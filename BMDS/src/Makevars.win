@@ -1,0 +1,9 @@
+
+# $topdir is set by the involking batch script
+PKG_CPPFLAGS = -I. -I"../include" -I"$(topdir)/nloptwin$(R_ARCH)/include/"  -DEIGEN_NO_DEBUG  -DR_COMPILATION=TRUE -w -Wno-ignored-attributes -std=c++11 
+PKG_LIBS = -L"$(topdir)/nloptwin$(R_ARCH)/lib/" -fabi-version=2 -lgsl -lnlopt -lRblas -lRlapack -lgslblas -fPIC -lgcc -lstdc++
+
+# Burned-in paths should no longer be necessary
+#PKG_CPPFLAGS = -I"C:/Users/aez0/Desktop/msys2/mingw$(WIN)/include/" -I"../include" -I"C:/Users/aez0/Desktop/msys2/home/aez0/BMDS-Model-Averaging/nloptwin$(R_ARCH)/include/"  -DEIGEN_NO_DEBUG  -DR_COMPILATION=TRUE -w -Wno-ignored-attributes -std=c++11
+#PKG_LIBS = -L"C:/Users/aez0/Desktop/msys2/home/aez0/BMDS-Model-Averaging/nloptwin$(R_ARCH)/lib/" -fabi-version=2 -lgsl -lnlopt -lRblas -lRlapack -lgslblas -fPIC -lgcc -lstdc++ 
+

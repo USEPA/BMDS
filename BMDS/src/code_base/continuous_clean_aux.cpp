@@ -1,0 +1,179 @@
+
+// [[Rcpp::depends(RcppGSL)]]
+// [[Rcpp::depends(RcppEigen)]]
+
+#ifdef R_COMPILATION
+//necessary things to run in R    
+  #include <RcppEigen.h>
+  #include <RcppGSL.h>
+#else 
+  #include <Eigen/Dense>
+
+#endif
+
+#include <gsl/gsl_randist.h>
+
+#include "continuous_clean_aux.h"
+#include "bmdStruct.h"
+#include <iostream>
+
+using namespace Rcpp;
+using namespace std;
+
+
+// [[Rcpp::depends(RcppGSL)]]
+// [[Rcpp::depends(RcppEigen)]]
+
+
+/*data clean procedures*/ 
+ 
+ std::vector<double> unique_list(Eigen::MatrixXd X){
+   
+   std::vector<double> uniqueX; 
+   
+   for (int i = 0; i < X.rows(); i++){
+     bool isUnique = true; 
+     for (int j = 0; j < uniqueX.size(); j++){
+       if (X(i,0)==uniqueX[j]){
+         isUnique = false; 
+         break; 
+       }
+     }
+     if (isUnique){
+       uniqueX.push_back(X(i,0)); 
+     }
+   }
+   
+   return uniqueX; 
+ }
+ 
+ 
+Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal){
+  double minDose = X.minCoeff(); 
+  double divisor = 0; 
+  int nmin = 0; 
+  
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==minDose){
+      nmin++; 
+      divisor += Y(i,0); 
+    }
+  }
+  divisor = divisor/double(nmin); //average background dose
+   
+  Y.col(0).array() = Y.col(0).array()/divisor; //divide mean
+  Y.col(2).array() = Y.col(2).array()/divisor; //divide sd; 
+  if (is_logNormal){
+    
+    Eigen::MatrixXd t1 = sqrt(log(1.0+pow(Y.col(2).array(),2)/Y.col(0).array())); 
+    Eigen::MatrixXd t2 = log(Y.col(0).array())-pow(t1.array(),2)*0.5; 
+    Y.col(0) = t2.array(); 
+    Y.col(2) = t1.array(); 
+  }
+  return Y; 
+  
+}
+
+double get_diviosor(Eigen::MatrixXd Y, Eigen::MatrixXd X){
+  // find the average of the lowest dose (e.g. background)
+  double minDose = X.minCoeff(); 
+  double divisor = 0; 
+  int nmin = 0; 
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==minDose){
+      nmin++; 
+      divisor += Y(i,0); 
+    }
+  }
+  divisor = divisor/double(nmin); 
+  return divisor; 
+}
+
+Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
+                               bool is_logNormal){
+  // get unique element
+  std::vector<double> uniqueX = unique_list(X); 
+  
+  // find the average of the lowest dose (e.g. background)
+  double minDose = X.minCoeff(); 
+  double divisor = 0; 
+  int nmin = 0; 
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==minDose){
+      nmin++; 
+      divisor += Y(i,0); 
+    }
+  }
+  divisor = divisor/double(nmin); 
+  
+  // build the sufficient statistics
+  Eigen::MatrixXd SSTAT(uniqueX.size(),3); 
+  for (int i = 0; i < uniqueX.size(); i++){
+    std::vector<double> uVals; 
+    for (int j = 0; j < Y.rows(); j++){
+      if (X(j,0)==uniqueX[i]){
+        if (is_logNormal){
+          uVals.push_back(log(Y(j,0))); //geometric mean
+        }else{
+          uVals.push_back(Y(j,0));  // aritmetic mean
+        }
+      }
+    }
+    SSTAT(i,0) = accumulate( uVals.begin(), uVals.end(), 0.0) / uVals.size();
+    SSTAT(i,1) = uVals.size();
+    double sqSum = std::inner_product(uVals.begin(), uVals.end(), uVals.begin(), 0.0);
+    SSTAT(i,2) =  sqSum / uVals.size() - SSTAT(i,0)*SSTAT(i,0);
+    SSTAT(i,2) =  SSTAT(i,2) * (double(uVals.size())/(double(uVals.size())-1.0)); //n-1 instead of n
+    SSTAT(i,2) =  pow(SSTAT(i,2),0.5); 
+  }
+  
+  return SSTAT; 
+}
+ 
+ 
+Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
+                              double max_dose, double bkground,bool is_logNormal)
+  {
+    
+    switch(model){
+      case cont_model::hill:
+        parms(0,0) *= bkground; parms(1,0) *= bkground; parms(2,0)*=max_dose; 
+        if (!is_logNormal){
+          if (parms.rows()==5){
+            parms(4,0) += 2*log(bkground); 
+          }
+        }
+        break; 
+      case cont_model::exp_3:
+        parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
+        if (!is_logNormal){
+          if (parms.rows()==4){
+            parms(3,0) += 2*log(bkground); 
+          }
+        }
+        break; 
+      case cont_model::exp_5:
+        
+        parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
+        if (!is_logNormal){
+          if (parms.rows()==5){
+            parms(4,0) += 2*log(bkground); 
+          }
+        }
+        break; 
+        
+      case cont_model::power: 
+        parms(0,0) *= bkground; parms(1,0) *= bkground*pow(1/max_dose,parms(2,0)); 
+        if (!is_logNormal){
+          if (parms.rows()==4){
+            parms(3,0) += 2*log(bkground); 
+          }
+        }
+        break; 
+ 
+    }
+    
+    return parms; 
+    
+  }
+ 

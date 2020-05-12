@@ -1,0 +1,13 @@
+Package: BMDS
+Type: Package
+Title: US EPA BMDS package
+Version: 0.1
+Date: 2019-02-13
+Author: US EPA
+Maintainer: US EPA <jeff.gift@epa.gov>
+Description: This package is the bomb and does what ever you want it to do.
+License: GPL (>=2)
+Imports: Rcpp (>= 1.0.0)
+Include: Rcpp, RcppEigen, RcppGSL
+LinkingTo: Rcpp, RcppEigen, RcppGSL
+

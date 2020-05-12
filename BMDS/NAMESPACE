@@ -1,0 +1,7 @@
+useDynLib(BMDS, .registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+importFrom(Rcpp, evalCpp)
+import(ggplot2)
+import(cowplot)
+import(reshape)
+importFrom(VIM, alphablend)
