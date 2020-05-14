@@ -1,0 +1,6 @@
+*.o
+*.tar.gz
+*.a
+*.RData
+
+.Rproj.user
