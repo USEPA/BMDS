@@ -130,7 +130,7 @@ Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   return SSTAT; 
 }
  
- 
+// FIXME: CHECK IF WE ARE RESCALING THE VARIANCE PARAMETERS CORRECTLY
 Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
                               double max_dose, double bkground,bool is_logNormal)
   {
@@ -174,6 +174,40 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
     }
     
     return parms; 
+    
+  }
+ 
+ 
+ Eigen::MatrixXd rescale_cov_matrix(Eigen::MatrixXd COV, 
+									Eigen::MatrixXd parms, cont_model model,
+									double max_dose, double bkground,
+									bool is_logNormal)
+  {
+    Eigen::MatrixXd scaleMatrix = Eigen::MatrixXd::Identity(COV.rows(), COV.cols());
+    switch(model){
+      case cont_model::hill:
+        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground; scaleMatrix(2,2)*=max_dose; 
+        COV = scaleMatrix*COV*scaleMatrix; 
+        break; 
+      case cont_model::exp_3:
+        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = 1/max_dose;  
+        COV = scaleMatrix*COV*scaleMatrix; 
+        break; 
+      case cont_model::exp_5:
+        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = 1/max_dose; 
+        COV = scaleMatrix*COV*scaleMatrix; 
+        break; 
+        
+      case cont_model::power: 
+        parms(0,0) *= bkground; parms(1,0) *= bkground*pow(1/max_dose,parms(2,0)); 
+        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground*pow(1/max_dose,parms(2,0));
+        scaleMatrix(1,2) = bkground*parms(1,0)*log(1/max_dose)*pow(1/max_dose,parms(2,0));  
+        COV = scaleMatrix*COV*scaleMatrix; 
+        break; 
+ 
+    }
+    
+    return COV; 
     
   }
  

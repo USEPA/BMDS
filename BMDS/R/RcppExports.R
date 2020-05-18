@@ -17,6 +17,10 @@ run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X,
     .Call(`_BMDS_run_continuous_ma_laplace`, model_priors, model_type, dist_type, Y, X, options)
 }
 
+run_continuous_ma_mcmc <- function(model_priors, model_type, dist_type, Y, X, options) {
+    .Call(`_BMDS_run_continuous_ma_mcmc`, model_priors, model_type, dist_type, Y, X, options)
+}
+
 run_dichotomous_single_mcmc <- function(model, Y, D, pr, options) {
     .Call(`_BMDS_run_dichotomous_single_mcmc`, model, Y, D, pr, options)
 }

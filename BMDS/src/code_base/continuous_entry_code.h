@@ -71,6 +71,11 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
                             double alpha, double step_size);
+
+void estimate_ma_MCMC(continuousMA_analysis *MA,
+                      continuous_analysis *CA ,
+                      continuousMA_result *res,
+                      ma_MCMCfits         *ma);
                             
 void transfer_continuous_model(bmd_analysis a, continuous_model_result *model); 
 

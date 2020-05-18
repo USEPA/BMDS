@@ -70,6 +70,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// run_continuous_ma_mcmc
+List run_continuous_ma_mcmc(List model_priors, NumericVector model_type, NumericVector dist_type, Eigen::MatrixXd Y, Eigen::MatrixXd X, NumericVector options);
+RcppExport SEXP _BMDS_run_continuous_ma_mcmc(SEXP model_priorsSEXP, SEXP model_typeSEXP, SEXP dist_typeSEXP, SEXP YSEXP, SEXP XSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type model_priors(model_priorsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type model_type(model_typeSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type dist_type(dist_typeSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_continuous_ma_mcmc(model_priors, model_type, dist_type, Y, X, options));
+    return rcpp_result_gen;
+END_RCPP
+}
 // run_dichotomous_single_mcmc
 List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd pr, NumericVector options);
 RcppExport SEXP _BMDS_run_dichotomous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP prSEXP, SEXP optionsSEXP) {
@@ -108,6 +124,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BMDS_run_ma_dichotomous", (DL_FUNC) &_BMDS_run_ma_dichotomous, 5},
     {"_BMDS_run_continuous_single", (DL_FUNC) &_BMDS_run_continuous_single, 7},
     {"_BMDS_run_continuous_ma_laplace", (DL_FUNC) &_BMDS_run_continuous_ma_laplace, 6},
+    {"_BMDS_run_continuous_ma_mcmc", (DL_FUNC) &_BMDS_run_continuous_ma_mcmc, 6},
     {"_BMDS_run_dichotomous_single_mcmc", (DL_FUNC) &_BMDS_run_dichotomous_single_mcmc, 5},
     {"_BMDS_run_continuous_single_mcmc", (DL_FUNC) &_BMDS_run_continuous_single_mcmc, 7},
     {NULL, NULL, 0}

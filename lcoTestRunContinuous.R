@@ -6,12 +6,13 @@ library(BMDS)
 # Input data - Continuous2.dax - Individual dose-response
 M = matrix(0,nrow=26,ncol=4)
 colnames(M) <- c("Dose","Resp","","")
-M[,1] <- c(0,0,0,0,18,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,40,40,40,40,40)
-M[,2] <- c(39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,35.9,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
+M[,1] <- c(20,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,40,40,40,40,40)
+M[,2] <- c(42,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
            55.2,55.1,59.1,56.3,52.9,53.7)
 
 
 B = ma_continuous_fit(M[,1],M[,2])
+C = ma_continuous_fit(M[,1],M[,2],fit_type="mcmc")
 
 # Input data - Continuous3.dax - Summarized dose-response
 M2           <- matrix(0,nrow=5,ncol=4)
@@ -26,7 +27,7 @@ B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")
 
 library(BMDS)
-system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")})
+system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mcmc",model_type = "power")})
 system.time({b = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mle",model_type = "exp-5")})
 system.time({a = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mcmc",model_type = "exp-5")})
 

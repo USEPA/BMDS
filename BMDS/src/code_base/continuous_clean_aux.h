@@ -22,6 +22,11 @@ Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 
 Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
                               double max_dose, double bkground,bool is_logNormal); 
+                              
+Eigen::MatrixXd rescale_cov_matrix(Eigen::MatrixXd COV, 
+									Eigen::MatrixXd parms, cont_model model,
+									double max_dose, double bkground,
+									bool is_logNormal);
 
 
 #endif

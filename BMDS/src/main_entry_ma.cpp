@@ -227,3 +227,139 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
    return rV; 
 
 }
+
+
+List covert_MCMC_fit_to_list(bmd_analysis_MCMC *a){
+  List rV; 
+  NumericMatrix parameters(a->samples,a->nparms);  
+  NumericMatrix BMDS(a->samples,1); 
+  
+  for (unsigned int i = 0; i < a->samples; i++){
+    BMDS[i] = a->BMDS[i]; 
+    for( unsigned int j = 0; j < a->nparms; j++){
+       parameters(i,j) = a->parms[i +j*a->samples]; 
+    }
+  }
+  rV = List::create(Named("BMD_samples")=BMDS,Named("PARM_samples")=parameters); 
+  return rV; 
+}
+
+
+List convert_mcmc_results(const ma_MCMCfits *a){
+  List rV; 
+  char str[80]; 
+
+  for (unsigned int i=0; i < a->nfits; i++){
+    sprintf(str,"Fitted_Model_%d",i+1);
+    rV.push_back(covert_MCMC_fit_to_list(a->analyses[i]),
+                 str); 
+    
+  }
+  return rV; 
+}
+/////////////////////////////////////////////////////////////////////////////
+//
+//
+/////////////////////////////////////////////////////////////////////////////
+// [[Rcpp::export]]
+List run_continuous_ma_mcmc(List model_priors, NumericVector model_type, 
+                               NumericVector dist_type,
+                               Eigen::MatrixXd Y, Eigen::MatrixXd X,
+                               NumericVector options){
+  unsigned int burnin = (unsigned int) options[6];
+  bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
+  double tail_p = (double)options[2]; 	double bmrf  = (double)options[1];
+  int    riskType = (int)options[0];   
+  unsigned int samples = (unsigned int) options[5];
+  
+  continuousMA_analysis ma_anal;
+  
+  ma_anal.nmodels = model_priors.length(); 
+  ma_anal.modelPriors = new double [ma_anal.nmodels]; 
+  ma_anal.priors  = new double *[ma_anal.nmodels];
+  ma_anal.nparms  = new int [ma_anal.nmodels];
+  ma_anal.actual_parms = new int [ma_anal.nmodels];
+  ma_anal.prior_cols   = new int[ma_anal.nmodels];
+  ma_anal.models  = new int [ma_anal.nmodels];
+  ma_anal.disttype= new int [ma_anal.nmodels];
+  
+  continuousMA_result *ma_result = new continuousMA_result; 
+  ma_MCMCfits model_mcmc_info; 
+  model_mcmc_info.analyses = new bmd_analysis_MCMC*[ma_anal.nmodels]; 
+  model_mcmc_info.nfits = ma_anal.nmodels; 
+  ma_result->nmodels    = ma_anal.nmodels; 
+  ma_result->dist_numE  = 300; 
+  ma_result->bmd_dist   = new double[300*2]; 
+  ma_result->post_probs = new double[ma_anal.nmodels];
+  ma_result->models     = new continuous_model_result*[ma_anal.nmodels];
+  
+  
+  for (int i = 0; i < ma_anal.nmodels; i++){
+    ma_anal.modelPriors[i] = 1.0/double(ma_anal.nmodels); 
+    Eigen::MatrixXd temp = model_priors[i];
+    ma_anal.priors[i]    = new double[temp.rows()*temp.cols()];
+    //cout << temp << endl; 
+    cp_prior( temp, ma_anal.priors[i]);
+    ma_anal.nparms[i]     = temp.rows(); 
+    ma_anal.prior_cols[i] = temp.cols();
+    ma_anal.models[i]     = (int) model_type[i]; 
+    ma_anal.disttype[i]   = (int) dist_type[i]; 
+    //cout << ma_anal.models[i] << " " << dist_type[i] << endl; 
+    ma_result->models[i] = new_continuous_model_result( ma_anal.models[i],
+                                                        ma_anal.nparms[i],
+                                                                      200); //have 200 equally spaced values
+    model_mcmc_info.analyses[i] = new_mcmc_analysis(ma_anal.models[i],
+                                                    ma_anal.nparms[i],
+                                                              samples);
+    
+    
+  }
+  
+  /// Set up the other info
+  continuous_analysis anal; 
+  anal.Y       =    new double[Y.rows()]; 
+  anal.n       =    Y.rows(); 
+  anal.n_group =    new double[Y.rows()]; 
+  anal.sd      =    new double[Y.rows()]; 
+  anal.doses   =    new double[Y.rows()]; 
+  anal.prior   =    NULL;
+  anal.isIncreasing = is_increasing; 
+  anal.alpha        = 0.005; //alpha for analyses; 
+  anal.BMD_type     = riskType; 
+  anal.BMR          = bmrf; 
+  anal.samples      = samples;
+  anal.burnin       = burnin; 
+  anal.tail_prob    = tail_p; 
+  anal.suff_stat    = Y.cols()==3;
+  
+  
+  for (int i = 0; i < Y.rows(); i++){
+    anal.Y[i] = Y(i,0); 
+    anal.doses[i] = X(i,0); 
+    if (Y.cols() == 3){ //sufficient statistics
+      anal.n_group[i] = Y(i,2);
+      anal.sd[i]      = Y(i,1); 
+    }
+  }
+  
+  estimate_ma_MCMC(&ma_anal,&anal,ma_result,&model_mcmc_info);
+ 
+  List rV = convert_mcmc_results(&model_mcmc_info); 	
+ // List t2 = convert_continuous_maresults_to_list(ma_result); 
+ // List rv(Named("mcm
+  //////////////////////////////////////////////////////////
+  // free up memory
+  for (unsigned int i = 0; i < ma_result->nmodels; i++){
+    del_continuous_model_result(ma_result->models[i]); 
+    del_mcmc_analysis(model_mcmc_info.analyses[i]);
+  }
+  
+  delete ma_result->post_probs; 
+  delete ma_result->bmd_dist; 
+  delete ma_result; 
+  del_continuous_analysis(anal);
+  del_continuousMA_analysis(ma_anal); 
+  return rV; 
+  
+}
+

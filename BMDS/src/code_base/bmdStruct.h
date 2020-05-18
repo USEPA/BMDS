@@ -1,7 +1,5 @@
 
-//necessary things to run in R    
-
-
+//necessary things to run in R  
 #ifndef BMD_ANALYSIS_h
 #define BMD_ANALYSIS_h
 
@@ -30,13 +28,6 @@ struct dichotomous_analysis{
   int parms; // number of parameters 
 };
 
-struct bmd_analysis_MCMC{
-  dich_model model; 
-  int samples; 
-  double * BMDS; 
-  double * parms; 
-};
-
 
 struct continuous_analysis{
   cont_model model; 
@@ -58,6 +49,7 @@ struct continuous_analysis{
   double alpha; 
   est_method fitter; 
   int samples; // number of MCMC samples. 
+  int burnin;  // burn in 
   int parms; // number of parameters 
   int priorD; 
 };
@@ -95,14 +87,30 @@ struct continuousMA_result{
   double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
 
+struct bmd_analysis_MCMC{
+  int model; 
+  unsigned int burnin; 
+  unsigned int samples;
+  unsigned int nparms; 
+  double * BMDS; 
+  double * parms; 
+};
 
+struct ma_MCMCfits{
+  unsigned int nfits; 
+  bmd_analysis_MCMC **analyses;   
+}; 
 
+bmd_analysis_MCMC * new_mcmc_analysis(int model,
+                                       int parms, 
+                                       unsigned int samples);
+void del_mcmc_analysis(bmd_analysis_MCMC *an); 
 void cp_prior(Eigen::MatrixXd temp, double *priors);
 void del_continuousMA_analysis(continuousMA_analysis &CMA);
 void del_continuous_analysis(continuous_analysis a); 
 continuous_model_result * new_continuous_model_result(int model,
 													  unsigned int n_parm,
-                                                      unsigned int n_elm);
+                            unsigned int n_elm);
                                                       
 void del_continuous_model_result(continuous_model_result * cm);                                                      
 #endif

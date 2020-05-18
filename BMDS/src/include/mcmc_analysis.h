@@ -34,6 +34,13 @@
 
 
 struct mcmcSamples{
+  /*******************
+  *for model averaging
+  *********************/
+    double map; 
+    Eigen::MatrixXd map_estimate; 
+    Eigen::MatrixXd map_cov; 
+  /**********************/
     Eigen::MatrixXd BMD;
     Eigen::MatrixXd samples;
     Eigen::MatrixXd log_posterior;
@@ -53,13 +60,15 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
 
  
 	LL        dichotimousM(Y, D, degree);
-	PR   	  model_prior(prior);
+	PR   	    model_prior(prior);
 
 	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
 	optimizationResult oR = findMAP<LL, PR>(&model);
 
   mcmcSamples rVal;
-
+  rVal.map = 	oR.functionV;
+  rVal.map_estimate = oR.max_parms;; 
+  rVal.map_cov = model.varMatrix(oR.max_parms); 
 
  int n = oR.max_parms.rows();
     //generate random univariate normals for the MCMC sampler
@@ -88,7 +97,8 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
     nSamples.col(0) = mu; // starting value of the MCMC
  
 
-
+    
+    
     penLike(0,0) =  -model.negPenLike(nSamples.col(0));
     for (int i = 1; i < samples ; i++){
         Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1);//mu;
@@ -124,7 +134,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
 			nSamples.col(i) = nSamples.col(i-1);
 			penLike(0,i) = penLike(0,i-1);
         }
-	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR) : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
+    	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR) : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
 	}
 
 
@@ -151,6 +161,10 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   
   optimizationResult oR = findMAP<LL, PR>(model);
   mcmcSamples rVal;
+  
+  rVal.map = 	oR.functionV;
+  rVal.map_estimate = oR.max_parms;; 
+  rVal.map_cov = model->varMatrix(oR.max_parms); 
   
   struct timeval tv; // Seed generation based on time
   gettimeofday(&tv,0);
@@ -205,7 +219,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
       
       if (isnan(test)){
         test = 0.0; // no probability of making this jump
-        cout << i << endl; 
+       // cout << i << endl; 
       }
       
       if ( rr < test){
@@ -246,6 +260,7 @@ mcmcSamples MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL(Eigen::MatrixXd Y, Eigen::Mat
                                                   int samples, int adverse_d){
   
   LL        likelihood(Y, D,suff_stat, adverse_d);
+ // cout << prior << endl; 
   PR   	    model_prior(prior);
   
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, isIncreasing);	
@@ -260,6 +275,7 @@ mcmcSamples MCMC_bmd_analysis_CONTINUOUS_NORMAL(Eigen::MatrixXd Y, Eigen::Matrix
                                                 double alpha, int samples, int adverse_d) {
   
   LL        likelihood(Y, D,suff_stat, const_var, adverse_d);
+ // cout << prior << endl; 
   PR   	    model_prior(prior);
   
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, isIncreasing);	

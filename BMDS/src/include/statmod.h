@@ -42,13 +42,12 @@ struct optimizationResult {
 	double functionV;
 	Eigen::MatrixXd max_parms;
 
-    optimizationResult & operator=(const optimizationResult &M) {
+  optimizationResult & operator=(const optimizationResult &M) {
       result = M.result;
       functionV = M.functionV;
       max_parms = M.max_parms;
       return *this;
     }
-
 };
 
 template <class LL, class PR>

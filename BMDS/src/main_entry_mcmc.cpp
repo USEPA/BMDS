@@ -463,7 +463,8 @@ List run_continuous_single_mcmc(NumericVector model,
                                 Eigen::MatrixXd Y, Eigen::MatrixXd D,
                                 Eigen::MatrixXd priors, NumericVector options,
                                 bool is_logNormal,bool suff_stat){
-  int samples = (int) options[7]; 
+  unsigned int samples = (unsigned int) options[7]; 
+  unsigned int burnin  = (unsigned int) options[8];
   double tail_p = (double) options[6]; 
   bool bConstVar = (bool)options[5]; // check if it is constant variance
   bool is_increasing = (bool)options[4];
@@ -533,12 +534,13 @@ List run_continuous_single_mcmc(NumericVector model,
   mcmcAnal.BMD_type     = riskType; 
   mcmcAnal.BMR          = bmrf; 
   mcmcAnal.samples      = samples; 
+  mcmcAnal.burnin       = burnin; 
   mcmcAnal.tail_prob    = tail_p; 
   mcmcAnal.suff_stat    = suff_stat; 
   
   bmd_analysis_MCMC  output; 
   output.parms = new double[samples*mcmcAnal.parms]; 
-  output.BMDS = new double[samples]; 
+  output.BMDS  = new double[samples]; 
   
   ///////////////////////////////////////////////////////////////////////
   if (suff_stat){

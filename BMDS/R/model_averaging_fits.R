@@ -82,12 +82,12 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     is_increasing = T
   }
   
-  options <- c(rt,BMR,point_p,alpha, is_increasing,samples)
+  options <- c(rt,BMR,point_p,alpha, is_increasing,samples,burnin)
   
   if (fit_type == "mcmc"){
     
- #   rvals <- run_continuous_single_mcmc(fitmodel,model_data$SSTAT,model_data$X,
-#                                        PR[[1]],options, is_log_normal, sstat) 
+    rvals <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
+                                    options) 
 #    if (model_type == "exp-3"){
 #      rvals$PARMS = rvals$PARMS[,-3]
 #    }

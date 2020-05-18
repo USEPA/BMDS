@@ -21,6 +21,27 @@ void del_continuous_analysis(continuous_analysis a){
   a.prior = NULL; 
 }
 
+bmd_analysis_MCMC * new_mcmc_analysis(int model,
+                                       int parms, 
+                                       unsigned int samples){
+  bmd_analysis_MCMC *rV = new bmd_analysis_MCMC; 
+  rV->model = model; 
+  rV->samples = samples; 
+  rV->BMDS    = new double[samples]; 
+  rV->parms   = new double[samples*parms]; 
+  
+  return rV; 
+  
+}
+
+void del_mcmc_analysis(bmd_analysis_MCMC *an){
+  if (an){
+    delete an->BMDS; 
+    delete an->parms; 
+    delete an; 
+  }
+}
+
 continuous_model_result * new_continuous_model_result(int model,
 													  unsigned int n_parm,
                                                       unsigned int n_elm){
