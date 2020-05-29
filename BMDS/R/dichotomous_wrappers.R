@@ -195,3 +195,58 @@ bmd_default_frequentist_settings <- function(model,degree=2){
   
   return(prior)
 }
+# fix me - remove 
+
+bmd_default_bayesian_prior <- function(model,degree=2){
+  dmodel = which(model==c("hill","gamma","logistic", "log-logistic",
+                          "log-probit"  ,"multistage"  ,"probit",
+                          "qlinear","weibull"))
+  if (dmodel==1){ #HILL
+    prior <- matrix(c(1,	-1,	2,	-40,	40,
+                      1,	 0,	3,	-40,	40,
+                      1,	-3,	3.3,	-40,	40,
+                      2,	0.693147,	0.5,	0,	40),nrow=4,ncol=5,byrow=T)
+  }
+  if (dmodel==2){ #GAMMA
+    prior <- matrix(c(1,	0,	2,	-18,	18,
+                      2,	0.693147180559945,	0.424264068711929,	0.2,	20,
+                      2,	0,	1,	0,	1e4),nrow=3,ncol=5,byrow=T)
+  }
+  if (dmodel == 3){ #LOGISTIC
+    prior <- matrix(c(1,	0,	2,	-20,	20,
+                      2,	0.1,	1,	0,	40     ),nrow=2,ncol=5,byrow=T)
+  }
+  if (dmodel == 4){ #LOG-LOGISTIC
+    prior <- matrix(c(1,	0,	2,	-20,	20,
+                      1,	0,	1,	-40,	40,
+                      2,	0.693147180559945,	0.5,	1.00E-04,	20),nrow=3,ncol=5,byrow=T)
+  }
+  if (dmodel == 5){ #LOG-PROBIT
+    prior <- matrix(c(1,	0,	2,	-20,	20,
+                      1,	0,	1,	-40,	40,
+                      2,	0.693147180559945,	0.5,	1.00E-04,	40),nrow=3,ncol=5,byrow=T)
+  }
+  
+  if (dmodel == 6){ #MULTISTAGE
+    temp <- matrix(c(1,	0,	2,	-20,	20,
+                     2,	0,	0.5,	1.00E-04,	100,
+                     2,	0,	1,	  1.00E-04,	1.00E+06),nrow=3,ncol=5,byrow=T)
+    prior <- matrix(c(2,	0,	1,	  1.00E-04,	1.00E+06),nrow=1+degree,ncol=5,byrow=T)
+    prior[1:3,] <- temp; 
+  }
+  if (dmodel == 7){ #PROBIT
+    prior <- matrix(c(1,	-2,	2,	-8,	8,
+                      2,	0.1,	1,	1.00E-12,	40 ),nrow=2,ncol=5,byrow=T)
+  }
+  if (dmodel == 8){ #QLINEAR
+    prior <- matrix(c(1,	0,  	2,-18,	18,
+                      2,	0.15,  1,	0,	18),nrow=2,ncol=5,byrow=T)
+  }
+  if (dmodel == 9){ #WEIBULL
+    prior <- matrix(c(1,	0,	2,	-20,	20,
+                      2,	0.424264068711929,	0.5,	0,	40,
+                      2,	0,	1.5,	0,	1e4),nrow=3,ncol=5,byrow=T)
+  }  
+  
+  return(prior)
+}
