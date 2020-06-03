@@ -362,7 +362,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 	int NI = 1000; // size of the initial population
 
   std::vector<double> llist(NI); // List of the likelihood values; 
-  for(int j; j< llist.size(); j++){
+  for(int j=0; j< llist.size(); j++){
     llist[j] = std::numeric_limits<double>::infinity(); // initialize everything to infinity
   }
   std::vector<Eigen::MatrixXd> population(NI); //list of the population parameters

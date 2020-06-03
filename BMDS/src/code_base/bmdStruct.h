@@ -57,7 +57,7 @@ struct continuous_analysis{
 
 
 struct continuousMA_analysis{
-  int nmodels;         //number of models for each 
+  int    nmodels;         //number of models for each 
   double **priors;     //priors
   int    *nparms;      //parameter in each model
   int    *actual_parms;//actual number of parameters in the model
@@ -112,5 +112,7 @@ continuous_model_result * new_continuous_model_result(int model,
 													  unsigned int n_parm,
                             unsigned int n_elm);
                                                       
-void del_continuous_model_result(continuous_model_result * cm);                                                      
+void del_continuous_model_result(continuous_model_result * cm);   
+
+
 #endif
