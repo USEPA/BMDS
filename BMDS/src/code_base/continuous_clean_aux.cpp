@@ -210,7 +210,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
     return COV; 
     
   }
- 
+ ////////////////////////////////////////
  // FIXME: RESCALE CENTER AND VARIANCE 
  Eigen::MatrixXd rescale_prior(Eigen::MatrixXd prior, cont_model model,
                                double max_dose, double bkground,bool is_logNormal)
