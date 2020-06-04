@@ -9,7 +9,7 @@ enum dich_model {d_hill, d_gamma,d_logistic, d_loglogistic,
                  d_logprobit  , d_multistage  ,d_probit,
                  d_qlinear,d_weibull}; 
 
-enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8}; 
+enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, polynomial=666}; 
 enum distribution {normal = 1, normal_ncv = 2, log_normal = 3}; 
 
 struct dichotomous_analysis{

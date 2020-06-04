@@ -31,6 +31,7 @@
 #include "mcmc_analysis.h"
 #include <algorithm>
 #include <vector>
+#include <limits>
 
 using namespace std; 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
@@ -281,8 +282,6 @@ void transfer_continuous_model(bmd_analysis a, continuous_model_result *model){
 }
 
 
-
-
 void bmd_range_find(continuousMA_result *res, 
 					double *range){
  // assume the minimum BMD for the MA is always 0
@@ -307,10 +306,6 @@ void bmd_range_find(continuousMA_result *res,
  range[1] = current_max == 0.0 ? std::numeric_limits<double>::quiet_NaN():current_max; 
   
 }
-
-
-
-
 
 void estimate_ma_laplace(continuousMA_analysis *MA,
                          continuous_analysis *CA ,
@@ -430,7 +425,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
-  double max_prob = -1e500; 
+  double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
         temp  = 	a[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - a[i].MAP + 0.5*log(max(0.0,a[i].COV.determinant()));
         max_prob = temp > max_prob? temp:max_prob; 
@@ -496,7 +491,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
  * 
  * 
 ##############################################################################*/
- mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
+mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                             bool is_increasing, 
                             double bmrf,   double bk_prob, 
@@ -509,8 +504,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     fixedB[i] = false;
     fixedV[i] = 0.0;
   }
-  
-  
+
   mcmcSamples a;
   int adverseR; 
   switch (CM)
@@ -661,10 +655,134 @@ void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
   }
 }
 
+
+void fixRescaleLogNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
+                         Eigen::MatrixXd prior,double max_dose,double divisor,
+                         bool is_increasing) {
+  
+  bool suff_stat = Y.cols() == 1? false:true; 
+  std::vector<bool> fixedB(prior.rows());
+  std::vector<double> fixedV(prior.rows());
+  
+
+  for (int i = 0; i < prior.rows(); i++) {
+      fixedB[i] = false;
+      fixedV[i] = 0.0;
+  }
+
+  int adverseR; 
+  switch (CM)
+  {
+  case cont_model::hill:
+    
+    
+    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
+    // <lognormalHILL_BMD_NC, IDcontinuousPrior>
+    break; 
+  case cont_model::exp_3:
+    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
+    adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
+    // <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
+
+    break; 
+  case cont_model::exp_5:
+  default: 
+    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
+    adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
+    // <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
+     
+    break; 
+    
+  }
+  
+  return; 
+}
+
+
+/*
+void fixRescaleNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
+                        Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
+                        bool is_increasing, bool bConstVar,
+                        double bmrf,   double bk_prob, 
+                        double alpha, int samples,
+                        int burnin) {
+  
+  bool suff_stat = Y.cols() == 1? false:true; 
+  std::vector<bool> fixedB(prior.rows());
+  std::vector<double> fixedV(prior.rows());
+  
+  for (int i = 0; i < prior.rows(); i++) {
+    fixedB[i] = false;
+    fixedV[i] = 0.0;
+  }
+  
+  mcmcSamples a;
+  int adverseR; 
+  switch (CM)
+  {
+  case cont_model::hill:
+    if (bConstVar){
+      cout << "Running Hill Model Normality Assumption using MCMC." << endl;
+    }else{
+      cout << "Running Hill Model Normality-NCV Assumption using MCMC." << endl;
+    }
+    
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalHILL_BMD_NC, IDcontinuousPrior>
+      (Y,  X, prior, fixedB, fixedV, is_increasing,
+       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+       samples,0); 
+    break; 
+  case cont_model::exp_3:
+    adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
+    if (bConstVar){
+      cout << "Running Exponential 3 Model Normality Assumption using MCMC." << endl;
+    }else{
+      cout << "Running Exponential 3 Model Normality-NCV Assumption using MCMC." << endl;
+    }
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
+      (Y,  X, prior, fixedB, fixedV, is_increasing,
+       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+       samples,adverseR);
+    break; 
+  case cont_model::exp_5:
+    
+    adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
+    if (bConstVar){
+      cout << "Running Exponential 5 Model Normality Assumption using MCMC." << endl;
+    }else{
+      cout << "Running Exponential 5 Model Normality-NCV Assumption using MCMC." << endl;
+    }
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
+      (Y,  X, prior, fixedB, fixedV, is_increasing,
+       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+       samples,0);
+    break; 
+  case cont_model::power:
+  default:  
+    if (bConstVar){
+      cout << "Running Power Model Normality Assumption using MCMC." << endl;
+    }else{
+      cout << "Running Powrer Model Normality-NCV Assumption using MCMC." << endl;
+    }
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOWER_BMD_NC, IDcontinuousPrior>
+      (Y,  X, prior, fixedB, fixedV, is_increasing,
+       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+       samples,adverseR);
+    
+    
+    break; 
+    
+  }
+  //convert a stuff
+  
+  //
+  return a; 
+}
+*/
 void estimate_ma_MCMC(continuousMA_analysis *MA,
                       continuous_analysis   *CA,
                       continuousMA_result   *res,
-                      ma_MCMCfits           *ma){
+                      ma_MCMCfits           *ma){ 
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
   //cerr << "Sufficient Stat: " << n_cols << endl; 
@@ -732,11 +850,11 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   unsigned int burnin  = CA->burnin;  
   for (int i = 0; i < MA->nmodels; i++ ){
     
-  Eigen::MatrixXd tprior(MA->nparms[i],MA->prior_cols[i]);
-  for (int m = 0; m < MA->nparms[i]; m++){
-      for (int n = 0; n < MA->prior_cols[i]; n++){
-        tprior(m,n) = MA->priors[i][m + n*MA->nparms[i]]; 
-      }
+    Eigen::MatrixXd tprior(MA->nparms[i],MA->prior_cols[i]);
+    for (int m = 0; m < MA->nparms[i]; m++){
+        for (int n = 0; n < MA->prior_cols[i]; n++){
+          tprior(m,n) = MA->priors[i][m + n*MA->nparms[i]]; 
+        }
     }
     
     if (MA->disttype[i] == distribution::log_normal){
@@ -790,7 +908,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                        (cont_model)MA->models[i] ,
                                         max_dose, divisor, MA->disttype[i] == distribution::log_normal); 
      a[i].map_cov      = rescale_cov_matrix(a[i].map_cov,
-										a[i].map_estimate, 
+										                    a[i].map_estimate, 
                                        (cont_model)MA->models[i] ,
                                         max_dose, divisor, MA->disttype[i] == distribution::log_normal);
   }

@@ -211,3 +211,50 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
     
   }
  
+ // FIXME: RESCALE CENTER AND VARIANCE 
+ Eigen::MatrixXd rescale_prior(Eigen::MatrixXd prior, cont_model model,
+                               double max_dose, double bkground,bool is_logNormal)
+ {
+   
+   switch(model){
+   case cont_model::hill:
+     parms(0,0) *= bkground; parms(1,0) *= bkground; parms(2,0)*=max_dose; 
+     if (!is_logNormal){
+       if (parms.rows()==5){
+         parms(4,0) += 2*log(bkground); 
+       }
+     }
+     break; 
+   case cont_model::exp_3:
+     parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
+     if (!is_logNormal){
+       if (parms.rows()==4){
+         parms(3,0) += 2*log(bkground); 
+       }
+     }
+     break; 
+   case cont_model::exp_5:
+     
+     parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
+     if (!is_logNormal){
+       if (parms.rows()==5){
+         parms(4,0) += 2*log(bkground); 
+       }
+     }
+     break; 
+     
+   case cont_model::power: 
+     parms(0,0) *= bkground; parms(1,0) *= bkground*pow(1/max_dose,parms(2,0)); 
+     if (!is_logNormal){
+       if (parms.rows()==4){
+         parms(3,0) += 2*log(bkground); 
+       }
+     }
+     break; 
+     
+   }
+   
+   return parms; 
+   
+ }
+ 
