@@ -82,8 +82,8 @@ public:
 
 	virtual double BMR_CONSTRAINT(Eigen::MatrixXd theta, double * grad, double BMR, double isExtra) {
 		double g = LOGPROBIT_G(theta(0, 0));
-		double a = LOGPROBIT_A(theta(1, 0));
-		double b = LOGPROBIT_B(theta(2, 0));
+//		double a = LOGPROBIT_A(theta(1, 0));
+//		double b = LOGPROBIT_B(theta(2, 0));
 
 
 		double rV = (isExtra) ? -1 : BMR / (1 - g) -1;

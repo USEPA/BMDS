@@ -656,49 +656,6 @@ void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
 }
 
 
-void fixRescaleLogNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
-                         Eigen::MatrixXd prior,double max_dose,double divisor,
-                         bool is_increasing) {
-  
-  bool suff_stat = Y.cols() == 1? false:true; 
-  std::vector<bool> fixedB(prior.rows());
-  std::vector<double> fixedV(prior.rows());
-  
-
-  for (int i = 0; i < prior.rows(); i++) {
-      fixedB[i] = false;
-      fixedV[i] = 0.0;
-  }
-
-  int adverseR; 
-  switch (CM)
-  {
-  case cont_model::hill:
-    
-    
-    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
-    // <lognormalHILL_BMD_NC, IDcontinuousPrior>
-    break; 
-  case cont_model::exp_3:
-    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
-    adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
-    // <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-
-    break; 
-  case cont_model::exp_5:
-  default: 
-    cBMDModel<lognormalHILL_BMD_NC, IDcontinuousPrior>  model(likelihood, prior, fixedB, fixedV, isIncreasing);
-    adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
-    // <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-     
-    break; 
-    
-  }
-  
-  return; 
-}
-
-
 /*
 void fixRescaleNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                         Eigen::MatrixXd prior, contbmd riskType, cont_model CM,

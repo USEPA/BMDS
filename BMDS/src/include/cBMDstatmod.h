@@ -432,7 +432,7 @@ double neg_pen_likelihood_contbound(unsigned n,
 	model->sm->parameter_to_remove(model->BMDType); 
 	int p_remove = model->sm->parameter_to_remove(model->BMDType);
 	int count = 0; 
-	double *tempgrad = new double[n + 1];
+//	double *tempgrad = new double[n + 1];
 	std::vector<double> x(n + 1); // add one to the number of parameters
     // LCO DEBUG ofstream file;
     //file.open("bmds.log", fstream::app);
@@ -468,7 +468,7 @@ double neg_pen_likelihood_contbound(unsigned n,
 			}
 		}
 	}
-	delete tempgrad; 
+//	delete tempgrad; 
 	
 	return model->sm->negPenLike(theta);
 }

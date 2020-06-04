@@ -94,7 +94,7 @@ bayesian_prior_continuous  <- function(model,variance){
   dvariance = which(variance == c("normal","normal-ncv","lognormal"))
   
   #Hill Prior NonConstant Normal Prior
-  if (dmodel ==1 && dvariance == 2){
+  if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(lnormprior(0,0.1,0,100),
                                normprior(1,2,-10,100),
                                lnormprior(log(0.5),1,0,18),

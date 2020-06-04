@@ -25,8 +25,10 @@
     #include <gsl/gsl_randist.h>
 #endif
 #include <cmath>
+#include <vector>
 #include <math.h>
 
+enum prior_iidtype {iid_normal = 1, iid_lognormal =2, iid_mle = 0}; 
 
 // IDPrior
 // Creates a class where each parameter specified is given an independent
@@ -63,6 +65,52 @@ public:
 		return prior_spec.col(4);
 	}
 
+	//scales the prior by a constant
+  void scale_prior(std::vector<double>  scale, int parm){
+    if (parm >= 0 && parm << prior_spec.rows()){
+       switch (prior_iidtype(prior_spec(parm,0))){
+         case prior_iidtype::iid_normal:
+             prior_spec(parm,1) *= scale[0]; 
+             prior_spec(parm,2) *= scale[0]*scale[0]; 
+             prior_spec(parm,3) *= scale[0];
+             prior_spec(parm,4) *= scale[0];
+           break; 
+        case prior_iidtype::iid_lognormal: 
+              prior_spec(parm,1) += log(scale[0]); 
+              prior_spec(parm,3) *= scale[0];
+              prior_spec(parm,4) *= scale[0];
+            break; 
+         case prior_iidtype::iid_mle: 
+              // do nothing
+           break; 
+       }
+    }
+  }
+	
+	// mean shift the prior 
+	// do nothing with the  other stuff
+	// only if it is in the bounds
+	void add_mean_prior(std::vector<double>  scale, int parm){
+	  if (parm >= 0 && parm << prior_spec.rows()){
+	    switch (prior_iidtype(prior_spec(parm,0))){
+	    case prior_iidtype::iid_normal:
+	      if (prior_spec(parm,1) + scale[0] > prior_spec(parm,3) &&
+            prior_spec(parm,1) + scale[0] < prior_spec(parm,3)){
+	          prior_spec(parm,1) += scale[0]; 
+	      }
+	      break; 
+	    case prior_iidtype::iid_lognormal: 
+	      if (exp(prior_spec(parm,1) + scale[0]) > prior_spec(parm,3) &&
+            exp(prior_spec(parm,1) + scale[0]) < prior_spec(parm,3)){
+	         prior_spec(parm,1) += scale[0]; 
+	      }
+	      break; 
+	    case prior_iidtype::iid_mle: 
+	      // do nothing
+	      break; 
+	    }
+	  }
+	}
 //private:
 	// Matrix that defines the prior specifications 
 	// for all of the parameters in theta

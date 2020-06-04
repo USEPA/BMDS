@@ -388,9 +388,9 @@ double  lognormalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra(unsigned n,
 	Eigen::MatrixXd temp_mean = mean(theta2, d);
 	Eigen::MatrixXd temp_var = variance(theta2, d);
 	/////////////////////////////////////////////////////////////////////////////////////
-	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
-	double ct_off = gsl_cdf_lognormal_Pinv(sdata->isIncreasing ? NOT_ADVERSE_P : 
-																TAIL_PROB, mu_zero, std_zero);
+//	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
+//	double ct_off = gsl_cdf_lognormal_Pinv(sdata->isIncreasing ? NOT_ADVERSE_P : 
+//																TAIL_PROB, mu_zero, std_zero);
 	/////////////////////////////////////////////////////////////////////////////////////
 	double returnV = 0.0; 
 	double temp; 
@@ -431,12 +431,12 @@ std::vector<double> lognormalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra_clean(st
 	Eigen::MatrixXd d(2, 1); d << 0, BMD;
 	Eigen::MatrixXd temp_mean = mean(theta2, d);
 	Eigen::MatrixXd temp_var = variance(theta2, d);
+	///////////////////////////////////////////////////////////////////////////////////////
+//	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
+//	double ct_off = gsl_cdf_lognormal_Pinv(isIncreasing ? NOT_ADVERSE_P :
+//											TAIL_PROB, mu_zero, std_zero);
 	/////////////////////////////////////////////////////////////////////////////////////
-	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
-	double ct_off = gsl_cdf_lognormal_Pinv(isIncreasing ? NOT_ADVERSE_P :
-											TAIL_PROB, mu_zero, std_zero);
-	/////////////////////////////////////////////////////////////////////////////////////
-	double returnV = 0.0;
+//	double returnV = 0.0;
 	double temp;
 	double k1 = gsl_cdf_ugaussian_Pinv(NOT_ADVERSE_P*BMRF + TAIL_PROB);
 
@@ -723,7 +723,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doub
 
 	double test_prob = isIncreasing ? 1.0 - gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0)))
 		: gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0))); //standardize
-	double test = 0;
+//	double test = 0;
 
 
 	int k = 0;

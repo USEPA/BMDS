@@ -318,17 +318,13 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
  *  function: bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
  *							 double BMR, bool isExtra, double alpha, double step_size)
  * 
- * 
- * 
- * 
- * 
  * *******************************************************************/
 template <class LL, class PR>
 bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
                               std::vector<bool> fixedB, std::vector<double> fixedV, int degree,
                               double BMR, bool isExtra, double alpha, double step_size) {
 
-	LL        dichotimousM(Y, D, degree);
+	LL      dichotimousM(Y, D, degree);
 	PR   	  model_prior(prior);
 
 	ofstream file;
@@ -352,7 +348,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 					                  step_size, (gsl_cdf_chisq_Pinv(1.0 - 2 * alpha, 1) + 0.1) / 2.0, true);
 		 	// cerr << result << endl << flush;
 			if (result.rows() <= 5)
-				step_size *= 0.5; 
+				  step_size *= 0.5; 
 			i++; 	
 		}while(result.rows() <= 5 &&  !(i > 4));
 		

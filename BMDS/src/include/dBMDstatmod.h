@@ -461,7 +461,7 @@ optimizationResult findMAX_W_EQUALITY( dBMDModel<LL, PR>  *M,
     //file << __FUNCTION__ << " at line: " << __LINE__ << " Before optimize"<< endl;
 	while( opt_iter < 2 &&  !good_opt){
 		opt_iter++; 
-		if (opt_iter = 0)
+		if (opt_iter == 0)
 			opt.set_local_optimizer((const nlopt::opt) local_opt);
 		else
 			opt.set_local_optimizer((const nlopt::opt) local_opt2);
@@ -821,7 +821,7 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 								bool robust)
 								
 {
-	double mapBMD = BMD; // current BMD evaluated at estimate M->getEST 
+	//double mapBMD = BMD; // current BMD evaluated at estimate M->getEST 
 	Eigen::MatrixXd parms = M->getEST();
 	Eigen::MatrixXd X = M->returnX(); 
 	fstream fs;
@@ -835,7 +835,7 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	double CLIKE = MAP_LIKE; 	int max_iters = 0; 
 	double CBMD = BMD * (1.0-BMDchange);
 	double PLIKE = CLIKE;
-	double PBMD = BMD;
+	//double PBMD = BMD;
 	bool error = false;
 	
 	ret1(0, 0) = PLIKE; ret1(1, 0) = BMD; ret1(2, 0) = 666; 
@@ -1030,10 +1030,6 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 		}
        
                
-		if (CBMD > 0.95) {
-			CLIKE = CLIKE; 
-		}
-		
 		CLIKE = ret1(0, 0);
 		PLIKE = CLIKE;
 		CBMD *= 1 + BMDchange;

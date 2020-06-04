@@ -4,12 +4,12 @@
 //
 
 #pragma once
-#pragma message ("Entered stdafx.h")
+//#pragma message ("Entered stdafx.h")
 
 #include <stdio.h>
 #include <limits>
 #define NEAR_ZERO 1e-8
-#pragma message ("defining _USE_MATH_DEFINES in stdafx.h")
+//#pragma message ("defining _USE_MATH_DEFINES in stdafx.h")
 #define _USE_MATH_DEFINES
 
 #ifndef R_COMPILATION

@@ -121,7 +121,7 @@ public:
 	virtual double BMR_CONSTRAINT(Eigen::MatrixXd theta, double * grad, double BMR , double isExtra) {
 		double g = HILL_G(theta(0, 0)); // + 0.5;
 		double n = HILL_N(theta(1, 0));// + 0.5;
-		double a = HILL_A(theta(2, 0)); double b = HILL_B(theta(3, 0));
+		//double a = HILL_A(theta(2, 0)); //double b = HILL_B(theta(3, 0));
 
 		double rV = (isExtra)? -n/BMR + 1.0 : -((1.0 - g)*n) / BMR + 1.0;
 
@@ -148,7 +148,7 @@ public:
 	}
 	// Computes the BMD with a given BMR assuming no covariates NC option
 	double compute_BMD_EXTRA_NC(Eigen::MatrixXd theta, double BMR) {
-		double g = HILL_G(theta(0, 0));
+	//	double g = HILL_G(theta(0, 0));
 		double n = HILL_N(theta(1, 0));
 		double a = HILL_A(theta(2, 0)); double b = HILL_B(theta(3, 0));
 
@@ -177,7 +177,7 @@ public:
 
 	Eigen::MatrixXd beta_BMD_ExtraNC(Eigen::MatrixXd theta, double BMD, double BMR) {
 
-		double g = HILL_G(theta(0, 0));
+	//	double g = HILL_G(theta(0, 0));
 		double n = HILL_N(theta(1, 0));
 		double a = HILL_A(theta(2, 0));
 
@@ -199,7 +199,7 @@ public:
 
 	double compute_BMD_EXTRA_NC_INEQUALITY(Eigen::MatrixXd theta, double BMD, double BMR, double inequality, bool geq, double *grad) {
 
-		double g = HILL_G(theta(0, 0));
+	//	double g = HILL_G(theta(0, 0));
 		double n = HILL_N(theta(1, 0));
 		double a = HILL_A(theta(2, 0));
 		double Z = HILL_EXTRA_Z(g, n, a, b, BMR);

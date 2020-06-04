@@ -164,7 +164,7 @@ Eigen::MatrixXd statModel<LL,PR>::gradient(Eigen::MatrixXd v) {
 	Eigen::VectorXd h(log_likelihood.nParms());
 	double mpres = pow(1.0e-16, 0.5);
 	double x, temp;
-	double derEst;
+
 	double f1 = 0.0; double f2 = 0.0;
 	Eigen::MatrixXd  hvector=v;
 	Eigen::MatrixXd  g(log_likelihood.nParms(), 1);
@@ -355,10 +355,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 {
 	std::vector<double> x(M->nParms());
 
-  
-	bool correctBounds = false;
-	double multiplier = 1.0;
-	int j = 0;
+
 	int NI = 1000; // size of the initial population
 
   std::vector<double> llist(NI); // List of the likelihood values; 

@@ -145,7 +145,7 @@ public:
 			Z = GAMMA_EXTRA_Z(g, a, BMR);
 			temp = Z/BMD+fabs(lb-Z/BMD)*1.01; // define a beta that is "within" the constraints
 			x[0] = theta(0, 0);
-			double bob = 0;
+	
 			while (temp - GAMMA_EXTRA_Z(g, temp_a, BMR)/BMD < 0){	temp_a *= .95;}
 
 			upper = temp_a;
@@ -168,7 +168,7 @@ public:
 			Z = GAMMA_ADDED_Z(g, a, BMR);
 			temp = Z/BMD+fabs(lb-Z/BMD)*1.01; // define a beta that is "within" the constraints
 			x[0] = theta(0, 0);
-			double bob = 0;
+		
 			while (temp - GAMMA_ADDED_Z(g, temp_a, BMR)/BMD < 0){	temp_a *= .95;}
 
 			upper = temp_a;
@@ -204,7 +204,7 @@ public:
 			temp = Z/BMD-fabs(ub-Z/BMD)*1.01; // define a beta that is "within" the constraints
 			x[0] = theta(0, 0);
 			// set up a zero in procedure to get a good alpha estimate
-			double bob = 0;
+			
 			while (temp - GAMMA_EXTRA_Z(g, temp_a, BMR)/BMD < 0){	temp_a *= .95;}
 
 			upper = temp_a;
@@ -228,7 +228,7 @@ public:
 			temp = Z/BMD-fabs(ub-Z/BMD)*1.01; // define a beta that is "within" the constraints
 			x[0] = theta(0, 0);
 			// set up a zero in procedure to get a good alpha estimate
-			double bob = 0;
+
 			while (temp - GAMMA_ADDED_Z(g, temp_a, BMR)/BMD < 0){	temp_a *= .95;}
 
 			upper = temp_a;
