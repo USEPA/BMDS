@@ -254,53 +254,6 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
 }
 
 
-template  <class LL,class PR> 
-void fixRescaleLogNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
-                         Eigen::MatrixXd prior,double max_dose,double divisor,
-                         bool is_increasing) {
-  
-  bool suff_stat = Y.cols() == 1? false:true; 
-
-  std::vector<bool> fixedB(prior.rows());
-  std::vector<double> fixedV(prior.rows());
-  
-  
-  for (int i = 0; i < prior.rows(); i++) {
-    fixedB[i] = false;
-    fixedV[i] = 0.0;
-  }
-  
-  
-  LL      likelihood(Y, X,suff_stat, is_increasing);
-  PR   	  model_prior(prior);
-  cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, is_increasing);
-  
-  int adverseR; 
-  switch (CM)
-  {
-  case cont_model::hill:
-    
-    
-    
-    // <lognormalHILL_BMD_NC, IDcontinuousPrior>
-    break; 
-  case cont_model::exp_3:
-    // <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-    
-    break; 
-  case cont_model::exp_5:
-    
-    break; 
-  case cont_model::polynomial: 
-  //FIX_ME ADD
-    default: 
-    break; 
-    
-  }
-  
-  return; 
-}
-
 
 template <class LL, class PR>
 mcmcSamples MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,

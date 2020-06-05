@@ -32,6 +32,10 @@ class lognormalPOLYNOMIAL_BMD_NC : public lognormalLLModel {
 			deg = degree;
 	};
 
+	lognormalPOLYNOMIAL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS, bool CV,
+                              int degree) : lognormalLLModel(tY, tX,SS) {
+	    deg = degree;
+	};
 	lognormalPOLYNOMIAL_BMD_NC(){
 
 	};

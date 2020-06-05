@@ -169,8 +169,11 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
             parms(3,0) += 2*log(bkground); 
           }
         }
+       
         break; 
- 
+      case cont_model::polynomial:
+      default:
+        break; 
     }
     
     return parms; 
@@ -186,7 +189,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
     Eigen::MatrixXd scaleMatrix = Eigen::MatrixXd::Identity(COV.rows(), COV.cols());
     switch(model){
       case cont_model::hill:
-        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground; scaleMatrix(2,2)*=max_dose; 
+        scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground; scaleMatrix(2,2)*= max_dose; 
         COV = scaleMatrix*COV*scaleMatrix; 
         break; 
       case cont_model::exp_3:

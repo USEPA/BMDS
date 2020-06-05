@@ -38,7 +38,7 @@ public:
 
 
 	lognormalLLModel(Eigen::MatrixXd tY, Eigen::MatrixXd tX,
-					 bool SS) : lognormalLL(tY, tX,SS) {
+					          bool SS, bool CV = true) : lognormalLL(tY, tX,SS) {
 		  
 	};
 	

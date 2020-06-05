@@ -27,8 +27,13 @@ class lognormalHILL_BMD_NC : public lognormalLLModel {
 
 	// default constructor shouldn't ever be used
 	lognormalHILL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX, bool SS, int junk)
-							: lognormalLLModel(tY, tX,SS) {
+						        	: lognormalLLModel(tY, tX,SS) {
 		  // if it is a sufficient statistics model 
+	};
+	
+	lognormalHILL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX, bool SS, bool CV, int junk)
+	             : lognormalLLModel(tY, tX,SS) {
+	  // if it is a sufficient statistics model 
 	};
 	
 	lognormalHILL_BMD_NC(){

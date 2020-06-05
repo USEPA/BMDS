@@ -27,8 +27,13 @@ class lognormalPOWER_BMD_NC : public lognormalLLModel {
 	public: 
 
 	lognormalPOWER_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS,
-						  int junk) : lognormalLLModel(tY, tX,SS) {
+						           int junk) : lognormalLLModel(tY, tX,SS) {
 		  // if it is a sufficient statistics model 
+	};
+	  
+	lognormalPOWER_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS,bool CV,
+                         int junk) : lognormalLLModel(tY, tX,SS) {
+	    // if it is a sufficient statistics model 
 	};
 	
 	lognormalPOWER_BMD_NC(){

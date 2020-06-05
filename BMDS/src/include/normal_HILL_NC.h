@@ -29,7 +29,7 @@ class normalHILL_BMD_NC : public normalLLModel {
 	public: 
 
 	normalHILL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS,
-					  bool CV, int junk) : normalLLModel(tY, tX,SS,CV) {
+					          bool CV, int junk) : normalLLModel(tY, tX,SS,CV) {
 		  // if it is a sufficient statistics model 
 	};
 	

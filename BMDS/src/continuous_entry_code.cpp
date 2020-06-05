@@ -624,12 +624,14 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   rV.MAP          = s.map; 
   rV.MAP_ESTIMATE = s.map_estimate; 
   rV.COV          = s.map_cov; 
-  std::vector<double> v(s.BMD.cols()-burnin); 
-  for (int i = burnin; i < s.BMD.cols();i++){
-	v[i] = s.BMD(0,i);   
   
+
+  std::vector<double> v(s.BMD.cols()-burnin); 
+  for (int i = burnin; i < s.BMD.cols(); i++){
+	        v[i-burnin] = s.BMD(0,i);   
   }
-	
+  
+
   std::vector<double>  prob;
   std::vector<double> bmd_q;  
   std::sort(v.begin(), v.end());
@@ -656,86 +658,7 @@ void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
 }
 
 
-/*
-void fixRescaleNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
-                        Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
-                        bool is_increasing, bool bConstVar,
-                        double bmrf,   double bk_prob, 
-                        double alpha, int samples,
-                        int burnin) {
-  
-  bool suff_stat = Y.cols() == 1? false:true; 
-  std::vector<bool> fixedB(prior.rows());
-  std::vector<double> fixedV(prior.rows());
-  
-  for (int i = 0; i < prior.rows(); i++) {
-    fixedB[i] = false;
-    fixedV[i] = 0.0;
-  }
-  
-  mcmcSamples a;
-  int adverseR; 
-  switch (CM)
-  {
-  case cont_model::hill:
-    if (bConstVar){
-      cout << "Running Hill Model Normality Assumption using MCMC." << endl;
-    }else{
-      cout << "Running Hill Model Normality-NCV Assumption using MCMC." << endl;
-    }
-    
-    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalHILL_BMD_NC, IDcontinuousPrior>
-      (Y,  X, prior, fixedB, fixedV, is_increasing,
-       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-       samples,0); 
-    break; 
-  case cont_model::exp_3:
-    adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
-    if (bConstVar){
-      cout << "Running Exponential 3 Model Normality Assumption using MCMC." << endl;
-    }else{
-      cout << "Running Exponential 3 Model Normality-NCV Assumption using MCMC." << endl;
-    }
-    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-      (Y,  X, prior, fixedB, fixedV, is_increasing,
-       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-       samples,adverseR);
-    break; 
-  case cont_model::exp_5:
-    
-    adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
-    if (bConstVar){
-      cout << "Running Exponential 5 Model Normality Assumption using MCMC." << endl;
-    }else{
-      cout << "Running Exponential 5 Model Normality-NCV Assumption using MCMC." << endl;
-    }
-    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-      (Y,  X, prior, fixedB, fixedV, is_increasing,
-       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-       samples,0);
-    break; 
-  case cont_model::power:
-  default:  
-    if (bConstVar){
-      cout << "Running Power Model Normality Assumption using MCMC." << endl;
-    }else{
-      cout << "Running Powrer Model Normality-NCV Assumption using MCMC." << endl;
-    }
-    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOWER_BMD_NC, IDcontinuousPrior>
-      (Y,  X, prior, fixedB, fixedV, is_increasing,
-       bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-       samples,adverseR);
-    
-    
-    break; 
-    
-  }
-  //convert a stuff
-  
-  //
-  return a; 
-}
-*/
+
 void estimate_ma_MCMC(continuousMA_analysis *MA,
                       continuous_analysis   *CA,
                       continuousMA_result   *res,
@@ -755,6 +678,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       Y(i,2) = CA->n_group[i]; 
     }
   }
+  Eigen::MatrixXd orig_Y = Y; 
+  Eigen::MatrixXd orig_X = X; 
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
@@ -824,10 +749,10 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                                       CA->alpha, samples, burnin);
       }else{
         a[i] = mcmc_logNormal(Y, X,
-                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
-                                                      CA->isIncreasing, CA->BMR, 
-                                                      CA->tail_prob,  
-                                                      CA->alpha,samples, burnin);
+                              tprior, CA->BMD_type, (cont_model)MA->models[i],
+                              CA->isIncreasing, CA->BMR, 
+                              CA->tail_prob,  
+                              CA->alpha,samples, burnin);
         
       }
       
@@ -868,36 +793,103 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 										                    a[i].map_estimate, 
                                        (cont_model)MA->models[i] ,
                                         max_dose, divisor, MA->disttype[i] == distribution::log_normal);
+     switch((cont_model)MA->models[i]){
+     case cont_model::hill:
+       if (MA->disttype[i] == distribution::log_normal){
+          a[i].map  =   RescaleContinuousModel<lognormalHILL_BMD_NC,IDPrior>
+                                                (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                tprior, a[i].map_estimate,  max_dose, divisor,
+                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+       }else{
+         a[i].map  =   RescaleContinuousModel<normalHILL_BMD_NC,IDPrior>
+                                                (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                tprior,  a[i].map_estimate, max_dose, divisor,
+                                                CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                                MA->disttype[i] == distribution::normal);
+       }
+       break; 
+     case cont_model::exp_3:
+       if (MA->disttype[i] == distribution::log_normal){
+                 a[i].map  =   RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
+                                                     (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                      tprior, a[i].map_estimate,  max_dose, divisor,
+                                                      CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+       }else{
+         a[i].map  =   RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
+                                                   (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                    tprior,  a[i].map_estimate, max_dose, divisor,
+                                                    CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                                    MA->disttype[i] == distribution::normal);
+       }
+       break; 
+     case cont_model::exp_5:
+       if (MA->disttype[i] == distribution::log_normal){
+         a[i].map  =   RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
+                                             (orig_Y, orig_X, (cont_model)MA->models[i],
+                                              tprior, a[i].map_estimate,  max_dose, divisor,
+                                              CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+       }else{
+         a[i].map  =   RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
+                                               (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                tprior,  a[i].map_estimate, max_dose, divisor,
+                                                CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                                MA->disttype[i] == distribution::normal);
+       }
+       break; 
+  
+     case cont_model::power: 
+       if (MA->disttype[i] == distribution::log_normal){
+         a[i].map  =   RescaleContinuousModel<lognormalPOWER_BMD_NC,IDPrior>
+                                               (orig_Y, orig_X, (cont_model)MA->models[i],
+                                                tprior, a[i].map_estimate,  max_dose, divisor,
+                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+       }else{
+         a[i].map  =   RescaleContinuousModel<normalPOWER_BMD_NC,IDPrior>
+                                               (orig_Y, orig_X, (cont_model)MA->models[i],
+                                               tprior,  a[i].map_estimate, max_dose, divisor,
+                                               CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                               MA->disttype[i] == distribution::normal);
+       }
+       break; 
+       break; 
+     case cont_model::polynomial:
+     default:
+       break; 
+     }
+     
   }
 
+  
   bmd_analysis b[MA->nmodels]; 
   
   for (int i = 0; i < MA->nmodels; i++){
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
   }
   
+
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
-  double max_prob = -1e300; 
+  double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
   }
   double norm_sum = 0.0; 
-  
+ 
   for (int i = 0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); //FIX ME: ADD MODEL PROBS
     norm_sum += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
   }
-  
+
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
+    Rcout << post_probs[j] << endl;  
     for (double  i = 0.0; i < 0.99; i += 0.01 ){
-      if ( isnan(b[j].BMD_CDF.inv(i))){
-        post_probs[j] = 0; // if the cdf has nan in it then it needs a 0 posterior
-      }  
+ //     if ( isnan(b[j].BMD_CDF.inv(i))){
+ //       post_probs[j] = 0; // if the cdf has nan in it then it needs a 0 posterior
+//      }  
       
     } 
   }

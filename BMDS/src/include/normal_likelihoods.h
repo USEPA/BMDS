@@ -35,8 +35,8 @@ public:
 	normalLL(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS) : LL(tY, tX) {
 		sufficient_statistics = SS; // if it is a sufficient statistics model 
 	};
-	int    nParms() { return 2; }; 			// the model assumes one mean
-										    // and constan variance
+	int    nParms() { return 2; }; 		// the model assumes one mean
+										                // and constan variance
 	bool isSuffStat(){
 			return sufficient_statistics; 
 	}; 

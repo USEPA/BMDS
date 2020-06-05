@@ -38,8 +38,8 @@ class normalLLModel : public normalLL {
 public: 
 	normalLLModel(){}; 
 	normalLLModel(Eigen::MatrixXd tY, Eigen::MatrixXd tX,
-				  bool SS,bool CV) : normalLL(tY, tX,SS),
-				  constant_variance(CV){
+				        bool SS,bool CV) : normalLL(tY, tX,SS),
+				        constant_variance(CV){
 		  // if it is a sufficient statistics model 
 	};
 	

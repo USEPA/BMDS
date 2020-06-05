@@ -38,7 +38,7 @@ class normalEXPONENTIAL_BMD_NC : public normalLLModel {
 	public: 
 
 	normalEXPONENTIAL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS,
-							bool CV, int degree) : normalLLModel(tY, tX,SS,CV) {
+							            bool CV, int degree) : normalLLModel(tY, tX,SS,CV) {
 			// if it is a sufficient statistics model 
 			deg = degree; 
 	};

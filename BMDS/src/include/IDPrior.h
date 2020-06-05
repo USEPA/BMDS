@@ -66,19 +66,19 @@ public:
 	}
 
 	//scales the prior by a constant
-  void scale_prior(std::vector<double>  scale, int parm){
+  void scale_prior(double  scale, int parm){
     if (parm >= 0 && parm << prior_spec.rows()){
        switch (prior_iidtype(prior_spec(parm,0))){
          case prior_iidtype::iid_normal:
-             prior_spec(parm,1) *= scale[0]; 
-             prior_spec(parm,2) *= scale[0]*scale[0]; 
-             prior_spec(parm,3) *= scale[0];
-             prior_spec(parm,4) *= scale[0];
+             prior_spec(parm,1) *= scale; 
+             prior_spec(parm,2) *= scale*scale; 
+             prior_spec(parm,3) *= scale;
+             prior_spec(parm,4) *= scale;
            break; 
         case prior_iidtype::iid_lognormal: 
-              prior_spec(parm,1) += log(scale[0]); 
-              prior_spec(parm,3) *= scale[0];
-              prior_spec(parm,4) *= scale[0];
+              prior_spec(parm,1) += log(scale); 
+              prior_spec(parm,3) *= scale;
+              prior_spec(parm,4) *= scale;
             break; 
          case prior_iidtype::iid_mle: 
               // do nothing
@@ -90,19 +90,19 @@ public:
 	// mean shift the prior 
 	// do nothing with the  other stuff
 	// only if it is in the bounds
-	void add_mean_prior(std::vector<double>  scale, int parm){
+	void add_mean_prior(double  scale, int parm){
 	  if (parm >= 0 && parm << prior_spec.rows()){
 	    switch (prior_iidtype(prior_spec(parm,0))){
 	    case prior_iidtype::iid_normal:
-	      if (prior_spec(parm,1) + scale[0] > prior_spec(parm,3) &&
-            prior_spec(parm,1) + scale[0] < prior_spec(parm,3)){
-	          prior_spec(parm,1) += scale[0]; 
+	      if (prior_spec(parm,1) + scale > prior_spec(parm,3) &&
+            prior_spec(parm,1) + scale < prior_spec(parm,3)){
+	          prior_spec(parm,1) += scale; 
 	      }
 	      break; 
 	    case prior_iidtype::iid_lognormal: 
-	      if (exp(prior_spec(parm,1) + scale[0]) > prior_spec(parm,3) &&
-            exp(prior_spec(parm,1) + scale[0]) < prior_spec(parm,3)){
-	         prior_spec(parm,1) += scale[0]; 
+	      if (exp(prior_spec(parm,1) + scale) > prior_spec(parm,3) &&
+            exp(prior_spec(parm,1) + scale) < prior_spec(parm,3)){
+	         prior_spec(parm,1) += scale; 
 	      }
 	      break; 
 	    case prior_iidtype::iid_mle: 
@@ -111,14 +111,14 @@ public:
 	    }
 	  }
 	}
-//private:
+
 	// Matrix that defines the prior specifications 
 	// for all of the parameters in theta
 	// First Column - Type of Prior
 	// Second Column - mean
 	// Third Column  - Dispersion
 	// Fourth Column - Lower Bound
-	// Fith Column   - Upper Bound
+	// Fifth Column   - Upper Bound
 	Eigen::MatrixXd prior_spec;
 };
 

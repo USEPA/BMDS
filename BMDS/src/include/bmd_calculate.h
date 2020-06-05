@@ -23,9 +23,10 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
+#include "normal_EXP_NC.h"
 #include "dBMDstatmod.h"
 #include "cBMDstatmod.h"
-
+#include "bmdStruct.h"
 
 class bmd_cdf {
 public:
@@ -384,5 +385,73 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	
 	return rVal; 
 }
+
+
+template  <class LL,class PR> 
+double RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
+                            Eigen::MatrixXd prior, Eigen::MatrixXd betas, 
+                            double max_dose,double divisor,
+                            bool is_increasing, bool is_logNormal, bool is_const_var) {
+  
+  bool suff_stat = Y.cols() == 1? false:true; 
+  
+  std::vector<bool>   fixedB(prior.rows());
+  std::vector<double> fixedV(prior.rows());
+  
+  for (int i = 0; i < prior.rows(); i++) {
+    fixedB[i] = false;
+    fixedV[i] = 0.0;
+  }
+  
+  PR   	  model_prior(prior);
+  //fixme: in the future we might need to change a few things
+  // if there are more complicated priors
+  int adverseR = 0; 
+  switch(CM){
+    case cont_model::hill:
+      model_prior.scale_prior(divisor,0);
+      model_prior.scale_prior(divisor,1);
+      model_prior.scale_prior(1/max_dose,4);
+      if (!is_logNormal){
+         model_prior.add_mean_prior(2.0*log(divisor),5); 
+      }
+      break; 
+    case cont_model::exp_3:
+      adverseR = is_increasing? NORMAL_EXP3_UP:  NORMAL_EXP3_DOWN; 
+      model_prior.scale_prior(divisor,0);
+      model_prior.scale_prior(1/max_dose,1);
+      if (!is_logNormal){
+         model_prior.add_mean_prior(2.0*log(divisor),5); 
+      }
+      break; 
+    case cont_model::exp_5:
+      adverseR = is_increasing? NORMAL_EXP5_UP:  NORMAL_EXP5_DOWN; 
+      model_prior.scale_prior(divisor,0);
+      model_prior.scale_prior(1/max_dose,1);
+      if (!is_logNormal){
+        model_prior.add_mean_prior(2.0*log(divisor),5); 
+      }
+    case cont_model::power:
+      model_prior.scale_prior(divisor,0);
+      model_prior.scale_prior(1/max_dose,1);
+      model_prior.scale_prior( divisor*(1/max_dose),2); 
+
+      if (!is_logNormal){
+          model_prior.add_mean_prior(2.0*log(divisor),5); 
+      }
+      
+    case cont_model::polynomial:
+    default:
+      break; 
+  }
+  
+  LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
+  
+  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);
+  
+  return model.negPenLike(betas);
+  
+}
+
 
 #endif

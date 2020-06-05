@@ -45,6 +45,12 @@ class lognormalEXPONENTIAL_BMD_NC : public lognormalLLModel {
 			deg = degree; 
 	};
 	
+	lognormalEXPONENTIAL_BMD_NC(Eigen::MatrixXd tY, Eigen::MatrixXd tX,bool SS,bool CV,
+                               int degree) : lognormalLLModel(tY, tX,SS) {
+	    // if it is a sufficient statistics model 
+	    deg = degree; 
+	 };
+	
 	lognormalEXPONENTIAL_BMD_NC(){
 	
 	};
