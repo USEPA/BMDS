@@ -388,10 +388,11 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 
 
 template  <class LL,class PR> 
-double RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
+void RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
                             Eigen::MatrixXd prior, Eigen::MatrixXd betas, 
                             double max_dose,double divisor,
-                            bool is_increasing, bool is_logNormal, bool is_const_var) {
+                            bool is_increasing, bool is_logNormal, bool is_const_var,
+                            double *map, Eigen::MatrixXd *var) {
   
   bool suff_stat = Y.cols() == 1? false:true; 
   
@@ -448,8 +449,9 @@ double RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);
-  
-  return model.negPenLike(betas);
+  *map =  model.negPenLike(betas);
+  *var =  model.varMatrix(betas);
+  return; 
   
 }
 

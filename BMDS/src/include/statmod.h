@@ -524,6 +524,150 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 //Input : statMod<LL,PR> *M - A given statistical model;
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
+optimizationResult findMAP(statModel<LL, PR>  *M,
+                           Eigen::MatrixXd    startV) {
+  optimizationResult oR;
+  
+  Eigen::MatrixXd temp_data = M->parmLB();
+  std::vector<double> lb(M->nParms());
+  for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
+  temp_data = M->parmUB();
+  //cout << temp_data << endl;
+  std::vector<double> ub(M->nParms());
+  for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
+  
+  
+  std::vector<double> x =  startValue_F(M, startV,
+                                        lb, ub);
+  //for (int i = 0; i < x.size(); i++) cout << x[i] << endl;
+  
+  double minf;
+  nlopt::result result = nlopt::FAILURE;
+  
+  std::vector<double> init(x.size());
+  //for (int i = 0; i < x.size(); i++) init[i] = 1e-4;
+  // set up a bunch of differnt plausible optimizers in case of failure
+  // the first one is mainly to get a better idea of a starting value
+  // though it often converges to the optimum.
+  nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
+  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+  
+  nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
+  nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
+  
+  nlopt::opt *opt_ptr;
+  
+  int opt_iter;
+  // look at 5 optimization algorithms :-)
+  for (opt_iter = 0; opt_iter < 5; opt_iter++){
+    // Ensure that starting values are within bounds
+    for (int i = 0; i < M->nParms(); i++) {
+      double temp = x[i];
+      if (temp < lb[i]) temp = lb[i];
+      else if (temp > ub[i]) temp = ub[i];
+      x[i] = temp;
+    } // end for
+    
+    switch(opt_iter){
+    case  0:
+      opt_ptr = &opt1;
+      opt_ptr->set_maxeval(1000);
+      break;
+    case  1:
+      opt_ptr = &opt2 ;
+      opt_ptr->set_maxeval(5000);
+      break;
+    case 2:
+      opt_ptr = &opt3;
+      opt_ptr->set_maxeval(5000);
+      break;
+    case 3:
+      opt_ptr = &opt4;
+      opt_ptr->set_maxeval(5000);
+    default :
+      opt_ptr = &opt5;
+    opt_ptr->set_maxeval(5000);
+    break;
+    }
+    
+    
+    opt_ptr->set_lower_bounds(lb);
+    opt_ptr->set_upper_bounds(ub);
+    opt_ptr->set_ftol_rel(1e-8);
+    opt_ptr->set_ftol_abs(1e-8);
+    
+    opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
+    
+    ////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // set the start distance to a size
+    // nlopt's default options suck
+    ///////////////////////////////////////////////
+    
+    DEBUG_OPEN_LOG("bmds.log", file);
+    DEBUG_LOG(file, "findMAP: before optimize: opt_iter= " << opt_iter << endl);
+    try{
+      result = opt_ptr->optimize(x, minf);
+      // note even if it doesn't converge the x will be updated
+      // to the best value the optimizer ever had, which will allow
+      // the next optimizer to carry on.
+      DEBUG_LOG(file, "findMAP: after optimize: result= " << result << endl);
+      // Exit the loop if good result and not first try.
+      // lco: should change to a break statement since "10"
+      // could be legitimate iteration in the future
+      if (opt_iter >= 1
+            && result > 0
+            && result < 5) {
+            opt_iter = 10;  // if it made it here it will break the loop
+      }
+      
+    } // try
+    catch (const std::invalid_argument &exc) {
+      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: invalid arg: " << exc.what());
+      //   cout << "here" << endl; 
+    } // catch
+    catch (nlopt::roundoff_limited) {
+      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
+      //  cout << "bogo" << endl; 
+    } // catch
+    catch (nlopt::forced_stop) {
+      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: forced_stop");
+      //  cout << "there" << endl; 
+    } // catch
+    catch (const std::exception &exc) {
+      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", general error: " << exc.what());
+      // cout << "???" << endl; 
+    } // catch
+    
+    DEBUG_CLOSE_LOG(file);
+  } // for opt_iter
+  
+  
+  
+  Eigen::Map<Eigen::MatrixXd> d(x.data(),M->nParms(), 1);
+  oR.result = result;
+  oR.functionV = minf;
+  oR.max_parms = d; 
+  
+  M->setEST(d);
+  
+  if (result < 0) {
+    
+    cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
+    
+  }
+  
+  return oR;
+}
+
+////////////////////////////////////////////////////////////////////
+//Function: findMAP(statMod<LL,PR> *M)
+//Find the maximum a posteriori estimate given a statistical
+//model
+//Input : statMod<LL,PR> *M - A given statistical model;
+//Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
+template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M) {
 	optimizationResult oR;
 
@@ -592,7 +736,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M) {
 
 		opt_ptr->set_lower_bounds(lb);
 		opt_ptr->set_upper_bounds(ub);
-		opt_ptr->set_ftol_rel(1e-7);
+		opt_ptr->set_ftol_rel(1e-8);
     opt_ptr->set_ftol_abs(1e-8);
 
 		opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
@@ -647,8 +791,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M) {
     oR.result = result;
     oR.functionV = minf;
     oR.max_parms = d; 
-   // cout << "I am here " << endl; 
-    // TODO: do something if the optimization fails
+  
     M->setEST(d);
 
     if (result < 0) {

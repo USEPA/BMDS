@@ -786,69 +786,84 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
           a[i].samples.col(m) = temp.transpose(); 
          
      }
+     cout << a[i].map_cov << endl << endl; 
      a[i].map_estimate = rescale_parms(a[i].map_estimate, 
                                        (cont_model)MA->models[i] ,
                                         max_dose, divisor, MA->disttype[i] == distribution::log_normal); 
-     a[i].map_cov      = rescale_cov_matrix(a[i].map_cov,
-										                    a[i].map_estimate, 
-                                       (cont_model)MA->models[i] ,
-                                        max_dose, divisor, MA->disttype[i] == distribution::log_normal);
+ 
+   
      switch((cont_model)MA->models[i]){
      case cont_model::hill:
        if (MA->disttype[i] == distribution::log_normal){
-          a[i].map  =   RescaleContinuousModel<lognormalHILL_BMD_NC,IDPrior>
+      
+            RescaleContinuousModel<lognormalHILL_BMD_NC,IDPrior>
                                                 (orig_Y, orig_X, (cont_model)MA->models[i],
                                                 tprior, a[i].map_estimate,  max_dose, divisor,
-                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true,
+                                                &a[i].map,&a[i].map_cov);
        }else{
-         a[i].map  =   RescaleContinuousModel<normalHILL_BMD_NC,IDPrior>
+     
+           RescaleContinuousModel<normalHILL_BMD_NC,IDPrior>
                                                 (orig_Y, orig_X, (cont_model)MA->models[i],
                                                 tprior,  a[i].map_estimate, max_dose, divisor,
                                                 CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                MA->disttype[i] == distribution::normal);
+                                                MA->disttype[i] == distribution::normal,
+                                                &a[i].map,&a[i].map_cov);
        }
        break; 
      case cont_model::exp_3:
        if (MA->disttype[i] == distribution::log_normal){
-                 a[i].map  =   RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
+          
+          RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
                                                      (orig_Y, orig_X, (cont_model)MA->models[i],
                                                       tprior, a[i].map_estimate,  max_dose, divisor,
-                                                      CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+                                                      CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true,
+                                                      &a[i].map,&a[i].map_cov);
        }else{
-         a[i].map  =   RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
+          
+          RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
                                                    (orig_Y, orig_X, (cont_model)MA->models[i],
                                                     tprior,  a[i].map_estimate, max_dose, divisor,
                                                     CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                    MA->disttype[i] == distribution::normal);
+                                                    MA->disttype[i] == distribution::normal, 
+                                                    &a[i].map,&a[i].map_cov);
        }
        break; 
      case cont_model::exp_5:
        if (MA->disttype[i] == distribution::log_normal){
-         a[i].map  =   RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
+    
+           RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
                                              (orig_Y, orig_X, (cont_model)MA->models[i],
                                               tprior, a[i].map_estimate,  max_dose, divisor,
-                                              CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+                                              CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true, 
+                                              &a[i].map,&a[i].map_cov);
        }else{
-         a[i].map  =   RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
+      
+           RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
                                                (orig_Y, orig_X, (cont_model)MA->models[i],
                                                 tprior,  a[i].map_estimate, max_dose, divisor,
                                                 CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                MA->disttype[i] == distribution::normal);
+                                                MA->disttype[i] == distribution::normal, 
+                                                &a[i].map,&a[i].map_cov);
        }
        break; 
-  
+      
      case cont_model::power: 
        if (MA->disttype[i] == distribution::log_normal){
-         a[i].map  =   RescaleContinuousModel<lognormalPOWER_BMD_NC,IDPrior>
+       
+           RescaleContinuousModel<lognormalPOWER_BMD_NC,IDPrior>
                                                (orig_Y, orig_X, (cont_model)MA->models[i],
                                                 tprior, a[i].map_estimate,  max_dose, divisor,
-                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true);
+                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true, 
+                                                &a[i].map,&a[i].map_cov);
        }else{
-         a[i].map  =   RescaleContinuousModel<normalPOWER_BMD_NC,IDPrior>
+       
+           RescaleContinuousModel<normalPOWER_BMD_NC,IDPrior>
                                                (orig_Y, orig_X, (cont_model)MA->models[i],
                                                tprior,  a[i].map_estimate, max_dose, divisor,
                                                CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                               MA->disttype[i] == distribution::normal);
+                                               MA->disttype[i] == distribution::normal, 
+                                               &a[i].map,&a[i].map_cov);
        }
        break; 
        break; 
@@ -856,9 +871,9 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
      default:
        break; 
      }
-     
+     cout << a[i].map_cov << endl << endl; 
   }
-
+  
   
   bmd_analysis b[MA->nmodels]; 
   
@@ -874,6 +889,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
+    cout << post_probs[i] << endl; 
   }
   double norm_sum = 0.0; 
  
