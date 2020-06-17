@@ -71,72 +71,72 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   rVal.map_estimate = oR.max_parms;; 
   rVal.map_cov = model.varMatrix(oR.max_parms); 
 
- int n = oR.max_parms.rows();
+  int n = oR.max_parms.rows();
     //generate random univariate normals for the MCMC sampler
     // there are n x samples generated
     // ziggurat is used as it is the fastest sampler algorithm gsl has
-    Eigen::MatrixXd rNormal(n,samples);
-    gsl_rng * r;
+  Eigen::MatrixXd rNormal(n,samples);
+  gsl_rng * r;
     //gsl_rng_env_setup();
-    r = gsl_rng_alloc (gsl_rng_mt19937);
-    for (int i = 0; i < samples; i++){
+  r = gsl_rng_alloc (gsl_rng_mt19937);
+  for (int i = 0; i < samples; i++){
         for(int j = 0; j < n; j++){
             rNormal(j,i) =   gsl_ran_gaussian_ziggurat(r, 1.0);
         }
-    }
+  }
 
     // now sample, samples, number of proposals for the
     // metropolis sampler.
-    Eigen::MatrixXd mu  = oR.max_parms;
-    Eigen::MatrixXd cov = 0.4*model.varMatrix(oR.max_parms);
-    Eigen::MatrixXd chol = cov.llt().matrixL();
-    Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
+  Eigen::MatrixXd mu  = oR.max_parms;
+  Eigen::MatrixXd cov = 0.4*model.varMatrix(oR.max_parms);
+  Eigen::MatrixXd chol = cov.llt().matrixL();
+  Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
                                               // is is now L'L = cov
-    Eigen::MatrixXd penLike(1,samples);
-    Eigen::MatrixXd BMD(1,samples);
-    /////////////////////////////////////////////////////////////////
-    nSamples.col(0) = mu; // starting value of the MCMC
+  Eigen::MatrixXd penLike(1,samples);
+  Eigen::MatrixXd BMD(1,samples);
+  /////////////////////////////////////////////////////////////////
+  nSamples.col(0) = mu; // starting value of the MCMC
  
 
     
     
-    penLike(0,0) =  -model.negPenLike(nSamples.col(0));
-    for (int i = 1; i < samples ; i++){
+  penLike(0,0) =  -model.negPenLike(nSamples.col(0));
+  for (int i = 1; i < samples ; i++){
         Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1);//mu;
         //Metropolis
         // make sure the proposal isn't imposible
  
         double t = model.prior_model.neg_log_prior(value);
  
-        if ( !isnan(t) &&
-			 !isinf(t) ){
-			Eigen::MatrixXd a = MCMC_PROPOSAL(mu,nSamples.col(i-1),cov);
-			Eigen::MatrixXd b = MCMC_PROPOSAL(mu,value,cov);
-			double numer = -model.negPenLike(value);//+a(0,0);
-			double denom =  penLike(0,i-1);// + b(0,0);
-			double test = exp(numer - denom);
-			double rr = gsl_rng_uniform(r);
-		
-			if (isnan(test)){
-				test = 0.0; // no probability of making this jump
-			}
-
-			if ( rr < test){
-				nSamples.col(i) = value;
-				penLike(0,i) = -model.negPenLike(value);
-			}else{
-				nSamples.col(i) = nSamples.col(i-1);
-				penLike(0,i)    = penLike(0,i-1);
-			}
-			// compute the calculated BMD for each sample
+     if ( !isnan(t) &&
+		    	!isinf(t) ){
+  			Eigen::MatrixXd a = MCMC_PROPOSAL(mu,nSamples.col(i-1),cov);
+  			Eigen::MatrixXd b = MCMC_PROPOSAL(mu,value,cov);
+  			double numer = -model.negPenLike(value);//+a(0,0);
+  			double denom =  penLike(0,i-1);// + b(0,0);
+  			double test = exp(numer - denom);
+  			double rr = gsl_rng_uniform(r);
+  		
+  			if (isnan(test)){
+  				test = 0.0; // no probability of making this jump
+  			}
+  
+  			if ( rr < test){
+  				nSamples.col(i) = value;
+  				penLike(0,i) = -model.negPenLike(value);
+  			}else{
+  				nSamples.col(i) = nSamples.col(i-1);
+  				penLike(0,i)    = penLike(0,i-1);
+  			}
+  			// compute the calculated BMD for each sample
 
 		}else{
-			// previous proposal was outside of the bounds
-			nSamples.col(i) = nSamples.col(i-1);
-			penLike(0,i) = penLike(0,i-1);
-        }
-    	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR) : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
-	}
+  			// previous proposal was outside of the bounds
+  			nSamples.col(i) = nSamples.col(i-1);
+  			penLike(0,i) = penLike(0,i-1);
+          }
+      	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR) : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
+  	}
 
 
     gsl_rng_free (r);
@@ -158,9 +158,19 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
  ********************************************************************/
 template <class LL, class PR> 
 mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
-                            contbmd BMDt, double BMR, double pointP){
+                            contbmd BMDt, double BMR, double pointP, 
+                            Eigen::MatrixXd init_vals = Eigen::MatrixXd::Zero(1,1)){
   
-  optimizationResult oR = findMAP<LL, PR>(model);
+  optimizationResult oR; 
+  if (init_vals.rows() == 1 &&
+      init_vals.cols() == 1 &&
+      init_vals(0,0) == 0.0  ){
+    oR = findMAP<LL, PR>(model);
+    
+  }else{
+    oR = findMAP<LL, PR>(model,init_vals);
+  } 
+  
   mcmcSamples rVal;
   
   rVal.map = 	oR.functionV;

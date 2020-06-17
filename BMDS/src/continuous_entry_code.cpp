@@ -326,6 +326,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     }
   }
 
+
+  
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
   if(!CA->suff_stat){
@@ -352,7 +354,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 
   double divisor = get_diviosor( Y,  X); 
-  double  max_dose = X.maxCoeff(); 
+ double  max_dose = X.maxCoeff(); 
    
   if (CA->suff_stat){
     X = UX; 
@@ -602,7 +604,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     if (bConstVar){
       cout << "Running Power Model Normality Assumption using MCMC." << endl;
     }else{
-      cout << "Running Powrer Model Normality-NCV Assumption using MCMC." << endl;
+      cout << "Running Power Model Normality-NCV Assumption using MCMC." << endl;
     }
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOWER_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
@@ -614,7 +616,6 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     
   }
   //convert a stuff
-  
   //
   return a; 
 }
@@ -630,7 +631,6 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   for (int i = burnin; i < s.BMD.cols(); i++){
 	        v[i-burnin] = s.BMD(0,i);   
   }
-  
 
   std::vector<double>  prob;
   std::vector<double> bmd_q;  
@@ -678,11 +678,16 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       Y(i,2) = CA->n_group[i]; 
     }
   }
-  Eigen::MatrixXd orig_Y = Y; 
+  
+  double divisor = get_diviosor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+ 
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
   Eigen::MatrixXd orig_X = X; 
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
+ 
   if(!CA->suff_stat){
     //convert to sufficient statistics for speed if we can
     CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
@@ -691,11 +696,22 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       X = UX; 
       Y_N = cleanSuffStat(SSTAT,UX,false);  
       Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+      orig_X = UX;  
+      orig_Y = SSTAT; 
+      orig_Y_LN = SSTAT_LN;
       
+    }else{
+      Y = (1/divisor)*Y; // scale the data with the divisor term. 
+      X = X/max_dose;
+      Y_N = Y; 
+      Y_LN = Y; 
     }
   }else{
+    orig_Y = cleanSuffStat(Y,X,false,false); 
+    orig_Y_LN = cleanSuffStat(Y,X,true,false);
     SSTAT = cleanSuffStat(Y,X,false); 
     SSTAT_LN = cleanSuffStat(Y,X,true);
+    
     std::vector<double> tux = unique_list(X); 
     UX = Eigen::MatrixXd(tux.size(),1); 
     for (unsigned int i = 0; i < tux.size(); i++){
@@ -706,8 +722,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     Y_LN = SSTAT_LN; 
   }
   
-  double divisor = get_diviosor( Y,  X); 
-  double  max_dose = X.maxCoeff(); 
+ 
   
   if (CA->suff_stat){
     X = UX; 
@@ -720,161 +735,98 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     temp = Y_LN.col(2);
     Y_LN.col(2) = Y_LN.col(1);
     Y_LN.col(1) = temp; 
-    X = X/max_dose;
-  }else{
-    Y = (1/divisor)*Y; // scale the data with the divisor term. 
+    temp = orig_Y.col(2);
+    orig_Y.col(2) = orig_Y.col(1);
+    orig_Y.col(1) = temp; 
+    temp = orig_Y_LN.col(2);
+    orig_Y_LN.col(2) = orig_Y_LN.col(1);
+    orig_Y_LN.col(1) = temp; 
     X = X/max_dose;
   }
-  
+
   
   mcmcSamples a[MA->nmodels];
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
+  std::vector<bool> fixedB; 
+  std::vector<double> fixedV; 
+
   for (int i = 0; i < MA->nmodels; i++ ){
-    
+    fixedB.clear(); // on each iteration make sure there parameters are emptied
+    fixedV.clear(); 
     Eigen::MatrixXd tprior(MA->nparms[i],MA->prior_cols[i]);
     for (int m = 0; m < MA->nparms[i]; m++){
+        fixedB.push_back(false);
+        fixedV.push_back(0.0); 
         for (int n = 0; n < MA->prior_cols[i]; n++){
           tprior(m,n) = MA->priors[i][m + n*MA->nparms[i]]; 
         }
     }
-    
-    if (MA->disttype[i] == distribution::log_normal){
-      
-      if (CA->suff_stat ){
-        a[i] = mcmc_logNormal(Y_LN, X,
-                              tprior, CA->BMD_type, (cont_model)MA->models[i],
-                                                      CA->isIncreasing, CA->BMR, 
-                                                      CA->tail_prob,  
-                                                      CA->alpha, samples, burnin);
-      }else{
-        a[i] = mcmc_logNormal(Y, X,
-                              tprior, CA->BMD_type, (cont_model)MA->models[i],
-                              CA->isIncreasing, CA->BMR, 
-                              CA->tail_prob,  
-                              CA->alpha,samples, burnin);
-        
-      }
-      
-    }else{
-      
-      bool isNCV = MA->disttype[i] == distribution::normal_ncv? false:true; 
-      if (CA->suff_stat ){
-        a[i] = mcmc_Normal(Y_N, X,
-                           tprior, CA->BMD_type, (cont_model)MA->models[i],
-                           CA->isIncreasing,isNCV, CA->BMR, 
-                           CA->tail_prob,  
-                           CA->alpha, samples, burnin);
-      }else{
-        a[i] = mcmc_Normal(Y, X,
-                          tprior, CA->BMD_type, (cont_model)MA->models[i],
-                          CA->isIncreasing,isNCV, CA->BMR, 
-                          CA->tail_prob,  
-                          CA->alpha,samples, burnin);
-        
-      }
-      
-    }
 
-     for (int m = 0; m < samples; m++){
-          a[i].BMD(0,m) = a[i].BMD(0,m)*max_dose; 
-          Eigen::MatrixXd temp = rescale_parms(a[i].samples.col(i), 
-                                               (cont_model)MA->models[i] ,
-                                                max_dose, divisor, MA->disttype[i] == distribution::log_normal); 
-                                                
-         
-          a[i].samples.col(m) = temp.transpose(); 
-         
-     }
-     cout << a[i].map_cov << endl << endl; 
-     a[i].map_estimate = rescale_parms(a[i].map_estimate, 
-                                       (cont_model)MA->models[i] ,
-                                        max_dose, divisor, MA->disttype[i] == distribution::log_normal); 
- 
-   
-     switch((cont_model)MA->models[i]){
-     case cont_model::hill:
-       if (MA->disttype[i] == distribution::log_normal){
-      
-            RescaleContinuousModel<lognormalHILL_BMD_NC,IDPrior>
-                                                (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                tprior, a[i].map_estimate,  max_dose, divisor,
-                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true,
-                                                &a[i].map,&a[i].map_cov);
-       }else{
-     
-           RescaleContinuousModel<normalHILL_BMD_NC,IDPrior>
-                                                (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                tprior,  a[i].map_estimate, max_dose, divisor,
-                                                CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                MA->disttype[i] == distribution::normal,
-                                                &a[i].map,&a[i].map_cov);
-       }
-       break; 
-     case cont_model::exp_3:
-       if (MA->disttype[i] == distribution::log_normal){
-          
-          RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
-                                                     (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                      tprior, a[i].map_estimate,  max_dose, divisor,
-                                                      CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true,
-                                                      &a[i].map,&a[i].map_cov);
-       }else{
-          
-          RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
-                                                   (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                    tprior,  a[i].map_estimate, max_dose, divisor,
-                                                    CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                    MA->disttype[i] == distribution::normal, 
-                                                    &a[i].map,&a[i].map_cov);
-       }
-       break; 
-     case cont_model::exp_5:
-       if (MA->disttype[i] == distribution::log_normal){
     
-           RescaleContinuousModel<lognormalEXPONENTIAL_BMD_NC,IDPrior>
-                                             (orig_Y, orig_X, (cont_model)MA->models[i],
-                                              tprior, a[i].map_estimate,  max_dose, divisor,
-                                              CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true, 
-                                              &a[i].map,&a[i].map_cov);
-       }else{
-      
-           RescaleContinuousModel<normalEXPONENTIAL_BMD_NC,IDPrior>
-                                               (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                tprior,  a[i].map_estimate, max_dose, divisor,
-                                                CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                                MA->disttype[i] == distribution::normal, 
-                                                &a[i].map,&a[i].map_cov);
-       }
-       break; 
-      
-     case cont_model::power: 
-       if (MA->disttype[i] == distribution::log_normal){
-       
-           RescaleContinuousModel<lognormalPOWER_BMD_NC,IDPrior>
-                                               (orig_Y, orig_X, (cont_model)MA->models[i],
-                                                tprior, a[i].map_estimate,  max_dose, divisor,
-                                                CA->isIncreasing,MA->disttype[i] == distribution::log_normal, true, 
-                                                &a[i].map,&a[i].map_cov);
-       }else{
-       
-           RescaleContinuousModel<normalPOWER_BMD_NC,IDPrior>
-                                               (orig_Y, orig_X, (cont_model)MA->models[i],
-                                               tprior,  a[i].map_estimate, max_dose, divisor,
-                                               CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
-                                               MA->disttype[i] == distribution::normal, 
-                                               &a[i].map,&a[i].map_cov);
-       }
-       break; 
-       break; 
-     case cont_model::polynomial:
-     default:
-       break; 
+   Eigen::MatrixXd init_opt; 
+   switch((cont_model)MA->models[i]){
+       case cont_model::hill:
+          init_opt = MA->disttype[i] == distribution::log_normal ?
+                     bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
+                                                                                MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing):
+                     bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                                MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
+          //updated prior updated 
+           RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                          max_dose, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                          MA->disttype[i] != distribution::normal_ncv); 
+           
+         break; 
+       case cont_model::exp_3:
+       case cont_model::exp_5:
+         init_opt = MA->disttype[i] == distribution::log_normal ?
+                   bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
+                                                                                     MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing):
+                   bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                                     MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
+         //updated prior updated 
+         //updated prior updated 
+         RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                         max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+                                         MA->disttype[i] != distribution::normal_ncv); 
+                   
+         break; 
+       case cont_model::power: 
+         init_opt = MA->disttype[i] == distribution::log_normal ?
+                   bmd_continuous_optimization<lognormalPOWER_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
+                                                                               MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing):
+                   bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                               MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
+                   
+         //updated prior updated 
+         RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                                   max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+                                                   MA->disttype[i] != distribution::normal_ncv); 
+         
+         break; 
+       case cont_model::polynomial:
+       default:
+           break; 
+         
      }
-     cout << a[i].map_cov << endl << endl; 
+      
+      a[i] = MA->disttype[i] == distribution::log_normal?
+                                 mcmc_logNormal(orig_Y_LN, orig_X,
+                                                tprior, CA->BMD_type, (cont_model)MA->models[i],
+                                                CA->isIncreasing, CA->BMR, 
+                                                CA->tail_prob,  
+                                                CA->alpha, samples, burnin):
+                                 mcmc_Normal(orig_Y, orig_X,
+                                              tprior, CA->BMD_type, (cont_model)MA->models[i],
+                                              CA->isIncreasing, MA->disttype[i] != distribution::normal_ncv, CA->BMR,  
+                                              CA->tail_prob,  
+                                              CA->alpha,samples, burnin);
+         
+      
   }
   
-  
+ /* 
   bmd_analysis b[MA->nmodels]; 
   
   for (int i = 0; i < MA->nmodels; i++){
@@ -889,24 +841,23 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
-    cout << post_probs[i] << endl; 
+    // cout << post_probs[i] << endl; 
   }
   double norm_sum = 0.0; 
  
   for (int i = 0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); //FIX ME: ADD MODEL PROBS
-    norm_sum += exp(post_probs[i]);
+    norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
   }
 
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
-    Rcout << post_probs[j] << endl;  
+    cout  << post_probs[j] << endl;   
     for (double  i = 0.0; i < 0.99; i += 0.01 ){
- //     if ( isnan(b[j].BMD_CDF.inv(i))){
- //       post_probs[j] = 0; // if the cdf has nan in it then it needs a 0 posterior
-//      }  
-      
+      if ( isnan(b[j].BMD_CDF.inv(i))){
+         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
+      }  
     } 
   }
   
@@ -918,7 +869,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
-    
+  //   Rcout << post_probs[i] << endl;
     transfer_continuous_model(b[i],res->models[i]);
     transfer_mcmc_output(a[i],ma->analyses[i]); 
     res->models[i]->model = MA->models[i]; 

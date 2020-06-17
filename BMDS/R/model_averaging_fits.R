@@ -5,7 +5,7 @@
 ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                                   user_priors=NA, BMD_TYPE = "sd",
                                   BMR = 0.1, point_p = 0.01, distribution_list = NA,
-                                  alpha = 0.05,samples = 51000,
+                                  alpha = 0.05,samples = 21000,
                                   burnin = 1000){
   myD = Y; 
   Y = as.matrix(Y)

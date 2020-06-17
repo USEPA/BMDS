@@ -4,12 +4,12 @@
 #define BMD_ANALYSIS_h
 
 
-enum est_method {est_mle,est_laplace,est_mcmc}; 
+enum est_method {est_mle = 1, est_laplace=2, est_mcmc=3}; 
 enum dich_model {d_hill, d_gamma,d_logistic, d_loglogistic,
                  d_logprobit  , d_multistage  ,d_probit,
                  d_qlinear,d_weibull}; 
 
-enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, polynomial=666}; 
+enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, gain_loss_model = 10, polynomial = 666}; 
 enum distribution {normal = 1, normal_ncv = 2, log_normal = 3}; 
 
 struct dichotomous_analysis{
@@ -64,7 +64,7 @@ struct continuousMA_analysis{
   int    *prior_cols;  // columns in the prior if there are 'more' in the future
   int    *models;      // given model
   int    *disttype;    // given distribution type
-  double *modelPriors; // prior probbility on the model
+  double *modelPriors; // prior probability on the model
 };
 
 

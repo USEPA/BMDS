@@ -48,7 +48,7 @@ using namespace std;
  }
  
  
-Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal){
+Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal, bool use_divisor){
   double minDose = X.minCoeff(); 
   double divisor = 0; 
   int nmin = 0; 
@@ -59,8 +59,12 @@ Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logN
       divisor += Y(i,0); 
     }
   }
-  divisor = divisor/double(nmin); //average background dose
-   
+  if (use_divisor){
+     divisor = divisor/double(nmin); //average background dose
+  }else{
+     divisor = 1.0; 
+  } 
+  
   Y.col(0).array() = Y.col(0).array()/divisor; //divide mean
   Y.col(2).array() = Y.col(2).array()/divisor; //divide sd; 
   if (is_logNormal){
@@ -79,13 +83,17 @@ double get_diviosor(Eigen::MatrixXd Y, Eigen::MatrixXd X){
   double minDose = X.minCoeff(); 
   double divisor = 0; 
   int nmin = 0; 
+ // cout << Y << endl << X << endl << endl;  
   for (int i = 0; i < X.rows(); i++){
-    if (X(i,0)==minDose){
+  //  cout << "I am here" << endl; 
+    if (X(i,0) == minDose){
+  //    cout << "I am there" << endl; 
       nmin++; 
       divisor += Y(i,0); 
     }
   }
   divisor = divisor/double(nmin); 
+ // cout << divisor << endl; 
   return divisor; 
 }
 
@@ -141,14 +149,18 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         if (!is_logNormal){
           if (parms.rows()==5){
             parms(4,0) += 2*log(bkground); 
+          }else{
+            parms(5,0) += 2*log(bkground); 
           }
         }
         break; 
       case cont_model::exp_3:
         parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
         if (!is_logNormal){
-          if (parms.rows()==4){
-            parms(3,0) += 2*log(bkground); 
+          if (parms.rows()== 5){
+            parms(4,0) += 2*log(bkground); 
+          }else{
+            parms(5,0) += 2*log(bkground); 
           }
         }
         break; 
@@ -156,9 +168,11 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         
         parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
         if (!is_logNormal){
-          if (parms.rows()==5){
-            parms(4,0) += 2*log(bkground); 
-          }
+            if (parms.rows()==5){
+              parms(4,0) += 2*log(bkground); 
+            }else{
+              parms(5,0) += 2*log(bkground); 
+            }
         }
         break; 
         
@@ -167,6 +181,8 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         if (!is_logNormal){
           if (parms.rows()==4){
             parms(3,0) += 2*log(bkground); 
+          }else{
+            parms(4,0) += 2*log(bkground); 
           }
         }
        

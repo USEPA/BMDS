@@ -1,4 +1,3 @@
-#pragma once
 #ifndef bmd_calculateH
 #define bmd_calculateH
 
@@ -27,6 +26,7 @@
 #include "dBMDstatmod.h"
 #include "cBMDstatmod.h"
 #include "bmdStruct.h"
+#include "continuous_clean_aux.h"
 
 class bmd_cdf {
 public:
@@ -316,6 +316,37 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 }
 
 /**********************************************************************
+ * function bmd_continuous_optimization:
+ * 		LL        -    likelihood previously defined
+ *      PR        -    Prior
+ * 	    fixedB    -    boolean vector of which parameters are fixed
+ * 	  	fixedV    -    vector of what value parameters are fixed too. 
+ *      isIncreasing - true if the BMD should be calculated for an increasing data set
+ *  returns: 
+ *      Eigen::MatrixXd rVal <- the value that maximizes the model with the data. 
+ * *******************************************************************/
+template <class LL, class PR>
+Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X, 
+                                            Eigen::MatrixXd prior, 
+                                            std::vector<bool> fixedB,std::vector<double> fixedV,
+                                            bool is_const_var,
+                                            bool is_increasing) {
+  // value to return
+  bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
+  LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
+  PR   	  model_prior(prior);
+  Eigen::MatrixXd rVal;
+  // create the Continuous BMD model
+  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
+  // Find the maximum a-posteriori and compute the BMD
+  optimizationResult OptRes = findMAP<LL, PR>(&model);
+  
+  rVal = OptRes.max_parms;
+  return rVal; 
+  
+}
+
+/**********************************************************************
  *  function: bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
  *							 double BMR, bool isExtra, double alpha, double step_size)
  * 
@@ -387,24 +418,13 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 }
 
 
-template  <class LL,class PR> 
-void RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
-                            Eigen::MatrixXd prior, Eigen::MatrixXd betas, 
-                            double max_dose,double divisor,
-                            bool is_increasing, bool is_logNormal, bool is_const_var,
-                            double *map, Eigen::MatrixXd *var) {
+template  <class PR> 
+void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 
+                             double max_dose, double divisor, 
+                             bool is_increasing, bool is_logNormal, bool is_const_var){
   
-  bool suff_stat = Y.cols() == 1? false:true; 
-  
-  std::vector<bool>   fixedB(prior.rows());
-  std::vector<double> fixedV(prior.rows());
-  
-  for (int i = 0; i < prior.rows(); i++) {
-    fixedB[i] = false;
-    fixedV[i] = 0.0;
-  }
-  
-  PR   	  model_prior(prior);
+  PR   	  model_prior(*prior);
+  Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
@@ -412,17 +432,26 @@ void RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
     case cont_model::hill:
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(divisor,1);
-      model_prior.scale_prior(1/max_dose,4);
+      model_prior.scale_prior(max_dose,2);
       if (!is_logNormal){
-         model_prior.add_mean_prior(2.0*log(divisor),5); 
+         if (is_const_var){
+            model_prior.add_mean_prior(2.0*log(divisor),4);
+         }else{
+            model_prior.add_mean_prior(2.0*log(divisor),5);
+         }
       }
+      
       break; 
     case cont_model::exp_3:
       adverseR = is_increasing? NORMAL_EXP3_UP:  NORMAL_EXP3_DOWN; 
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(1/max_dose,1);
       if (!is_logNormal){
-         model_prior.add_mean_prior(2.0*log(divisor),5); 
+        if (is_const_var){
+          model_prior.add_mean_prior(2.0*log(divisor),4);
+        }else{
+          model_prior.add_mean_prior(2.0*log(divisor),5);
+        }
       }
       break; 
     case cont_model::exp_5:
@@ -430,27 +459,34 @@ void RescaleContinuousModel(Eigen::MatrixXd Y,Eigen::MatrixXd X, cont_model CM,
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(1/max_dose,1);
       if (!is_logNormal){
-        model_prior.add_mean_prior(2.0*log(divisor),5); 
+          if (is_const_var){
+            model_prior.add_mean_prior(2.0*log(divisor),4);
+          }else{
+            model_prior.add_mean_prior(2.0*log(divisor),5);
+          }
       }
+      break; 
     case cont_model::power:
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(1/max_dose,1);
       model_prior.scale_prior( divisor*(1/max_dose),2); 
 
       if (!is_logNormal){
-          model_prior.add_mean_prior(2.0*log(divisor),5); 
+        if (is_const_var){
+          model_prior.add_mean_prior(2.0*log(divisor),3);
+        }else{
+          model_prior.add_mean_prior(2.0*log(divisor),4);
+        }
       }
-      
+      break;
     case cont_model::polynomial:
     default:
       break; 
   }
   
-  LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
-  
-  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);
-  *map =  model.negPenLike(betas);
-  *var =  model.varMatrix(betas);
+  Eigen::MatrixXd temp2 = model_prior.get_prior(); 
+  *prior = temp2; 
+  *betas = temp; 
   return; 
   
 }

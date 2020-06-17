@@ -9,8 +9,6 @@
 //
 //
 //
-
-#pragma once
 #ifndef IDPriorH
 #define IDPriorH
 
@@ -26,9 +24,10 @@
 #endif
 #include <cmath>
 #include <vector>
+#include <iostream>
 #include <math.h>
 
-enum prior_iidtype {iid_normal = 1, iid_lognormal =2, iid_mle = 0}; 
+enum prior_iidtype {iid_normal = 1, iid_lognormal = 2, iid_mle = 0}; 
 
 // IDPrior
 // Creates a class where each parameter specified is given an independent
@@ -67,18 +66,20 @@ public:
 
 	//scales the prior by a constant
   void scale_prior(double  scale, int parm){
-    if (parm >= 0 && parm << prior_spec.rows()){
+    if (parm >= 0 && parm <  prior_spec.rows()){
        switch (prior_iidtype(prior_spec(parm,0))){
          case prior_iidtype::iid_normal:
              prior_spec(parm,1) *= scale; 
-             prior_spec(parm,2) *= scale*scale; 
+             prior_spec(parm,2) *= scale; //note it is only scale because we are dealing with the SD 
              prior_spec(parm,3) *= scale;
              prior_spec(parm,4) *= scale;
            break; 
         case prior_iidtype::iid_lognormal: 
+          //    std::cout << prior_spec.row(parm) << std::endl;
               prior_spec(parm,1) += log(scale); 
               prior_spec(parm,3) *= scale;
               prior_spec(parm,4) *= scale;
+          //    std::cout << prior_spec << std::endl; 
             break; 
          case prior_iidtype::iid_mle: 
               // do nothing
@@ -111,7 +112,9 @@ public:
 	    }
 	  }
 	}
-
+  Eigen::MatrixXd get_prior(){
+    return prior_spec; 
+  }
 	// Matrix that defines the prior specifications 
 	// for all of the parameters in theta
 	// First Column - Type of Prior

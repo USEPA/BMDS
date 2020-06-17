@@ -1,9 +1,8 @@
 
-
-PKG_CPPFLAGS =  -I./code_base -I"./include"  -o3 -funroll-loops -std=c++11
+PKG_CPPFLAGS =  -I"./code_base" -I"./include"  -o3 -funroll-loops -std=c++11
 PKG_CPPFLAGS += -fopenmp -DR_COMPILATION=TRUE -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
 
-PKG_LIBS     = -lgsl -lnlopt -fopenmp
+PKG_LIBS     = -lgsl -lnlopt -fopenmp 
 
 
 MAIN         = $(wildcard *.cpp)

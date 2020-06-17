@@ -14,7 +14,7 @@
 #include "bmdStruct.h"
 
 std::vector<double> unique_list(Eigen::MatrixXd X); 
-Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal); 
+Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal,bool use_divisor = true); 
 
 double get_diviosor(Eigen::MatrixXd Y, Eigen::MatrixXd X);
 Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
@@ -24,9 +24,9 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
                               double max_dose, double bkground,bool is_logNormal); 
                               
 Eigen::MatrixXd rescale_cov_matrix(Eigen::MatrixXd COV, 
-									Eigen::MatrixXd parms, cont_model model,
-									double max_dose, double bkground,
-									bool is_logNormal);
+                									Eigen::MatrixXd parms, cont_model model,
+                									double max_dose, double bkground,
+                									bool is_logNormal);
 
 
 #endif
