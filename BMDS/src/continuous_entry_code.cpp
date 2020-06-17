@@ -497,7 +497,8 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                             bool is_increasing, 
                             double bmrf,   double bk_prob, 
-                            double alpha,  int samples, int burnin) {
+                            double alpha,  int samples, int burnin,  
+                            Eigen::MatrixXd initV) {
    
   bool suff_stat = Y.cols() == 1? false:true; 
   std::vector<bool> fixedB(prior.rows());
@@ -517,7 +518,7 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
      a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalHILL_BMD_NC, IDcontinuousPrior>
                                     (Y,  X, prior, fixedB, fixedV, is_increasing,
                                      bk_prob,suff_stat,bmrf, riskType, alpha,
-                                     samples,0); 
+                                     samples,0,initV); 
     break; 
   case cont_model::exp_3:
       adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
@@ -525,7 +526,7 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                               bk_prob,suff_stat,bmrf, riskType, alpha,
-                                              samples,adverseR);
+                                              samples,adverseR,initV);
     break; 
   case cont_model::exp_5:
   default: 
@@ -534,7 +535,7 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                bk_prob,suff_stat,bmrf, riskType, alpha,
-                                               samples,adverseR);
+                                               samples,adverseR,initV);
     break; 
     
   }
@@ -547,7 +548,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                          bool is_increasing, bool bConstVar,
                          double bmrf,   double bk_prob, 
                          double alpha, int samples,
-                         int burnin) {
+                         int burnin, Eigen::MatrixXd initV) {
   
   bool suff_stat = Y.cols() == 1? false:true; 
   std::vector<bool> fixedB(prior.rows());
@@ -572,7 +573,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalHILL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-                                                 samples,0); 
+                                                 samples,0,initV); 
     break; 
   case cont_model::exp_3:
     adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
@@ -584,7 +585,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-                                                 samples,adverseR);
+                                                 samples,adverseR,initV);
     break; 
   case cont_model::exp_5:
   
@@ -597,7 +598,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-                                                 samples,0);
+                                                 samples,0,initV);
     break; 
   case cont_model::power:
   default:  
@@ -609,7 +610,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOWER_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                               bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
-                                              samples,adverseR);
+                                              samples,adverseR,initV);
     
   
   break; 
@@ -811,28 +812,27 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
          
      }
       
-      a[i] = MA->disttype[i] == distribution::log_normal?
-                                 mcmc_logNormal(orig_Y_LN, orig_X,
+    a[i] = MA->disttype[i] == distribution::log_normal?
+                              mcmc_logNormal(orig_Y_LN, orig_X,
                                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                                 CA->isIncreasing, CA->BMR, 
                                                 CA->tail_prob,  
-                                                CA->alpha, samples, burnin):
-                                 mcmc_Normal(orig_Y, orig_X,
+                                                CA->alpha, samples, burnin,init_opt):
+                              mcmc_Normal(orig_Y, orig_X,
                                               tprior, CA->BMD_type, (cont_model)MA->models[i],
                                               CA->isIncreasing, MA->disttype[i] != distribution::normal_ncv, CA->BMR,  
                                               CA->tail_prob,  
-                                              CA->alpha,samples, burnin);
+                                              CA->alpha,samples, burnin,init_opt);
          
       
   }
   
- /* 
+
   bmd_analysis b[MA->nmodels]; 
-  
+  // FIXME: THE INVERSE ECT. 
   for (int i = 0; i < MA->nmodels; i++){
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
   }
-  
 
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
@@ -841,7 +841,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
-    // cout << post_probs[i] << endl; 
   }
   double norm_sum = 0.0; 
  
@@ -866,15 +865,17 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     norm_sum += post_probs[i]; 
   }
   
+  cout << MA->nmodels << endl;
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
-  //   Rcout << post_probs[i] << endl;
+   // Rcout << post_probs[i] << endl;
     transfer_continuous_model(b[i],res->models[i]);
     transfer_mcmc_output(a[i],ma->analyses[i]); 
     res->models[i]->model = MA->models[i]; 
     res->models[i]->dist  = MA->disttype[i];
   }
+  cout << "Here " << endl; 
   
   double range[2]; 
   /*

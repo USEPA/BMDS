@@ -20,7 +20,7 @@ M2[, 2]      <- c(10.56, 10.26, 8.98, 7.56, 6.99)
 M2[, 3]      <- c(25,25,25,25,25)
 M2[, 4]      <- c(1.56,1.26,1.35,1.21,1.33)
 
-B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
+B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
 
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")
 

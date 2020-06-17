@@ -270,14 +270,15 @@ mcmcSamples MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL(Eigen::MatrixXd Y, Eigen::Mat
                                                   std::vector<bool> fixedB, std::vector<double> fixedV,
                                                   bool isIncreasing, double point_p, bool suff_stat,
                                                   double BMR, contbmd BMDType, double alpha,
-                                                  int samples, int adverse_d){
+                                                  int samples, int adverse_d,
+                                                  Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1)){
   
   LL        likelihood(Y, D,suff_stat, adverse_d);
  // cout << prior << endl; 
   PR   	    model_prior(prior);
   
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, isIncreasing);	
-  return mcmc_continuous<LL, PR>(&model,samples,BMDType,BMR,point_p); 
+  return mcmc_continuous<LL, PR>(&model,samples,BMDType,BMR,point_p,init); 
 }
 
 template <class LL, class PR>
@@ -285,14 +286,14 @@ mcmcSamples MCMC_bmd_analysis_CONTINUOUS_NORMAL(Eigen::MatrixXd Y, Eigen::Matrix
                                                 std::vector<bool> fixedB, std::vector<double> fixedV, 
                                                 bool isIncreasing, double point_p, bool suff_stat,
                                                 double BMR, contbmd BMDType, bool const_var,
-                                                double alpha, int samples, int adverse_d) {
+                                                double alpha, int samples, int adverse_d,
+                                                Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1)) {
   
   LL        likelihood(Y, D,suff_stat, const_var, adverse_d);
- // cout << prior << endl; 
   PR   	    model_prior(prior);
   
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, isIncreasing);	
-  return mcmc_continuous<LL, PR>(&model,samples,BMDType,BMR,point_p); 
+  return mcmc_continuous<LL, PR>(&model,samples,BMDType,BMR,point_p,init); 
 
 }
 
