@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <vector>
 #include <limits>
+#include <algorithm> 
 
 using namespace std; 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
@@ -630,17 +631,34 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
 
   std::vector<double> v(s.BMD.cols()-burnin); 
   for (int i = burnin; i < s.BMD.cols(); i++){
-	        v[i-burnin] = s.BMD(0,i);   
+	        v[i-burnin] = s.BMD(0,i);   // get rid of the burn in samples
   }
 
   std::vector<double>  prob;
-  std::vector<double> bmd_q;  
+  std::vector<double> bmd_q; 
   std::sort(v.begin(), v.end());
-  for (double k = 0.005; k <= 0.995; k += 0.005){
-		prob.push_back(k); 
-		prob.push_back(v[int(k*(v.size()-burnin))]);
+ 
+  for (double k = 0.004; k <= 0.9999; k += 0.005){
+	  if (!isnan(v[int(k*double(v.size()))-1]) && !isinf(v[int(k*double(v.size()))-1])){
+	    prob.push_back(k); 
+	    bmd_q.push_back(v[int(k*double(v.size()))-1]);
+	  }
   }
-	
+  
+  // fix numerical quantile issues.
+  for (int i = 1; i < bmd_q.size(); i++){
+    if (bmd_q[i] <= bmd_q[i-1]){
+       for (int kk = i; kk <  bmd_q.size(); kk++){
+          bmd_q[kk] = bmd_q[kk-1] + 1e-6; 
+       }
+    } 
+    cout << bmd_q[i] << endl; 
+  }
+  cout << "---------------------" << endl; 
+  if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e10 
+                       && bmd_q[0] > 0 ){  
+      rV.BMD_CDF = bmd_cdf(prob,bmd_q);
+  }
   return rV; 
 }
 
@@ -831,6 +849,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   bmd_analysis b[MA->nmodels]; 
   // FIXME: THE INVERSE ECT. 
   for (int i = 0; i < MA->nmodels; i++){
+  
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
   }
 
@@ -842,6 +861,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
   }
+  
   double norm_sum = 0.0; 
  
   for (int i = 0; i < MA->nmodels; i++){
@@ -852,8 +872,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
-    cout  << post_probs[j] << endl;   
-    for (double  i = 0.0; i < 0.99; i += 0.01 ){
+
+    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
       if ( isnan(b[j].BMD_CDF.inv(i))){
          post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
@@ -865,20 +885,22 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     norm_sum += post_probs[i]; 
   }
   
-  cout << MA->nmodels << endl;
+
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
-   // Rcout << post_probs[i] << endl;
     transfer_continuous_model(b[i],res->models[i]);
     transfer_mcmc_output(a[i],ma->analyses[i]); 
     res->models[i]->model = MA->models[i]; 
     res->models[i]->dist  = MA->disttype[i];
+   // cout << i << ":" << b[i].BMD_CDF.inv(0.95) << endl; 
   }
-  cout << "Here " << endl; 
+ 
   
   double range[2]; 
-  /*
+  
+  // define the BMD distribution ranges
+  // also get compute the MA BMD list
   bmd_range_find(res,range);
   double range_bmd = range[1] - range[0]; 
   for (int i = 0; i < res->dist_numE; i ++){
@@ -886,11 +908,11 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += isnan(a[j].BMD_CDF.P(cbmd))?0:a[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+        prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
-  */
+  
   return; 
 }

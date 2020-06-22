@@ -88,7 +88,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
     // now sample, samples, number of proposals for the
     // metropolis sampler.
   Eigen::MatrixXd mu  = oR.max_parms;
-  Eigen::MatrixXd cov = 0.4*model.varMatrix(oR.max_parms);
+  Eigen::MatrixXd cov = 0.2*model.varMatrix(oR.max_parms);
   Eigen::MatrixXd chol = cov.llt().matrixL();
   Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
                                               // is is now L'L = cov
@@ -98,8 +98,6 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   nSamples.col(0) = mu; // starting value of the MCMC
  
 
-    
-    
   penLike(0,0) =  -model.negPenLike(nSamples.col(0));
   for (int i = 1; i < samples ; i++){
         Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1);//mu;
@@ -171,6 +169,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
     oR = findMAP<LL, PR>(model,init_vals);
   } 
   
+  //cout << oR.max_parms << endl << endl; 
   mcmcSamples rVal;
   
   rVal.map = 	oR.functionV;
@@ -201,10 +200,10 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   // now sample From a metropolis-Hastings sampler.
   Eigen::MatrixXd mu  = oR.max_parms;
   
-  Eigen::MatrixXd cov = 0.4*model->varMatrix(oR.max_parms);
+  Eigen::MatrixXd cov = 0.3*model->varMatrix(oR.max_parms);
   Eigen::MatrixXd chol = cov.llt().matrixL();
   Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
-  // is is now L'L = cov
+  // is is now LL' = cov
   Eigen::MatrixXd penLike(1,samples);
   Eigen::MatrixXd BMD(1,samples);
   /////////////////////////////////////////////////////////////////
@@ -212,7 +211,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   
   penLike(0,0) =  -model->negPenLike(nSamples.col(0));
   for (int i = 1; i < samples ; i++){
-    Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1); 
+    Eigen::MatrixXd value = nSamples.col(i) + mu; //nSamples.col(i-1); 
     //Metropolis-Hasings proposal
     // make sure the proposal isn't imposible
 
@@ -220,17 +219,17 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
 
     if ( !isnan(t) &&
          !isinf(t) ){
-      Eigen::MatrixXd a = MCMC_PROPOSAL(mu,nSamples.col(i-1),cov);
-      Eigen::MatrixXd b = MCMC_PROPOSAL(mu,value,cov);
+      Eigen::MatrixXd a = MCMC_PROPOSAL(value,nSamples.col(i-1),cov);
+      Eigen::MatrixXd b = MCMC_PROPOSAL(nSamples.col(i-1),value,cov);
    
-      double numer = -model->negPenLike(value);//+a(0,0);
-      double denom =  penLike(0,i-1);  //+ b(0,0);
+      double numer = -model->negPenLike(value) +a(0,0);
+      double denom =  penLike(0,i-1) + b(0,0);
       double test = exp(numer - denom);
       double rr = gsl_rng_uniform(r);
       
       if (isnan(test)){
         test = 0.0; // no probability of making this jump
-       // cout << i << endl; 
+                    // cout << i << endl; 
       }
       
       if ( rr < test){
@@ -248,7 +247,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
     }
     
     BMD(0,i) = model->returnBMD(nSamples.col(i), BMDt,
-                                BMR , pointP);
+                                  BMR , pointP);
   }
   
 

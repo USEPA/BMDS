@@ -6,8 +6,8 @@
   #include <Eigen/Dense>
 #endif
 
-
 #include "bmdStruct.h"
+
 void del_continuous_analysis(continuous_analysis a){
   if (a.Y)  delete a.Y; 
   if (a.n_group) delete a.n_group; 

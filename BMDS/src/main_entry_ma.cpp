@@ -344,11 +344,12 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
   
   estimate_ma_MCMC(&ma_anal,&anal,ma_result,&model_mcmc_info);
  
-  List rV = convert_mcmc_results(&model_mcmc_info); 	
- // List t2 = convert_continuous_maresults_to_list(ma_result); 
- // List rv(Named("mcm
+  List t1 = convert_mcmc_results(&model_mcmc_info); 	
+  List t2 = convert_continuous_maresults_to_list(ma_result); 
+  List rV =  List::create(Named("mcmc_runs") = t1 , Named("ma_results") = t2);
   //////////////////////////////////////////////////////////
   // free up memory
+  //////////////////////////////////////////////////////////
   for (unsigned int i = 0; i < ma_result->nmodels; i++){
     del_continuous_model_result(ma_result->models[i]); 
     del_mcmc_analysis(model_mcmc_info.analyses[i]);
