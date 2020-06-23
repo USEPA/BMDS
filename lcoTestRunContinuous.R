@@ -2,6 +2,7 @@
 # Uncomment the next 2 lines if pkgs are not being manually loaded
 #library(Rcpp)
 library(BMDS)
+library(rstan)
 
 # Input data - Continuous2.dax - Individual dose-response
 M = matrix(0,nrow=26,ncol=4)
@@ -9,9 +10,13 @@ colnames(M) <- c("Dose","Resp","","")
 M[,1] <- c(0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,59,59,59,59,59)
 M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
            55.2,55.1,59.1,56.3,52.9,53.7)
+data <- list(N=length(M[,1]),
+             d = M[,1], 
+             y = M[,2])
 
-ds <- seq(0,69)
-vs <- x[1]*(exp(x[3])-(exp(x[3])-1)*exp(-(x[2]*ds)^x[4]))
+h_fit <- stan(file="stan-check-hill.stan",data=data,
+              control = list(adapt_delta=0.9),iter=10000)
+
 
 C = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc")
 library(BMDS)

@@ -211,7 +211,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   
   penLike(0,0) =  -model->negPenLike(nSamples.col(0));
   for (int i = 1; i < samples ; i++){
-    Eigen::MatrixXd value = nSamples.col(i) + mu; //nSamples.col(i-1); 
+    Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1); //nSamples.col(i-1); 
     //Metropolis-Hasings proposal
     // make sure the proposal isn't imposible
 

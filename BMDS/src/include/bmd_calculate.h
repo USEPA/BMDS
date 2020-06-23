@@ -487,6 +487,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   Eigen::MatrixXd temp2 = model_prior.get_prior(); 
   *prior = temp2; 
   *betas = temp; 
+  cout << temp2 << endl << endl; 
   return; 
   
 }

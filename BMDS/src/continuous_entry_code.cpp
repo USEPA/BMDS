@@ -652,9 +652,9 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
           bmd_q[kk] = bmd_q[kk-1] + 1e-6; 
        }
     } 
-    cout << bmd_q[i] << endl; 
+ //   cout << bmd_q[i] << endl; 
   }
-  cout << "---------------------" << endl; 
+  // cout << "---------------------" << endl; 
   if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e10 
                        && bmd_q[0] > 0 ){  
       rV.BMD_CDF = bmd_cdf(prob,bmd_q);

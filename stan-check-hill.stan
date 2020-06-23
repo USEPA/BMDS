@@ -30,12 +30,13 @@ parameters {
 // 'y' to be normally distributed with mean 'mu'
 // and standard deviation 'sigma'.
 model {
-  a ~ normal(0,2); 
-  b ~ lognormal(0,1); 
-  k ~ lognormal(0,1); 
-  n ~ lognormal(log(1.5),0.25); 
+  a ~ lognormal(3.63653,0.1); 
+  b ~ normal(0,37.96); 
+  k ~ lognormal(4.07754,0.33); 
+  n ~ lognormal(0,0.33);
+  sigma ~ normal(0,2); 
   for (i in 1:N)
-      y[i] ~ normal(a + b*pow(d[i],n)/(k^n+pow(d[i],n)), exp(2*sigma));
+      y[i] ~ normal(a + b*pow(d[i],n)/(k^n+pow(d[i],n)), exp(0.5*sigma));
   
 }
 
