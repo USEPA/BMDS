@@ -64,13 +64,15 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                                bool is_increasing, 
                                double bmrf,   double bk_prob, 
-                               double alpha, double step_size);
+                               double alpha, double step_size,
+                               Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1));
                                
 bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
-                            double alpha, double step_size);
+                            double alpha, double step_size,
+                            Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1));
 
 void estimate_ma_MCMC(continuousMA_analysis *MA,
                       continuous_analysis *CA ,

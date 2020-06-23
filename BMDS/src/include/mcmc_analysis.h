@@ -200,7 +200,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   // now sample From a metropolis-Hastings sampler.
   Eigen::MatrixXd mu  = oR.max_parms;
   
-  Eigen::MatrixXd cov = 0.3*model->varMatrix(oR.max_parms);
+  Eigen::MatrixXd cov = 0.625*model->varMatrix(oR.max_parms);
   Eigen::MatrixXd chol = cov.llt().matrixL();
   Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
   // is is now LL' = cov

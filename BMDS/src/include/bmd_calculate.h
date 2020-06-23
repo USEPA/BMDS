@@ -241,15 +241,15 @@ template <class LL, class PR>
 bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior, 
 			 std::vector<bool> fixedB, std::vector<double> fixedV,
 			 contbmd BMDType, double BMRF,   double tail_prob, 
-			 bool isIncreasing, double alpha, double step_size) {
+			 bool isIncreasing, double alpha, double step_size,
+			 Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1)) {
 	// value to return
 	bmd_analysis rVal;
-	// create the Continuous BMD model
-	
+	// create the Continuous BMD modelds
 	cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, isIncreasing);								  
 	// Find the maximum a-posteriori and compute the BMD
 	
-	optimizationResult OptRes = findMAP<LL, PR>(&model);
+	optimizationResult OptRes = findMAP<LL, PR>(&model,init);
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
 
@@ -487,7 +487,6 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   Eigen::MatrixXd temp2 = model_prior.get_prior(); 
   *prior = temp2; 
   *betas = temp; 
-  cout << temp2 << endl << endl; 
   return; 
   
 }
