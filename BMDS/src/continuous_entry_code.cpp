@@ -392,7 +392,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = X/max_dose;
   } 
   
-  bmd_analysis a[MA->nmodels];
+  bmd_analysis b[MA->nmodels];
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
   
@@ -453,18 +453,18 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           break; 
         
       }
-
+      cerr << "I am here" << endl; 
       // now you fit it based upon the origional data
       if (MA->disttype[i] == distribution::log_normal){
         
         if (CA->suff_stat ){
-          a[i] = laplace_logNormal(orig_Y_LN, orig_X,
+          b[i] = laplace_logNormal(orig_Y_LN, orig_X,
                                    tprior, CA->BMD_type, (cont_model)MA->models[i],
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
                                    CA->alpha, 0.02,init_opt);
         }else{
-          a[i] = laplace_logNormal(orig_Y_LN, orig_X,
+          b[i] = laplace_logNormal(orig_Y_LN, orig_X,
                                    tprior, CA->BMD_type, (cont_model)MA->models[i],
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
@@ -476,13 +476,13 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         
         bool isNCV = MA->disttype[i] == distribution::normal_ncv? false:true; 
         if (CA->suff_stat ){
-          a[i] = laplace_Normal(orig_Y_LN, orig_X,
+          b[i] = laplace_Normal(orig_Y, orig_X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
                                 CA->alpha, 0.02,init_opt);
         }else{
-          a[i] = laplace_Normal(Y, X,
+          b[i] = laplace_Normal(orig_Y, orig_X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
@@ -500,61 +500,61 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
-        temp  = 	a[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - a[i].MAP + 0.5*log(max(0.0,a[i].COV.determinant()));
-        max_prob = temp > max_prob? temp:max_prob; 
-        post_probs[i] = temp; 
+    temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
+    max_prob = temp > max_prob? temp:max_prob; 
+    post_probs[i] = temp; 
   }
-  
   
   double norm_sum = 0.0; 
   
-  
   for (int i = 0; i < MA->nmodels; i++){
-        post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); //FIX ME: ADD MODEL PROBS
-        norm_sum += exp(post_probs[i]);
-        post_probs[i] = exp(post_probs[i]);
+    post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); //FIX ME: ADD MODEL PROBS
+    norm_sum     += exp(post_probs[i]);
+    post_probs[i] = exp(post_probs[i]);
   }
-
+  
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
-    for (double  i = 0.0; i < 0.99; i += 0.01 ){
-      if ( isnan(a[j].BMD_CDF.inv(i))){
-        post_probs[j] = 0; // if the cdf has nan in it then it needs a 0 posterior
-                           // probability
+    
+    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+      if ( isnan(b[j].BMD_CDF.inv(i))){
+        post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
-      
     } 
   }
+  
   norm_sum = 0.0; 
   for (int i =0; i < MA->nmodels; i++){
     norm_sum += post_probs[i]; 
   }
- 
+  
+  
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
-	
-	transfer_continuous_model(a[i],res->models[i]);
-	res->models[i]->model = MA->models[i]; 
-	res->models[i]->dist  = MA->disttype[i];
+    transfer_continuous_model(b[i],res->models[i]);
+    res->models[i]->model = MA->models[i]; 
+    res->models[i]->dist  = MA->disttype[i];
   }
-	 
-  double range[2]; 
 
+  double range[2]; 
+  
+  // define the BMD distribution ranges
+  // also get compute the MA BMD list
   bmd_range_find(res,range);
   double range_bmd = range[1] - range[0]; 
   for (int i = 0; i < res->dist_numE; i ++){
-	  double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
-	  double prob = 0.0; 
-	  
-	  for (int j = 0; j < MA->nmodels; j++){
-			prob += isnan(a[j].BMD_CDF.P(cbmd))?0:a[j].BMD_CDF.P(cbmd)*post_probs[j]; 
-      }
-	  res->bmd_dist[i] = cbmd; 
-	  res->bmd_dist[i+res->dist_numE]  = prob;
+    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
+    double prob = 0.0; 
+    
+    for (int j = 0; j < MA->nmodels; j++){
+      prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+    }
+    res->bmd_dist[i] = cbmd; 
+    res->bmd_dist[i+res->dist_numE]  = prob;
   }
-	
-  return; 
+  
+  return;  
 }
 
 

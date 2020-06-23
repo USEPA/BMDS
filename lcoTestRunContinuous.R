@@ -17,7 +17,6 @@ data <- list(N=length(M[,1]),
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 #              control = list(adapt_delta=0.9),iter=10000)
 
-
 C = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc")
 Q = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F])
 
@@ -31,7 +30,8 @@ M2[, 2]      <- c(10.56, 10.26, 8.98, 7.56, 6.99)
 M2[, 3]      <- c(25,25,25,25,25)
 M2[, 4]      <- c(0.56,0.26,0.35,0.21,0.33)
 
-B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
+C = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
+B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
 
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")
 
