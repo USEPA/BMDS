@@ -14,14 +14,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   current_models = c("hill","exp-3","exp-5","power")
   current_dists  = c("normal","normal-ncv","lognormal")
   type_of_fit = which(fit_type == c('laplace','mcmc'))
-  #define CONTINUOUS_BMD_ABSOLUTE     1
-  #define CONTINUOUS_BMD_STD_DEV      2
-  #define CONTINUOUS_BMD_REL_DEV      3
-  #define CONTINUOUS_BMD_POINT        4
-  #define CONTINUOUS_BMD_EXTRA        5
-  #define CONTINUOUS_BMD_HYBRID_EXTRA 6
-  #define CONTINUOUS_BMD_HYBRID_ADDED 7
-  #define CONTINUOUS_BMD_EMPTY        0.0
+
   rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
   if (rt == 4){
     rt = 6; 
@@ -51,10 +44,8 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   }
 
   
-###################  
- # print(D,Y)
+  ###################  
   DATA <- cbind(D,Y);
-#  print("Now I am here.s")
   if (ncol(DATA)==4){
     colnames(DATA) =  c("Dose","Resp","N","StDev")
     sstat = T
@@ -88,16 +79,9 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     
     rvals <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
                                     options) 
-#    if (model_type == "exp-3"){
-#      rvals$PARMS = rvals$PARMS[,-3]
-#    }
-#    class(rvals) <- "BMDcont_fit_MCMC"; 
-#    rvals$model <- model_type
-#    rvals$options <- options
-#    rvals$data <- DATA
-#    rvals$bmd <- c(mean(rvals$BMD,na.rm=TRUE),quantile(rvals$BMD,c(alpha,1-alpha),na.rm=TRUE))
-  #  rvals$prior <- PR
- #   return(rvals)
+    rvals$ma_results$options <- options
+    rvals$ma_results$data    <- DATA
+    return(rvals)
   }else{
   
     rvals   <-  run_continuous_ma_laplace(priors, models, dlists,Y,D,

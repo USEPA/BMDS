@@ -453,7 +453,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           break; 
         
       }
-      cerr << "I am here" << endl; 
+ 
       // now you fit it based upon the origional data
       if (MA->disttype[i] == distribution::log_normal){
         
@@ -753,7 +753,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                       ma_MCMCfits           *ma){ 
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
-  //cerr << "Sufficient Stat: " << n_cols << endl; 
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data

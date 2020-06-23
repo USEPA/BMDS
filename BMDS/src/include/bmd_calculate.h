@@ -386,17 +386,36 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		
 	
 		// Prepare the results to form an X/Y tuple
-	    	// X - BMD values 
-	    	// Y - Cumulative Probabilities associated with the corresponding X row
+	  // X - BMD values 
+	  // Y - Cumulative Probabilities associated with the corresponding X row
 		result = convertresult_to_probs(result);	
-		x.resize(result.rows());
-		y.resize(result.rows());
-		for (int i = 0; i < x.size(); i++) { x[i] = result(i, 0); y[i] = result(i, 1); }
+		x.clear();
+		y.clear();
+		// fix the cdf so things don't implode
+		for (int i = 0; i < x.size(); i++) { 
+		  if (!isnan(result(i, 0)) && !isinf(result(i, 0))){
+		    y.push_back(result(i, 1)); 
+		    x.push_back(result(i, 0));
+		  } 
+		} 
+		// fix numerical quantile issues
+		// so gsl doesn't go BOOM
+		for (int i = 1; i < x.size(); i++){
+		  if (x[i] <= x[i-1]){
+		    for (int kk = i; kk <  x.size(); kk++){
+		      x[kk] = x[kk-1] + 1e-6; 
+		    }
+		  } 
+		}
+	  	
 	}	
 	
 	
 	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){
+    
+    
+    
 		bmd_cdf cdf(x, y);
 		rVal.BMD_CDF = cdf;
 	}
