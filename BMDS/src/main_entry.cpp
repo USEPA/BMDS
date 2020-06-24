@@ -29,6 +29,8 @@
 #include "lognormal_EXP_NC.h"
 
 #include "continuous_clean_aux.h"
+#include "continuous_entry_code.h"
+#include "list_r_conversion.h"
 
 using namespace Rcpp;
 using namespace std;
@@ -314,6 +316,8 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector model_p
 
 
 
+
+
 // [[Rcpp::depends(RcppGSL)]]
 // [[Rcpp::depends(RcppEigen)]]
 //////////////////////////////////////////////////////////////////////////
@@ -323,245 +327,57 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector model_p
 // run the corresponding analysis.
 // output: BMD analysis with the model specified by NumericVector model
 // [[Rcpp::export]]
-List run_continuous_single(NumericVector model, 
+List run_continuous_single(IntegerVector model, 
                            Eigen::MatrixXd Y, Eigen::MatrixXd X,
-                           Eigen::MatrixXd priors, NumericVector options,
-                           bool is_logNormal,bool suff_stat){
-  
-  bool convert = true; 
-
-  if (!suff_stat){
-    // check to see if it can be converted into sufficient statistics4
-    int temp = 0; 
-    for (int i = 0; i < X.rows(); i++){
-      for (int j = 0 ; j < X.rows(); j++){
-        if (X(i,0) == X(j,0)){
-          temp++; 
-        }
-      }
-      if( temp == 1){
-        convert = false; 
-      }
-    }
-   
-    if (convert){
-      // we can convert the data
-      Eigen::MatrixXd SSTAT = createSuffStat( Y, X, is_logNormal); 
-      std::vector<double> uniqueX = unique_list(X);
-      Eigen::MatrixXd temp_X(uniqueX.size(),1);
-      for (int i = 0; i < uniqueX.size(); i++){
-         temp_X(i,0) = uniqueX[i]; 
-      }
-      X = temp_X; 
-      Y = SSTAT; 
-      suff_stat = true; 
-    }
-  }
-  
-  double divisor = get_diviosor( Y,  X); 
-  
-  if (suff_stat){
-    Y = cleanSuffStat(Y,X,is_logNormal);  
-  }else{
-    Y = (1/divisor)*Y; // scale the data with the divisor term. 
-  }
-  double  max_dose = X.maxCoeff(); 
-  X = X/max_dose; 
-
-  bool bConstVar = (bool)options[5]; // check if it is constant variance
-  bool is_increasing = (bool)options[4];
-  double alpha = (double)options[3];
-  double bk_prob = (double)options[2];
-  double bmrf  = (double)options[1];
-  int riskType = (int)options[0];
-  
-  int nparms = priors.rows();
-  
-
-  ///////////////////////////////////////////////////////////////////////
-  if (suff_stat){
-    Eigen::MatrixXd tY = Y.col(1);
-    Y.col(1) = Y.col(2);
-    Y.col(2) = tY;
-  }
-  ////////////////////////////////////////////////////////////////////////
-  IDcontinuousPrior model_prior(priors);
-  normalHILL_BMD_NC likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
-  normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
-  
-  
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y, X, suff_stat,  NORMAL_EXP5_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y, X, suff_stat,  NORMAL_EXP3_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y, X, suff_stat,  NORMAL_EXP5_DOWN);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat,  NORMAL_EXP3_DOWN);
-  lognormalHILL_BMD_NC likelihood_lnhill(Y, X, suff_stat,  0);
-  lognormalPOWER_BMD_NC likelihood_lnpower(Y, X, suff_stat,  0);
-  
-  /*normalHILL_BMD_NC likelihood(YY, X, suff_stat, bConstVar, 0);
-   normalHILL_BMD_NC likelihood(YY, X, suff_stat, bConstVar, 0);
-   normalHILL_BMD_NC likelihood(YY, X, suff_stat, bConstVar, 0);
-   */
-  std::vector<bool> fixedB(nparms);
-  std::vector<double> fixedV(nparms);
-  for (int i = 0; i < nparms; i++) {
-    fixedB[i] = false;
-    fixedV[i] = 0.0;
-  }
-
-  
-
-  CModelID_t ID;
-  bmd_analysis a;
-
-  if (is_logNormal){
-    switch(int(model[0])){
+                           Eigen::MatrixXd prior, NumericVector options,
+                           IntegerVector dist_type){
     
-    case 3:
-      if (is_increasing){
-        a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-                        (likelihood_lnexp3U,  model_prior, fixedB, fixedV,
-                        riskType, bmrf,bk_prob,
-                        is_increasing, alpha, 0.02);
-      }else{
-        a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-             (likelihood_lnexp3D,  model_prior, fixedB, fixedV,
-              riskType, bmrf,bk_prob,
-              is_increasing, alpha, 0.02);
-      }
-      break;
- 
-    case 5:
-      if (is_increasing){
-        a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-                            (likelihood_lnexp5U,  model_prior, fixedB, fixedV,
-                              riskType, bmrf,bk_prob,
-                              is_increasing, alpha, 0.02);
-      }else{
-        a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-                            (likelihood_lnexp5D,  model_prior, fixedB, fixedV,
-                              riskType, bmrf,bk_prob,
-                              is_increasing, alpha, 0.02);
-      }
-      break;
-    case 6:
-      a = bmd_analysis_CNC<lognormalHILL_BMD_NC, IDcontinuousPrior>
-          (likelihood_lnhill,  model_prior, fixedB, fixedV,
-           riskType, bmrf, bk_prob,
-           is_increasing, alpha, 0.02);break;
+    bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
+    double tail_p = (double)options[2]; 	double bmrf  = (double)options[1];
+    int    riskType = (int)options[0];   
+    unsigned int samples = (unsigned int) options[5];
     
-    case 8:
-      default:
-        a = bmd_analysis_CNC<lognormalPOWER_BMD_NC, IDcontinuousPrior>
-        (likelihood_lnpower,  model_prior, fixedB, fixedV,
-         riskType, bmrf, bk_prob,
-         is_increasing, alpha, 0.02);
-      break;
-    }
-  }else{
+    ////////////////////////////////////////////////
+    /// Set up the analysis
+    ////////////////////////////////////////////////
+    continuous_analysis anal; 
+    anal.Y       =    new double[Y.rows()]; 
+    anal.n       =    Y.rows(); 
+    anal.n_group =    new double[Y.rows()]; 
+    anal.sd      =    new double[Y.rows()]; 
+    anal.doses   =    new double[Y.rows()]; 
+    anal.model   =    (cont_model) model[0]; 
+    anal.disttype     = dist_type[0]; 
+    anal.isIncreasing = is_increasing; 
+    anal.alpha        = 0.005; //alpha for analyses; 
+    anal.BMD_type     = riskType; 
+    anal.BMR          = bmrf; 
+    anal.samples      = samples; 
+    anal.tail_prob    = tail_p; 
+    anal.suff_stat    = Y.cols()==3;
+    anal.parms        = prior.rows();
+    anal.prior_cols   = prior.cols(); 
+    anal.prior   = new double[prior.rows()*prior.cols()]; 
+    cp_prior(prior,anal.prior);
     
-    switch(int(model[0])){
-    //case 2:
-    //ID = eExp2;break;
-    case 3:
-      if (is_increasing){
-        a = bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-        (likelihood_nexp3U,  model_prior, fixedB, fixedV,
-         riskType, bmrf,bk_prob,
-         is_increasing, alpha, 0.02);
-      }else{
-        a = bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-        (likelihood_nexp3D,  model_prior, fixedB, fixedV,
-         riskType, bmrf,bk_prob,
-         is_increasing, alpha, 0.02);
+    for (int i = 0; i < Y.rows(); i++){
+      anal.Y[i] = Y(i,0); 
+      anal.doses[i] = X(i,0); 
+      if (Y.cols() == 3){ //sufficient statistics
+        anal.n_group[i] = Y(i,2);
+        anal.sd[i]      = Y(i,1); 
       }
-      break;
-      //case 4:
-      //ID = eExp4;break;*/
-    case 5:
-      if (is_increasing){
-        a = bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-        (likelihood_nexp5U,  model_prior, fixedB, fixedV,
-         riskType, bmrf,bk_prob,
-         is_increasing, alpha, 0.02);
-      }else{
-        a = bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
-        (likelihood_nexp5D,  model_prior, fixedB, fixedV,
-         riskType, bmrf,bk_prob,
-         is_increasing, alpha, 0.02);
-      }
-      break;
-    case 6:
-      
-      a = bmd_analysis_CNC<normalHILL_BMD_NC, IDcontinuousPrior>
-                          (likelihood_nhill,  model_prior, fixedB, fixedV,
-                           riskType, bmrf, bk_prob,
-                           is_increasing, alpha, 0.02);
-      break;
+    }
+    ////////////////////////////////////
+    continuous_model_result *result = new_continuous_model_result( anal.model,
+                                                                   anal.parms,
+                                                                   200); //have 200 equally spaced values
+    ////////////////////////////////////
+    estimate_sm_laplace(&anal,result);
+    List rV = covert_continuous_fit_to_list(result); 	
+    // free up memory
+    del_continuous_model_result(result); 
+    del_continuous_analysis(anal);
+    return rV; 
     
-    case 8:
-    default:
-      a = bmd_analysis_CNC<normalPOWER_BMD_NC, IDcontinuousPrior>
-                          (likelihood_power,  model_prior, fixedB, fixedV,
-                           riskType, bmrf, bk_prob,
-                           is_increasing, alpha, 0.02);
-      break;
-    }
   }
-  
-  double bmd  = a.MAP_BMD*max_dose;
-  double bmdl = a.BMD_CDF.inv(alpha)*max_dose;
-  double bmdu = a.BMD_CDF.inv(1-alpha)*max_dose;
-  
-  Eigen::MatrixXd model_CDF(99,2); 
-  for (int i = 1; i <100; i++){
-    model_CDF(i-1,0) = a.BMD_CDF.inv(double(i)/100.0)*max_dose;
-    model_CDF(i-1,1) = double(i)/100.0; 
-  }
-  
-  Eigen::MatrixXd tCOV;
-  Eigen::MatrixXd tEST;
-  
-  if (int(model[0])==3){
-    int ti,tj;
-    tCOV = Eigen::MatrixXd::Zero(a.COV.rows()-1,a.COV.rows()-1);
-    tEST = Eigen::MatrixXd::Zero(a.COV.rows()-1,1);
-    for (int i = 0; i < a.COV.rows(); i++)
-    {
-      for (int j = 0; j < a.COV.rows(); j++)
-      {
-        if ( (i != 2) && (j!=2)){
-          ti = (i >2)?i-1:i;
-          tj = (j >2)?j-1:j;
-          tCOV(ti,tj) = a.COV(i,j);
-          tEST(ti,0) = a.MAP_ESTIMATE(i,0);
-        }
-      }
-      
-    }
-  }else{
-    tCOV = a.COV;
-    tEST = a.MAP_ESTIMATE;
-  }
-  tEST = rescale_parms(tEST, (cont_model)model[0],max_dose,divisor, is_logNormal); 
-  
-  NumericVector  BMD      = NumericVector::create(bmd, bmdl,bmdu);
-  
-  
-  double logP    = tEST.rows() / 2 * log(2 * M_PI) - a.MAP +   0.5*log(max(0.0,tCOV.determinant()));
-  NumericVector  FINFO      = NumericVector::create(a.MAP,logP);
-  // setup deviance
-  
-  List data_out  = List::create( Named("bmd")= BMD,
-                                 Named("parameters") = tEST,
-                                 Named("cov") = tCOV,
-                                 Named("cdf") = model_CDF,
-                                 Named("F_INFO") = NumericVector::create(a.MAP,logP));  // the MAP ESTIMATE and the
-  // Laplace Integrating Constant
-  
-  return data_out;
-}
-

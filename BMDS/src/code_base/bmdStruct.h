@@ -40,18 +40,17 @@ struct continuous_analysis{
   double *prior; // a column order matrix px5 where p is 
                 // the number of parametersd
   int BMD_type; 
-  bool const_var; 
+  
   bool isIncreasing; 
-  bool isLognorm; 
   double BMR; 
   double tail_prob; 
-  
+  int    disttype; 
   double alpha; 
   est_method fitter; 
   int samples; // number of MCMC samples. 
   int burnin;  // burn in 
   int parms; // number of parameters 
-  int priorD; 
+  int prior_cols; 
 };
 
 

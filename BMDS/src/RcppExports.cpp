@@ -38,19 +38,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_continuous_single
-List run_continuous_single(NumericVector model, Eigen::MatrixXd Y, Eigen::MatrixXd X, Eigen::MatrixXd priors, NumericVector options, bool is_logNormal, bool suff_stat);
-RcppExport SEXP _BMDS_run_continuous_single(SEXP modelSEXP, SEXP YSEXP, SEXP XSEXP, SEXP priorsSEXP, SEXP optionsSEXP, SEXP is_logNormalSEXP, SEXP suff_statSEXP) {
+List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y, Eigen::MatrixXd X, Eigen::MatrixXd prior, NumericVector options, IntegerVector dist_type);
+RcppExport SEXP _BMDS_run_continuous_single(SEXP modelSEXP, SEXP YSEXP, SEXP XSEXP, SEXP priorSEXP, SEXP optionsSEXP, SEXP dist_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type model(modelSEXP);
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type Y(YSEXP);
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type priors(priorsSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type prior(priorSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type options(optionsSEXP);
-    Rcpp::traits::input_parameter< bool >::type is_logNormal(is_logNormalSEXP);
-    Rcpp::traits::input_parameter< bool >::type suff_stat(suff_statSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_continuous_single(model, Y, X, priors, options, is_logNormal, suff_stat));
+    Rcpp::traits::input_parameter< IntegerVector >::type dist_type(dist_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_continuous_single(model, Y, X, prior, options, dist_type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -122,7 +121,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_BMDS_run_single_dichotomous", (DL_FUNC) &_BMDS_run_single_dichotomous, 5},
     {"_BMDS_run_ma_dichotomous", (DL_FUNC) &_BMDS_run_ma_dichotomous, 5},
-    {"_BMDS_run_continuous_single", (DL_FUNC) &_BMDS_run_continuous_single, 7},
+    {"_BMDS_run_continuous_single", (DL_FUNC) &_BMDS_run_continuous_single, 6},
     {"_BMDS_run_continuous_ma_laplace", (DL_FUNC) &_BMDS_run_continuous_ma_laplace, 6},
     {"_BMDS_run_continuous_ma_mcmc", (DL_FUNC) &_BMDS_run_continuous_ma_mcmc, 6},
     {"_BMDS_run_dichotomous_single_mcmc", (DL_FUNC) &_BMDS_run_dichotomous_single_mcmc, 5},

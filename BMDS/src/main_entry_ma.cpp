@@ -83,6 +83,8 @@ List covert_continuous_fit_to_list(continuous_model_result *result){
 	break;	
 	case cont_model::power: 
 		sprintf(str,"Model: %s %s", "Power",dist); 
+  default: 
+    sprintf(str,"Model: %s %s", "Danger","Danger");
 	break;  
   }
   double maximum = result->max; 
@@ -104,8 +106,6 @@ List covert_continuous_fit_to_list(continuous_model_result *result){
 }
  
 /////////////////////////////////////////////////////////////////////////////
-//
-//
 //
 //
 ////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
       			                   Eigen::MatrixXd Y, Eigen::MatrixXd X,
       			                   NumericVector options){
 
-     bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
+    bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
 	 double tail_p = (double)options[2]; 	double bmrf  = (double)options[1];
 	 int    riskType = (int)options[0];   
      unsigned int samples = (unsigned int) options[5];

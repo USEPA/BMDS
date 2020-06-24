@@ -2,7 +2,7 @@
 # Uncomment the next 2 lines if pkgs are not being manually loaded
 #library(Rcpp)
 library(BMDS)
-library(rstan)
+#library(rstan)
 
 # Input data - Continuous2.dax - Individual dose-response
 M = matrix(0,nrow=26,ncol=4)
@@ -21,8 +21,6 @@ C = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc")
 Q = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F])
 
 library(BMDS)
-
-
 M2           <- matrix(0,nrow=5,ncol=4)
 colnames(M2) <- c("Dose","Resp","N","StDev")
 M2[, 1]      <- c(0,5,20,80,200)

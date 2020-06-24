@@ -9,8 +9,8 @@ run_ma_dichotomous <- function(data, priors, model_p, options1, options2) {
     .Call(`_BMDS_run_ma_dichotomous`, data, priors, model_p, options1, options2)
 }
 
-run_continuous_single <- function(model, Y, X, priors, options, is_logNormal, suff_stat) {
-    .Call(`_BMDS_run_continuous_single`, model, Y, X, priors, options, is_logNormal, suff_stat)
+run_continuous_single <- function(model, Y, X, prior, options, dist_type) {
+    .Call(`_BMDS_run_continuous_single`, model, Y, X, prior, options, dist_type)
 }
 
 run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X, options) {

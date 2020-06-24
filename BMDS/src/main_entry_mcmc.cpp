@@ -319,7 +319,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
     Eigen::MatrixXd D(input->n,1);
     
     
-    Eigen::MatrixXd pr(input->parms,input->priorD);
+    Eigen::MatrixXd pr(input->parms,input->prior_cols);
     
     std::vector<bool>   fixedB(pr.rows());
     std::vector<double> fixedV(pr.rows()); 
@@ -342,7 +342,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
     D = (1/max_dose)*D; 
     for (int i = 0; i < input->parms; i++){
        cerr.flush();
-      for (int j = 0; j < input->priorD; j++){
+      for (int j = 0; j < input->prior_cols; j++){
         pr(i,j) = input->prior[i + j*input->parms]; 
       }
  
@@ -359,7 +359,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
     
     switch (input->model ){
     case cont_model::hill:
-        if (input->isLognorm){
+        if (input->disttype == distribution::log_normal){
         
             Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalHILL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
                                                                                                     fixedB,  fixedV,  input->isIncreasing,                                                                                           input->tail_prob,input->suff_stat,
@@ -371,14 +371,14 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
                                                                                               fixedB,  fixedV,  input->isIncreasing,
                                                                                               input->tail_prob, input->suff_stat,
                                                                                               input->BMR, input->BMD_type, 
-                                                                                              input->const_var,
+                                                                                              input->disttype == distribution::normal,
                                                                                               input->alpha,input->samples,0);
         }
         break;
     case cont_model::exp_3:
       adverseR = input->isIncreasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
  
-      if (input->isLognorm){
+      if (input->disttype == distribution::log_normal){
         
         Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalEXPONENTIAL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
                                                                                                        fixedB,  fixedV,  input->isIncreasing,
@@ -391,7 +391,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
                                                                                                   fixedB,  fixedV,  input->isIncreasing,
                                                                                                   input->tail_prob, input->suff_stat,
                                                                                                   input->BMR, input->BMD_type, 
-                                                                                                  input->const_var,
+                                                                                                  input->disttype == distribution::normal,
                                                                                                   input->alpha,input->samples,adverseR);
       }
 
@@ -399,7 +399,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
     case cont_model::exp_5:
       
       adverseR = input->isIncreasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
-      if (input->isLognorm){
+      if (input->disttype == distribution::log_normal){
         
         Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalEXPONENTIAL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
                                                                                                        fixedB,  fixedV,  input->isIncreasing,
@@ -411,13 +411,13 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
                                                                                                   fixedB,  fixedV,  input->isIncreasing,
                                                                                                   input->tail_prob, input->suff_stat,
                                                                                                   input->BMR, input->BMD_type, 
-                                                                                                  input->const_var,
+                                                                                                  input->disttype == distribution::normal,
                                                                                                   input->alpha,input->samples,adverseR);
       }
    
       break;
     case cont_model::power:
-      if (input->isLognorm){
+      if (input->disttype == distribution::log_normal){
         
         Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalPOWER_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
                                                                                                  fixedB,  fixedV, input->isIncreasing,
@@ -429,7 +429,7 @@ void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
                                                                                            fixedB,  fixedV,  input->isIncreasing,
                                                                                            input->tail_prob, input->suff_stat,
                                                                                             input->BMR, input->BMD_type, 
-                                                                                            input->const_var,
+                                                                                            input->disttype == distribution::normal,
                                                                                             input->alpha,input->samples,0);
       }
       break;
@@ -516,7 +516,16 @@ List run_continuous_single_mcmc(NumericVector model,
   D = (1/max_dose)*D;
   
   continuous_analysis mcmcAnal; 
-
+  distribution dtype; 
+  if (is_logNormal){
+    dtype = distribution::log_normal; 
+  }else{
+    if (bConstVar){
+      dtype = distribution::normal;
+    }else{
+      dtype = distribution::normal_ncv; 
+    }
+  }
   
   mcmcAnal.model   = (cont_model) model[0]; 
   mcmcAnal.Y       =    new double[Y.rows()]; 
@@ -526,9 +535,8 @@ List run_continuous_single_mcmc(NumericVector model,
   mcmcAnal.doses   =    new double[Y.rows()]; 
   mcmcAnal.prior   =    new double[priors.rows()*priors.cols()]; 
   mcmcAnal.isIncreasing = is_increasing; 
-  mcmcAnal.const_var    = bConstVar; 
-  mcmcAnal.isLognorm    = is_logNormal; 
-  mcmcAnal.priorD       =  priors.cols(); 
+  mcmcAnal.disttype     = dtype; 
+  mcmcAnal.prior_cols   = priors.cols(); 
   mcmcAnal.parms        = priors.rows(); 
   mcmcAnal.alpha        = alpha; 
   mcmcAnal.BMD_type     = riskType; 
@@ -559,7 +567,7 @@ List run_continuous_single_mcmc(NumericVector model,
   }
 
   for (int i = 0; i < mcmcAnal.parms; i++ ){
-    for (int j = 0; j < mcmcAnal.priorD; j++){
+    for (int j = 0; j < mcmcAnal.prior_cols; j++){
       mcmcAnal.prior[i+j*mcmcAnal.parms] = priors(i,j); 
     }
   }

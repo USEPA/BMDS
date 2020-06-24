@@ -88,5 +88,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                          continuous_analysis *CA ,
                          continuousMA_result *res);
 
+void estimate_sm_laplace(continuous_analysis *CA ,
+                         continuous_model_result *res);
+
 
 #endif

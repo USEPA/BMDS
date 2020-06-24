@@ -127,7 +127,16 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     
     options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,point_p,samples)
     
-   
+    ## pick a distribution type 
+    if (is_log_normal){
+      dist_type = 3 #log normal
+    }else{
+      if (constVar){
+          dist_type = 1 # normal
+      }else{
+          dist_type = 2 # normal-ncv
+      }
+    }
     
     if (fit_type == "mcmc"){
       
@@ -145,8 +154,9 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       return(rvals)
     }else{
       
+      
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
-  						                          PR[[1]],options, is_log_normal, sstat)
+  						                          PR[[1]],options, dist_type)
       if (type_of_fit == 2){
         #MLE was chosen
         class(rvals) <- "BMDcont_fit_mle"
