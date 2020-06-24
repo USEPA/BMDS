@@ -329,48 +329,6 @@ List run_continuous_single_mcmc(NumericVector model,
   double bmrf  = (double)options[1];
   int riskType = (int)options[0];
   
-  
-  bool convert = true; 
-  double  max_dose = D.maxCoeff(); 
-  
-  if (!suff_stat){
-    // check to see if it can be converted into sufficient statistics4
-    int temp = 0; 
-    for (int i = 0; i < D.rows(); i++){
-      for (int j = 0 ; j < D.rows(); j++){
-        if (D(i,0) == D(j,0)){
-          temp++; 
-        }
-      }
-      if( temp == 1){
-        convert = false; 
-      }
-    }
-    
-    if (convert){
-      // we can convert the data
-      Eigen::MatrixXd SSTAT = createSuffStat( Y, D, is_logNormal); 
-      std::vector<double> uniqueX = unique_list(D);
-      Eigen::MatrixXd temp_D(uniqueX.size(),1);
-      for (int i = 0; i < uniqueX.size(); i++){
-        temp_D(i,0) = uniqueX[i]; 
-      }
-      D = temp_D; 
-      Y = SSTAT; 
-      suff_stat = true; 
-    }
-  }
-  
-  double divisor = get_diviosor( Y,  D); 
-  
-  if (suff_stat){
-    Y = cleanSuffStat(Y,D,is_logNormal);  
-  }else{
-    Y = (1/divisor)*Y; // scale the data with the divisor term. 
-  }
-  
-  D = (1/max_dose)*D;
-  
   continuous_analysis *mcmcAnal = new continuous_analysis; 
   distribution dtype; 
   if (is_logNormal){
