@@ -91,5 +91,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
 void estimate_sm_laplace(continuous_analysis *CA ,
                          continuous_model_result *res);
 
+void estimate_sm_mcmc(continuous_analysis *CA,
+                      continuous_model_result *res,
+                      bmd_analysis_MCMC *mcmc); 
+
 
 #endif

@@ -109,32 +109,32 @@ List covert_continuous_fit_to_list(continuous_model_result *result){
 //
 //
 ////////////////////////////////////////////////////////////////////////////
-List convert_continuous_maresults_to_list(continuousMA_result *result){
-	
-	List fittedModels; 
-	char str[80]; 
-	
-	for(int i = 0; i < result->nmodels ; i++){
-		sprintf(str,"Fitted_Model_%d",i+1);
-		fittedModels.push_back(covert_continuous_fit_to_list(result->models[i]),
-							   str); 
-	}
-	NumericMatrix ma_bmd_dist(result->dist_numE,2); 
-	NumericVector post_probs(result->nmodels);
-	for(int i = 0; i < result->dist_numE; i++){
-		ma_bmd_dist(i,0) = result->bmd_dist[i]; 
-		ma_bmd_dist(i,1) = result->bmd_dist[i + result->dist_numE];
-	}
-	for (int i = 0; i < result->nmodels; i++){
-		post_probs[i] = result->post_probs[i]; 
-	}
-	
-	fittedModels.push_back(ma_bmd_dist,"BMD_CDF"); 
-	fittedModels.push_back(post_probs ,"posterior_probs"); 
-	
-	return fittedModels; 
-}
 
+List convert_continuous_maresults_to_list(continuousMA_result *result){
+  
+  List fittedModels; 
+  char str[80]; 
+  
+  for(int i = 0; i < result->nmodels ; i++){
+    sprintf(str,"Fitted_Model_%d",i+1);
+    fittedModels.push_back(covert_continuous_fit_to_list(result->models[i]),
+                           str); 
+  }
+  NumericMatrix ma_bmd_dist(result->dist_numE,2); 
+  NumericVector post_probs(result->nmodels);
+  for(int i = 0; i < result->dist_numE; i++){
+    ma_bmd_dist(i,0) = result->bmd_dist[i]; 
+    ma_bmd_dist(i,1) = result->bmd_dist[i + result->dist_numE];
+  }
+  for (int i = 0; i < result->nmodels; i++){
+    post_probs[i] = result->post_probs[i]; 
+  }
+  
+  fittedModels.push_back(ma_bmd_dist,"BMD_CDF"); 
+  fittedModels.push_back(post_probs ,"posterior_probs"); 
+  
+  return fittedModels; 
+}
 /////////////////////////////////////////////////////////////////////////////
 //
 //
@@ -145,10 +145,10 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
       			                   Eigen::MatrixXd Y, Eigen::MatrixXd X,
       			                   NumericVector options){
 
-    bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
+   bool   is_increasing = (bool)options[4]; 	double alpha = (double)options[3];
 	 double tail_p = (double)options[2]; 	double bmrf  = (double)options[1];
 	 int    riskType = (int)options[0];   
-     unsigned int samples = (unsigned int) options[5];
+   unsigned int samples = (unsigned int) options[5];
    
 	 continuousMA_analysis ma_anal;
 	
@@ -358,6 +358,7 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
   delete ma_result->post_probs; 
   delete ma_result->bmd_dist; 
   delete ma_result; 
+  
   del_continuous_analysis(anal);
   del_continuousMA_analysis(ma_anal); 
   return rV; 

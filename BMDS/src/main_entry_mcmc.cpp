@@ -62,6 +62,9 @@
 
 #include "bmds_entry.h"
 #include "bmdStruct.h"
+#include "continuous_clean_aux.h"
+#include "continuous_entry_code.h"
+#include "list_r_conversion.h"
 
 using namespace Rcpp;
 using namespace std;
@@ -304,153 +307,6 @@ List run_dichotomous_single_mcmc(NumericVector model,
 
 
 
-void bmd_single_continuous_mcmc_fitter(const continuous_analysis *input,
-                                             bmd_analysis_MCMC * output)
-  {
-   
- 
-    int input_cols;
-    if (input->suff_stat){
-      input_cols = 3; 
-    }else{
-      input_cols = 1; 
-    }
-    Eigen::MatrixXd Y(input->n,input_cols); 
-    Eigen::MatrixXd D(input->n,1);
-    
-    
-    Eigen::MatrixXd pr(input->parms,input->prior_cols);
-    
-    std::vector<bool>   fixedB(pr.rows());
-    std::vector<double> fixedV(pr.rows()); 
-
-    double max_dose = input->doses[0]; 
-    
-    for (int i = 0; i < input->n; i++){
-      Y(i,0) = input->Y[i];
-      D(i,0) = input->doses[i]; 
-      if (input->suff_stat){
-        Y(i,1) = input->sd[i]; 
-        Y(i,2) = input->n_group[i]; 
-      }
-      if (input->doses[i] > max_dose){
-        max_dose = input->doses[i]; 
-      }
-    }
-   
-   
-    D = (1/max_dose)*D; 
-    for (int i = 0; i < input->parms; i++){
-       cerr.flush();
-      for (int j = 0; j < input->prior_cols; j++){
-        pr(i,j) = input->prior[i + j*input->parms]; 
-      }
- 
-    }
-   
-    int degree = 1;
-    for(int i = 0; i < pr.rows(); i++){
-      fixedB[i] = false;
-      fixedV[i] = 0;
-    }
-    
-    mcmcSamples Rval;
-    int adverseR = 0; 
-    
-    switch (input->model ){
-    case cont_model::hill:
-        if (input->disttype == distribution::log_normal){
-        
-            Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalHILL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                                    fixedB,  fixedV,  input->isIncreasing,                                                                                           input->tail_prob,input->suff_stat,
-                                                                                                    input->BMR, input->BMD_type,
-                                                                                                    input->alpha,input->samples,0);
-        }else{
-       
-            Rval = MCMC_bmd_analysis_CONTINUOUS_NORMAL< normalHILL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                              fixedB,  fixedV,  input->isIncreasing,
-                                                                                              input->tail_prob, input->suff_stat,
-                                                                                              input->BMR, input->BMD_type, 
-                                                                                              input->disttype == distribution::normal,
-                                                                                              input->alpha,input->samples,0);
-        }
-        break;
-    case cont_model::exp_3:
-      adverseR = input->isIncreasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
- 
-      if (input->disttype == distribution::log_normal){
-        
-        Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalEXPONENTIAL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                                       fixedB,  fixedV,  input->isIncreasing,
-                                                                                                       input->tail_prob,input->suff_stat,
-                                                                                                       input->BMR, input->BMD_type,
-                                                                                                       input->alpha,input->samples,adverseR);
-      }else{
-   
-        Rval = MCMC_bmd_analysis_CONTINUOUS_NORMAL< normalEXPONENTIAL_BMD_NC,IDcontinuousPrior>  (Y, D, pr, 
-                                                                                                  fixedB,  fixedV,  input->isIncreasing,
-                                                                                                  input->tail_prob, input->suff_stat,
-                                                                                                  input->BMR, input->BMD_type, 
-                                                                                                  input->disttype == distribution::normal,
-                                                                                                  input->alpha,input->samples,adverseR);
-      }
-
-      break;
-    case cont_model::exp_5:
-      
-      adverseR = input->isIncreasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
-      if (input->disttype == distribution::log_normal){
-        
-        Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalEXPONENTIAL_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                                       fixedB,  fixedV,  input->isIncreasing,
-                                                                                                       input->tail_prob,input->suff_stat,
-                                                                                                       input->BMR, input->BMD_type,
-                                                                                                       input->alpha,input->samples,adverseR);
-      }else{
-        Rval = MCMC_bmd_analysis_CONTINUOUS_NORMAL< normalEXPONENTIAL_BMD_NC,IDcontinuousPrior>  (Y, D, pr, 
-                                                                                                  fixedB,  fixedV,  input->isIncreasing,
-                                                                                                  input->tail_prob, input->suff_stat,
-                                                                                                  input->BMR, input->BMD_type, 
-                                                                                                  input->disttype == distribution::normal,
-                                                                                                  input->alpha,input->samples,adverseR);
-      }
-   
-      break;
-    case cont_model::power:
-      if (input->disttype == distribution::log_normal){
-        
-        Rval = MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL< lognormalPOWER_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                                 fixedB,  fixedV, input->isIncreasing,
-                                                                                                  input->BMR, input->BMD_type, input->tail_prob,
-                                                                                                  input->suff_stat,
-                                                                                                  input->alpha,input->samples,0);
-      }else{
-        Rval = MCMC_bmd_analysis_CONTINUOUS_NORMAL< normalPOWER_BMD_NC,IDcontinuousPrior> (Y, D, pr, 
-                                                                                           fixedB,  fixedV,  input->isIncreasing,
-                                                                                           input->tail_prob, input->suff_stat,
-                                                                                            input->BMR, input->BMD_type, 
-                                                                                            input->disttype == distribution::normal,
-                                                                                            input->alpha,input->samples,0);
-      }
-      break;
-      
-    
-    }
-    
-    output->samples = input->samples; 
-    for (int i = 0; i < input->samples; i++){
-       output->BMDS[i] = Rval.BMD(0,i)*max_dose; // rescale 
-      for (int j = 0; j < Rval.samples.rows();j++){
-        output->parms[j+i*Rval.samples.rows()] = Rval.samples(j,i); 
-      }
-    }
-    
-    return; 
-    
-  }
-
-
-
 //////////////////////////////////////////////////////////////////////////
 // function: run_dichotomous_single_mcmc
 // purpose: takes input, which is assumed to be correct (i.e., filtered
@@ -515,7 +371,7 @@ List run_continuous_single_mcmc(NumericVector model,
   
   D = (1/max_dose)*D;
   
-  continuous_analysis mcmcAnal; 
+  continuous_analysis *mcmcAnal = new continuous_analysis; 
   distribution dtype; 
   if (is_logNormal){
     dtype = distribution::log_normal; 
@@ -527,28 +383,28 @@ List run_continuous_single_mcmc(NumericVector model,
     }
   }
   
-  mcmcAnal.model   = (cont_model) model[0]; 
-  mcmcAnal.Y       =    new double[Y.rows()]; 
-  mcmcAnal.n       =    Y.rows(); 
-  mcmcAnal.n_group =    new double[Y.rows()]; 
-  mcmcAnal.sd      =    new double[Y.rows()]; 
-  mcmcAnal.doses   =    new double[Y.rows()]; 
-  mcmcAnal.prior   =    new double[priors.rows()*priors.cols()]; 
-  mcmcAnal.isIncreasing = is_increasing; 
-  mcmcAnal.disttype     = dtype; 
-  mcmcAnal.prior_cols   = priors.cols(); 
-  mcmcAnal.parms        = priors.rows(); 
-  mcmcAnal.alpha        = alpha; 
-  mcmcAnal.BMD_type     = riskType; 
-  mcmcAnal.BMR          = bmrf; 
-  mcmcAnal.samples      = samples; 
-  mcmcAnal.burnin       = burnin; 
-  mcmcAnal.tail_prob    = tail_p; 
-  mcmcAnal.suff_stat    = suff_stat; 
+  mcmcAnal->model   = (cont_model) model[0]; 
+  mcmcAnal->Y       =    new double[Y.rows()]; 
+  mcmcAnal->n       =    Y.rows(); 
+  mcmcAnal->n_group =    new double[Y.rows()]; 
+  mcmcAnal->sd      =    new double[Y.rows()]; 
+  mcmcAnal->doses   =    new double[Y.rows()]; 
+  mcmcAnal->prior   =    new double[priors.rows()*priors.cols()]; 
+  mcmcAnal->isIncreasing = is_increasing; 
+  mcmcAnal->disttype     = dtype; 
+  mcmcAnal->prior_cols   = priors.cols(); 
+  mcmcAnal->parms        = priors.rows(); 
+  mcmcAnal->alpha        = alpha; 
+  mcmcAnal->BMD_type     = riskType; 
+  mcmcAnal->BMR          = bmrf; 
+  mcmcAnal->samples      = samples; 
+  mcmcAnal->burnin       = burnin; 
+  mcmcAnal->tail_prob    = tail_p; 
+  mcmcAnal->suff_stat    = suff_stat; 
   
-  bmd_analysis_MCMC  output; 
-  output.parms = new double[samples*mcmcAnal.parms]; 
-  output.BMDS  = new double[samples]; 
+  bmd_analysis_MCMC  *output = new bmd_analysis_MCMC; 
+  output->parms = new double[samples*mcmcAnal->parms]; 
+  output->BMDS  = new double[samples]; 
   
   ///////////////////////////////////////////////////////////////////////
   if (suff_stat){
@@ -558,49 +414,37 @@ List run_continuous_single_mcmc(NumericVector model,
   }
   
   for (int i = 0; i < Y.rows(); i++){
-    mcmcAnal.Y[i] = Y(i,0); 
-    mcmcAnal.doses[i] = D(i,0); 
+    mcmcAnal->Y[i] = Y(i,0); 
+    mcmcAnal->doses[i] = D(i,0); 
     if (suff_stat){
-      mcmcAnal.n_group[i] = Y(i,2);
-      mcmcAnal.sd[i]      = Y(i,1); 
+      mcmcAnal->n_group[i] = Y(i,2);
+      mcmcAnal->sd[i]      = Y(i,1); 
     }
   }
 
-  for (int i = 0; i < mcmcAnal.parms; i++ ){
-    for (int j = 0; j < mcmcAnal.prior_cols; j++){
-      mcmcAnal.prior[i+j*mcmcAnal.parms] = priors(i,j); 
+  for (int i = 0; i < mcmcAnal->parms; i++ ){
+    for (int j = 0; j < mcmcAnal->prior_cols; j++){
+      mcmcAnal->prior[i+j*mcmcAnal->parms] = priors(i,j); 
     }
   }
+  ////////////////////////////////////
+  continuous_model_result *res = new_continuous_model_result( mcmcAnal->model,
+                                                              mcmcAnal->parms,
+                                                              200);
+  
+  estimate_sm_mcmc(mcmcAnal,
+                   res     ,
+                   output) ;
   
   
-  bmd_single_continuous_mcmc_fitter(&mcmcAnal,
-                                    &output);
-  
-  Eigen::MatrixXd BMDS(output.samples,1); 
-  Eigen::MatrixXd PARMS(output.samples,priors.rows()); 
-  
-  // disregard the burnin i.e. i = options[3]
-  for (int i = 0; i < output.samples; i++){
-    BMDS(i,0) = output.BMDS[i]*max_dose; 
-    for (int j=0; j < priors.rows(); j++){
-      PARMS(i,j) = output.parms[j + i* priors.rows()]; 
-    }
-    Eigen::MatrixXd temp = rescale_parms(PARMS.row(i).transpose(), mcmcAnal.model ,
-                                          max_dose, divisor, is_logNormal); 
-    PARMS.row(i) = temp.transpose(); 
-  }
- 
-  List data_out  = List::create(Named("BMD")=BMDS,
-                                Named("PARMS")=PARMS); 
+  List rV = covert_continuous_fit_to_list(res); 
+  List t2 = covert_MCMC_fit_to_list(output);
+  List data_out  = List::create(Named("mcmc_result")=t2,
+                                Named("fitted_model")=rV); 
 
-
-  delete(mcmcAnal.Y); 
-  delete(mcmcAnal.n_group); 
-  delete(mcmcAnal.sd); 
-  delete(mcmcAnal.doses); 
-  delete(mcmcAnal.prior); 
-  delete(output.parms); 
-  delete(output.BMDS); 
+  del_mcmc_analysis(output);
+  del_continuous_model_result(res); 
+  del_continuous_analysis(*mcmcAnal);
 
   return wrap(data_out);
 }
