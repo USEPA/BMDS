@@ -1,0 +1,6 @@
+*.tar.gz
+*.bat
+*.o
+*.Rhistory
+*.so
+*.RData
