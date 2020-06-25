@@ -13,7 +13,7 @@
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    prior="default", BMD_TYPE = "sd", sstat = T,
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
-                                   alpha = 0.05,samples = 51000,
+                                   alpha = 0.05,samples = 21000,
                                    burnin = 1000){
     myD = Y; 
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
@@ -149,7 +149,8 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$model <- model_type
       rvals$options <- options
       rvals$data <- DATA
-      rvals$bmd <- c(mean(rvals$BMD,na.rm=TRUE),quantile(rvals$BMD,c(alpha,1-alpha),na.rm=TRUE))
+      rvals$bmd <- c(mean(rvals$mcmc_result$BMD_samples,na.rm=TRUE),quantile(rvals$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE))
+      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       rvals$prior <- PR
       return(rvals)
     }else{
@@ -166,6 +167,10 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
         class(rvals) <- "BMDcont_fit_laplace"
         rvals$prior <- PR
       }
+      te <- splinefun(rvals$bmd_dist[,2],rvals$bmd_dist[,1],method="hyman")
+    
+      rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+      names(rvals$bmd) <- c("BMD","BMDL","BMDU") 
       rvals$model   <- model_type
       rvals$options <- options
       rvals$data    <- DATA
