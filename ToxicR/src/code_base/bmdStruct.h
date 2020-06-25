@@ -20,7 +20,7 @@ struct dichotomous_analysis{
   double *n_group; //
   double *prior; // a column order matrix px5 where p is 
                  // the number of parametersd
-  int BMD_type; 
+  int    BMD_type; 
   double BMR; 
   double alpha; 
   est_method fitter; 
@@ -28,6 +28,24 @@ struct dichotomous_analysis{
   int parms; // number of parameters 
 };
 
+struct dichotomous_model_result{
+  int      model;           // dichotomous model specification
+  int      nparms; 		      //number of parameters in the model
+  double  *parms;           // Parameter Estimate 
+  double  *cov;             // Covariance Estimate
+  double   max;             // Value of the Likelihood/Posterior at the maximum
+  int      dist_numE;       // number of entries in rows for the bmd_dist
+  double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+};
+
+
+struct dichotomousMA_result{
+  int                      nmodels; //number of models for each 
+  dichotomous_model_result **models; //priors
+  int                    dist_numE; // number of entries in rows for the bmd_dist
+  double               *post_probs; // posterior probabilities
+  double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+};
 
 struct continuous_analysis{
   cont_model model; 
@@ -52,9 +70,6 @@ struct continuous_analysis{
   int parms; // number of parameters 
   int prior_cols; 
 };
-
-
-
 struct continuousMA_analysis{
   int    nmodels;         //number of models for each 
   double **priors;     //priors
@@ -65,8 +80,6 @@ struct continuousMA_analysis{
   int    *disttype;    // given distribution type
   double *modelPriors; // prior probability on the model
 };
-
-
 struct continuous_model_result{
   int      model;           // continuous model specification
   int      dist;            // distribution_type 
@@ -77,7 +90,6 @@ struct continuous_model_result{
   int      dist_numE;       // number of entries in rows for the bmd_dist
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
-
 struct continuousMA_result{
   int                      nmodels; //number of models for each 
   continuous_model_result **models; //priors
