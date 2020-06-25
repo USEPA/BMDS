@@ -2,30 +2,30 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 run_single_dichotomous <- function(model, data, prior, options1, options2) {
-    .Call(`_BMDS_run_single_dichotomous`, model, data, prior, options1, options2)
+    .Call(`_ToxicR_run_single_dichotomous`, model, data, prior, options1, options2)
 }
 
 run_ma_dichotomous <- function(data, priors, model_p, options1, options2) {
-    .Call(`_BMDS_run_ma_dichotomous`, data, priors, model_p, options1, options2)
+    .Call(`_ToxicR_run_ma_dichotomous`, data, priors, model_p, options1, options2)
 }
 
 run_continuous_single <- function(model, Y, X, prior, options, dist_type) {
-    .Call(`_BMDS_run_continuous_single`, model, Y, X, prior, options, dist_type)
+    .Call(`_ToxicR_run_continuous_single`, model, Y, X, prior, options, dist_type)
 }
 
 run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X, options) {
-    .Call(`_BMDS_run_continuous_ma_laplace`, model_priors, model_type, dist_type, Y, X, options)
+    .Call(`_ToxicR_run_continuous_ma_laplace`, model_priors, model_type, dist_type, Y, X, options)
 }
 
 run_continuous_ma_mcmc <- function(model_priors, model_type, dist_type, Y, X, options) {
-    .Call(`_BMDS_run_continuous_ma_mcmc`, model_priors, model_type, dist_type, Y, X, options)
+    .Call(`_ToxicR_run_continuous_ma_mcmc`, model_priors, model_type, dist_type, Y, X, options)
 }
 
 run_dichotomous_single_mcmc <- function(model, Y, D, pr, options) {
-    .Call(`_BMDS_run_dichotomous_single_mcmc`, model, Y, D, pr, options)
+    .Call(`_ToxicR_run_dichotomous_single_mcmc`, model, Y, D, pr, options)
 }
 
 run_continuous_single_mcmc <- function(model, Y, D, priors, options, is_logNormal, suff_stat) {
-    .Call(`_BMDS_run_continuous_single_mcmc`, model, Y, D, priors, options, is_logNormal, suff_stat)
+    .Call(`_ToxicR_run_continuous_single_mcmc`, model, Y, D, priors, options, is_logNormal, suff_stat)
 }
 

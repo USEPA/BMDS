@@ -9,7 +9,7 @@ using namespace Rcpp;
 
 // run_single_dichotomous
 List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data, Eigen::MatrixXd prior, NumericVector options1, IntegerVector options2);
-RcppExport SEXP _BMDS_run_single_dichotomous(SEXP modelSEXP, SEXP dataSEXP, SEXP priorSEXP, SEXP options1SEXP, SEXP options2SEXP) {
+RcppExport SEXP _ToxicR_run_single_dichotomous(SEXP modelSEXP, SEXP dataSEXP, SEXP priorSEXP, SEXP options1SEXP, SEXP options2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -24,7 +24,7 @@ END_RCPP
 }
 // run_ma_dichotomous
 List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector model_p, NumericVector options1, IntegerVector options2);
-RcppExport SEXP _BMDS_run_ma_dichotomous(SEXP dataSEXP, SEXP priorsSEXP, SEXP model_pSEXP, SEXP options1SEXP, SEXP options2SEXP) {
+RcppExport SEXP _ToxicR_run_ma_dichotomous(SEXP dataSEXP, SEXP priorsSEXP, SEXP model_pSEXP, SEXP options1SEXP, SEXP options2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,7 +39,7 @@ END_RCPP
 }
 // run_continuous_single
 List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y, Eigen::MatrixXd X, Eigen::MatrixXd prior, NumericVector options, IntegerVector dist_type);
-RcppExport SEXP _BMDS_run_continuous_single(SEXP modelSEXP, SEXP YSEXP, SEXP XSEXP, SEXP priorSEXP, SEXP optionsSEXP, SEXP dist_typeSEXP) {
+RcppExport SEXP _ToxicR_run_continuous_single(SEXP modelSEXP, SEXP YSEXP, SEXP XSEXP, SEXP priorSEXP, SEXP optionsSEXP, SEXP dist_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -55,7 +55,7 @@ END_RCPP
 }
 // run_continuous_ma_laplace
 List run_continuous_ma_laplace(List model_priors, NumericVector model_type, NumericVector dist_type, Eigen::MatrixXd Y, Eigen::MatrixXd X, NumericVector options);
-RcppExport SEXP _BMDS_run_continuous_ma_laplace(SEXP model_priorsSEXP, SEXP model_typeSEXP, SEXP dist_typeSEXP, SEXP YSEXP, SEXP XSEXP, SEXP optionsSEXP) {
+RcppExport SEXP _ToxicR_run_continuous_ma_laplace(SEXP model_priorsSEXP, SEXP model_typeSEXP, SEXP dist_typeSEXP, SEXP YSEXP, SEXP XSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -71,7 +71,7 @@ END_RCPP
 }
 // run_continuous_ma_mcmc
 List run_continuous_ma_mcmc(List model_priors, NumericVector model_type, NumericVector dist_type, Eigen::MatrixXd Y, Eigen::MatrixXd X, NumericVector options);
-RcppExport SEXP _BMDS_run_continuous_ma_mcmc(SEXP model_priorsSEXP, SEXP model_typeSEXP, SEXP dist_typeSEXP, SEXP YSEXP, SEXP XSEXP, SEXP optionsSEXP) {
+RcppExport SEXP _ToxicR_run_continuous_ma_mcmc(SEXP model_priorsSEXP, SEXP model_typeSEXP, SEXP dist_typeSEXP, SEXP YSEXP, SEXP XSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -87,7 +87,7 @@ END_RCPP
 }
 // run_dichotomous_single_mcmc
 List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd pr, NumericVector options);
-RcppExport SEXP _BMDS_run_dichotomous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP prSEXP, SEXP optionsSEXP) {
+RcppExport SEXP _ToxicR_run_dichotomous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP prSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -102,7 +102,7 @@ END_RCPP
 }
 // run_continuous_single_mcmc
 List run_continuous_single_mcmc(NumericVector model, Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd priors, NumericVector options, bool is_logNormal, bool suff_stat);
-RcppExport SEXP _BMDS_run_continuous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP priorsSEXP, SEXP optionsSEXP, SEXP is_logNormalSEXP, SEXP suff_statSEXP) {
+RcppExport SEXP _ToxicR_run_continuous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP priorsSEXP, SEXP optionsSEXP, SEXP is_logNormalSEXP, SEXP suff_statSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -119,17 +119,17 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_BMDS_run_single_dichotomous", (DL_FUNC) &_BMDS_run_single_dichotomous, 5},
-    {"_BMDS_run_ma_dichotomous", (DL_FUNC) &_BMDS_run_ma_dichotomous, 5},
-    {"_BMDS_run_continuous_single", (DL_FUNC) &_BMDS_run_continuous_single, 6},
-    {"_BMDS_run_continuous_ma_laplace", (DL_FUNC) &_BMDS_run_continuous_ma_laplace, 6},
-    {"_BMDS_run_continuous_ma_mcmc", (DL_FUNC) &_BMDS_run_continuous_ma_mcmc, 6},
-    {"_BMDS_run_dichotomous_single_mcmc", (DL_FUNC) &_BMDS_run_dichotomous_single_mcmc, 5},
-    {"_BMDS_run_continuous_single_mcmc", (DL_FUNC) &_BMDS_run_continuous_single_mcmc, 7},
+    {"_ToxicR_run_single_dichotomous", (DL_FUNC) &_ToxicR_run_single_dichotomous, 5},
+    {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 5},
+    {"_ToxicR_run_continuous_single", (DL_FUNC) &_ToxicR_run_continuous_single, 6},
+    {"_ToxicR_run_continuous_ma_laplace", (DL_FUNC) &_ToxicR_run_continuous_ma_laplace, 6},
+    {"_ToxicR_run_continuous_ma_mcmc", (DL_FUNC) &_ToxicR_run_continuous_ma_mcmc, 6},
+    {"_ToxicR_run_dichotomous_single_mcmc", (DL_FUNC) &_ToxicR_run_dichotomous_single_mcmc, 5},
+    {"_ToxicR_run_continuous_single_mcmc", (DL_FUNC) &_ToxicR_run_continuous_single_mcmc, 7},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_BMDS(DllInfo *dll) {
+RcppExport void R_init_ToxicR(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

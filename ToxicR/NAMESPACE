@@ -1,4 +1,4 @@
-useDynLib(BMDS, .registration=TRUE)
+useDynLib(ToxicR, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
 importFrom(VIM, alphablend)

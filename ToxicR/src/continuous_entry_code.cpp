@@ -393,10 +393,13 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   } 
   
   bmd_analysis b[MA->nmodels];
-  std::vector<bool> fixedB; 
-  std::vector<double> fixedV; 
-  
+ 
+#pragma omp parallel
+{
+#pragma omp for  
   for (int i = 0; i < MA->nmodels; i++ ){
+      std::vector<bool> fixedB; 
+      std::vector<double> fixedV;
       // on each iteration make sure there parameters are emptied
       fixedB.clear();
       fixedV.clear(); 
@@ -494,7 +497,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
       
   }
-  
+} 
   
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
@@ -840,12 +843,16 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 
   
   mcmcSamples a[MA->nmodels];
+
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
-  std::vector<bool> fixedB; 
-  std::vector<double> fixedV; 
-
+  
+#pragma omp parallel
+{
+#pragma omp for
   for (int i = 0; i < MA->nmodels; i++ ){
+    std::vector<bool> fixedB; 
+    std::vector<double> fixedV; 
     fixedB.clear(); // on each iteration make sure there parameters are emptied
     fixedV.clear(); 
     Eigen::MatrixXd tprior(MA->nparms[i],MA->prior_cols[i]);
@@ -919,10 +926,10 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
          
       
   }
-  
+}  
 
   bmd_analysis b[MA->nmodels]; 
-  // FIXME: THE INVERSE ECT. 
+
   for (int i = 0; i < MA->nmodels; i++){
   
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
