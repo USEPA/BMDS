@@ -78,8 +78,8 @@ public:
 
 		returnV = Y.col(0).array()*p.array().log() + (Y.col(1).array() - Y.col(0).array())*(1 - p.array()).log();
 
-		// correct the likelihood when one has p very close to zero make sure
-		// log(0) is not there
+		// correct the likelihood 
+		// "?log(0) is not there
 		for (int i = 0; i < returnV.rows(); i++) {
           if (p(i, 0) < NEAR_ZERO)
             returnV(i, 0) = Y(i, 0)*log(NEAR_ZERO); // Note the last term doesn't exist because log(1) = 0

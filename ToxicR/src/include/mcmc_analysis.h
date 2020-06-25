@@ -88,7 +88,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
     // now sample, samples, number of proposals for the
     // metropolis sampler.
   Eigen::MatrixXd mu  = oR.max_parms;
-  Eigen::MatrixXd cov = 0.2*model.varMatrix(oR.max_parms);
+  Eigen::MatrixXd cov = 0.75*model.varMatrix(oR.max_parms);
   Eigen::MatrixXd chol = cov.llt().matrixL();
   Eigen::MatrixXd nSamples  = chol*rNormal; // variance of each row
                                               // is is now L'L = cov
@@ -108,10 +108,11 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
  
      if ( !isnan(t) &&
 		    	!isinf(t) ){
-  			Eigen::MatrixXd a = MCMC_PROPOSAL(mu,nSamples.col(i-1),cov);
-  			Eigen::MatrixXd b = MCMC_PROPOSAL(mu,value,cov);
-  			double numer = -model.negPenLike(value);//+a(0,0);
-  			double denom =  penLike(0,i-1);// + b(0,0);
+        Eigen::MatrixXd a = MCMC_PROPOSAL(value,nSamples.col(i-1),cov);
+        Eigen::MatrixXd b = MCMC_PROPOSAL(nSamples.col(i-1),value,cov);
+        double numer = - model.negPenLike(value) + a(0,0);
+        double denom =  penLike(0,i-1) + b(0,0);
+  	
   			double test = exp(numer - denom);
   			double rr = gsl_rng_uniform(r);
   		
@@ -210,18 +211,16 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   nSamples.col(0) = mu; // starting value of the MCMC
   
   penLike(0,0) =  -model->negPenLike(nSamples.col(0));
-  for (int i = 1; i < samples ; i++){
-    Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1); //nSamples.col(i-1); 
+  for (int i = 1; i < samples ; i++){//nSamples.col(i-1); 
     //Metropolis-Hasings proposal
     // make sure the proposal isn't imposible
-
+    Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1);
     double t = model->prior_model.neg_log_prior(value);
 
     if ( !isnan(t) &&
          !isinf(t) ){
       Eigen::MatrixXd a = MCMC_PROPOSAL(value,nSamples.col(i-1),cov);
       Eigen::MatrixXd b = MCMC_PROPOSAL(nSamples.col(i-1),value,cov);
-   
       double numer = -model->negPenLike(value) +a(0,0);
       double denom =  penLike(0,i-1) + b(0,0);
       double test = exp(numer - denom);

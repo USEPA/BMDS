@@ -12,6 +12,7 @@ enum dich_model {d_hill, d_gamma,d_logistic, d_loglogistic,
 enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, gain_loss_model = 10, polynomial = 666}; 
 enum distribution {normal = 1, normal_ncv = 2, log_normal = 3}; 
 
+// Dichotomous Structures
 struct dichotomous_analysis{
   dich_model model; 
   int n; 
@@ -20,14 +21,15 @@ struct dichotomous_analysis{
   double *n_group; //
   double *prior; // a column order matrix px5 where p is 
                  // the number of parametersd
-  int    BMD_type; 
+  int BMD_type;  
   double BMR; 
   double alpha; 
-  est_method fitter; 
+  int degree;  // used for multistage
   int samples; // number of MCMC samples. 
-  int parms; // number of parameters 
+  int burnin;  // size of burin
+  int parms;   // number of parameters
+  int prior_cols; // colunns in the prior
 };
-
 struct dichotomous_model_result{
   int      model;           // dichotomous model specification
   int      nparms; 		      //number of parameters in the model
@@ -37,8 +39,15 @@ struct dichotomous_model_result{
   int      dist_numE;       // number of entries in rows for the bmd_dist
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
-
-
+struct dichotomousMA_analysis{
+  int    nmodels;         //number of models for each 
+  double **priors;     //priors
+  int    *nparms;      //parameter in each model
+  int    *actual_parms;//actual number of parameters in the model
+  int    *prior_cols;  // columns in the prior if there are 'more' in the future
+  int    *models;      // given model
+  double *modelPriors; // prior probability on the model
+};
 struct dichotomousMA_result{
   int                      nmodels; //number of models for each 
   dichotomous_model_result **models; //priors
@@ -46,7 +55,7 @@ struct dichotomousMA_result{
   double               *post_probs; // posterior probabilities
   double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
-
+// Continuous Structures
 struct continuous_analysis{
   cont_model model; 
   int n; 
@@ -98,6 +107,7 @@ struct continuousMA_result{
   double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
 
+// mcmc structures
 struct bmd_analysis_MCMC{
   int model; 
   unsigned int burnin; 
@@ -106,12 +116,12 @@ struct bmd_analysis_MCMC{
   double * BMDS; 
   double * parms; 
 };
-
 struct ma_MCMCfits{
   unsigned int nfits; 
   bmd_analysis_MCMC **analyses;   
 }; 
 
+// odds and ends
 bmd_analysis_MCMC * new_mcmc_analysis(int model,
                                        int parms, 
                                        unsigned int samples);
