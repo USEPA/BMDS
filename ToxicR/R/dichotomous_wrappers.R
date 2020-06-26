@@ -42,7 +42,6 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-    
     temp$bounds  = bounds; 
     temp$model   = model_type; 
     temp$data    = DATA
@@ -68,6 +67,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     prior =   bayesian_prior_dich(model_type,degree)
     temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
                                        c(BMR, alpha,samples,burnin))
+    class(temp$bmd_dist) <- "BMD_CDF"
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 
@@ -79,8 +79,8 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
  
 }
 
-print.BMD_CDF<-function(p){
-  x <- splinefun(p[,2],p[,1])
+.print.BMD_CDF<-function(p){
+  x <- splinefun(p[!is.infinite(p[,1]),2],p[!is.infinite(p[,1]),1],method="hyman")
   cat("Approximate Quantiles for the BMD\n")
   cat("--------------------------------------------------------------\n")
   cat("1% \t 5% \t 10% \t 25% \t 50% \t 75% \t 90% \t 95% \t 99%\n")

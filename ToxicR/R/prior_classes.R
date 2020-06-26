@@ -74,7 +74,7 @@ combine_prior_lists<-function(p1,p2){
   return(retval)
 }
 
-print.BMDmodelprior <- function(priors){
+.print.BMDmodelprior <- function(priors){
   X = priors[[1]]
   cat("Model Parameter Priors\n ")
   cat("------------------------------------------------------------------------\n")
