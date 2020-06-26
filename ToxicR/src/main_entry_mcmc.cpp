@@ -241,14 +241,12 @@ List run_dichotomous_single_mcmc(NumericVector model,
               				     Eigen::MatrixXd Y, Eigen::MatrixXd D,
 					                 Eigen::MatrixXd pr, NumericVector options){
 
-
-  
-
 	dichotomous_analysis mcmcAnal; 
 	mcmcAnal.BMD_type =  eExtraRisk;// (options[0]==1)?eExtraRisk:eAddedRisk;
 	mcmcAnal.BMR      = options[0]; 
 	mcmcAnal.alpha     = options[1];
 	mcmcAnal.samples  = options[2]; 
+	mcmcAnal.burnin   = options[3]; 
   mcmcAnal.parms    = pr.rows(); 
   mcmcAnal.model = (dich_model)model[0]; 
   mcmcAnal.Y       = new double[Y.rows()] ; 
@@ -257,9 +255,15 @@ List run_dichotomous_single_mcmc(NumericVector model,
   mcmcAnal.prior   = new double[pr.cols()*pr.rows()];
   mcmcAnal.prior_cols = pr.cols(); 
   mcmcAnal.n          = Y.rows(); 
+  mcmcAnal.degree = 0; 
+  
+  if (mcmcAnal.model == dich_model::d_multistage){
+    mcmcAnal.degree = mcmcAnal.parms - 1; 
+    cerr << mcmcAnal.degree << endl; 
+  }
   
   bmd_analysis_MCMC output; 
-  output.samples = 0; // initialize
+  output.samples = mcmcAnal.samples; // initialize
   output.model = (dich_model)0; 
   output.BMDS =  new double[mcmcAnal.samples]; 
   output.parms = new double[mcmcAnal.samples*pr.rows()]; 
@@ -287,25 +291,13 @@ List run_dichotomous_single_mcmc(NumericVector model,
   res.dist_numE = 200; 
   res.bmd_dist = new double[res.dist_numE*2]; 
  
-  estimate_sm_mcmc(&mcmcAnal, &res,&output); 
+  estimate_sm_mcmc(&mcmcAnal, &res, &output); 
   
-  Eigen::MatrixXd BMDS(output.samples,1); 
-  Eigen::MatrixXd PARMS(output.samples,pr.rows()); 
-  
- // disregard the burnin i.e. i = options[3]
-  for (int i = 0; i < output.samples; i++){
-    BMDS(i,0) = output.BMDS[i]; 
-    for (int j=0; j < pr.rows(); j++){
-     PARMS(i,j) = output.parms[j + i* pr.rows()]; 
-    }
-  }
-  
-  List rV = covert_dichotomous_fit_to_list(&res); 
-  List t2 = covert_MCMC_fit_to_list(&output);
+  List rV = convert_dichotomous_fit_to_list(&res); 
+  List t2 = convert_MCMC_fit_to_list(&output);
   
   List data_out  = List::create(Named("mcmc_result")=t2,
                                 Named("fitted_model")=rV); 
-  
   
   delete(output.BMDS); 
   delete(output.parms); 
@@ -409,8 +401,8 @@ List run_continuous_single_mcmc(NumericVector model,
                    output) ;
   
   
-  List rV = covert_continuous_fit_to_list(res); 
-  List t2 = covert_MCMC_fit_to_list(output);
+  List rV = convert_continuous_fit_to_list(res); 
+  List t2 = convert_MCMC_fit_to_list(output);
   List data_out  = List::create(Named("mcmc_result")=t2,
                                 Named("fitted_model")=rV); 
 

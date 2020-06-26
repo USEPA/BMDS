@@ -374,7 +374,7 @@ List run_continuous_single(IntegerVector model,
                                                                    200); //have 200 equally spaced values
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result);
-    List rV = covert_continuous_fit_to_list(result); 	
+    List rV = convert_continuous_fit_to_list(result); 	
     // free up memory
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);

@@ -121,7 +121,7 @@ double start_distance(unsigned     n,
 	default:
 		return 0.0; 
 	}
-	
+	 return 0.0; 
 	
 }
 ///////////////////////////////////////////////////////////////////////

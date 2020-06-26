@@ -30,6 +30,7 @@ struct dichotomous_analysis{
   int parms;   // number of parameters
   int prior_cols; // colunns in the prior
 };
+
 struct dichotomous_model_result{
   int      model;           // dichotomous model specification
   int      nparms; 		      //number of parameters in the model

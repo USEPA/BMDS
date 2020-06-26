@@ -85,8 +85,9 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
         }
   }
 
-    // now sample, samples, number of proposals for the
-    // metropolis sampler.
+  // now sample, samples, number of proposals for the
+  // metropolis sampler.
+  
   Eigen::MatrixXd mu  = oR.max_parms;
   Eigen::MatrixXd cov = 0.75*model.varMatrix(oR.max_parms);
   Eigen::MatrixXd chol = cov.llt().matrixL();
@@ -134,12 +135,13 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   			nSamples.col(i) = nSamples.col(i-1);
   			penLike(0,i) = penLike(0,i-1);
           }
-      	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR) : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
+      	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR)
+		      : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
   	}
 
 
-    gsl_rng_free (r);
-    /////////////////////////////////////////////////////////////////
+  gsl_rng_free (r);
+  /////////////////////////////////////////////////////////////////
 	rVal.BMD = BMD; //vector of burn in BMD samples
 	rVal.samples = nSamples; // vector of sample parameters
 	rVal.isExtra = isExtra;

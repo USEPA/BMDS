@@ -704,26 +704,25 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   
 
   std::vector<double> v; 
-
   for (int i = burnin; i < s.BMD.cols(); i++){
+    
     if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
+  
   }
 
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
-  std::sort(v.begin(), v.end());
   double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
   if (v.size() > 0){
+    std::sort(v.begin(), v.end());
     for (double k = 0.004; k <= 0.9999; k += 0.005){
     	    prob.push_back(k*inf_prob); 
           int idx = int(k*double(v.size()));
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
-          
     }
-  
     // fix numerical quantile issues.
     for (int i = 1; i < bmd_q.size(); i++){
       if (bmd_q[i] <= bmd_q[i-1]){

@@ -33,6 +33,8 @@
 #include "dichotomous_entry_code.h"
 #include "mcmc_analysis.h"
 
+
+
 void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model){
   if (model){
     model->nparms = a.COV.rows(); 
@@ -40,8 +42,10 @@ void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model)
     for (int i = 0; i< model->dist_numE; i ++){
       double temp = double(i)/double(model->dist_numE); 
       model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
+     // cerr << model->bmd_dist[i] << ":" << temp << endl; 
       model->bmd_dist[model->dist_numE + i] = temp; // probability 
     }
+    
     for (int i = 0; i < model->nparms; i++){
       model->parms[i] = a.MAP_ESTIMATE(i,0); 
       for (int j = 0; j < model->nparms; j++){
@@ -82,7 +86,6 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
       Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
       D(i,0) = DA->doses[i]; 
   }
-  
   for (int i = 0; i < DA->parms; i++){
       for (int j = 0; j < DA->prior_cols; j++){
         prior(i,j) = DA->prior[i + j*DA->parms]; 
@@ -145,9 +148,12 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
     default: 
     break; 
   }
-  
   bmd_analysis b; 
   b = create_bmd_analysis_from_mcmc(DA->burnin,a);
+  mcmc->model = DA->model; 
+  mcmc->burnin = DA->burnin; 
+  mcmc->samples = DA->samples; 
+  mcmc->nparms = DA->parms; 
   transfer_mcmc_output(a,mcmc); 
   res->model = DA->model; 
   transfer_dichotomous_model(b,res);

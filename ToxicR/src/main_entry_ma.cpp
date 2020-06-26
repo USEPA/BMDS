@@ -42,14 +42,10 @@ using Rcpp::as;
 #include "continuous_clean_aux.h"
 #include "continuous_entry_code.h"
 
-
 /*
  * 
  */
-
-
-
-List covert_dichotomous_fit_to_list(dichotomous_model_result *result){
+List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
   NumericVector  parms(result->nparms); 
   NumericMatrix  covM(result->nparms,result->nparms); 
   
@@ -93,7 +89,7 @@ List covert_dichotomous_fit_to_list(dichotomous_model_result *result){
   }
   double maximum = result->max; 
   NumericMatrix bmd_distribution(result->dist_numE , 2);
-  
+
   for (int i = 0; i < result->dist_numE; i++){
     bmd_distribution(i,0) = result->bmd_dist[i]; 
     bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
@@ -114,7 +110,7 @@ List covert_dichotomous_fit_to_list(dichotomous_model_result *result){
  * 
  * 
  */
-List covert_continuous_fit_to_list(continuous_model_result *result){
+List convert_continuous_fit_to_list(continuous_model_result *result){
   NumericVector  parms(result->nparms); 
   NumericMatrix  covM(result->nparms,result->nparms); 
   
@@ -186,7 +182,7 @@ List convert_continuous_maresults_to_list(continuousMA_result *result){
   
   for(int i = 0; i < result->nmodels ; i++){
     sprintf(str,"Fitted_Model_%d",i+1);
-    fittedModels.push_back(covert_continuous_fit_to_list(result->models[i]),
+    fittedModels.push_back(convert_continuous_fit_to_list(result->models[i]),
                            str); 
   }
   NumericMatrix ma_bmd_dist(result->dist_numE,2); 
@@ -298,7 +294,7 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
 }
 
 
-List covert_MCMC_fit_to_list(bmd_analysis_MCMC *a){
+List convert_MCMC_fit_to_list(bmd_analysis_MCMC *a){
   List rV; 
   NumericMatrix parameters(a->samples,a->nparms);  
   NumericMatrix BMDS(a->samples,1); 
@@ -320,7 +316,7 @@ List convert_mcmc_results(const ma_MCMCfits *a){
 
   for (unsigned int i=0; i < a->nfits; i++){
     sprintf(str,"Fitted_Model_%d",i+1);
-    rV.push_back(covert_MCMC_fit_to_list(a->analyses[i]),
+    rV.push_back(convert_MCMC_fit_to_list(a->analyses[i]),
                  str); 
     
   }
