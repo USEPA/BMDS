@@ -1,4 +1,5 @@
 useDynLib(ToxicR, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
+S3method(print, BMDmodelprior, print.BMDmodelprior)
 importFrom(Rcpp, evalCpp)
 importFrom(VIM, alphablend)

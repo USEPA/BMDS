@@ -58,23 +58,21 @@ List run_single_dichotomous(NumericVector model,
   Anal.BMR      =  options1[0]; 
   Anal.alpha    = options1[1];
   Anal.parms    = pr.rows(); 
-  Anal.model = (dich_model)model[0]; 
-  Anal.Y       = new double[data.rows()] ; 
-  Anal.n_group = new double[data.rows()] ; 
-  Anal.doses   = new double[data.rows()] ; 
-  Anal.prior   = new double[pr.cols()*pr.rows()];
+  Anal.model    = (dich_model)model[0]; 
+  Anal.Y        = new double[data.rows()] ; 
+  Anal.n_group  = new double[data.rows()] ; 
+  Anal.doses    = new double[data.rows()] ; 
+  Anal.prior    = new double[pr.cols()*pr.rows()];
   Anal.prior_cols = pr.cols(); 
   Anal.n          = data.rows(); 
   Anal.degree = options2[1]; 
-  
+
   if (Anal.model == dich_model::d_multistage){
     Anal.degree = Anal.parms - 1; 
   }
-  
- 
-  
+
   for (int i = 0; i < data.rows(); i++){
-    Anal.Y[i] = data(i,2); 
+    Anal.Y[i] = data(i,1); 
     Anal.n_group[i] = data(i,2); 
   }
   
@@ -107,9 +105,7 @@ List run_single_dichotomous(NumericVector model,
   delete(res.bmd_dist);  
   return rV;
 }
-
 ////////////////////////////////////////////////////////////////////////
-
 
 ////////////////////////////////////////////////////////////////////////
 // function: List run_ma_dichotomous()

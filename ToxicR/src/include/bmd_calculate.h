@@ -365,9 +365,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	bmd_analysis rVal;
 	double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
 
-	//cerr << oR.max_parms << " Test ONE " << endl << flush; 
- 	// The boolean parameter below specifies robustness - whether to also use MMA opt method   
-  	
+  
 	Eigen::MatrixXd result; 
 	std::vector<double> x;
 	std::vector<double> y;	
@@ -392,7 +390,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		x.clear();
 		y.clear();
 		// fix the cdf so things don't implode
-		for (int i = 0; i < x.size(); i++) { 
+		for (int i = 0; i < result.rows(); i++) { 
 		  if (!isnan(result(i, 0)) && !isinf(result(i, 0))){
 		    y.push_back(result(i, 1)); 
 		    x.push_back(result(i, 0));
@@ -409,7 +407,6 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		}
 	  	
 	}	
-	
 	
 	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){

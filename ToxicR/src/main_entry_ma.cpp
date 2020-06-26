@@ -93,7 +93,6 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
   for (int i = 0; i < result->dist_numE; i++){
     bmd_distribution(i,0) = result->bmd_dist[i]; 
     bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
-    
   } 
   
   List rV = List::create(Named("full_model") = str,

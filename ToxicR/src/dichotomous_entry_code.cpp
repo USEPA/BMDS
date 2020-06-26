@@ -82,6 +82,10 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
       Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
       D(i,0) = DA->doses[i]; 
   }
+  
+  double  max_dose = D.maxCoeff(); 
+  D = (1/max_dose) * D; 
+  
   for (int i = 0; i < DA->parms; i++){
       for (int j = 0; j < DA->prior_cols; j++){
         prior(i,j) = DA->prior[i + j*DA->parms]; 
@@ -94,6 +98,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
     fixedB.push_back(false);
     fixedV.push_back(0.0); 
   }
+
   switch (DA->model){
     case dich_model::d_hill:
       a =  MCMC_bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
@@ -101,7 +106,6 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
                                      DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_gamma:
-   
       a =  MCMC_bmd_analysis_DNC<dich_gammaModelNC,IDPrior> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
@@ -167,7 +171,8 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
     D(i,0) = DA->doses[i]; 
   }
-  
+  double  max_dose = D.maxCoeff(); 
+  D = (1/max_dose) * D; 
   for (int i = 0; i < DA->parms; i++){
     for (int j = 0; j < DA->prior_cols; j++){
       prior(i,j) = DA->prior[i + j*DA->parms]; 
@@ -176,11 +181,11 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   bmd_analysis a; 
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
-  for (int i = 0; i < prior.rows(); i++){
+  for (int i = 0; i < DA->parms; i++){
     fixedB.push_back(false);
     fixedV.push_back(0.0); 
   }
-  
+
   switch (DA->model){
   case dich_model::d_hill:
     a =   bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
@@ -189,12 +194,12 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                       DA->alpha*0.5, 0.02);
     break; 
   case dich_model::d_gamma:
-    
+
     a =   bmd_analysis_DNC<dich_gammaModelNC,IDPrior> (Y,D,prior,
-                                                      fixedB, fixedV, DA->degree,
-                                                      DA->BMR, DA->BMD_type,
-                                                      DA->alpha*0.5,0.02);
-    
+                                                       fixedB, fixedV, DA->degree,
+                                                       DA->BMR, DA->BMD_type,
+                                                       DA->alpha*0.5,0.02);
+
     break; 
   case dich_model::d_logistic:
     a =   bmd_analysis_DNC<dich_logisticModelNC,IDPrior> (Y,D,prior,
@@ -240,8 +245,9 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   default: 
     break; 
   }
-  
+
   transfer_dichotomous_model(a,res);
-  
+  res->model = DA->model; 
+
   return; 
 }

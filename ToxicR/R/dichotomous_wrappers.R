@@ -39,7 +39,10 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 1){ #MLE fit
     bounds = bmd_default_frequentist_settings(model_type,degree)
     temp = run_single_dichotomous(dmodel,DATA,bounds,o1,o2); 
-    class(temp$cdf) <-"BMD_CDF"
+    class(temp$bmd_dist) <- "BMD_CDF"
+    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
+    temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    
     temp$bounds  = bounds; 
     temp$model   = model_type; 
     temp$data    = DATA
@@ -51,7 +54,10 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 2){ #laplace fit
     prior =   bayesian_prior_dich(model_type,degree); 
     temp = run_single_dichotomous(dmodel,DATA,prior[[1]],o1,o2); 
-    class(temp$cdf) <- "BMD_CDF"
+    class(temp$bmd_dist) <- "BMD_CDF"
+    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
+    temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    
     temp$prior = prior; 
     temp$model =  model_type; 
     temp$data = DATA
@@ -60,15 +66,14 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   }
   if (fitter ==3){
     prior =   bayesian_prior_dich(model_type,degree)
-    #NOTE dmodel-1 is to accomodate what is going on in the C+ code. 
-    temp = run_dichotomous_single_mcmc(dmodel-1,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
-                                      c(BMR, alpha,samples,burnin))
+    temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
+                                       c(BMR, alpha,samples,burnin))
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
-    temp$prior = prior = list(prior = prior); 
-    temp$model = model_type; 
-    temp$data = DATA
-    temp$bmd = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha))))
-    class(temp) = "BMDdich_fit_MCMC"
+    temp$prior   = prior = list(prior = prior); 
+    temp$model   = model_type; 
+    temp$data    = DATA
+    temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha))))
+    class(temp)  = "BMDdich_fit_MCMC"
     return(temp)
   }
  
