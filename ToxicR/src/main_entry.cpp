@@ -30,6 +30,7 @@
 
 #include "continuous_clean_aux.h"
 #include "continuous_entry_code.h"
+#include "dichotomous_entry_code.h"
 #include "list_r_conversion.h"
 
 using namespace Rcpp;
@@ -48,149 +49,63 @@ using namespace std;
 //
 // [[Rcpp::export]]
 List run_single_dichotomous(NumericVector model,
-                            Eigen::MatrixXd data, Eigen::MatrixXd prior,
-                            NumericVector options1, IntegerVector options2) {
+                            Eigen::MatrixXd data, Eigen::MatrixXd pr,
+                            NumericVector options1, IntegerVector options2) 
+{
 
-	gsl_set_error_handler_off();
-    //Begin: Analysis Set up ///////////////////////////////////////////////
-    DModelID_t ID;
-    switch(int(model[0])){
-    case 1:
-            ID = eDHill;  break;
-    case 2:
-            ID = eGamma;  break;
-    case 3:
-            ID = eLogistic;break;
-    case 4:
-            ID = eLogLogistic;break;
-    case 5:
-            ID = eLogProbit;break;
-    case 6:
-            ID = eMultistage;break;
-    case 7:
-            ID = eProbit;break;
-    case 8:
-            ID = eQLinear;break;
-    case 9:
-            ID = eWeibull;break;
-    default:
-            ID = eWeibull; 
+  dichotomous_analysis Anal; 
+  Anal.BMD_type =  (options1[0]==1)?eExtraRisk:eAddedRisk;
+  Anal.BMR      =  options1[0]; 
+  Anal.alpha    = options1[1];
+  Anal.parms    = pr.rows(); 
+  Anal.model = (dich_model)model[0]; 
+  Anal.Y       = new double[data.rows()] ; 
+  Anal.n_group = new double[data.rows()] ; 
+  Anal.doses   = new double[data.rows()] ; 
+  Anal.prior   = new double[pr.cols()*pr.rows()];
+  Anal.prior_cols = pr.cols(); 
+  Anal.n          = data.rows(); 
+  Anal.degree = options2[1]; 
+  
+  if (Anal.model == dich_model::d_multistage){
+    Anal.degree = Anal.parms - 1; 
+  }
+  
+ 
+  
+  for (int i = 0; i < data.rows(); i++){
+    Anal.Y[i] = data(i,2); 
+    Anal.n_group[i] = data(i,2); 
+  }
+  
+  for (int i = 0; i < data.rows(); i++){
+    Anal.doses[i] = data(i,0); 
+  }
+  
+  // copy in column major order  
+  for (int i = 0; i < pr.rows(); i++){
+    for (int j = 0; j < pr.cols(); j++){
+      Anal.prior[i + j*pr.rows()] = pr(i,j); 
     }
-    
-    BMDSInputType_t type = eDich_3; // Specify a dichotomous run
-
-    // set up the initial structure required for the analysis
-    constexpr auto CDF_TABLE_SIZE = 99;
-    DichotomousDeviance_t zDev;
-    int n = data.rows();
-    dGoF_t zGoF;  zGoF.pzRow = new GoFRow_t[n];
-    BMD_ANAL returnV; returnV.PARMS = new(double[MAX_PARMS]);
-    for (int i = 0; i<MAX_PARMS; i++){ returnV.PARMS[i] = 0;  }
-    returnV.nparms = prior.rows(); 
-    returnV.boundedParms = new bool[MAX_PARMS];
-    returnV.deviance = &zDev;
-    returnV.gof = &zGoF;
-    returnV.aCDF = new double[CDF_TABLE_SIZE];
-    returnV.nCDF = CDF_TABLE_SIZE;
-    returnV.covM = new double[prior.rows() * prior.rows() ];
-
-    vector<BMDSInputData_t> vInputData;
-
-    BMDS_D_Opts1_t opt_one; opt_one.bmr = options1[0]; opt_one.alpha = options1[1];
-    opt_one.background = options1[2];
-    BMDS_D_Opts2_t opt_two; opt_two.bmrType = (options2[0]==1)?eExtraRisk:eAddedRisk; // 1 if extra 2 if added.
-    opt_two.degree = options2[1];
-    ////////////////////////////////////////////////////////////////////////////
-    //copy the data in
-    BMDSInputData_t zTemp;
-    for (int i = 0; i < n; i++){
-      zTemp.dose     = data(i,0);
-      zTemp.response  = data(i,1);
-      zTemp.groupSize = data(i,2);
-      vInputData.push_back(zTemp);
-    }
-    ///////////////////////////////////////////////////////////////////////
-    //copy the priors for the analysis
-    PRIOR *prior_to_model = new PRIOR[prior.rows()];
-    for (int i = 0; i < prior.rows(); i++){
-      prior_to_model[i].type = prior(i,0);
-      prior_to_model[i].initalValue = prior(i,1); 
-      prior_to_model[i].stdDev = prior(i,2);
-      prior_to_model[i].minValue = prior(i,3);
-      prior_to_model[i].maxValue = prior(i,4);
-    }
-    //End: Anlysis Set up 
-    ///////////////////////////////////////////////////////////////////////
-
-
-    run_dmodel2(&ID,&returnV,&type,&vInputData[0],
-                prior_to_model,&opt_one,&opt_two,&n);
-
-
-
-    CharacterVector x = CharacterVector::create( "BMD", "BMDL" );
-    ///////////////////////////////////////////////////////////////////////
-    // general return info
-    Eigen::VectorXd parms(returnV.nparms);
-    for (int i = 0; i < returnV.nparms; i++){ parms[i] = returnV.PARMS[i]; };
-    NumericVector  Options   = NumericVector::create( opt_one.bmr,opt_one.alpha,double(opt_two.bmrType),
-                                                      double(opt_two.degree),opt_one.background);
-    NumericVector  BMD       = NumericVector::create( returnV.BMD, returnV.BMDL ,returnV.BMDU);
-    NumericVector  statistics = NumericVector::create(returnV.MAP,returnV.AIC);
-   // setup deviance
-	  Eigen::MatrixXd deviance_t(2,3);
-	  deviance_t(0,0) = returnV.deviance->llFull; deviance_t(1,0) = returnV.deviance->llReduced;
-	  deviance_t(0,1) = returnV.deviance->devFit; deviance_t(1,1) = returnV.deviance->devReduced;
-	  deviance_t(0,2) = returnV.deviance->pvFit;  deviance_t(1,2) = returnV.deviance->pvReduced;
-	  IntegerMatrix dev_df(3,2);
-	  dev_df(0,0) = returnV.deviance->nparmFull; dev_df(1,0) = returnV.deviance->nparmFit;
-	  dev_df(2,0) = returnV.deviance->nparmReduced;
-	  dev_df(0,1) = 0; // zero degrees of freedom on complete model
-	  dev_df(1,1) = returnV.deviance->dfFit; dev_df(2,1) = returnV.deviance->dfReduced;
-	  List dev = List::create(Named("computed_deviance")=deviance_t,Named("df")=dev_df);
-	  
-	  //gof table
-	  Eigen::MatrixXd gof_table(n,6);
-	  for (int i = 0; i < n; i++){
-	    gof_table(i,0) = returnV.gof->pzRow[i].dose;
-	    gof_table(i,1) = returnV.gof->pzRow[i].estProb;
-	    gof_table(i,2) = returnV.gof->pzRow[i].expected;
-	    gof_table(i,3) = returnV.gof->pzRow[i].observed;
-	    gof_table(i,4) = returnV.gof->pzRow[i].scaledResidual;
-	    gof_table(i,5) = returnV.gof->pzRow[i].size;
-	  }
-	  
-	  Eigen::MatrixXd covMat(prior.rows(),prior.rows()); 
-	  for (int i = 0 ; i < prior.rows(); i++){
-	    for(int j = 0; j < prior.rows(); j++){
-	      covMat(i,j) = returnV.covM[i + j*prior.rows()]; 
-	    }
-	  }
-	  
-	  Eigen::MatrixXd return_cdf(CDF_TABLE_SIZE,2); 
-	  for (int ii = 0; ii < CDF_TABLE_SIZE; ii++){
-	      return_cdf(ii,0) = returnV.aCDF[ii];
-	      return_cdf(ii,1) = double(ii+1.0)/double(CDF_TABLE_SIZE+1.0); 
-	  }
-     	
-     List data_out  = List::create( Named("options")=Options,
-                                    Named("bmd") = BMD,
-                                    Named("parameters") = parms,
-                                    Named("cov") = covMat, 
-                                    Named("fit_statistics") = statistics,
-                               	    Named("deviance") = dev,
-                                    Named("gof") = gof_table,
-                                    Named("cdf") = return_cdf);
-    
-    
-    delete returnV.boundedParms;
-    delete zGoF.pzRow;
-    delete returnV.PARMS;
-    delete[] prior_to_model;
-    delete[] returnV.aCDF;
-    delete returnV.covM; 
-    
-    return data_out;
+  }
+  
+  dichotomous_model_result res; 
+  res.parms = new double[pr.rows()]; 
+  res.cov   = new double[pr.rows()*pr.rows()]; 
+  res.dist_numE = 200; 
+  res.bmd_dist = new double[res.dist_numE*2]; 
+  
+  estimate_sm_laplace(&Anal, &res); 
+  List rV = convert_dichotomous_fit_to_list(&res); 
+  
+  delete(Anal.Y); 
+  delete(Anal.n_group); 
+  delete(Anal.doses); 
+  delete(Anal.prior); 
+  delete(res.parms);   
+  delete(res.cov);    
+  delete(res.bmd_dist);  
+  return rV;
 }
 
 ////////////////////////////////////////////////////////////////////////

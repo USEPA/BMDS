@@ -51,7 +51,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 2){ #laplace fit
     prior =   bayesian_prior_dich(model_type,degree); 
     temp = run_single_dichotomous(dmodel,DATA,prior[[1]],o1,o2); 
-    class(temp$cdf) <-"BMD_CDF"
+    class(temp$cdf) <- "BMD_CDF"
     temp$prior = prior; 
     temp$model =  model_type; 
     temp$data = DATA

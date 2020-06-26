@@ -40,6 +40,7 @@ struct dichotomous_model_result{
   int      dist_numE;       // number of entries in rows for the bmd_dist
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
+
 struct dichotomousMA_analysis{
   int    nmodels;         //number of models for each 
   double **priors;     //priors
@@ -49,6 +50,7 @@ struct dichotomousMA_analysis{
   int    *models;      // given model
   double *modelPriors; // prior probability on the model
 };
+
 struct dichotomousMA_result{
   int                      nmodels; //number of models for each 
   dichotomous_model_result **models; //priors
