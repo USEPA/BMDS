@@ -42,6 +42,74 @@ using Rcpp::as;
 #include "continuous_clean_aux.h"
 #include "continuous_entry_code.h"
 
+
+/*
+ * 
+ */
+
+
+
+List covert_dichotomous_fit_to_list(dichotomous_model_result *result){
+  NumericVector  parms(result->nparms); 
+  NumericMatrix  covM(result->nparms,result->nparms); 
+  
+  for (int i = 0; i < result->nparms; i++){
+    parms[i] = result->parms[i]; 
+    for (int j = 0; j < result->nparms; j++){
+      covM(i,j) = result->cov[i + j*result->nparms]; 
+    }
+  } 
+  char str[160]; 
+
+  switch(result->model){
+  
+  case dich_model::d_hill: 
+    sprintf(str,"Model:  %s", "Hill"); 
+    break; 
+  case dich_model::d_gamma: 
+    sprintf(str,"Model:  %s", "Gamma"); 
+    break;
+  case dich_model::d_logistic:
+    sprintf(str,"Model:  %s", "Logistic"); 
+    break;	
+  case dich_model::d_loglogistic: 
+    sprintf(str,"Model:  %s", "Log-Logistic"); 
+  break; 
+  case dich_model::d_logprobit: 
+    sprintf(str,"Model:  %s", "Log-Probit");
+  break; 
+  case dich_model::d_multistage: 
+    sprintf(str,"Model:  %s", "Multistage");
+  break;
+  case dich_model::d_qlinear: 
+    sprintf(str,"Model:  %s", "Quantal-Linear");
+  break; 
+  case dich_model::d_probit: 
+    sprintf(str,"Model:  %s", "Probit");
+  break; 
+  default: 
+    sprintf(str,"Model:  %s", "Danger","Danger");
+  break;  
+  }
+  double maximum = result->max; 
+  NumericMatrix bmd_distribution(result->dist_numE , 2);
+  
+  for (int i = 0; i < result->dist_numE; i++){
+    bmd_distribution(i,0) = result->bmd_dist[i]; 
+    bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
+    
+  } 
+  
+  List rV = List::create(Named("full_model") = str,
+                         Named("parameters") = parms, 
+                         Named("covariance") = covM, 
+                         Named("bmd_dist")   = bmd_distribution,
+                         Named("maximum")    = maximum);  
+  return rV; 
+  
+}
+
+
 /*
  * 
  * 
@@ -83,6 +151,7 @@ List covert_continuous_fit_to_list(continuous_model_result *result){
 	break;	
 	case cont_model::power: 
 		sprintf(str,"Model: %s %s", "Power",dist); 
+	break; 
   default: 
     sprintf(str,"Model: %s %s", "Danger","Danger");
 	break;  

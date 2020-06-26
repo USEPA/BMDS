@@ -29,9 +29,27 @@
 #include "bmds_entry.h"
 #include "bmdStruct.h"
 
-
+#include "bmd_calculate.h"
 #include "dichotomous_entry_code.h"
 #include "mcmc_analysis.h"
+
+void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model){
+  if (model){
+    model->nparms = a.COV.rows(); 
+    model->max = a.MAP; 
+    for (int i = 0; i< model->dist_numE; i ++){
+      double temp = double(i)/double(model->dist_numE); 
+      model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
+      model->bmd_dist[model->dist_numE + i] = temp; // probability 
+    }
+    for (int i = 0; i < model->nparms; i++){
+      model->parms[i] = a.MAP_ESTIMATE(i,0); 
+      for (int j = 0; j < model->nparms; j++){
+        model->cov[i + j*model->nparms] = a.COV(i,j); 
+      }
+    }
+  }
+}
 
 
 void estimate_ma_MCMC(dichotomousMA_analysis *MA,
@@ -55,7 +73,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA ,
 void estimate_sm_mcmc(dichotomous_analysis *DA, 
                       dichotomous_model_result *res,
                       bmd_analysis_MCMC *mcmc){
-
+ 
   ///////////////////////////////////
   Eigen::MatrixXd Y(DA->n,2); 
   Eigen::MatrixXd D(DA->n,1); 
@@ -65,7 +83,11 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
       D(i,0) = DA->doses[i]; 
   }
   
-  cp_prior(prior, DA->prior);  // copy the prior over. 
+  for (int i = 0; i < DA->parms; i++){
+      for (int j = 0; j < DA->prior_cols; j++){
+        prior(i,j) = DA->prior[i + j*DA->parms]; 
+      } 
+  }  // copy the prior over. 
   mcmcSamples a; 
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
@@ -80,9 +102,11 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
                                      DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_gamma:
+   
       a =  MCMC_bmd_analysis_DNC<dich_gammaModelNC,IDPrior> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
+  
     break; 
     case dich_model::d_logistic:
       a =  MCMC_bmd_analysis_DNC<dich_logisticModelNC,IDPrior> (Y,D,prior,
@@ -122,7 +146,11 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
     break; 
   }
   
-  
-  
-  return ; 
+  bmd_analysis b; 
+  b = create_bmd_analysis_from_mcmc(DA->burnin,a);
+  transfer_mcmc_output(a,mcmc); 
+  res->model = DA->model; 
+  transfer_dichotomous_model(b,res);
+ 
+  return; 
 }

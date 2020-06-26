@@ -64,6 +64,8 @@
 #include "bmdStruct.h"
 #include "continuous_clean_aux.h"
 #include "continuous_entry_code.h"
+#include "dichotomous_entry_code.h"
+    
 #include "list_r_conversion.h"
 
 using namespace Rcpp;
@@ -240,32 +242,33 @@ List run_dichotomous_single_mcmc(NumericVector model,
 					                 Eigen::MatrixXd pr, NumericVector options){
 
 
-	
+  
+
 	dichotomous_analysis mcmcAnal; 
 	mcmcAnal.BMD_type =  eExtraRisk;// (options[0]==1)?eExtraRisk:eAddedRisk;
-	mcmcAnal.BMR     = options[0]; 
-	mcmcAnal.alpha   = options[1];
-	mcmcAnal.samples = options[2]; 
-  mcmcAnal.parms   = pr.rows(); 
-  
-  
+	mcmcAnal.BMR      = options[0]; 
+	mcmcAnal.alpha     = options[1];
+	mcmcAnal.samples  = options[2]; 
+  mcmcAnal.parms    = pr.rows(); 
   mcmcAnal.model = (dich_model)model[0]; 
   mcmcAnal.Y       = new double[Y.rows()] ; 
   mcmcAnal.n_group = new double[Y.rows()] ; 
   mcmcAnal.doses   = new double[D.rows()] ; 
   mcmcAnal.prior   = new double[pr.cols()*pr.rows()];
-  mcmcAnal.n       = Y.rows(); 
+  mcmcAnal.prior_cols = pr.cols(); 
+  mcmcAnal.n          = Y.rows(); 
   
   bmd_analysis_MCMC output; 
   output.samples = 0; // initialize
   output.model = (dich_model)0; 
-  output.BMDS = new double[mcmcAnal.samples]; 
+  output.BMDS =  new double[mcmcAnal.samples]; 
   output.parms = new double[mcmcAnal.samples*pr.rows()]; 
   
   for (int i = 0; i < Y.rows(); i++){
     mcmcAnal.Y[i] = Y(i,0); 
     mcmcAnal.n_group[i] = Y(i,1); 
   }
+  
   for (int i = 0; i < D.rows(); i++){
     mcmcAnal.doses[i] = D(i,0); 
   }
@@ -276,10 +279,15 @@ List run_dichotomous_single_mcmc(NumericVector model,
       mcmcAnal.prior[i + j*pr.rows()] = pr(i,j); 
     }
   }
-  
-  
-  
-  bmd_single_dichotomous_mcmc_fitter(&mcmcAnal,&output); 
+
+
+  dichotomous_model_result res; 
+  res.parms = new double[pr.rows()]; 
+  res.cov   = new double[pr.rows()*pr.rows()]; 
+  res.dist_numE = 200; 
+  res.bmd_dist = new double[res.dist_numE*2]; 
+ 
+  estimate_sm_mcmc(&mcmcAnal, &res,&output); 
   
   Eigen::MatrixXd BMDS(output.samples,1); 
   Eigen::MatrixXd PARMS(output.samples,pr.rows()); 
@@ -292,8 +300,11 @@ List run_dichotomous_single_mcmc(NumericVector model,
     }
   }
   
-  List data_out  = List::create(Named("BMDS")=BMDS,
-                                Named("PARMS")=PARMS); 
+  List rV = covert_dichotomous_fit_to_list(&res); 
+  List t2 = covert_MCMC_fit_to_list(&output);
+  
+  List data_out  = List::create(Named("mcmc_result")=t2,
+                                Named("fitted_model")=rV); 
   
   
   delete(output.BMDS); 
@@ -302,6 +313,9 @@ List run_dichotomous_single_mcmc(NumericVector model,
   delete(mcmcAnal.n_group); 
   delete(mcmcAnal.doses); 
   delete(mcmcAnal.prior); 
+  delete(res.parms);   
+  delete(res.cov);    
+  delete(res.bmd_dist);  
   return data_out;
 }
 

@@ -17,6 +17,7 @@
 #include "bmdStruct.h"
 #include "continuous_model_functions.h"
 
+
 using namespace Rcpp;
 using namespace std;
 using Eigen::Map;
@@ -47,11 +48,15 @@ using Rcpp::as;
 #include "lognormal_EXP_NC.h"
 
 #include "continuous_clean_aux.h"
-
+#include "mcmc_analysis.h"
+#include "bmdStruct.h"
 
 
 #ifndef _CONTINUOUS_ENTRY_CODE_H
 #define _CONTINUOUS_ENTRY_CODE_H
+
+bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s);
+void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b); 
 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                   Eigen::MatrixXd *SSTAT, Eigen::MatrixXd *SSTAT_LN,

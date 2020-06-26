@@ -1,11 +1,3 @@
-#ifdef R_COMPILATION  
-  #include <RcppEigen.h>
-  #include <RcppGSL.h>
-#else 
-  #include <Eigen/Dense>
-#endif
-
-#include <gsl/gsl_randist.h>
 #include "bmdStruct.h"
 #include <math.h>
 #include <stdio.h>
@@ -28,7 +20,7 @@
 
 #include "bmds_entry.h"
 #include "bmdStruct.h"
-
+#include "continuous_entry_code.h"
 
 #ifndef _DICHOTOMOUS_ENTRY_CODE_H
 #define _DICHOTOMOUS_ENTRY_CODE_H
@@ -45,8 +37,9 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
 void estimate_sm_laplace(dichotomous_analysis *DA ,
                          dichotomous_model_result *res);
 
+
 void estimate_sm_mcmc(dichotomous_analysis *DA, 
-                      continuous_model_result *res,
+                      dichotomous_model_result *res,
                       bmd_analysis_MCMC *mcmc);
 
 #endif

@@ -268,6 +268,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
 
 void transfer_continuous_model(bmd_analysis a, continuous_model_result *model){
 	if (model){
+	  model->nparms = a.COV.rows(); 
 		model->max = a.MAP; 
 		for (int i = 0; i< model->dist_numE; i ++){
 				double temp = double(i)/double(model->dist_numE); 
