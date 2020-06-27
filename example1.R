@@ -18,7 +18,6 @@ B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",
 B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",fit_type = "mcmc")
 B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "qlinear",fit_type = "mcmc")
 
-
 mData <- matrix(c(0, 0,5,
                   0.1, 2,5,
                   0.3, 3,5,

@@ -67,7 +67,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     prior =   bayesian_prior_dich(model_type,degree)
     temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
                                        c(BMR, alpha,samples,burnin))
-    class(temp$bmd_dist) <- "BMD_CDF"
+    class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 
