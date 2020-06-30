@@ -147,7 +147,7 @@ List run_dichotomous_single_mcmc(NumericVector model,
   
   if (mcmcAnal.model == dich_model::d_multistage){
     mcmcAnal.degree = mcmcAnal.parms - 1; 
-    cerr << mcmcAnal.degree << endl; 
+    // cerr << mcmcAnal.degree << endl; 
   }
   
   bmd_analysis_MCMC output; 
@@ -235,18 +235,18 @@ List run_continuous_single_mcmc(NumericVector model,
     }
   }
   
-  mcmcAnal->model   = (cont_model) model[0]; 
-  mcmcAnal->Y       =    new double[Y.rows()]; 
-  mcmcAnal->n       =    Y.rows(); 
-  mcmcAnal->n_group =    new double[Y.rows()]; 
-  mcmcAnal->sd      =    new double[Y.rows()]; 
-  mcmcAnal->doses   =    new double[Y.rows()]; 
-  mcmcAnal->prior   =    new double[priors.rows()*priors.cols()]; 
-  mcmcAnal->isIncreasing = is_increasing; 
-  mcmcAnal->disttype     = dtype; 
-  mcmcAnal->prior_cols   = priors.cols(); 
-  mcmcAnal->parms        = priors.rows(); 
-  mcmcAnal->alpha        = alpha; 
+  mcmcAnal->model         = (cont_model) model[0]; 
+  mcmcAnal->Y             =    new double[Y.rows()]; 
+  mcmcAnal->n             =    Y.rows(); 
+  mcmcAnal->n_group       =    new double[Y.rows()]; 
+  mcmcAnal->sd            =    new double[Y.rows()]; 
+  mcmcAnal->doses         =    new double[Y.rows()]; 
+  mcmcAnal->prior         =    new double[priors.rows()*priors.cols()]; 
+  mcmcAnal->isIncreasing  = is_increasing; 
+  mcmcAnal->disttype      = dtype; 
+  mcmcAnal->prior_cols    = priors.cols(); 
+  mcmcAnal->parms         = priors.rows(); 
+  mcmcAnal->alpha         = alpha; 
   mcmcAnal->BMD_type     = riskType; 
   mcmcAnal->BMR          = bmrf; 
   mcmcAnal->samples      = samples; 

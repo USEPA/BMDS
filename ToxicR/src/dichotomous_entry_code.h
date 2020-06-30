@@ -35,11 +35,12 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomousMA_result *res);
 
 void estimate_sm_laplace(dichotomous_analysis *DA ,
-                         dichotomous_model_result *res);
-
+                         dichotomous_model_result *res,
+                         bool do_a_rescale = true);
 
 void estimate_sm_mcmc(dichotomous_analysis *DA, 
                       dichotomous_model_result *res,
-                      bmd_analysis_MCMC *mcmc);
+                      bmd_analysis_MCMC *mcmc,
+                      bool do_a_rescale = true);
 
 #endif

@@ -8,6 +8,9 @@
 //
 //
 //
+
+#undef ADDED_Q
+#undef EXTRA_Q
 #define LOGISTIC_A(X) X
 #define LOGISTIC_B(X) X
 #define ADDED_Q(A,BMR) (BMR*(1.0+exp(-A))/exp(-A))
@@ -214,6 +217,7 @@ public:
 };
 
 //Make sure the # defines are only for this file!
+
 
 
 #endif

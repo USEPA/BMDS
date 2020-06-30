@@ -84,7 +84,7 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
     sprintf(str,"Model:  %s", "Probit");
   break; 
   default: 
-    sprintf(str,"Model:  %s", "Danger","Danger");
+    sprintf(str,"Model:  %s", "Danger");
   break;  
   }
   double maximum = result->max; 

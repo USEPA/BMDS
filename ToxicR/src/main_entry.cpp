@@ -176,7 +176,7 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector model_p
 
 		//copy the data in
 		int n = data.rows();
-		BMDSInputData_t *zTemp = new(BMDSInputData_t[n]);
+		BMDSInputData_t *zTemp = new BMDSInputData_t[n];
 
 		for (int i = 0; i < n; i++){
 		  zTemp[i].dose      = data(i,0);

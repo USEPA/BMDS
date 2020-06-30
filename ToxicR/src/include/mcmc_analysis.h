@@ -41,7 +41,7 @@ struct mcmcSamples{
     double map; 
     Eigen::MatrixXd map_estimate; 
     Eigen::MatrixXd map_cov; 
-  /**********************/
+    /**********************/
     Eigen::MatrixXd BMD;
     Eigen::MatrixXd samples;
     Eigen::MatrixXd log_posterior;
@@ -134,9 +134,9 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   			// previous proposal was outside of the bounds
   			nSamples.col(i) = nSamples.col(i-1);
   			penLike(0,i) = penLike(0,i-1);
-          }
+    }
       	BMD(0,i) = isExtra ? model.log_likelihood.compute_BMD_EXTRA_NC(nSamples.col(i),BMR)
-		      : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
+		                       : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i),BMR);
   	}
 
 

@@ -755,14 +755,14 @@ std::list<Eigen::MatrixXd> fit_profileLogic(dBMDModel<LL, PR>  *M,
 	//	cout << "BB" << endl;
 		return rV;
 	}
-	catch (const std::exception &exc) {
+	catch (const std::invalid_argument &exc) {
 		result(0, 0) = DBL_MAX; result(1, 0) = BMD; result(2, 0) = NLOPT_FAILURE;
 		bad_result = true;
 		rV.push_front(result);
 	//	cout <<"CB" << endl;
 		return rV;
 	}
-	catch (const std::invalid_argument &exc) {
+	catch (const std::exception &exc) {
         	result(0, 0) = DBL_MAX; result(1, 0) = BMD; result(2, 0) = NLOPT_FAILURE;
 		bad_result = true;
 		rV.push_front(result);

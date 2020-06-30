@@ -8,6 +8,8 @@
 //
 //
 //
+#undef ADDED_Q
+#undef EXTRA_Q
 #define PROBIT_A(X) X
 #define PROBIT_B(X) X
 #define ADDED_Q(A,BMR) (BMR+gsl_cdf_gaussian_P(A,1.0))
@@ -216,6 +218,8 @@ public:
 		return 1; // the Beta is the removed parameter for the PROBIT
 	}
 };
+
+
 
 
 #endif

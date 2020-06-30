@@ -1,10 +1,7 @@
 #################################################33
 #get_prior_list <- a list of Default priors for an analysis
 #
-#
-#
 ##################################################
-
 
 #################################################
 # bmd_single_continous - Run a single BMD model
@@ -98,25 +95,16 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
             "hill", "exp-3", "exp-5", "power"')
     }
     
- 
-    
-    #check for sufficient statistics and normalize
-    #if (sstat==T){
+    #Temporary fit to determine direction. 
     model_data = list(); 
     model_data$X = D; model_data$SSTAT = Y
-    #}else{
-    #  model_data = createSuffStat(DATA[,1],DATA[,2],is_log_normal)	
-    #}
-    
-    #start here tomorrow <- worry about this change. 
- 
     if (sstat == T){
       temp.fit <- lm(model_data$SSTAT[,1] ~ model_data$X,
   		                weights=(1/model_data$SSTAT[,3]^2)*model_data$SSTAT[,2])
     }else{
       temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
     }
-
+    
     #Determine if there is an increasing or decreasing trend for BMD
     is_increasing = F
     

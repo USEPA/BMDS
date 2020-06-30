@@ -58,6 +58,7 @@ struct dichotomousMA_result{
   double               *post_probs; // posterior probabilities
   double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
+
 // Continuous Structures
 struct continuous_analysis{
   cont_model model; 

@@ -33,6 +33,104 @@
 #include "dichotomous_entry_code.h"
 #include "mcmc_analysis.h"
 
+void rescale(Eigen::MatrixXd *parms, 
+             dich_model model, double max_dose){
+  
+  Eigen::MatrixXd temp = *parms; 
+  Eigen::MatrixXd add   = Eigen::MatrixXd::Zero(parms->rows(),1);
+  Eigen::MatrixXd scale = Eigen::MatrixXd::Ones(parms->rows(),1); 
+  switch(model){
+    case dich_model::d_hill:
+        add(2,0)   = temp(3,0)*log(1/max_dose); 
+      break; 
+    case dich_model::d_gamma:
+        scale(2,0) = 1/max_dose; 
+      break; 
+    case dich_model::d_logistic:
+        scale(1,0) = 1/max_dose; 
+      break; 
+    case dich_model::d_loglogistic:
+        add(1,0) = temp(2,0)*log(1/max_dose); 
+      break; 
+    case dich_model::d_logprobit:
+        add(1,0) = temp(2,0)*log(1/max_dose); 
+      break; 
+    case dich_model::d_multistage:
+        for (int i = 1; i < parms->rows(); i++){
+          scale(i,0) = pow(1/max_dose, i); 
+        }
+      break;
+    case dich_model::d_probit:
+        scale(1,0) = 1/max_dose; 
+      break;
+    case dich_model::d_qlinear: 
+        scale(1,0) = 1/max_dose; 
+      break; 
+    case dich_model::d_weibull:
+        scale(1,0) = pow(1/max_dose,temp(1,0)); 
+      break; 
+  }
+  *parms =   parms->array() * scale.array(); 
+  *parms +=  add; 
+}
+
+
+void rescale_var_matrix(Eigen::MatrixXd *var, 
+                        Eigen::MatrixXd parms, 
+                        dich_model model, double max_dose){
+  Eigen::MatrixXd tvar = *var; 
+  Eigen::MatrixXd temp = parms; 
+  Eigen::MatrixXd add =   Eigen::MatrixXd::Zero(parms.rows(),parms.rows()); 
+  Eigen::MatrixXd scale = Eigen::MatrixXd::Identity(parms.rows(),parms.rows());
+ 
+  switch(model){
+  case dich_model::d_hill:
+    scale(2,3)   = log(1/max_dose); 
+    break; 
+  case dich_model::d_gamma:
+    scale(2,2) = 1/max_dose; 
+    break; 
+  case dich_model::d_logistic:
+    scale(1,1) = 1/max_dose; 
+    break; 
+  case dich_model::d_loglogistic:
+    scale(1,2) = log(1/max_dose); 
+    break; 
+  case dich_model::d_logprobit:
+    scale(1,2) = log(1/max_dose); 
+    break; 
+  case dich_model::d_multistage:
+    for (int i = 1; i < parms.rows(); i++){
+      scale(i,0) = pow(1/max_dose,i); 
+    }
+    break;
+  case dich_model::d_probit:
+    scale(1,1) = 1/max_dose; 
+    break;
+  case dich_model::d_qlinear: 
+    scale(1,1) = 1/max_dose; 
+    break; 
+  case dich_model::d_weibull:
+    scale(2,1) = log(1/max_dose)*pow(1/max_dose,temp(1,0)); 
+    break; 
+  }
+  
+  *var  =   scale * (tvar) *scale.transpose();  
+
+}
+void rescale_dichotomous_model(mcmcSamples v, dich_model model,
+                               double max_dose){
+  //rescale the dichotomous to the origional values
+  for (int i = 0; i < v.samples.cols(); i++ ){
+       Eigen::MatrixXd temp = v.samples.col(i); 
+       rescale(&temp, model,max_dose);  
+       v.samples.col(i) = temp; 
+       v.BMD(i,0) *= max_dose; 
+  }
+  
+  rescale(&v.map_estimate,model,max_dose); 
+  
+}
 
 
 void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model){
@@ -72,7 +170,8 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
 
 void estimate_sm_mcmc(dichotomous_analysis *DA, 
                       dichotomous_model_result *res,
-                      bmd_analysis_MCMC *mcmc){
+                      bmd_analysis_MCMC *mcmc,
+                      bool do_a_rescale){
  
   ///////////////////////////////////
   Eigen::MatrixXd Y(DA->n,2); 
@@ -90,7 +189,9 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
       for (int j = 0; j < DA->prior_cols; j++){
         prior(i,j) = DA->prior[i + j*DA->parms]; 
       } 
-  }  // copy the prior over. 
+  } 
+  
+  // copy the prior over. 
   mcmcSamples a; 
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
@@ -148,7 +249,13 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
     default: 
     break; 
   }
+  
+  if (do_a_rescale){
+    rescale_dichotomous_model(a, DA->model, max_dose); 
+  }
+  
   bmd_analysis b; 
+  
   b = create_bmd_analysis_from_mcmc(DA->burnin,a);
   mcmc->model = DA->model; 
   mcmc->burnin = DA->burnin; 
@@ -162,7 +269,9 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
 }
 
 void estimate_sm_laplace(dichotomous_analysis *DA, 
-                         dichotomous_model_result *res){
+                         dichotomous_model_result *res, 
+                         bool do_a_rescale){
+  
   ///////////////////////////////////
   Eigen::MatrixXd Y(DA->n,2); 
   Eigen::MatrixXd D(DA->n,1); 
@@ -171,8 +280,10 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
     D(i,0) = DA->doses[i]; 
   }
+  
   double  max_dose = D.maxCoeff(); 
   D = (1/max_dose) * D; 
+  
   for (int i = 0; i < DA->parms; i++){
     for (int j = 0; j < DA->prior_cols; j++){
       prior(i,j) = DA->prior[i + j*DA->parms]; 
@@ -245,9 +356,13 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   default: 
     break; 
   }
-
+  
+  if (do_a_rescale){
+      rescale(&a.MAP_ESTIMATE,DA->model,
+              max_dose);
+  }
+  
   transfer_dichotomous_model(a,res);
   res->model = DA->model; 
-
   return; 
 }
