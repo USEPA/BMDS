@@ -41,6 +41,7 @@ using Rcpp::as;
 
 #include "continuous_clean_aux.h"
 #include "continuous_entry_code.h"
+#include "dichotomous_entry_code.h"
 
 /*
  * 
@@ -200,7 +201,6 @@ List convert_continuous_maresults_to_list(continuousMA_result *result){
   return fittedModels; 
 }
 /////////////////////////////////////////////////////////////////////////////
-//
 //
 /////////////////////////////////////////////////////////////////////////////
 // [[Rcpp::export]]
@@ -428,4 +428,103 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
   return rV; 
   
 }
+
+
+
+////////////////////////////////////////////////////////////////////////
+// function: List run_ma_dichotomous()
+// Purpose:  runs a model average based on the prior
+//
+// [[Rcpp::export]]
+List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
+                        NumericVector model_p,
+                        NumericVector options1, IntegerVector options2){
+  
+  dichotomous_analysis Anal; 
+  Anal.BMD_type = (options1[0]==1)?eExtraRisk:eAddedRisk;
+  Anal.BMR      = options1[0]; 
+  Anal.alpha    = options1[1];
+  Anal.Y        = new double[data.rows()] ; 
+  Anal.n_group  = new double[data.rows()] ; 
+  Anal.doses    = new double[data.rows()] ; 
+ // Anal.prior    = new double[pr.cols()*pr.rows()];
+  Anal.n        = data.rows(); 
+  Anal.samples  = options2[2];
+  Anal.burnin   = options2[3];
+ 
+  for (int i = 0; i < data.rows(); i++){
+    Anal.Y[i] = data(i,1); 
+    Anal.n_group[i] = data(i,2); 
+  }
+  
+  for (int i = 0; i < data.rows(); i++){
+    Anal.doses[i] = data(i,0); 
+  }
+  
+  dichotomousMA_analysis ma_info; 
+  ma_info.nmodels = priors.size(); 
+  ma_info.priors  =      new double* [priors.size()];
+  ma_info.actual_parms = new int[priors.size()];//actual number of parameters in the model
+  ma_info.prior_cols   = new int[priors.size()];
+  ma_info.models       = new int[priors.size()];      // given model
+  ma_info.modelPriors  = new double[priors.size()];
+  
+  for (int i = 0; i < priors.size(); i++){
+    Eigen::MatrixXd temp_cov = priors[i]; 
+    ma_info.priors[i] = new double[temp_cov.rows()*temp_cov.cols()]; 
+    ma_info.actual_parms[i] = temp_cov.rows(); 
+    ma_info.prior_cols[i]   = temp_cov.cols(); 
+    ma_info.models[i]       = models[i]; 
+    ma_info.modelPriors[i]     = model_p[i]; // prior over the model
+    
+    for (int m = 0; m < temp_cov.rows(); m++){
+      for (int n = 0; n < temp_cov.cols(); n++){
+        ma_info.priors[i][m + n*temp_cov.rows()] = temp_cov(m,n);
+      }
+    }
+  }
+  
+  ma_MCMCfits model_mcmc_info; 
+  model_mcmc_info.nfits = ma_info.nmodels; 
+  dichotomousMA_result *ma_res = new_dichotomousMA_result(ma_info.nmodels,200);
+  for (int i = 0; i < ma_info.nmodels; i++){
+    // add a new result for each model result
+    ma_res->models[i] = new_dichotomous_model_result(ma_info.models[i],
+                                                     ma_info.actual_parms[i],200);
+    model_mcmc_info.analyses[i] = new_mcmc_analysis(ma_info.models[i],
+                                                    ma_info.prior_cols[i],
+                                                    Anal.samples);
+  }
+  
+
+  /////////
+  estimate_ma_MCMC(&ma_info,
+                   &Anal,
+                   ma_res,
+                   &model_mcmc_info); 
+  //////////
+  
+  
+  //to do add degree to the individual model
+  for(int i = 0; i < priors.size(); i++){
+    delete ma_info.priors[i]; 
+    del_mcmc_analysis(model_mcmc_info.analyses[i]); 
+  }
+  
+  delete ma_info.priors; 
+  delete Anal.Y;        
+  delete Anal.n_group;  
+  delete Anal.doses; 
+  delete ma_info.actual_parms;//actual number of parameters in the model
+  delete ma_info.prior_cols;  
+  delete ma_info.models;      // given model
+  delete ma_info.modelPriors; 
+  delete_dichotomousMA_result(ma_res); 
+  
+  return priors; 
+  
+}
+
+
+
 

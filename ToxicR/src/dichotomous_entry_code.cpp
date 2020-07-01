@@ -88,7 +88,7 @@ void rescale_var_matrix(Eigen::MatrixXd *var,
     scale(2,3)   = log(1/max_dose); 
     break; 
   case dich_model::d_gamma:
-    scale(2,2) = 1/max_dose; 
+    scale(2,2)   = 1/max_dose; 
     break; 
   case dich_model::d_logistic:
     scale(1,1) = 1/max_dose; 
@@ -118,17 +118,18 @@ void rescale_var_matrix(Eigen::MatrixXd *var,
   *var  =   scale * (tvar) *scale.transpose();  
 
 }
-void rescale_dichotomous_model(mcmcSamples v, dich_model model,
+void rescale_dichotomous_model(mcmcSamples *v, dich_model model,
                                double max_dose){
   //rescale the dichotomous to the origional values
-  for (int i = 0; i < v.samples.cols(); i++ ){
-       Eigen::MatrixXd temp = v.samples.col(i); 
+  for (int i = 0; i < v->samples.cols(); i++ ){
+       Eigen::MatrixXd temp = v->samples.col(i); 
        rescale(&temp, model,max_dose);  
-       v.samples.col(i) = temp; 
-       v.BMD(i,0) *= max_dose; 
+       v->samples.col(i) = temp; 
+       v->BMD(i,0) *= max_dose; 
   }
   
-  rescale(&v.map_estimate,model,max_dose); 
+  rescale_var_matrix(&v->map_cov,v->map_estimate,(dich_model)model,max_dose); 
+  rescale(&v->map_estimate,(dich_model)model,max_dose); 
   
 }
 
@@ -152,21 +153,6 @@ void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model)
     }
   }
 }
-
-
-void estimate_ma_MCMC(dichotomousMA_analysis *MA,
-                      dichotomous_analysis   *DA,
-                      dichotomousMA_result   *res,
-                      ma_MCMCfits            *ma){ 
-  return ; 
-}
-
-void estimate_ma_laplace(dichotomousMA_analysis *MA,
-                         dichotomous_analysis *DA ,
-                         dichotomousMA_result *res){
-  return ; 
-}
-
 
 void estimate_sm_mcmc(dichotomous_analysis *DA, 
                       dichotomous_model_result *res,
@@ -251,7 +237,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   }
   
   if (do_a_rescale){
-    rescale_dichotomous_model(a, DA->model, max_dose); 
+    rescale_dichotomous_model(&a, (dich_model)DA->model, max_dose); 
   }
   
   bmd_analysis b; 
@@ -288,7 +274,8 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     for (int j = 0; j < DA->prior_cols; j++){
       prior(i,j) = DA->prior[i + j*DA->parms]; 
     } 
-  }  // copy the prior over. 
+  }  
+  // copy the prior over. 
   bmd_analysis a; 
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
@@ -297,7 +284,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     fixedV.push_back(0.0); 
   }
 
-  switch (DA->model){
+  switch ((dich_model)DA->model){
   case dich_model::d_hill:
     a =   bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
                                                       fixedB, fixedV, DA->degree,
@@ -358,11 +345,110 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   }
   
   if (do_a_rescale){
-      rescale(&a.MAP_ESTIMATE,DA->model,
+      rescale_var_matrix(&a.COV,a.MAP_ESTIMATE,
+                         (dich_model)DA->model,
+                         max_dose); 
+    
+      rescale(&a.MAP_ESTIMATE,(dich_model)DA->model,
               max_dose);
+     
   }
   
   transfer_dichotomous_model(a,res);
   res->model = DA->model; 
   return; 
+}
+
+void estimate_ma_MCMC(dichotomousMA_analysis *MA,
+                      dichotomous_analysis   *DA,
+                      dichotomousMA_result   *res,
+                      ma_MCMCfits            *ma){ 
+ 
+  
+
+  for (int i = 0; i < MA->nmodels ; i++){
+    dichotomous_analysis temp = *DA; // copy over the initial stuff
+    temp.prior = MA->priors[i]; 
+    temp.parms = MA->actual_parms[i]; temp.prior_cols = MA->prior_cols[i]; 
+    temp.model = MA->models[i]; 
+    if (MA->models[i] == dich_model::d_multistage){
+        temp.degree = temp.parms - 1; 
+    }else{
+        temp.degree = 0; 
+    }
+    // fit the individual model
+    estimate_sm_mcmc(&temp, 
+                     res->models[i],
+                     ma->analyses[i], 
+                     false); 
+  }
+  
+  double post_probs[MA->nmodels]; 
+  double temp =0.0; 
+  double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
+  for (int i = 0; i < MA->nmodels; i++){
+    Eigen::Map<MatrixXd> transfer_mat(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
+    Eigen::MatrixXd cov = transfer_mat;
+    cout << cov << endl; 
+    //temp  = 	res->models[i].nparms/2 * log(2 * M_PI) - resb[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
+    //max_prob = temp > max_prob? temp:max_prob; 
+    //post_probs[i] = temp; 
+  }
+  /*
+  double norm_sum = 0.0; 
+  
+  for (int i = 0; i < MA->nmodels; i++){
+    post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); 
+    norm_sum     += exp(post_probs[i]);
+    post_probs[i] = exp(post_probs[i]);
+  }
+  
+  for (int j = 0; j < MA->nmodels; j++){
+    post_probs[j] = post_probs[j]/ norm_sum; 
+    
+    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+      if ( isnan(b[j].BMD_CDF.inv(i))){
+        post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
+      }  
+    } 
+  }
+  
+  norm_sum = 0.0; 
+  for (int i =0; i < MA->nmodels; i++){
+    norm_sum += post_probs[i]; 
+  }
+  
+  
+  for (int i =0; i < MA->nmodels; i++){
+    post_probs[i] = post_probs[i]/norm_sum; 
+    res->post_probs[i] = post_probs[i];
+    transfer_continuous_model(b[i],res->models[i]);
+    res->models[i]->model = MA->models[i]; 
+    res->models[i]->dist  = MA->disttype[i];
+  }
+  
+  double range[2]; 
+  
+  // define the BMD distribution ranges
+  // also get compute the MA BMD list
+  bmd_range_find(res,range);
+  double range_bmd = range[1] - range[0]; 
+  for (int i = 0; i < res->dist_numE; i ++){
+    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
+    double prob = 0.0; 
+    
+    for (int j = 0; j < MA->nmodels; j++){
+      prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+    }
+    res->bmd_dist[i] = cbmd; 
+    res->bmd_dist[i+res->dist_numE]  = prob;
+  }
+  */
+  return; 
+}
+
+void estimate_ma_laplace(dichotomousMA_analysis *MA,
+                         dichotomous_analysis *DA ,
+                         dichotomousMA_result *res){
+  return ; 
 }

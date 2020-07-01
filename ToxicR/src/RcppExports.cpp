@@ -8,32 +8,17 @@
 using namespace Rcpp;
 
 // run_single_dichotomous
-List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data, Eigen::MatrixXd prior, NumericVector options1, IntegerVector options2);
-RcppExport SEXP _ToxicR_run_single_dichotomous(SEXP modelSEXP, SEXP dataSEXP, SEXP priorSEXP, SEXP options1SEXP, SEXP options2SEXP) {
+List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data, Eigen::MatrixXd pr, NumericVector options1, IntegerVector options2);
+RcppExport SEXP _ToxicR_run_single_dichotomous(SEXP modelSEXP, SEXP dataSEXP, SEXP prSEXP, SEXP options1SEXP, SEXP options2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type model(modelSEXP);
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type pr(prSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type options1(options1SEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type options2(options2SEXP);
-    rcpp_result_gen = Rcpp::wrap(run_single_dichotomous(model, data, prior, options1, options2));
-    return rcpp_result_gen;
-END_RCPP
-}
-// run_ma_dichotomous
-List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector model_p, NumericVector options1, IntegerVector options2);
-RcppExport SEXP _ToxicR_run_ma_dichotomous(SEXP dataSEXP, SEXP priorsSEXP, SEXP model_pSEXP, SEXP options1SEXP, SEXP options2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< List >::type priors(priorsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type model_p(model_pSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type options1(options1SEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type options2(options2SEXP);
-    rcpp_result_gen = Rcpp::wrap(run_ma_dichotomous(data, priors, model_p, options1, options2));
+    rcpp_result_gen = Rcpp::wrap(run_single_dichotomous(model, data, pr, options1, options2));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -85,6 +70,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// run_ma_dichotomous
+List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models, NumericVector model_p, NumericVector options1, IntegerVector options2);
+RcppExport SEXP _ToxicR_run_ma_dichotomous(SEXP dataSEXP, SEXP priorsSEXP, SEXP modelsSEXP, SEXP model_pSEXP, SEXP options1SEXP, SEXP options2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< List >::type priors(priorsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type models(modelsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type model_p(model_pSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type options1(options1SEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type options2(options2SEXP);
+    rcpp_result_gen = Rcpp::wrap(run_ma_dichotomous(data, priors, models, model_p, options1, options2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // run_dichotomous_single_mcmc
 List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd pr, NumericVector options);
 RcppExport SEXP _ToxicR_run_dichotomous_single_mcmc(SEXP modelSEXP, SEXP YSEXP, SEXP DSEXP, SEXP prSEXP, SEXP optionsSEXP) {
@@ -120,10 +121,10 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_single_dichotomous", (DL_FUNC) &_ToxicR_run_single_dichotomous, 5},
-    {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 5},
     {"_ToxicR_run_continuous_single", (DL_FUNC) &_ToxicR_run_continuous_single, 6},
     {"_ToxicR_run_continuous_ma_laplace", (DL_FUNC) &_ToxicR_run_continuous_ma_laplace, 6},
     {"_ToxicR_run_continuous_ma_mcmc", (DL_FUNC) &_ToxicR_run_continuous_ma_mcmc, 6},
+    {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 6},
     {"_ToxicR_run_dichotomous_single_mcmc", (DL_FUNC) &_ToxicR_run_dichotomous_single_mcmc, 5},
     {"_ToxicR_run_continuous_single_mcmc", (DL_FUNC) &_ToxicR_run_continuous_single_mcmc, 7},
     {NULL, NULL, 0}

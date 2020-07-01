@@ -512,7 +512,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   double norm_sum = 0.0; 
   
   for (int i = 0; i < MA->nmodels; i++){
-    post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); //FIX ME: ADD MODEL PROBS
+    post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]);
     norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
   }

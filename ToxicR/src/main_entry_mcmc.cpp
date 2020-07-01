@@ -146,8 +146,7 @@ List run_dichotomous_single_mcmc(NumericVector model,
   mcmcAnal.degree = 0; 
   
   if (mcmcAnal.model == dich_model::d_multistage){
-    mcmcAnal.degree = mcmcAnal.parms - 1; 
-    // cerr << mcmcAnal.degree << endl; 
+      mcmcAnal.degree = mcmcAnal.parms - 1; 
   }
   
   bmd_analysis_MCMC output; 

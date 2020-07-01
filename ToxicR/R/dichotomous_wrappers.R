@@ -8,7 +8,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
                                      alpha = 0.05, degree=2,samples = 51000,
                                      burnin = 1000){
-    dmodel = which(model_type==c("hill","gamma","logistic", "log-logistic",
+  dmodel = which(model_type==c("hill","gamma","logistic", "log-logistic",
                                 "log-probit"  ,"multistage"  ,"probit",
                                 "qlinear","weibull"))
   DATA <- cbind(D,Y,N)

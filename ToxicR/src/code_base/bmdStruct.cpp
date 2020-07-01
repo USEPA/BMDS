@@ -21,6 +21,59 @@ void del_continuous_analysis(continuous_analysis a){
   a.prior = NULL; 
 }
 
+
+dichotomous_model_result * new_dichotomous_model_result(int model,
+                                                        int parms,
+                                                          int dist_numE){
+  
+  dichotomous_model_result *dmodel = new dichotomous_model_result; 
+  dmodel->model = model; 
+  dmodel->nparms = parms; 
+  dmodel->max = -1.0*std::numeric_limits<double>::infinity(); 
+  dmodel->dist_numE = dist_numE; 
+  dmodel->parms = new double[parms]; 
+  dmodel->cov   = new double[parms*parms]; 
+  dmodel->bmd_dist = new double[dist_numE*2]; 
+ 
+  return dmodel;  
+}
+
+void delete_dichotomous_model_result(dichotomous_model_result * dmodel)
+                                                           {
+  if (dmodel){
+    delete(dmodel->parms); delete(dmodel->cov);   
+    delete(dmodel->bmd_dist); 
+    delete(dmodel);
+  }
+  return ;  
+}
+
+dichotomousMA_result * new_dichotomousMA_result(int nmodels,
+                                                int dist_numE)
+{
+  dichotomousMA_result * dres = new dichotomousMA_result; 
+  dres->nmodels = nmodels; 
+  dres->models  = new  dichotomous_model_result * [nmodels];
+  dres->dist_numE = dist_numE; 
+  dres->post_probs = new double[dist_numE*2];
+  dres->bmd_dist   = new double[nmodels];
+
+  return dres; 
+}
+  
+void delete_dichotomousMA_result(dichotomousMA_result *res){
+  
+  for (int i = 0; i < res->nmodels; i++){
+     if (res->models[i]){
+        delete_dichotomous_model_result(res->models[i]);
+     }
+  }
+  delete(res->post_probs);
+  delete(res->bmd_dist);
+  return; 
+}
+  
+/////////////////////////////////////////////////////////
 bmd_analysis_MCMC * new_mcmc_analysis(int model,
                                        int parms, 
                                        unsigned int samples){
@@ -33,6 +86,8 @@ bmd_analysis_MCMC * new_mcmc_analysis(int model,
   return rV; 
   
 }
+
+
 
 void del_mcmc_analysis(bmd_analysis_MCMC *an){
   if (an){
