@@ -206,7 +206,6 @@ List run_dichotomous_single_mcmc(NumericVector model,
 // correctly by the R calling function), and then calls the library to
 // run the corresponding analysis. Does MCMC sample
 // output: BMD analysis with the model specified by NumericVector model
-
 // [[Rcpp::export]]
 List run_continuous_single_mcmc(NumericVector model,
                                 Eigen::MatrixXd Y, Eigen::MatrixXd D,

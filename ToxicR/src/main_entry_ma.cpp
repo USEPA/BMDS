@@ -437,17 +437,16 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
 //
 // [[Rcpp::export]]
 List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
-                        NumericVector model_p,
+                        NumericVector model_p, bool is_MCMC, 
                         NumericVector options1, IntegerVector options2){
   
   dichotomous_analysis Anal; 
-  Anal.BMD_type = (options1[0]==1)?eExtraRisk:eAddedRisk;
+  Anal.BMD_type = (options2[2]==1)?eExtraRisk:eAddedRisk;
   Anal.BMR      = options1[0]; 
   Anal.alpha    = options1[1];
   Anal.Y        = new double[data.rows()] ; 
   Anal.n_group  = new double[data.rows()] ; 
   Anal.doses    = new double[data.rows()] ; 
- // Anal.prior    = new double[pr.cols()*pr.rows()];
   Anal.n        = data.rows(); 
   Anal.samples  = options2[2];
   Anal.burnin   = options2[3];
@@ -471,6 +470,7 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   
   for (int i = 0; i < priors.size(); i++){
     Eigen::MatrixXd temp_cov = priors[i]; 
+ 
     ma_info.priors[i] = new double[temp_cov.rows()*temp_cov.cols()]; 
     ma_info.actual_parms[i] = temp_cov.rows(); 
     ma_info.prior_cols[i]   = temp_cov.cols(); 
@@ -483,19 +483,21 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
       }
     }
   }
-  
+ 
   ma_MCMCfits model_mcmc_info; 
   model_mcmc_info.nfits = ma_info.nmodels; 
+  model_mcmc_info.analyses = new bmd_analysis_MCMC * [ma_info.nmodels]; 
   dichotomousMA_result *ma_res = new_dichotomousMA_result(ma_info.nmodels,200);
   for (int i = 0; i < ma_info.nmodels; i++){
     // add a new result for each model result
+   
     ma_res->models[i] = new_dichotomous_model_result(ma_info.models[i],
                                                      ma_info.actual_parms[i],200);
+   
     model_mcmc_info.analyses[i] = new_mcmc_analysis(ma_info.models[i],
                                                     ma_info.prior_cols[i],
                                                     Anal.samples);
   }
-  
 
   /////////
   estimate_ma_MCMC(&ma_info,
@@ -511,6 +513,7 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
     del_mcmc_analysis(model_mcmc_info.analyses[i]); 
   }
   
+  delete model_mcmc_info.analyses; 
   delete ma_info.priors; 
   delete Anal.Y;        
   delete Anal.n_group;  

@@ -365,7 +365,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
                       ma_MCMCfits            *ma){ 
  
   
-
+  
   for (int i = 0; i < MA->nmodels ; i++){
     dichotomous_analysis temp = *DA; // copy over the initial stuff
     temp.prior = MA->priors[i]; 

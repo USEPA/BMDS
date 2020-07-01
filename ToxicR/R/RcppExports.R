@@ -17,8 +17,8 @@ run_continuous_ma_mcmc <- function(model_priors, model_type, dist_type, Y, X, op
     .Call(`_ToxicR_run_continuous_ma_mcmc`, model_priors, model_type, dist_type, Y, X, options)
 }
 
-run_ma_dichotomous <- function(data, priors, models, model_p, options1, options2) {
-    .Call(`_ToxicR_run_ma_dichotomous`, data, priors, models, model_p, options1, options2)
+run_ma_dichotomous <- function(data, priors, models, model_p, is_MCMC, options1, options2) {
+    .Call(`_ToxicR_run_ma_dichotomous`, data, priors, models, model_p, is_MCMC, options1, options2)
 }
 
 run_dichotomous_single_mcmc <- function(model, Y, D, pr, options) {

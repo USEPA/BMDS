@@ -180,6 +180,7 @@ bayesian_prior_dich  <- function(model,degree=2){
   dmodel = which(model==c("hill","gamma","logistic", "log-logistic",
                           "log-probit"  ,"multistage"  ,"probit",
                           "qlinear","weibull"))
+  print(model)
   if (dmodel==1){ #HILL
     prior <- create_prior_list(normprior(	-1,	2,	-40,	40),
                                normprior( 0,	3,	-40,	40),
