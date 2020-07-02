@@ -13,24 +13,33 @@ enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, gain_loss_model = 10, polyn
 enum distribution {normal = 1, normal_ncv = 2, log_normal = 3}; 
 
 // Dichotomous Structures
+//
+// dichotomous_analysis:   
+//   Purpose - Contains all of the information for a dichotomous analysis.
+//   It is used do describe a single model analysis, in which all of the information
+//   is used, or a MA analysis, in which all the information save prior, degree, parms
+//   and prior_cols are used. 
 struct dichotomous_analysis{
-  int model; 
-  int n; 
+  int model; // Model Type as listed in dich_model
+  int n;     // total number of observations obs/n 
   double *Y; // observed +
   double *doses; // 
-  double *n_group; //
-  double *prior; // a column order matrix px5 where p is 
-                 // the number of parametersd
-  int BMD_type;  
+  double *n_group; //size of the group
+  double *prior; // a column order matrix parms X prior_cols 
+  int BMD_type; // 1 = extra ; added otherwise
   double BMR; 
-  double alpha; 
-  int degree;  // used for multistage
+  double alpha; // alpha of the analysis
+  int degree;  // degree of polynomial used only  multistage
   int samples; // number of MCMC samples. 
   int burnin;  // size of burin
-  int parms;   // number of parameters
+  int parms;   // number of parameters in the model
   int prior_cols; // colunns in the prior
 };
-
+//
+// dichotomous_model_result: 
+// Purpose: Data structure that is populated with all of the necessary
+// information for a single model fit. 
+//
 struct dichotomous_model_result{
   int      model;           // dichotomous model specification
   int      nparms; 		      //number of parameters in the model
