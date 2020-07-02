@@ -487,12 +487,12 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   ma_MCMCfits model_mcmc_info; 
   model_mcmc_info.nfits = ma_info.nmodels; 
   model_mcmc_info.analyses = new bmd_analysis_MCMC * [ma_info.nmodels]; 
-  dichotomousMA_result *ma_res = new_dichotomousMA_result(ma_info.nmodels,200);
+  dichotomousMA_result *ma_res = new_dichotomousMA_result(ma_info.nmodels,300);
   for (int i = 0; i < ma_info.nmodels; i++){
     // add a new result for each model result
    
     ma_res->models[i] = new_dichotomous_model_result(ma_info.models[i],
-                                                     ma_info.actual_parms[i],200);
+                                                     ma_info.actual_parms[i],300);
    
     model_mcmc_info.analyses[i] = new_mcmc_analysis(ma_info.models[i],
                                                     ma_info.prior_cols[i],
@@ -500,10 +500,16 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   }
 
   /////////
-  estimate_ma_MCMC(&ma_info,
-                   &Anal,
-                   ma_res,
-                   &model_mcmc_info); 
+  if (is_MCMC){
+      estimate_ma_MCMC(&ma_info,
+                       &Anal,
+                       ma_res,
+                       &model_mcmc_info); 
+  } else{
+      estimate_ma_laplace(&ma_info,
+                          &Anal,
+                          ma_res); 
+  }
   ///////////////////
   //to do add degree to the individual model
   for(int i = 0; i < priors.size(); i++){
