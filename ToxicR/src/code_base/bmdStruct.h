@@ -50,22 +50,34 @@ struct dichotomous_model_result{
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
 
+//
+// dichotomousMA_analysis
+// Puprose: Fill out all of the information for a dichotomous
+// model average.  
+//
+//
 struct dichotomousMA_analysis{
-  int    nmodels;         //number of models for each 
-  double **priors;     //priors
-  int    *nparms;      //parameter in each model
+  int    nmodels;      //number of models for the model average
+  double **priors;     // List of pointers to prior arrays
+                       // priors[i] is the prior array for the ith model ect
+  int    *nparms;      //parameters in each model
   int    *actual_parms;//actual number of parameters in the model
   int    *prior_cols;  // columns in the prior if there are 'more' in the future
-  int    *models;      // given model
+                       // presently there are only 5
+  int    *models;      // list of models this is defined by dich_model. 
   double *modelPriors; // prior probability on the model
 };
 
+// 
+//
+//
 struct dichotomousMA_result{
-  int                      nmodels; //number of models for each 
-  dichotomous_model_result **models; // data result
-  int                    dist_numE; // number of entries in rows for the bmd_dist
-  double               *post_probs; // posterior probabilities
-  double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  int                       nmodels; //number of models for each 
+  dichotomous_model_result **models; // Individual model fits for each
+                                     // model average  
+  int                     dist_numE; // number of entries in rows for the bmd_dist
+  double                *post_probs; // posterior probabilities
+  double                  *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
 
 // Continuous Structures
@@ -73,20 +85,19 @@ struct continuous_analysis{
   cont_model model; 
   int n; 
   bool suff_stat; //true if the data are in sufficient statistics format
-  double *Y; // observed +
+  double *Y; // observed data means or actual data
   double *doses; // 
-  double *sd; //
-  double *n_group; //
+  double *sd; // SD of the group if suff_stat = true, null otherwise. 
+  double *n_group; // N for each group if suff_stat = true, null otherwise
   double *prior; // a column order matrix px5 where p is 
                 // the number of parametersd
-  int BMD_type; 
+  int BMD_type; // type of BMD
   
-  bool isIncreasing; 
-  double BMR; 
-  double tail_prob; 
-  int    disttype; 
-  double alpha; 
-  est_method fitter; 
+  bool isIncreasing; // if the BMD is defined increasing or decreasing
+  double BMR; // Benchmark response related to the BMD type
+  double tail_prob; // tail probability 
+  int    disttype;  // Distribution type defined in the enum distribution
+  double alpha;     // specified alpha
   int samples; // number of MCMC samples. 
   int burnin;  // burn in 
   int parms; // number of parameters 
@@ -94,14 +105,17 @@ struct continuous_analysis{
 };
 struct continuousMA_analysis{
   int    nmodels;         //number of models for each 
-  double **priors;     //priors
-  int    *nparms;      //parameter in each model
+  double **priors;        // pointer to pointer arrays for the prior
+                          // each prior will have nparms[i] x prior_cols[i]
+                          // it is also a columnwise matrix
+  int    *nparms;         //parameter in each model
   int    *actual_parms;//actual number of parameters in the model
   int    *prior_cols;  // columns in the prior if there are 'more' in the future
   int    *models;      // given model
   int    *disttype;    // given distribution type
   double *modelPriors; // prior probability on the model
 };
+
 struct continuous_model_result{
   int      model;           // continuous model specification
   int      dist;            // distribution_type 
@@ -123,12 +137,13 @@ struct continuousMA_result{
 
 // mcmc structures
 struct bmd_analysis_MCMC{
-  int model; 
-  unsigned int burnin; 
-  unsigned int samples;
-  unsigned int nparms; 
-  double * BMDS; 
-  double * parms; 
+  int model; // model used in the analysis
+  unsigned int burnin; // burnin samples
+  unsigned int samples; // total samples including burnin
+  unsigned int nparms;  // parameters in the model
+  double * BMDS;        // array of samples of BMDS length (samples)
+  double * parms;       // array of parameters length (samples X parms)
+                        
 };
 
 struct ma_MCMCfits{

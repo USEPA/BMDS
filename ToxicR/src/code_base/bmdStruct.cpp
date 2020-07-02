@@ -55,21 +55,22 @@ dichotomousMA_result * new_dichotomousMA_result(int nmodels,
   dres->nmodels = nmodels; 
   dres->models  = new  dichotomous_model_result * [nmodels];
   dres->dist_numE = dist_numE; 
-  dres->post_probs = new double[dist_numE*2];
-  dres->bmd_dist   = new double[nmodels];
+  dres->post_probs = new double[nmodels];
+  dres->bmd_dist   = new double[dist_numE*2];
 
   return dres; 
 }
   
 void delete_dichotomousMA_result(dichotomousMA_result *res){
-  
-  for (int i = 0; i < res->nmodels; i++){
-     if (res->models[i]){
-        delete_dichotomous_model_result(res->models[i]);
-     }
+  if (res){
+    for (int i = 0; i < res->nmodels; i++){
+       if (res->models[i]){
+          delete_dichotomous_model_result(res->models[i]);
+       }
+    }
+    delete(res->post_probs);
+    delete(res->bmd_dist);
   }
-  delete(res->post_probs);
-  delete(res->bmd_dist);
   return; 
 }
   

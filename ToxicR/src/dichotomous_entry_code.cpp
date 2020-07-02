@@ -33,6 +33,33 @@
 #include "dichotomous_entry_code.h"
 #include "mcmc_analysis.h"
 
+
+void bmd_range_find(dichotomousMA_result *res, 
+                    double *range){
+  // assume the minimum BMD for the MA is always 0
+  range[0] = 0.0; 
+  double current_max = 0.0; 
+  for (int j = 10; j > 1; j--){
+    for (int i = 0; i < res->nmodels;i++){
+      int temp_idx = res->models[i]->dist_numE -j; 
+      
+      // make sure we are not dealing with an infinite value
+      // or not a number
+      if (!isnan(res->models[i]->bmd_dist[temp_idx]) && 
+          !isinf(res->models[i]->bmd_dist[temp_idx])){
+          if ( res->models[i]->bmd_dist[temp_idx] > current_max){
+            current_max = res->models[i]->bmd_dist[temp_idx]; 
+          }
+      }
+      
+    }
+  }
+  // if we don't find a max then the upper limit is NAN
+  range[1] = current_max == 0.0 ? std::numeric_limits<double>::quiet_NaN():current_max; 
+  
+}
+
+
 void rescale(Eigen::MatrixXd *parms, 
              dich_model model, double max_dose){
   
@@ -422,36 +449,131 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   }
  
   for (int i =0; i < MA->nmodels; i++){
-    post_probs[i] = post_probs[i]/norm_sum; 
-    res->post_probs[i] = post_probs[i];
+    post_probs[i]         = post_probs[i]/norm_sum; 
+    res->post_probs[i]    = post_probs[i];
     res->models[i]->model = MA->models[i]; 
   }
-  
-  double range[2]; 
  
-  // TO Do the approximate integration
-    
-  /* 
-  // define the BMD distribution ranges
-  // also get compute the MA BMD list
+  double range[2]; 
+  std::vector<bmd_cdf> model_cdfs(MA->nmodels); 
+  for (int i = 0; i < MA->nmodels; i++){
+    std::vector<double> bmd(res->models[i]->dist_numE); 
+    std::vector<double> prc(res->models[i]->dist_numE);
+    for (int m = 0; m < bmd.size(); m++){
+      bmd[m] = res->models[i]->bmd_dist[m];
+      prc[m] = res->models[i]->bmd_dist[m + res->models[i]->dist_numE]; 
+    }
+    model_cdfs[i] = bmd_cdf(prc,bmd); 
+  }
+
   bmd_range_find(res,range);
   double range_bmd = range[1] - range[0]; 
+
   for (int i = 0; i < res->dist_numE; i ++){
     double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+      prob += isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
     }
     res->bmd_dist[i] = cbmd; 
-    res->bmd_dist[i+res->dist_numE]  = prob;
+    res->bmd_dist[i + res->dist_numE]  = prob;
   }
-  */
+
   return; 
 }
 
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
-  return ; 
+#pragma omp parallel
+{
+#pragma omp for  
+  for (int i = 0; i < MA->nmodels ; i++){
+    dichotomous_analysis temp = *DA; // copy over the initial stuff
+    temp.prior = MA->priors[i]; 
+    temp.parms = MA->actual_parms[i]; temp.prior_cols = MA->prior_cols[i]; 
+    temp.model = MA->models[i]; 
+    if (MA->models[i] == dich_model::d_multistage){
+      temp.degree = temp.parms - 1; 
+    }else{
+      temp.degree = 0; 
+    }
+    // fit the individual model
+    estimate_sm_laplace(&temp, 
+                        res->models[i],
+                        false); 
+  }
+} 
+  double post_probs[MA->nmodels]; 
+  double temp =0.0; 
+  double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
+  for (int i = 0; i < MA->nmodels; i++){
+    Eigen::Map<MatrixXd> transfer_mat(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
+    Eigen::MatrixXd cov = transfer_mat;
+    temp  = 	res->models[i]->nparms/2 * log(2 * M_PI) - res->models[i]->max + 0.5*log(max(0.0,cov.determinant()));
+    max_prob = temp > max_prob? temp:max_prob; 
+    post_probs[i] = temp; 
+  }
+  
+  double norm_sum = 0.0; 
+  
+  for (int i = 0; i < MA->nmodels; i++){
+    post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]); 
+    norm_sum     += exp(post_probs[i]);
+    post_probs[i] = exp(post_probs[i]);
+  }
+  
+  
+  for (int j = 0; j < MA->nmodels; j++){
+    post_probs[j] = post_probs[j]/ norm_sum; 
+    // cout << post_probs[j] << endl; 
+    
+    for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
+      
+      if ( isnan(res->models[j]->bmd_dist[i])){
+        post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
+      }  
+    } 
+  }
+  
+  norm_sum = 0.0; 
+  for (int i =0; i < MA->nmodels; i++){
+    norm_sum += post_probs[i]; 
+  }
+  
+  for (int i =0; i < MA->nmodels; i++){
+    post_probs[i]         = post_probs[i]/norm_sum; 
+    res->post_probs[i]    = post_probs[i];
+    res->models[i]->model = MA->models[i]; 
+  }
+  
+  double range[2]; 
+  std::vector<bmd_cdf> model_cdfs(MA->nmodels); 
+  for (int i = 0; i < MA->nmodels; i++){
+    std::vector<double> bmd(res->models[i]->dist_numE); 
+    std::vector<double> prc(res->models[i]->dist_numE);
+    for (int m = 0; m < bmd.size(); m++){
+      bmd[m] = res->models[i]->bmd_dist[m];
+      prc[m] = res->models[i]->bmd_dist[m + res->models[i]->dist_numE]; 
+    }
+    model_cdfs[i] = bmd_cdf(prc,bmd); 
+  }
+  
+  bmd_range_find(res,range);
+  double range_bmd = range[1] - range[0]; 
+  
+  for (int i = 0; i < res->dist_numE; i ++){
+    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
+    double prob = 0.0; 
+    
+    for (int j = 0; j < MA->nmodels; j++){
+      prob += isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
+    }
+    res->bmd_dist[i] = cbmd; 
+    res->bmd_dist[i + res->dist_numE]  = prob;
+  }
+  
+  return; 
+  
 }
