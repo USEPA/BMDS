@@ -364,8 +364,9 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
                       dichotomousMA_result   *res,
                       ma_MCMCfits            *ma){ 
  
-  
-  
+#pragma omp parallel
+{
+  #pragma omp for  
   for (int i = 0; i < MA->nmodels ; i++){
     dichotomous_analysis temp = *DA; // copy over the initial stuff
     temp.prior = MA->priors[i]; 
@@ -382,19 +383,18 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
                      ma->analyses[i], 
                      false); 
   }
-  
+} 
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     Eigen::Map<MatrixXd> transfer_mat(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
     Eigen::MatrixXd cov = transfer_mat;
-    cout << cov << endl; 
-    //temp  = 	res->models[i].nparms/2 * log(2 * M_PI) - resb[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
-    //max_prob = temp > max_prob? temp:max_prob; 
-    //post_probs[i] = temp; 
+    temp  = 	res->models[i]->nparms/2 * log(2 * M_PI) - res->models[i]->max + 0.5*log(max(0.0,cov.determinant()));
+    max_prob = temp > max_prob? temp:max_prob; 
+    post_probs[i] = temp; 
   }
-  /*
+  
   double norm_sum = 0.0; 
   
   for (int i = 0; i < MA->nmodels; i++){
@@ -402,12 +402,15 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
   }
+ 
   
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
-    
-    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
-      if ( isnan(b[j].BMD_CDF.inv(i))){
+   // cout << post_probs[j] << endl; 
+  
+    for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
+      
+      if ( isnan(res->models[j]->bmd_dist[i])){
         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
     } 
@@ -417,18 +420,18 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   for (int i =0; i < MA->nmodels; i++){
     norm_sum += post_probs[i]; 
   }
-  
-  
+ 
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
-    transfer_continuous_model(b[i],res->models[i]);
     res->models[i]->model = MA->models[i]; 
-    res->models[i]->dist  = MA->disttype[i];
   }
   
   double range[2]; 
-  
+ 
+  // TO Do the approximate integration
+    
+  /* 
   // define the BMD distribution ranges
   // also get compute the MA BMD list
   bmd_range_find(res,range);

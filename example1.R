@@ -6,7 +6,7 @@ mData <- matrix(c(0, 1,50,
                   3, 1,50,
                   10, 20,50),nrow=4,ncol=3,byrow=T)
 
-C <- ma_dichotomous_fit(mData[,1],mData[,2],mData[,3])
+system.time({C <- ma_dichotomous_fit(mData[,1],mData[,2],mData[,3])})
 
 A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma",fit_type = "laplace")
 

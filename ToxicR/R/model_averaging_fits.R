@@ -108,9 +108,9 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   result = which(model_name ==c("hill","gamma","logistic","log-logistic","log-probit","multistage","probit",
                                  "qlinear","weibull"))
   if ((identical(result,integer(0)))){
-    stop("ahhhh")
+    stop("The model requested to be fit is not defined.")
   }
-  print(result)
+ 
   return(result)
 }
 
