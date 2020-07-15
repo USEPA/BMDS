@@ -6,7 +6,7 @@
 ##########################################################
 single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
-                                     alpha = 0.05, degree=2,samples = 51000,
+                                     alpha = 0.05, degree=2,samples = 21000,
                                      burnin = 1000){
   dmodel = which(model_type==c("hill","gamma","logistic", "log-logistic",
                                 "log-probit"  ,"multistage"  ,"probit",
@@ -120,32 +120,7 @@ print.BMDdich_fit_mle<-function(p){
   cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",p$bmd[1],p$bmd[2],p$bmd[3],100*(1-2*p$options[2]),"% 2-sided Confidence Interval"))
 }
 
-#######################################################
-#
-#
-#######################################################
-bmd_ma_dichotomous <- function(DATA,o1,o2,PR=NA)
-{
-    models <- c("Logistic","Probit","Log-logistic",
-                "Log-probit", "Weibull", "Gamma", "Multistage",
-                "Quantal-Linear", "Hill")
-    model_p <- rep(1,9)/9; # background prior is even
-    priors <- list();
-    priors[[1]] = bmd_default_bayesian_prior('logistic')
-    priors[[2]] = bmd_default_bayesian_prior('probit')
-    priors[[3]] = bmd_default_bayesian_prior('log-logistic')
-    priors[[4]] = bmd_default_bayesian_prior('log-probit')
-    priors[[5]] = bmd_default_bayesian_prior('weibull')
-    priors[[6]] = bmd_default_bayesian_prior('gamma')
-    priors[[7]] = bmd_default_bayesian_prior('multistage')
-    priors[[8]] = bmd_default_bayesian_prior('qlinear')
-    priors[[9]] = bmd_default_bayesian_prior('hill')
 
-    temp <- run_ma_dichotomous(DATA, priors, model_p,
-                                     o1, o2)
-    names(temp$POSTERIORS) <- models;
-    return(temp)
-}
 
 bmd_default_frequentist_settings <- function(model,degree=2){
   dmodel = which(model==c("hill","gamma","logistic", "log-logistic",

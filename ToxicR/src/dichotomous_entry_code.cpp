@@ -264,20 +264,26 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   }
   
   if (do_a_rescale){
-    rescale_dichotomous_model(&a, (dich_model)DA->model, max_dose); 
+  
   }
   
   bmd_analysis b; 
-  
   b = create_bmd_analysis_from_mcmc(DA->burnin,a);
   mcmc->model = DA->model; 
   mcmc->burnin = DA->burnin; 
   mcmc->samples = DA->samples; 
   mcmc->nparms = DA->parms; 
+  // rescale mcmc information
+  rescale_dichotomous_model(&a, (dich_model)DA->model, max_dose); 
   transfer_mcmc_output(a,mcmc); 
-  res->model = DA->model; 
   transfer_dichotomous_model(b,res);
- 
+  // rescale the BMD 
+  // has nothing to do with the do_a_rescale
+  for (int i = 0; i < res->dist_numE; i++){
+    res->bmd_dist[i] *= max_dose; 
+  }
+  
+  res->model = DA->model; 
   return; 
 }
 
@@ -382,6 +388,10 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   }
   
   transfer_dichotomous_model(a,res);
+  // rescale the BMD 
+   for (int i = 0; i < res->dist_numE; i++){
+    res->bmd_dist[i] *= max_dose; 
+  }
   res->model = DA->model; 
   return; 
 }
@@ -421,6 +431,31 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
   }
+  double max_dose = -std::numeric_limits<double>::infinity();
+  for (int i = 0; i < DA->n; i++){
+    if (DA->doses[i] > max_dose){
+      max_dose = DA->doses[i]; 
+    }
+  }
+  // now that the Bayes Factor's have been approximated, we can rescale
+  for (int i = 0; i < MA->nmodels; i++){
+    Eigen::Map<MatrixXd> trans_cov(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
+    Eigen::MatrixXd cov = trans_cov;  
+    Eigen::Map<MatrixXd> trans_par(res->models[i]->cov,res->models[i]->nparms,1); 
+    Eigen::MatrixXd par = trans_par; 
+    
+    rescale(&par, (dich_model) res->models[i]->model, max_dose);
+    rescale_var_matrix(&cov,par,
+                       (dich_model)res->models[i]->model,
+                       max_dose);
+    
+    for (int n= 0; n < res->models[i]->nparms; n++){
+      res->models[i]->parms[n] = par(n,0);   
+      for (int m = 0; m <  res->models[i]->nparms; m++){
+        res->models[i]->cov[n + m*res->models[i]->nparms] = cov(n,m); 
+      }
+    }
+  }
   
   double norm_sum = 0.0; 
   
@@ -456,16 +491,29 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
  
   double range[2]; 
   std::vector<bmd_cdf> model_cdfs(MA->nmodels); 
-  for (int i = 0; i < MA->nmodels; i++){
-    std::vector<double> bmd(res->models[i]->dist_numE); 
-    std::vector<double> prc(res->models[i]->dist_numE);
-    for (int m = 0; m < bmd.size(); m++){
-      bmd[m] = res->models[i]->bmd_dist[m];
-      prc[m] = res->models[i]->bmd_dist[m + res->models[i]->dist_numE]; 
-    }
-    model_cdfs[i] = bmd_cdf(prc,bmd); 
-  }
 
+  for (int i = 0; i < MA->nmodels; i++){
+    std::vector<double> bmd;; 
+    std::vector<double> prc;
+    for (int m = 0; m < res->models[i]->dist_numE ; m++){
+      if (!isinf(res->models[i]->bmd_dist[m]) && 
+          !isnan(res->models[i]->bmd_dist[m]) ){
+          // deal with numerical problems in the tails of the distribution
+          if ( m > 0 ){
+            if (res->models[i]->bmd_dist[m] <= res->models[i]->bmd_dist[m-1]){
+              res->models[i]->bmd_dist[m] = res->models[i]->bmd_dist[m-1] + 1e-8;  
+            }
+          }
+          
+          bmd.push_back(res->models[i]->bmd_dist[m]);
+          prc.push_back(res->models[i]->bmd_dist[m + res->models[i]->dist_numE]);
+      }
+    }
+    if (prc.size() > 5){
+      model_cdfs[i] = bmd_cdf(prc,bmd); 
+    }
+  }
+  
   bmd_range_find(res,range);
   double range_bmd = range[1] - range[0]; 
 
@@ -476,6 +524,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     for (int j = 0; j < MA->nmodels; j++){
       prob += isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
     }
+   // cout << prob << endl; 
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i + res->dist_numE]  = prob;
   }
@@ -486,7 +535,8 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
-#pragma omp parallel
+
+  #pragma omp parallel
 {
 #pragma omp for  
   for (int i = 0; i < MA->nmodels ; i++){
@@ -505,6 +555,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
                         false); 
   }
 } 
+
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
@@ -515,7 +566,34 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     max_prob = temp > max_prob? temp:max_prob; 
     post_probs[i] = temp; 
   }
-  
+
+  double max_dose = -std::numeric_limits<double>::infinity();
+  for (int i = 0; i < DA->n; i++){
+    if (DA->doses[i] > max_dose){
+      max_dose = DA->doses[i]; 
+    }
+  }
+  // now that the Bayes Factor's have been approximated, we can rescale
+ for (int i = 0; i < MA->nmodels; i++){
+    Eigen::Map<MatrixXd> trans_cov(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
+    Eigen::MatrixXd cov = trans_cov;  
+    Eigen::Map<MatrixXd> trans_par(res->models[i]->cov,res->models[i]->nparms,1); 
+    Eigen::MatrixXd par = trans_par; 
+    
+    rescale(&par, (dich_model) res->models[i]->model, max_dose);
+    rescale_var_matrix(&cov,par,
+                       (dich_model)res->models[i]->model,
+                       max_dose);
+    
+    for (int n= 0; n < res->models[i]->nparms; n++){
+      res->models[i]->parms[n] = par(n,0);   
+      for (int m = 0; m <  res->models[i]->nparms; m++){
+        res->models[i]->cov[n + m*res->models[i]->nparms] = cov(n,m); 
+      }
+    }
+  }
+ 
+
   double norm_sum = 0.0; 
   
   for (int i = 0; i < MA->nmodels; i++){
@@ -524,19 +602,17 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     post_probs[i] = exp(post_probs[i]);
   }
   
-  
+
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
     // cout << post_probs[j] << endl; 
-    
     for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
-      
       if ( isnan(res->models[j]->bmd_dist[i])){
         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
     } 
   }
-  
+
   norm_sum = 0.0; 
   for (int i =0; i < MA->nmodels; i++){
     norm_sum += post_probs[i]; 
@@ -549,20 +625,35 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   }
   
   double range[2]; 
+
   std::vector<bmd_cdf> model_cdfs(MA->nmodels); 
   for (int i = 0; i < MA->nmodels; i++){
-    std::vector<double> bmd(res->models[i]->dist_numE); 
-    std::vector<double> prc(res->models[i]->dist_numE);
-    for (int m = 0; m < bmd.size(); m++){
-      bmd[m] = res->models[i]->bmd_dist[m];
-      prc[m] = res->models[i]->bmd_dist[m + res->models[i]->dist_numE]; 
+    std::vector<double> bmd;; 
+    std::vector<double> prc;
+    for (int m = 0; m < res->models[i]->dist_numE ; m++){
+      if (!isinf(res->models[i]->bmd_dist[m]) && 
+          !isnan(res->models[i]->bmd_dist[m]) ){
+          // deal with numerical problems in the tails
+          if ( m > 0 ){
+            if (res->models[i]->bmd_dist[m] <= res->models[i]->bmd_dist[m-1]){
+              res->models[i]->bmd_dist[m] = res->models[i]->bmd_dist[m-1] + 1e-8;  
+            }
+           }
+          
+          bmd.push_back(res->models[i]->bmd_dist[m]);
+          prc.push_back(res->models[i]->bmd_dist[m + res->models[i]->dist_numE]);
+         // cerr << res->models[i]->bmd_dist[m] << ":" << res->models[i]->bmd_dist[m + res->models[i]->dist_numE] << endl; 
+      }
     }
-    model_cdfs[i] = bmd_cdf(prc,bmd); 
+    if (prc.size() > 5){
+         model_cdfs[i] = bmd_cdf(prc,bmd); 
+    }
   }
   
   bmd_range_find(res,range);
+ 
   double range_bmd = range[1] - range[0]; 
-  
+ 
   for (int i = 0; i < res->dist_numE; i ++){
     double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
     double prob = 0.0; 

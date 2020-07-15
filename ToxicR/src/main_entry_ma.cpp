@@ -43,6 +43,7 @@ using Rcpp::as;
 #include "continuous_entry_code.h"
 #include "dichotomous_entry_code.h"
 
+
 /*
  * 
  */
@@ -101,8 +102,35 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
                          Named("covariance") = covM, 
                          Named("bmd_dist")   = bmd_distribution,
                          Named("maximum")    = maximum);  
+ 
   return rV; 
   
+}
+
+List convert_dichotomous_maresults_to_list(dichotomousMA_result *result){
+  List fittedModels; 
+  char str[80]; 
+  
+  for(int i = 0; i < result->nmodels ; i++){
+    sprintf(str,"Fitted_Model_%d",i+1);
+    fittedModels.push_back(convert_dichotomous_fit_to_list(result->models[i]),
+                           str); 
+  }
+  
+  NumericMatrix ma_bmd_dist(result->dist_numE,2); 
+  NumericVector post_probs(result->nmodels);
+  for(int i = 0; i < result->dist_numE; i++){
+    ma_bmd_dist(i,0) = result->bmd_dist[i]; 
+    ma_bmd_dist(i,1) = result->bmd_dist[i + result->dist_numE];
+  }
+  for (int i = 0; i < result->nmodels; i++){
+    post_probs[i] = result->post_probs[i]; 
+  }
+  
+  fittedModels.push_back(ma_bmd_dist,"BMD_CDF"); 
+  fittedModels.push_back(post_probs ,"posterior_probs"); 
+  
+  return fittedModels; 
 }
 
 
@@ -371,7 +399,7 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
     //cout << ma_anal.models[i] << " " << dist_type[i] << endl; 
     ma_result->models[i] = new_continuous_model_result( ma_anal.models[i],
                                                         ma_anal.nparms[i],
-                                                                      200); //have 200 equally spaced values
+                                                                      300); //have 300 equally spaced values
     model_mcmc_info.analyses[i] = new_mcmc_analysis(ma_anal.models[i],
                                                     ma_anal.nparms[i],
                                                               samples);
@@ -430,7 +458,6 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // function: List run_ma_dichotomous()
 // Purpose:  runs a model average based on the prior
@@ -438,7 +465,7 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
 // [[Rcpp::export]]
 List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
                         NumericVector model_p, bool is_MCMC, 
-                        NumericVector options1, IntegerVector options2){
+                        NumericVector options1,  IntegerVector options2){
   
   dichotomous_analysis Anal; 
   Anal.BMD_type = (options2[2]==1)?eExtraRisk:eAddedRisk;
@@ -499,16 +526,25 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
                                                     Anal.samples);
   }
 
+  List returnV; 
   /////////
   if (is_MCMC){
       estimate_ma_MCMC(&ma_info,
                        &Anal,
                        ma_res,
                        &model_mcmc_info); 
+       returnV = convert_dichotomous_maresults_to_list(ma_res);
+       List t1 = convert_mcmc_results(&model_mcmc_info); 	
+       returnV =  List::create(Named("mcmc_runs") = t1 , Named("ma_results") = returnV);
+       // convert MCMC results to R Lists
+       // List::create(Named("mcmc_runs") = t1 , Named("ma_results") = t2);
   } else{
       estimate_ma_laplace(&ma_info,
                           &Anal,
                           ma_res); 
+      // convert Laplace results to R lists
+      returnV = convert_dichotomous_maresults_to_list(ma_res); 
+      
   }
   ///////////////////
   //to do add degree to the individual model
@@ -528,7 +564,7 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   delete ma_info.modelPriors; 
   delete_dichotomousMA_result(ma_res); 
 
-  return priors; 
+  return returnV; 
   
 }
 
