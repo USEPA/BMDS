@@ -39,13 +39,12 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 1){ #MLE fit
     bounds = bmd_default_frequentist_settings(model_type,degree)
     temp = run_single_dichotomous(dmodel,DATA,bounds,o1,o2); 
-    class(temp$bmd_dist) <- "BMD_CDF"
+    #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     temp$bounds  = bounds; 
     temp$model   = model_type; 
     temp$data    = DATA
-    class(temp) = "BMDdich_fit_mle"
     
     return(temp)
   }
@@ -53,27 +52,25 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 2){ #laplace fit
     prior =   bayesian_prior_dich(model_type,degree); 
     temp = run_single_dichotomous(dmodel,DATA,prior[[1]],o1,o2); 
-    class(temp$bmd_dist) <- "BMD_CDF"
+    #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     
     temp$prior = prior; 
     temp$model =  model_type; 
     temp$data = DATA
-    class(temp) = "BMDdich_fit_laplace"
     return(temp)
   }
   if (fitter ==3){
     prior =   bayesian_prior_dich(model_type,degree)
     temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
                                        c(BMR, alpha,samples,burnin))
-    class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
+    #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 
     temp$data    = DATA
     temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha))))
-    class(temp)  = "BMDdich_fit_MCMC"
     return(temp)
   }
  
@@ -101,24 +98,19 @@ print.BMDdich_fit_MCMC<-function(p){
   cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",m,x[1],x[2],100*(1-2*p$options[2]),"% 2-sided Confidence Interval"))
 }
 
-print.BMDdich_fit_laplace<-function(p){
-  cat ("Benchmark Dose Estimates using Laplace \n")
-  cat ("approximation to the Posterior\n")
-  cat (sprintf("Extra Risk: BMR:%1.2f\n",p$options[1]))
-  cat (sprintf("Model Type: %s\n",p[[9]][1]))
+.print.BMDdich_fit<-function(p){
+  cat ("Benchmark Dose Estimates\n")
+  cat ("Approximation to the Posterior\n")
+  cat (sprintf("Model Type: %s\n",p$full_model))
   cat ("BMD  (BMDL,BMDU) \n")
   cat ("---------------------\n")
-  cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",p$bmd[1],p$bmd[2],p$bmd[3],100*(1-2*p$options[2]),"% 2-sided Confidence Interval"))
+  temp = p$bmd_dist
+  temp = temp[!is.infinite(temp[,1]),]
+  spfun = splinefun(temp[,2],temp[,1],method = "hyman")
+  cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",spfun(0.5),spfun(0.05),spfun(0.95),90,"% 2-sided Confidence Interval"))
 }
 
-print.BMDdich_fit_mle<-function(p){
-  cat ("Benchmark Dose Estimates using MLE \n")
-  cat (sprintf("Extra Risk: BMR:%1.2f\n",p$options[1]))
-  cat (sprintf("Model Type: %s\n",p[[9]][1]))
-  cat ("BMD  (BMDL,BMDU) \n")
-  cat ("---------------------\n")
-  cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",p$bmd[1],p$bmd[2],p$bmd[3],100*(1-2*p$options[2]),"% 2-sided Confidence Interval"))
-}
+
 
 
 

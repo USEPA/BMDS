@@ -85,6 +85,9 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
   case dich_model::d_probit: 
     sprintf(str,"Model:  %s", "Probit");
   break; 
+  case dich_model::d_weibull:
+    sprintf(str,"Model: %s", "Weibull");
+  break; 
   default: 
     sprintf(str,"Model:  %s", "Danger");
   break;  
@@ -103,6 +106,8 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
                          Named("bmd_dist")   = bmd_distribution,
                          Named("maximum")    = maximum);  
  
+ 
+  rV.attr("class") = "BMDdich_fit"; 
   return rV; 
   
 }
