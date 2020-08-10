@@ -6,3 +6,4 @@ importFrom(VIM, alphablend)
 #and the plot commands etc. 
 S3method(print, BMDmodelprior, .print.BMDmodelprior)
 S3method(print, BMD_CDF, .print.BMD_CDF)
+S3method(print, BMDdich_fit, .print.BMDdich_fit)

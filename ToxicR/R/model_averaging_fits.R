@@ -151,8 +151,15 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
   }
   
   data <- as.matrix(cbind(D,Y,N))
-  temp <- run_ma_dichotomous(data, priors, model_i,
-                             model_p, TRUE, o1, o2)
+  if ( fit_type == "laplace"){
+    #Laplace Run
+    temp <- run_ma_dichotomous(data, priors, model_i,
+                               model_p, FALSE, o1, o2)
+  }else{
+    #MCMC run
+    temp <- run_ma_dichotomous(data, priors, model_i,
+                               model_p, TRUE, o1, o2)
+  }
   
   return(temp)
 }

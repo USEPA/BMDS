@@ -74,6 +74,8 @@ using Eigen::Map;
 using Eigen::MatrixXd;
 using Rcpp::as;
 
+
+
 Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max){
 
   // Note: Samples are by column. 
