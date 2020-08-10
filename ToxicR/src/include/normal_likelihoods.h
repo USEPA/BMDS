@@ -73,7 +73,7 @@ public:
          // log-likelihood formula in the BMDS documentation - numerically the same as above. 
          if (sufficient_statistics){
 				returnV = 		Y.col(2).array()*log(1/sqrt(2.0*M_PI))
-								-(Y.col(2).array() / 2.0)*log(var.array()) - (1 / (2.0*var.array()))*((Y.col(2).array() - 1)*pow(Y.col(1).array(), 2) +
+								       -(Y.col(2).array() / 2.0)*log(var.array()) - (1 / (2.0*var.array()))*((Y.col(2).array() - 1)*pow(Y.col(1).array(), 2) +
 												Y.col(2).array()*pow(Y.col(0).array() - mu.array(), 2));
 
          }else{

@@ -6,6 +6,7 @@
 //necessary things to run in R    
   #include <RcppEigen.h>
   #include <RcppGSL.h>
+using namespace Rcpp;
 #else 
   #include <Eigen/Dense>
 
@@ -16,8 +17,9 @@
 #include "continuous_clean_aux.h"
 #include "bmdStruct.h"
 #include <iostream>
+#include <numeric> 
 
-using namespace Rcpp;
+
 using namespace std;
 
 

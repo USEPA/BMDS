@@ -1,6 +1,9 @@
 #ifdef R_COMPILATION  
   #include <RcppEigen.h>
   #include <RcppGSL.h>
+  using namespace Rcpp;
+  using Rcpp::as;
+
 #else 
   #include <Eigen/Dense>
 #endif
@@ -18,11 +21,10 @@
 #include "continuous_model_functions.h"
 
 
-using namespace Rcpp;
+
 using namespace std;
 using Eigen::Map;
 using Eigen::MatrixXd;
-using Rcpp::as;
 
 //const Map<MatrixXd> A(as<Map<MatrixXd>>(AA));
 

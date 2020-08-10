@@ -824,7 +824,7 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	//double mapBMD = BMD; // current BMD evaluated at estimate M->getEST 
 	Eigen::MatrixXd parms = M->getEST();
 	Eigen::MatrixXd X = M->returnX(); 
-	fstream fs;
+	
 
 	double max_dose = X.maxCoeff(); 
 	//cout << "Yo Yo Yo" << max_dose << endl << endl; 

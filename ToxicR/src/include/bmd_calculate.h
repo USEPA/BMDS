@@ -359,7 +359,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	LL      dichotimousM(Y, D, degree);
 	PR   	  model_prior(prior);
 
-	ofstream file;
+	
 	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
 	optimizationResult oR = findMAP<LL, PR>(&model);
 	bmd_analysis rVal;
