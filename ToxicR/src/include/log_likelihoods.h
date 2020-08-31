@@ -51,7 +51,7 @@ public:
 				return X;
 	}
 protected:
-	Eigen::MatrixXd      Y; // Data - First column is observed, Second Column is N
+	Eigen::MatrixXd    Y; // Data - First column is observed, Second Column is N
 	Eigen::MatrixXd		 X; // Covariates
 
 };

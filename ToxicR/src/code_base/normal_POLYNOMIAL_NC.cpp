@@ -646,6 +646,8 @@ double normalPOLYNOMIAL_BMD_NC::bmd_hybrid_extra_bound(Eigen::MatrixXd theta, do
 	return log(temp) - log(BMRF); 
 }
 
+
+
 // Functions: normalPOLYNOMIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 //			  normalPOLYNOMIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 //			  normalPOLYNOMIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)

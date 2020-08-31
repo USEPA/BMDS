@@ -1,5 +1,10 @@
-PKG_CPPFLAGS =  -I"./code_base" -I"./include"  -o3 -funroll-loops -std=c++11
-PKG_CPPFLAGS += -fopenmp -DR_COMPILATION=TRUE -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
+#USE_SIMD = 0 NO VECTOR INSTRUCTIONS -DUSE_SIMD=1
+#USE_SIMD = 1 USE AVX/AVX2 INSTRUCTIONS
+#USE_SIMD = 2 USE AVX2512 INSTRUCTIONS-DUSE_SIMD=1
+
+PKG_CPPFLAGS =  -I"./code_base" -I"./include"   -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize
+PKG_CPPFLAGS += -fopenmp -DR_COMPILATION=TRUE -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native -DNDEBUG -flto
+
 
 PKG_LIBS     = -lgsl -lnlopt -fopenmp 
 

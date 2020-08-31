@@ -415,7 +415,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::advance(it_pop,175);
   llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
   
-  int ngenerations = 1500; 
+  int ngenerations = 400; 
   int ntourny = 20; 
   int tourny_size = 20; 
   
@@ -445,7 +445,6 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
            cur_tourny_parms.insert(temp_pop,population[sel]);
          }else{
            for (int j = 0; !break_loop && j < ctsize; j++){
-             
              if (it_l[sel] < cur_tourny_nll[j]){ // this is the first occurance
                std::advance(temp_it,j);  std::advance(temp_pop,j);
                cur_tourny_nll.insert(temp_it,it_l[sel]); 
@@ -505,8 +504,8 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      
     it_l = llist.begin();
     it_pop = population.begin();
-    std::advance(it_l,175);
-    std::advance(it_pop,175);
+    std::advance(it_l,100);
+    std::advance(it_pop,100);
     llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
    }
    
@@ -558,8 +557,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -568,7 +567,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   int opt_iter;
   // look at 5 optimization algorithms :-)
-  for (opt_iter = 0; opt_iter < 5; opt_iter++){
+  for (opt_iter = 1; opt_iter < 5; opt_iter++){
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
       double temp = x[i];
@@ -584,18 +583,18 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       break;
     case  1:
       opt_ptr = &opt2 ;
-      opt_ptr->set_maxeval(5000);
+      opt_ptr->set_maxeval(1000);
       break;
     case 2:
       opt_ptr = &opt3;
-      opt_ptr->set_maxeval(5000);
+      opt_ptr->set_maxeval(1000);
       break;
     case 3:
       opt_ptr = &opt4;
-      opt_ptr->set_maxeval(5000);
+      opt_ptr->set_maxeval(1000);
     default :
       opt_ptr = &opt5;
-    opt_ptr->set_maxeval(5000);
+      opt_ptr->set_maxeval(1000);
     break;
     }
     
@@ -603,7 +602,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_lower_bounds(lb);
     opt_ptr->set_upper_bounds(ub);
     opt_ptr->set_ftol_rel(1e-8);
-    opt_ptr->set_ftol_abs(1e-8);
+   // opt_ptr->set_ftol_abs(1e-8);
     
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
@@ -627,6 +626,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       if (opt_iter >= 1
             && result > 0
             && result < 5) {
+
             opt_iter = 10;  // if it made it here it will break the loop
       }
       

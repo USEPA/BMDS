@@ -73,9 +73,10 @@ class cBMDModel : public statModel<LL,PR> {
 										double tail_prob,
 										std::vector<double> lb,
 										std::vector<double> ub) {
+		     
 			return this->log_likelihood.starting_value(theta, BMDType,
-													   BMD, BMRF, isInc, tail_prob,
-													   lb, ub);
+											   BMD, BMRF, isInc, tail_prob,
+											   lb, ub);
 		};
 	
 		std::vector<double> bound_fix(std::vector<double> x, contbmd BMDType,
@@ -154,8 +155,8 @@ double cBMDModel<LL,PR>::equality_constraint(Eigen::MatrixXd theta,
 	double returnV = 0.0; 	
 		switch (BMDType){
 			case CONTINUOUS_BMD_ABSOLUTE:    
-				 returnV = this->log_likelihood.bmd_absolute_bound( theta,BMD, BMRF,isInc); 
-				 break; 
+				returnV = this->log_likelihood.bmd_absolute_bound( theta,BMD, BMRF,isInc); 
+				break; 
 			case  CONTINUOUS_BMD_STD_DEV:   
 			     returnV = this->log_likelihood.bmd_stdev_bound( theta,BMD, BMRF,isInc);  
 				break; 
@@ -262,9 +263,9 @@ double cequality_constraint(unsigned     n,
 	// thus we call equality and let the class cBMDstatmod figure out
 	// what the equality constraint is
 	return  model->sm->equality_constraint(theta,grad,
-										   model->BMDType, 
-										   model->cBMD, model->BMR,
-										   model->add_info);	
+                                             model->BMDType, 
+                                             model->cBMD, model->BMR,
+                                             model->add_info);	
 }
 
 /***************************************************************************************
@@ -284,10 +285,10 @@ tail_prob            - Used by the Hybrid approach only to define "adverse" resp
 //findMaxW_EQUALITY <- for continuous bmd models
 template <class LL, class PR>
 optimizationResult cfindMAX_W_EQUALITY( cBMDModel<LL, PR>  *M,
-					Eigen::MatrixXd start,
-					contbmd BMDType, double BMD, double BMRF,
-					bool isInc,
-					double tail_prob)
+                                        Eigen::MatrixXd start,
+                                        contbmd BMDType, double BMD, double BMRF,
+                                        bool isInc,
+                                        double tail_prob)
 {
 	//cout << start << endl << endl;  
 	int opt_iter = 0; // try several different optimization methods 
@@ -310,17 +311,12 @@ optimizationResult cfindMAX_W_EQUALITY( cBMDModel<LL, PR>  *M,
 	///////////////////////////////////////////////////////////
 	start = M->starting_value(start,BMDType,BMD,BMRF,isInc,tail_prob,lb,ub);
 	///////////////////////////////////////////////////////////
-	//
-	//cout << start << endl; 
+	//cout << "equality start" << start << endl; 
+	
 	for (int i = 0; i < x.size(); i++) {
-      double temp = start(i, 0);
-      //// Force starting value to be within bounds
-      //if (temp < lb[i]) temp = lb[i];
-      //else if (temp > ub[i]) temp = ub[i];
-     		 x[i] = temp;
-		//	cout << x[i] << ":" ; 
+         x[i] = start(i, 0);
 	}
-	//cout << endl; 
+	
 
 	///////////////////////////////////////////////////////////////////////////////
 	c_optimInfo<LL, PR> info; 	info.BMR = BMRF; 	info.cBMD = BMD;
@@ -670,7 +666,6 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 	double PBMD = BMD;
 	bool error = false;
 
-    //DEBUG_OPEN_LOG("bmds.log", file);
 
 	ret1(0, 0) = PLIKE; ret1(1, 0) = BMD; ret1(2, 0) = 666; 
 	CL.push_front(ret1); 
@@ -681,21 +676,16 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 		// fit the profile likelihood
 		if (M->type_of_profile(BMDType) == PROFILE_EQUALITY) {
 			oR = cfindMAX_W_EQUALITY<LL, PR>(M, parms, BMDType, CBMD, BMRF,
-				isIncreasing, tail_prob);
+				                            isIncreasing, tail_prob);
 		}
 		else {
 			oR = cfindMAX_W_BOUND<LL, PR>(M, parms, BMDType, CBMD,
 										  BMRF, isIncreasing, tail_prob);
 		}
-        //file << "\toR.result= " << oR.result << endl;
-        //if (std::isnan(oR.functionV)) {
-        //  file << __FUNCTION__ << " at line: " << __LINE__ << " error= true" << endl;
-        //  flush(file);
-        //}
-
-       	    parms = oR.max_parms;      
-	    result(0, 0) = oR.functionV; result(1, 0) = CBMD; result(2, 0) = oR.result;	
-	    temp1.push_front(parms); 
+       
+    parms = oR.max_parms;      
+	  result(0, 0) = oR.functionV; result(1, 0) = CBMD; result(2, 0) = oR.result;	
+	  temp1.push_front(parms); 
 	    
 		CLIKE = oR.functionV; 
 		PLIKE = CLIKE;
@@ -705,22 +695,16 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 		
         if (std::isnan(oR.functionV)) {
           error = true;
-          //DEBUG_LOG(file, __FUNCTION__ << " at line: " << __LINE__ << " error= true");
+ 
         }
 	}
-    //DEBUG_LOG(file, "Finished lower profile: CBMD= "<< CBMD <<", max_iters= " << max_iters);
-//	for (std::list<Eigen::MatrixXd>::iterator it = temp1.begin(); it != temp1.end(); ++it)
-//		cout << endl << it->transpose(); 
-		
-//	cout << BMD << " " << CLIKE << endl;
+ 
 	CLIKE = MAP_LIKE;  	CBMD = BMD * (1.0 + BMDchange);
 	max_iters = 0;   	parms = M->getEST();
 	error = false; 
-	// Now increase the BMD sequentially going up
+
 	while (fabs(MAP_LIKE - CLIKE) < totalChange && max_iters < 300 && !error)
 	{   
-		//cout << max_iters << " " << CBMD << " " << endl; 
-		// fit the profile likelihood
 		if (M->type_of_profile(BMDType) == PROFILE_EQUALITY) {
 			oR = cfindMAX_W_EQUALITY<LL, PR>(M,	parms,	BMDType, CBMD, 	BMRF,
 											isIncreasing,	tail_prob);
@@ -738,7 +722,6 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 	
 	   if (std::isnan(oR.functionV) || std::isinf(CBMD)){
 			error = true; 
-            //DEBUG_LOG(file, __FUNCTION__ << " at line: " << __LINE__ << " error= true");
 	   } 
 	
 	   CL.push_back(result);

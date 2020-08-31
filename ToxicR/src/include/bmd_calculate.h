@@ -253,10 +253,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
 
-	double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
-	
-  //DEBUG_LOG(file, "After model.returnBMD, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", BMD= " << BMD);
-  //DEBUG_CLOSE_LOG(file);
+  double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
 
   Eigen::MatrixXd result;
 	std::vector<double> x;

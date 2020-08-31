@@ -2,5 +2,6 @@
 *.tar.gz
 *.a
 *.RData
-
-.Rproj.user
+*.la
+*.so
+*.Rproj.user

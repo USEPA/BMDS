@@ -119,6 +119,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// test_skn
+NumericVector test_skn(Eigen::MatrixXd Y, Eigen::MatrixXd D);
+RcppExport SEXP _ToxicR_test_skn(SEXP YSEXP, SEXP DSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type D(DSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_skn(Y, D));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_single_dichotomous", (DL_FUNC) &_ToxicR_run_single_dichotomous, 5},
@@ -128,6 +140,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 7},
     {"_ToxicR_run_dichotomous_single_mcmc", (DL_FUNC) &_ToxicR_run_dichotomous_single_mcmc, 5},
     {"_ToxicR_run_continuous_single_mcmc", (DL_FUNC) &_ToxicR_run_continuous_single_mcmc, 7},
+    {"_ToxicR_test_skn", (DL_FUNC) &_ToxicR_test_skn, 2},
     {NULL, NULL, 0}
 };
 

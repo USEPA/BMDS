@@ -84,7 +84,7 @@ class lognormalPOLYNOMIAL_BMD_NC : public lognormalLLModel {
 	double bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing);
 	double bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing);
 	double bmd_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing);
-    double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB);
+  double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB);
 
     //BASIC BMD Computation absolute to hybrid
 	double bmd_absolute_bound(Eigen::MatrixXd theta,	 double BMD,double BMRF, bool isIncreasing);
@@ -92,7 +92,7 @@ class lognormalPOLYNOMIAL_BMD_NC : public lognormalLLModel {
 	double bmd_reldev_bound(Eigen::MatrixXd theta,       double BMD,double BMRF, bool isIncreasing);
 	double bmd_point_bound(Eigen::MatrixXd theta,        double BMD,double BMRF, bool isIncreasing);
 	double bmd_extra_bound(Eigen::MatrixXd theta,        double BMD,double BMRF, bool isIncreasing);
-    double bmd_hybrid_extra_bound(Eigen::MatrixXd theta, double BMD,double BMRF, bool isIncreasing,
+  double bmd_hybrid_extra_bound(Eigen::MatrixXd theta, double BMD,double BMRF, bool isIncreasing,
 								  double TAIL_PROB);
 
 	///

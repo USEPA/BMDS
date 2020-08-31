@@ -29,3 +29,7 @@ run_continuous_single_mcmc <- function(model, Y, D, priors, options, is_logNorma
     .Call(`_ToxicR_run_continuous_single_mcmc`, model, Y, D, priors, options, is_logNormal, suff_stat)
 }
 
+test_skn <- function(Y, D) {
+    .Call(`_ToxicR_test_skn`, Y, D)
+}
+

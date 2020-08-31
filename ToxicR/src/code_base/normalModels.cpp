@@ -12,7 +12,7 @@
 #include "normalModels.h"
 
 #ifdef R_COMPILATION
-    //necessary things to run in R    
+    //necessary things to run in R    starting_value
     #include <RcppEigen.h>
     #include <RcppGSL.h>
 #else 
