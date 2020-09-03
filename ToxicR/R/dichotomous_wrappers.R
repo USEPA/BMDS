@@ -45,7 +45,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$bounds  = bounds; 
     temp$model   = model_type; 
     temp$data    = DATA
-    
+    class(temp) <- "BMDdich_fit_maximized"
     return(temp)
   }
   
@@ -59,6 +59,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$prior = prior; 
     temp$model =  model_type; 
     temp$data = DATA
+    class(temp) <- "BMDdich_fit_maximized"
     return(temp)
   }
   if (fitter ==3){
@@ -71,6 +72,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$model   = model_type; 
     temp$data    = DATA
     temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha))))
+    class(temp) <- "BMDdich_fit_MCMC"
     return(temp)
   }
  
