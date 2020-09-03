@@ -328,10 +328,11 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             std::vector<bool> fixedB,std::vector<double> fixedV,
                                             bool is_const_var,
                                             bool is_increasing) {
+
   // value to return
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
-  PR   	  model_prior(prior);
+  PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
   // create the Continuous BMD model
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
@@ -441,7 +442,23 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
-  switch(CM){
+  switch(CM){ 
+    case cont_model::funl:
+      model_prior.scale_prior(divisor,0); 
+      model_prior.scale_prior(divisor,1); 
+      model_prior.scale_prior(max_dose,2); 
+      model_prior.scale_prior(max_dose,3);
+      model_prior.scale_prior(max_dose,4); 
+      model_prior.scale_prior(max_dose*max_dose,5);
+      
+      if (!is_logNormal){
+           if (is_const_var){
+                model_prior.add_mean_prior(2.0*log(divisor),6);
+           }else{
+                model_prior.add_mean_prior(2.0*log(divisor),7);
+           }
+      }
+      break; 
     case cont_model::hill:
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(divisor,1);

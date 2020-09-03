@@ -151,16 +151,19 @@ List run_continuous_single(IntegerVector model,
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
+     
       if (Y.cols() == 3){ //sufficient statistics
         anal.n_group[i] = Y(i,2);
         anal.sd[i]      = Y(i,1); 
       }
     }
+    
     ////////////////////////////////////
     continuous_model_result *result = new_continuous_model_result( anal.model,
                                                                    anal.parms,
                                                                    200); //have 200 equally spaced values
     ////////////////////////////////////
+     
     estimate_sm_laplace(&anal,result);
     List rV = convert_continuous_fit_to_list(result); 	
     // free up memory

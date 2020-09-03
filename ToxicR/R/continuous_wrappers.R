@@ -27,18 +27,14 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rt = 6; 
     }
     dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
-    dmodel = which(model_type==c("hill","exp-3","exp-5","power"))
+    dmodel = which(model_type==c("hill","exp-3","exp-5","power","FUNL"))
 
     if (identical(dmodel, integer(0))){
       stop('Please specify one of the following model types: \n
-            "hill","exp-3","exp-5","power"')
+            "hill","exp-3","exp-5","power","FUNL"')
     }
     
-    if (identical(rt,integer(0))){
-      stop('Please specify one of the following Benchmark Dose types \n
-            "hill","exp-5","power"')
-    }
-    
+  
     if(identical(dis_type,integer(0))){
       stop('Please specify the distribution as one of the following:\n
             "normal","normal-ncv","lognormal"')
@@ -52,9 +48,14 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     }else{
       stop("The data do not appear to be in the correct format.")
     }
-    
-    permuteMat = cbind(c(1,2,3,4),c(6,3,5,8))
+    #permute the matrix to the internal C values
+    # Hill = 6, Exp3 = 3, Exp5 = 5, Power = 8, 
+    # FUNL = 10
+    permuteMat = cbind(c(1,2,3,4,5),c(6,3,5,8,10))
     fitmodel = permuteMat[dmodel,2]
+    if (fitmodel == 10 && dis_type == 3){
+         stop("The FUNL model is currently not defined for Log-Normal distribution.")
+    }
     
     if (prior =="default"){
       PR = bayesian_prior_continuous(model_type,distribution)
@@ -89,11 +90,6 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     
     if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
     
-    
-    if (identical(dmodel, integer(0))){
-      stop('Please specify one of the following model types: 
-            "hill", "exp-3", "exp-5", "power"')
-    }
     
     #Temporary fit to determine direction. 
     model_data = list(); 
@@ -140,21 +136,15 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$bmd <- c(mean(rvals$mcmc_result$BMD_samples,na.rm=TRUE),quantile(rvals$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE))
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       rvals$prior <- PR
+      class(rvals) <- "BMDcont_fit_MCMC"
       return(rvals)
     }else{
       
       
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
   						                          PR[[1]],options, dist_type)
-      if (type_of_fit == 2){
-        #MLE was chosen
-        class(rvals) <- "BMDcont_fit_mle"
-        
-      }else{
-        #Laplace was chosen
-        class(rvals) <- "BMDcont_fit_laplace"
-        rvals$prior <- PR
-      }
+      
+      rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),]
       te <- splinefun(rvals$bmd_dist[,2],rvals$bmd_dist[,1],method="hyman")
     
       rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
@@ -162,6 +152,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$model   <- model_type
       rvals$options <- options
       rvals$data    <- DATA
+      class(rvals)  <- "BMDcont_fit_maximized"
       
       return (rvals)
     }

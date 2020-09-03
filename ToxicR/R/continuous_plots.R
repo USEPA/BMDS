@@ -1,3 +1,9 @@
+# FUNL
+cont_FUNL_f <- function(A,doses){
+     b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
+     return(b)
+}
+
 #dichotomous hill
 cont_hill_f <- function(parms,d){
   g  <- parms[1] 
@@ -25,18 +31,17 @@ cont_exp_3_f <-function(parms,d){
   return (rval)
 }
 
-#dichotomous weibull
 cont_power_f <-function(parms,d){
-  g <- 1/(1+exp(-parms[1])); 
-  a <- parms[2];
-  b <- parms[3]; 
-  rval <- g + (1-g)*(1-exp(-b*d^a))
+  g <- parms[1]; 
+  b <- parms[2];
+  a <- parms[3]; 
+  rval <- g + b*d^a
   return (rval)
 }
 
 
 
-plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
+.plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
   density_col="red"
   credint_col="lightblue1"
@@ -46,7 +51,7 @@ plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
     stop( "Quantile probability must be between 0 and 0.5")
   }
   
-  if (ncol(fit$data) ==4 ){ #sufficient statistics
+  if (ncol(fit$data) == 4 ){ #sufficient statistics
     mean <- fit$data[,2,drop=F]
     se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
     doses = fit$data[,1,drop=F]
@@ -65,18 +70,21 @@ plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
 
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  if (fit$model=="FUNL"){
+     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses)   
+  }
   if (fit$model=="hill"){
-    Q <- apply(fit$PARMS,1,cont_hill_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses)
   }
   if (fit$model=="exp-3"){
-    Q <- apply(fit$PARMS,1,cont_exp_3_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses)
   }
   if (fit$model=="exp-5"){
-    Q <- apply(fit$PARMS,1,cont_exp_5_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
   }
   
   if (fit$model=="power"){
-    Q <- apply(fit$PARMS,1,cont_power_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
   }
   
  
@@ -98,7 +106,9 @@ plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   }
   
   if (BMD_DENSITY ==TRUE){
-    Dens =  density(fit$BMD,cut=c(max(test_doses)),adjust =1.5)
+    temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
+    temp = temp[!is.infinite(temp)]
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]
@@ -118,7 +128,7 @@ plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
 }
   
 
-plot.BMDcont_fit_mle<-function(fit,qprob=0.05,...){
+.plot.BMDcont_fit_maximized<-function(fit,qprob=0.05,...){
   
   density_col="red"
   credint_col="lightblue1"
@@ -127,25 +137,28 @@ plot.BMDcont_fit_mle<-function(fit,qprob=0.05,...){
     stop( "Quantile probability must be between 0 and 0.5")
   }
    
-  if (ncol(fit$data) ==4 ){ #sufficient statistics
-    mean <- fit$data[,2,drop=F]
-    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-    doses = fit$data[,1,drop=F]
-    uerror <- mean+se
-    lerror <- mean-se
-    
-    dose = c(doses,doses)
-    Response = c(uerror,lerror)
-    plot(dose,Response,type='n',...)
-    
+  if (ncol(fit$data) == 4 ){ #sufficient statistics
+       mean <- fit$data[,2,drop=F]
+       se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+       doses = fit$data[,1,drop=F]
+       uerror <- mean+se
+       lerror <- mean-se
+       
+       dose = c(doses,doses)
+       Response = c(uerror,lerror)
+       plot(dose,Response,type='n',...)
+       
   }else{
-    Response <- fit$data[,2,drop=F]
-    doses = fit$data[,1,drop=F]
-    plot(doses,Response,type='n',...)
+       Response <- fit$data[,2,drop=F]
+       doses = fit$data[,1,drop=F]
+       plot(doses,Response,type='n',...)
   }
   
   
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  if (fit$model=="FUNL"){
+       me <- cont_FUNL_f(fit$parameters,test_doses)
+  }  
   if (fit$model=="hill"){
     me <- cont_hill_f(fit$parameters,test_doses)
   }
@@ -168,28 +181,7 @@ plot.BMDcont_fit_mle<-function(fit,qprob=0.05,...){
     lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
   }
   
-  cdf_rows = nrow(fit$cdf)
-  a = fit$cdf[,1]
-  b = fit$cdf[,2]
-  b = b[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-  a = a[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-  ta = a
-  tb = ta*0
-  a = c(min(a)*0.9,a,max(a)*1.1)
-  b = c(0,b,1.0)
-  cdf_est <- splinefun(a,b)
-  
-  for(i in 1:length(ta)){
-    tb[i] = -qchisq(abs(0.5-cdf_est(ta[i])),df=1)*0.5 #approximate the profile 
-  }
-  tb = tb - min(tb)
-  tb = tb/(max(tb))*(max(Response)-min(Response))*0.6
-  tb[1] = 0; tb[length(tb)] = 0; 
-  tb = tb + min(Response)
-  polygon(ta,tb,col = alphablend(col="red",0.2),border =alphablend(col="red",0.2))  
-
-  
-  if (ncol(fit$data) ==4){
+  if (ncol(fit$data) == 4){
        points(doses,mean,...)
        arrows(x0=doses, y0=lerror, x1=doses, 
               y1=uerror, code=3, angle=90, length=0.1)
@@ -199,89 +191,3 @@ plot.BMDcont_fit_mle<-function(fit,qprob=0.05,...){
   
 }
 
-
-
-
-plot.BMDcont_fit_laplace<-function(fit,qprob=0.05,...){
-  
-  density_col="red"
-  credint_col="lightblue1"
-  
-  
-  if (qprob < 0 || qprob > 0.5){
-    stop( "Quantile probability must be between 0 and 0.5")
-  }
-  
-  
-  
-  if (ncol(fit$data) ==4 ){ #sufficient statistics
-    mean <- fit$data[,2,drop=F]
-    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-    doses = fit$data[,1,drop=F]
-    uerror <- mean+se
-    lerror <- mean-se
-    
-    dose = c(doses,doses)
-    Response = c(uerror,lerror)
-    plot(dose,Response,type='n',...)
-    
-  }else{
-    Response <- fit$data[,2,drop=F]
-    doses = fit$data[,1,drop=F]
-    plot(doses,Response,type='n',...)
-  }
-  
-  
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
-  if (fit$model=="hill"){
-    me <- cont_hill_f(fit$parameters,test_doses)
-  }
-  if (fit$model=="exp-3"){
-    me <- cont_exp_3_f(fit$parameters,test_doses)
-  }
-  if (fit$model=="exp-5"){
-    me <- cont_exp_5_f(fit$parameters,test_doses)
-  }
-  if (fit$model=="power"){
-    me <- cont_power_f(fit$parameters,test_doses)
-  }
-  
-  lines(test_doses,me)
-  temp_fit <- splinefun(test_doses,me)
-  
-  if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
-  }
-  
-  cdf_rows = nrow(fit$cdf)
-  a = fit$cdf[,1]
-  b = fit$cdf[,2]
-  b = b[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-  a = a[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-  ta = a
-  tb = ta*0
-  a = c(min(a)*0.9,a,max(a)*1.1)
-  b = c(0,b,1.0)
-  cdf_est <- splinefun(a,b)
-  
-  for(i in 1:length(ta)){
-    tb[i] = -qchisq(abs(0.5-cdf_est(ta[i])),df=1)*0.5 #approximate the profile 
-  }
-  tb = tb - min(tb)
-  tb = tb/(max(tb))*(max(Response)-min(Response))*0.6
-  tb[1] = 0; tb[length(tb)] = 0; 
-  tb = tb + min(Response)
-  polygon(ta,tb,col = alphablend(col="red",0.2),border =alphablend(col="red",0.2))  
-  
-  
-  if (ncol(fit$data) ==4){
-       points(doses,mean,...)
-       arrows(x0=doses, y0=lerror, x1=doses, 
-              y1=uerror, code=3, angle=90, length=0.1)
-  }else{
-       points(doses,Response,...)
-  }
-  
-}

@@ -38,7 +38,7 @@ using Eigen::MatrixXd;
 
 #include <bmd_calculate.h>
 
-
+#include "normal_FUNL_NC.h"
 #include "normal_HILL_NC.h"
 #include "normal_POWER_NC.h"
 #include "normal_POLYNOMIAL_NC.h"

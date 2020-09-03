@@ -5,3 +5,4 @@
 *.la
 *.so
 *.Rproj.user
+.Rproj.user

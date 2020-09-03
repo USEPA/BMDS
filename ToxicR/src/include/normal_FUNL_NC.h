@@ -49,7 +49,7 @@ class normalFUNL_BMD_NC : public normalLLModel {
 					return 7; // Hill regression + constant variance
 				} else{
 					return 8; // Hill regression + variance proportional to mean
-				}  ; 		  
+				}   		  
 	}
 	
 	virtual int parameter_to_remove(contbmd TYPE); 

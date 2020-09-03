@@ -1,5 +1,5 @@
 #include <normal_likelihoods.h>
-#include <sleef.h>
+
 
 double normalLL::negLogLikelihood(Eigen::MatrixXd theta) {
   // get the mean and variance for each dose group

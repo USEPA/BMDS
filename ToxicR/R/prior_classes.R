@@ -88,12 +88,36 @@ combine_prior_lists<-function(p1,p2){
 ##################################################
 bayesian_prior_continuous  <- function(model,variance){
   
-  dmodel = which(model==c("hill","exp-3","exp-5","power"))
+  dmodel = which(model==c("hill","exp-3","exp-5","power","FUNL"))
   dvariance = which(variance == c("normal","normal-ncv","lognormal"))
   
   #Hill Prior NonConstant Normal Prior
+  if (dmodel ==5 && dvariance == 1){
+         prior <- create_prior_list(normprior(0,5,-100,100),
+                                  normprior(0,5,-100,100),
+                                  lnormprior(0,0.5,0,100),
+                                  lnormprior(0,0.5,0,100),
+                                  lnormprior(0,0.5,0,100),
+                                  lnormprior(0,1,0,100),
+                                  normprior (0,1,-18,18))
+         return(prior)
+  }
+  
+  #Hill Prior NonConstant Normal Prior
+  if (dmodel ==5 && dvariance == 2){
+       prior <- create_prior_list(normprior(0,5,-100,100),
+                                  normprior(0,5,-100,100),
+                                  lnormprior(0,0.5,0,100),
+                                  lnormprior(0,1,0,100),
+                                  lnormprior(0,0.5,0,100),
+                                  lnormprior(0,1,0,100),
+                                  lnormprior(0,0.5,0,18), 
+                                  normprior(0,1,-18,18))
+       return(prior)
+  }
+  
   if (dmodel == 1 && dvariance == 2){
-    prior <- create_prior_list(lnormprior(0,0.1,0,100),
+    prior <- create_prior_list(normprior(0,5,-100,100),
                                normprior(0,1,-100,100),
                                lnormprior(0,1,0,100),
                                lnormprior(0,0.3,0,100),
@@ -132,6 +156,7 @@ bayesian_prior_continuous  <- function(model,variance){
                                normprior(0,2,-18,18))
     return(prior)
   }
+  
   
   
   #Hill model

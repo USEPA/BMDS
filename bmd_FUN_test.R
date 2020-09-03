@@ -18,25 +18,21 @@ library(ToxicR)
 
 set.seed(893223)
 
-D <- rep(seq(0,1.0,1/4),each=5)
-mean <- 2.3  + 2/(1+exp(-(D-0.37)*5))*(1/(1+exp(-(0.75-D)*3)))
+D <-c(rep(seq(0,1.0,1/4),each=5))
+mean <- 2.3  + 10/(1+exp(-(D-0.77)*5))*(1/(1+exp(-(0.75-D)*3)))
 
-Y <- mean + rnorm(length(mean),0,0.5)
-system.time({B <-test_skn(as.matrix(Y), as.matrix(D))})
-
+Y <- mean + rnorm(length(mean),0,0.2)
+Q <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="FUNL",distribution = "normal",fit_type = "laplace")
+R <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="FUNL",distribution = "normal",fit_type = "mcmc")
+S <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="hill",distribution = "normal",fit_type = "mcmc")
+Z <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="exp-5",distribution = "normal",fit_type = "laplace")
+U <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="exp-5",distribution = "normal",fit_type = "mcmc")
+#system.time({B <-test_skn(as.matrix(Y), as.matrix(D))})
+B <- Q$fitted_model$parameters
 
 plot(D,Y,pch=16)
 
 doses <- seq(0,1,0.01)
-
-
-FUN(a,0.08636607) - FUN(a,0)
-FUN(b,0.08811084) - FUN(b,0)
-
-d = 10
-for (ii in 1:7){
-  d = d - dFUN(B,d)/d2FUN(B,d)
-}
 
 lines(doses,FUN(B,doses),col=2,lwd=3)
 

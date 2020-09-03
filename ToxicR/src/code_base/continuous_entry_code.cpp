@@ -29,10 +29,11 @@
 
 #include "continuous_entry_code.h"
 #include "mcmc_analysis.h"
+#include "bmd_calculate.h"
 #include <algorithm>
 #include <vector>
 #include <limits>
-#include <algorithm> 
+
 
 using namespace std; 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
@@ -124,8 +125,9 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   bmd_analysis a;
   switch (CM)
   {
+  
   case cont_model::hill:
-    cout << "Running Exponential 4 Model Log-Normality Assumption." << endl;
+    cout << "Running Hill Model Log-Normality Assumption." << endl;
     a = bmd_analysis_CNC<lognormalHILL_BMD_NC, IDcontinuousPrior>
                             (likelihood_lnhill,  model_prior, fixedB, fixedV,
                               riskType, bmrf, bk_prob,
@@ -190,20 +192,31 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   IDcontinuousPrior model_prior(prior);
   normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
   normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
+  normalFUNL_BMD_NC likelihood_funl(Y, X, suff_stat, bConstVar, 0);
   normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
   normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
   normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
   normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
+  
 
   bmd_analysis a;
   switch (CM)
   {
-  case cont_model::power:
+    
+  case cont_model::funl:
     if (bConstVar){
-      cout << "Running Power Model Normality Assumption using Laplace." << endl;
+      cout << "Running FUNL Model Normality Assumption using Laplace." << endl;
     }else{
-      cout << "Running Power Model Normality-NCV Assumption using Laplace." << endl;
+      cout << "Running FUNL Model Normality-NCV Assumption using Laplace." << endl;
     } 
+    
+    a = bmd_analysis_CNC<normalFUNL_BMD_NC, IDcontinuousPrior>
+                        (likelihood_funl,  model_prior, fixedB, fixedV,
+                         riskType, bmrf, bk_prob,
+                         is_increasing, alpha, step_size,init);
+    break; 
+  case cont_model::power:
+    
     a = bmd_analysis_CNC<normalPOWER_BMD_NC, IDcontinuousPrior>
                           (likelihood_power,  model_prior, fixedB, fixedV,
                            riskType, bmrf, bk_prob,
@@ -415,6 +428,13 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   
       Eigen::MatrixXd init_opt; 
       switch((cont_model)MA->models[i]){
+      case cont_model::funl:
+         init_opt = bmd_continuous_optimization<normalFUNL_BMD_NC,IDPrior>(Y_N, X, tprior,  fixedB, fixedV, 
+                                                                          MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
+         RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                         max_dose, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                         MA->disttype[i] != distribution::normal_ncv); 
+        break; 
       case cont_model::hill:
           init_opt = MA->disttype[i] == distribution::log_normal ?
           bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
@@ -638,6 +658,19 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   int adverseR; 
   switch (CM)
   {
+  case cont_model::funl:
+    if (bConstVar){
+      cout << "Running FUNL Model Normality Assumption using MCMC." << endl;
+    }else{
+      cout << "Running FUNL Model Normality-NCV Assumption using MCMC." << endl;
+    }
+    
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalFUNL_BMD_NC, IDcontinuousPrior>
+                                            (Y,  X, prior, fixedB, fixedV, is_increasing,
+                                             bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+                                             samples,0,initV); 
+    break;   
+    
   case cont_model::hill:
     if (bConstVar){
       cout << "Running Hill Model Normality Assumption using MCMC." << endl;
@@ -867,6 +900,15 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     
    Eigen::MatrixXd init_opt; 
    switch((cont_model)MA->models[i]){
+     case cont_model::funl:
+       init_opt =  bmd_continuous_optimization<normalFUNL_BMD_NC,IDPrior> (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                           MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
+       
+       RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                       max_dose, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                       MA->disttype[i] != distribution::normal_ncv); 
+       
+       break; 
        case cont_model::hill:
           init_opt = MA->disttype[i] == distribution::log_normal ?
                      bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
@@ -1097,6 +1139,17 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   
   Eigen::MatrixXd init_opt; 
   switch((cont_model)CA->model){
+  case cont_model::funl:
+ 
+    init_opt =  bmd_continuous_optimization<normalFUNL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                               CA->disttype != distribution::normal_ncv, CA->isIncreasing);
+
+    RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
+                                    max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
+                                    CA->disttype != distribution::normal_ncv); 
+
+    
+    break; 
   case cont_model::hill:
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
@@ -1269,23 +1322,33 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   mcmcSamples a;
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
+  
+  
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
   
-  fixedB.clear(); // on each iteration make sure there parameters are emptied
-  fixedV.clear(); 
   Eigen::MatrixXd tprior(CA->parms,CA->prior_cols);
   for (int m = 0; m < CA->parms; m++){
-    fixedB.push_back(false);
-    fixedV.push_back(0.0); 
-    for (int n = 0; n < CA->prior_cols; n++){
-        tprior(m,n) = CA->prior[m + n*CA->parms]; 
-    }
+       fixedB.push_back(false);
+       fixedV.push_back(0.0); 
+       for (int n = 0; n < CA->prior_cols; n++){
+            tprior(m,n) = CA->prior[m + n*CA->parms]; 
+       }
   }
-    
-    
+  bool bob = CA->disttype != distribution::normal_ncv; 
+
   Eigen::MatrixXd init_opt; 
   switch((cont_model)CA->model){
+  case cont_model::funl:
+     
+       init_opt =  bmd_continuous_optimization<normalFUNL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                    CA->disttype != distribution::normal_ncv, CA->isIncreasing);
+       //updated prior updated 
+       RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
+                                       max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
+                                       CA->disttype != distribution::normal_ncv); 
+       break; 
+    
     case cont_model::hill:
       init_opt = CA->disttype == distribution::log_normal ?
       bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
@@ -1330,7 +1393,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       break; 
       
     }
-    
+
     a = CA->disttype == distribution::log_normal?
       mcmc_logNormal(orig_Y_LN, orig_X,
                      tprior, CA->BMD_type, (cont_model)CA->model,

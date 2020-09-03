@@ -137,15 +137,15 @@ List run_dichotomous_single_mcmc(NumericVector model,
 	mcmcAnal.alpha     = options[1];
 	mcmcAnal.samples  = options[2]; 
 	mcmcAnal.burnin   = options[3]; 
-  mcmcAnal.parms    = pr.rows(); 
-  mcmcAnal.model = (dich_model)model[0]; 
-  mcmcAnal.Y       = new double[Y.rows()] ; 
-  mcmcAnal.n_group = new double[Y.rows()] ; 
-  mcmcAnal.doses   = new double[D.rows()] ; 
-  mcmcAnal.prior   = new double[pr.cols()*pr.rows()];
-  mcmcAnal.prior_cols = pr.cols(); 
-  mcmcAnal.n          = Y.rows(); 
-  mcmcAnal.degree = 0; 
+     mcmcAnal.parms    = pr.rows(); 
+     mcmcAnal.model = (dich_model)model[0]; 
+     mcmcAnal.Y       = new double[Y.rows()] ; 
+     mcmcAnal.n_group = new double[Y.rows()] ; 
+     mcmcAnal.doses   = new double[D.rows()] ; 
+     mcmcAnal.prior   = new double[pr.cols()*pr.rows()];
+     mcmcAnal.prior_cols = pr.cols(); 
+     mcmcAnal.n          = Y.rows(); 
+     mcmcAnal.degree = 0; 
   
   if (mcmcAnal.model == dich_model::d_multistage){
       mcmcAnal.degree = mcmcAnal.parms - 1; 
@@ -242,7 +242,7 @@ List run_continuous_single_mcmc(NumericVector model,
   mcmcAnal->sd            =    new double[Y.rows()]; 
   mcmcAnal->doses         =    new double[Y.rows()]; 
   mcmcAnal->prior         =    new double[priors.rows()*priors.cols()]; 
-  mcmcAnal->isIncreasing  = is_increasing; 
+  mcmcAnal->isIncreasing  =    is_increasing; 
   mcmcAnal->disttype      = dtype; 
   mcmcAnal->prior_cols    = priors.cols(); 
   mcmcAnal->parms         = priors.rows(); 
@@ -274,20 +274,17 @@ List run_continuous_single_mcmc(NumericVector model,
     }
   }
 
-  for (int i = 0; i < mcmcAnal->parms; i++ ){
-    for (int j = 0; j < mcmcAnal->prior_cols; j++){
-      mcmcAnal->prior[i+j*mcmcAnal->parms] = priors(i,j); 
-    }
-  }
+  cp_prior(priors,mcmcAnal->prior);
   ////////////////////////////////////
+  
   continuous_model_result *res = new_continuous_model_result( mcmcAnal->model,
                                                               mcmcAnal->parms,
                                                               200);
-  
+ 
   estimate_sm_mcmc(mcmcAnal,
                    res     ,
                    output) ;
-  
+ 
   
   List rV = convert_continuous_fit_to_list(res); 
   List t2 = convert_MCMC_fit_to_list(output);
