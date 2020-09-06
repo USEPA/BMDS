@@ -1,5 +1,5 @@
 #################################################
-# bmd_single_continous - Run a single BMD model
+# bmd_single_continuous - Run a single BMD model
 #
 ##################################################
 ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
@@ -11,7 +11,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   Y = as.matrix(Y)
   D = as.matrix(D)
   
-  current_models = c("hill","exp-3","exp-5","power")
+  current_models = c("hill","exp-3","exp-5","power","FUNL")
   current_dists  = c("normal","normal-ncv","lognormal")
   type_of_fit = which(fit_type == c('laplace','mcmc'))
 
@@ -21,22 +21,22 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   }
   if (identical(rt,integer(0))){
     stop("Please specify one of the following BMRF types:
-    		  'abs','sd','rel','hybrid'")
+    		  'abs','sd','rel','hybrid','FUNL'")
   }
   
   if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
   
   
   if (is.na(model_list)){
-    model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2))
-    distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv")
+    model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2),rep("FUNL",2))
+    distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv","normal","normal-ncv")
   }
   prior_list = ma_continuous_list(model_list,distribution_list)
   
   models <- rep(0,length(prior_list))
   dlists  <- rep(0,length(prior_list))
   priors <- list()
-  permuteMat = cbind(c(1,2,3,4),c(6,3,5,8)) #c++ internal adjustment
+  permuteMat = cbind(c(1,2,3,4,5),c(6,3,5,8,10)) #c++ internal adjustment
   for(ii in 1:length(prior_list)){
       models[ii]   <- permuteMat[which(prior_list[[ii]]$model == current_models),2] #readjust for c++ internal
       priors[[ii]] <- prior_list[[ii]]$prior[[1]]
@@ -90,9 +90,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       rvals[[ii]]$prior = prior_list[[ii]]
     }
     class(rvals) <- "BMDcont_mafit_laplace"
-  #    rvals$prior <- PR
-  
-  # rvals$model   <- model_type
+
     rvals$options <- options
     rvals$data    <- DATA
     

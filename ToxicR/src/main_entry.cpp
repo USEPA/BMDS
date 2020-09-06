@@ -80,12 +80,8 @@ List run_single_dichotomous(NumericVector model,
     Anal.doses[i] = data(i,0); 
   }
   
-  // copy in column major order  
-  for (int i = 0; i < pr.rows(); i++){
-    for (int j = 0; j < pr.cols(); j++){
-      Anal.prior[i + j*pr.rows()] = pr(i,j); 
-    }
-  }
+  
+  cp_prior(pr,Anal.prior);
   
   dichotomous_model_result res; 
   res.parms = new double[pr.rows()]; 

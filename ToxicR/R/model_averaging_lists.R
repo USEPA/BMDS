@@ -7,9 +7,9 @@ ma_continuous_list<-function(ml,dl){
   if (length(ml) != length(dl)){
     stop("Model List Length not the same length as distribution length list.")
   }
-  check_list = ml %in% c("hill","exp-3","exp-5","power")
+  check_list = ml %in% c("hill","exp-3","exp-5","power","FUNL")
   if (sum(check_list) != length(ml)){
-    stop('At least one model not specified as "hill","exp-3","exp-5","power".')
+    stop('At least one model not specified as "hill","exp-3","exp-5","power",or "FUNL".')
   }
   check_dist = dl %in% c("normal","normal-ncv","lognormal")
   if (sum(check_dist) != length(dl)){

@@ -546,7 +546,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
- // for (int i = 0; i < x.size(); i++) cout << x[i] << endl;
+  
+  //for (int i = 0; i < x.size(); i++) cout << x[i] << endl;
   
   double minf;
   nlopt::result result = nlopt::FAILURE;
@@ -557,8 +558,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -567,7 +568,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   int opt_iter;
   // look at 5 optimization algorithms :-)
-  for (opt_iter = 1; opt_iter < 5; opt_iter++){
+  for (opt_iter = 0; opt_iter < 5; opt_iter++){
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
       double temp = x[i];

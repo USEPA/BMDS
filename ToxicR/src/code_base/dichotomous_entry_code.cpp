@@ -94,11 +94,13 @@ void rescale(Eigen::MatrixXd *parms,
         scale(1,0) = 1/max_dose; 
       break; 
     case dich_model::d_weibull:
-        scale(1,0) = pow(1/max_dose,temp(1,0)); 
+        scale(2,0) = pow(1/max_dose,temp(1,0)); 
       break; 
   }
   *parms =   parms->array() * scale.array(); 
   *parms +=  add; 
+  
+  
 }
 
 
@@ -369,6 +371,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                          0.02);
     break; 
   case dich_model::d_weibull:
+    
     a =   bmd_analysis_DNC<dich_weibullModelNC,IDPrior> (Y,D,prior,
                                                          fixedB, fixedV, DA->degree,
                                                          DA->BMR, DA->BMD_type, 0.5*DA->alpha, 

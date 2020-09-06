@@ -179,8 +179,11 @@ List convert_continuous_fit_to_list(continuous_model_result *result){
 		sprintf(str,"Model: %s %s", "Exponential-5",dist); 
 	break;	
 	case cont_model::power: 
-		sprintf(str,"Model: %s %s", "Power",dist); 
+		sprintf(str,"Model: %s %s", "Power",dist);
 	break; 
+  case cont_model::funl:
+          sprintf(str,"Model: %s %s", "FUNL", dist); 
+     break; 
   default: 
     sprintf(str,"Model: %s %s", "Danger","Danger");
 	break;  

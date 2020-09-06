@@ -1,14 +1,19 @@
 library(ToxicR)
 
+mData <- matrix(c(0, 1,10,
+                  0.3, 4,10,
+                  1, 4,10,
+                  4, 7,10),nrow=4,ncol=3,byrow=T)
 
-mData <- matrix(c(0, 1,50,
-                  10, 2,50,
-                  30, 3,50,
-                  100, 20,50),nrow=4,ncol=3,byrow=T)
+prior <- create_prior_list(normprior(	-1,	2,	-18,	18),
+                           lnormprior(	0.693, 0.42, 1,	20),
+                           lnormprior(	0,	1,	0,	100))
 
+system.time({A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace",prior = prior)})
+system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc",prior = prior)})
 
-A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma",fit_type = "laplace")
-C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistage",fit_type = "laplace")
+system.time({B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3])})
+
 D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "laplace")
 E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "laplace")
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",fit_type = "laplace")

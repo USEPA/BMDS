@@ -48,9 +48,11 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     class(temp) <- "BMDdich_fit_maximized"
     return(temp)
   }
-  
+  if (prior == 'default'){
+      prior =  bayesian_prior_dich(model_type,degree);
+  }    
   if (fitter == 2){ #laplace fit
-    prior =   bayesian_prior_dich(model_type,degree); 
+    
     temp = run_single_dichotomous(dmodel,DATA,prior[[1]],o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
@@ -63,7 +65,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     return(temp)
   }
   if (fitter ==3){
-    prior =   bayesian_prior_dich(model_type,degree)
+    
     temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
                                        c(BMR, alpha,samples,burnin))
     #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"

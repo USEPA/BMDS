@@ -216,7 +216,13 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                          is_increasing, alpha, step_size,init);
     break; 
   case cont_model::power:
-    
+       
+       if (bConstVar){
+            cout << "Running Power Model Normality Assumption using Laplace." << endl;
+       }else{
+            cout << "Running Power Model Normality-NCV Assumption using Laplace." << endl;
+       }
+       
     a = bmd_analysis_CNC<normalPOWER_BMD_NC, IDcontinuousPrior>
                           (likelihood_power,  model_prior, fixedB, fixedV,
                            riskType, bmrf, bk_prob,
