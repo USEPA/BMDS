@@ -170,7 +170,7 @@ void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model)
     for (int i = 0; i< model->dist_numE; i ++){
       double temp = double(i)/double(model->dist_numE); 
       model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
-     // cerr << model->bmd_dist[i] << ":" << temp << endl; 
+  
       model->bmd_dist[model->dist_numE + i] = temp; // probability 
     }
     
@@ -444,13 +444,14 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   for (int i = 0; i < MA->nmodels; i++){
     Eigen::Map<MatrixXd> trans_cov(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
     Eigen::MatrixXd cov = trans_cov;  
-    Eigen::Map<MatrixXd> trans_par(res->models[i]->cov,res->models[i]->nparms,1); 
+    Eigen::Map<MatrixXd> trans_par(res->models[i]->parms,res->models[i]->nparms,1); 
     Eigen::MatrixXd par = trans_par; 
     
     rescale(&par, (dich_model) res->models[i]->model, max_dose);
     rescale_var_matrix(&cov,par,
                        (dich_model)res->models[i]->model,
                        max_dose);
+   
     
     for (int n= 0; n < res->models[i]->nparms; n++){
       res->models[i]->parms[n] = par(n,0);   
@@ -580,14 +581,14 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
  for (int i = 0; i < MA->nmodels; i++){
     Eigen::Map<MatrixXd> trans_cov(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
     Eigen::MatrixXd cov = trans_cov;  
-    Eigen::Map<MatrixXd> trans_par(res->models[i]->cov,res->models[i]->nparms,1); 
+    Eigen::Map<MatrixXd> trans_par(res->models[i]->parms,res->models[i]->nparms,1); 
     Eigen::MatrixXd par = trans_par; 
     
     rescale(&par, (dich_model) res->models[i]->model, max_dose);
     rescale_var_matrix(&cov,par,
                        (dich_model)res->models[i]->model,
                        max_dose);
-    
+   
     for (int n= 0; n < res->models[i]->nparms; n++){
       res->models[i]->parms[n] = par(n,0);   
       for (int m = 0; m <  res->models[i]->nparms; m++){
@@ -645,7 +646,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
           
           bmd.push_back(res->models[i]->bmd_dist[m]);
           prc.push_back(res->models[i]->bmd_dist[m + res->models[i]->dist_numE]);
-         // cerr << res->models[i]->bmd_dist[m] << ":" << res->models[i]->bmd_dist[m + res->models[i]->dist_numE] << endl; 
+         
       }
     }
     if (prc.size() > 5){

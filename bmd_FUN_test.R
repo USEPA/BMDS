@@ -5,10 +5,10 @@ set.seed(893223)
 D <-c(rep(seq(0,1.0,1/4),each=5))
 mean <- 2.3  + 10/(1+exp(-(D-0.99)*5))*(1/(1+exp(-(0.99-D)*3)))
 
-Y <- mean + rnorm(length(mean),0,0.1)
+Y <- mean + rnorm(length(mean),0,0.8)
 Q <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="FUNL",distribution = "normal",fit_type = "laplace")
 
-system.time({fit<-ma_continuous_fit(D,Y,fit_type="mcmc")})
+system.time({fit<-ma_continuous_fit(D,Y,fit_type="laplace",samples=50000,burnin=5000)})
 sprintf("%1.2f",fit$ma_results$posterior_probs)
 R <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="power",distribution = "normal",fit_type = "mcmc",samples = 300000,burnin =  30000)
 S <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 1.0 ,model_type="hill",distribution = "normal",fit_type = "mcmc")

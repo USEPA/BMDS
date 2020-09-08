@@ -107,7 +107,7 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
                          Named("maximum")    = maximum);  
  
  
-  rV.attr("class") = "BMDdich_fit"; 
+  rV.attr("class") = "BMDdich_fit_maximized"; 
   return rV; 
   
 }
@@ -503,7 +503,10 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   ma_info.models       = new int[priors.size()];      // given model
   ma_info.modelPriors  = new double[priors.size()];
   
+
+
   for (int i = 0; i < priors.size(); i++){
+   
     Eigen::MatrixXd temp_cov = priors[i]; 
  
     ma_info.priors[i] = new double[temp_cov.rows()*temp_cov.cols()]; 

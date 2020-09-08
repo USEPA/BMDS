@@ -55,7 +55,7 @@
 
 #dichtomous probit
 .dich_probit_f <- function(parms,d){
-  rval <- pnorm(-parms[1]-parms[2]*d)
+  rval <- pnorm(parms[1]+parms[2]*d)
   return (rval)
 }
 
@@ -95,7 +95,7 @@
 
   dose = c(doses,doses)
   Response = c(uerror,lerror)
-  plot(dose,Response,type='n',...)
+  plot(dose,Response,type='n',main=fit$full_model...)
  
   
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
@@ -180,7 +180,7 @@
   
   dose = c(doses,doses)
   Response = c(uerror,lerror)
-  plot(dose,Response,type='n',...)
+  plot(dose,Response,type='n',main=fit$full_model...)
   
   
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
@@ -202,6 +202,7 @@
   }
   if (fit$model=="probit"){
     #fit$parameters[1] = .logit(fit$parameters[1])
+    print
     me <- .dich_probit_f(fit$parameters, d=test_doses)    
   }
   if (fit$model=="log-probit"){

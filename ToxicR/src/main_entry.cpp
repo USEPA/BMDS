@@ -7,7 +7,6 @@
 
 #include "bmds_entry.h"
 
-
 #include  <statmod.h>
 
 #include <log_likelihoods.h>

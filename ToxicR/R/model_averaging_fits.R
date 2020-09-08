@@ -31,6 +31,8 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2),rep("FUNL",2))
     distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv","normal","normal-ncv")
   }
+  
+  
   prior_list = ma_continuous_list(model_list,distribution_list)
   
   models <- rep(0,length(prior_list))
@@ -141,22 +143,75 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
                     "qlinear","weibull")
     model_i = rep(0,length(model_list))
     for (ii in 1:length(model_list)){
-      priors[[ii]] = bmd_default_bayesian_prior(model_list[ii])
- 
+      priors[[ii]] = bayesian_prior_dich(model_list[ii])
+    
       model_i[ii]  = .dichotomous_model_type(model_list[ii])
     }
   
+  }
+  ## prepare the prior list for C++ internal 
+  ## by stripping it of all 'extra' class info
+  temp_priors <-list(); 
+  for (ii in 1:length(priors)){
+       temp_priors[ii] <- priors[[ii]]
   }
   
   data <- as.matrix(cbind(D,Y,N))
   if ( fit_type == "laplace"){
     #Laplace Run
-    temp <- run_ma_dichotomous(data, priors, model_i,
+    temp <- run_ma_dichotomous(data, temp_priors, model_i,
                                model_p, FALSE, o1, o2)
+    #clean up the run
+    t_names <- names(temp)
+    
+    idx     <- grep("Fitted_Model",t_names)
+    for ( ii in idx){
+         temp[[ii]]$prior <- priors[[which(ii == idx)]]
+         temp[[ii]]$data  <- data
+         temp[[ii]]$model <- tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+         if (temp[[ii]]$model =="quantal-linear" ){
+              temp[[ii]]$model ="qlinear"
+         }
+         te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
+         temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         
+    }
+    
   }else{
     #MCMC run
-    temp <- run_ma_dichotomous(data, priors, model_i,
+    temp_r <- run_ma_dichotomous(data, temp_priors, model_i,
                                model_p, TRUE, o1, o2)
+    tempn <- temp_r$ma_results
+    tempm <- temp_r$mcmc_runs
+    #clean up the run
+    idx     <- grep("Fitted_Model",names(tempn))
+    temp <- list()
+    jj <- 1
+    for ( ii in idx){
+         
+         temp[[jj]] <- list()
+         temp[[jj]]$mcmc_result <- tempm[[ii]]
+         temp[[jj]]$fitted_model <- tempn[[ii]]
+         temp[[jj]]$prior <- priors[[which(ii == idx)]]
+         temp[[jj]]$data  <- data
+         temp[[jj]]$model <- tolower(trimws(gsub("Model: ","",tempn[[ii]]$full_model)))
+         temp[[jj]]$options <- c(o1,o2)
+         if (temp[[jj]]$model =="quantal-linear" ){
+                temp[[jj]]$model ="qlinear"
+         }
+         te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
+         temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         class(temp[[jj]]) = "BMDdich_fit_MCMC"
+         jj <- jj + 1
+    }
+   # for (ii in idx_mcmc)
+    names(temp) <- sprintf("Individual_Model_%s",1:length(temp_priors))
+    temp$ma_bmd <- tempn$BMD_CDF 
+    te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
+    temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
+    temp$posterior_probs = tempn$posterior_probs;
+    temp$post_prob
+    
   }
   
   return(temp)
