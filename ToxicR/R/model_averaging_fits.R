@@ -79,24 +79,84 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   
   if (fit_type == "mcmc"){
     
-    rvals <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
+    temp_r <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
                                     options) 
-    rvals$ma_results$options <- options
-    rvals$ma_results$data    <- DATA
-    return(rvals)
+    tempn <- temp_r$ma_results
+    tempm <- temp_r$mcmc_runs
+    #clean up the run
+    idx     <- grep("Fitted_Model",names(tempn))
+    temp <- list()
+    jj <- 1
+    for ( ii in idx){
+         
+         temp[[jj]] <- list()
+         temp[[jj]]$mcmc_result <- tempm[[ii]]
+         temp[[jj]]$fitted_model <- tempn[[ii]]
+         temp[[jj]]$prior <- priors[[which(ii == idx)]]
+         temp[[jj]]$data  <- cbind(D,Y)
+         temp[[jj]]$model <- model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+
+         #te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
+         data_temp = temp[[jj]]$fitted_model$bmd_dist
+         data_temp = data_temp[!is.infinite(data_temp[,1]),]
+         data_temp = data_temp[!is.na(data_temp[,1]),]
+         if (nrow(data_temp)>6){
+              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+              temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         }else{
+              temp[[jj]]$bmd     <- c(NA,NA,NA)              
+         }
+         
+         temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         class(temp[[jj]]) = "BMDcont_fit_MCMC"
+         jj <- jj + 1
+    }
+    # for (ii in idx_mcmc)
+    names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
+    temp$ma_bmd <- tempn$BMD_CDF 
+    
+    data_temp = temp$ma_bmd
+    data_temp = data_temp[!is.infinite(data_temp[,1]),]
+    data_temp = data_temp[!is.na(data_temp[,1]),]
+    if (nrow(data_temp)>6){
+         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+         temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    }else{
+         temp$bmd     <- c(NA,NA,NA)              
+    }
+    temp$posterior_probs = tempn$posterior_probs;
+    class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_mcmc")  
+    return(temp)
   }else{
   
-    rvals   <-  run_continuous_ma_laplace(priors, models, dlists,Y,D,
+    temp   <-  run_continuous_ma_laplace(priors, models, dlists,Y,D,
                                           options)
-    for (ii in 1:length(prior_list)){
-      rvals[[ii]]$prior = prior_list[[ii]]
-    }
-    class(rvals) <- "BMDcont_mafit_laplace"
-
-    rvals$options <- options
-    rvals$data    <- DATA
     
-    return (rvals)
+    #clean up the run
+    t_names <- names(temp)
+    
+    idx     <- grep("Fitted_Model",t_names)
+    jj <- 1
+    for ( ii in idx){
+         temp[[ii]]$prior <- priors[[which(ii == idx)]]
+         temp[[ii]]$data  <- cbind(D,Y)
+         temp[[ii]]$model <- model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+     
+         data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
+         data_temp = data_temp[!is.na(data_temp[,1]),]
+         if (nrow(data_temp)>6){
+              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+              temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         }else{
+              temp[[ii]]$bmd     <- c(NA,NA,NA)              
+         }
+         names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
+         class(temp[[ii]]) <- "BMDcont_fit_maximized"
+         jj <- jj + 1
+    }
+    
+    
+    return (temp)
   }
 }
 
@@ -172,11 +232,13 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          if (temp[[ii]]$model =="quantal-linear" ){
               temp[[ii]]$model ="qlinear"
          }
+     
          te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
          temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-         
+         names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
     }
     
+    class(temp) <- c("BMDdich_MA","BMDdich_MA_maximized")  
   }else{
     #MCMC run
     temp_r <- run_ma_dichotomous(data, temp_priors, model_i,
@@ -211,7 +273,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
     temp$posterior_probs = tempn$posterior_probs;
     temp$post_prob
-    
+    class(temp) <- c("BMDdich_MA","BMDdich_MA_mcmc")  
   }
   
   return(temp)

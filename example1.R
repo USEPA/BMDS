@@ -10,7 +10,7 @@ prior <- create_prior_list(normprior(	-1,	2,	-18,	18),
                            lnormprior(	0,	1,	0,	100))
 
 
-B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
+B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 
 A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace",prior = prior)
 C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc",prior = prior)
