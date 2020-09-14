@@ -7,19 +7,28 @@ library(ToxicR)
 # Input data - Continuous2.dax - Individual dose-response
 M =matrix(0,nrow=27,ncol=4)
 colnames(M) <- c("Dose","Resp","","")
-M[,1] <- c(0.1,0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,59,59,59,59,59)
+M[,1] <- c(0.1,0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,39,39,39,39,39)
 M[,2] <- c(39.0,39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
            55.2,55.1,59.1,56.3,52.9,53.7)
 
 data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
+A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
+
+#h_fit <- stan(file="stan-check-hill.stan",data=data,
+
+#   control = list(adapt_delta=0.9),iter=10000)
+system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,
+                                      BMD_TYPE="sd",BMR=1, distribution = "normal",
+                                      fit_type="mcmc",model_type = "exp-3")})
 
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 #              control = list(adapt_delta=0.9),iter=10000)
+system.time({r = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mcmc",model_type = "exp-5")})
 
 system.time({fit = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc")})
-system.time({fit_l = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc")})
+
 
 
 set.seed(893223)
@@ -31,6 +40,9 @@ Y <- mean + rnorm(length(mean),0,0.38)
 Q <- single_continuous_fit(as.matrix(D),as.matrix(Y),sstat = F,BMR = 3.0 ,model_type="FUNL",distribution = "normal",fit_type = "laplace")
 
 system.time({fit<-ma_continuous_fit(D,Y,fit_type="mcmc",BMR=3.0,samples=50000,burnin=5000)})
+plot(fit$Individual_Model_1)
+plot(fit$Individual_Model_13)
+
 system.time({fit_l<-ma_continuous_fit(D,Y,fit_type="laplace",BMR=3.0,samples=50000,burnin=5000)})
 
 

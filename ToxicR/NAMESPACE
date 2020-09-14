@@ -13,3 +13,5 @@ S3method(plot,  BMDdich_fit_maximized, .plot.BMDdich_fit_maximized)
 
 S3method(plot, BMDcont_fit_MCMC,      .plot.BMDcont_fit_MCMC)
 S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
+
+S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )

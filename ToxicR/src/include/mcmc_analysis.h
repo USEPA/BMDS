@@ -29,6 +29,8 @@
 #include <sys/time.h>
 #include <bmdStruct.h>
 
+using namespace std;  
+ 
 #define MCMC_PROPOSAL(MU,X,COV) \
         -0.5*(MU.transpose()-X.transpose())*COV.inverse()*(MU-X) // note the integrating constant cancels out
 
@@ -171,8 +173,8 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   }else{
     oR = findMAP<LL, PR>(model,init_vals);
   } 
-  
-  //cout << oR.max_parms << endl << endl; 
+ // cout << "iv:" << init_vals << endl << endl;  
+ // cout <<"bubba" << oR.max_parms << endl << endl; 
   mcmcSamples rVal;
   
   rVal.map = 	oR.functionV;

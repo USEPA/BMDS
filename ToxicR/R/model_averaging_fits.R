@@ -155,7 +155,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          jj <- jj + 1
     }
     
-    
+    class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_laplace") 
     return (temp)
   }
 }

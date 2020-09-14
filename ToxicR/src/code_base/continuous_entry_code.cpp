@@ -1375,10 +1375,12 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                         CA->disttype != distribution::normal_ncv, CA->isIncreasing);
       //updated prior updated 
+      //cout << init_opt << endl; 
       //updated prior updated 
       RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                       max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
                                       CA->disttype != distribution::normal_ncv); 
+     //cout << init_opt << endl << endl << tprior; 
       
       break; 
     case cont_model::power: 

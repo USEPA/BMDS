@@ -1,16 +1,18 @@
 library(ToxicR)
 
 mData <- matrix(c(0, 1,10,
-                  0.3, 2,10,
-                  3, 4,10,
-                  4, 7,10),nrow=4,ncol=3,byrow=T)
+                  0.3, 1,10,
+                  3, 4,20,
+                  4, 13,20),nrow=4,ncol=3,byrow=T)
 
 prior <- create_prior_list(normprior(	-1,	2,	-18,	18),
                            lnormprior(	0.693, 0.42, 1,	20),
                            lnormprior(	0,	1,	0,	100))
 
+B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
+plot(B$Individual_Model_5)
 
-B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
+A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 
 A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace",prior = prior)
 C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc",prior = prior)

@@ -114,10 +114,6 @@ print.BMDdich_fit_MCMC<-function(p){
   cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",spfun(0.5),spfun(0.05),spfun(0.95),90,"% 2-sided Confidence Interval"))
 }
 
-
-
-
-
 bmd_default_frequentist_settings <- function(model,degree=2){
   dmodel = which(model==c("hill","gamma","logistic", "log-logistic",
                           "log-probit"  ,"multistage"  ,"probit",
