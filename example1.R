@@ -1,25 +1,21 @@
 library(ToxicR)
 
 mData <- matrix(c(0, 1,10,
-                  0.3, 1,10,
-                  3, 4,20,
-                  4, 13,20),nrow=4,ncol=3,byrow=T)
+                  0.3, 4,10,
+                  1, 4,10,
+                  4, 7,10),nrow=4,ncol=3,byrow=T)
 
-prior <- create_prior_list(normprior(	-1,	2,	-18,	18),
-                           lnormprior(	0.693, 0.42, 1,	20),
-                           lnormprior(	0,	1,	0,	100))
 
 B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
+
+
 plot(B$Individual_Model_5)
 
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
-
-A = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace",prior = prior)
-C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc",prior = prior)
 D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "laplace")
 E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "laplace")
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",fit_type = "mcmc")
-H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace")
+H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc")
 I = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",fit_type = "laplace")
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "qlinear",fit_type = "laplace")
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit",fit_type = "laplace")

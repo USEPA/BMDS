@@ -40,8 +40,17 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     bounds = bmd_default_frequentist_settings(model_type,degree)
     temp = run_single_dichotomous(dmodel,DATA,bounds,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
-    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
-    temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    temp_me = temp$bmd_dist
+   
+    temp_me = temp_me[!is.infinite(temp_me[,1]),]
+    temp_me = temp_me[!is.na(temp_me[,1]),]
+    temp_me = temp_me[!is.nan(temp_me[,1]),]
+    if( nrow(temp_me) > 5){
+         te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+         temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    }else{
+         temp$bmd <- c(NA,NA,NA)
+    }
     temp$bounds  = bounds; 
     temp$model   = model_type; 
     temp$data    = DATA
@@ -73,7 +82,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 
     temp$data    = DATA
-    temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha))))
+    temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE)))
     class(temp) <- "BMDdich_fit_MCMC"
     return(temp)
   }
@@ -161,7 +170,7 @@ bmd_default_frequentist_settings <- function(model,degree=2){
   }
   if (dmodel == 9){ #WEIBULL
     prior <- matrix(c(0,	0,	2,	-18,	18,
-                      0,	1,	1,	1.00E+00,	50,
+                      0,	1,	1,	0,	50,
                       0,	1,	0.424264068711929, 1.00E-06,1000),nrow=3,ncol=5,byrow=T)
   }  
   

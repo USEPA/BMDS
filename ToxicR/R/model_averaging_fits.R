@@ -238,7 +238,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
     }
     
-    class(temp) <- c("BMDdich_MA","BMDdich_MA_maximized")  
+    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_maximized")  
   }else{
     #MCMC run
     temp_r <- run_ma_dichotomous(data, temp_priors, model_i,
@@ -273,7 +273,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
     temp$posterior_probs = tempn$posterior_probs;
     temp$post_prob
-    class(temp) <- c("BMDdich_MA","BMDdich_MA_mcmc")  
+    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_mcmc")  
   }
   
   return(temp)

@@ -43,8 +43,8 @@ cont_power_f <-function(parms,d){
 
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-  density_col="red"
-  credint_col="lightblue1"
+     density_col="blueviolet"
+     credint_col="azure2"
   BMD_DENSITY = T
   
   if (qprob < 0 || qprob > 0.5){
@@ -130,8 +130,8 @@ cont_power_f <-function(parms,d){
 
 .plot.BMDcont_fit_maximized<-function(fit,qprob=0.05,...){
   
-  density_col="red"
-  credint_col="lightblue1"
+     density_col="blueviolet"
+     credint_col="azure2"
   
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
@@ -267,7 +267,7 @@ cont_power_f <-function(parms,d){
           
           temp = temp_bmd[!is.nan(temp_bmd)]
           temp = temp[!is.infinite(temp)]
-          Dens =  density(temp,cut=c(max(test_doses)))
+          Dens =  density(temp,cut=c(quantile(temp_bmd,0.995,na.rm = TRUE)))
           Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
           temp = which(Dens$x < max(test_doses))
           D1_y = Dens$y[temp]
