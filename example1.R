@@ -4,11 +4,18 @@ mData <- matrix(c(0, 1,10,
                   0.3, 4,10,
                   1, 4,10,
                   4, 7,10),nrow=4,ncol=3,byrow=T)
-
+mData <- matrix(c(0, 1,50,
+                  1, 2,50,
+                  2.5, 3,50,
+                  4, 14,50),nrow=4,ncol=3,byrow=T)
 
 B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
+plot(B)
 
-
+plot(K[1,],ylim=c(0,1))
+for (ii in 1:2000){
+  lines(K[ii,])
+}
 plot(B$Individual_Model_5)
 
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")

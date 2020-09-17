@@ -1,7 +1,6 @@
 useDynLib(ToxicR, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
-importFrom(VIM, alphablend)
 #register all of the S3 methods for the print commands
 #and the plot commands etc. 
 S3method(print, BMDmodelprior, .print.BMDmodelprior)
@@ -15,3 +14,5 @@ S3method(plot, BMDcont_fit_MCMC,      .plot.BMDcont_fit_MCMC)
 S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
 
 S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )
+
+S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA) 
