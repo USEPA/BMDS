@@ -16,7 +16,7 @@
 std::vector<double> unique_list(Eigen::MatrixXd X); 
 Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logNormal,bool use_divisor = true); 
 
-double get_diviosor(Eigen::MatrixXd Y, Eigen::MatrixXd X);
+double get_divisor(Eigen::MatrixXd Y, Eigen::MatrixXd X);
 Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                                bool is_logNormal);
 

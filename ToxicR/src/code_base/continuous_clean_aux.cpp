@@ -80,23 +80,21 @@ Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logN
   
 }
 
-double get_diviosor(Eigen::MatrixXd Y, Eigen::MatrixXd X){
+double get_divisor(Eigen::MatrixXd Y, Eigen::MatrixXd X){
   // find the average of the lowest dose (e.g. background)
   double minDose = X.minCoeff(); 
   double divisor = 0; 
   int nmin = 0; 
- // cout << Y << endl << X << endl << endl;  
+  
   for (int i = 0; i < X.rows(); i++){
-  //  cout << "I am here" << endl; 
     if (X(i,0) == minDose){
-  //    cout << "I am there" << endl; 
       nmin++; 
       divisor += Y(i,0); 
     }
   }
   divisor = divisor/double(nmin); 
- // cout << divisor << endl; 
-  return divisor; 
+  return fabs(divisor); // return the absolute value of the divisor so we don't 
+                        // flip the sign of the dose-response curve. 
 }
 
 Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,

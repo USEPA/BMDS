@@ -15,7 +15,7 @@ data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
 A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
-
+plot(A)
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 
 #   control = list(adapt_delta=0.9),iter=10000)

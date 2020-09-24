@@ -348,7 +348,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     }
   }
   
-  double divisor = get_diviosor( Y,  X); 
+  double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
@@ -815,7 +815,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     }
   }
   
-  double divisor = get_diviosor( Y,  X); 
+  double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
  
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
@@ -1067,7 +1067,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
-  double divisor = get_diviosor( Y,  X); 
+  double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
@@ -1261,7 +1261,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     }
   }
   
-  double divisor = get_diviosor( Y,  X); 
+  double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 

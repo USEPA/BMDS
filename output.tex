@@ -1,0 +1,397 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provides euro and other symbols
+\else % if luatex or xelatex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\usepackage{hyperref}
+\hypersetup{
+            pdftitle={Prior Analysis Jose's Data and Posteriors},
+            pdfauthor={Matt Wheeler},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+
+\title{Prior Analysis Jose's Data and Posteriors}
+\author{Matt Wheeler}
+\date{9/22/2020}
+
+\begin{document}
+\maketitle
+
+\hypertarget{analysis-of-priors}{%
+\subsection{Analysis of priors}\label{analysis-of-priors}}
+
+I am going to look at the different priors and the resulting likelihood
+that results for the following data-set using maximum likelihood
+estimation. Note that I have made all of the doses on a (0,1) scale for
+more appropriate comparisons.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{print}\NormalTok{(mData)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       [,1] [,2] [,3]
+## [1,] 0.000    1   10
+## [2,] 0.075    4   10
+## [3,] 0.250    4   10
+## [4,] 1.000    7   10
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =}\StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mle"}\NormalTok{)}
+\NormalTok{H}\OperatorTok{$}\NormalTok{parameters}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -2.1666034  0.4443281  1.0068814
+\end{verbatim}
+
+The default MLE for the \(\alpha\) parameter hits its natural bound at
+1.0. If we look at the likelihood without the beta we have the following
+surface:
+
+\includegraphics{output_files/figure-latex/surface-1.pdf}
+
+So what happens when we start to mess around with the prior? Well lets
+see the default prior in `ToxicR' using MCMC for pretty plots we have:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =} \StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mcmc"}\NormalTok{)}
+\KeywordTok{print}\NormalTok{( H}\OperatorTok{$}\NormalTok{fitted_model}\OperatorTok{$}\NormalTok{parameters)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -1.0913760  1.0051454  0.7630374
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{output_files/figure-latex/default prior-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H}\OperatorTok{$}\NormalTok{prior}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $prior
+## Model Parameter Priors
+##  ------------------------------------------------------------------------
+## Prior: Normal(mu = 0.00, sd = 2.000) 1[-20.00,20.00]
+## Prior: Log-Normal(log-mu = 0.42, log-sd = 0.500) 1[0.00,40.00]
+## Prior: Log-Normal(log-mu = 0.00, log-sd = 1.500) 1[0.00,10000.00]
+\end{verbatim}
+
+Now the parameters are essentially no different than the estimate using
+maximum likelihood, but the experimental test prior, which is different
+than BMDS is pretty flat. What does the optimization surface look like?
+
+\includegraphics{output_files/figure-latex/default prior 2-1.pdf} The
+peak is not noticeably different, so it is essentially performing the
+same inference.
+
+\hypertarget{joses-first-prior}{%
+\subsubsection{Jose's First Prior}\label{joses-first-prior}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{prior <-}\StringTok{ }\KeywordTok{create_prior_list}\NormalTok{(}\KeywordTok{normprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{2}\NormalTok{,}\OperatorTok{-}\DecValTok{20}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\FloatTok{0.5}\NormalTok{,}\FloatTok{0.3}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\FloatTok{1.5}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{10000}\NormalTok{))}
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =}   \StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mcmc"}\NormalTok{,}\DataTypeTok{prior =}\NormalTok{ prior)}
+\KeywordTok{print}\NormalTok{( H}\OperatorTok{$}\NormalTok{fitted_model}\OperatorTok{$}\NormalTok{parameters)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -0.9061123  1.4451849  0.6808757
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{output_files/figure-latex/new prior 1-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H}\OperatorTok{$}\NormalTok{prior}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $prior
+## Model Parameter Priors
+##  ------------------------------------------------------------------------
+## Prior: Normal(mu = 0.00, sd = 2.000) 1[-20.00,20.00]
+## Prior: Log-Normal(log-mu = 0.50, log-sd = 0.300) 1[0.00,20.00]
+## Prior: Log-Normal(log-mu = 0.00, log-sd = 1.500) 1[0.00,10000.00]
+\end{verbatim}
+
+Here the alpha kicks up to \(1.44\) thus our prior is starting to impact
+our fit. What does this prior surface look like?
+\includegraphics{output_files/figure-latex/new prior 1 plot2-1.pdf}
+\includegraphics{output_files/figure-latex/new prior 1 plot2-2.pdf} Here
+the top plot is the `new prior' and the bottom plot is the likelihood,
+and this side-by-side view starts to show us what is going on. The
+bottom plot has no more than a 0.5 change in the log likelihood between
+the MLE and the edge of the graph on the x axis which is the \(\alpha\)
+shape parameter. The change is really insignificant, and the prior is
+thus informative increasing \(\alpha\)
+
+\hypertarget{joses-second-prior}{%
+\subsubsection{Jose's Second prior}\label{joses-second-prior}}
+
+Looking at the second prior on the list we can do the same as above.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{prior <-}\StringTok{ }\KeywordTok{create_prior_list}\NormalTok{(}\KeywordTok{normprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{2}\NormalTok{,}\OperatorTok{-}\DecValTok{20}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\FloatTok{0.8}\NormalTok{,}\FloatTok{0.5}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\FloatTok{1.5}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{10000}\NormalTok{))}
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =}   \StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mcmc"}\NormalTok{,}\DataTypeTok{prior =}\NormalTok{ prior)}
+\KeywordTok{print}\NormalTok{( H}\OperatorTok{$}\NormalTok{fitted_model}\OperatorTok{$}\NormalTok{parameters)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -0.8790296  1.5621925  0.6656322
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{output_files/figure-latex/new prior 2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H}\OperatorTok{$}\NormalTok{prior}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $prior
+## Model Parameter Priors
+##  ------------------------------------------------------------------------
+## Prior: Normal(mu = 0.00, sd = 2.000) 1[-20.00,20.00]
+## Prior: Log-Normal(log-mu = 0.80, log-sd = 0.500) 1[0.00,20.00]
+## Prior: Log-Normal(log-mu = 0.00, log-sd = 1.500) 1[0.00,10000.00]
+\end{verbatim}
+
+\includegraphics{output_files/figure-latex/new prior 2 plot2-1.pdf}
+\includegraphics{output_files/figure-latex/new prior 2 plot2-2.pdf}
+Given there is more variance the ellipsis/quadratic does not move as far
+but it still moves. The problem is the same as above. There is barely
+any difference between an \(\alpha = 1\) and an \(\alpha = 1.4\) as far
+as inference is concerned.
+
+\hypertarget{joses-third-prior}{%
+\subsubsection{Jose's Third prior}\label{joses-third-prior}}
+
+Looking at the second prior on the list we can do the same as above.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{prior <-}\StringTok{ }\KeywordTok{create_prior_list}\NormalTok{(}\KeywordTok{normprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{2}\NormalTok{,}\OperatorTok{-}\DecValTok{20}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\OperatorTok{-}\DecValTok{1}\NormalTok{,}\FloatTok{0.2}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\FloatTok{1.5}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{10000}\NormalTok{))}
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =}   \StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mcmc"}\NormalTok{,}\DataTypeTok{prior =}\NormalTok{ prior)}
+\KeywordTok{print}\NormalTok{( H}\OperatorTok{$}\NormalTok{fitted_model}\OperatorTok{$}\NormalTok{parameters)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -1.6671302  0.3549661  0.7362700
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{output_files/figure-latex/new prior 3-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H}\OperatorTok{$}\NormalTok{prior}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $prior
+## Model Parameter Priors
+##  ------------------------------------------------------------------------
+## Prior: Normal(mu = 0.00, sd = 2.000) 1[-20.00,20.00]
+## Prior: Log-Normal(log-mu = -1.00, log-sd = 0.200) 1[0.00,20.00]
+## Prior: Log-Normal(log-mu = 0.00, log-sd = 1.500) 1[0.00,10000.00]
+\end{verbatim}
+
+\includegraphics{output_files/figure-latex/new prior 3 plot2-1.pdf}
+\includegraphics{output_files/figure-latex/new prior 3 plot2-2.pdf}
+
+Now this prior is wacky, but it gives the result we would expect. It
+puts all of the mass of \(\alpha\) below 1 and give a nutjob (scientific
+term) surface to optimize.
+
+\hypertarget{bmds-standard-prior}{%
+\subsubsection{BMDS Standard Prior}\label{bmds-standard-prior}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{prior <-}\StringTok{ }\KeywordTok{create_prior_list}\NormalTok{(}\KeywordTok{normprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{2}\NormalTok{,}\OperatorTok{-}\DecValTok{20}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\FloatTok{0.69}\NormalTok{,}\FloatTok{0.42}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{20}\NormalTok{),}
+                           \KeywordTok{lnormprior}\NormalTok{(}\DecValTok{0}\NormalTok{,}\FloatTok{1.5}\NormalTok{,}\DecValTok{0}\NormalTok{,}\DecValTok{10000}\NormalTok{))}
+\NormalTok{H =}\StringTok{ }\KeywordTok{single_dichotomous_fit}\NormalTok{(mData[,}\DecValTok{1}\NormalTok{],mData[,}\DecValTok{2}\NormalTok{],mData[,}\DecValTok{3}\NormalTok{],}\DataTypeTok{model_type =}   \StringTok{"weibull"}\NormalTok{,}\DataTypeTok{fit_type =} \StringTok{"mcmc"}\NormalTok{,}\DataTypeTok{prior =}\NormalTok{ prior)}
+\KeywordTok{print}\NormalTok{( H}\OperatorTok{$}\NormalTok{fitted_model}\OperatorTok{$}\NormalTok{parameters)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -0.8810978  1.5524636  0.6666730
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{output_files/figure-latex/new prior 4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H}\OperatorTok{$}\NormalTok{prior}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $prior
+## Model Parameter Priors
+##  ------------------------------------------------------------------------
+## Prior: Normal(mu = 0.00, sd = 2.000) 1[-20.00,20.00]
+## Prior: Log-Normal(log-mu = 0.69, log-sd = 0.420) 1[0.00,20.00]
+## Prior: Log-Normal(log-mu = 0.00, log-sd = 1.500) 1[0.00,10000.00]
+\end{verbatim}
+
+\includegraphics{output_files/figure-latex/new prior 4 plot2-1.pdf}
+\includegraphics{output_files/figure-latex/new prior 4 plot2-2.pdf}
+
+Again, we see that the default BMDS prior puts things in a much more
+`reasonable' area, because truth be told there is not a heck of a lot of
+information to put \(\alpha\) below zero. In fact a likelihood
+difference of 0.5 is barely a sneeze. To me, this just shows how little
+information can be in these data sets that inform our models. As always,
+being careful is the name of the game.
+
+\end{document}
