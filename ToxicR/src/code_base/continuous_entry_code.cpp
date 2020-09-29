@@ -44,6 +44,7 @@ bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   if (Y.cols() == 1 ){
     // check to see if it can be converted into sufficient statistics4
     int temp = 0; 
+    // go through each row to see if there are duplicates
     for (int i = 0; i < X.rows(); i++){
       for (int j = 0 ; j < X.rows(); j++){
         if (X(i,0) == X(j,0)){
@@ -53,6 +54,7 @@ bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
       if( temp == 1){
         convert = false; 
       }
+      temp = 0; 
     }
     
     if (convert){
@@ -334,7 +336,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                          continuousMA_result *res){
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
-  //cerr << "Sufficient Stat: " << n_cols << endl; 
+
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -857,9 +859,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  
- 
-  
+
   if (CA->suff_stat){
     X = UX; 
     //  Y_N = cleanSuffStat(SSTAT,UX,false);  
@@ -1099,6 +1099,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     orig_Y_LN = cleanSuffStat(Y,X,true,false);
     SSTAT = cleanSuffStat(Y,X,false); 
     SSTAT_LN = cleanSuffStat(Y,X,true);
+    
     
     std::vector<double> tux = unique_list(X); 
     UX = Eigen::MatrixXd(tux.size(),1); 
