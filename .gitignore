@@ -1,3 +1,5 @@
+*.html
+*.docx
 *.o
 *.tar.gz
 *.a

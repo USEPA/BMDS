@@ -31,11 +31,14 @@ public:
 	// returns true if you can turn the BMD as a function of the
 	// other parameters false if it is a equality constraint
 	// defaults to false
+	
+	
 	virtual bool fixedNC_BMDformula() { return false; }
 
 	virtual double BMR_CONSTRAINT(Eigen::MatrixXd X,double BMR) {
 		return 0.0;
 	}
+	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return   mean(theta, X);
 	};
@@ -45,7 +48,7 @@ public:
 	};
 
 	virtual Eigen::MatrixXd variance(Eigen::MatrixXd theta, Eigen::MatrixXd X) {
-		Eigen::MatrixXd p = 1 / (1 + exp(-(X*theta).array()));
+		Eigen::MatrixXd p = mean(theta); 
 		return  p.array()*(1 - p.array());
 	};
 

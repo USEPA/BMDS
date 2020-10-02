@@ -1,11 +1,13 @@
 #include "bmdStruct.h"
-#include <math.h>
+//#include <math.h>
+#include <cmath>
 #include <stdio.h>
 
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <iostream>
 
 #include "DichHillBMD_NC.h"
 #include "DichMultistageBMD_NC.h"
@@ -17,6 +19,7 @@
 #include "DichLogisticBMD_NC.h"
 #include "DichProbitBMD_NC.h"
 #include "IDPrior.h"
+#include "gradient.h"
 
 #include "bmds_entry.h"
 #include "bmdStruct.h"
@@ -24,6 +27,46 @@
 
 #ifndef _DICHOTOMOUS_ENTRY_CODE_H
 #define _DICHOTOMOUS_ENTRY_CODE_H
+
+template <class PR> 
+Eigen::MatrixXd X_logPrior( Eigen::MatrixXd theta, Eigen::MatrixXd p){
+        PR prior(p); 
+        return prior.log_prior(theta); 
+}
+
+template <class LL> 
+Eigen::MatrixXd X_gradient( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
+                                      Eigen::MatrixXd D){
+        
+        LL data_likelihood(Y,D,1); 
+        Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
+       
+        double *grad = new double[data_likelihood.nParms()]; 
+   
+        Eigen::MatrixXd md(1,3); 
+        for (int i = 0; i < D.rows(); i++){
+                md(0,2) = D(i,0); 
+                xgrad<LL>(theta, grad, &data_likelihood, md); 
+                for (int j = 0; j < data_likelihood.nParms(); j++){
+                        rValue(i,j) =  grad[j] *Y(i,1); //n*p'  
+                }
+        }
+        delete grad; 
+        return rValue; 
+        
+}
+
+template <class LL> 
+Eigen::MatrixXd X_cov( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
+                            Eigen::MatrixXd D){
+        
+        LL data_likelihood(Y,D,1); 
+        
+        Eigen::MatrixXd rValue = data_likelihood.variance(theta); //*Y.col(1).array(); // n*p*(1-p) 
+        rValue = rValue.array()*Y.col(1).array(); 
+        return rValue.asDiagonal().inverse(); 
+        
+}
 
 /* Function: estimate_ma_mcmc 
  * Purpose:  This function performs a dichotomous Model Average (MA) for dichotomous

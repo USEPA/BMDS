@@ -15,7 +15,7 @@
 #ifndef cBMDstatmodH
 #define cBMDstatmodH
 
-
+#include <cmath> 
 #ifdef R_COMPILATION
     //necessary things to run in R    
     #include <RcppEigen.h>
@@ -25,8 +25,7 @@
 #endif
 
 #include <list>
-#include <cmath>
-#include <math.h>
+
 #include <nlopt.hpp>
 #include <limits>
 #include <iostream>

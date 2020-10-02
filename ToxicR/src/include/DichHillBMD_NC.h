@@ -105,7 +105,7 @@ public:
 	}
 
 	Eigen::MatrixXd mean(Eigen::MatrixXd theta, Eigen::MatrixXd X) {
-
+   
 		double g = HILL_G(theta(0, 0));
 		double n = HILL_N(theta(1, 0));
 		double a = HILL_A(theta(2,0)); double b = HILL_B(theta(3, 0));

@@ -37,6 +37,8 @@ using namespace std;
 
 #define MAX_PARMS 32 // Should never get close to this many!!!
 
+
+
 // [[Rcpp::depends(RcppGSL)]]
 // [[Rcpp::depends(RcppEigen)]]
 //////////////////////////////////////////////////////////////////////////

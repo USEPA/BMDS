@@ -1,3 +1,4 @@
+#include <cmath> 
 #ifdef R_COMPILATION  
   #include <RcppEigen.h>
   #include <RcppGSL.h>
@@ -14,7 +15,7 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <math.h>
+//#include <math.h>
 #include <stdio.h>
 #include "bmds_entry.h"
 #include "bmdStruct.h"

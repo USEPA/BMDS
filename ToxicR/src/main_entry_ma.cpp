@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <math.h>
+#include <cmath.h>
+//#include <math.h>
 #include <stdio.h>
 #include "bmds_entry.h"
 #include "bmdStruct.h"

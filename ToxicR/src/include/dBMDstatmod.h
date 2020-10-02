@@ -17,7 +17,7 @@
 #define dBMDstatmodH
 
 #include "statmod.h"
-
+#include <cmath>
 #ifdef R_COMPILATION
     //necessary things to run in R    
     #include <R.h>
@@ -30,8 +30,7 @@
 #endif
 
 #include <list>
-#include <cmath>
-#include <math.h>
+//#include <cmath>
 #include <nlopt.hpp>
 #include <limits>
 #include <iostream>
@@ -827,7 +826,7 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	
 
 	double max_dose = X.maxCoeff(); 
-	//cout << "Yo Yo Yo" << max_dose << endl << endl; 
+
 	double MAP_LIKE = M->negPenLike(parms);
 	Eigen::MatrixXd ret1(3,1), ret2, fParms; 
 	std::list<Eigen::MatrixXd> CL,temp1,temp2; 
@@ -835,7 +834,7 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	double CLIKE = MAP_LIKE; 	int max_iters = 0; 
 	double CBMD = BMD * (1.0-BMDchange);
 	double PLIKE = CLIKE;
-	//double PBMD = BMD;
+	
 	bool error = false;
 	
 	ret1(0, 0) = PLIKE; ret1(1, 0) = BMD; ret1(2, 0) = 666; 
@@ -1058,6 +1057,8 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	
 	return returnMat; 
 }
+
+
 
 #endif
 

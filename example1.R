@@ -4,15 +4,29 @@ mData <- matrix(c(0, 1,10,
                   0.3, 4,10,
                   1, 4,10,
                   4, 7,10),nrow=4,ncol=3,byrow=T)
-mData <- matrix(c(0, 1,50,
+
+
+mData <- matrix(c(0, 2,50,
                   1, 2,50,
-                  2.5, 3,50,
-                  4, 14,50),nrow=4,ncol=3,byrow=T)
+                  2.5, 2,100,
+                  4, 28,100,
+                  8, 17,50),nrow=5,ncol=3,byrow=T)
+
+prior <- create_prior_list(normprior(	0,	10,	-18,	18),
+                           lnormprior(	0.693147180559945,	0.01,	0.2,	20),
+                           lnormprior(	0,	2,	0,	1e4))
+
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")
+
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "laplace")
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "mle")
+
 
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "laplace")
 E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "laplace")
-G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",fit_type = "mcmc")
+
 H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc")
 I = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",fit_type = "laplace")
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "qlinear",fit_type = "laplace")

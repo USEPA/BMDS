@@ -1,3 +1,4 @@
+#include <cmath>
 #ifdef R_COMPILATION  
 #include <RcppEigen.h>
   #include <RcppGSL.h>
@@ -7,7 +8,7 @@
 
 #include <gsl/gsl_randist.h>
 #include "bmdStruct.h"
-#include <math.h>
+//#include <math.h>
 #include <stdio.h>
 
 #include <string>
@@ -220,6 +221,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
       a =  MCMC_bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
                                      fixedB, fixedV, DA->degree,
                                      DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
+     
     break; 
     case dich_model::d_gamma:
       a =  MCMC_bmd_analysis_DNC<dich_gammaModelNC,IDPrior> (Y,D,prior,
@@ -318,13 +320,24 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     fixedB.push_back(false);
     fixedV.push_back(0.0); 
   }
-
+  
+  Eigen::MatrixXd Xd ;
+  Eigen::MatrixXd cv_t; 
+  Eigen::MatrixXd pr; 
+  
   switch ((dich_model)DA->model){
   case dich_model::d_hill:
     a =   bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
                                                       fixedB, fixedV, DA->degree,
                                                       DA->BMR, DA->BMD_type, 
                                                       DA->alpha*0.5, 0.02);
+    Xd = X_gradient<dich_hillModelNC>(a.MAP_ESTIMATE,Y,D); 
+    cv_t = X_cov<dich_hillModelNC>(a.MAP_ESTIMATE,Y,D);
+    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    std::cerr << Xd.diagonal().array().sum() << endl << endl; 
+    
     break; 
   case dich_model::d_gamma:
 
@@ -332,6 +345,13 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                        fixedB, fixedV, DA->degree,
                                                        DA->BMR, DA->BMD_type,
                                                        DA->alpha*0.5,0.02);
+    Xd = X_gradient<dich_gammaModelNC>(a.MAP_ESTIMATE,Y,D); 
+    cv_t = X_cov<dich_gammaModelNC>(a.MAP_ESTIMATE,Y,D); 
+    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    std::cerr << Xd.diagonal().array().sum() << endl << endl; 
+    
 
     break; 
   case dich_model::d_logistic:
@@ -535,6 +555,9 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
 
   return; 
 }
+
+
+
 
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,

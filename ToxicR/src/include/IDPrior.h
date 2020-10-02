@@ -54,6 +54,7 @@ public:
 		prior_spec = tP; 
 	}
 	double neg_log_prior(Eigen::MatrixXd theta);
+	Eigen::MatrixXd log_prior(Eigen::MatrixXd theta);
 	Eigen::MatrixXd prior_mean(); 
 
 	Eigen::MatrixXd lowerBounds() {
