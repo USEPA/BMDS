@@ -70,7 +70,13 @@ public:
 		X = newX;
 	};
 	int    nParms() { return X.cols(); };
-
+	virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+	     Eigen::MatrixXd returnV(D.rows(), 3);
+	     Eigen::MatrixXd one = Eigen::MatrixXd::Ones(D.rows(), 1) ;
+	     returnV << one , one , D.col(0); 
+	     return returnV; 
+	     
+	}
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return   mean(theta, X);
 	};

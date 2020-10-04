@@ -34,7 +34,7 @@
 #include "dichotomous_entry_code.h"
 #include "mcmc_analysis.h"
 
-
+using namespace Eigen; 
 void bmd_range_find(dichotomousMA_result *res, 
                     double *range){
   // assume the minimum BMD for the MA is always 0
@@ -245,6 +245,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_multistage:
+     
       a =  MCMC_bmd_analysis_DNC<dich_multistageNC,IDPrior> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
@@ -336,7 +337,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
     pr   = Xd.transpose()*cv_t*Xd + pr; 
     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    std::cerr << Xd.diagonal().array().sum() << endl << endl; 
+    res->model_df   = Xd.diagonal().array().sum(); 
     
     break; 
   case dich_model::d_gamma:
@@ -350,7 +351,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
     pr   = Xd.transpose()*cv_t*Xd + pr; 
     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    std::cerr << Xd.diagonal().array().sum() << endl << endl; 
+    res->model_df   = Xd.diagonal().array().sum(); 
     
 
     break; 
@@ -359,36 +360,75 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                           fixedB, fixedV, DA->degree,
                                                           DA->BMR, DA->BMD_type, 
                                                           DA->alpha*0.5, 0.02);
+       Xd = X_gradient<dich_logisticModelNC>(a.MAP_ESTIMATE,Y,D); 
+       cv_t = X_cov<dich_logisticModelNC>(a.MAP_ESTIMATE,Y,D); 
+       pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+       res->model_df   = Xd.diagonal().array().sum(); 
     break; 
   case dich_model::d_loglogistic:
     a =   bmd_analysis_DNC<dich_loglogisticModelNC,IDPrior> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, 
                                                             DA->alpha*0.5, 0.02);
+     Xd = X_gradient<dich_loglogisticModelNC>(a.MAP_ESTIMATE,Y,D); 
+     cv_t = X_cov<dich_loglogisticModelNC>(a.MAP_ESTIMATE,Y,D); 
+     pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+     pr   = Xd.transpose()*cv_t*Xd + pr; 
+     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+     res->model_df   = Xd.diagonal().array().sum(); 
+       
     break;
   case dich_model::d_logprobit:
     a =   bmd_analysis_DNC<dich_logProbitModelNC,IDPrior> (Y,D,prior,
                                                            fixedB, fixedV, DA->degree,
                                                            DA->BMR, DA->BMD_type, 
                                                            DA->alpha*0.5, 0.02);
+    Xd = X_gradient<dich_logProbitModelNC>(a.MAP_ESTIMATE,Y,D); 
+    cv_t = X_cov<dich_logProbitModelNC>(a.MAP_ESTIMATE,Y,D); 
+    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    res->model_df   = Xd.diagonal().array().sum();
+       
     break; 
   case dich_model::d_multistage:
+   
     a =   bmd_analysis_DNC<dich_multistageNC,IDPrior> (Y,D,prior,
                                                        fixedB, fixedV, DA->degree,
                                                        DA->BMR, DA->BMD_type, 
                                                        0.5*DA->alpha, 0.02);
+       Xd = X_gradient<dich_multistageNC>(a.MAP_ESTIMATE,Y,D,DA->degree); 
+       cv_t = X_cov<dich_multistageNC>(a.MAP_ESTIMATE,Y,D); 
+       pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+       res->model_df   = Xd.diagonal().array().sum();
     break;
   case dich_model::d_probit: 
     a =   bmd_analysis_DNC<dich_probitModelNC,IDPrior> (Y,D,prior,
                                                         fixedB, fixedV, DA->degree,
                                                         DA->BMR, DA->BMD_type, 
                                                         0.5*DA->alpha, 0.02);
+       Xd = X_gradient<dich_probitModelNC>(a.MAP_ESTIMATE,Y,D); 
+       cv_t = X_cov<dich_probitModelNC>(a.MAP_ESTIMATE,Y,D); 
+       pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior);
+       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+       res->model_df   = Xd.diagonal().array().sum();
     break;
   case dich_model::d_qlinear: 
     a =   bmd_analysis_DNC<dich_qlinearModelNC,IDPrior> (Y,D,prior,
                                                          fixedB, fixedV, DA->degree,
                                                          DA->BMR, DA->BMD_type, 0.5*DA->alpha,
                                                          0.02);
+       Xd = X_gradient<dich_qlinearModelNC>(a.MAP_ESTIMATE,Y,D); 
+       cv_t = X_cov<dich_qlinearModelNC>(a.MAP_ESTIMATE,Y,D); 
+       pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+       res->model_df   = Xd.diagonal().array().sum();
     break; 
   case dich_model::d_weibull:
     
@@ -396,6 +436,12 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                          fixedB, fixedV, DA->degree,
                                                          DA->BMR, DA->BMD_type, 0.5*DA->alpha, 
                                                          0.02);
+       Xd = X_gradient<dich_weibullModelNC>(a.MAP_ESTIMATE,Y,D); 
+       cv_t = X_cov<dich_weibullModelNC>(a.MAP_ESTIMATE,Y,D); 
+       pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+       res->model_df   = Xd.diagonal().array().sum();
   default: 
     break; 
   }
@@ -694,4 +740,61 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   
   return; 
   
+}
+
+void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data){//}, dichotomous_PGOF_result *res){
+     Eigen::MatrixXd Y(data->n,2); 
+     Eigen::MatrixXd D(data->n,1); 
+     Eigen::MatrixXd parms(data->parms,1);
+     Eigen::MatrixXd mean_p; 
+     Eigen::MatrixXd mean_d; 
+     for (int i = 0; i < data->parms; i++){
+          parms(i,0) = data->est_parms[i]; 
+     }
+     for (int i = 0; i < data->n; i++){
+          Y(i,0) = data->Y[i]; Y(i,1) = data->n_group[i]; 
+          D(i,0) = data->doses[i]; 
+     }
+     
+     
+          
+     switch (data->model){
+     case dich_model::d_hill:
+          mean_d =  X_compute_mean<dich_hillModelNC> (Y,D,parms);
+          break; 
+     case dich_model::d_gamma:
+          mean_d =  X_compute_mean<dich_gammaModelNC> (Y,D,parms);
+          break; 
+     case dich_model::d_logistic:
+          mean_d =  X_compute_mean<dich_logisticModelNC> (Y,D,parms);
+          break; 
+     case dich_model::d_loglogistic:
+          mean_d =  X_compute_mean<dich_loglogisticModelNC> (Y,D,parms);
+          break;
+     case dich_model::d_logprobit:
+          mean_d =  X_compute_mean<dich_logProbitModelNC> (Y,D,parms);
+          break; 
+     case dich_model::d_multistage:
+          mean_d =  X_compute_mean<dich_multistageNC> (Y,D,parms);
+          break;
+     case dich_model::d_probit: 
+          mean_d =  X_compute_mean<dich_probitModelNC> (Y,D,parms);
+          break;
+     case dich_model::d_qlinear: 
+          mean_d =  X_compute_mean<dich_qlinearModelNC> (Y,D,parms);
+          break; 
+     case dich_model::d_weibull:
+          mean_d =  X_compute_mean<dich_weibullModelNC> (Y,D,parms);
+     default: 
+          break; 
+     }
+     Eigen::MatrixXd expected = Y.col(1).array()*mean_d.array(); 
+     Eigen::MatrixXd residual = Y - expected; 
+     residual = residual.array()/sqrt(expected.array()); 
+     Eigen::MatrixXd sqresid  = residual.array()*residual.array();
+     Eigen::MatrixXd resultsTable(Y.rows(),5); 
+     resultsTable << Y.col(0) , Y.col(1) , expected , residual, sqresid;
+     std::cout << resultsTable << endl ;
+     std::cout << sqresid.array().sum() << " : " << data->n-data->model_df << endl; 
+     std::cout << "P-value: " << 1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df) << endl;
 }

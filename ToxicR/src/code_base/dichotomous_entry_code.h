@@ -36,16 +36,17 @@ Eigen::MatrixXd X_logPrior( Eigen::MatrixXd theta, Eigen::MatrixXd p){
 
 template <class LL> 
 Eigen::MatrixXd X_gradient( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
-                                      Eigen::MatrixXd D){
+                                      Eigen::MatrixXd D,int degree = 1){
         
-        LL data_likelihood(Y,D,1); 
+        LL data_likelihood(Y,D,degree); 
         Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
        
         double *grad = new double[data_likelihood.nParms()]; 
    
-        Eigen::MatrixXd md(1,3); 
+        Eigen::MatrixXd md; 
         for (int i = 0; i < D.rows(); i++){
-                md(0,2) = D(i,0); 
+                md = data_likelihood.convertDataMatrix(D.row(i)); 
+                
                 xgrad<LL>(theta, grad, &data_likelihood, md); 
                 for (int j = 0; j < data_likelihood.nParms(); j++){
                         rValue(i,j) =  grad[j] *Y(i,1); //n*p'  
@@ -57,6 +58,16 @@ Eigen::MatrixXd X_gradient( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
 }
 
 template <class LL> 
+Eigen::MatrixXd X_compute_mean( Eigen::MatrixXd Y, Eigen::MatrixXd D,  
+                                Eigen::MatrixXd parms, int degree = 1){
+     
+     LL data_likelihood(Y,D,degree);
+     Eigen::MatrixXd  md = data_likelihood.convertDataMatrix(D);
+     Eigen::MatrixXd rValue = data_likelihood.mean(parms,md); 
+     return rValue; 
+     
+}
+template <class LL> 
 Eigen::MatrixXd X_cov( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
                             Eigen::MatrixXd D){
         
@@ -67,6 +78,8 @@ Eigen::MatrixXd X_cov( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
         return rValue.asDiagonal().inverse(); 
         
 }
+
+void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data);
 
 /* Function: estimate_ma_mcmc 
  * Purpose:  This function performs a dichotomous Model Average (MA) for dichotomous

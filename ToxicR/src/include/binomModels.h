@@ -51,7 +51,13 @@ public:
 		Eigen::MatrixXd p = mean(theta); 
 		return  p.array()*(1 - p.array());
 	};
-
+     virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+          Eigen::MatrixXd returnV(D.rows(), 2);
+          Eigen::MatrixXd one = Eigen::MatrixXd::Ones(D.rows(), 1);
+          returnV << one , D.col(0); 
+          return returnV; 
+          
+     }
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta, Eigen::MatrixXd X) {
 		return   1 / (1 + exp(-(X*theta).array()));
 	};

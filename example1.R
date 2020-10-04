@@ -8,9 +8,10 @@ mData <- matrix(c(0, 1,10,
 
 mData <- matrix(c(0, 2,50,
                   1, 2,50,
-                  2.5, 2,100,
-                  4, 28,100,
-                  8, 17,50),nrow=5,ncol=3,byrow=T)
+                  3, 10, 50,
+                  16, 18,50,
+                  32, 18,50,
+                  8, 17,50),nrow=6,ncol=3,byrow=T)
 
 prior <- create_prior_list(normprior(	0,	10,	-18,	18),
                            lnormprior(	0.693147180559945,	0.01,	0.2,	20),
@@ -24,14 +25,27 @@ G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", f
 
 
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
-D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "laplace")
-E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "laplace")
 
-H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mcmc")
+D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "laplace")
+D = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "logistic",fit_type = "mle")
+
+E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "laplace")
+E = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit",fit_type = "mle")
+
+H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "laplace")
+H = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",fit_type = "mle")
+
 I = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",fit_type = "laplace")
+I = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",fit_type = "mle")
+
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "qlinear",fit_type = "laplace")
+J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "qlinear",fit_type = "mle")
+
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit",fit_type = "laplace")
+J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit",fit_type = "mle")
+
 J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistage",fit_type = "laplace")
+J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistage",fit_type = "mle")
 
 
 

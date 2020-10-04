@@ -41,8 +41,6 @@
 #include "binomModels.h"
 
 
-
-
 //void gradient(Eigen::MatrixXd v, double *g, void *data, std::function<double(Eigen::MatrixXd, void*)> math_func)
 struct probit_inequality {
 	double BMD;
@@ -61,7 +59,7 @@ public:
 	dich_probitModelNC(Eigen::MatrixXd tY, Eigen::MatrixXd tX, int Deg) : binomialBMD(tY, tX) {
 		Eigen::MatrixXd temp = X;
 		Eigen::MatrixXd newX(temp.rows(), 2);
-		Eigen::MatrixXd one(temp.rows(), 1);
+		Eigen::MatrixXd one(temp.rows(), 1) ;
 		newX << one, temp;
 		X = newX;
 	};

@@ -46,7 +46,7 @@ struct log_qlinear_inequality {
 class dich_qlinearModelNC : public binomialBMD {
 
 public:
-	// hill dose response function
+
 	dich_qlinearModelNC(Eigen::MatrixXd tY, Eigen::MatrixXd tX, int Deg) : binomialBMD(tY, tX) {
 		Eigen::MatrixXd temp = X;
 		Eigen::MatrixXd newX(temp.rows(), 2);
@@ -54,8 +54,17 @@ public:
 		newX << one, temp;
 		X = newX;
 	};
+	
 	int    nParms() { return 2; };
-
+	
+	virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+	     Eigen::MatrixXd returnV(D.rows(), 2);
+	     Eigen::MatrixXd one = Eigen::MatrixXd::Ones(D.rows(), 1);
+	     returnV << one , D.col(0); 
+	      
+	     return returnV; 
+	     
+	}
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return   mean(theta, X);
 	};

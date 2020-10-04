@@ -66,7 +66,7 @@ List run_single_dichotomous(NumericVector model,
   Anal.prior    = new double[pr.cols()*pr.rows()];
   Anal.prior_cols = pr.cols(); 
   Anal.n          = data.rows(); 
-  Anal.degree = options2[1]; 
+  Anal.degree = pr.rows()-1; 
 
   if (Anal.model == dich_model::d_multistage){
     Anal.degree = Anal.parms - 1; 
@@ -91,6 +91,15 @@ List run_single_dichotomous(NumericVector model,
   res.bmd_dist = new double[res.dist_numE*2]; 
   
   estimate_sm_laplace(&Anal, &res); 
+  dichotomous_PGOF_data GOFdata; 
+  GOFdata.n = Anal.n; GOFdata.Y = Anal.Y;
+  GOFdata.model = Anal.model;
+  GOFdata.model_df = res.model_df; 
+  GOFdata.est_parms = res.parms; 
+  GOFdata.doses = Anal.doses; GOFdata.n_group = Anal.n_group; 
+  compute_dichotomous_pearson_GOF(&GOFdata); 
+  
+  cout << res.model_df << endl;  
   List rV = convert_dichotomous_fit_to_list(&res); 
   
   delete(Anal.Y); 

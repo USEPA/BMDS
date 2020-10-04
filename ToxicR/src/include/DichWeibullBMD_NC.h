@@ -63,6 +63,14 @@ public:
 		return   mean(theta, X);
 	};
 
+	virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+	     Eigen::MatrixXd returnV(D.rows(), 3);
+	     Eigen::MatrixXd one = Eigen::MatrixXd::Ones(D.rows(), 1) ;
+	     returnV << one , one , D.col(0); 
+	     return returnV; 
+	     
+	}
+	
 	Eigen::MatrixXd mean(Eigen::MatrixXd theta, Eigen::MatrixXd X) {
 
 		double g = WEIBULL_G(theta(0, 0));

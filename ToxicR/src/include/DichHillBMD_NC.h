@@ -57,7 +57,14 @@ public:
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return   mean(theta, X);
 	};
-
+	
+	virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+	     Eigen::MatrixXd returnV(D.rows(), 3);
+	     Eigen::MatrixXd one = Eigen::MatrixXd::Ones(D.rows(), 1) ;
+	     returnV << one , one , D.col(0); 
+	     return returnV; 
+	     
+	}
 	std::vector<double> fixConstraintUB(Eigen::MatrixXd theta, double BMD, double BMR, bool isExtra, double ub) {
 		std::vector<double> x(theta.rows());
 		double g = HILL_G(theta(0, 0)); // + 0.5;

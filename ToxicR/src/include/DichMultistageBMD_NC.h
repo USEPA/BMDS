@@ -59,8 +59,19 @@ public:
 			newX.col(i) = pow(X.array(), i + 1);
 		}
 		X = newX;
+		
 	};
-
+     
+     virtual Eigen::MatrixXd convertDataMatrix(Eigen::MatrixXd D){
+          Eigen::MatrixXd newX(D.rows(), degree);
+          
+          for (int i = 0; i < degree; i++) {
+               newX.col(i) = pow(D.array(), i + 1);
+          }
+          
+          return newX; 
+          
+     }
 	int    nParms() { return degree + 1 ; }; // assumes n x 2 matrix degree + 1
 
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {

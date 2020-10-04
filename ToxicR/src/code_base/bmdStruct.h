@@ -35,6 +35,28 @@ struct dichotomous_analysis{
   int parms;   // number of parameters in the model
   int prior_cols; // colunns in the prior
 };
+
+struct dichotomous_PGOF_data{
+     int     n;     // total number of observations obs/n 
+     double *Y; // observed +
+     double *doses; // 
+     double *n_group; //size of the group
+     double  model_df;
+     int     model; 
+     int     parms; 
+     double  *est_parms; 
+};
+
+struct dichotomous_PGOF_result{
+     int     n;     // total number of observations obs/n 
+     double *observed; // observed +
+     double *expected; // 
+     double *residual; //size of the group
+     double  test_statistic; 
+     double  p_value; 
+     double  df;  
+};
+
 //
 // dichotomous_model_result: 
 // Purpose: Data structure that is populated with all of the necessary
@@ -47,6 +69,8 @@ struct dichotomous_model_result{
   double  *cov;             // Covariance Estimate
   double   max;             // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;       // number of entries in rows for the bmd_dist
+  double      model_df;        // Used model degrees of freedom
+  double      total_df;        // Total degrees of freedom
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
 
@@ -124,6 +148,8 @@ struct continuous_model_result{
   double  *cov;             // Covariance Estimate
   double   max;             // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;       // number of entries in rows for the bmd_dist
+  double      model_df;        // Used model degrees of freedom
+  double      total_df;        // Total degrees of freedom
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
 
