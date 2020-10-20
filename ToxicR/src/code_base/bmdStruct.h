@@ -97,7 +97,7 @@ struct dichotomousMA_analysis{
 //
 struct dichotomousMA_result{
   int                       nmodels; //number of models for each 
-  dichotomous_model_result **models; // Individual model fits for each
+  struct dichotomous_model_result **models; // Individual model fits for each
                                      // model average  
   int                     dist_numE; // number of entries in rows for the bmd_dist
   double                *post_probs; // posterior probabilities
@@ -106,7 +106,7 @@ struct dichotomousMA_result{
 
 // Continuous Structures
 struct continuous_analysis{
-  cont_model model; 
+  enum cont_model model; 
   int n; 
   bool suff_stat; //true if the data are in sufficient statistics format
   double *Y; // observed data means or actual data
@@ -155,7 +155,7 @@ struct continuous_model_result{
 
 struct continuousMA_result{
   int                      nmodels; //number of models for each 
-  continuous_model_result **models; //priors
+  struct continuous_model_result **models; //priors
   int                    dist_numE; // number of entries in rows for the bmd_dist
   double               *post_probs; // posterior probabilities
   double                 *bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
@@ -174,32 +174,35 @@ struct bmd_analysis_MCMC{
 
 struct ma_MCMCfits{
   unsigned int nfits; 
-  bmd_analysis_MCMC **analyses;   
+  struct bmd_analysis_MCMC **analyses;   
 }; 
 
 // odds and ends
-bmd_analysis_MCMC * new_mcmc_analysis(int model,
+struct bmd_analysis_MCMC * new_mcmc_analysis(int model,
                                        int parms, 
                                        unsigned int samples);
-void del_mcmc_analysis(bmd_analysis_MCMC *an); 
+void del_mcmc_analysis(struct bmd_analysis_MCMC *an); 
+
+#if defined(__cplusplus) || defined(R_COMPILATION)
 void cp_prior(Eigen::MatrixXd temp, double *priors);
+#endif
 
-void del_continuousMA_analysis(continuousMA_analysis &CMA);
-void del_continuous_analysis(continuous_analysis a); 
+void del_continuousMA_analysis(struct continuousMA_analysis CMA);
+void del_continuous_analysis(struct continuous_analysis a); 
 
-dichotomousMA_result * new_dichotomousMA_result(int nmodels,
+struct dichotomousMA_result * new_dichotomousMA_result(int nmodels,
                                                 int dist_numE);
 
-continuous_model_result * new_continuous_model_result(int model,
+struct continuous_model_result * new_continuous_model_result(int model,
 													  unsigned int n_parm,
                             unsigned int n_elm);
                                                       
-dichotomous_model_result * new_dichotomous_model_result(int model,
+struct dichotomous_model_result * new_dichotomous_model_result(int model,
                                                         int parms,
                                                         int dist_numE);
 
-void del_continuous_model_result(continuous_model_result * cm); 
-void delete_dichotomousMA_result(dichotomousMA_result *res); 
+void del_continuous_model_result(struct continuous_model_result * cm); 
+void delete_dichotomousMA_result(struct dichotomousMA_result *res); 
 
 
 #endif

@@ -1067,6 +1067,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+  cout << "Here\n";
+  
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
@@ -1111,6 +1113,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
+  cout << "Here2\n";
   
   if (CA->suff_stat){
     X = UX; 
@@ -1129,7 +1132,9 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     orig_Y_LN.col(2) = orig_Y_LN.col(1);
     orig_Y_LN.col(1) = temp; 
     X = X/max_dose;
-  } 
+  }
+ 
+  cout << "Here3\n";
   
   bmd_analysis b; 
   std::vector<bool> fixedB; 
@@ -1144,6 +1149,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+  cout << "Here4\n";
+
   Eigen::MatrixXd init_opt; 
   switch((cont_model)CA->model){
   case cont_model::funl:
@@ -1163,11 +1170,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                               CA->disttype != distribution::normal_ncv, CA->isIncreasing):
     bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-    
+    cout << "Here4a\n";
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-    
+    cout << "Here5\n";
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
@@ -1199,6 +1206,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
     
   }
+
+  cout << "Here6\n";
   
   // now you fit it based upon the origional data
   if (CA->disttype == distribution::log_normal){
@@ -1235,10 +1244,14 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->alpha, 0.02,init_opt);
     }
   }
+
+  cout << "Here7\n";
  
   transfer_continuous_model(b,res);
   res->model = CA->model; 
   res->dist  = CA->disttype; 
+
+  cout << "Here8\n";
   return;  
 }
 
@@ -1427,4 +1440,10 @@ void estimate_sm_mcmc(continuous_analysis *CA,
 }
 
 
+void estimate_sm_laplace_cont(continuous_analysis *CA ,
+                         continuous_model_result *res){
+
+   estimate_sm_laplace(CA, res);
+
+}
 

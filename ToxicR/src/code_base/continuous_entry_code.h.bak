@@ -1,8 +1,12 @@
+
 #if defined R_COMPILATION || defined __cplusplus
   #include <cmath> 
 #else
   #include <math.h>
 #endif
+
+#include <stdio.h>
+#include "bmdStruct.h"
 
 #ifdef R_COMPILATION  
   #include <RcppEigen.h>
@@ -14,17 +18,15 @@
   #include <Eigen/Dense>
 #endif
 
-#include "bmdStruct.h"
-
 #if defined R_COMPILATION || defined __cplusplus
 #include <gsl/gsl_randist.h>
 #include <string>
 #include <vector>
 #include <limits>
 //#include <math.h>
-#include <stdio.h>
 #include "bmds_entry.h"
 #include "continuous_model_functions.h"
+
 
 
 using namespace std;
@@ -62,7 +64,8 @@ using Eigen::MatrixXd;
 #ifndef _CONTINUOUS_ENTRY_CODE_H
 #define _CONTINUOUS_ENTRY_CODE_H
 
-#if defined R_COMPILATION || __cplusplus
+
+#if defined R_COMPILATION || defined __cplusplus
 
 bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s);
 void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b); 
@@ -172,9 +175,18 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
  *                  2) These funcions are overloaded with continuous counterparts 
  *                  that use the exact same estimation algorithms for continuous data.  
  */
-void estimate_sm_laplace(continuous_analysis *CA ,
-                         continuous_model_result *res);
+#endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void estimate_sm_laplace(struct continuous_analysis *CA ,
+                         struct continuous_model_result *res);
+#ifdef __cplusplu
+}
+#endif
 /* Function: estimate_sm_mcmc
  * Purpose:  This function performs a single model estimate for continuous data  
  * This is done using MCMC estimation. 
@@ -196,19 +208,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
  *                  2) These funcions are overloaded with continuous counterparts 
  *                  that use the exact same estimation algorithms for continuous data.  
  */
+#if defined R_COMPILATION || defined __cplusplus
 void estimate_sm_mcmc(continuous_analysis *CA,
                       continuous_model_result *res,
                       bmd_analysis_MCMC  *mcmc); 
 
 #endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-void estimate_sm_laplace_cont(struct continuous_analysis *CA,
-                         struct continuous_model_result *res);
-#ifdef __cplusplus
-}
-#endif
-
 #endif

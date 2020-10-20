@@ -798,3 +798,12 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data){//}, dichotomo
      std::cout << sqresid.array().sum() << " : " << data->n-data->model_df << endl; 
      std::cout << "P-value: " << 1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df) << endl;
 }
+
+
+void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
+                         dichotomous_model_result *res,
+                         bool do_a_rescale){
+
+   estimate_sm_laplace(DA, res, do_a_rescale);
+
+}
