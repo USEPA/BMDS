@@ -28,11 +28,7 @@
 #ifndef _DICHOTOMOUS_ENTRY_CODE_H
 #define _DICHOTOMOUS_ENTRY_CODE_H
 
-template <class PR> 
-Eigen::MatrixXd X_logPrior( Eigen::MatrixXd theta, Eigen::MatrixXd p){
-        PR prior(p); 
-        return prior.log_prior(theta); 
-}
+
 
 template <class LL> 
 Eigen::MatrixXd X_gradient( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
@@ -79,7 +75,7 @@ Eigen::MatrixXd X_cov( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
         
 }
 
-void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data);
+void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data,dichotomous_PGOF_result *res);
 
 /* Function: estimate_ma_mcmc 
  * Purpose:  This function performs a dichotomous Model Average (MA) for dichotomous

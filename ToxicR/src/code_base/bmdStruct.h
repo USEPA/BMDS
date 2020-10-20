@@ -48,8 +48,7 @@ struct dichotomous_PGOF_data{
 };
 
 struct dichotomous_PGOF_result{
-     int     n;     // total number of observations obs/n 
-     double *observed; // observed +
+     int     n;        // total number of observations obs/n 
      double *expected; // 
      double *residual; //size of the group
      double  test_statistic; 

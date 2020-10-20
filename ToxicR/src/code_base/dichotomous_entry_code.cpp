@@ -742,7 +742,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   
 }
 
-void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data){//}, dichotomous_PGOF_result *res){
+void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PGOF_result *res){
      Eigen::MatrixXd Y(data->n,2); 
      Eigen::MatrixXd D(data->n,1); 
      Eigen::MatrixXd parms(data->parms,1);
@@ -788,13 +788,20 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data){//}, dichotomo
      default: 
           break; 
      }
+     std::cerr << mean_d << std::endl; 
      Eigen::MatrixXd expected = Y.col(1).array()*mean_d.array(); 
      Eigen::MatrixXd residual = Y - expected; 
      residual = residual.array()/sqrt(expected.array()); 
      Eigen::MatrixXd sqresid  = residual.array()*residual.array();
      Eigen::MatrixXd resultsTable(Y.rows(),5); 
      resultsTable << Y.col(0) , Y.col(1) , expected , residual, sqresid;
-     std::cout << resultsTable << endl ;
-     std::cout << sqresid.array().sum() << " : " << data->n-data->model_df << endl; 
-     std::cout << "P-value: " << 1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df) << endl;
+     std::cerr << resultsTable << std::endl; 
+     for (int i = 0; i < data->n; i++){
+       res->expected[i] = expected(i,0);
+       res->residual[i] = residual(i,0);          
+     }
+     res->n = data->n;        // total number of observations obs 
+     res->test_statistic =   sqresid.array().sum();
+     res->p_value        =   1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df); 
+     res->df             =   data->n-data->model_df; 
 }

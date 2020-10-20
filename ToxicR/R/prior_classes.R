@@ -161,10 +161,10 @@ bayesian_prior_continuous  <- function(model,variance){
   
   #Hill model
   if (dmodel == 1){
-    prior <- create_prior_list(lnormprior(0,0.1,0,100),
+    prior <- create_prior_list(lnormprior(0,1,-100,100),
                                normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
-                               lnormprior(0 ,0.33,0,100),
-                               lnormprior(0,0.33,0,18),
+                               lnormprior(0 ,1,0,100),
+                               lnormprior(0,1,0,18),
                                normprior(0,2,-18,18)); 
     return(prior)
   }

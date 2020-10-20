@@ -64,10 +64,11 @@ double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
 //         option for the initialization.  The third column specifies the 
 //		   dispersion parameter. 
 Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
-  double pi_const = double(theta.rows())*log(0.5*M_2_SQRTPI * M_SQRT1_2);
+  double pi_const = log(0.5*M_2_SQRTPI * M_SQRT1_2);
   Eigen::MatrixXd returnV(theta.rows(),1); 
   double mean = 0;
   double sd = 0;
+  double mu = 0 ;
   // loop over the prior specification in prior_spec
   // when  it is 1 - Normal Prior
   // when  it is 2 - Log normal prior.
@@ -77,12 +78,17 @@ Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
     case 1:
       mean = (theta(i, 0) - prior_spec(i, 1));
       sd = prior_spec(i, 2);
-      returnV(i,0) = -log(sd) - 0.5*mean*mean / (sd*sd) +pi_const;
+      //returnV(i,0) = // - 0.5*mean*mean / (sd*sd);// +pi_const -log(sd);
+      returnV(i,0) = -1/(sd*sd);
       break;
     case 2:
       mean = (log(theta(i, 0)) - prior_spec(i, 1));
       sd = prior_spec(i, 2);
-      returnV(i,0) = -log(sd) - log(theta(i, 0)) - 0.5*mean*mean / (sd*sd) + pi_const;
+      mu = prior_spec(i, 1); 
+      returnV(i,0)  = (exp(sd*sd)-1); 
+      returnV(i,0) *= exp(2*mu + sd*sd);
+      returnV(i,0) /= -1; 
+      //returnV(i,0) = - 0.5*mean*mean / (sd*sd) ;// -log(sd) - log(theta(i, 0)) + pi_const;
       break;
     default: // in the default case we remove all prior info
       returnV(i,0) = 0;

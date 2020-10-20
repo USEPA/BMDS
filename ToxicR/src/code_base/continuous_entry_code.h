@@ -58,6 +58,106 @@ using Eigen::MatrixXd;
 #ifndef _CONTINUOUS_ENTRY_CODE_H
 #define _CONTINUOUS_ENTRY_CODE_H
 
+template <class LL> 
+Eigen::MatrixXd X_gradient_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd D,bool SS,
+                                     bool CV, int junk = 1){
+  
+  LL data_likelihood(Y,D,SS,CV,junk); 
+  Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
+  
+  double *grad = new double[data_likelihood.nParms()]; 
+  
+  Eigen::MatrixXd md = D; 
+  for (int i = 0; i < D.rows(); i++){
+    md = D.row(i); 
+    xgrad<LL>(theta, grad, &data_likelihood, md); 
+    for (int j = 0; j < data_likelihood.nParms(); j++){
+      rValue(i,j) =  grad[j]; 
+    }
+  }
+  delete grad; 
+  return rValue; 
+  
+}
+
+
+template <class LL> 
+Eigen::MatrixXd X_compute_mean_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd D,bool SS,
+                                         bool CV, int junk = 1){
+  
+  LL data_likelihood(Y,D,SS,CV,junk);
+  Eigen::MatrixXd  md = D;
+  
+  Eigen::MatrixXd rValue = data_likelihood.mean(theta,md); 
+  return rValue; 
+}
+
+template <class LL> 
+Eigen::MatrixXd X_cov_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd D,bool SS,
+                                bool CV, int junk = 1){
+  
+  LL data_likelihood(Y,D,SS,CV,junk);
+  
+  Eigen::MatrixXd rValue = data_likelihood.variance(theta,D); //*Y.col(1).array(); // n*p*(1-p) 
+  if (SS){
+    rValue = (1/rValue.array())*Y.col(2).array(); // make up for the fact it is the variance
+    return rValue.asDiagonal();                                         // for multiple observations
+  }
+  
+  return rValue.asDiagonal().inverse(); 
+  
+}
+
+
+template <class LL> 
+Eigen::MatrixXd X_gradient_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
+                                 Eigen::MatrixXd D,bool SS, int degree = 1){
+  
+  LL data_likelihood(Y,D,SS,degree); 
+  Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
+  
+  double *grad = new double[data_likelihood.nParms()]; 
+  
+  Eigen::MatrixXd md = D; 
+  for (int i = 0; i < D.rows(); i++){
+    md = D.row(i); 
+    xgrad<LL>(theta, grad, &data_likelihood, md); 
+    for (int j = 0; j < data_likelihood.nParms(); j++){
+      rValue(i,j) =  grad[j];   
+    }
+  }
+  delete grad; 
+  return rValue; 
+  
+}
+
+template <class LL> 
+Eigen::MatrixXd X_compute_mean_cont( Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd D,  
+                                      bool SS, int degree = 1){
+  
+  LL data_likelihood(Y,D,SS,degree);
+  Eigen::MatrixXd  md = D;
+  Eigen::MatrixXd rValue = data_likelihood.mean(theta,md); 
+  return rValue; 
+}
+
+template <class LL> 
+Eigen::MatrixXd X_cov_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y, Eigen::MatrixXd D,  
+                           bool SS, int degree = 1){
+  
+  LL data_likelihood(Y,D,SS,degree);
+  
+  Eigen::MatrixXd rValue = data_likelihood.variance(theta,D); //*Y.col(1).array(); // n*p*(1-p) 
+  cout << rValue <<endl; 
+  if (SS){
+    rValue = (1/rValue.array())*Y.col(2).array(); // make up for the fact it is the variance
+    return rValue.asDiagonal();                                         // for multiple observations
+  }
+  
+  return rValue.asDiagonal().inverse(); 
+  
+}
+
 bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s);
 void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b); 
 

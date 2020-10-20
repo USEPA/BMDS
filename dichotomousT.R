@@ -10,4 +10,4 @@ mData <- matrix(c(0,    0,100,
                   150, 65,100,
                   200, 90,100),nrow=5,ncol=3,byrow=T)
 
-system.time({Q = bmd_ma_dichotomous(mData,o1,o2)})
+system.time({Q = bmd_ma_dichotomous(mData,o1,o2,)})

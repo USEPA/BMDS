@@ -71,7 +71,7 @@ public:
        switch (prior_iidtype(prior_spec(parm,0))){
          case prior_iidtype::iid_normal:
              prior_spec(parm,1) *= scale; 
-             prior_spec(parm,2) *= scale; //note it is only scale because we are dealing with the SD 
+             prior_spec(parm,2) *= fabs(scale); //note it is only scale because we are dealing with the SD 
              prior_spec(parm,3) *= scale;
              prior_spec(parm,4) *= scale;
            break; 

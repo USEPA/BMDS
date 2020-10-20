@@ -322,7 +322,7 @@ Eigen::MatrixXd lognormalLLModel::variance(Eigen::MatrixXd theta) {
 }
 	
 Eigen::MatrixXd lognormalLLModel::variance(Eigen::MatrixXd theta, Eigen::MatrixXd d){
-	    double var = exp(theta(theta.rows()-1,0)); 
+	  double var = exp(theta(theta.rows()-1,0)); 
 		Eigen::MatrixXd rV = Eigen::MatrixXd::Ones(d.rows(),1)*var; 
 		return rV;  					
 }

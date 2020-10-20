@@ -462,6 +462,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
     case cont_model::hill:
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(divisor,1);
+      model_prior.scale_prior(max_dose,1);
       model_prior.scale_prior(max_dose,2);
       if (!is_logNormal){
          if (is_const_var){

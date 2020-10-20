@@ -48,13 +48,14 @@ public:
 		return rV;  // variance is constant											
 	};
 
+	
 
 	double negLogLikelihood(Eigen::MatrixXd theta) {
 		// get the mean and variance for each dose group
 		Eigen::MatrixXd mu = mean(theta); 
 		Eigen::MatrixXd var = variance(theta); 
 		Eigen::MatrixXd returnV = Y.col(0)*0; // make a log likelihood value
-								            // for each observation
+								                         // for each observation
 								            
 	     if (sufficient_statistics){
 				// this assumes the correct geometric mean and geometric 

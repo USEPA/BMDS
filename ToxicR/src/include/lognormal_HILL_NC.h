@@ -56,6 +56,17 @@ class lognormalHILL_BMD_NC : public lognormalLLModel {
 	
 	virtual int parameter_to_remove(contbmd TYPE);
 
+	virtual Eigen::MatrixXd mmean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
+	  double gamma = theta(0,0); 
+	  double nu = theta(1,0); 
+	  double k  = theta(2,0); 
+	  double n_exp = theta(3,0); 
+	  double var_t  = exp(theta(4,0)); 
+	  
+	  Eigen::MatrixXd rV = gamma + nu*pow(d.array(),n_exp)/(pow(k,n_exp)+pow(d.array(),n_exp));		
+	  
+	  return exp(log(rV.array())+0.5*var_t); 
+	}
 	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
 		double gamma = theta(0,0); 

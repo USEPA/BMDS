@@ -175,8 +175,8 @@
   probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
   se <- sqrt(probs*(1-probs)/fit$data[,3,drop=T])
   doses = fit$data[,1,drop=T]
-  uerror <- apply(cbind(probs*0+1,probs+se),1,min)
-  lerror <- apply(cbind(probs*0,probs-se),1,max)
+  uerror <- apply(cbind(probs*0+1,probs+2*se),1,min)
+  lerror <- apply(cbind(probs*0,probs-2*se),1,max)
   
   dose = c(doses,doses)
   Response = c(uerror,lerror)

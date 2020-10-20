@@ -7,22 +7,27 @@ library(ToxicR)
 # Input data - Continuous2.dax - Individual dose-response
 M =matrix(0,nrow=26,ncol=4)
 colnames(M) <- c("Dose","Resp","","")
-M[,1] <- c(0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,39,39,39,39,39)
-M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
+M[,1] <- c(0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,49,49,49,49,49)
+M[,2] <- 0.2*c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
            55.2,55.1,59.1,56.3,52.9,53.7)
 
 data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
 A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
-plot(A)
+#plot(A)
 
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 #   control = list(adapt_delta=0.9),iter=10000)
+prior <- create_prior_list(normprior(0,1,-100,100),
+                           normprior(0, 1,-1000,1000),#normprior(1,2,-18,18),
+                           lnormprior(0,0.25,0,18),
+                           lnormprior(0,0.25,0,18),
+                           normprior(0,2,-18,18)); 
 
-system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,
+system.time({d = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,prior=prior,
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                      fit_type="mcmc",model_type = "exp-3")})
+                                      fit_type="mcmc",model_type = "hill")})
 
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 #              control = list(adapt_delta=0.9),iter=10000)

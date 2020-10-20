@@ -11,14 +11,17 @@ mData <- matrix(c(0, 2,50,
                   3, 10, 50,
                   16, 18,50,
                   32, 18,50,
-                  8, 17,50),nrow=6,ncol=3,byrow=T)
+                  33, 17,50),nrow=6,ncol=3,byrow=T)
 
 prior <- create_prior_list(normprior(	0,	10,	-18,	18),
                            lnormprior(	0.693147180559945,	0.01,	0.2,	20),
                            lnormprior(	0,	2,	0,	1e4))
 
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
+
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")
+
 
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "laplace")
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "mle")

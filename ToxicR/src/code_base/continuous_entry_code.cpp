@@ -125,15 +125,34 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat,  NORMAL_EXP3_DOWN);
   lognormalHILL_BMD_NC likelihood_lnhill(Y, X, suff_stat,  0);
   bmd_analysis a;
+  Eigen::MatrixXd Xd; 
+  Eigen::MatrixXd cv_t; 
+  Eigen::MatrixXd pr; 
+  Eigen::MatrixXd mean_m; 
   switch (CM)
   {
   
   case cont_model::hill:
+    
     cout << "Running Hill Model Log-Normality Assumption." << endl;
     a = bmd_analysis_CNC<lognormalHILL_BMD_NC, IDcontinuousPrior>
                             (likelihood_lnhill,  model_prior, fixedB, fixedV,
                               riskType, bmrf, bk_prob,
                               is_increasing, alpha, step_size,init);
+  
+    Xd = X_gradient_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat);
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+    mean_m = X_compute_mean_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,
+                                                      suff_stat);
+    cv_t = X_cov_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat); 
+    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+  //  res->model_df   = Xd.diagonal().array().sum(); 
+    
+    std::cout  << Xd.diagonal().array().sum() << std::endl; 
+    
     break; 
   case cont_model::exp_3:
     cout << "Running Exponential 3 Model Log-Normality Assumption." << endl;
@@ -200,7 +219,10 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
   normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
   
-
+  Eigen::MatrixXd Xd; 
+  Eigen::MatrixXd mean_m; 
+  Eigen::MatrixXd cv_t; 
+  Eigen::MatrixXd pr; 
   bmd_analysis a;
   switch (CM)
   {
@@ -216,6 +238,8 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                         (likelihood_funl,  model_prior, fixedB, fixedV,
                          riskType, bmrf, bk_prob,
                          is_increasing, alpha, step_size,init);
+    
+    
     break; 
   case cont_model::power:
        
@@ -236,10 +260,24 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     }else{
       cout << "Running Hill Model Normality-NCV Assumption using Laplace." << endl;
     }
+    
     a = bmd_analysis_CNC<normalHILL_BMD_NC, IDcontinuousPrior>
                     (likelihood_nhill,  model_prior, fixedB, fixedV,
                      riskType, bmrf, bk_prob,
                      is_increasing, alpha, step_size,init);
+    
+    Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat,bConstVar,1);
+    cout << Xd << endl; 
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+    cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat,bConstVar); 
+    cerr << prior << endl; 
+    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    
+    std::cout  << Xd.diagonal().array().sum() << std::endl;
+   
     break; 
   case cont_model::exp_3:
     if (bConstVar){

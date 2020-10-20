@@ -61,7 +61,7 @@ public:
 	virtual double bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){return 0.0;}; 
 	virtual double bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){return 0.0;}; 
 	virtual double bmd_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){return 0.0;}; 
-    virtual double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB){return 0.0;};
+  virtual double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB){return 0.0;};
     
     //BASIC BMD Computation absolute to hybrid
 	virtual double bmd_absolute_bound(Eigen::MatrixXd theta,	 double BMD,double BMRF, bool isIncreasing){return 0.0;}; 

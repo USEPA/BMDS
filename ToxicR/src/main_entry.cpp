@@ -97,9 +97,31 @@ List run_single_dichotomous(NumericVector model,
   GOFdata.model_df = res.model_df; 
   GOFdata.est_parms = res.parms; 
   GOFdata.doses = Anal.doses; GOFdata.n_group = Anal.n_group; 
-  compute_dichotomous_pearson_GOF(&GOFdata); 
+
+  dichotomous_PGOF_result GOFres; 
   
-  cout << res.model_df << endl;  
+  ///////////////////////////////////////////////
+  ///////////////////////////////////////////////
+  GOFres.expected = new double[Anal.n]; 
+  GOFres.residual = new double[Anal.n]; 
+  
+  compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
+  Eigen::VectorXd resid(Anal.n); 
+  Eigen::VectorXd expec(Anal.n);
+  
+  for (int i = 0; i < Anal.n; i++){
+    resid[i] = GOFres.residual[i]; 
+    expec[i] = GOFres.expected[i]; 
+  }
+  
+  Eigen::MatrixXd results(Anal.n,4); 
+  results << data.col(1) , data.col(2) , expec , resid; 
+  
+  delete (GOFres.expected);
+  delete (GOFres.residual); 
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+ 
   List rV = convert_dichotomous_fit_to_list(&res); 
   
   delete(Anal.Y); 
@@ -157,7 +179,6 @@ List run_continuous_single(IntegerVector model,
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
-     
       if (Y.cols() == 3){ //sufficient statistics
         anal.n_group[i] = Y(i,2);
         anal.sd[i]      = Y(i,1); 
