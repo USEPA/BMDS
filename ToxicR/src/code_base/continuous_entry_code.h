@@ -1,26 +1,30 @@
-#include <cmath> 
+#if defined R_COMPILATION || defined __cplusplus
+  #include <cmath> 
+#else
+  #include <math.h>
+#endif
+
 #ifdef R_COMPILATION  
   #include <RcppEigen.h>
   #include <RcppGSL.h>
   using namespace Rcpp;
   using Rcpp::as;
 
-#else 
+#elif __cplusplus
   #include <Eigen/Dense>
 #endif
 
-#include <gsl/gsl_randist.h>
 #include "bmdStruct.h"
 
+#if defined R_COMPILATION || defined __cplusplus
+#include <gsl/gsl_randist.h>
 #include <string>
 #include <vector>
 #include <limits>
 //#include <math.h>
 #include <stdio.h>
 #include "bmds_entry.h"
-#include "bmdStruct.h"
 #include "continuous_model_functions.h"
-
 
 
 using namespace std;
@@ -52,11 +56,13 @@ using Eigen::MatrixXd;
 
 #include "continuous_clean_aux.h"
 #include "mcmc_analysis.h"
-#include "bmdStruct.h"
 
+#endif
 
 #ifndef _CONTINUOUS_ENTRY_CODE_H
 #define _CONTINUOUS_ENTRY_CODE_H
+
+#if defined R_COMPILATION || __cplusplus
 
 template <class LL> 
 Eigen::MatrixXd X_gradient_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd D,bool SS,
@@ -294,5 +300,15 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                       continuous_model_result *res,
                       bmd_analysis_MCMC  *mcmc); 
 
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void estimate_sm_laplace_cont(struct continuous_analysis *CA,
+                         struct continuous_model_result *res);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -36,6 +36,147 @@
 
 
 using namespace std; 
+
+
+double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
+                             bool is_increasing, bool suff_stat, Eigen::MatrixXd prior, 
+                             cont_model CM){
+  double DOF = 0; 
+  Eigen::MatrixXd Xd; 
+  Eigen::MatrixXd cv_t; 
+  Eigen::MatrixXd pr; 
+  Eigen::MatrixXd subBlock(3,3); 
+  switch(CM){
+  case cont_model::hill:
+    Xd = X_gradient_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat);
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+    cv_t = X_cov_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat); 
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    
+    break; 
+  case cont_model::exp_3:
+    if (is_increasing){
+      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
+      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
+    }else{
+      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
+      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
+    }
+    subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
+                Xd(1,0), Xd(1,1), Xd(1,3),
+                Xd(3,0), Xd(3,1), Xd(3,3);
+    Xd = subBlock; 
+    
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    subBlock << pr(0,0), pr(0,1), pr(0,3),
+                pr(1,0), pr(1,1), pr(1,3),
+                pr(3,0), pr(3,1), pr(3,3);
+    pr = subBlock; 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break; 
+  case cont_model::exp_5: 
+    if (is_increasing){
+      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP5_UP);
+      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP5_UP);
+    }else{
+      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP5_DOWN);
+      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP5_DOWN);
+    }
+  
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+   
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break; 
+  }
+  return DOF; 
+
+}
+
+double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
+                          bool is_increasing, bool suff_stat,  bool CV, Eigen::MatrixXd prior,
+                          cont_model CM){
+  double DOF = 0; 
+  Eigen::MatrixXd Xd; 
+  Eigen::MatrixXd cv_t; 
+  Eigen::MatrixXd pr; 
+  Eigen::MatrixXd subBlock(3,3); 
+  switch(CM){
+  case cont_model::hill:
+    Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+    cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    
+    break; 
+  case cont_model::exp_3:
+    if (is_increasing){
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
+    }else{
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
+    }
+    subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
+                Xd(1,0), Xd(1,1), Xd(1,3),
+                Xd(3,0), Xd(3,1), Xd(3,3);
+    Xd = subBlock; 
+    
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    subBlock << pr(0,0), pr(0,1), pr(0,3),
+                pr(1,0), pr(1,1), pr(1,3),
+                pr(3,0), pr(3,1), pr(3,3);
+    pr = subBlock; 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break; 
+  case cont_model::exp_5: 
+    if (is_increasing){
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_UP);
+      cv_t = X_cov_cont_norm< normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_UP);
+    }else{
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_DOWN);
+      cv_t = X_cov_cont_norm< normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_DOWN);
+    }
+    
+    Xd = Xd.block(0,0,Xd.rows(),4); 
+    
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,4,4); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break; 
+  case cont_model::power: 
+    
+    Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
+    cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
+    Xd = Xd.block(0,0,Xd.rows(),3); 
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,3,3); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break;
+  }    
+  return DOF; 
+  
+}
+
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                   Eigen::MatrixXd *SSTAT, Eigen::MatrixXd *SSTAT_LN,
                   Eigen::MatrixXd *UX){
@@ -139,20 +280,6 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             (likelihood_lnhill,  model_prior, fixedB, fixedV,
                               riskType, bmrf, bk_prob,
                               is_increasing, alpha, step_size,init);
-  
-    Xd = X_gradient_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat);
-    Xd = Xd.block(0,0,Xd.rows(),4); 
-    mean_m = X_compute_mean_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,
-                                                      suff_stat);
-    cv_t = X_cov_cont<lognormalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat); 
-    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
-    pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-  //  res->model_df   = Xd.diagonal().array().sum(); 
-    
-    std::cout  << Xd.diagonal().array().sum() << std::endl; 
-    
     break; 
   case cont_model::exp_3:
     cout << "Running Exponential 3 Model Log-Normality Assumption." << endl;
@@ -198,7 +325,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
                             double alpha, double step_size, Eigen::MatrixXd init) {
-  
+
   bool suff_stat = Y.cols() == 1? false:true; 
   
   std::vector<bool> fixedB(prior.rows());
@@ -1105,6 +1232,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
@@ -1149,6 +1277,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
+ 
   
   if (CA->suff_stat){
     X = UX; 
@@ -1167,7 +1296,9 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     orig_Y_LN.col(2) = orig_Y_LN.col(1);
     orig_Y_LN.col(1) = temp; 
     X = X/max_dose;
-  } 
+  }
+ 
+
   
   bmd_analysis b; 
   std::vector<bool> fixedB; 
@@ -1182,6 +1313,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+
+
   Eigen::MatrixXd init_opt; 
   switch((cont_model)CA->model){
   case cont_model::funl:
@@ -1201,11 +1334,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                               CA->disttype != distribution::normal_ncv, CA->isIncreasing):
     bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-    
+   
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-    
+
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
@@ -1237,7 +1370,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
     
   }
-  
+  double DOF = 0; 
   // now you fit it based upon the origional data
   if (CA->disttype == distribution::log_normal){
     
@@ -1255,6 +1388,9 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             CA->alpha, 0.02,init_opt);
       
     }
+    DOF =  compute_lognormal_dof(orig_Y_LN,orig_X, b.MAP_ESTIMATE, 
+                                 CA->isIncreasing, CA->suff_stat, tprior, 
+                                 CA->model); 
     
   }else{
     
@@ -1272,11 +1408,23 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt);
     }
+    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
+                                 CA->model); 
   }
- 
+
+  std::vector<double> v(orig_X.rows()); 
+  for (int i ; i < orig_X.rows(); i++){
+    v[i] = orig_X(i,0); 
+  } 
+  
+
   transfer_continuous_model(b,res);
+  res->model_df = DOF; 
+  res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
   res->model = CA->model; 
   res->dist  = CA->disttype; 
+
   return;  
 }
 
@@ -1465,4 +1613,10 @@ void estimate_sm_mcmc(continuous_analysis *CA,
 }
 
 
+void estimate_sm_laplace_cont(continuous_analysis *CA ,
+                         continuous_model_result *res){
+
+   estimate_sm_laplace(CA, res);
+
+}
 

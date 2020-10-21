@@ -1,8 +1,14 @@
 #include "bmdStruct.h"
 //#include <math.h>
-#include <cmath>
+#if defined R_COMPILATION || defined __cplusplus
+  #include <cmath>
+#else
+  #include <math.h>
+#endif
 #include <stdio.h>
 
+
+#if defined R_COMPILATION || defined __cplusplus
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -22,13 +28,14 @@
 #include "gradient.h"
 
 #include "bmds_entry.h"
-#include "bmdStruct.h"
+//#include "bmdStruct.h"
 #include "continuous_entry_code.h"
+#endif
 
 #ifndef _DICHOTOMOUS_ENTRY_CODE_H
 #define _DICHOTOMOUS_ENTRY_CODE_H
 
-
+#if (defined R_COMPILATION || defined __cplusplus) 
 
 template <class LL> 
 Eigen::MatrixXd X_gradient( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
@@ -186,5 +193,18 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
                       dichotomous_model_result *res,
                       bmd_analysis_MCMC *mcmc,
                       bool do_a_rescale = true);
+
+#endif
+
+//c entry
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void estimate_sm_laplace_dicho(struct dichotomous_analysis *DA,
+                                 struct dichotomous_model_result *res,
+                                 bool do_a_rescale);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

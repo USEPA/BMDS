@@ -127,7 +127,7 @@ void del_continuous_model_result(continuous_model_result * cm){
 	
 }
 
-void del_continuousMA_analysis(continuousMA_analysis &CMA){
+void del_continuousMA_analysis(continuousMA_analysis CMA){
   if (CMA.priors){
     for (int i = 0; i < CMA.nmodels; i++){
       delete CMA.priors[i]; 

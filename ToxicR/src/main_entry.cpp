@@ -91,20 +91,21 @@ List run_single_dichotomous(NumericVector model,
   res.bmd_dist = new double[res.dist_numE*2]; 
   
   estimate_sm_laplace(&Anal, &res); 
+
   dichotomous_PGOF_data GOFdata; 
   GOFdata.n = Anal.n; GOFdata.Y = Anal.Y;
   GOFdata.model = Anal.model;
   GOFdata.model_df = res.model_df; 
   GOFdata.est_parms = res.parms; 
   GOFdata.doses = Anal.doses; GOFdata.n_group = Anal.n_group; 
-
+  GOFdata.parms = Anal.parms; 
   dichotomous_PGOF_result GOFres; 
   
   ///////////////////////////////////////////////
   ///////////////////////////////////////////////
   GOFres.expected = new double[Anal.n]; 
   GOFres.residual = new double[Anal.n]; 
-  
+
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);

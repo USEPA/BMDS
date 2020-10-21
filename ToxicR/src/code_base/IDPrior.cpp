@@ -87,7 +87,7 @@ Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
       mu = prior_spec(i, 1); 
       returnV(i,0)  = (exp(sd*sd)-1); 
       returnV(i,0) *= exp(2*mu + sd*sd);
-      returnV(i,0) /= -1; 
+      returnV(i,0)  = -1/returnV(i,0); 
       //returnV(i,0) = - 0.5*mean*mean / (sd*sd) ;// -log(sd) - log(theta(i, 0)) + pi_const;
       break;
     default: // in the default case we remove all prior info
