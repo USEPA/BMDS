@@ -152,9 +152,8 @@ Eigen::MatrixXd X_cov_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y, Eigen::Matr
                            bool SS, int degree = 1){
   
   LL data_likelihood(Y,D,SS,degree);
-  
   Eigen::MatrixXd rValue = data_likelihood.variance(theta,D); //*Y.col(1).array(); // n*p*(1-p) 
-  cout << rValue <<endl; 
+ 
   if (SS){
     rValue = (1/rValue.array())*Y.col(2).array(); // make up for the fact it is the variance
     return rValue.asDiagonal();                                         // for multiple observations

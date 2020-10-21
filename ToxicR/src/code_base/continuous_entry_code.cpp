@@ -392,19 +392,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                     (likelihood_nhill,  model_prior, fixedB, fixedV,
                      riskType, bmrf, bk_prob,
                      is_increasing, alpha, step_size,init);
-    
-    Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat,bConstVar,1);
-    cout << Xd << endl; 
-    Xd = Xd.block(0,0,Xd.rows(),4); 
-    cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(a.MAP_ESTIMATE,Y,X,suff_stat,bConstVar); 
-    cerr << prior << endl; 
-    pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
-    pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    
-    std::cout  << Xd.diagonal().array().sum() << std::endl;
-   
     break; 
   case cont_model::exp_3:
     if (bConstVar){
@@ -1188,7 +1175,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     transfer_mcmc_output(a[i],ma->analyses[i]); 
     res->models[i]->model = MA->models[i]; 
     res->models[i]->dist  = MA->disttype[i];
-   // cout << i << ":" << b[i].BMD_CDF.inv(0.95) << endl; 
+   
   }
  
   
@@ -1418,7 +1405,6 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     v[i] = orig_X(i,0); 
   } 
   
-
   transfer_continuous_model(b,res);
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
@@ -1561,13 +1547,11 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                                                                         CA->disttype != distribution::normal_ncv, CA->isIncreasing):
       bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                         CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-      //updated prior updated 
-      //cout << init_opt << endl; 
-      //updated prior updated 
+     
       RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                       max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
                                       CA->disttype != distribution::normal_ncv); 
-     //cout << init_opt << endl << endl << tprior; 
+
       
       break; 
     case cont_model::power: 

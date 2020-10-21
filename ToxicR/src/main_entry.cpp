@@ -190,9 +190,12 @@ List run_continuous_single(IntegerVector model,
     continuous_model_result *result = new_continuous_model_result( anal.model,
                                                                    anal.parms,
                                                                    200); //have 200 equally spaced values
+   
     ////////////////////////////////////
      
     estimate_sm_laplace(&anal,result);
+    cout << result->model_df << endl; 
+    
     List rV = convert_continuous_fit_to_list(result); 	
     // free up memory
     del_continuous_model_result(result); 
