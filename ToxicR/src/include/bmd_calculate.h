@@ -248,7 +248,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	// create the Continuous BMD modelds
 	cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, isIncreasing);								  
 	// Find the maximum a-posteriori and compute the BMD
-	
+	cout << init << endl; 
 	optimizationResult OptRes = findMAP<LL, PR>(&model,init);
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
@@ -345,6 +345,41 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
 }
 
 /**********************************************************************
+ * function bmd_continuous_optimization:
+ * 		LL        -    likelihood previously defined
+ *      PR        -    Prior
+ * 	    fixedB    -    boolean vector of which parameters are fixed
+ * 	  	fixedV    -    vector of what value parameters are fixed too. 
+ *      isIncreasing - true if the BMD should be calculated for an increasing data set
+ *      degree    - the degree of the polynomial
+ *  returns: 
+ *      Eigen::MatrixXd rVal <- the value that maximizes the model with the data. 
+ * *******************************************************************/
+template <class LL, class PR>
+Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X, 
+                                            Eigen::MatrixXd prior, 
+                                            std::vector<bool> fixedB,std::vector<double> fixedV,
+                                            bool is_const_var,
+                                            bool is_increasing,
+                                            int degree) {
+  
+  // value to return
+  bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
+
+  LL      likelihood(Y, X, suff_stat, is_const_var, degree);//for polynomial models
+  PR   	model_prior(prior);
+  Eigen::MatrixXd rVal;
+  // create the Continuous BMD model
+  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
+  // Find the maximum a-posteriori and compute the BMD
+  optimizationResult OptRes = findMAP<LL, PR>(&model);
+  
+  rVal = OptRes.max_parms;
+  return rVal; 
+  
+}
+
+/**********************************************************************
  *  function: bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
  *							 double BMR, bool isExtra, double alpha, double step_size)
  * 
@@ -374,7 +409,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 			result = profile_BMDNC<LL, PR>(&model, isExtra,
 		   			                  BMD, BMR,
 					                  step_size, (gsl_cdf_chisq_Pinv(1.0 - 2 * alpha, 1) + 0.1) / 2.0, true);
-		 	// cerr << result << endl << flush;
+
 			if (result.rows() <= 5)
 				  step_size *= 0.5; 
 			i++; 	

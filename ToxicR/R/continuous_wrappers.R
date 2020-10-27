@@ -145,10 +145,16 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
   						                          PR[[1]],options, dist_type)
       
       rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),]
-      te <- splinefun(rvals$bmd_dist[,2],rvals$bmd_dist[,1],method="hyman")
-    
-      rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-      names(rvals$bmd) <- c("BMD","BMDL","BMDU") 
+      rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1])]
+      rvals$bmd     <- c(NA,NA,NA)
+      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+      if (!identical(rvals$bmd_dist, numeric(0))){
+     #  if (nrow(rvals$bmd_dist) > 6){
+    #    te <- splinefun(rvals$bmd_dist[,2],rvals$bmd_dist[,1],method="hyman")
+     #   rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    #    names(rvals$bmd) <- c("BMD","BMDL","BMDU") 
+     #  }
+      }
       rvals$model   <- model_type
       rvals$options <- options
       rvals$data    <- DATA

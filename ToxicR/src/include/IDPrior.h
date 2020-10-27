@@ -83,7 +83,8 @@ public:
           //    std::cout << prior_spec << std::endl; 
             break; 
          case prior_iidtype::iid_mle: 
-              // do nothing
+             prior_spec(parm,3) *= scale;
+             prior_spec(parm,4) *= scale;
            break; 
        }
     }

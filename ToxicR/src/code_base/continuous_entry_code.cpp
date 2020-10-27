@@ -325,7 +325,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
                             double alpha, double step_size, Eigen::MatrixXd init) {
-
   bool suff_stat = Y.cols() == 1? false:true; 
   
   std::vector<bool> fixedB(prior.rows());
@@ -345,7 +344,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
   normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
   normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
-  
+
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd mean_m; 
   Eigen::MatrixXd cv_t; 
@@ -400,6 +399,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       cout << "Running Exponential 3 Model Normality-NCV Assumption using Laplace." << endl;
     }
     if (is_increasing){
+    
       a =  bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                           (likelihood_nexp3U,  model_prior, fixedB, fixedV,
                            riskType, bmrf,bk_prob,
@@ -410,6 +410,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                              riskType, bmrf,bk_prob,
                              is_increasing, alpha, step_size,init);
     }
+  
     removeRow(a.COV,2);
     removeCol(a.COV,2);
     break; 
@@ -1205,7 +1206,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          continuous_model_result *res){
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
-  //cerr << "Sufficient Stat: " << n_cols << endl; 
+  
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -1228,7 +1229,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  
+
   if(!CA->suff_stat){
     //convert to sufficient statistics for speed if we can
     CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
@@ -1265,7 +1266,6 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   }
   
  
-  
   if (CA->suff_stat){
     X = UX; 
     
@@ -1290,7 +1290,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   bmd_analysis b; 
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
-  
+
   Eigen::MatrixXd tprior(CA->parms,CA->prior_cols);
   for (int m = 0; m < CA->parms; m++){
     fixedB.push_back(false);
@@ -1301,8 +1301,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   }
   
 
-
   Eigen::MatrixXd init_opt; 
+
   switch((cont_model)CA->model){
   case cont_model::funl:
  
@@ -1353,10 +1353,18 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     
     break; 
   case cont_model::polynomial:
+    // Polynomials are ONLY normal models. 
+    init_opt =  bmd_continuous_optimization<normalPOLYNOMIAL_BMD_NC,IDPrior> (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                         CA->disttype != distribution::normal_ncv,
+                                                                         CA->isIncreasing,
+                                                                         CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
+    
   default:
     break; 
     
   }
+
+  
   double DOF = 0; 
   // now you fit it based upon the origional data
   if (CA->disttype == distribution::log_normal){
