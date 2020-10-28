@@ -1,6 +1,17 @@
 useDynLib(ToxicR, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
+
+###############################
+# Necessary Packages
+###############################
+import(tidyverse)
+import(ggplot2)
+import(shiny)
+import(plotly)
+import(scales)
+###############################
+
 #register all of the S3 methods for the print commands
 #and the plot commands etc. 
 S3method(print, BMDmodelprior, .print.BMDmodelprior)

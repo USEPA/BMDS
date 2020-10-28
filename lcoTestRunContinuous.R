@@ -29,7 +29,7 @@ data2 <- read.delim("~/Downloads/dataFile2.txt")
 
 system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),sstat=F, 
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                      fit_type="mle",model_type = "hill")})
+                                      fit_type="mcmc",model_type = "exp-3")})
 
 system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
                                        BMD_TYPE="sd",BMR=1, distribution = "normal",
@@ -56,10 +56,6 @@ plot(fit$Individual_Model_1)
 plot(fit$Individual_Model_13)
 
 system.time({fit_l<-ma_continuous_fit(D,Y,fit_type="laplace",BMR=3.0,samples=50000,burnin=5000)})
-
-
-
-
 
 system.time({Q = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F])})
 
