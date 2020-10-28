@@ -26,12 +26,14 @@ prior <- create_prior_list(normprior(0, 1,-100,100),
                            normprior(0,2,-18,18)); 
 data2 <- read.delim("~/Downloads/dataFile2.txt")
 
-system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
-                          BMD_TYPE="sd",BMR=1, distribution = "normal",
-                          fit_type="mle",model_type = "hill")})
+
 system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),sstat=F, 
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                      fit_type="mle",model_type = "exp-3")})
+                                      fit_type="mle",model_type = "hill")})
+
+system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
+                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
+                                       fit_type="mle",model_type = "exp-3")})
 
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
 #              control = list(adapt_delta=0.9),iter=10000)

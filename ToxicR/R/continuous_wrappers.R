@@ -144,8 +144,8 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
   						                          PR[[1]],options, dist_type)
       
-      rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),]
-      rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1])]
+      rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),,drop=F]
+      rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1]),,drop=F]
       rvals$bmd     <- c(NA,NA,NA)
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       if (!identical(rvals$bmd_dist, numeric(0))){

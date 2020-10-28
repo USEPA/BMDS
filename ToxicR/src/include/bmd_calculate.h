@@ -248,12 +248,13 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	// create the Continuous BMD modelds
 	cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, isIncreasing);								  
 	// Find the maximum a-posteriori and compute the BMD
-	cout << init << endl; 
+
 	optimizationResult OptRes = findMAP<LL, PR>(&model,init);
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
-
+  cout << "Is increasing? "<< isIncreasing << endl; 
   double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
+  cout << "Benchmark Dose:?" << BMD << endl; 
 
   Eigen::MatrixXd result;
 	std::vector<double> x;
