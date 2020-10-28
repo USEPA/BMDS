@@ -17,6 +17,11 @@ AC_CHECK_LIB(nlopt, [nlopt_get_algorithm], [], [
 
 AC_ARG_VAR(EIGEN_INCLUDE,Location of Eigen include directory e.g, /usr/include/Eigen3)
 
+#Check for OpenMP
+AC_OPENMP
+
+AC_SUBST(OPENMP_CFLAGS)
+
 LT_PREREQ([2.2])
 LT_INIT()
 
