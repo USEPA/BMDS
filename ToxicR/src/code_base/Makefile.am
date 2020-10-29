@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libBMDS.la
 
 AM_CPPFLAGS= -I$(top_srcdir)/code_base -I$(top_srcdir)/include  -I$(EIGEN_INCLUDE)
 AM_CPPFLAGS+=  -O3 -funroll-loops -std=c++11
-AM_CPPFLAGS+= -fopenmp -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
+AM_CPPFLAGS+= @OPENMP_CFLAGS@ -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
 
 libBMDS_la_SOURCES=  DichLogProbitBMD_NC.cpp lognormal_HILL_NC.cpp \
 		        bmdStruct.cpp dichotomous_entry_code.cpp  lognormalModels.cpp \
