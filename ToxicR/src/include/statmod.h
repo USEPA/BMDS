@@ -365,7 +365,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     llist[j] = std::numeric_limits<double>::infinity(); // initialize everything to infinity
   }
   std::vector<Eigen::MatrixXd> population(NI); //list of the population parameters
-  
+
   double test_l; 
   Eigen::MatrixXd test = startV;
   // test = M->startValue();
@@ -376,14 +376,24 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-
+  
+  population.push_back(startV); 
+  llist.push_back( M->negPenLike(test)); 
   //
   // create the initial population of size (NI) random starting points for the genetic algorithm
-
+  double initial_temp; 
   for (int i = 0; i < NI; i ++){
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j,0) = gsl_ran_flat(r,max(lb[j],-4.0),min(4.0,ub[j]));// random number in the bounds
+      test(j,0) = startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
+      
+      if (test(j,0) > ub[j] ){
+          test(j,0) = ub[j]; 
+      }
+      if (test(j,0) < lb[j]){
+        test(j,0) = lb[j]; 
+      }
+      
     }  
     test_l = M->negPenLike(test);
     bool break_loop = false; 
@@ -552,11 +562,17 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   std::vector<double> ub(M->nParms());
   
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
+ 
+ 
+  cerr << "*****************" << endl; 
+  cerr << startV << endl; 
+  cerr << "*****************" << endl; 
   
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
-  
-  //for (int i = 0; i < x.size(); i++) cout << x[i] << endl;
+  cerr << "*****************" << endl; 
+  for (int i = 0; i < x.size(); i++) cerr << x[i] << endl;
+  cerr << "*****************" << endl; 
   
   double minf;
   nlopt::result result = nlopt::FAILURE;

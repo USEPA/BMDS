@@ -472,7 +472,7 @@ template  <class PR>
 void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 
                              double max_dose, double divisor, 
                              bool is_increasing, bool is_logNormal, bool is_const_var){
-  
+  Eigen::MatrixXd te_b = *betas; 
   PR   	  model_prior(*prior);
   Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
   //fixme: in the future we might need to change a few things
@@ -535,8 +535,8 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       break; 
     case cont_model::power:
       model_prior.scale_prior(divisor,0);
-      model_prior.scale_prior(1/max_dose,1);
-      model_prior.scale_prior( divisor*(1/max_dose),2); 
+      model_prior.scale_prior(divisor*pow(1/max_dose,te_b(2,0)),1);
+     // model_prior.scale_prior( divisor*(1/max_dose),2); 
 
       if (!is_logNormal){
         if (is_const_var){

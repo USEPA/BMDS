@@ -181,7 +181,7 @@ bayesian_prior_continuous  <- function(model,variance){
   #Power NonConstant Normal Prior
   if (dmodel == 4){
    prior <-create_prior_list(lnormprior(0,0.1,0,100), # a
-                             normprior(0,1,  -1e4,1e4),     # b
+                             normprior(0,1,  -1e2,1e2),     # b
                              lnormprior(0,0.5, 0,40),  #k
                              normprior(0,2,-18,18))
    return(prior)

@@ -274,15 +274,18 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   {
   
   case cont_model::hill:
-    
+#ifdef R_COMPILATION 
     cout << "Running Hill Model Log-Normality Assumption." << endl;
+#endif
     a = bmd_analysis_CNC<lognormalHILL_BMD_NC, IDcontinuousPrior>
                             (likelihood_lnhill,  model_prior, fixedB, fixedV,
                               riskType, bmrf, bk_prob,
                               is_increasing, alpha, step_size,init);
     break; 
   case cont_model::exp_3:
+#ifdef R_COMPILATION 
     cout << "Running Exponential 3 Model Log-Normality Assumption." << endl;
+#endif 
     if (is_increasing){
       a =  bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                     (likelihood_lnexp3U,  model_prior, fixedB, fixedV,
@@ -300,7 +303,9 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break; 
   case cont_model::exp_5:
   default: 
+#ifdef R_COMPILATION 
     cout << "Running Exponential 5 Model Log-Normality Assumption." << endl;
+#endif
     if (is_increasing){
       a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                  (likelihood_lnexp5U,  model_prior, fixedB, fixedV,
@@ -354,12 +359,13 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   {
     
   case cont_model::funl:
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running FUNL Model Normality Assumption using Laplace." << endl;
     }else{
       cout << "Running FUNL Model Normality-NCV Assumption using Laplace." << endl;
     } 
-    
+#endif
     a = bmd_analysis_CNC<normalFUNL_BMD_NC, IDcontinuousPrior>
                         (likelihood_funl,  model_prior, fixedB, fixedV,
                          riskType, bmrf, bk_prob,
@@ -368,36 +374,40 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     
     break; 
   case cont_model::power:
-       
+#ifdef R_COMPILATION      
        if (bConstVar){
             cout << "Running Power Model Normality Assumption using Laplace." << endl;
        }else{
             cout << "Running Power Model Normality-NCV Assumption using Laplace." << endl;
        }
-       
+#endif
     a = bmd_analysis_CNC<normalPOWER_BMD_NC, IDcontinuousPrior>
                           (likelihood_power,  model_prior, fixedB, fixedV,
                            riskType, bmrf, bk_prob,
                            is_increasing, alpha, step_size,init);
+    cout << a.MAP_ESTIMATE << endl; 
     break; 
   case cont_model::hill:
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Hill Model Normality Assumption using Laplace." << endl;
     }else{
       cout << "Running Hill Model Normality-NCV Assumption using Laplace." << endl;
     }
-    
+#endif
     a = bmd_analysis_CNC<normalHILL_BMD_NC, IDcontinuousPrior>
                     (likelihood_nhill,  model_prior, fixedB, fixedV,
                      riskType, bmrf, bk_prob,
                      is_increasing, alpha, step_size,init);
     break; 
   case cont_model::exp_3:
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Exponential 3 Model Normality Assumption using Laplace." << endl;
     }else{
       cout << "Running Exponential 3 Model Normality-NCV Assumption using Laplace." << endl;
     }
+#endif
     if (is_increasing){
     
       a =  bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -416,11 +426,13 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break; 
   case cont_model::exp_5:
   default: 
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Exponential 5 Model Normality Assumption using Laplace." << endl;
     }else{
       cout << "Running Exponential 5 Model Normality-NCV Assumption using Laplace." << endl;
     }
+#endif
     
     if (is_increasing){
       a = bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -769,8 +781,9 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   switch (CM)
   {
   case cont_model::hill:
+#ifdef R_COMPILATION 
     cout << "Running Hill Model Log-Normality Assumption using MCMC." << endl;
-    
+#endif
      a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalHILL_BMD_NC, IDcontinuousPrior>
                                     (Y,  X, prior, fixedB, fixedV, is_increasing,
                                      bk_prob,suff_stat,bmrf, riskType, alpha,
@@ -778,7 +791,9 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break; 
   case cont_model::exp_3:
       adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
+#ifdef R_COMPILATION 
       cout << "Running Exponential 3 Model Log-Normality Assumption using MCMC." << endl;
+#endif
       a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                               bk_prob,suff_stat,bmrf, riskType, alpha,
@@ -787,7 +802,9 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   case cont_model::exp_5:
   default: 
       adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
+#ifdef R_COMPILATION 
       cout << "Running Exponential 5 Model Log-Normality Assumption using MCMC." << endl;
+#endif
       a =  MCMC_bmd_analysis_CONTINUOUS_LOGNORMAL<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                bk_prob,suff_stat,bmrf, riskType, alpha,
@@ -820,12 +837,13 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   switch (CM)
   {
   case cont_model::funl:
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running FUNL Model Normality Assumption using MCMC." << endl;
     }else{
       cout << "Running FUNL Model Normality-NCV Assumption using MCMC." << endl;
     }
-    
+#endif  
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalFUNL_BMD_NC, IDcontinuousPrior>
                                             (Y,  X, prior, fixedB, fixedV, is_increasing,
                                              bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
@@ -833,11 +851,13 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break;   
     
   case cont_model::hill:
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Hill Model Normality Assumption using MCMC." << endl;
     }else{
       cout << "Running Hill Model Normality-NCV Assumption using MCMC." << endl;
     }
+#endif
     
       a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalHILL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
@@ -846,24 +866,27 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break; 
   case cont_model::exp_3:
     adverseR = is_increasing?NORMAL_EXP3_UP: NORMAL_EXP3_DOWN; 
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Exponential 3 Model Normality Assumption using MCMC." << endl;
     }else{
       cout << "Running Exponential 3 Model Normality-NCV Assumption using MCMC." << endl;
     }
+#endif
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
                                                  samples,adverseR,initV);
     break; 
   case cont_model::exp_5:
-  
     adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Exponential 5 Model Normality Assumption using MCMC." << endl;
     }else{
       cout << "Running Exponential 5 Model Normality-NCV Assumption using MCMC." << endl;
     }
+#endif
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
@@ -871,11 +894,13 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     break; 
   case cont_model::power:
   default:  
+#ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Power Model Normality Assumption using MCMC." << endl;
     }else{
       cout << "Running Power Model Normality-NCV Assumption using MCMC." << endl;
     }
+#endif
     a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOWER_BMD_NC, IDcontinuousPrior>
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                               bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
@@ -1100,7 +1125,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                                                                MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing):
                    bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                                MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
-                   
+         cout << init_opt << endl;            
          //updated prior updated 
          RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
                                                    max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
@@ -1346,10 +1371,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                 CA->disttype != distribution::normal_ncv, CA->isIncreasing):
     bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                 CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-    
+   
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
+    
     
     break; 
   case cont_model::polynomial:
@@ -1390,6 +1416,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   }else{
     
     bool isNCV = CA->disttype != distribution::normal_ncv; 
+    cout << "***************" << endl << orig_X <<  endl << "**********" 
+         << orig_Y;
     if (CA->suff_stat ){
       b = laplace_Normal(orig_Y, orig_X,
                         tprior, CA->BMD_type, (cont_model) CA->model,
@@ -1580,7 +1608,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       break; 
       
     }
-
+    
     a = CA->disttype == distribution::log_normal?
       mcmc_logNormal(orig_Y_LN, orig_X,
                      tprior, CA->BMD_type, (cont_model)CA->model,

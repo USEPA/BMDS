@@ -66,7 +66,7 @@ List run_single_dichotomous(NumericVector model,
   Anal.prior    = new double[pr.cols()*pr.rows()];
   Anal.prior_cols = pr.cols(); 
   Anal.n          = data.rows(); 
-  Anal.degree = pr.rows()-1; 
+  Anal.degree =   pr.rows()-1; 
 
   if (Anal.model == dich_model::d_multistage){
     Anal.degree = Anal.parms - 1; 
@@ -117,6 +117,12 @@ List run_single_dichotomous(NumericVector model,
   
   Eigen::MatrixXd results(Anal.n,4); 
   results << data.col(1) , data.col(2) , expec , resid; 
+  cout << results << endl; 
+  
+  cout << "X^2 Test stat:" << GOFres.test_statistic << endl 
+       <<  "Degrees of Freedom: "<< GOFres.df << endl 
+       <<  "P-value: " << GOFres.p_value << endl;  
+ 
   
   delete (GOFres.expected);
   delete (GOFres.residual); 
