@@ -177,7 +177,6 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         break; 
         
       case cont_model::power: 
-        cout << "bkgrnd:" << bkground << "dose:" << max_dose << endl;  
         parms(0,0) *= bkground; parms(1,0) *= bkground; 
         parms(1,0) *= pow(1/max_dose,parms(2,0)); 
         if (!is_logNormal){

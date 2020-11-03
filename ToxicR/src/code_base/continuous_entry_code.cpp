@@ -385,7 +385,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                           (likelihood_power,  model_prior, fixedB, fixedV,
                            riskType, bmrf, bk_prob,
                            is_increasing, alpha, step_size,init);
-    cout << a.MAP_ESTIMATE << endl; 
     break; 
   case cont_model::hill:
 #ifdef R_COMPILATION 
@@ -1416,9 +1415,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   }else{
     
     bool isNCV = CA->disttype != distribution::normal_ncv; 
-    cout << "***************" << endl << orig_X <<  endl << "**********" 
-         << orig_Y;
-    if (CA->suff_stat ){
+     if (CA->suff_stat ){
       b = laplace_Normal(orig_Y, orig_X,
                         tprior, CA->BMD_type, (cont_model) CA->model,
                         CA->isIncreasing,isNCV, CA->BMR, 

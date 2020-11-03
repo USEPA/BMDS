@@ -74,7 +74,7 @@ C = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
 B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
 
 library(ToxicR)
-c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mle",model_type = "power")
+c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "power")
 
 library(ToxicR)
 system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="",model_type = "exp-5")})
