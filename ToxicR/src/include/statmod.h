@@ -385,7 +385,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   for (int i = 0; i < NI; i ++){
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j,0) = startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
+      test(j,0) = 1 + startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
       
       if (test(j,0) > ub[j] ){
           test(j,0) = ub[j]; 
@@ -416,7 +416,6 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     
   }
 
-  
   for (int i = population.size()-1; i > 1; --i){
     if (population[i].size() == 0){
       population.erase(population.begin() + i);
@@ -426,6 +425,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (population.size() <= 3){
     // couln't find a good starting point return the starting value
     // and pray
+
     for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
     return x; 
   }
@@ -493,10 +493,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
        
        int idx = (int)(cur_tourny_parms.size()-1)*gsl_rng_uniform(r) + 1;    
        Eigen::MatrixXd temp_delta = cur_tourny_parms[0] - cur_tourny_parms[idx];
-       
        Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.2*temp_delta*(2*gsl_rng_uniform(r)-1);
-       
-       
        correctBounds = true; 
        
       
@@ -547,7 +544,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
    if (t2 < t1){ // the random search was no better than the first value. 
      test = startV; 
    }
-   
+
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
 	return x;
 
@@ -571,11 +568,11 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   //cout << temp_data << endl;
   std::vector<double> ub(M->nParms());
   
-
+  for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
+  
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
 
- // for (int i = 0; i < x.size(); i++) cerr << x[i] << endl;
   
   double minf;
   nlopt::result result = nlopt::FAILURE;

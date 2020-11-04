@@ -36,7 +36,7 @@ system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_321
 
 system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
                                        BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                       fit_type="mle",model_type = "exp-5")})
+                                       fit_type="mle",model_type = "hill")})
 #
 # h_fit <- stan(file="stan-check-hill.stan",data=data,
 #               control = list(adapt_delta=0.9),iter=10000)
