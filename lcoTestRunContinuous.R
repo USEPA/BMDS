@@ -32,14 +32,15 @@ data2 <- read.delim("~/Downloads/dataFile2.txt")
 
 system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),sstat=F, 
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                      fit_type="mcmc",model_type = "power")})
+                                      fit_type="laplace",model_type = "exp-5")})
 
 system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
                                        BMD_TYPE="sd",BMR=1, distribution = "normal",
                                        fit_type="mle",model_type = "exp-5")})
+#
+# h_fit <- stan(file="stan-check-hill.stan",data=data,
+#               control = list(adapt_delta=0.9),iter=10000)
 
-#h_fit <- stan(file="stan-check-hill.stan",data=data,
-#              control = list(adapt_delta=0.9),iter=10000)
 system.time({r = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mcmc",model_type = "exp-5")})
 
 system.time({fit = ma_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),fit_type="mcmc")})

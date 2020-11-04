@@ -329,11 +329,13 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             bool is_increasing) {
 
   // value to return
+ 
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
   // create the Continuous BMD model
+
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
   // Find the maximum a-posteriori and compute the BMD
   optimizationResult OptRes = findMAP<LL, PR>(&model);

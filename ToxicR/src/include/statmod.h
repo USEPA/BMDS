@@ -415,10 +415,19 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     }
     
   }
-  for (int i = population.size()-1; i >= 0; i--){
-    if (population[i].size()==0){
-      population.erase(population.begin() + i); 
+
+  
+  for (int i = population.size()-1; i > 1; --i){
+    if (population[i].size() == 0){
+      population.erase(population.begin() + i);
     }
+  }
+  
+  if (population.size() <= 3){
+    // couln't find a good starting point return the starting value
+    // and pray
+    for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
+    return x; 
   }
   //
   //Now do the Genetic algoritm thing. 
@@ -554,6 +563,7 @@ template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M,
                            Eigen::MatrixXd    startV) {
   optimizationResult oR;
+
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
@@ -561,12 +571,10 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   //cout << temp_data << endl;
   std::vector<double> ub(M->nParms());
   
-  for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
- 
- 
-  
+
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
+
  // for (int i = 0; i < x.size(); i++) cerr << x[i] << endl;
   
   double minf;
@@ -695,7 +703,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M) {
-
+     
     return findMAP<LL,PR>(M,M->startValue());
 }
 
