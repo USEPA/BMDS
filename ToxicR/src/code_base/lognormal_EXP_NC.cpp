@@ -669,20 +669,24 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF
 	}
 	
 	double test = t_mean(1, 0) - BMRF;
-	while (fabs(test) > 1e-7) { // zero in on the BMD
-		if ( isIncreasing?test > 0:test < 0) {
-			max = mid;
-		}
-		else {
-			min = mid;
-		}
-		mid = (min + max)*0.5;
-		d << min, mid, max;
-		t_mean = mean(theta, d);
-		t_mean = exp(t_mean.array());
-		test = t_mean(1, 0) - BMRF;
+	niter = 0; 
+	while (fabs(test) > 1e-7 && niter < 200) { // zero in on the BMD
+	  if (test > 0) {
+	    max = mid; 
+	  }else {
+	    min = mid;
+	  }
+	  mid = (min + max)*0.5;
+	  d << min, mid, max;
+	  t_mean = mean(theta, d);
+	  test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+	  niter++; 
 	}
-	return mid;
+	if (niter >= 200){
+	  return INFINITY; 
+	}else{
+	  return mid; 
+	}
 }
 
 double lognormalEXPONENTIAL_BMD_NC::bmd_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){

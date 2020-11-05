@@ -673,7 +673,8 @@ double normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF
 						 // search for the BMD return INFINITY. 
 	}
 	double test = fabs(t_mean(1, 0) - mu_zero) - BMRF; 
-	while (fabs(test) > 1e-7) { // zero in on the BMD
+	niter = 0; 
+	while (fabs(test) > 1e-7 && niter < 200) { // zero in on the BMD
 		if (test > 0) {
 			max = mid; 
 		}else {
@@ -683,8 +684,13 @@ double normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF
 		d << min, mid, max;
 		t_mean = mean(theta, d);
 		test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+		niter++; 
 	}
-	return mid; 
+	if (niter >= 200){
+	  return INFINITY; 
+	}else{
+	  return mid; 
+	}
 }
 
 double normalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){

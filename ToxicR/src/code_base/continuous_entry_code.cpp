@@ -424,7 +424,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     removeCol(a.COV,2);
     break; 
   case cont_model::exp_5:
-  default: 
 #ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Exponential 5 Model Normality Assumption using Laplace." << endl;
@@ -1429,9 +1428,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt);
     }
-    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
-                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
-                                 CA->model); 
+//    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+//                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
+//                                 CA->model); 
+    DOF = 1.0; 
   }
 
   std::vector<double> v(orig_X.rows()); 

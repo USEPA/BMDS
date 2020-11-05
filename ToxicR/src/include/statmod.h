@@ -568,12 +568,13 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   //cout << temp_data << endl;
   std::vector<double> ub(M->nParms());
   
+  
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
   
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
 
-  
+
   double minf;
   nlopt::result result = nlopt::FAILURE;
   
@@ -688,7 +689,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
     
   }
-  
+
   return oR;
 }
 

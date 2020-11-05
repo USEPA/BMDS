@@ -252,6 +252,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	optimizationResult OptRes = findMAP<LL, PR>(&model,init);
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
+
   double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
  
   Eigen::MatrixXd result;
