@@ -203,6 +203,7 @@ List run_continuous_single(IntegerVector model,
     
     List rV = convert_continuous_fit_to_list(result); 	
     // free up memory
+    
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);
     return rV; 

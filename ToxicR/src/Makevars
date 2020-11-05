@@ -1,13 +1,11 @@
 #USE_SIMD = 0 NO VECTOR INSTRUCTIONS -DUSE_SIMD=1
 #USE_SIMD = 1 USE AVX/AVX2 INSTRUCTIONS
-#USE_SIMD = 2 USE AVX2512 INSTRUCTIONS-DUSE_SIMD=1
+#USE_SIMD = 2 USE AVX2512 INSTRUCTIONS-DUSE_SIMD=1 -DNDEBUG -DEIGEN_NO_DEBUG
 
 PKG_CPPFLAGS =  -I"./code_base" -I"./include"   -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize
-PKG_CPPFLAGS +=  -fopenmp -DR_COMPILATION=TRUE -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native -DNDEBUG -flto
-
+PKG_CPPFLAGS +=  -fopenmp -DR_COMPILATION=TRUE -Wno-ignored-attributes  -march=native  -flto
 
 PKG_LIBS     = -lgsl -lnlopt 
-
 
 MAIN         = $(wildcard *.cpp)
 MAIN_CODE    = $(wildcard code_base/*.cpp)

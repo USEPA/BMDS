@@ -258,6 +258,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
   Eigen::MatrixXd result;
 	std::vector<double> x;
 	std::vector<double> y;	
+
 	if (!std::isinf(BMD) && !std::isnan(BMD)){
 		int i = 0; 	
 		do{
@@ -282,8 +283,9 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	x.resize(result.rows());
 	y.resize(result.rows());
 	}	
+
 	// compute the CDF for the BMD posterior approximation
-    	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
+  if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 		&& result.rows() > 5 ) {
 		for (int i = 0; i < x.size(); i++) { x[i] = result(i, 0); y[i] = result(i, 1); }
 		bmd_cdf cdf(x, y);
@@ -467,7 +469,6 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	
 	return rVal; 
 }
-
 
 template  <class PR> 
 void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 

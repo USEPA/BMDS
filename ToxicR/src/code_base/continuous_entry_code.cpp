@@ -344,7 +344,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   IDcontinuousPrior model_prior(prior);
   normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
   normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
-  normalFUNL_BMD_NC likelihood_funl(Y, X, suff_stat, bConstVar, 0);
+  normalFUNL_BMD_NC  likelihood_funl(Y, X, suff_stat, bConstVar, 0);
   normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
   normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
   normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
@@ -385,6 +385,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                           (likelihood_power,  model_prior, fixedB, fixedV,
                            riskType, bmrf, bk_prob,
                            is_increasing, alpha, step_size,init);
+      
     break; 
   case cont_model::hill:
 #ifdef R_COMPILATION 
@@ -926,8 +927,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
     if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
-  
-  }
+}
 
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
@@ -1365,14 +1365,13 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     
     break; 
   case cont_model::power: 
-    init_opt = CA->disttype == distribution::log_normal ?
-    bmd_continuous_optimization<lognormalPOWER_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                                CA->disttype != distribution::normal_ncv, CA->isIncreasing):
-    bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                CA->disttype != distribution::normal_ncv, CA->isIncreasing);
+    init_opt =  bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                           CA->disttype != distribution::normal_ncv, 
+                                                                           CA->isIncreasing);
    
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                    max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
+                                    max_dose, divisor, 
+                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
     
     
@@ -1428,10 +1427,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt);
     }
-//    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
-//                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
-//                                 CA->model); 
-    DOF = 1.0; 
+    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
+                                 CA->model); 
+    
   }
 
   std::vector<double> v(orig_X.rows()); 

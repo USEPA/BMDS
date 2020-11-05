@@ -543,9 +543,25 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
    double t2 = M->negPenLike(startV); 
    if (t2 < t1){ // the random search was no better than the first value. 
      test = startV; 
+   }	
+   bool found_nans = false; 
+   for (int i = 0; i < M->nParms(); i++){
+     if (isnan(test(i,0))){
+       found_nans = true; 
+     }
+   }
+   if (found_nans){ // something really messed up revert to initial
+                    // starting values
+     test = startV; 
    }
 
+   
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
+
+  for (int i = 0; i < M->nParms(); i++){
+    if (!isnormal(x[i])){
+      x[i] = 0; }
+  }
 	return x;
 
 }
@@ -573,8 +589,14 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
-
-
+  int yy = x.size(); 
+ 
+  for (int i = 0; i < M->nParms(); i++){
+    if (!isnormal(x[i])){
+      x[i] = 0; }
+  }
+  
+ // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
   double minf;
   nlopt::result result = nlopt::FAILURE;
   

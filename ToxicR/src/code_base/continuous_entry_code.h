@@ -71,7 +71,7 @@ Eigen::MatrixXd X_gradient_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, E
   LL data_likelihood(Y,D,SS,CV,junk); 
   Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
   
-  double *grad = new double[data_likelihood.nParms()]; 
+  double *grad = new double[data_likelihood.nParms()+10]; 
   
   Eigen::MatrixXd md = D; 
   for (int i = 0; i < D.rows(); i++){
@@ -122,7 +122,7 @@ Eigen::MatrixXd X_gradient_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
   LL data_likelihood(Y,D,SS,degree); 
   Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
   
-  double *grad = new double[data_likelihood.nParms()]; 
+  double *grad = new double[data_likelihood.nParms()+10]; 
   
   Eigen::MatrixXd md = D; 
   for (int i = 0; i < D.rows(); i++){
@@ -132,6 +132,7 @@ Eigen::MatrixXd X_gradient_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
       rValue(i,j) =  grad[j];   
     }
   }
+  
   delete grad; 
   return rValue; 
   
