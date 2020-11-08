@@ -186,9 +186,9 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
             parms(4,0) += 2*log(bkground); 
           }
         }
-        
         break; 
       case cont_model::polynomial:
+      
       default:
         break; 
     }

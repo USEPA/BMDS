@@ -1,3 +1,25 @@
+/*
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
 #ifndef bmd_calculateH
 #define bmd_calculateH
 
@@ -244,6 +266,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 			 bool isIncreasing, double alpha, double step_size,
 			 Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1)) {
 	// value to return
+	
 	bmd_analysis rVal;
 	// create the Continuous BMD modelds
 	cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, isIncreasing);								  
@@ -299,7 +322,6 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	for (int i = 0; i < rVal.expected.size(); i++) {
 		rVal.expected[i] = estimated(i, 0);
 	}
-
 
 	rVal.MAP_BMD = BMD; 
 	rVal.BMR = BMRF;
@@ -379,6 +401,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   optimizationResult OptRes = findMAP<LL, PR>(&model);
   
   rVal = OptRes.max_parms;
+
   return rVal; 
   
 }
@@ -481,6 +504,9 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   // if there are more complicated priors
   int adverseR = 0; 
   switch(CM){ 
+    case cont_model::polynomial:
+      // TODO: RESCALE POLYNOMIAL BETAS?
+      break;
     case cont_model::funl:
       model_prior.scale_prior(divisor,0); 
       model_prior.scale_prior(divisor,1); 
@@ -548,7 +574,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
         }
       }
       break;
-    case cont_model::polynomial:
+   
     default:
       break; 
   }

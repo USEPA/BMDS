@@ -3,20 +3,22 @@
  * 
  * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
  * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * 
  */
@@ -329,7 +331,8 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
-                            double alpha, double step_size, Eigen::MatrixXd init) {
+                            double alpha, double step_size, Eigen::MatrixXd init,
+                            int degree) {
   bool suff_stat = Y.cols() == 1? false:true; 
   
   std::vector<bool> fixedB(prior.rows());
@@ -340,8 +343,8 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     fixedV[i] = 0.0;
   }
   
-  
   IDcontinuousPrior model_prior(prior);
+  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(Y, X, suff_stat, bConstVar, degree);
   normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
   normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
   normalFUNL_BMD_NC  likelihood_funl(Y, X, suff_stat, bConstVar, 0);
@@ -445,6 +448,22 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                     is_increasing, alpha, step_size,init);
     }
     break; 
+  case cont_model::polynomial:
+#ifdef R_COMPILATION 
+    if (bConstVar){
+      cout << "Running Polynomial Model Normality Assumption using Laplace." << endl;
+    }else{
+      cout << "Running Polynomial Model Normality-NCV Assumption using Laplace." << endl;
+    }
+#endif
+  
+
+    a = bmd_analysis_CNC<normalPOLYNOMIAL_BMD_NC, IDcontinuousPrior>
+                       (likelihood_npoly,  model_prior, fixedB, fixedV,
+                        riskType, bmrf, bk_prob,
+                        is_increasing, alpha, step_size,init);
+   
+    break;
     
   }
   
@@ -645,6 +664,14 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           
           break; 
       case cont_model::polynomial:
+        init_opt =   bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>(Y_N, X, tprior,  fixedB, fixedV, 
+                                                                            MA->disttype[i] != distribution::normal_ncv,
+                                                                            CA->degree);
+        
+        RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                        max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+                                        MA->disttype[i] != distribution::normal_ncv); 
+        break; 
       default:
           break; 
         
@@ -1374,7 +1401,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
     
-    
+     
     break; 
   case cont_model::polynomial:
     // Polynomials are ONLY normal models. 
@@ -1412,24 +1439,25 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                  CA->model); 
     
   }else{
-    
+
     bool isNCV = CA->disttype != distribution::normal_ncv; 
      if (CA->suff_stat ){
       b = laplace_Normal(orig_Y, orig_X,
                         tprior, CA->BMD_type, (cont_model) CA->model,
                         CA->isIncreasing,isNCV, CA->BMR, 
                         CA->tail_prob,  
-                        CA->alpha, 0.02,init_opt);
+                        CA->alpha, 0.02,init_opt,CA->degree);
     }else{
+
       b = laplace_Normal(orig_Y, orig_X,
                          tprior, CA->BMD_type, (cont_model)CA->model,
                          CA->isIncreasing,isNCV, CA->BMR, 
                          CA->tail_prob,  
-                         CA->alpha, 0.02,init_opt);
+                         CA->alpha, 0.02,init_opt,CA->degree);
     }
-    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
-                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
-                                 CA->model); 
+ //   DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+//                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
+//                                 CA->model); 
     
   }
 

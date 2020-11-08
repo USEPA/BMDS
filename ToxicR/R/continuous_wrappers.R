@@ -10,31 +10,24 @@
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    prior="default", BMD_TYPE = "sd", sstat = T,
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
-                                   alpha = 0.05,samples = 21000,
+                                   alpha = 0.05,samples = 21000,degree=2,
                                    burnin = 1000){
     myD = Y; 
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
-    #define CONTINUOUS_BMD_ABSOLUTE     1
-    #define CONTINUOUS_BMD_STD_DEV      2
-    #define CONTINUOUS_BMD_REL_DEV      3
-    #define CONTINUOUS_BMD_POINT        4
-    #define CONTINUOUS_BMD_EXTRA        5
-    #define CONTINUOUS_BMD_HYBRID_EXTRA 6
-    #define CONTINUOUS_BMD_HYBRID_ADDED 7
-    #define CONTINUOUS_BMD_EMPTY        0.0
+
     rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
     if (rt == 4){
       rt = 6; 
     }
     dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
-    dmodel = which(model_type==c("hill","exp-3","exp-5","power","FUNL"))
-
+    
+    dmodel = which(model_type==c("hill","exp-3","exp-5","power","FUNL","polynomial"))
+    
     if (identical(dmodel, integer(0))){
       stop('Please specify one of the following model types: \n
-            "hill","exp-3","exp-5","power","FUNL"')
+            "hill","exp-3","exp-5","power","FUNL","polynomial"')
     }
     
-  
     if(identical(dis_type,integer(0))){
       stop('Please specify the distribution as one of the following:\n
             "normal","normal-ncv","lognormal"')
@@ -51,14 +44,17 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     #permute the matrix to the internal C values
     # Hill = 6, Exp3 = 3, Exp5 = 5, Power = 8, 
     # FUNL = 10
-    permuteMat = cbind(c(1,2,3,4,5),c(6,3,5,8,10))
+    permuteMat = cbind(c(1,2,3,4,5,6),c(6,3,5,8,10,666))
     fitmodel = permuteMat[dmodel,2]
     if (fitmodel == 10 && dis_type == 3){
          stop("The FUNL model is currently not defined for Log-Normal distribution.")
     }
+    if (fitmodel == 666 && dis_type == 3){
+         stop("Polynomial models are currently not defined for the Log-Normal distribution.")
+    }
     
     if (prior =="default"){
-      PR = bayesian_prior_continuous(model_type,distribution)
+      PR = bayesian_prior_continuous(model_type,distribution,degree)
     }else{
       PR = prior; 
     }
@@ -88,10 +84,11 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     		  'abs','sd','rel','hybrid'")
     }
     
-    if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
+    if (rt == 4) {rt = 6;} #internally in Rcpp hybrid is coded as 6	
     
     
-    #Temporary fit to determine direction. 
+    #Fit to determine direction. 
+    #This is done for the BMD estimate. 
     model_data = list(); 
     model_data$X = D; model_data$SSTAT = Y
     if (sstat == T){
@@ -101,9 +98,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
     }
     
-    #Determine if there is an increasing or decreasing trend for BMD
     is_increasing = F
-    
     if (coefficients(temp.fit)[2] > 0){
 	     is_increasing = T
     }
@@ -149,11 +144,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$bmd     <- c(NA,NA,NA)
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       if (!identical(rvals$bmd_dist, numeric(0))){
-     #  if (nrow(rvals$bmd_dist) > 6){
-    #    te <- splinefun(rvals$bmd_dist[,2],rvals$bmd_dist[,1],method="hyman")
-     #   rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-    #    names(rvals$bmd) <- c("BMD","BMDL","BMDU") 
-     #  }
+ 
       }
       rvals$model   <- model_type
       rvals$options <- options
