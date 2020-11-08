@@ -503,17 +503,28 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
+  int nparms = te_b.rows();
+  int tot_e = 1;
   switch(CM){ 
     case cont_model::polynomial:
       // TODO: RESCALE POLYNOMIAL BETAS?
+      if (!is_const_var){
+        tot_e = 2; 
+      }
+      for (int i =1; i < nparms - tot_e; i++){
+        model_prior.scale_prior(divisor,i);
+        model_prior.scale_prior(pow(1/max_dose,i),i);
+      }
       break;
     case cont_model::funl:
+      // b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
+      
       model_prior.scale_prior(divisor,0); 
       model_prior.scale_prior(divisor,1); 
       model_prior.scale_prior(max_dose,2); 
       model_prior.scale_prior(max_dose,3);
       model_prior.scale_prior(max_dose,4); 
-      model_prior.scale_prior(max_dose*max_dose,5);
+      model_prior.scale_prior((1/max_dose)*(1/max_dose),5);
       
       if (!is_logNormal){
            if (is_const_var){

@@ -1,4 +1,26 @@
-
+/*
+ 
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
 // [[Rcpp::depends(RcppGSL)]]
 // [[Rcpp::depends(RcppEigen)]]
 
@@ -188,7 +210,21 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         }
         break; 
       case cont_model::polynomial:
-      
+      break; 
+    case cont_model::funl:
+      parms(0,0) *= bkground; parms(1,0) *= bkground; 
+      parms(2,0) *= max_dose; 
+      parms(3,0) *= max_dose; 
+      parms(4,0) *= max_dose; 
+      parms(5,0) *= (1/max_dose)*(1/max_dose); 
+      if (!is_logNormal){
+        if (parms.rows()==4){
+          parms(6,0) += 2*log(bkground); 
+        }else{
+          parms(7,0) += 2*log(bkground); 
+        }
+      }
+      break; 
       default:
         break; 
     }

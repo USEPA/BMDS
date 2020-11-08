@@ -112,7 +112,18 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
   Eigen::MatrixXd subBlock(3,3); 
+  int offset = CV? 1:2; 
   switch(CM){
+  case cont_model::polynomial:
+    Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
+    Xd = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
+    cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
+    pr   =  X_logPrior<IDPrior>(estimate,prior); 
+    pr = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
+    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+    DOF =  Xd.diagonal().array().sum(); 
+    break; 
   case cont_model::hill:
     Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
     Xd = Xd.block(0,0,Xd.rows(),4); 
@@ -843,11 +854,19 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
 }
 
 mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
+                        Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
+                        bool is_increasing, bool bConstVar,
+                        double bmrf,   double bk_prob, 
+                        double alpha, int samples,
+                        int burnin, Eigen::MatrixXd initV,
+                        int degree = 2); 
+mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                          Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
                          bool is_increasing, bool bConstVar,
                          double bmrf,   double bk_prob, 
                          double alpha, int samples,
-                         int burnin, Eigen::MatrixXd initV) {
+                         int burnin, Eigen::MatrixXd initV,
+                         int degree) {
   
   bool suff_stat = Y.cols() == 1? false:true; 
   std::vector<bool> fixedB(prior.rows());
@@ -919,7 +938,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                                  samples,0,initV);
     break; 
   case cont_model::power:
-  default:  
+ 
 #ifdef R_COMPILATION 
     if (bConstVar){
       cout << "Running Power Model Normality Assumption using MCMC." << endl;
@@ -934,7 +953,22 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     
   
   break; 
+  case cont_model::polynomial:
+#ifdef R_COMPILATION 
+  if (bConstVar){
+    cout << "Running Polynomial Model Normality Assumption using MCMC." << endl;
+  }else{
+    cout << "Running Polynomial Model Normality-NCV Assumption using MCMC." << endl;
+  }
+#endif
+
+    a =  MCMC_bmd_analysis_CONTINUOUS_NORMAL<normalPOLYNOMIAL_BMD_NC, IDcontinuousPrior>
+          (Y,  X, prior, fixedB, fixedV, is_increasing,
+           bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
+           samples,degree,initV);
     
+  default: 
+    break; 
   }
   //convert a stuff
   //
@@ -1409,7 +1443,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
-    
+    RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
+                                    max_dose, divisor, 
+                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
+                                    CA->disttype != distribution::normal_ncv); 
   default:
     break; 
     
@@ -1455,9 +1492,9 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt,CA->degree);
     }
- //   DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
-//                                 CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
-//                                 CA->model); 
+   DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+                             CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
+                             CA->model); 
     
   }
 
@@ -1626,9 +1663,20 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                       max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
                                       CA->disttype != distribution::normal_ncv); 
-      
+  case cont_model::polynomial:
+    init_opt =  bmd_continuous_optimization<normalPOLYNOMIAL_BMD_NC,IDPrior> (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                              CA->disttype != distribution::normal_ncv,
+                                                                              CA->isIncreasing,
+                                                                              CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
+    RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
+                                    max_dose, divisor, 
+                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
+                                    CA->disttype != distribution::normal_ncv); RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
+                                    max_dose, divisor, 
+                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
+                                    CA->disttype != distribution::normal_ncv); 
       break; 
-    case cont_model::polynomial:
+  
     default:
       break; 
       
@@ -1644,7 +1692,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                   tprior, CA->BMD_type, (cont_model)CA->model,
                   CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
                   CA->tail_prob,  
-                  CA->alpha,samples, burnin,init_opt);
+                  CA->alpha,samples, burnin,init_opt,CA->degree);
     
   bmd_analysis b; 
  
