@@ -11,10 +11,18 @@ M[,1] <- c(0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,49,49,49,49
 M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
            55.2,55.1,59.1,56.3,52.9,53.7)
 
+
+system.time({d = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F, 
+                                       BMD_TYPE="sd",BMR=1, distribution = "normal-ncv",
+                                       fit_type="mle",model_type = "polynomial",degree=3)})
+
 data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
-#A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
+
+A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
+
+
 #plot(A)
 
 #h_fit <- stan(file="stan-check-hill.stan",data=data,
@@ -29,14 +37,15 @@ data2 <- read.delim("~/Downloads/dataFile2.txt")
 
 system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),sstat=F, 
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                      fit_type="mle",model_type = "hill")})
+                                      fit_type="laplace",model_type = "exp-5")})
 
 system.time({d = single_continuous_fit(matrix(M[,1]),matrix(M[,2]),sstat=F, 
                                        BMD_TYPE="sd",BMR=1, distribution = "normal",
-                                       fit_type="mle",model_type = "exp-3")})
+                                       fit_type="mle",model_type = "hill")})
+#
+# h_fit <- stan(file="stan-check-hill.stan",data=data,
+#               control = list(adapt_delta=0.9),iter=10000)
 
-#h_fit <- stan(file="stan-check-hill.stan",data=data,
-#              control = list(adapt_delta=0.9),iter=10000)
 system.time({r = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mcmc",model_type = "exp-5")})
 
 system.time({fit = ma_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),fit_type="mcmc")})
@@ -57,10 +66,6 @@ plot(fit$Individual_Model_13)
 
 system.time({fit_l<-ma_continuous_fit(D,Y,fit_type="laplace",BMR=3.0,samples=50000,burnin=5000)})
 
-
-
-
-
 system.time({Q = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F])})
 
 library(ToxicR)
@@ -74,7 +79,8 @@ M2[, 4]      <- c(0.26,0.26,0.35,0.21,0.33)
 C = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
 B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
 
-c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")
+library(ToxicR)
+c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "power")
 
 library(ToxicR)
 system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="",model_type = "exp-5")})

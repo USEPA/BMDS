@@ -1,3 +1,27 @@
+/*
+ 
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
+
 #include <RcppEigen.h>
 #include <RcppGSL.h>
 
@@ -66,7 +90,7 @@ List run_single_dichotomous(NumericVector model,
   Anal.prior    = new double[pr.cols()*pr.rows()];
   Anal.prior_cols = pr.cols(); 
   Anal.n          = data.rows(); 
-  Anal.degree = pr.rows()-1; 
+  Anal.degree =   pr.rows()-1; 
 
   if (Anal.model == dich_model::d_multistage){
     Anal.degree = Anal.parms - 1; 
@@ -117,6 +141,12 @@ List run_single_dichotomous(NumericVector model,
   
   Eigen::MatrixXd results(Anal.n,4); 
   results << data.col(1) , data.col(2) , expec , resid; 
+  cout << results << endl; 
+  
+  cout << "X^2 Test stat:" << GOFres.test_statistic << endl 
+       <<  "Degrees of Freedom: "<< GOFres.df << endl 
+       <<  "P-value: " << GOFres.p_value << endl;  
+ 
   
   delete (GOFres.expected);
   delete (GOFres.residual); 
@@ -174,29 +204,46 @@ List run_continuous_single(IntegerVector model,
     anal.suff_stat    = Y.cols()==3;
     anal.parms        = prior.rows();
     anal.prior_cols   = prior.cols(); 
+    anal.degree       = 0;
     anal.prior   = new double[prior.rows()*prior.cols()]; 
     cp_prior(prior,anal.prior);
-    
+    //
+    // Check on the polynomial stuff
+    //
+    if (anal.model == cont_model::polynomial){
+      // figure out the degree
+      if (anal.disttype == distribution::normal ){
+        anal.degree = anal.parms -2; 
+      }else if (anal.disttype == distribution::normal_ncv){
+        anal.degree = anal.parms -3; 
+      }else{
+        //throw an error! can'd do log-normal polynomial
+        stop("Polynomial-Log-normal models are not allowed.\n Please choose normal or normal non-constant variance.");
+      }
+      
+    }
+   
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
       if (Y.cols() == 3){ //sufficient statistics
-        anal.n_group[i] = Y(i,2);
-        anal.sd[i]      = Y(i,1); 
+         anal.n_group[i] = Y(i,2);
+         anal.sd[i]      = Y(i,1); 
       }
     }
     
     ////////////////////////////////////
-    continuous_model_result *result = new_continuous_model_result( anal.model,
-                                                                   anal.parms,
-                                                                   200); //have 200 equally spaced values
+    continuous_model_result *result = new_continuous_model_result(anal.model,
+                                                                  anal.parms,
+                                                                  200); //have 200 equally spaced values
    
+     
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result);
-   // cout << result->model_df << endl; 
-    
+ 
     List rV = convert_continuous_fit_to_list(result); 	
-    // free up memory
+    ////////////////////////////////////
+    
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);
     return rV; 

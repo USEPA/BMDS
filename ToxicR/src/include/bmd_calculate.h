@@ -1,3 +1,25 @@
+/*
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
 #ifndef bmd_calculateH
 #define bmd_calculateH
 
@@ -244,6 +266,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 			 bool isIncreasing, double alpha, double step_size,
 			 Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1)) {
 	// value to return
+	
 	bmd_analysis rVal;
 	// create the Continuous BMD modelds
 	cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, isIncreasing);								  
@@ -252,13 +275,13 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	optimizationResult OptRes = findMAP<LL, PR>(&model,init);
     //DEBUG_OPEN_LOG("bmds.log", file);
     //DEBUG_LOG(file, "After findMap, optres= " << OptRes.result << ", MAP= " << OptRes.functionV << ", max_parms=\n" << OptRes.max_parms << "\n");
-  cout << "Is increasing? "<< isIncreasing << endl; 
-  double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
-  cout << "Benchmark Dose:?" << BMD << endl; 
 
+  double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
+ 
   Eigen::MatrixXd result;
 	std::vector<double> x;
 	std::vector<double> y;	
+
 	if (!std::isinf(BMD) && !std::isnan(BMD)){
 		int i = 0; 	
 		do{
@@ -283,8 +306,9 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	x.resize(result.rows());
 	y.resize(result.rows());
 	}	
+
 	// compute the CDF for the BMD posterior approximation
-    	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
+  if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 		&& result.rows() > 5 ) {
 		for (int i = 0; i < x.size(); i++) { x[i] = result(i, 0); y[i] = result(i, 1); }
 		bmd_cdf cdf(x, y);
@@ -298,7 +322,6 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	for (int i = 0; i < rVal.expected.size(); i++) {
 		rVal.expected[i] = estimated(i, 0);
 	}
-
 
 	rVal.MAP_BMD = BMD; 
 	rVal.BMR = BMRF;
@@ -331,11 +354,13 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             bool is_increasing) {
 
   // value to return
+ 
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
   // create the Continuous BMD model
+
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
   // Find the maximum a-posteriori and compute the BMD
   optimizationResult OptRes = findMAP<LL, PR>(&model);
@@ -376,6 +401,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   optimizationResult OptRes = findMAP<LL, PR>(&model);
   
   rVal = OptRes.max_parms;
+
   return rVal; 
   
 }
@@ -467,25 +493,38 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	return rVal; 
 }
 
-
 template  <class PR> 
 void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 
                              double max_dose, double divisor, 
                              bool is_increasing, bool is_logNormal, bool is_const_var){
-  
+  Eigen::MatrixXd te_b = *betas; 
   PR   	  model_prior(*prior);
   Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
+  int nparms = te_b.rows();
+  int tot_e = 1;
   switch(CM){ 
+    case cont_model::polynomial:
+      // TODO: RESCALE POLYNOMIAL BETAS?
+      if (!is_const_var){
+        tot_e = 2; 
+      }
+      for (int i =1; i < nparms - tot_e; i++){
+        model_prior.scale_prior(divisor,i);
+        model_prior.scale_prior(pow(1/max_dose,i),i);
+      }
+      break;
     case cont_model::funl:
+      // b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
+      
       model_prior.scale_prior(divisor,0); 
       model_prior.scale_prior(divisor,1); 
       model_prior.scale_prior(max_dose,2); 
       model_prior.scale_prior(max_dose,3);
       model_prior.scale_prior(max_dose,4); 
-      model_prior.scale_prior(max_dose*max_dose,5);
+      model_prior.scale_prior((1/max_dose)*(1/max_dose),5);
       
       if (!is_logNormal){
            if (is_const_var){
@@ -535,8 +574,8 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       break; 
     case cont_model::power:
       model_prior.scale_prior(divisor,0);
-      model_prior.scale_prior(1/max_dose,1);
-      model_prior.scale_prior( divisor*(1/max_dose),2); 
+      model_prior.scale_prior(divisor*pow(1/max_dose,te_b(2,0)),1);
+     // model_prior.scale_prior( divisor*(1/max_dose),2); 
 
       if (!is_logNormal){
         if (is_const_var){
@@ -546,7 +585,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
         }
       }
       break;
-    case cont_model::polynomial:
+   
     default:
       break; 
   }

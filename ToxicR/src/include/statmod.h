@@ -365,7 +365,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     llist[j] = std::numeric_limits<double>::infinity(); // initialize everything to infinity
   }
   std::vector<Eigen::MatrixXd> population(NI); //list of the population parameters
-  
+
   double test_l; 
   Eigen::MatrixXd test = startV;
   // test = M->startValue();
@@ -376,14 +376,24 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-
+  
+  population.push_back(startV); 
+  llist.push_back( M->negPenLike(test)); 
   //
   // create the initial population of size (NI) random starting points for the genetic algorithm
-
+  double initial_temp; 
   for (int i = 0; i < NI; i ++){
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j,0) = gsl_ran_flat(r,max(lb[j],-4.0),min(4.0,ub[j]));// random number in the bounds
+      test(j,0) = 1 + startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
+      
+      if (test(j,0) > ub[j] ){
+          test(j,0) = ub[j]; 
+      }
+      if (test(j,0) < lb[j]){
+        test(j,0) = lb[j]; 
+      }
+      
     }  
     test_l = M->negPenLike(test);
     bool break_loop = false; 
@@ -405,10 +415,19 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     }
     
   }
-  for (int i = population.size()-1; i >= 0; i--){
-    if (population[i].size()==0){
-      population.erase(population.begin() + i); 
+
+  for (int i = population.size()-1; i > 1; --i){
+    if (population[i].size() == 0){
+      population.erase(population.begin() + i);
     }
+  }
+  
+  if (population.size() <= 3){
+    // couln't find a good starting point return the starting value
+    // and pray
+
+    for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
+    return x; 
   }
   //
   //Now do the Genetic algoritm thing. 
@@ -474,10 +493,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
        
        int idx = (int)(cur_tourny_parms.size()-1)*gsl_rng_uniform(r) + 1;    
        Eigen::MatrixXd temp_delta = cur_tourny_parms[0] - cur_tourny_parms[idx];
-       
        Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.2*temp_delta*(2*gsl_rng_uniform(r)-1);
-       
-       
        correctBounds = true; 
        
       
@@ -527,9 +543,25 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
    double t2 = M->negPenLike(startV); 
    if (t2 < t1){ // the random search was no better than the first value. 
      test = startV; 
+   }	
+   bool found_nans = false; 
+   for (int i = 0; i < M->nParms(); i++){
+     if (isnan(test(i,0))){
+       found_nans = true; 
+     }
    }
+   if (found_nans){ // something really messed up revert to initial
+                    // starting values
+     test = startV; 
+   }
+
    
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
+
+  for (int i = 0; i < M->nParms(); i++){
+    if (!isnormal(x[i])){
+      x[i] = 0; }
+  }
 	return x;
 
 }
@@ -544,6 +576,7 @@ template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M,
                            Eigen::MatrixXd    startV) {
   optimizationResult oR;
+
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
@@ -551,13 +584,19 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   //cout << temp_data << endl;
   std::vector<double> ub(M->nParms());
   
+  
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
   
   std::vector<double> x =  startValue_F(M, startV,
                                         lb, ub);
+  int yy = x.size(); 
+ 
+  for (int i = 0; i < M->nParms(); i++){
+    if (!isnormal(x[i])){
+      x[i] = 0; }
+  }
   
-  //for (int i = 0; i < x.size(); i++) cout << x[i] << endl;
-  
+ // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
   double minf;
   nlopt::result result = nlopt::FAILURE;
   
@@ -672,7 +711,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
     
   }
-  
+
   return oR;
 }
 
@@ -684,7 +723,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M) {
-
+     
     return findMAP<LL,PR>(M,M->startValue());
 }
 

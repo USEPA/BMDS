@@ -16,7 +16,6 @@
     #include <RcppGSL.h>
 #else 
     #include <Eigen/Dense>
-   
 #endif
 
 

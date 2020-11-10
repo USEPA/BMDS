@@ -1,4 +1,26 @@
-
+/*
+ 
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
 
 #include <iostream>
 #include <string>
@@ -116,7 +138,6 @@ Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max){
 }
 
 
-//void bmd_single_continuous_mcmc_fitter()
 
 // [[Rcpp::depends(RcppGSL)]]
 // [[Rcpp::depends(RcppEigen)]]
@@ -236,13 +257,13 @@ List run_continuous_single_mcmc(NumericVector model,
   }
   
   mcmcAnal->model         = (cont_model) model[0]; 
-  mcmcAnal->Y             =    new double[Y.rows()]; 
-  mcmcAnal->n             =    Y.rows(); 
-  mcmcAnal->n_group       =    new double[Y.rows()]; 
-  mcmcAnal->sd            =    new double[Y.rows()]; 
-  mcmcAnal->doses         =    new double[Y.rows()]; 
-  mcmcAnal->prior         =    new double[priors.rows()*priors.cols()]; 
-  mcmcAnal->isIncreasing  =    is_increasing; 
+  mcmcAnal->Y             =  new double[Y.rows()]; 
+  mcmcAnal->n             =  Y.rows(); 
+  mcmcAnal->n_group       =  new double[Y.rows()]; 
+  mcmcAnal->sd            =  new double[Y.rows()]; 
+  mcmcAnal->doses         =  new double[Y.rows()]; 
+  mcmcAnal->prior         =  new double[priors.rows()*priors.cols()]; 
+  mcmcAnal->isIncreasing  =  is_increasing; 
   mcmcAnal->disttype      = dtype; 
   mcmcAnal->prior_cols    = priors.cols(); 
   mcmcAnal->parms         = priors.rows(); 
@@ -253,6 +274,23 @@ List run_continuous_single_mcmc(NumericVector model,
   mcmcAnal->burnin       = burnin; 
   mcmcAnal->tail_prob    = tail_p; 
   mcmcAnal->suff_stat    = suff_stat; 
+  mcmcAnal->degree       = 0; 
+  
+  //
+  // Check on the polynomial stuff
+  //
+  if (mcmcAnal->model == cont_model::polynomial){
+    // figure out the degree
+    if (mcmcAnal->disttype == distribution::normal ){
+      mcmcAnal->degree = mcmcAnal->parms - 2; 
+    }else if (mcmcAnal->disttype == distribution::normal_ncv){
+      mcmcAnal->degree = mcmcAnal->parms - 3; 
+    }else{
+      //throw an error! can'd do log-normal polynomial
+      stop("Polynomial-Log-normal models are not allowed.\n Please choose normal or normal non-constant variance.");
+    }
+    
+  }
   
   bmd_analysis_MCMC  *output = new bmd_analysis_MCMC; 
   output->parms = new double[samples*mcmcAnal->parms]; 

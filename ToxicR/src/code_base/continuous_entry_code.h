@@ -1,3 +1,27 @@
+/*
+ * 
+ * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+ * 
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+ *and associated documentation files (the "Software"), to deal in the Software without restriction, 
+ *including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+ *sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+ *is furnished to do so, subject to the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be included in all copies 
+ *or substantial portions of the Software.
+ 
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ *INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ *PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ *HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+ *OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ * 
+ */
+
 #if defined R_COMPILATION || defined __cplusplus
   #include <cmath> 
 #else
@@ -71,7 +95,7 @@ Eigen::MatrixXd X_gradient_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, E
   LL data_likelihood(Y,D,SS,CV,junk); 
   Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
   
-  double *grad = new double[data_likelihood.nParms()]; 
+  double *grad = new double[data_likelihood.nParms()+10]; 
   
   Eigen::MatrixXd md = D; 
   for (int i = 0; i < D.rows(); i++){
@@ -122,7 +146,7 @@ Eigen::MatrixXd X_gradient_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
   LL data_likelihood(Y,D,SS,degree); 
   Eigen::MatrixXd rValue(Y.rows(),data_likelihood.nParms()) ;
   
-  double *grad = new double[data_likelihood.nParms()]; 
+  double *grad = new double[data_likelihood.nParms()+10]; 
   
   Eigen::MatrixXd md = D; 
   for (int i = 0; i < D.rows(); i++){
@@ -132,6 +156,7 @@ Eigen::MatrixXd X_gradient_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
       rValue(i,j) =  grad[j];   
     }
   }
+  
   delete grad; 
   return rValue; 
   
@@ -185,7 +210,8 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             bool is_increasing, bool bConstVar,
                             double bmrf,   double bk_prob, 
                             double alpha, double step_size,
-                            Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1));
+                            Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1),
+                            int degree = 2);
 
                             
 void transfer_continuous_model(bmd_analysis a, continuous_model_result *model); 
