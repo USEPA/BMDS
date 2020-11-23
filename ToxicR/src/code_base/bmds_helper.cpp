@@ -38,7 +38,7 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target){
    double retVal = -9999.0;
 
    for (int i=0; i < arrSize; i++){
-      if (fabs(quant[i] - target) < BMDS_EPS && isfinite(val[i]) ){
+      if (fabs(quant[i] - target) < BMDS_EPS && std::isfinite(val[i]) ){
          retVal = val[i];
       }
    }

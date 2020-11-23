@@ -815,3 +815,9 @@ void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
    estimate_sm_laplace(DA, res, do_a_rescale);
 
 }
+
+void estimate_ma_laplace_dicho(dichotomousMA_analysis *MA,
+                         dichotomous_analysis *DA ,
+                         dichotomousMA_result *res){
+   estimate_ma_laplace(MA, DA, res);
+}
