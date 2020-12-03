@@ -640,7 +640,7 @@ double lognormalPOLYNOMIAL_BMD_NC::bmd_hybrid_extra_bound(Eigen::MatrixXd theta,
 // 
 double lognormalPOLYNOMIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 				double min, mid, max, mu_zero;
-	min = 0.0; max = 1.0; mid = (min + max)*0.5; 
+	min = 0.0; max =  X.maxCoeff();; mid = (min + max)*0.5; 
 	Eigen::MatrixXd d(3, 1); d << min, mid, max;
 	Eigen::MatrixXd t_mean = mean(theta, d);
 	t_mean = exp(t_mean.array()); 
@@ -709,7 +709,7 @@ double lognormalPOLYNOMIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF
 
 double lognormalPOLYNOMIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 	double min, mid, max, mu_zero;
-	min = 0.0; max = 1.0; mid = (min + max)*0.5;
+	min = 0.0; max =   X.maxCoeff();; mid = (min + max)*0.5;
 	Eigen::MatrixXd d(3, 1); d << min, mid, max;
 	Eigen::MatrixXd t_mean = mean(theta, d);
 	t_mean = exp(t_mean.array()); 
@@ -778,7 +778,7 @@ double lognormalPOLYNOMIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doubl
 
 	////////////////////////////////////////////////////////////////////
 	//Get the mean and variance at dose zero as well as a very high dose
-	double min_d = 0.0; double max_d = 1.0; double mid = 0.5*(min_d + max_d);
+	double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d + max_d);
 	Eigen::MatrixXd d(3, 1); d << min_d, mid, max_d;
 	Eigen::MatrixXd temp_mean = mean(theta, d);
 	Eigen::MatrixXd temp_var = variance(theta, d);

@@ -643,7 +643,7 @@ double lognormalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF
 
 	////////////////////////////////////////////////////////////////////
 	//Get the mean and variance at dose zero as well as a very high dose
-	double min_d = 0.0; double max_d = 1.0; double mid = 0.5*(min_d + max_d);
+	double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d + max_d);
 	Eigen::MatrixXd d(3, 1); d << min_d, mid, max_d;
 	Eigen::MatrixXd temp_mean = mean(theta, d);
 	Eigen::MatrixXd temp_var = variance(theta, d);

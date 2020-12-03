@@ -2,6 +2,27 @@
 # Prior File
 #
 #################################################
+#Copyright 2020  NIEHS <matt.wheeler@nih.gov>
+#   
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+#and associated documentation files (the "Software"), to deal in the Software without restriction, 
+#including without limitation the rights to use, copy, modify, merge, publish, distribute, 
+#sublicense, and/or sell copies of the Software, and to permit persons to whom the Software 
+#is furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in all copies 
+#or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+#INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+#PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+#HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+#CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# 
+
+  
 
 normprior<-function(mean = 0, sd = 1, lb = -100,ub=100){
       if (ub < lb){
@@ -86,12 +107,50 @@ combine_prior_lists<-function(p1,p2){
 #################################################33
 # bayesian_prior_dich(model,variance)
 ##################################################
-bayesian_prior_continuous  <- function(model,variance){
+bayesian_prior_continuous  <- function(model,variance,degree=2){
   
-  dmodel = which(model==c("hill","exp-3","exp-5","power","FUNL"))
+  dmodel = which(model==c("hill","exp-3","exp-5","power","FUNL","polynomial"))
   dvariance = which(variance == c("normal","normal-ncv","lognormal"))
   
-  #Hill Prior NonConstant Normal Prior
+  #POLYNOMIAL *BLAH*
+  if (dmodel == 6){
+    cat("WARNING: Polynomial models may provide wacky estimates. 
+         In general, estimating a dose-response with a non-constrainted 
+         polynomial is against all that is holy. Use at your own risk and don't 
+         forget that `I told you so` when it hits the fan.\n")
+    if (dvariance == 1){
+      prior <- create_prior_list(normprior(0,5,-100,100))
+      
+      for (ii in 1:degree){
+        prior <- combine_prior_lists(prior,
+                                     normprior(0,5,-100,100))
+      }
+      
+      prior <- combine_prior_lists(prior, create_prior_list(normprior (0,1,-18,18)))
+    }
+  
+    if (dvariance == 2){
+        prior <- create_prior_list(normprior(0,5,-100,100))
+      
+      for (ii in 1:degree){
+        prior <- combine_prior_lists(prior,
+                                     normprior(0,5,-100,100))
+      }
+      prior <- combine_prior_lists(prior, 
+                                   create_prior_list(lnormprior(0,1,0,100),
+                                                     normprior (0,1,-18,18)))
+      
+    }
+    if (dvariance == 3){
+      stop("Polynomial-Log-normal models are not allowed. Please 
+choose normal or normal non-constant variance. I warned you 
+that they were a bad idea. But I morally can't let you make this
+poor of a modeling choice.\n");
+    }
+    return(prior)
+  }
+  
+  #FUNL
   if (dmodel ==5 && dvariance == 1){
          prior <- create_prior_list(normprior(0,5,-100,100),
                                   normprior(0,5,-100,100),
@@ -103,7 +162,7 @@ bayesian_prior_continuous  <- function(model,variance){
          return(prior)
   }
   
-  #Hill Prior NonConstant Normal Prior
+  #FUNL
   if (dmodel ==5 && dvariance == 2){
        prior <- create_prior_list(normprior(0,5,-100,100),
                                   normprior(0,5,-100,100),
@@ -115,7 +174,7 @@ bayesian_prior_continuous  <- function(model,variance){
                                   normprior(0,1,-18,18))
        return(prior)
   }
-  
+  #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,5,-100,100),
                                normprior(0,1,-100,100),
@@ -181,7 +240,7 @@ bayesian_prior_continuous  <- function(model,variance){
   #Power NonConstant Normal Prior
   if (dmodel == 4){
    prior <-create_prior_list(lnormprior(0,0.1,0,100), # a
-                             normprior(0,1,  -1e4,1e4),     # b
+                             normprior(0,1,  -1e2,1e2),     # b
                              lnormprior(0,0.5, 0,40),  #k
                              normprior(0,2,-18,18))
    return(prior)

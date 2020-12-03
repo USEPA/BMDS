@@ -624,8 +624,6 @@ double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra_bound(Eigen::MatrixXd theta, d
 	double mu_zero = temp_mean(0,0); double std_zero = pow(temp_var(0,0),0.5); 
 	double mu_bmd =  temp_mean(1,0); double std_bmd  = pow(temp_var(1,0),0.5); 
 	
-//	cout << mu_zero << " "<< std_zero << " " << 
-//		    mu_bmd  << " "<<  std_bmd << " " << endl; 
 	
 	double l; 
 	double temp; 
@@ -654,7 +652,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra_bound(Eigen::MatrixXd theta, d
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 double normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 	double min, mid, max, mu_zero;
-	min = 0.0; max = 1.0; mid = (min + max)*0.5; 
+	min = 0.0; max = X.maxCoeff(); mid = (min + max)*0.5; 
 	Eigen::MatrixXd d(3, 1); d << min, mid, max;
 	Eigen::MatrixXd t_mean = mean(theta, d);
 	mu_zero = t_mean(0, 0); 
@@ -675,7 +673,8 @@ double normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF
 						 // search for the BMD return INFINITY. 
 	}
 	double test = fabs(t_mean(1, 0) - mu_zero) - BMRF; 
-	while (fabs(test) > 1e-7) { // zero in on the BMD
+	niter = 0; 
+	while (fabs(test) > 1e-7 && niter < 200) { // zero in on the BMD
 		if (test > 0) {
 			max = mid; 
 		}else {
@@ -685,8 +684,13 @@ double normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF
 		d << min, mid, max;
 		t_mean = mean(theta, d);
 		test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+		niter++; 
 	}
-	return mid; 
+	if (niter >= 200){
+	  return INFINITY; 
+	}else{
+	  return mid; 
+	}
 }
 
 double normalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
@@ -716,7 +720,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, 
 
 double normalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 	double min, mid, max, mu_zero;
-	min = 0.0; max = 1.0; mid = (min + max)*0.5;
+	min = 0.0; max = X.maxCoeff(); mid = (min + max)*0.5;
 	Eigen::MatrixXd d(3, 1); d << min, mid, max;
 	Eigen::MatrixXd t_mean = mean(theta, d);
 	mu_zero = t_mean(0, 0);
@@ -784,7 +788,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double 
     
     ////////////////////////////////////////////////////////////////////
     //Get the mean and variance at dose zero as well as a very high dose
-	double min_d = 0.0; double max_d = 1.0; double mid = 0.5*(min_d+max_d); 
+	double min_d = 0.0; double max_d =  X.maxCoeff();; double mid = 0.5*(min_d+max_d); 
 	Eigen::MatrixXd d(3,1); d << min_d, mid, max_d; 	
 	Eigen::MatrixXd temp_mean =     mean(theta,d); 
 	Eigen::MatrixXd temp_var  = variance(theta,d); 
