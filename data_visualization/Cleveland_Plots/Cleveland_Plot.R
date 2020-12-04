@@ -72,6 +72,7 @@ bmd_ind_df$X1
 # I should add a vertical line from the bmd;
 
 ggplot()+
+  
   geom_point(data=bmd_ind_df, aes(x=as.numeric(X1), y=fct_reorder(X4,X5,.desc=T),size=(sqrt(as.numeric(X5)))), color="red")+
   #scale_colour_gradient(low = "gray", high = "black")+
   geom_vline(xintercept=as.numeric(bmd_ind_df$X1[10]), linetype="dotted")+
