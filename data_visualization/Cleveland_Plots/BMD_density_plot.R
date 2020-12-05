@@ -9,7 +9,7 @@ library(tidyverse)
 library(ggridges)
 
 # Load required function from source code;
-source("data_visualization/dicho_functions.R")
+source("data_visualization/Cleveland_Plots/dicho_functions.R")
 
 # Sample Dichotomous Data set
 mData <- matrix(c(1, 3,50,
@@ -103,21 +103,19 @@ for (i in fit_idx){
   # Do I need to stack up the dataset?
   
   
-  temp_density<-data.frame(matrix(0,length(temp),2))
+  temp_density<-data.frame(matrix(0,length(temp),3))
   temp_density[,2]=fit$model
   temp_density[,1]=temp
-  
+  temp_density[,3]=A$posterior_probs[i]
   
   assign(paste("t",i,sep="_"),temp_density)
   
 }
 
 
+
 # combine the fitting dataset here
 t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
-
-
-View(t_combine)
 
 
 out_bmd<-ggplot()+
@@ -148,10 +146,10 @@ ggplot()+
 
 
 
-#Need join posterior later
+#Need to sort order based on sequence
 #Needs to be ordered based on factor
 
-ggplot(data=t_combine,aes(x=X1, y=X2, fill = factor(stat(quantile))))+
+ggplot(data=t_combine,aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))))+
   stat_density_ridges(geom="density_ridges_gradient",
                       calc_ecdf=TRUE,quantiles=c(0.025,0.975))+
   xlim(c(0,20))+
