@@ -17,7 +17,7 @@ prior <- create_prior_list(normprior(	0,	10,	-18,	18),
                            lnormprior(	0.693147180559945,	0.01,	0.2,	20),
                            lnormprior(	0,	2,	0,	1e4))
 
-G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
 C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
 system.time({B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")})
 
