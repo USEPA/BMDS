@@ -119,7 +119,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
     data_temp = data_temp[!is.na(data_temp[,1]),]
     if (nrow(data_temp)>6){
-         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+         te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
@@ -146,7 +146,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
          data_temp = data_temp[!is.na(data_temp[,1]),]
          if (nrow(data_temp)>6){
-              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+              te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
               temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          }else{
               temp[[ii]]$bmd     <- c(NA,NA,NA)              
