@@ -11,14 +11,22 @@ library(scales)
 library(ToxicR)
 
 # Load functions for dichotomous and continous cases
-source("data_visualization/Shiny_App/dichotomous_functions.R")
-source("data_visualization/Shiny_App/continous_functions.R")
+# source("data_visualization/Shiny_App/dichotomous_functions.R")
+# source("data_visualization/Shiny_App/continous_functions.R")
+# 
+# # Load plot generators
+# source("data_visualization/Shiny_App/plot_dichotomous_shiny.R")
+# source("data_visualization/Shiny_App/plot_continous_shiny.R")
+
+
+
+
+source("dichotomous_functions.R")
+source("continous_functions.R")
 
 # Load plot generators
-source("data_visualization/Shiny_App/plot_dichotomous_shiny.R")
-source("data_visualization/Shiny_App/plot_continous_shiny.R")
-
-
+source("plot_dichotomous_shiny.R")
+source("plot_continous_shiny.R")
 
 # Model list - Dichotomous case
 model_list_dic<-list("hill","gamma","logistic","log-probit","weibull",
@@ -47,7 +55,7 @@ cont_response<- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8
 M<-matrix(nrow=length(cont_dose),ncol=2)
 M[,1]<-cont_dose
 M[,2]<-cont_response
-
+M
 
 
 ui<-navbarPage(title = "Toxic R - Interactive Plot V0.5", selected="Dichotomous Fitting",
@@ -119,17 +127,17 @@ ui<-navbarPage(title = "Toxic R - Interactive Plot V0.5", selected="Dichotomous 
                      conditionalPanel(condition="input.tabs =='Single Model'",
                                       helpText("Continous Single Model"),
                                       
-                                      selectInput(inputId="model2", 
+                                      selectInput(inputId="model3", 
                                                   label= "Choose a model type",
                                                   choices=model_list_cont, 
-                                                  selected = "FUNL"),
+                                                  selected = "hill"),
                                       
-                                      selectInput(inputId="fit_type2", 
+                                      selectInput(inputId="fit_type3", 
                                                   label= "Choose a fit type",
                                                   choices=fit_type, 
                                                   selected = "mcmc"),
                                       
-                                      sliderInput(inputId="bmr_slide2",
+                                      sliderInput(inputId="bmr_slide3",
                                                   label="Choose a BMR level",
                                                   min=0,max=1,value=0.1)
                      ),
@@ -142,12 +150,12 @@ ui<-navbarPage(title = "Toxic R - Interactive Plot V0.5", selected="Dichotomous 
                                        #            choices=model_list_cont,
                                        #            selected = "mcmc"),
                                        # 
-                                      selectInput(inputId="fit_type2",
+                                      selectInput(inputId="fit_type4",
                                                   label= "Choose a fit type",
                                                   choices=fit_type,
                                                   selected = "mcmc"),
                                       
-                                      sliderInput(inputId="bmr_slide2",
+                                      sliderInput(inputId="bmr_slide4",
                                                   label="Choose a BMR level",
                                                   min=0,max=1,value=0.1)
                      )
@@ -157,10 +165,10 @@ ui<-navbarPage(title = "Toxic R - Interactive Plot V0.5", selected="Dichotomous 
                    mainPanel(
                      
                      tabsetPanel(id="tabs",
-                                 tabPanel("Single Model",plotlyOutput(outputId = "cont_sing_plot")),
+                                 tabPanel("Single Model",plotOutput(outputId = "cont_sing_plot")),
                                  tabPanel("Model Average",plotOutput(outputId = "cont_ma_plot"))
                                  
-                                 
+                                
                      )
                      
                    )
@@ -207,27 +215,27 @@ server<- function (input,output){
   # Continous Single Case
   output$cont_sing_plot<-renderPlot({
     
-    # Data input needs to be checked
-    temp_fit = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],model_type = input$model2,fit_type = input$fit_type2, BMR = input$bmr_slide2)
+    # Data input needs to be checke
     
+    #temp_fit = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],model_type = input$model2,fit_type = input$fit_type2, BMR = input$bmr_slide2)
+    temp_fit2 <- single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat = F, BMR = input$bmr_slide3 ,model_type=input$model3 ,distribution = "normal",fit_type = input$fit_type3)
+
     #For MCMC  
     if (input$fit_type2=="mcmc"){
-      .plot.BMDcont_fit_MCMC(fit=temp_fit,fit_type=input$fit_type2)
+      .plot.BMDcont_fit_MCMC(fit=temp_fit2,qprob=0.05)
     }
     
     #For MCMC  
     else if (input$fit_type2!="mcmc"){
-      .plot.BMDcont_fit_maximized(fit=temp_fit,fit_type=input$fit_type2)
+      .plot.BMDcont_fit_maximized(fit=temp_fit2,qprob=0.05)
     }
     
-    
   })  
-  
   # Continous Model average case
   
   output$cont_ma_plot<-renderPlot({
-    temp_fit = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type = input$fit_type2, BMR = input$bmr_slide2)
-    .plot.BMDcontinuous_MA(temp_fit)
+    temp_fit2 = ma_continuous_fit(D=M[,1,drop=F],Y=M[,2,drop=F],model_list = NA, BMR = input$bmr_slide4 ,distribution = "normal",fit_type = input$fit_type4)
+    .plot.BMDcontinuous_MA(temp_fit2,qprob=0.05)
   })  
   
   
