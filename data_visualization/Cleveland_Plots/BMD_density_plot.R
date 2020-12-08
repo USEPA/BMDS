@@ -146,9 +146,6 @@ ggplot()+
 
 
 
-#Need to sort order based on sequence
-#Needs to be ordered based on factor
-
 ggplot(data=t_combine,aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))))+
   stat_density_ridges(geom="density_ridges_gradient",
                       calc_ecdf=TRUE,quantiles=c(0.025,0.975))+
