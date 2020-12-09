@@ -57,7 +57,7 @@
 #include "list_r_conversion.h"
 
 using namespace Rcpp;
-using namespace std;
+
 
 #define MAX_PARMS 32 // Should never get close to this many!!!
 

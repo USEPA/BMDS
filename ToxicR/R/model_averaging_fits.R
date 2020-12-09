@@ -106,7 +106,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          }else{
               temp[[jj]]$bmd     <- c(NA,NA,NA)              
          }
-         
+         names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
@@ -119,11 +119,12 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
     data_temp = data_temp[!is.na(data_temp[,1]),]
     if (nrow(data_temp)>6){
-         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+         te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
     }
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
     temp$posterior_probs = tempn$posterior_probs;
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_mcmc")  
     return(temp)
@@ -145,16 +146,30 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
          data_temp = data_temp[!is.na(data_temp[,1]),]
          if (nrow(data_temp)>6){
-              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+              te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
               temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          }else{
               temp[[ii]]$bmd     <- c(NA,NA,NA)              
          }
+         
+         names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
          class(temp[[ii]]) <- "BMDcont_fit_maximized"
          jj <- jj + 1
     }
     
+    temp_me <- temp$BMD_CDF 
+    temp_me = temp_me[!is.infinite(temp_me[,1]),]
+    temp_me = temp_me[!is.na(temp_me[,1]),]
+    temp_me = temp_me[!is.nan(temp_me[,1]),]
+    if( nrow(temp_me) > 5){
+      te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+      temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    }else{
+      temp$bmd <- c(NA,NA,NA)
+    }
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
+    temp$posterior_probs = temp$posterior_probs;
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_laplace") 
     return (temp)
   }

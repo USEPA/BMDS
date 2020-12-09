@@ -1,7 +1,6 @@
 useDynLib(ToxicR, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
-importFrom(forcats,fct_reorder)
 
 ###############################
 # Necessary Packages
@@ -28,7 +27,3 @@ S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
 S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )
 
 S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA) 
-#################################################################
-
-S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDdichotomous_MA) 
-#UseMethod(".cleveland_plot.BMDdichotomous_MA","BMDdichotomous_MA")
