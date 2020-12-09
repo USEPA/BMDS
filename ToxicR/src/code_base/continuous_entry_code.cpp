@@ -1462,13 +1462,13 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.02,init_opt);
+                            CA->alpha, 0.1,init_opt);
     }else{
       b = laplace_logNormal(orig_Y_LN, orig_X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.02,init_opt);
+                            CA->alpha, 0.05,init_opt);
       
     }
     DOF =  compute_lognormal_dof(orig_Y_LN,orig_X, b.MAP_ESTIMATE, 

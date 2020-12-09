@@ -1,20 +1,10 @@
-# Load ToxicR and ggplot package
+#Set the default clevland_plot method generic for all of the classes. 
+cleveland_plot <- function (A, ...){
+  UseMethod("cleveland_plot")
+}
 
-library(tidyverse)
-library(ggplot2)
-library(ToxicR)
-# Dichotomous case- Sample data input
 
-mData <- matrix(c(1, 3,50,
-                  3, 10, 50,
-                  16, 18,50,
-                  32, 40,50,
-                  50, 48,50),nrow=5,ncol=3,byrow=T)
-
-# Sample RBMDS fitting
-A<-ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type="mcmc", BMR=0.1)
-
-.cleveland_plot_ma.dichotomous <- function(A){
+.cleveland_plot.BMDdichotomous_MA <- function(A){
   # Construct bmd sample plots for mcmc 
   class_list <- names(A)
   
@@ -54,10 +44,13 @@ A<-ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type="mcmc", BMR=0.1)
     labs(x="Dose Level",y="Model",title="BMD Estimates by Each Model (Sorted by Posterior Probability)",size="Posterior Probability")+
     theme(legend.position="none")+
     geom_errorbar(data=bmd_ind_df, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
-
+  
 }
 
 
+# Continous Case
 
-
-
+.cleveland_plot.BMDdichotomous_MA<-function(A){
+  
+  
+}
