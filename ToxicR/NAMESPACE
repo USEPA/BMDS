@@ -11,6 +11,10 @@ import(ggplot2)
 import(shiny)
 import(plotly)
 import(scales)
+
+# Added two additional package 2012/12/08 SL
+import(tidyverse)
+import(ggridges)
 ###############################
 
 #register all of the S3 methods for the print commands
@@ -25,10 +29,15 @@ S3method(plot,  BMDdich_fit_maximized, .plot.BMDdich_fit_maximized)
 S3method(plot, BMDcont_fit_MCMC,      .plot.BMDcont_fit_MCMC)
 S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
 
-S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )
 
+# Work In Progress SL
+S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )
 S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA) 
 #################################################################
 
+
+# S3 method First-define function name/Second-target fitting type/Third-function we are going to use
 S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDdichotomous_MA) 
+
+## This part is defined in the inside of each function
 #UseMethod(".cleveland_plot.BMDdichotomous_MA","BMDdichotomous_MA")

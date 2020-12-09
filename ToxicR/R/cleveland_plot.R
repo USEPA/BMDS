@@ -46,3 +46,11 @@ cleveland_plot <- function (A, ...){
     geom_errorbar(data=bmd_ind_df, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
   
 }
+
+
+# Continous Case
+
+.cleveland_plot.BMDdichotomous_MA<-function(A){
+  
+  
+}
