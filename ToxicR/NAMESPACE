@@ -31,13 +31,17 @@ S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
 
 
 # Work In Progress SL
-S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA )
+# In the next update, this part will be replaced to ggplot() object instead of plotly object
+S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA)
 S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA) 
 #################################################################
 
 
 # S3 method First-define function name/Second-target fitting type/Third-function we are going to use
 S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDdichotomous_MA) 
+S3method(cleveland_plot, BMDcontinuous_MA, .cleveland_plot.BMDcontinous_MA) 
+
+# Add clevland plot BMDcontinous_MA case
 
 ## This part is defined in the inside of each function
 #UseMethod(".cleveland_plot.BMDdichotomous_MA","BMDdichotomous_MA")
