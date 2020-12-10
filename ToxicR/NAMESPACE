@@ -39,7 +39,7 @@ S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA)
 
 # S3 method First-define function name/Second-target fitting type/Third-function we are going to use
 S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDdichotomous_MA) 
-S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDcontinous_MA) 
+S3method(cleveland_plot, BMDcontinuous_MA, .cleveland_plot.BMDcontinous_MA) 
 
 # Add clevland plot BMDcontinous_MA case
 
