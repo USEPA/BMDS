@@ -14,6 +14,9 @@ import(scales)
 
 # Added two additional package 2012/12/08 SL
 import(ggridges)
+
+
+
 ###############################
 
 #register all of the S3 methods for the print commands
@@ -42,8 +45,13 @@ S3method(cleveland_plot, BMDcontinuous_MA, .cleveland_plot.BMDcontinous_MA)
 
 
 # MCMC / laplace mle etc..
-S3method(MAdensity_plot, BMDdichotomous_MA_mcmc, .MAdensity_plot.BMDdichotomous_MA)
+S3method(MAdensity_plot, BMDdichotomous_MA_mcmc, .plot.density.BMDdichotomous_MA_MCMC)
+S3method(MAdensity_plot, BMDdichotomous_MA_maximized, .plot.density.BMDdichotomous_MA_maximized)
+
+
+
 # Add clevland plot BMDcontinous_MA case
+
 
 ## This part is defined in the inside of each function
 #UseMethod(".cleveland_plot.BMDdichotomous_MA","BMDdichotomous_MA")
