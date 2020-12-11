@@ -13,6 +13,9 @@ mData <- matrix(c(1, 3,50,
 
 # Sample RBMDS fitting
 A<-ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type="mcmc", BMR=0.1)
+A<-ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type="mle", BMR=0.1)
+
+
 
 .cleveland_plot_ma.dichotomous <- function(A){
   # Construct bmd sample plots for mcmc 
