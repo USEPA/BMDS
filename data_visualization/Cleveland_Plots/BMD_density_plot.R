@@ -21,22 +21,18 @@ mData <- matrix(c(1, 3,50,
 # Sample Fitting Case
 A<-ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type="mcmc", BMD_TYPE="added",BMR=0.1)
 
+
+
+
+
+
 # Construct bmd sample plots for mcmc 
 class_list <- names(A)
 fit_idx    <- grep("Individual_Model",class_list)
 qprob=0.05
 
-
-
 #Dose levels
 doses<-mData[,1]
-
-
-
-
-
-
-
 
 
 for (i in fit_idx){
@@ -144,12 +140,10 @@ ggplot()+
 # How can I add this for every case?
 
 
-
-
 ggplot(data=t_combine,aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))))+
   stat_density_ridges(geom="density_ridges_gradient",
                       calc_ecdf=TRUE,quantiles=c(0.025,0.975))+
-  xlim(c(0,20))+
+  xlim(c(0,max(t_combine$X1)))+
   scale_fill_manual(name = "Probability", values = c("red", "blue", "red"), labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]"))+
   geom_vline(xintercept = A$bmd[1],linetype="longdash")+
   labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model")+theme_classic()+
