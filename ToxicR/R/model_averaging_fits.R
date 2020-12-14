@@ -107,7 +107,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
               temp[[jj]]$bmd     <- c(NA,NA,NA)              
          }
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
-         temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+        # temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
     }

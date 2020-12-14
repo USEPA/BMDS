@@ -14,18 +14,11 @@ M[,1]  = c(0, 0,   0,   0,        18,  18,  18,  18,  18,      20,   20,  20,  2
 M[,2] = c(  39,38.4,36.3,37.1,    30.2,35.3,32.1,38.3,35.9,     22.5,25.2,20.1,29.8,   10.1,13.4,11.2,12.1,    6.1,   6.4, 6.2,6.2,     3.1, 3.4, 3.3,2.9,3.7);
 
 
-for (ii in 1:1000){
-system.time({d = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F, 
-                                       BMD_TYPE="sd",BMR=1, distribution = "normal-ncv",
-                                     fit_type="mcmc",model_type = "hill",degree=2)})
-print(  d$parameters )
-}
-
 data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
 
-A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="laplace",BMR=2)
+A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
 
 
 #plot(A)
