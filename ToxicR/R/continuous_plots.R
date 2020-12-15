@@ -345,8 +345,8 @@ cont_power_f <-function(parms,d){
           lines(test_doses,me,lwd=2)
          
           temp_fit <- splinefun(test_doses,me)
-          bmds <- splinefun(A$BMD_CDF[,2],A$BMD_CDF[,1])
-          temp_bmd <- bmds(runif(3000,0,max(A$BMD_CDF[,2])))
+          bmds <- splinefun(A$ma_bmd[,2],A$ma_bmd[,1])
+          temp_bmd <- bmds(runif(3000,0,max(A$ma_bmd[,2])))
           
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 

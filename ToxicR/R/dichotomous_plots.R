@@ -231,18 +231,17 @@
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
       out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "azure2", alpha=1)
-      
-      out5
+      out6<-ggplotly(out5)
+      return(out6)
     }
     
     
-    out6<-ggplotly(out5)
     # Already reflected from above 
     #points(doses,probs)
     #arrows(x0=doses, y0=lerror, x1=doses, 
     #       y1=uerror, code=3, angle=90, length=0.1)
     
-    out6
+    out4
   }
   
   .plot.BMDdich_fit_maximized <- function(fit,fit_type,qprob=0.05,...){
@@ -479,7 +478,7 @@
       D1_x = Dens$x[temp]
       qm = min(Response)
       # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-      print("I am here")
+    
       out5 <- out4 + geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "lightblue1", alpha=0.5)
       
       
@@ -545,12 +544,7 @@
     out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
     
     
-    
-    # What is this part for?
-    # else{
-    #   
-    # }
-    # 
+   
     
     
     out15<-out14+geom_point(aes(x=doses,y=probs))

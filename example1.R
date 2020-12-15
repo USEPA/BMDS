@@ -16,7 +16,7 @@ mData <- matrix(c(0, 2,50,
 prior <- create_prior_list(normprior(	0,	10,	-18,	18),
                            lnormprior(	0.693147180559945,	0.01,	0.2,	20),
                            lnormprior(	0,	2,	0,	1e4))
-system.time({A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "laplace")})
+system.time({A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")})
 
 
 

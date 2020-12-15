@@ -283,7 +283,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     }
    # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(temp_priors))
-    temp$ma_bmd <- tempn$ma_bmd
+    temp$ma_bmd <- tempn$BMD_CDF
     te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
     temp$posterior_probs = tempn$posterior_probs;
