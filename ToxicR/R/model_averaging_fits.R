@@ -113,7 +113,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
-    temp$ma_bmd <- tempn$BMD_CDF 
+    temp$ma_bmd <- tempn$ma_bmd
     
     data_temp = temp$ma_bmd
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
@@ -158,7 +158,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          jj <- jj + 1
     }
     
-    temp_me <- temp$BMD_CDF 
+    temp_me <- temp$ma_bmd 
     temp_me = temp_me[!is.infinite(temp_me[,1]),]
     temp_me = temp_me[!is.na(temp_me[,1]),]
     temp_me = temp_me[!is.nan(temp_me[,1]),]
@@ -283,7 +283,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     }
    # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(temp_priors))
-    temp$ma_bmd <- tempn$BMD_CDF 
+    temp$ma_bmd <- tempn$ma_bmd
     te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
     temp$posterior_probs = tempn$posterior_probs;

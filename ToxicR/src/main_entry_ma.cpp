@@ -258,7 +258,7 @@ List convert_continuous_maresults_to_list(continuousMA_result *result){
     post_probs[i] = result->post_probs[i]; 
   }
   
-  fittedModels.push_back(ma_bmd_dist,"BMD_CDF"); 
+  fittedModels.push_back(ma_bmd_dist,"ma_bmd"); 
   fittedModels.push_back(post_probs ,"posterior_probs"); 
   
   return fittedModels; 

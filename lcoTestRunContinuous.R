@@ -33,7 +33,7 @@ prior <- create_prior_list(normprior(0, 1,-100,100),
 data2 <- read.delim("~/Downloads/dataFile2.txt")
 
 
-system.time({d = single_continuous_fit(matrix(data2$Doses),matrix(data2$IER3_3214),sstat=F, 
+system.time({d = single_continuous_fit(matrix(data$d),matrix(data$y),sstat=F, 
                                       BMD_TYPE="sd",BMR=1, distribution = "normal",
                                       fit_type="laplace",model_type = "exp-5")})
 
