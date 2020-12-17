@@ -100,6 +100,17 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = temp[[jj]]$fitted_model$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]),]
          data_temp = data_temp[!is.na(data_temp[,1]),]
+         
+         ii = nrow(data_temp)
+         while(ii > 2){
+           if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
+             data_temp = data_temp[-ii,]
+             ii = nrow(data_temp)
+           }else{
+             ii = ii - 1; 
+           }
+         }
+         temp[[jj]]$fitted_model$bmd_dist = data_temp
          if (nrow(data_temp)>6){
               te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
               temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
@@ -113,13 +124,24 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
+   # print(tempn)
     temp$ma_bmd <- tempn$ma_bmd
     
     data_temp = temp$ma_bmd
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
     data_temp = data_temp[!is.na(data_temp[,1]),]
+    ii = nrow(data_temp)
+    while(ii > 2){
+      if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
+        data_temp = data_temp[-ii,]
+        ii = nrow(data_temp)
+      }else{
+        ii = ii - 1; 
+      }
+    }
+    temp$ma_bmd = data_temp
     if (nrow(data_temp)>6){
-         te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
+         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
@@ -146,7 +168,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
          data_temp = data_temp[!is.na(data_temp[,1]),]
          if (nrow(data_temp)>6){
-              te <- splinefun(data_temp[,1],data_temp[,2],method="hyman")
+              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
               temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          }else{
               temp[[ii]]$bmd     <- c(NA,NA,NA)              

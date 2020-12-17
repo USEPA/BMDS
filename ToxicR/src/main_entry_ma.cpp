@@ -254,6 +254,7 @@ List convert_continuous_maresults_to_list(continuousMA_result *result){
     ma_bmd_dist(i,0) = result->bmd_dist[i]; 
     ma_bmd_dist(i,1) = result->bmd_dist[i + result->dist_numE];
   }
+ 
   for (int i = 0; i < result->nmodels; i++){
     post_probs[i] = result->post_probs[i]; 
   }
@@ -290,8 +291,8 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
 	 
 	 continuousMA_result *ma_result = new continuousMA_result; 
 	 ma_result->nmodels    = ma_anal.nmodels; 
-	 ma_result->dist_numE  = 300; 
-	 ma_result->bmd_dist   = new double[300*2]; 
+	 ma_result->dist_numE  = 600; 
+	 ma_result->bmd_dist   = new double[600*2]; 
 	 ma_result->post_probs = new double[ma_anal.nmodels];
 	 ma_result->models     = new continuous_model_result*[ma_anal.nmodels];
 	 
@@ -328,13 +329,12 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
 	 anal.tail_prob    = tail_p; 
 	 anal.suff_stat    = Y.cols()==3;
 	 
-	 
 	 for (int i = 0; i < Y.rows(); i++){
 	   anal.Y[i] = Y(i,0); 
 	   anal.doses[i] = X(i,0); 
 	   if (Y.cols() == 3){ //sufficient statistics
-	     anal.n_group[i] = Y(i,2);
-	     anal.sd[i]      = Y(i,1); 
+	     anal.n_group[i] = Y(i,1);
+	     anal.sd[i]      = Y(i,2); 
 	   }
 	 }
 
@@ -415,8 +415,8 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
   model_mcmc_info.analyses = new bmd_analysis_MCMC*[ma_anal.nmodels]; 
   model_mcmc_info.nfits = ma_anal.nmodels; 
   ma_result->nmodels    = ma_anal.nmodels; 
-  ma_result->dist_numE  = 300; 
-  ma_result->bmd_dist   = new double[300*2]; 
+  ma_result->dist_numE  = 600; 
+  ma_result->bmd_dist   = new double[600*2]; 
   ma_result->post_probs = new double[ma_anal.nmodels];
   ma_result->models     = new continuous_model_result*[ma_anal.nmodels];
   
@@ -459,13 +459,13 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
   anal.tail_prob    = tail_p; 
   anal.suff_stat    = Y.cols()==3;
   
-  
+
   for (int i = 0; i < Y.rows(); i++){
     anal.Y[i] = Y(i,0); 
     anal.doses[i] = X(i,0); 
     if (Y.cols() == 3){ //sufficient statistics
-      anal.n_group[i] = Y(i,2);
-      anal.sd[i]      = Y(i,1); 
+      anal.n_group[i] = Y(i,1);
+      anal.sd[i]      = Y(i,2); 
     }
   }
   

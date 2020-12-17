@@ -222,13 +222,14 @@ List run_continuous_single(IntegerVector model,
       }
       
     }
-   
+    cout << "What R gave me" << endl 
+         << Y << endl << "----------"<< endl;  
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
       if (Y.cols() == 3){ //sufficient statistics
-         anal.n_group[i] = Y(i,2);
-         anal.sd[i]      = Y(i,1); 
+         anal.n_group[i] = Y(i,1);
+         anal.sd[i]      = Y(i,2); 
       }
     }
     

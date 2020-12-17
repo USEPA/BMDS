@@ -297,18 +297,13 @@ List run_continuous_single_mcmc(NumericVector model,
   output->BMDS  = new double[samples]; 
   
   ///////////////////////////////////////////////////////////////////////
-  if (suff_stat){
-    Eigen::MatrixXd tY = Y.col(1);
-    Y.col(1) = Y.col(2);
-    Y.col(2) = tY;
-  }
   
   for (int i = 0; i < Y.rows(); i++){
     mcmcAnal->Y[i] = Y(i,0); 
     mcmcAnal->doses[i] = D(i,0); 
     if (suff_stat){
-      mcmcAnal->n_group[i] = Y(i,2);
-      mcmcAnal->sd[i]      = Y(i,1); 
+      mcmcAnal->n_group[i] = Y(i,1);
+      mcmcAnal->sd[i]      = Y(i,2); 
     }
   }
 
