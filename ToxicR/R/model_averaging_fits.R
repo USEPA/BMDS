@@ -100,30 +100,53 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = temp[[jj]]$fitted_model$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]),]
          data_temp = data_temp[!is.na(data_temp[,1]),]
+         
+         ii = nrow(data_temp)
+         while(ii > 2){
+           if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
+             data_temp = data_temp[-ii,]
+             ii = nrow(data_temp)
+           }else{
+             ii = ii - 1; 
+           }
+         }
+         temp[[jj]]$fitted_model$bmd_dist = data_temp
          if (nrow(data_temp)>6){
               te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
               temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          }else{
               temp[[jj]]$bmd     <- c(NA,NA,NA)              
          }
-         
-         temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
+        # temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
     }
     # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
-    temp$ma_bmd <- tempn$BMD_CDF 
+   # print(tempn)
+    temp$ma_bmd <- tempn$ma_bmd
     
     data_temp = temp$ma_bmd
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
     data_temp = data_temp[!is.na(data_temp[,1]),]
+    ii = nrow(data_temp)
+    while(ii > 2){
+      if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
+        data_temp = data_temp[-ii,]
+        ii = nrow(data_temp)
+      }else{
+        ii = ii - 1; 
+      }
+    }
+    temp$ma_bmd = data_temp
     if (nrow(data_temp)>6){
          te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
     }
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
     temp$posterior_probs = tempn$posterior_probs;
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_mcmc")  
     return(temp)
@@ -150,11 +173,25 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          }else{
               temp[[ii]]$bmd     <- c(NA,NA,NA)              
          }
+         
+         names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
          class(temp[[ii]]) <- "BMDcont_fit_maximized"
          jj <- jj + 1
     }
     
+    temp_me <- temp$ma_bmd 
+    temp_me = temp_me[!is.infinite(temp_me[,1]),]
+    temp_me = temp_me[!is.na(temp_me[,1]),]
+    temp_me = temp_me[!is.nan(temp_me[,1]),]
+    if( nrow(temp_me) > 5){
+      te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+      temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+    }else{
+      temp$bmd <- c(NA,NA,NA)
+    }
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
+    temp$posterior_probs = temp$posterior_probs;
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_laplace") 
     return (temp)
   }
@@ -268,7 +305,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     }
    # for (ii in idx_mcmc)
     names(temp) <- sprintf("Individual_Model_%s",1:length(temp_priors))
-    temp$ma_bmd <- tempn$BMD_CDF 
+    temp$ma_bmd <- tempn$BMD_CDF
     te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))
     temp$posterior_probs = tempn$posterior_probs;

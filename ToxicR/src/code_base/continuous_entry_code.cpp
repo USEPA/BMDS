@@ -539,8 +539,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X(i,0) = CA->doses[i]; 
     if(CA->suff_stat){
       
-      Y(i,1) = CA->sd[i]; 
-      Y(i,2) = CA->n_group[i]; 
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
     }
   }
   
@@ -1048,9 +1048,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     Y(i,0) = CA->Y[i]; 
     X(i,0) = CA->doses[i]; 
     if(CA->suff_stat){
-      
-      Y(i,1) = CA->sd[i]; 
-      Y(i,2) = CA->n_group[i]; 
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
     }
   }
   
@@ -1216,7 +1215,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   bmd_analysis b[MA->nmodels]; 
 
   for (int i = 0; i < MA->nmodels; i++){
-  
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
   }
 
@@ -1279,6 +1277,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
+    //cout << res->bmd_dist[i] << " " << res->bmd_dist[i+res->dist_numE] << endl;  
   }
   
   return; 
@@ -1299,8 +1298,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     X(i,0) = CA->doses[i]; 
     if(CA->suff_stat){
       
-      Y(i,1) = CA->sd[i]; 
-      Y(i,2) = CA->n_group[i]; 
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
     }
   }
   
@@ -1313,6 +1312,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
+  
+  cout << Y << endl << endl; 
 
   if(!CA->suff_stat){
     //convert to sufficient statistics for speed if we can
@@ -1349,6 +1350,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
+  cout << Y_N    << endl << "-----" << endl
+       << orig_Y << endl;  
  
   if (CA->suff_stat){
     X = UX; 
@@ -1462,13 +1465,13 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.02,init_opt);
+                            CA->alpha, 0.1,init_opt);
     }else{
       b = laplace_logNormal(orig_Y_LN, orig_X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.02,init_opt);
+                            CA->alpha, 0.05,init_opt);
       
     }
     DOF =  compute_lognormal_dof(orig_Y_LN,orig_X, b.MAP_ESTIMATE, 
@@ -1522,15 +1525,16 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
+  
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
     X(i,0) = CA->doses[i]; 
     if(CA->suff_stat){
-      
-      Y(i,1) = CA->sd[i]; 
-      Y(i,2) = CA->n_group[i]; 
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
     }
   }
+  //cout << Y << endl << endl; 
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
@@ -1574,7 +1578,8 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  
+  //cout << Y_N << endl << endl;  
+  //cout << orig_Y << endl; 
   if (CA->suff_stat){
     X = UX; 
     //  Y_N = cleanSuffStat(SSTAT,UX,false);  

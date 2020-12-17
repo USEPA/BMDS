@@ -1,89 +1,11 @@
-# Dichotomous functions are defined here
-{
-  .logit <- function(p)
-  {
-    return (log(p/(1-p)))
-  }
-  
-  #dichotomous hill
-  .dich_hill_f <- function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    n <- 1/(1+exp(-parms[2])); 
-    a <- parms[3];
-    b <- parms[4]; 
-    rval <- g + (1-g)*n*(1/(1+exp(-a-b*log(d))))
-    return (rval)
-  }
-  #dichotomous log-logistic
-  .dich_llogist_f <- function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    a <- parms[2];
-    b <- parms[3]; 
-    rval <- g + (1-g)*(1/(1+exp(-a-b*log(d))))
-    return (rval)
-  }
-  #dichotomous log-probit
-  .dich_lprobit_f <-function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    a <- parms[2];
-    b <- parms[3]; 
-    rval <- g + (1-g)*(1/(1+exp(-a-b*log(d))))
-    return (rval)
-  }
-  
-  #dichotomous weibull
-  .dich_weibull_f <-function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    a <- parms[2];
-    b <- parms[3]; 
-    rval <- g + (1-g)*(1-exp(-b*d^a))
-    return (rval)
-  }
-  
-  #dichotomous gamma
-  .dich_gamma_f <-function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    a <- parms[2];
-    b <- parms[3]; 
-    rval <- g + (1-g)*pgamma(b*d,a,1)
-    return (rval)
-  }
-  
-  #dichtomous logistic
-  .dich_logist_f <- function(parms,d){
-    rval <- 1/(1+exp(-parms[1]-parms[2]*d))
-    return (rval)
-  }
-  
-  #dichtomous probit
-  .dich_probit_f <- function(parms,d){
-    rval <- pnorm(parms[1]+parms[2]*d)
-    return (rval)
-  }
-  
-  .dich_qlinear_f <- function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    a <- parms[2];
-    return (g + (1-g)*1-exp(-a*d))
-  }
-  
-  .dich_multistage_f <- function(parms,d){
-    g <- 1/(1+exp(-parms[1])); 
-    rval = d*0
-    for (ii  in 2:length(parms)){
-      rval = rval - parms[ii]*d^(ii-1)
-    }
-    return (g + (1-g)*1-exp(rval))
-  }
-  
-  
-}
 
+
+# Plot functions for Dichotomous 
 {
-  .plot.BMDdich_fit_MCMC <-function(fit,fit_type="MCMC",qprob=0.05,...){
+  .plot.BMDdich_fit_MCMC <-function(fit,fit_type,qprob=0.05,...){
     
     density_col="red"
-    credint_col="azure2"
+    credint_col="lightblue1"
     BMD_DENSITY = T
     
     if (qprob < 0 || qprob > 0.5){
@@ -230,20 +152,20 @@
       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
-      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "azure2", alpha=1)
-      out6<-ggplotly(out5)
-      return(out6)
+      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue1", alpha=0.5)
+      
+      out5
     }
     
     
+    out6<-ggplotly(out5)
     # Already reflected from above 
     #points(doses,probs)
     #arrows(x0=doses, y0=lerror, x1=doses, 
     #       y1=uerror, code=3, angle=90, length=0.1)
     
-    out4
+    out6
   }
-  
   .plot.BMDdich_fit_maximized <- function(fit,fit_type,qprob=0.05,...){
     
     density_col="red"
@@ -363,7 +285,6 @@
     
     
   }
-  
   .plot.BMDdichotomous_MA <- function(A,qprob=0.05,...){
     density_col="blueviolet"
     credint_col="azure2"
@@ -373,7 +294,7 @@
     
     #plot the model average curve
     if ("BMDdichotomous_MA_mcmc" %in% class(A)){ # mcmc run
-      n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples); 
+      n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples) 
       data_d   <-  A[[fit_idx[1]]]$data
       max_dose <- max(data_d[,1])
       min_dose <- min(data_d[,1])
@@ -450,14 +371,16 @@
       out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
       temp_fit <- splinefun(test_doses,me)
       
-      out4<-out3+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
+      
+      # This should be updated too-> fit-> A
+      out4<-out3+geom_segment(aes(x=A$bmd, y=temp_fit(x=A$bmd), xend=A$bmd, yend=0), color="Red")
       
       
       # polygon(c(test_doses,test_doses[length(test_doses):1]),
       #          c(uq,lq[length(test_doses):1]),col = col1,border=col1)
       # lines(test_doses,me,lwd=2)
       
-      temp_fit <- splinefun(test_doses,me)
+      #temp_fit <- splinefun(test_doses,me)
       bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
       
       
@@ -478,8 +401,7 @@
       D1_x = Dens$x[temp]
       qm = min(Response)
       # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-    
-      out5 <- out4 + geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "lightblue1", alpha=0.5)
+      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "lightblue1", alpha=0.5)
       
       
       #plot the individual models proportional to their weight
@@ -544,7 +466,12 @@
     out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
     
     
-   
+    
+    # What is this part for?
+    # else{
+    #   
+    # }
+    # 
     
     
     out15<-out14+geom_point(aes(x=doses,y=probs))
@@ -554,8 +481,5 @@
     #out16<-ggplotly(out15)
     # Issue with plotly transition to ggplot
     out16<-ggplotly(out15)
-    return(out16)
   }
-  
 }
-
