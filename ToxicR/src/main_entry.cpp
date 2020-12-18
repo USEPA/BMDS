@@ -222,8 +222,7 @@ List run_continuous_single(IntegerVector model,
       }
       
     }
-    cout << "What R gave me" << endl 
-         << Y << endl << "----------"<< endl;  
+   
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 

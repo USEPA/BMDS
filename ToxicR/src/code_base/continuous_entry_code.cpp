@@ -1313,7 +1313,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
   
-  cout << Y << endl << endl; 
+ 
 
   if(!CA->suff_stat){
     //convert to sufficient statistics for speed if we can
@@ -1350,8 +1350,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
-  cout << Y_N    << endl << "-----" << endl
-       << orig_Y << endl;  
+
  
   if (CA->suff_stat){
     X = UX; 
@@ -1534,7 +1533,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       Y(i,1) = CA->n_group[i]; 
     }
   }
-  //cout << Y << endl << endl; 
+
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
@@ -1578,8 +1577,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  //cout << Y_N << endl << endl;  
-  //cout << orig_Y << endl; 
+
   if (CA->suff_stat){
     X = UX; 
     //  Y_N = cleanSuffStat(SSTAT,UX,false);  
