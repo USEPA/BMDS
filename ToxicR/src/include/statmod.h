@@ -532,8 +532,17 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      
     it_l = llist.begin();
     it_pop = population.begin();
-    std::advance(it_l,100);
-    std::advance(it_pop,100);
+	  
+    if(llist.size() >=100)
+        std::advance(it_l,100);
+    else
+       std::advance(it_l,llist.size());
+ 
+    if(population.size() >=100)
+        std::advance(it_pop,100);
+    else
+        std::advance(it_pop,population.size());
+	  
     llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
    }
 
