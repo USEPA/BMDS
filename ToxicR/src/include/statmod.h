@@ -431,7 +431,6 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (population.size() <= 3){
     // couln't find a good starting point return the starting value
     // and pray
-
     for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
     return x; 
   }
@@ -446,12 +445,12 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::advance(it_pop,tmp);
   llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
   
-  int ngenerations = 400; 
-  int ntourny = 20; 
-  int tourny_size = 20; 
+  int ngenerations = 600; 
+  int ntourny = 30; 
+  int tourny_size = 40; 
   
   for ( int xx = 0; xx < ngenerations; xx++){
-     
+   
     std::vector<double> tourny_winners; 
     std::vector<Eigen::MatrixXd> tourny_vals; 
 
@@ -570,7 +569,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      test = startV; 
    }
 
-   
+ 
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
 
   for (int i = 0; i < M->nParms(); i++){
@@ -667,7 +666,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_upper_bounds(ub);
     opt_ptr->set_ftol_rel(1e-8);
    // opt_ptr->set_ftol_abs(1e-8);
-    
+    //opt_ptr->set_initial_step(1e-3); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////

@@ -80,12 +80,9 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     }
     
     if (type_of_fit == 2){
-      PR[[1]][,1] = 0
-      PR[[1]][,2] = 0
-      PR[[1]][4,2] = 1
-      PR[[1]][4,4] = 1
+      PR = MLE_bounds_continuous(model_type,distribution,degree)
     }
-    print(unclass(PR)[[1]])
+
     
     if (distribution == "lognormal"){
       is_log_normal = TRUE
