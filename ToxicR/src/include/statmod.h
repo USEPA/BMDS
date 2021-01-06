@@ -367,6 +367,12 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::vector<Eigen::MatrixXd> population(NI); //list of the population parameters
 
   double test_l; 
+  // make sure start value is within our bounds
+  for (unsigned int i = 0; i < lb.size(); i++){
+    if (startV(i,0) < lb[i] || startV(i,0) > ub[i]){
+      startV(i,0) = lb[i];
+    }
+  }
   Eigen::MatrixXd test = startV;
   // test = M->startValue();
   // Set up the random number portion for the code
