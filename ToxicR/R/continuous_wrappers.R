@@ -73,7 +73,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
          stop("Polynomial models are currently not defined for the Log-Normal distribution.")
     }
     
-    if (prior =="default"){
+    if (prior[1] =="default"){
       PR = bayesian_prior_continuous(model_type,distribution,degree)
     }else{
       PR = prior; 
@@ -81,8 +81,11 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     
     if (type_of_fit == 2){
       PR[[1]][,1] = 0
-      PR[[1]][,2] = 1
+      PR[[1]][,2] = 0
+      PR[[1]][4,2] = 1
+      PR[[1]][4,4] = 1
     }
+    print(unclass(PR)[[1]])
     
     if (distribution == "lognormal"){
       is_log_normal = TRUE
