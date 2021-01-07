@@ -605,11 +605,15 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
                                         lb, ub);
   int yy = x.size(); 
  
+ 
   for (int i = 0; i < M->nParms(); i++){
     if (!isnormal(x[i])){
-      x[i] = 0; }
+ x[i] = 0;
+        
+    }
+    cout << "bubs:" << x[i] << endl;
   }
-  
+
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
   double minf;
   nlopt::result result = nlopt::FAILURE;
@@ -620,8 +624,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
