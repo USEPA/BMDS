@@ -7,7 +7,7 @@ int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_r
    for (int i=0; i<nparms; i++){
       //5*i+4 is location of min in prior array
       //5*i+5 is location of max in prior array
-      if (fabs(parms[i]-prior[5*i+4]) < BMDS_EPS || fabs(parms[i]-prior[5*i+5]) < BMDS_EPS){
+      if (fabs(parms[i]-prior[3*nparms+i]) < BMDS_EPS || fabs(parms[i]-prior[4*nparms+i]) < BMDS_EPS){
          bounded++;
          BMDSres->bounded[i] = false;
       }
@@ -123,3 +123,35 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   
 }
+
+
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes){
+
+  estimate_sm_laplace_dicho(anal, res, true);
+
+  struct dichotomous_PGOF_data gofData;
+  gofData.n = anal->n;
+  gofData.Y = anal->Y;
+  gofData.model = anal->model;
+  gofData.model_df = res->model_df;
+  gofData.est_parms = res->parms;
+  gofData.doses = anal->doses;
+  gofData.n_group = anal->n_group;
+  gofData.parms = anal->parms; 
+  
+
+  compute_dichotomous_pearson_GOF(&gofData, gofRes);
+
+  collect_dicho_bmd_values(anal, res, bmdsRes);
+
+}
+
+
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes){
+
+  estimate_sm_laplace_cont(anal, res);
+
+  collect_cont_bmd_values(anal, res, bmdsRes);
+
+}
+

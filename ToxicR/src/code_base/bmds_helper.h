@@ -1,7 +1,8 @@
 #ifdef __cplusplus
   #include <Eigen/Dense>
 #endif
-#include "bmdStruct.h"
+//#include "bmdStruct.h"
+#include "dichotomous_entry_code.h"
 // BMDS helper structures
 
 // BMD_results:
@@ -26,6 +27,12 @@ extern "C" {
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres);
 
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
+
+
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes);
+
+
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes);
 #ifdef __cplusplus
 }
 #endif
