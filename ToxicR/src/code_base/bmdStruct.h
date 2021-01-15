@@ -200,11 +200,13 @@ struct ma_MCMCfits{
   struct bmd_analysis_MCMC **analyses;   
 }; 
 
-
 struct continuous_deviance{
   double A1; 
+  int N1; 
   double A2; 
+  int N2; 
   double A3; 
+  int N3; 
 };
 
 // odds and ends

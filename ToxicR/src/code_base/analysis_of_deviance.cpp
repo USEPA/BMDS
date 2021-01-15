@@ -59,33 +59,30 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 
   /////////////////////////////////////////////////////////////////////////////////////
   // Test A1
-  lognormalLLTESTA1 a1Test(Y, X, bSuffStat);
+  lognormalLLTESTA1 a1Test(Y, X, true);
   int nParms = a1Test.nParms();
   std::vector<double> fix1(nParms); for (unsigned int i = 0; i < nParms; i++) { fix1[i] = 0.0; }
   std::vector<bool> isfix1(nParms); for (unsigned int i = 0; i < nParms; i++) { isfix1[i] = false; }
   Eigen::MatrixXd a1Priors(nParms, NUM_PRIOR_COLS);
   for (unsigned int i = 0; i < nParms; i++) {
-    a1Priors.row(i) << 0, 0, 1, 0, 1e8;
+    a1Priors.row(i) << 0, 0, 1, 0, 1e7;
   }
-  a1Priors.row(nParms - 1) << 0, 0, 1, -1e8, 1e8;
+  a1Priors.row(nParms - 1) << 0, 0, 1, -1e7, 1e7;
   
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
-  for (unsigned int i = 0; i < nParms-1; i++){
-    startV1(i,0) = exp(Y(i,0)); 
+  double tempV = 0.0; 
+  for (unsigned int i = 0; i < a1Test.nParms(); i++){
+    startV1(i,0) = exp(Y(i,0));
   }
-  
-  for (unsigned int i = 0; i < nParms-1; i++){
-    startV1(nParms-1,0) += Y(i,2); 
-  }
-  startV1(nParms,0) /= double(nParms-1); 
-  
-  cout << startV1 << endl; 
+  startV1(a1Test.nParms() - 1,0) = 0; 
+   
   IDcontinuousPrior a1Init(a1Priors);
   statModel<lognormalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                           isfix1, fix1);
   optimizationResult a1Result = findMAP<lognormalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
-  cout << a1Result.max_parms << endl; 
+
   CD->A1 = a1Result.functionV;
+  
   /////////////////////////////////////////////////////////////////////////////////////
   // Test A2
   lognormalLLTESTA2 a2Test(Y, X, bSuffStat);
@@ -145,10 +142,19 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   }
   IDcontinuousPrior a1Init(a1Priors);
   
+  Eigen::MatrixXd startV1(a1Test.nParms(),1); 
+  double tempV = 0.0; 
+  for (unsigned int i = 0; i < a1Test.nParms(); i++){
+    startV1(i,0) = Y(i,0);
+  }
+  startV1(a1Test.nParms() - 1,0) = 1; 
+  
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
-  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model);
-  CD->A3 = a1Result.functionV;
+  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
+  //cout << a1Result.max_parms << endl; 
+  CD->A1 = a1Result.functionV;
+  CD->N1 = a1Result.max_parms.rows(); 
   ////////////////////////////////////////////////////////////////////
   normalLLTESTA2 a2Test(Y, X, bSuffStat);
   nParms = a2Test.nParms();

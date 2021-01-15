@@ -1748,16 +1748,19 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-  
-  if(!CA->suff_stat){
+  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  Y_LN = SSTAT_LN; 
+  Eigen::MatrixXd temp = Y_LN.col(2);
+  Y_LN.col(2) = Y_LN.col(1);
+  Y_LN.col(1) = temp; 
+  if(!can_be_suff){
      aod->A1 =  std::numeric_limits<double>::infinity();
      aod->A2 =  std::numeric_limits<double>::infinity();
      aod->A3 =  std::numeric_limits<double>::infinity();
      return;   
   }else{
-    log_normal_AOD_fits(SSTAT_LN, UX, 
-                        CA->suff_stat, aod);
+    log_normal_AOD_fits(Y_LN, UX, 
+                        can_be_suff, aod);
     return; 
   }
 }
@@ -1792,15 +1795,20 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-  if(!CA->suff_stat){
+  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  Y_N = SSTAT; 
+  Eigen::MatrixXd temp = Y_N.col(2);
+  Y_N.col(2) = Y_N.col(1);
+  Y_N.col(1) = temp; 
+  
+  if(!can_be_suff){
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();
     aod->A3 =  std::numeric_limits<double>::infinity();
     return;   
   }else{
-    normal_AOD_fits(SSTAT, UX, 
-                    CA->suff_stat, aod);
+    normal_AOD_fits(Y_N, UX, 
+                    can_be_suff, aod);
     return; 
   }
 }
