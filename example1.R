@@ -36,7 +36,7 @@ BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5",
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({ single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)})
+system.time({ single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",sstat = F,)})
 plot(BB)
 
 

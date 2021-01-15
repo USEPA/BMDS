@@ -236,8 +236,6 @@ List run_continuous_single(IntegerVector model,
     continuous_model_result *result = new_continuous_model_result(anal.model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
-   
-     
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result);
     continuous_deviance aod1, aod2; 
