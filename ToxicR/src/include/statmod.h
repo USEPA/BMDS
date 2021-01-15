@@ -609,9 +609,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   for (int i = 0; i < M->nParms(); i++){
     if (!isnormal(x[i])){
  x[i] = 0;
-        
     }
-    cout << "bubs:" << x[i] << endl;
   }
 
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 

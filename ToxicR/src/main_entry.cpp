@@ -239,20 +239,17 @@ List run_continuous_single(IntegerVector model,
    
      
     ////////////////////////////////////
-   // estimate_sm_laplace(&anal,result);
+    estimate_sm_laplace(&anal,result);
     continuous_deviance aod1, aod2; 
     
-    estimate_log_normal_aod(&anal,
+     estimate_log_normal_aod(&anal,
                             &aod1);
     
-    cout << "SSS:Analysis of deviance" << endl; 
-    cout << aod1.A1 << ":" << aod1.A2 << ":" << aod1.A3 << endl; 
-    estimate_normal_aod(&anal,
+     estimate_normal_aod(&anal,
                         &aod2);
-    cout << aod2.A1 << ":" << aod2.A2 << ":" << aod2.A3 << endl; 
+     
     
-    
-    List rV = convert_continuous_fit_to_list(result); 	
+     List rV = convert_continuous_fit_to_list(result); 	
     
     ////////////////////////////////////
     

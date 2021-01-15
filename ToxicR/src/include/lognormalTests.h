@@ -40,7 +40,6 @@ class lognormalLLTESTA1 : public lognormalLL {
 						}
 						
 					}
-					
 
 				};
 
