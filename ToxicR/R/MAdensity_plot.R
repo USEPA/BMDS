@@ -6,7 +6,6 @@ MAdensity_plot <- function (A, ...){
 
 # Sample Dichotomous Data set
 
-
 .plot.density.BMDdichotomous_MA_MCMC<-function(A){
 # Construct bmd sample plots for mcmc
   class_list <- names(A)
@@ -91,26 +90,96 @@ MAdensity_plot <- function (A, ...){
     assign(paste("t",i,sep="_"),temp_density)
     
   }
-    
-  # Combine the fitting dataset here
+  
+  
   t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
   
-  #Plot 
-  ggplot(data=t_combine,aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))))+
-    stat_density_ridges(geom="density_ridges_gradient",calc_ecdf=TRUE,quantiles=c(0.025,0.975))+
-    xlim(c(0,max(t_combine$X1)))+
-    scale_fill_manual(name = "Probability", values = c("red", "blue", "red"), 
-                      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]"))+
-    geom_vline(xintercept = A$bmd[1],linetype="longdash")+
-    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()+
-    theme(legend.position="none")
+  
+  
+  # This part is needed to get MA density plots
+  # Model ~xxx..
+  idx <- sample(1:9, length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
 
+  m1<-A$Individual_Model_1
+  c1<-m1$mcmc_result$BMD_samples
+  
+  
+  m2<-A$Individual_Model_2
+  c2<-m2$mcmc_result$BMD_samples
+  
+  m3<-A$Individual_Model_3
+  c3<-m3$mcmc_result$BMD_samples
+  
+  m4<-A$Individual_Model_4
+  c4<-m4$mcmc_result$BMD_samples
+  
+  m5<-A$Individual_Model_5
+  c5<-m5$mcmc_result$BMD_samples
+  
+  m6<-A$Individual_Model_6
+  c6<-m6$mcmc_result$BMD_samples
+  
+  m7<-A$Individual_Model_7
+  c7<-m7$mcmc_result$BMD_samples
+  
+  m8<-A$Individual_Model_8
+  c8<-m5$mcmc_result$BMD_samples
+  
+  m9<-A$Individual_Model_9
+  c9<-m9$mcmc_result$BMD_samples
+  
+  combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5,c6,c7,c8,c9))
+
+  # Select MA values
+  BMD_MA<-matrix(NA,length(A$Individual_Model_1$mcmc_result$BMD_samples),1)
+  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
+    BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
+  }
+  
+  BMD_MA<-data.frame(BMD_MA)
+  
+  t_ma<-BMD_MA %>% mutate(X1=BMD_MA,X2="Model Average",X3=1)
+  #BMD_CDF should be shown here - it 
+  t_ma<-t_ma %>% select(X1,X2,X3)
+  
+  
+
+  t_combine2<-rbind(t_combine,t_ma)
+  
+  # From samples 
+  p<-ggplot()+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
+                        calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,fill="blue")+
+    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    geom_vline(xintercept = A$bmd[1],linetype="longdash")+
+    scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "#A0A0A0A0", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+
+    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
+  
+  p2<-p+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
+                        geom = "density_ridges_gradient",
+                        calc_ecdf = TRUE, quantiles = c(0.025, 0.975)
+    )+ scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "NA", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+theme(legend.position="none")
+  
+  
+  return(p2) # Return output
+  
+  
 }
 
+
 # Define another function for mle/laplace
+# This is option for mle or laplace
+
 .plot.density.BMDdichotomous_MA_maximized<-function(A,fit_type="laplace"){
-  
-  
   
   class_list <- names(A)
   
@@ -191,16 +260,68 @@ MAdensity_plot <- function (A, ...){
   
   t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
   
-  #Plot 
-  ggplot(data=t_combine,aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))))+
-  stat_density_ridges(geom="density_ridges_gradient",calc_ecdf=TRUE,quantiles=c(0.025,0.975))+
-  xlim(c(0,max(t_combine$X1)))+
-    scale_fill_manual(name = "Probability", values = c("red", "blue", "red"), 
-                      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]"))+
-    geom_vline(xintercept = quantile(A$BMD_CDF[,1],0.5),linetype="longdash")+
-    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: Maximized)")+theme_classic()+
-    theme(legend.position="none")
   
+
+  # This part is needed to get MA density plots
+  # Model ~xxx..
+  idx <- sample(1:9, nrow(t_1),replace=TRUE,prob=A$posterior_probs)
+  
+  c1<-t_1$X1
+  c2<-t_2$X1
+  c4<-t_3$X1
+  c4<-t_4$X1
+  c5<-t_5$X1
+  c6<-t_6$X1
+  c7<-t_7$X1
+  c8<-t_8$X1
+  c9<-t_9$X1
+  
+  
+  combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5,c6,c7,c8,c9))
+  
+  # Select MA values
+  BMD_MA<-matrix(NA,nrow(t_1),1)
+  for (i in 1:nrow(t_1)){
+    BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
+  }
+  
+  BMD_MA<-data.frame(BMD_MA)
+  
+  t_ma<-BMD_MA %>% mutate(X1=BMD_MA,X2="Model Average",X3=1)
+  #BMD_CDF should be shown here - it 
+  t_ma<-t_ma %>% select(X1,X2,X3)
+  
+  
+  
+  t_combine2<-rbind(t_combine,t_ma)
+  
+  # From samples 
+  p<-ggplot()+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
+                        calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,fill="blue")+
+    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    geom_vline(xintercept = A$bmd[1],linetype="longdash")+
+    scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "#A0A0A0A0", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+
+    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
+  
+  p2<-p+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
+                        geom = "density_ridges_gradient",
+                        calc_ecdf = TRUE, quantiles = c(0.025, 0.975)
+    )+ scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "NA", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+theme(legend.position="none")
+  
+  
+  return(p2) # Return output
+  
+
   
 }
 
