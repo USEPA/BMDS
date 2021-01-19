@@ -30,6 +30,7 @@
 */
 
 #include "continuous_entry_code.h"
+#include "analysis_of_deviance.h"
 #include "mcmc_analysis.h"
 #include "bmd_calculate.h"
 #include <algorithm>
@@ -530,7 +531,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                          continuousMA_result *res){
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
-
+  bool  tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -787,7 +788,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
-  
+  CA->suff_stat = tempsa;
   return;  
 }
 
@@ -1041,6 +1042,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                       ma_MCMCfits           *ma){ 
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  bool tempsa = CA->suff_stat; 
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -1279,7 +1281,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     res->bmd_dist[i+res->dist_numE]  = prob;
     //cout << res->bmd_dist[i] << " " << res->bmd_dist[i+res->dist_numE] << endl;  
   }
-  
+  CA->suff_stat = tempsa;
   return; 
 }
 
@@ -1289,7 +1291,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          continuous_model_result *res){
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
-  
+  bool tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -1313,7 +1315,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
   
-  cout << Y << endl << endl; 
+ 
 
   if(!CA->suff_stat){
     //convert to sufficient statistics for speed if we can
@@ -1350,8 +1352,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
-  cout << Y_N    << endl << "-----" << endl
-       << orig_Y << endl;  
+
  
   if (CA->suff_stat){
     X = UX; 
@@ -1511,7 +1512,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
   res->model = CA->model; 
   res->dist  = CA->disttype; 
-
+  CA->suff_stat = tempsa;
   return;  
 }
 
@@ -1522,6 +1523,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
 { 
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  bool tempsa = CA->suff_stat; 
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -1534,7 +1536,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
       Y(i,1) = CA->n_group[i]; 
     }
   }
-  //cout << Y << endl << endl; 
+
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
@@ -1578,8 +1580,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  //cout << Y_N << endl << endl;  
-  //cout << orig_Y << endl; 
+
   if (CA->suff_stat){
     X = UX; 
     //  Y_N = cleanSuffStat(SSTAT,UX,false);  
@@ -1700,7 +1701,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                   CA->alpha,samples, burnin,init_opt,CA->degree);
     
   bmd_analysis b; 
- 
+  CA->suff_stat = tempsa;
   b = create_bmd_analysis_from_mcmc(burnin,a);
   transfer_continuous_model(b,res);
   transfer_mcmc_output(a,mcmc); 
@@ -1718,3 +1719,96 @@ void estimate_sm_laplace_cont(continuous_analysis *CA ,
 
 }
 
+/*
+ * 
+ */
+void estimate_log_normal_aod(continuous_analysis *CA,
+                             continuous_deviance *aod){
+  
+  // standardize the data
+  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  Eigen::MatrixXd Y(n_rows,n_cols); 
+  Eigen::MatrixXd X(n_rows,1); 
+  // copy the origional data
+  
+  for (int i = 0; i < n_rows; i++){
+    Y(i,0) = CA->Y[i]; 
+    X(i,0) = CA->doses[i]; 
+    if(CA->suff_stat){
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
+    }
+  }
+  
+  double divisor = get_divisor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+  
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+  Eigen::MatrixXd orig_X = X; 
+  
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+  Eigen::MatrixXd Y_LN, Y_N;
+  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  Y_LN = SSTAT_LN; 
+  Eigen::MatrixXd temp = Y_LN.col(2);
+  Y_LN.col(2) = Y_LN.col(1);
+  Y_LN.col(1) = temp; 
+  if(!can_be_suff){
+     aod->A1 =  std::numeric_limits<double>::infinity();
+     aod->A2 =  std::numeric_limits<double>::infinity();
+     aod->A3 =  std::numeric_limits<double>::infinity();
+     return;   
+  }else{
+    log_normal_AOD_fits(Y_LN, UX, 
+                        can_be_suff, aod);
+    return; 
+  }
+}
+
+
+/*
+ * 
+ */
+void estimate_normal_aod(continuous_analysis *CA,
+                         continuous_deviance *aod){
+  
+  // standardize the data
+  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  Eigen::MatrixXd Y(n_rows,n_cols); 
+  Eigen::MatrixXd X(n_rows,1); 
+  // copy the origional data
+  
+  for (int i = 0; i < n_rows; i++){
+    Y(i,0) = CA->Y[i]; 
+    X(i,0) = CA->doses[i]; 
+    if(CA->suff_stat){
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
+    }
+  }
+  
+  double divisor = get_divisor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+  
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+  Eigen::MatrixXd orig_X = X; 
+  
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+  Eigen::MatrixXd Y_LN, Y_N;
+  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  Y_N = SSTAT; 
+  Eigen::MatrixXd temp = Y_N.col(2);
+  Y_N.col(2) = Y_N.col(1);
+  Y_N.col(1) = temp; 
+  
+  if(!can_be_suff){
+    aod->A1 =  std::numeric_limits<double>::infinity();
+    aod->A2 =  std::numeric_limits<double>::infinity();
+    aod->A3 =  std::numeric_limits<double>::infinity();
+    return;   
+  }else{
+    normal_AOD_fits(Y_N, UX, 
+                    can_be_suff, aod);
+    return; 
+  }
+}

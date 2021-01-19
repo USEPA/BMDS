@@ -126,7 +126,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
    # print(tempn)
     temp$ma_bmd <- tempn$ma_bmd
-    
+   
     data_temp = temp$ma_bmd
     data_temp = data_temp[!is.infinite(data_temp[,1]),]
     data_temp = data_temp[!is.na(data_temp[,1]),]

@@ -367,6 +367,12 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::vector<Eigen::MatrixXd> population(NI); //list of the population parameters
 
   double test_l; 
+  // make sure start value is within our bounds
+  for (unsigned int i = 0; i < lb.size(); i++){
+    if (startV(i,0) < lb[i] || startV(i,0) > ub[i]){
+      startV(i,0) = lb[i];
+    }
+  }
   Eigen::MatrixXd test = startV;
   // test = M->startValue();
   // Set up the random number portion for the code
@@ -425,7 +431,6 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (population.size() <= 3){
     // couln't find a good starting point return the starting value
     // and pray
-
     for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
     return x; 
   }
@@ -440,12 +445,12 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::advance(it_pop,tmp);
   llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
   
-  int ngenerations = 400; 
-  int ntourny = 20; 
-  int tourny_size = 20; 
+  int ngenerations = 600; 
+  int ntourny = 30; 
+  int tourny_size = 40; 
   
   for ( int xx = 0; xx < ngenerations; xx++){
-     
+   
     std::vector<double> tourny_winners; 
     std::vector<Eigen::MatrixXd> tourny_vals; 
 
@@ -532,8 +537,17 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      
     it_l = llist.begin();
     it_pop = population.begin();
-    std::advance(it_l,100);
-    std::advance(it_pop,100);
+	  
+    if(llist.size() >=100)
+        std::advance(it_l,100);
+    else
+       std::advance(it_l,llist.size());
+ 
+    if(population.size() >=100)
+        std::advance(it_pop,100);
+    else
+        std::advance(it_pop,population.size());
+	  
     llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
    }
 
@@ -555,7 +569,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      test = startV; 
    }
 
-   
+ 
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
 
   for (int i = 0; i < M->nParms(); i++){
@@ -591,11 +605,13 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
                                         lb, ub);
   int yy = x.size(); 
  
+ 
   for (int i = 0; i < M->nParms(); i++){
     if (!isnormal(x[i])){
-      x[i] = 0; }
+ x[i] = 0;
+    }
   }
-  
+
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
   double minf;
   nlopt::result result = nlopt::FAILURE;
@@ -606,8 +622,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -652,7 +668,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_upper_bounds(ub);
     opt_ptr->set_ftol_rel(1e-8);
    // opt_ptr->set_ftol_abs(1e-8);
-    
+    //opt_ptr->set_initial_step(1e-3); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////

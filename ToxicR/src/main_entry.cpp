@@ -222,8 +222,7 @@ List run_continuous_single(IntegerVector model,
       }
       
     }
-    cout << "What R gave me" << endl 
-         << Y << endl << "----------"<< endl;  
+   
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
@@ -237,12 +236,19 @@ List run_continuous_single(IntegerVector model,
     continuous_model_result *result = new_continuous_model_result(anal.model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
-   
-     
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result);
- 
-    List rV = convert_continuous_fit_to_list(result); 	
+    continuous_deviance aod1, aod2; 
+    
+     estimate_log_normal_aod(&anal,
+                            &aod1);
+    
+     estimate_normal_aod(&anal,
+                        &aod2);
+     
+    
+     List rV = convert_continuous_fit_to_list(result); 	
+    
     ////////////////////////////////////
     
     del_continuous_model_result(result); 

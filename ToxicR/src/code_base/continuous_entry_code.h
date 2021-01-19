@@ -325,6 +325,18 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                       continuous_model_result *res,
                       bmd_analysis_MCMC  *mcmc); 
 
+
+/**************************************************
+ * 
+ * 
+ ***************************************************/
+
+void estimate_log_normal_aod(continuous_analysis *CA,
+                            continuous_deviance *aod);
+
+void estimate_normal_aod(continuous_analysis *CA,
+                             continuous_deviance *aod);
+
 #endif
 
 #ifdef __cplusplus

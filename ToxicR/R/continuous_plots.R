@@ -255,6 +255,7 @@ cont_power_f <-function(parms,d){
           col1 = alphablend(credint_col,1)
           polygon(c(test_doses,test_doses[length(test_doses):1]),
                   c(uq,lq[length(test_doses):1]),col = col1,border=col1)
+          
           lines(test_doses,me,lwd=2)
           temp_fit <- splinefun(test_doses,me)
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
@@ -267,14 +268,17 @@ cont_power_f <-function(parms,d){
           
           temp = temp_bmd[!is.nan(temp_bmd)]
           temp = temp[!is.infinite(temp)]
-          Dens =  density(temp,cut=c(quantile(temp_bmd,0.995,na.rm = TRUE)))
+          temp = temp[temp < 20 * max_dose]
+          #return(temp)
+          #print(c(max(temp),median(temp),min(temp)))
+          Dens =  density(temp,cut=c(quantile(temp,0.995,na.rm = TRUE)))
           Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
           temp = which(Dens$x < max(test_doses))
           D1_y = Dens$y[temp]
           D1_x = Dens$x[temp]
           qm = min(Response)
           polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-          #plot the individual models proportional to their weight
+         
           for (ii in 1:length(fit_idx)){
                fit <- A[[fit_idx[ii]]]
                if (fit$model=="FUNL"){

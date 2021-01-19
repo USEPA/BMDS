@@ -80,31 +80,42 @@ M2[, 4]      <- c(1.2,1.1,0.81,0.74,0.66)
 C = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1,fit_type="mcmc")
 B = ma_continuous_fit(D=M2[,1,drop=F],Y=M2[,2:4],BMR=1)
 
-library(ToxicR)
+
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "power")
 
 library(ToxicR)
-system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="",model_type = "exp-5")})
-system.time({b = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="laplace",model_type = "exp-5")})
-system.time({a = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal",fit_type="mle",model_type = "exp-5")})
+doses = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
+          0.9486690163612366, 0.9486690163612366, 0.9486690163612366, 2.99995493888855,
+          2.99995493888855, 2.99995493888855, 9.486689567565918, 9.486689567565918, 
+          9.486689567565918, 29.999547958374023, 29.999547958374023, 29.999547958374023, 
+          94.86689758300781, 94.86689758300781, 94.86689758300781, 299.9954833984375, 
+          299.9954833984375, 299.9954833984375, 948.6690063476562, 948.6690063476562, 
+          948.6690063476562, 2999.954833984375, 2999.954833984375, 2999.954833984375,
+          9486.6904296875, 9486.6904296875, 9486.6904296875)
+
+Y = c(6.020999908447266, 6.050000190734863, 6.113999843597412, 5.645999908447266, 6.201000213623047, 
+      5.363999843597412, 6.271999835968018, 5.973999977111816, 6.605999946594238, 5.7769999504089355, 
+      5.966000080108643, 5.986999988555908, 6.064000129699707, 6.508999824523926, 6.547999858856201, 
+      6.001999855041504, 6.308000087738037, 6.583000183105469, 6.181000232696533, 6.324999809265137, 
+      6.006999969482422, 6.547999858856201, 6.385000228881836, 6.329999923706055, 5.965000152587891, 
+      6.230999946594238, 6.486999988555908, 6.433000087738037, 6.2729997634887695, 6.5920000076293945,
+      6.7870001792907715, 6.531000137329102, 6.553999900817871, 7.992000102996826, 8.246999740600586, 
+      7.921999931335449, 8.621999740600586, 8.793999671936035, 8.609999656677246)
+
+data <- list(N=length(Y),
+             doses = as.matrix(doses), 
+             y = as.matrix(Y))
 
 
-system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal-ncv",fit_type="mcmc",model_type = "exp-5")})
-system.time({b = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal-ncv",fit_type="laplace",model_type = "exp-5")})
-system.time({a = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="sd",BMR=1, distribution = "normal-ncv",fit_type="mle",model_type = "exp-5")})
+c = single_continuous_fit(data$doses,data$y,sstat=F,
+                          BMD_TYPE="sd",BMR=2, distribution = "normal",
+                          fit_type="laplace",model_type = "hill")
+library(ToxicR)
+c = single_continuous_fit(data$doses,data$y,sstat=F,
+                          BMD_TYPE="sd",BMR=3, distribution = "normal",
+                          fit_type="mcmc",model_type = "FUNL")
+B = ma_continuous_fit(data$doses,data$y,BMR=3,fit_type = "mcmc")
 
-system.time({c = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="rel",BMR=0.2, distribution = "normal-ncv",fit_type="mcmc",model_type = "exp-5")})
-system.time({b = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="rel",BMR=0.2, distribution = "normal-ncv",fit_type="laplace",model_type = "exp-5")})
-system.time({a = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],sstat=F,BMD_TYPE="rel",BMR=0.2, distribution = "normal-ncv",fit_type="mle",model_type = "exp-5")})
-
-
-system.time({c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, distribution = "lognormal",fit_type="laplace",model_type = "exp-5")})
-system.time({b = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, distribution = "lognormal",fit_type="mle",model_type = "exp-5")})
-system.time({a = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, distribution = "lognormal",fit_type="mcmc",model_type = "exp-5")})
-
-
-system.time({b = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="hybrid",BMR=0.1, distribution = "normal-ncv",fit_type="laplace",model_type = "hill")})
-system.time({a = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="hybrid",BMR=0.1, fit_type = "mcmc",  distribution = "normal-ncv",model_type = "hill")})
 
 
 
