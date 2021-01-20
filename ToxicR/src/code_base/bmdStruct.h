@@ -79,6 +79,19 @@ struct dichotomous_PGOF_result{
      double  df;  
 };
 
+struct dichotomous_aod{
+  double A1; 
+  int     N1;        // total number of observations obs/n 
+  double A2; 
+  int N2;   
+};
+
+struct continuous_expected_result{
+  int     n;        // total number of observations obs/n 
+  double *expected; // 
+  double *sd; 
+};
+
 //
 // dichotomous_model_result: 
 // Purpose: Data structure that is populated with all of the necessary

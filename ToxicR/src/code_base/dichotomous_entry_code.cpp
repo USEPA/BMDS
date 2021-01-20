@@ -25,6 +25,7 @@
 #include "DichQlinearBMD_NC.h"
 #include "DichLogisticBMD_NC.h"
 #include "DichProbitBMD_NC.h"
+#include "binomialTests.h"
 #include "IDPrior.h"
 
 #include "bmds_entry.h"
@@ -815,3 +816,50 @@ void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
    estimate_sm_laplace(DA, res, do_a_rescale);
 
 }
+
+
+void deviance_dichotomous(dichotomous_analysis *DA,
+                              dichotomous_aod *AOD)
+{
+  
+  ///////////////////////////////////
+  Eigen::MatrixXd Y(DA->n,2); 
+  Eigen::MatrixXd D(DA->n,1); 
+  for (int i = 0; i < DA->n; i++){
+    Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
+    D(i,0) = DA->doses[i]; 
+  }
+  
+  binomialLLTESTA1 like_A1(Y,D);
+  binomialLLTESTA2 like_A2(Y,D); 
+  Eigen::MatrixXd P1(like_A1.nParms(),5); 
+  for (int i = 0; i < P1.rows(); i++){
+    P1.row(i) << 0 , 0 , 1 , -30 , 30; 
+  }
+  Eigen::MatrixXd P2(like_A2.nParms(),5); 
+  for (int i = 0; i < P2.rows(); i++){
+    P2.row(i) << 0 , 0 , 1 , -30 , 30; 
+  }
+  std::vector<double> fix1(like_A1.nParms()); for (unsigned int i = 0; i < like_A1.nParms(); i++) { fix1[i] = 0.0; }
+  std::vector<bool> isfix1(like_A1.nParms()); for (unsigned int i = 0; i < like_A1.nParms(); i++) { isfix1[i] = false; }
+  
+  IDcontinuousPrior P1Init(P1);
+  statModel<binomialLLTESTA1, IDcontinuousPrior> a1Model(like_A1, P1Init,
+                                                          isfix1, fix1);
+  optimizationResult a1Result = findMAP<binomialLLTESTA1, IDcontinuousPrior> (&a1Model);
+  
+  AOD->A1 = a1Result.functionV;
+  AOD->N1 = a1Result.max_parms.rows();
+  
+  std::vector<double> fix2(like_A2.nParms()); for (unsigned int i = 0; i < like_A2.nParms(); i++) { fix1[i] = 0.0; }
+  std::vector<bool> isfix2(like_A2.nParms()); for (unsigned int i = 0; i < like_A2.nParms(); i++) { isfix1[i] = false; }
+  
+  IDcontinuousPrior P2Init(P2);
+  statModel<binomialLLTESTA2, IDcontinuousPrior> a2Model(like_A2, P2Init,
+                                                         isfix2, fix2);
+  optimizationResult a2Result = findMAP<binomialLLTESTA2, IDcontinuousPrior> (&a2Model);
+  
+  AOD->A2 = a2Result.functionV;
+  AOD->N2 = a2Result.max_parms.rows();
+  
+}  

@@ -337,6 +337,9 @@ void estimate_log_normal_aod(continuous_analysis *CA,
 void estimate_normal_aod(continuous_analysis *CA,
                              continuous_deviance *aod);
 
+void continuous_expectation( const continuous_analysis *CA, const continuous_model_result *MR,
+                             continuous_expected_result *expected); 
+
 #endif
 
 #ifdef __cplusplus

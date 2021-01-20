@@ -47,7 +47,7 @@ public:
 	}
 	
 	// BASIC MEAN FUNCTIONS
-    virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta); 					    	
+  virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta); 					    	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta, Eigen::MatrixXd d);  
 
 	//VARIANCE FUNCTIONS

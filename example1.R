@@ -27,12 +27,13 @@ library(dplyr)
 
 temp <- PFOA_Liver %>% filter(X1 == "ACAA2_7955")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="lognormal",fit_type = "laplace",sstat = F,)
 
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle",sstat = F,)
+
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
