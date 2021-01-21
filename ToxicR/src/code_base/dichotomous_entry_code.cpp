@@ -817,6 +817,66 @@ void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
 
 }
 
+Eigen::MatrixXd A1_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
+  
+
+  std::vector<double> vec(X.data(), X.data() + X.rows() * X.cols());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+  std::vector<double> udoses = vec; // this should be the unique dose group
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size());
+  
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+    for (int j = 0; j < udoses.size(); j++) {
+      meanX(i, j) = udoses[j] == X(i, 0) ? Y(i,1) : 0.0;
+    }
+  }
+  //cout << meanX << endl << ":" << endl;  
+  Eigen::MatrixXd temp = meanX.transpose()*meanX;
+  temp = temp.inverse()*meanX.transpose()*Y.col(0); 
+  //logit transform
+  temp = log(temp.array()/(1-temp.array()));
+  // check for P = 0 or P =1 i.e. Infinity
+  for (int i = 0; i < temp.rows(); i++){
+    if ( isinf(temp(i,0))){
+      if (temp(i,0) < 0){
+        temp(i,0) = -17; 
+      }else{
+        temp(i,0) = 17; 
+      }
+    }
+  }
+ 
+  return temp; 
+}
+
+Eigen::MatrixXd A2_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), 1).array();
+  
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+      meanX(i, 0) = Y(i,1) ;
+  }
+  Eigen::MatrixXd temp = meanX.transpose()*meanX;
+  temp = temp.inverse()*meanX.transpose()*Y.col(0); 
+  //logit transform
+  temp = log(temp.array()/(1-temp.array()));
+  // check for P = 0 or P =1 i.e. Infinity
+  for (int i = 0; i < temp.rows(); i++){
+    if ( isinf(temp(i,0))){
+      if (temp(i,0) < 0){
+        temp(i,0) = -17; 
+      }else{
+        temp(i,0) = 17; 
+      }
+    }
+  }
+  return temp; 
+}
+
 
 void deviance_dichotomous(dichotomous_analysis *DA,
                               dichotomous_aod *AOD)
@@ -846,7 +906,10 @@ void deviance_dichotomous(dichotomous_analysis *DA,
   IDcontinuousPrior P1Init(P1);
   statModel<binomialLLTESTA1, IDcontinuousPrior> a1Model(like_A1, P1Init,
                                                           isfix1, fix1);
-  optimizationResult a1Result = findMAP<binomialLLTESTA1, IDcontinuousPrior> (&a1Model);
+  A1_startingValues(D, Y); 
+  optimizationResult a1Result = findMAP<binomialLLTESTA1, IDcontinuousPrior> (&a1Model,
+                                                                              A1_startingValues(D, Y),
+                                                                              OPTIM_NO_FLAGS);
   
   AOD->A1 = a1Result.functionV;
   AOD->N1 = a1Result.max_parms.rows();
@@ -857,8 +920,9 @@ void deviance_dichotomous(dichotomous_analysis *DA,
   IDcontinuousPrior P2Init(P2);
   statModel<binomialLLTESTA2, IDcontinuousPrior> a2Model(like_A2, P2Init,
                                                          isfix2, fix2);
-  optimizationResult a2Result = findMAP<binomialLLTESTA2, IDcontinuousPrior> (&a2Model);
-  
+  optimizationResult a2Result = findMAP<binomialLLTESTA2, IDcontinuousPrior> (&a2Model,
+                                                                              A2_startingValues(D, Y),
+                                                                              OPTIM_NO_FLAGS);
   AOD->A2 = a2Result.functionV;
   AOD->N2 = a2Result.max_parms.rows();
   

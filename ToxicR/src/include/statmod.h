@@ -13,6 +13,13 @@
 
 #include <cmath>
 
+#define OPTIM_NO_FLAGS    0
+#define OPTIM_USE_GENETIC 1
+#define OPTIM_USE_SUBPLX  2
+#define OPTIM_USE_BIG_GENETIC 4
+#define OPTIM_ALL_FLAGS   7
+
+
 #ifdef R_COMPILATION
     //necessary things to run in R
     #include <RcppEigen.h>
@@ -352,14 +359,18 @@ template <class LL, class PR>
 std::vector<double> startValue_F(statModel<LL, PR>  *M,
                                 Eigen::MatrixXd startV,
 								                std::vector<double> lb,
-							                  std::vector<double> ub)
+							                  std::vector<double> ub,
+							                  bool isBig = true)
 {
 
 	std::vector<double> x(M->nParms());
 
-
-	int NI = 1000; // size of the initial population
-
+  int NI; 
+  if (isBig){
+	   NI = 1000; // size of the initial population
+  }else{
+     NI = 400; 
+  }
   std::vector<double> llist(NI); // List of the likelihood values; 
   for(int j=0; j< llist.size(); j++){
     llist[j] = std::numeric_limits<double>::infinity(); // initialize everything to infinity
@@ -445,9 +456,18 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   std::advance(it_pop,tmp);
   llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
   
-  int ngenerations = 600; 
-  int ntourny = 30; 
-  int tourny_size = 40; 
+  int ngenerations; ; 
+  int ntourny; 
+  int tourny_size; 
+  if (isBig){
+      ngenerations = 600; 
+      ntourny = 30; 
+      tourny_size = 40; 
+  }else{
+      ngenerations = 200; 
+      ntourny = 15; 
+      tourny_size = 20; 
+  }
   
   for ( int xx = 0; xx < ngenerations; xx++){
    
@@ -585,10 +605,11 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 //Find the maximum a posteriori estimate given a statistical
 //model
 //Input : statMod<LL,PR> *M - A given statistical model;
+// note by default all optimization flags are on. 
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M,
-                           Eigen::MatrixXd    startV) {
+                           Eigen::MatrixXd    startV, unsigned int flags = OPTIM_ALL_FLAGS) {
   optimizationResult oR;
 
   Eigen::MatrixXd temp_data = M->parmLB();
@@ -600,15 +621,22 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
-  
-  std::vector<double> x =  startValue_F(M, startV,
-                                        lb, ub);
+  std::vector<double> x(startV.rows());
+  if (OPTIM_USE_GENETIC & flags){
+     bool op_size = (OPTIM_USE_BIG_GENETIC & flags); 
+     x =  startValue_F(M, startV,
+                          lb, ub,op_size);
+  }else{
+    for (int i = 0; i < x.size(); i++){
+      x[i] = startV(i,0);
+    }
+  }
   int yy = x.size(); 
  
  
   for (int i = 0; i < M->nParms(); i++){
     if (!isnormal(x[i])){
- x[i] = 0;
+      x[i] = 0;
     }
   }
 
@@ -622,8 +650,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -632,7 +660,9 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   int opt_iter;
   // look at 5 optimization algorithms :-)
-  for (opt_iter = 0; opt_iter < 5; opt_iter++){
+  int start_iter = (OPTIM_USE_SUBPLX & flags)?0:1; 
+  for (opt_iter = start_iter; opt_iter < 5; opt_iter++){
+    
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
       double temp = x[i];
@@ -741,6 +771,12 @@ template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M) {
      
     return findMAP<LL,PR>(M,M->startValue());
+}
+
+template <class LL, class PR>
+optimizationResult findMAP(statModel<LL, PR>  *M,
+                           signed int flags) {
+  return findMAP<LL,PR>(M,M->startValue(),flags);
 }
 
 #endif

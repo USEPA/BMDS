@@ -81,8 +81,8 @@ public:
 	binomialLLTESTA2(Eigen::MatrixXd tY, Eigen::MatrixXd tX) : binomialLL(tY, tX) {
 	};
 	
-	int    nParms() { return 1; }; // the model is fully saturated
-								   // if it is a sufficient statistics model
+	int    nParms() { return 1; };
+								  
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return   mean(theta, X);
 	};
