@@ -55,6 +55,7 @@ A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_T
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDcontinous_MA(A)
 .plot.BMDcontinuous_MA(A)
-
+# Bit weird result FUNL- Almost 1 other cases is 0;
+.plot.density.BMDcontinous_MA_MCMC(A)
 
 
