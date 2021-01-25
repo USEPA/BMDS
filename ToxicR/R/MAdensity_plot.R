@@ -157,7 +157,7 @@ MAdensity_plot <- function (A, ...){
       values = c("#FF0000A0", "#A0A0A0A0", "#FF0000A0"),
       labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
     )+
-    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
+    labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
   
   p2<-p+
     stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
@@ -176,14 +176,13 @@ MAdensity_plot <- function (A, ...){
 }
 
 
-# Define another function for mle/laplace
-# This is option for mle or laplace
+# Laplace case- Is it even possible to do this? 
 
-.plot.density.BMDdichotomous_MA_maximized<-function(A,fit_type="laplace"){
+.plot.density.BMDdichotomous_MA_maximized<-function(A){
   
   class_list <- names(A)
   
-  if (fit_type=="laplace"){
+  if (class(A)[2]=="BMDdichotomous_MA_maximized"){
     fit_idx <- grep("Fitted_Model",class_list)
     qprob=0.05
     
@@ -191,9 +190,7 @@ MAdensity_plot <- function (A, ...){
     data<-A$Fitted_Model_1$data
     doses<-data[,1]
     
-  }
-  
-  else{
+  }else{
   fit_idx <- grep("Individual_Model",class_list)
   qprob=0.05
   
@@ -207,47 +204,30 @@ MAdensity_plot <- function (A, ...){
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
     if (fit$model=="hill"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
-      #fit$parameters[2] = .logit(fit$parameters[2])
       me <- .dich_hill_f(fit$parameters, d=test_doses)
-    }
-    if (fit$model=="gamma"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
+    }else if (fit$model=="gamma"){
       me <- .dich_gamma_f(fit$parameters, d=test_doses)
-    }
-    if (fit$model=="logistic"){
+    }else if (fit$model=="logistic"){
       me <- .dich_logist_f(fit$parameters, d=test_doses)
-    }
-    if (fit$model=="log-logistic"){
-      #fit$parameters[1] = logit(fit$parameters[1])
+    }else if (fit$model=="log-logistic"){
       me <- .dich_llogist_f(fit$parameters, d=test_doses)    
-    }
-    if (fit$model=="probit"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
-      print
+    }else if (fit$model=="probit"){
       me <- .dich_probit_f(fit$parameters, d=test_doses)    
-    }
-    if (fit$model=="log-probit"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
+    }else if (fit$model=="log-probit"){
       me <- .dich_lprobit_f(fit$parameters, d=test_doses)    
-    }
-    if (fit$model=="multistage"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
+    }else if (fit$model=="multistage"){
       me <- .dich_multistage_f(fit$parameters, d=test_doses)    
-    }
-    if (fit$model=="qlinear"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
+    }else if (fit$model=="qlinear"){
       me <- .dich_qlinear_f(fit$parameters, d=test_doses)    
-    }
-    if (fit$model=="weibull"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
+    }else if (fit$model=="weibull"){
       me <- .dich_weibull_f(fit$parameters, d=test_doses)    
     }
 
+    # Question- this is not created from sample dataset
+    # Is it even possible to create bmd density plot for each model?
+    
     temp <- fit$bmd_dist[,1]
     temp <- temp[!is.infinite(temp)]
-    
-    
     
     temp_density<-data.frame(matrix(0,length(temp),3))
     temp_density[,2]=fit$model
@@ -260,10 +240,7 @@ MAdensity_plot <- function (A, ...){
   
   t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
   
-  
 
-  # This part is needed to get MA density plots
-  # Model ~xxx..
   idx <- sample(1:9, nrow(t_1),replace=TRUE,prob=A$posterior_probs)
   
   c1<-t_1$X1
@@ -306,7 +283,7 @@ MAdensity_plot <- function (A, ...){
       values = c("#FF0000A0", "#A0A0A0A0", "#FF0000A0"),
       labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
     )+
-    labs(y="Model",x="Dose Level (Dotted Line : MA BMD)", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
+    labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
   
   p2<-p+
     stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
@@ -326,5 +303,154 @@ MAdensity_plot <- function (A, ...){
 }
 
 
+
+
+.plot.density.BMDcontinous_MA_MCMC<-function(A){
+  # Construct bmd sample plots for mcmc
+  class_list <- names(A)
+  fit_idx    <- grep("Individual_Model",class_list)
+  qprob=0.05
+  
+  #Dose levels
+  data<-A$Individual_Model_1$data
+  doses<-data[,1]
+  
+  
+  for (i in fit_idx){
+    # Loop for the model
+    fit<-A[[i]]
+    test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+    #probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
+    
+    
+    
+    if (fit$model=="hill"){
+      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses)
+      
+    }
+    if (fit$model=="exp-3"){
+      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses)
+      
+    }
+    if (fit$model=="exp-5"){
+      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
+      
+    }
+    if (fit$model=="power"){
+      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
+      
+    }
+    if (fit$model=="FUNL"){
+      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses)
+      
+    }
+
+    
+    temp <- fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
+    temp <- temp[!is.infinite(temp)]
+    
+    
+    
+    # Q <- t(Q)
+    # 
+    # me <- colMeans(Q)
+    # lq <- apply(Q,2,quantile, probs = qprob)
+    # uq <- apply(Q,2,quantile, probs = 1-qprob)
+    
+    Dens =  density(temp,cut=c(max(doses)))
+    # what is this 0.4 means? Scale?
+    
+    # normalize it?-- We don't need it actually here
+    # Dens$y = Dens$y/max(Dens$y) * max(probs)
+    # temp = which(Dens$x < max(doses))
+    # D1_y = Dens$y[temp]
+    # D1_x = Dens$x[temp]
+    
+    
+    
+    # Do I need to stack up the dataset?
+    
+    
+    temp_density<-data.frame(matrix(0,length(temp),3))
+    temp_density[,2]=fit$model
+    temp_density[,1]=temp
+    temp_density[,3]=A$posterior_probs[i]
+    
+    assign(paste("t",i,sep="_"),temp_density)
+    
+  }
+  
+  # So far add the 5 models 01/24/2021
+  t_combine<-rbind(t_1,t_2,t_3,t_4,t_5)
+  
+  
+  
+  # This part is needed to get MA density plots
+  # Model ~xxx..
+  idx <- sample(1:5, length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
+  
+  m1<-A$Individual_Model_1
+  c1<-m1$mcmc_result$BMD_samples
+  
+  
+  m2<-A$Individual_Model_2
+  c2<-m2$mcmc_result$BMD_samples
+  
+  m3<-A$Individual_Model_3
+  c3<-m3$mcmc_result$BMD_samples
+  
+  m4<-A$Individual_Model_4
+  c4<-m4$mcmc_result$BMD_samples
+  
+  m5<-A$Individual_Model_5
+  c5<-m5$mcmc_result$BMD_samples
+
+  # This part should be dynamically assigned... 
+  combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5))
+  
+  # Select MA values
+  BMD_MA<-matrix(NA,length(A$Individual_Model_1$mcmc_result$BMD_samples),1)
+  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
+    BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
+  }
+  
+  BMD_MA<-data.frame(BMD_MA)
+  
+  t_ma<-BMD_MA %>% mutate(X1=BMD_MA,X2="Model Average",X3=1)
+  #BMD_CDF should be shown here - it 
+  t_ma<-t_ma %>% select(X1,X2,X3)
+  
+  
+  
+  t_combine2<-rbind(t_combine,t_ma)
+  
+  # From samples 
+  p<-ggplot()+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
+                        calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,fill="blue")+
+    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    geom_vline(xintercept = A$bmd[1],linetype="longdash")+
+    scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "#A0A0A0A0", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+
+    labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
+  
+  p2<-p+
+    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
+                        geom = "density_ridges_gradient",
+                        calc_ecdf = TRUE, quantiles = c(0.025, 0.975)
+    )+ scale_fill_manual(
+      name = "Probability",
+      values = c("#FF0000A0", "NA", "#FF0000A0"),
+      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+    )+theme(legend.position="none")
+  
+  
+  return(p2) # Return output
+  
+  
+}
 
 
