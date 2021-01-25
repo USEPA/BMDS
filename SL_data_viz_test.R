@@ -31,8 +31,11 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
-# Test 2. Dichotomous MA Density Plot 
-#-- This part should be double checked. Laplace fitting is not consistent with other fitting model
+# Test 2. Dichotomous MA Density Plot
+
+
+
+#This part should be double checked. Laplace fitting is not consistent with other fitting model
 .plot.density.BMDdichotomous_MA_maximized(A)
 
 
@@ -54,8 +57,9 @@ A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_T
 
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDcontinous_MA(A)
-.plot.BMDcontinuous_MA(A)
 # Bit weird result FUNL- Almost 1 other cases is 0;
 .plot.density.BMDcontinous_MA_MCMC(A)
+# Base object should be updated by using Shiny App
+.plot.BMDcontinuous_MA(A)
 
 
