@@ -4,7 +4,7 @@ AM_CPPFLAGS= -I$(top_srcdir)/code_base -I$(top_srcdir)/include  -I$(EIGEN_INCLUD
 AM_CPPFLAGS+=  -O3 -funroll-loops -std=c++11
 AM_CPPFLAGS+= @OPENMP_CFLAGS@ -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
 
-libBMDS_la_SOURCES=  bmds_helper.cpp DichLogProbitBMD_NC.cpp lognormal_HILL_NC.cpp \
+libBMDS_la_SOURCES=  bmds_helper.cpp analysis_of_deviance.cpp DichLogProbitBMD_NC.cpp lognormal_HILL_NC.cpp \
 		        bmdStruct.cpp dichotomous_entry_code.cpp  lognormalModels.cpp \
 			DichProbitBMD_NC.cpp lognormal_POLYNOMIAL_NC.cpp \
 			DichQlinearBMD_NC.cpp  lognormal_POWER_NC.cpp \

@@ -3,6 +3,9 @@
 #endif
 //#include "bmdStruct.h"
 #include "dichotomous_entry_code.h"
+
+const double BMDS_EPS = 1.0e-6;
+
 // BMDS helper structures
 
 // BMD_results:
@@ -16,13 +19,34 @@ struct BMDS_results{
   bool *bounded;
 };
 
-const double BMDS_EPS = 1.0e-6;
+
+//enum TestOfInterest {A1 = 1, A2 = 2, A3 = 3, fitted = 4, R = 5};
+
+//
+struct testsOfInterest{
+  double *logLikeRatio;
+  double *DF;
+  double *pValue;
+};
+
+//
+struct continuous_AOD{
+  double *logLikelihood;
+  double *nparms;
+  double *AIC;
+  struct testsOfInterest *TOI;
+};
 
 
 //c entry
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void determineAdvDir(double *doses, double *n_group, double *Yin, bool isIncreasing);
+
+void calc_AOD(struct continuous_analysis *anal, struct continuous_AOD *aod);
+
 //void collect_dicho_bmd_values(double *bmd_dist, struct BMD_results *BMDres);
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres);
 
@@ -32,7 +56,7 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes);
 
 
-void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes);
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, bool detectAdvDir);
 #ifdef __cplusplus
 }
 #endif
