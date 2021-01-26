@@ -27,12 +27,13 @@ library(dplyr)
 
 temp <- PFOA_Liver %>% filter(X1 == "ACAA2_7955")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="lognormal",fit_type = "laplace",sstat = F,)
 
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle",sstat = F,)
+
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
@@ -86,7 +87,7 @@ mData <- matrix(c(0, 1,10,
                   1, 4,10,
                   4, 7,10),nrow=4,ncol=3,byrow=T)
 
-
+library(ToxicR)
 mData <- matrix(c(0, 2,50,
                   1, 2,50,
                   3, 10, 50,
@@ -97,12 +98,16 @@ mData <- matrix(c(0, 2,50,
 prior <- create_prior_list(normprior(	0,	10,	-18,	18),
                            lnormprior(	0.693147180559945,	0.01,	0.2,	20),
                            lnormprior(	0,	2,	0,	1e4))
-system.time({A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")})
+#system.time({A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")})
 
 
 
-G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
-C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
+#G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
+system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")})
+system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit", fit_type = "laplace")})
+system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit", fit_type = "laplace")})
+system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "laplace")})
+
 system.time({B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")})
 
 

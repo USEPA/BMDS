@@ -193,6 +193,9 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
                       bmd_analysis_MCMC *mcmc,
                       bool do_a_rescale = true);
 
+void deviance_dichotomous(dichotomous_analysis *DA,
+                              dichotomous_aod *AOD); 
+
 #endif
 
 //c entry

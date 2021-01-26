@@ -134,19 +134,10 @@ List run_single_dichotomous(NumericVector model,
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);
   
-  for (int i = 0; i < Anal.n; i++){
-    resid[i] = GOFres.residual[i]; 
-    expec[i] = GOFres.expected[i]; 
-  }
+  dichotomous_aod AOD;
   
-  Eigen::MatrixXd results(Anal.n,4); 
-  results << data.col(1) , data.col(2) , expec , resid; 
-  cout << results << endl; 
-  
-  cout << "X^2 Test stat:" << GOFres.test_statistic << endl 
-       <<  "Degrees of Freedom: "<< GOFres.df << endl 
-       <<  "P-value: " << GOFres.p_value << endl;  
- 
+  //deviance_dichotomous(&Anal,&AOD);
+ // cout << AOD.A1 << " : " << AOD.A2 << endl; 
   
   delete (GOFres.expected);
   delete (GOFres.residual); 
@@ -240,14 +231,20 @@ List run_continuous_single(IntegerVector model,
     estimate_sm_laplace(&anal,result);
     continuous_deviance aod1, aod2; 
     
-     estimate_log_normal_aod(&anal,
-                            &aod1);
+    // estimate_log_normal_aod(&anal,
+    //                         &aod1);
     
-     estimate_normal_aod(&anal,
-                        &aod2);
-     
-    
-     List rV = convert_continuous_fit_to_list(result); 	
+    // estimate_normal_aod(&anal,
+    //                     &aod2);
+    continuous_expected_result expected;
+    expected.n = anal.n; 
+    expected.expected = new double[anal.n]; 
+    expected.sd = new double[anal.n]; 
+    continuous_expectation( &anal, result, 
+                                 &expected); 
+    delete expected.sd; 
+    delete expected.expected; 
+    List rV = convert_continuous_fit_to_list(result); 	
     
     ////////////////////////////////////
     

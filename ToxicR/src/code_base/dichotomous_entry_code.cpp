@@ -25,6 +25,7 @@
 #include "DichQlinearBMD_NC.h"
 #include "DichLogisticBMD_NC.h"
 #include "DichProbitBMD_NC.h"
+#include "binomialTests.h"
 #include "IDPrior.h"
 
 #include "bmds_entry.h"
@@ -816,8 +817,121 @@ void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
 
 }
 
+
 void estimate_ma_laplace_dicho(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
    estimate_ma_laplace(MA, DA, res);
 }
+
+
+Eigen::MatrixXd A1_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
+  
+
+  std::vector<double> vec(X.data(), X.data() + X.rows() * X.cols());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+  std::vector<double> udoses = vec; // this should be the unique dose group
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size());
+  
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+    for (int j = 0; j < udoses.size(); j++) {
+      meanX(i, j) = udoses[j] == X(i, 0) ? Y(i,1) : 0.0;
+    }
+  }
+  //cout << meanX << endl << ":" << endl;  
+  Eigen::MatrixXd temp = meanX.transpose()*meanX;
+  temp = temp.inverse()*meanX.transpose()*Y.col(0); 
+  //logit transform
+  temp = log(temp.array()/(1-temp.array()));
+  // check for P = 0 or P =1 i.e. Infinity
+  for (int i = 0; i < temp.rows(); i++){
+    if ( isinf(temp(i,0))){
+      if (temp(i,0) < 0){
+        temp(i,0) = -17; 
+      }else{
+        temp(i,0) = 17; 
+      }
+    }
+  }
+ 
+  return temp; 
+}
+
+Eigen::MatrixXd A2_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), 1).array();
+  
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+      meanX(i, 0) = Y(i,1) ;
+  }
+  Eigen::MatrixXd temp = meanX.transpose()*meanX;
+  temp = temp.inverse()*meanX.transpose()*Y.col(0); 
+  //logit transform
+  temp = log(temp.array()/(1-temp.array()));
+  // check for P = 0 or P =1 i.e. Infinity
+  for (int i = 0; i < temp.rows(); i++){
+    if ( isinf(temp(i,0))){
+      if (temp(i,0) < 0){
+        temp(i,0) = -17; 
+      }else{
+        temp(i,0) = 17; 
+      }
+    }
+  }
+  return temp; 
+}
+
+
+void deviance_dichotomous(dichotomous_analysis *DA,
+                              dichotomous_aod *AOD)
+{
+  
+  ///////////////////////////////////
+  Eigen::MatrixXd Y(DA->n,2); 
+  Eigen::MatrixXd D(DA->n,1); 
+  for (int i = 0; i < DA->n; i++){
+    Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
+    D(i,0) = DA->doses[i]; 
+  }
+  
+  binomialLLTESTA1 like_A1(Y,D);
+  binomialLLTESTA2 like_A2(Y,D); 
+  Eigen::MatrixXd P1(like_A1.nParms(),5); 
+  for (int i = 0; i < P1.rows(); i++){
+    P1.row(i) << 0 , 0 , 1 , -30 , 30; 
+  }
+  Eigen::MatrixXd P2(like_A2.nParms(),5); 
+  for (int i = 0; i < P2.rows(); i++){
+    P2.row(i) << 0 , 0 , 1 , -30 , 30; 
+  }
+  std::vector<double> fix1(like_A1.nParms()); for (unsigned int i = 0; i < like_A1.nParms(); i++) { fix1[i] = 0.0; }
+  std::vector<bool> isfix1(like_A1.nParms()); for (unsigned int i = 0; i < like_A1.nParms(); i++) { isfix1[i] = false; }
+  
+  IDcontinuousPrior P1Init(P1);
+  statModel<binomialLLTESTA1, IDcontinuousPrior> a1Model(like_A1, P1Init,
+                                                          isfix1, fix1);
+  A1_startingValues(D, Y); 
+  optimizationResult a1Result = findMAP<binomialLLTESTA1, IDcontinuousPrior> (&a1Model,
+                                                                              A1_startingValues(D, Y),
+                                                                              OPTIM_NO_FLAGS);
+  
+  AOD->A1 = a1Result.functionV;
+  AOD->N1 = a1Result.max_parms.rows();
+  
+  std::vector<double> fix2(like_A2.nParms()); for (unsigned int i = 0; i < like_A2.nParms(); i++) { fix1[i] = 0.0; }
+  std::vector<bool> isfix2(like_A2.nParms()); for (unsigned int i = 0; i < like_A2.nParms(); i++) { isfix1[i] = false; }
+  
+  IDcontinuousPrior P2Init(P2);
+  statModel<binomialLLTESTA2, IDcontinuousPrior> a2Model(like_A2, P2Init,
+                                                         isfix2, fix2);
+  optimizationResult a2Result = findMAP<binomialLLTESTA2, IDcontinuousPrior> (&a2Model,
+                                                                              A2_startingValues(D, Y),
+                                                                              OPTIM_NO_FLAGS);
+  AOD->A2 = a2Result.functionV;
+  AOD->N2 = a2Result.max_parms.rows();
+  
+}  

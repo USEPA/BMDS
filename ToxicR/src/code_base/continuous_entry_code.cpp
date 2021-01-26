@@ -1812,3 +1812,125 @@ void estimate_normal_aod(continuous_analysis *CA,
     return; 
   }
 }
+
+/*
+ * 
+ * 
+ */
+void continuous_expectation( const continuous_analysis *CA, const continuous_model_result *MR,
+                             continuous_expected_result *expected){
+  // standardize the data
+  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  Eigen::MatrixXd Y(n_rows,n_cols); 
+  Eigen::MatrixXd X(n_rows,1); 
+  // copy the origional data
+  
+  for (int i = 0; i < n_rows; i++){
+    Y(i,0) = CA->Y[i]; 
+    X(i,0) = CA->doses[i]; 
+    if(CA->suff_stat){
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
+    }
+  }
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  bool suff_stat = CA->suff_stat;
+  bool bConstVar = (CA->disttype == distribution::normal);
+  int  degree    = CA->parms - 2 - (CA->disttype == distribution::normal_ncv );
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(Y, X, suff_stat, bConstVar, degree);
+  normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
+  normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
+  normalFUNL_BMD_NC  likelihood_funl(Y, X, suff_stat, bConstVar, 0);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
+  
+  lognormalHILL_BMD_NC  likelihood_lnhill(Y, X, suff_stat, 0);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y, X, suff_stat, NORMAL_EXP5_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y, X, suff_stat, NORMAL_EXP3_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y, X, suff_stat, NORMAL_EXP5_DOWN);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat, NORMAL_EXP3_DOWN);
+  
+  Eigen::MatrixXd mean; 
+  Eigen::MatrixXd var; 
+  Eigen::MatrixXd theta(MR->nparms,1); 
+  for (int i=0; i < MR->nparms; i++){
+    theta(i,0) = MR->parms[i];  
+  }
+  
+  if (CA->disttype == distribution::log_normal){
+    switch (CA->model){
+      case cont_model::hill:
+          mean = likelihood_lnhill.mean(theta); 
+          var  = likelihood_lnhill.variance(theta); 
+          break; 
+      case cont_model::exp_3:
+        if (CA->isIncreasing){
+          mean = likelihood_lnexp3U.mean(theta); 
+          var  = likelihood_lnexp3U.variance(theta);
+        }else{
+          mean = likelihood_lnexp3D.mean(theta); 
+          var  = likelihood_lnexp3D.variance(theta);
+        }
+        break; 
+      case cont_model::exp_5:
+        if (CA->isIncreasing){
+          mean = likelihood_lnexp5U.mean(theta); 
+          var  = likelihood_lnexp5U.variance(theta);
+        }else{
+          mean = likelihood_lnexp5D.mean(theta); 
+          var  = likelihood_lnexp5D.variance(theta);
+        }
+        break; 
+      break; 
+    }
+  }else{
+    switch (CA->model){
+      case cont_model::funl:
+          mean = likelihood_funl.mean(theta); 
+          var  = likelihood_funl.variance(theta);
+          break; 
+      case cont_model::power:
+          mean = likelihood_power.mean(theta); 
+          var  = likelihood_power.variance(theta); 
+          break; 
+      case cont_model::polynomial:
+          mean = likelihood_npoly.mean(theta); 
+          var  = likelihood_npoly.variance(theta); 
+          break; 
+      case cont_model::hill:
+          mean = likelihood_nhill.mean(theta); 
+          var  = likelihood_nhill.variance(theta); 
+          break; 
+      case cont_model::exp_3:
+        if (CA->isIncreasing){
+          mean = likelihood_nexp3U.mean(theta); 
+          var  = likelihood_nexp3U.variance(theta);
+        }else{
+          mean = likelihood_nexp3D.mean(theta); 
+          var  = likelihood_nexp3D.variance(theta);
+        }
+        break; 
+      case cont_model::exp_5:
+        if (CA->isIncreasing){
+          mean = likelihood_nexp5U.mean(theta); 
+          var  = likelihood_nexp5U.variance(theta);
+        }else{
+          mean = likelihood_nexp5D.mean(theta); 
+          var  = likelihood_nexp5D.variance(theta);
+        }
+        break; 
+      break; 
+    
+    }
+    
+  }
+  for (int i = 0; i < expected->n ; i++){
+    expected->expected[i] = mean(i,0);
+    expected->expected[i] = pow((i,0),0.5);
+  }
+ 
+  
+}
