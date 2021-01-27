@@ -151,7 +151,7 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, bool detectAdvDir){
 
   if (detectAdvDir){
-    determineAdvDir(anal->doses, anal->n_group, anal->Y, anal->isIncreasing);
+    determineAdvDir(anal);
   }
 
   estimate_sm_laplace_cont(anal, res);
@@ -185,34 +185,78 @@ void calc_AOD(struct continuous_analysis *CA, struct continuous_AOD *aod){
 }
 
 
-void determineAdvDir(double *doses, double *n_group, double *Yin, bool isIncreasing){
-  std::cout << "inside determineAdvDir" << std::endl; 
-  int numDataRows = sizeof(doses)/sizeof(doses[0]);
 
-  Eigen::MatrixXd X(numDataRows,2);
-  Eigen::MatrixXd W(numDataRows,numDataRows);
-  Eigen::VectorXd Y(numDataRows);
+void determineAdvDir(struct continuous_analysis *CA){
+
+  //standardize the data
+  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  
+  Eigen::MatrixXd Yin(n_rows,n_cols); 
+  Eigen::MatrixXd Xin(n_rows,1); 
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX;
+  Eigen::MatrixXd Y_LN, Y_N;
+
+  if(!CA->suff_stat){
+  // copy the original data
+    for (int i = 0; i < n_rows; i++){
+      Yin(i,0) = CA->Y[i]; 
+      Xin(i,0) = CA->doses[i]; 
+      if(CA->suff_stat){
+        
+        Yin(i,2) = CA->sd[i]; 
+        Yin(i,1) = CA->n_group[i]; 
+      }
+    }
+
+    bool canConvert = convertSStat(Yin, Xin, &SSTAT, &SSTAT_LN, &UX);
+    if (canConvert){
+      Y_N = cleanSuffStat(SSTAT,UX,false);  
+      Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+      n_rows = UX.rows();
+
+    } else {
+      std::cout<<"Error in determineAdvDir"<<std::endl;
+      return;
+    }
+  }
+
+
+
+  Eigen::MatrixXd X(n_rows,2);
+  Eigen::MatrixXd W(n_rows,n_rows);
+  Eigen::VectorXd Y(n_rows);
   Eigen::VectorXd beta(2);
 
-  for (int i=0; i< numDataRows; i++){
-    X(i,0) = 1;
-    X(i,1) = doses[i];
 
-    W(i,i) =  n_group[i];
-
-    Y(i) = Yin[i];
-  }
+  if(!CA->suff_stat){
+   
+      for (int i=0; i< n_rows; i++){
+        X(i,0) = 1;
+        X(i,1) = UX(i);
   
+        W(i,i) =  Y_N(i,1);
+        Y(i) = Y_N(i,0);
+    }  
+
+
+  } else {
+    for (int i=0; i< n_rows; i++){
+      X(i,0) = 1;
+      X(i,1) = CA->doses[i];
+
+      W(i,i) =  CA->n_group[i];
+      Y(i) = CA->Y[i];
+    }
+ 
+  }
+
   beta = (X.transpose() * W * X).colPivHouseholderQr().solve(X.transpose()*W*Y);
 
   if (beta(1) > 0 ) {
-    isIncreasing = true;
+    CA->isIncreasing = true;
   } else {
-    isIncreasing = false;
+    CA->isIncreasing = false;
   }
- 
 
 }
-
-
 

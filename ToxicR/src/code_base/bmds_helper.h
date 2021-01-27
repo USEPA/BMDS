@@ -43,7 +43,7 @@ struct continuous_AOD{
 extern "C" {
 #endif
 
-void determineAdvDir(double *doses, double *n_group, double *Yin, bool isIncreasing);
+void determineAdvDir(struct continuous_analysis *anal);
 
 void calc_AOD(struct continuous_analysis *anal, struct continuous_AOD *aod);
 
