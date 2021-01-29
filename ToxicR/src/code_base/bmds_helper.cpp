@@ -110,12 +110,12 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
-  printf("dist:\n");
-  for (int i = 0; i < distSize/2; i++)
-  {
-     printf("quant:%f, val:%f\n",dist[i][0],dist[i][1]);
-     printf("quant:%f, val:%f\n",quant[i],val[i]);
-  }
+//  printf("dist:\n");
+//  for (int i = 0; i < distSize/2; i++)
+//  {
+//     printf("quant:%f, val:%f\n",dist[i][0],dist[i][1]);
+//     printf("quant:%f, val:%f\n",quant[i],val[i]);
+//  }
 
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
@@ -158,12 +158,26 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
 
   collect_cont_bmd_values(anal, res, bmdsRes);
 
-  std::cout<<"calling calc_AOD"<<std::endl;
-  calc_AOD(anal, aod);
+
+
+  //std::cout<<"calling calc_AOD"<<std::endl;
+  calc_AOD(anal, res, bmdsRes, aod);
+  
+
+ // std::cout<<"AOD vals:"<<std::endl;
+ // for (int i=0; i<5; i++){
+ //   std::cout<<"i:"<<i<<", LL:"<<aod->LL[i]<<", nParms:"<<aod->nParms[i]<<", AIC:"<<aod->AIC[i]<<std::endl;
+ // }
+ // std::cout<<"additive constant:"<<aod->addConst<<std::endl;
+ // std::cout<<"TOI vals:"<<std::endl;
+ // for (int i=0; i<4; i++){
+ //   std::cout<<"i:"<<i<<", llRatio:"<<aod->TOI->llRatio[i]<<", DF:"<<aod->TOI->DF[i]<<", pVal:"<<aod->TOI->pVal[i]<<std::endl;
+ // }
+  
 
 }
 
-void calc_AOD(struct continuous_analysis *CA, struct continuous_AOD *aod){
+void calc_AOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
 
   continuous_deviance CD;  
 
@@ -182,9 +196,76 @@ void calc_AOD(struct continuous_analysis *CA, struct continuous_AOD *aod){
   std::cout << "A2:" << CD.A2 << std::endl; 
   std::cout << "A3:" << CD.A3 << std::endl; 
  
+  aod->LL[0] = -1*CD.A1;
+  aod->nParms[0] = CD.N1;
+  aod->LL[1] = -1*CD.A2;
+  aod->nParms[1] = CD.N2;
+  aod->LL[2] = -1*CD.A3;
+  aod->nParms[2] = CD.N3;
+  aod->LL[3] = -1*res->max;
+  int bounded = 0;
+  for(int i=0; i<CA->parms;i++){
+    if(bmdsRes->bounded[i]){
+      bounded++;
+    }
+  }
+  std::cout<<"CA->parms="<<CA->parms<<std::endl;
+  aod->nParms[3] = CA->parms - bounded;
+  //TEMP DEBUG values
+  aod->LL[4] = -88.71521848;  //CD.R
+  aod->nParms[4] = 2;  //CD.NR
+
+
+  //add tests of interest
+  //TODO:  need to check for bounded parms in A1,A2,A3,R
+  for (int i=0; i<5; i++){
+    aod->AIC[i] = 2*(aod->LL[i] + aod->nParms[i]);
+  }  
+
+  if (CA->suff_stat) {
+    double sumN = 0;
+    for(int i=0; i<CA->n; i++){
+      sumN+=CA->n_group[i];
+    }
+    aod->addConst = -1*sumN*log(2*M_PI)/2;
+  } else {
+    aod->addConst = -1*CA->n*log(2*M_PI)/2;
+  }
+
+  
+  
+  calcTestsOfInterest(aod);
 }
 
 
+
+void calcTestsOfInterest(struct continuous_AOD *aod){
+
+  struct testsOfInterest *TOI = aod->TOI;
+  double dev;
+  int df;
+
+  //Test #1 - A2 vs Reduced - does mean and/or variance differ across dose groups
+  TOI->llRatio[0] = dev = 2 * (aod->LL[1] - aod->LL[4]);
+  TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
+  TOI->pVal[0] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+
+  //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
+  TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
+  TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
+  TOI->pVal[1] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+
+  //Test #3 - A2 vs A3 - Does the model describe variances adequately
+  TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
+  TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
+  TOI->pVal[2] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+
+  //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
+  TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
+  TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
+  TOI->pVal[3] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+ 
+}
 
 void determineAdvDir(struct continuous_analysis *CA){
 
