@@ -46,6 +46,8 @@ S3method(cleveland_plot, BMDcontinuous_MA, .cleveland_plot.BMDcontinous_MA)
 S3method(MAdensity_plot, BMDdichotomous_MA_mcmc, .plot.density.BMDdichotomous_MA_MCMC)
 S3method(MAdensity_plot, BMDdichotomous_MA_maximized, .plot.density.BMDdichotomous_MA_maximized)
 
+S3method(MAdensity_plot, BMDcontinuous_MA_mcmc, .plot.density.BMDcontinous_MA_MCMC)
+#S3method(MAdensity_plot, BMDcontinuous_MA_maximized, .plot.density.BMDcontinuous_MA_maximized)
 
 
 # Add clevland plot BMDcontinous_MA case

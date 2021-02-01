@@ -2,7 +2,13 @@ model_list = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",
                         distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
                                                "normal-ncv"))
 
-
+# Toxicol Pathol. 2013 Mar; 26(1): 29–34.
+#Published online 2013 Apr 22. doi: 10.1293/tox.26.29
+#PMCID: PMC3620211
+#PMID: 23723565
+#Change Trends of Organ Weight Background Data in Sprague Dawley Rats at Different Ages
+#
+#
 library(ToxicR)
 
 v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,

@@ -1,0 +1,77 @@
+---
+title: "Simulation Conditions for CMA"
+author: "Matt Wheeler"
+date: "1/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Study design drawn from 
+# https://www.fda.gov/regulatory-information/search-fda-guidance-documents/redbook-2000-ivc3a-short-term-toxicity-studies-rodents#exp
+# Means and variances drawn from 
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3620211/
+
+library(knitr)
+library(ToxicR)
+library(actuar)
+knitr::opts_chunk$set(echo = TRUE)
+Hill.p <- rbind(c(4,5.02,70,3.3),
+                c(4,5.02,40,1.3),
+                c(4,5.02,15,1.1),
+                c(4,10.02,50,4) ,
+                c(10.88,-3.02,50,1),
+                c(10.88,-3.02,25,3),
+                c(10.88,-3.02,25,2))
+hill <- data.frame(a=Hill.p[,1],b=Hill.p[,2],
+                   c=Hill.p[,3],d=Hill.p[,4])
+row.names(hill) <- c("Hill Simulation 1","Hill Simulation 2",
+                     "Hill Simulation 3","Hill Simulation 4",
+                     "Hill Simulation 5","Hill Simulation 6",
+                     "hill Simulation 7")
+```
+# Basic simulation conditions
+We are interested in 
+# Continuous Model Averaging Hill Conditions
+For the simulation, three different distributions were concidered, the normal,log-normal and 
+inverse-Gaussian distributions. 
+\begin{align}
+g(y) &= \frac{1}{sqrt{2\pi\sigma}}
+\end{align}
+
+## Inverse-Gaussian Distribution 
+The Hill mean models were used for the simulation: 
+\begin{align}
+f(dose) = a + \frac{b\times dose^d}{c^d + dose^d}
+\end{align}
+```{r cars, echo=FALSE}
+kable(hill)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+set.seed(2020)
+model_list = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                        distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
+                                               "normal-ncv"))
+doses <- rep(c(0,25,50,75,100),each=20)
+
+mean <- cont_hill_f(as.numeric(hill[4,]),doses)
+y <- rinvgauss(length(mean),mean,400)
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+
+mean <- cont_hill_f(as.numeric(hill[6,]),doses)
+y <- rinvgauss(length(mean),mean,2000)
+
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+```
+
+
