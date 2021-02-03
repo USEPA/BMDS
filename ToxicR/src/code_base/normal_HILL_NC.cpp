@@ -695,8 +695,8 @@ double normalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
 	
 	double NOT_ADVERSE_P = 1.0 - TAIL_PROB;
     
-    ////////////////////////////////////////////////////////////////////
-    //Get the mean and variance at dose zero as well as a very high dose
+  ////////////////////////////////////////////////////////////////////
+  //Get the mean and variance at dose zero as well as a very high dose
 	double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d+max_d); 
 	Eigen::MatrixXd d(3,1); d << min_d, mid, max_d; 	
 	Eigen::MatrixXd temp_mean =     mean(theta,d); 

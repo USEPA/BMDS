@@ -351,7 +351,8 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             Eigen::MatrixXd prior, 
                                             std::vector<bool> fixedB,std::vector<double> fixedV,
                                             bool is_const_var,
-                                            bool is_increasing) {
+                                            bool is_increasing,
+                                            Eigen::MatrixXd init = Eigen::MatrixXd::Zero(10, 10)) {
 
   // value to return
  
@@ -361,10 +362,15 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   Eigen::MatrixXd rVal;
   // create the Continuous BMD model
 
-  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
+  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);		
+  optimizationResult OptRes;
   // Find the maximum a-posteriori and compute the BMD
-  optimizationResult OptRes = findMAP<LL, PR>(&model);
-  
+  if ( init.cols() == 10 && init.rows() ==10){
+    OptRes = findMAP<LL, PR>(&model);
+  }else{
+   
+    OptRes = findMAP<LL, PR>(&model,init);
+  }
   rVal = OptRes.max_parms;
   return rVal; 
   

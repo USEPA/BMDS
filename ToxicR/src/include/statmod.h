@@ -571,7 +571,6 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
    }
 
-  
    test = population[0]; // the fittest is our starting value
    double t1 = M->negPenLike(test); 
    double t2 = M->negPenLike(startV); 
@@ -609,24 +608,26 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M,
-                           Eigen::MatrixXd    startV, unsigned int flags = OPTIM_ALL_FLAGS) {
+                           Eigen::MatrixXd    startV,
+                           unsigned int flags =  OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX) {
   optimizationResult oR;
 
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
   temp_data = M->parmUB();
-  //cout << temp_data << endl;
+
   std::vector<double> ub(M->nParms());
-  
   
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
   std::vector<double> x(startV.rows());
   if (OPTIM_USE_GENETIC & flags){
      bool op_size = (OPTIM_USE_BIG_GENETIC & flags); 
+ 
      x =  startValue_F(M, startV,
                           lb, ub,op_size);
   }else{
+    cout << "You're killing me smalls" << endl; 
     for (int i = 0; i < x.size(); i++){
       x[i] = startV(i,0);
     }
@@ -635,9 +636,11 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
  
  
   for (int i = 0; i < M->nParms(); i++){
+    
     if (!isnormal(x[i])){
       x[i] = 0;
     }
+  
   }
 
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 

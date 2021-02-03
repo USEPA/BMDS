@@ -1,6 +1,6 @@
 #Set the default clevland_plot method generic for all of the classes. 
 MAdensity_plot <- function (A, ...){
-  source("dicho_functions.R")
+  #source("dicho_functions.R")
   UseMethod("MAdensity_plot")
 }
 
@@ -301,7 +301,6 @@ MAdensity_plot <- function (A, ...){
 
   
 }
-
 
 
 
