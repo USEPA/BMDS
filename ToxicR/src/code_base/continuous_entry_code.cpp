@@ -1748,11 +1748,25 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-  Y_LN = SSTAT_LN; 
-  Eigen::MatrixXd temp = Y_LN.col(2);
-  Y_LN.col(2) = Y_LN.col(1);
-  Y_LN.col(1) = temp; 
+  bool can_be_suff;
+  if (!CA->suff_stat){
+    can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+    Y_LN = SSTAT_LN; 
+    Eigen::MatrixXd temp = Y_LN.col(2);
+    Y_LN.col(2) = Y_LN.col(1);
+    Y_LN.col(1) = temp; 
+  } else {
+    UX.resize(CA->n,1);
+    Y_LN.resize(CA->n,3);
+    for(int i=0; i<CA->n; i++){
+      UX(i) = CA->doses[i];
+      Y_LN.col(0)[i] = CA->Y[i];
+      Y_LN.col(2)[i] = CA->n_group[i];
+      Y_LN.col(1)[i] = CA->sd[i];
+    }
+    can_be_suff = true;
+  }
+
   if(!can_be_suff){
      aod->A1 =  std::numeric_limits<double>::infinity();
      aod->A2 =  std::numeric_limits<double>::infinity();
@@ -1795,12 +1809,25 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-  Y_N = SSTAT; 
-  Eigen::MatrixXd temp = Y_N.col(2);
-  Y_N.col(2) = Y_N.col(1);
-  Y_N.col(1) = temp; 
-  
+  bool can_be_suff;
+  if (!CA->suff_stat){
+    can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX);
+    Y_N = SSTAT; 
+    Eigen::MatrixXd temp = Y_N.col(2);
+    Y_N.col(2) = Y_N.col(1);
+    Y_N.col(1) = temp; 
+  } else {
+    UX.resize(CA->n,1);
+    Y_N.resize(CA->n,3);
+    for(int i=0; i<CA->n; i++){
+      UX(i) = CA->doses[i];
+      Y_N.col(0)[i] = CA->Y[i];
+      Y_N.col(2)[i] = CA->n_group[i];
+      Y_N.col(1)[i] = CA->sd[i];
+    }
+    can_be_suff = true;
+  }
+
   if(!can_be_suff){
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();
@@ -1852,7 +1879,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
   lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y, X, suff_stat, NORMAL_EXP3_UP);
   lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y, X, suff_stat, NORMAL_EXP5_DOWN);
   lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat, NORMAL_EXP3_DOWN);
-  
+
   Eigen::MatrixXd mean; 
   Eigen::MatrixXd var; 
   Eigen::MatrixXd theta(MR->nparms,1); 
@@ -1929,7 +1956,8 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
   }
   for (int i = 0; i < expected->n ; i++){
     expected->expected[i] = mean(i,0);
-    expected->expected[i] = pow((i,0),0.5);
+//    expected->expected[i] = pow((i,0),0.5);
+    expected->sd[i] = pow(var(i,0),0.5);
   }
  
   
