@@ -157,45 +157,74 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   estimate_sm_laplace_cont(anal, res);
 
   collect_cont_bmd_values(anal, res, bmdsRes);
+  
+  //if not suff_stat, then convert
+  struct continuous_analysis GOFanal;
+  //arrays are needed for conversion to suff_stat
+  double doses[anal->n];
+  double means[anal->n];
+  double n_group[anal->n];
+  double sd[anal->n];
+  bool isIncreasing;
+  double BMR;
+  double tail_prob;
+  int disttype;
+  double alpha;
+  int samples;
+  int degree;
+  int burnin;
+  int parms;
+  int prior_cols;
 
+  if (anal->suff_stat){
+    GOFanal = *anal;
+  } else {
+    //copy analysis and convert to suff_stat
+    GOFanal.doses = doses;
+    GOFanal.Y = means;
+    GOFanal.n_group = n_group;
+    GOFanal.sd = sd;
+    GOFanal.isIncreasing = isIncreasing;
+    GOFanal.BMR = BMR;
+    GOFanal.tail_prob = tail_prob;
+    GOFanal.disttype = disttype;
+    GOFanal.alpha = alpha;
+    GOFanal.samples = samples;
+    GOFanal.degree = degree;
+    GOFanal.burnin = burnin;
+    GOFanal.parms = parms;
+    GOFanal.prior_cols = prior_cols;
+    bmdsConvertSStat(anal, &GOFanal);    
+  }
 
+  continuous_expected_result GOFres;
+  GOFres.n = GOFanal.n;
+  GOFres.expected = new double[GOFanal.n];
+  GOFres.sd = new double[GOFanal.n];
+  continuous_expectation(&GOFanal, res, &GOFres);
 
-  //std::cout<<"calling calc_AOD"<<std::endl;
   calc_AOD(anal, res, bmdsRes, aod);
   
 
- // std::cout<<"AOD vals:"<<std::endl;
- // for (int i=0; i<5; i++){
- //   std::cout<<"i:"<<i<<", LL:"<<aod->LL[i]<<", nParms:"<<aod->nParms[i]<<", AIC:"<<aod->AIC[i]<<std::endl;
- // }
- // std::cout<<"additive constant:"<<aod->addConst<<std::endl;
- // std::cout<<"TOI vals:"<<std::endl;
- // for (int i=0; i<4; i++){
- //   std::cout<<"i:"<<i<<", llRatio:"<<aod->TOI->llRatio[i]<<", DF:"<<aod->TOI->DF[i]<<", pVal:"<<aod->TOI->pVal[i]<<std::endl;
- // }
   
 
 }
+
+//void calc_GOF(){
+//}
 
 void calc_AOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
 
   continuous_deviance CD;  
 
   if (CA->disttype == distribution::log_normal){
-    cout << "calling estimate_log_normal_aod" << std::endl;
     estimate_log_normal_aod(CA, &CD);
   } else {
-    cout << "calling estimate_normal_aod" << std::endl;
     estimate_normal_aod(CA, &CD);
   }
 
-  std::cout << "finished fit" << std::endl;
 
   //fill aod with results and calculate tests of interest
-  std::cout << "A1:" << CD.A1 << std::endl; 
-  std::cout << "A2:" << CD.A2 << std::endl; 
-  std::cout << "A3:" << CD.A3 << std::endl; 
- 
   aod->LL[0] = -1*CD.A1;
   aod->nParms[0] = CD.N1;
   aod->LL[1] = -1*CD.A2;
@@ -209,7 +238,6 @@ void calc_AOD(struct continuous_analysis *CA, struct continuous_model_result *re
       bounded++;
     }
   }
-  std::cout<<"CA->parms="<<CA->parms<<std::endl;
   aod->nParms[3] = CA->parms - bounded;
   //TEMP DEBUG values
   aod->LL[4] = -88.71521848;  //CD.R
@@ -269,39 +297,26 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
 
 void determineAdvDir(struct continuous_analysis *CA){
 
-  //standardize the data
-  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  int n_rows;
+
+  struct continuous_analysis CAnew;
+  double doses[CA->n];  //allocate memory for individual size.  Will not use entire array for summary data.
+  double means[CA->n];
+  double n_group[CA->n];
+  double sd[CA->n];
   
-  Eigen::MatrixXd Yin(n_rows,n_cols); 
-  Eigen::MatrixXd Xin(n_rows,1); 
-  Eigen::MatrixXd SSTAT, SSTAT_LN, UX;
-  Eigen::MatrixXd Y_LN, Y_N;
+  CAnew.doses = doses;
+  CAnew.Y = means;
+  CAnew.n_group = n_group;
+  CAnew.sd = sd;
 
   if(!CA->suff_stat){
-  // copy the original data
-    for (int i = 0; i < n_rows; i++){
-      Yin(i,0) = CA->Y[i]; 
-      Xin(i,0) = CA->doses[i]; 
-      if(CA->suff_stat){
-        
-        Yin(i,2) = CA->sd[i]; 
-        Yin(i,1) = CA->n_group[i]; 
-      }
-    }
-
-    bool canConvert = convertSStat(Yin, Xin, &SSTAT, &SSTAT_LN, &UX);
-    if (canConvert){
-      Y_N = cleanSuffStat(SSTAT,UX,false);  
-      Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
-      n_rows = UX.rows();
-
-    } else {
-      std::cout<<"Error in determineAdvDir"<<std::endl;
-      return;
-    }
+    bmdsConvertSStat(CA, &CAnew);
+    n_rows = CAnew.n;
+  } else {
+    //already suff stat
+    n_rows = CA->n;
   }
-
-
 
   Eigen::MatrixXd X(n_rows,2);
   Eigen::MatrixXd W(n_rows,n_rows);
@@ -310,15 +325,13 @@ void determineAdvDir(struct continuous_analysis *CA){
 
 
   if(!CA->suff_stat){
-   
-      for (int i=0; i< n_rows; i++){
-        X(i,0) = 1;
-        X(i,1) = UX(i);
-  
-        W(i,i) =  Y_N(i,1);
-        Y(i) = Y_N(i,0);
-    }  
+    for (int i=0; i< n_rows; i++){
+      X(i,0) = 1;
+      X(i,1) = CAnew.doses[i];
 
+      W(i,i) =  CAnew.n_group[i];
+      Y(i) = CAnew.Y[i];
+    }  
 
   } else {
     for (int i=0; i< n_rows; i++){
@@ -328,8 +341,8 @@ void determineAdvDir(struct continuous_analysis *CA){
       W(i,i) =  CA->n_group[i];
       Y(i) = CA->Y[i];
     }
- 
   }
+
 
   beta = (X.transpose() * W * X).colPivHouseholderQr().solve(X.transpose()*W*Y);
 
@@ -341,3 +354,69 @@ void determineAdvDir(struct continuous_analysis *CA){
 
 }
 
+
+
+void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis *CAss){
+
+  //standardize the data
+  int n_rows = CA->n; 
+  int n_cols = CA->suff_stat?3:1;
+
+
+  if(!CA->suff_stat){
+    Eigen::MatrixXd Yin(n_rows,n_cols);
+    Eigen::MatrixXd Xin(n_rows,1);
+    Eigen::MatrixXd SSTAT, SSTAT_LN, X, Y;
+    // copy the original data
+    for (int i = 0; i < n_rows; i++){
+      Yin(i,0) = CA->Y[i];
+      Xin(i,0) = CA->doses[i];
+    }
+    bool canConvert = convertSStat(Yin, Xin, &SSTAT, &SSTAT_LN, &X);
+    if (canConvert){
+      bool isLognormal = CA->disttype == distribution::log_normal;
+      if (isLognormal) {
+        Y = cleanSuffStat(SSTAT,X,false);
+      } else {
+        Y = cleanSuffStat(SSTAT_LN,X,true);
+      }
+      n_rows = X.rows();
+
+      for(int i=0; i<n_rows; i++){
+        CAss->doses[i] = X(i);
+        CAss->Y[i] = Y.col(0)[i];
+        CAss->n_group[i] = Y.col(1)[i];
+        CAss->sd[i] = Y.col(2)[i];
+      }
+      CAss->n = n_rows;
+       
+    } else {
+      std::cout<<"Error in bmdsConvertSStat"<<std::endl;
+      return;
+    }
+  } else {
+  //already suff_stat, so just copy data to arrays
+    for (int i=0; i<n_rows; i++){
+      CAss->doses[i] = CA->doses[i];
+      CAss->Y[i] = CA->Y[i];
+      CAss->n_group[i] = CA->n_group[i];
+      CAss->sd[i] = CA->sd[i];
+      CAss->n = CA->n;
+    }    
+
+  }
+  CAss->model = CA->model;
+  CAss->isIncreasing = CA->isIncreasing;
+  CAss->BMR = CA->BMR;
+  CAss->tail_prob = CA->tail_prob;
+  CAss->disttype = CA->disttype;
+  CAss->alpha = CA->alpha;
+  CAss->samples = CA->samples;
+  CAss->degree = CA->degree;
+  CAss->burnin = CA->burnin;
+  CAss->parms = CA->parms;
+  CAss->prior_cols = CA->prior_cols;
+
+
+
+}

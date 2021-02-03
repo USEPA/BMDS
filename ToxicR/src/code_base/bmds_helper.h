@@ -58,6 +58,8 @@ struct continuous_AOD1{
 extern "C" {
 #endif
 
+void bmdsConvertSStat(struct continuous_analysis *ca, struct continuous_analysis *newCA);
+
 void calcTestsOfInterest(struct continuous_AOD *aod);
 
 void determineAdvDir(struct continuous_analysis *anal);
