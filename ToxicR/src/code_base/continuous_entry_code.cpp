@@ -69,7 +69,35 @@ Eigen::MatrixXd quadraticRegression(Eigen::MatrixXd Y_N, Eigen::MatrixXd X){
   betas = betas.inverse()*mX.transpose()*W*Y_N.col(0);
   return betas;
 }
-
+////////////////////////////////////////////////////////////////////////
+Eigen::MatrixXd init_funl_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::MatrixXd prior){
+  
+  
+  std::vector<double> vec(X.data(), X.data() + X.rows() * X.cols());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
+  //udoses = vec; // this should be the unique dose group
+  
+  Eigen::MatrixXd betas = quadraticRegression(Y_N,  X);
+  prior(0,1) = betas(0,0); 
+  double max_d = vec[vec.size()-1]; 
+  double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
+  prior(1,1)   = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d - prior(0,1))/max_d; 
+  prior(2,1)   = max_r; 
+  prior(3,1)   = 0.5;
+  prior(4,1)   = 1;
+  prior(5,1)   = 0.75;
+  prior(6,1)   = 1;
+  
+  for (int i = 0; i < 7; i++){
+    if (prior(i,1) < prior(i,3)) prior(i,1) = prior(i,3); 
+    if (prior(i,1) > prior(i,4)) prior(i,1) = prior(i,4);
+  }
+  
+  
+  return prior; 
+}
+////////////////////////////////////////////////////////////////////////
 Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::MatrixXd prior){
   
   
@@ -171,6 +199,9 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
   Eigen::MatrixXd retVal = prior; 
   
   switch (model){
+  case cont_model::funl:
+    retVal = init_funl_nor(Y_LN, X, prior);
+    break; 
   case cont_model::hill:
     retVal = distribution::log_normal==data_dist ? init_hill_lognor(Y_LN, X, prior):
     init_hill_nor(Y_N, X, prior); 
