@@ -3,10 +3,13 @@ cleveland_plot <- function (A, ...){
   UseMethod("cleveland_plot")
 }
 
+# Patch note 02/03/2021 
+# 1. # of model parameter input is assigned dynamically in the plot data structure
+# 2. For the continous case, assign prior information only first
 
 .cleveland_plot.BMDdichotomous_MA <- function(A){
   # Construct bmd sample plots for mcmc 
-  class_list <- names(A)
+  class_list <- names(A) 
   
   # This part should be consistent
   if (class(A)[2]=="BMDdichotomous_MA_maximized") {
@@ -109,7 +112,9 @@ cleveland_plot <- function (A, ...){
   bmd_ind[length(fit_idx)+1,5]<-1
   
   bmd_ind_df<-data.frame(bmd_ind)
-  bmd_ind_df$X1
+  
+  #Drop NA value
+  bmd_ind_df<-data.frame(bmd_ind[which(!is.na(bmd_ind[,1])),])
   
   ggplot()+
     geom_point(data=bmd_ind_df, aes(x=as.numeric(X1), y=fct_reorder(X4,as.numeric(X5),.desc=T),size=(sqrt(as.numeric(X5)))), color="red")+
