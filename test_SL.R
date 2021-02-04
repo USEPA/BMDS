@@ -13,9 +13,11 @@ y<-c(11.041634,9.842275, 9.184704,10.638314, 10.861213, 9.252667, 8.458513,
 #                         distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
 #                                                "normal-ncv"))
 
-AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y), model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
-                        distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv"),fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y), model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
+                        distribution_list =  c(rep(c("normal"),3),"normal"),fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 
 
 
 cleveland_plot(AA)
+
+plot(AA)

@@ -26,6 +26,8 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 2. Dichotomous MA Density Plot 
 .plot.density.BMDdichotomous_MA_MCMC(A)
 # Base plot
+
+# Update 1. ggplot object 
 plot(A)
 
 

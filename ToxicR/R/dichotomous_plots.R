@@ -106,23 +106,17 @@
     Response = c(uerror,lerror)
     
     # Basic structure of display
-    # main should show the models' information, I think this aprt sohuld be fixed.
+    # main should show the models' information, I think this part should be fixed.
     
     # Dichotomous's response is between 0 to 1
-    
     # Change this to ggplot object
     
     
     #plot(dose,Response,type='n',main=fit$fitted_model$full_model)
-    
     # We need to adjust the range here too
-    
     # S3 object not fitted here for the title part
     out<-ggplot()+
       geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose),max(dose)))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
-    
-    
-    
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
@@ -231,8 +225,8 @@
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
       out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "azure2", alpha=1)
-      out6<-ggplotly(out5)
-      return(out6)
+
+      return(out5)
     }
     
     
@@ -253,10 +247,10 @@
       stop( "Quantile probability must be between 0 and 0.5")
     }
     
-    
-    probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
-    se <- sqrt(probs*(1-probs)/fit$data[,3,drop=T])
-    doses = fit$data[,1,drop=T]
+    #Data structure was changed
+    probs <- (0.5+fit$Fitted_Model_1$data[,2,drop=T])/(1.0 + fit$Fitted_Model_1$data[,3,drop=T])
+    se <- sqrt(probs*(1-probs)/fit$Fitted_Model_1$data[,3,drop=T])
+    doses = fit$Fitted_Model_1$data[,1,drop=T]
     uerror <- apply(cbind(probs*0+1,probs+se),1,min)
     lerror <- apply(cbind(probs*0,probs-se),1,max)
     
@@ -268,6 +262,9 @@
     
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+    
+    
+    # Need to check loop 
     if (fit$model=="hill"){
       #fit$parameters[1] = .logit(fit$parameters[1])
       #fit$parameters[2] = .logit(fit$parameters[2])
@@ -533,7 +530,11 @@
     # Annotation by color - 8 models 
     # I would like to show models if I hover the cursor
     # Information should show --.. 
-    out6<-out5+geom_line(aes(x=test_doses,y=temp_house[1,]),col="coral3",alpha=A$posterior_probs[1])
+    
+
+    # Assign variable # dynamically
+
+    out6<-out5+geom_line(aes(x=test_doses,y=temp_house[1,]),col="coral3",alpha=A$posterior_probs[i])
     out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
     out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
     out9<-out8+geom_line(aes(x=test_doses,y=temp_house[4,]),col="coral3", alpha=A$posterior_probs[4])
@@ -542,19 +543,15 @@
     out12<-out11+geom_line(aes(x=test_doses,y=temp_house[7,]),col="coral3", alpha=A$posterior_probs[7])
     out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
     out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
-    
-    
-   
+
+
+    out14
     
     
     out15<-out14+geom_point(aes(x=doses,y=probs))
-    # points(doses,probs)
-    # arrows(x0=doses, y0=lerror, x1=doses, 
-    #        y1=uerror, code=3, angle=90, length=0.1)
-    #out16<-ggplotly(out15)
-    # Issue with plotly transition to ggplot
-    out16<-ggplotly(out15)
-    return(out16)
+
+    
+    return(out15)
   }
   
 }
