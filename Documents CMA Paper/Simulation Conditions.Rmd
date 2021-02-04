@@ -1,8 +1,12 @@
 ---
 title: "Simulation Conditions for CMA"
 author: "Matt Wheeler"
-date: "1/29/2021"
-output: html_document
+date: "2/02/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -10,63 +14,100 @@ output: html_document
 # https://www.fda.gov/regulatory-information/search-fda-guidance-documents/redbook-2000-ivc3a-short-term-toxicity-studies-rodents#exp
 # Means and variances drawn from 
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3620211/
+# Body Weight 
 
 library(knitr)
 library(ToxicR)
 library(actuar)
 knitr::opts_chunk$set(echo = TRUE)
-Hill.p <- rbind(c(4,5.02,70,3.3),
-                c(4,5.02,40,1.3),
-                c(4,5.02,15,1.1),
-                c(4,10.02,50,4) ,
-                c(10.88,-3.02,50,1),
-                c(10.88,-3.02,25,3),
-                c(10.88,-3.02,25,2))
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+Hill.p <- rbind(c(481,-144.3,70,3.3),
+                c(481,-144.3,40,1.3),
+                c(481,-144.2,15,1.1),
+                c(481,-144.3,50,4) ,
+                c(10.58,5.29,70,3.5),
+                c(10.58,5.29,25,3),
+                c(10.58,5.29,15,2),
+                c(10.58,5.29,50,4))
 hill <- data.frame(a=Hill.p[,1],b=Hill.p[,2],
                    c=Hill.p[,3],d=Hill.p[,4])
 row.names(hill) <- c("Hill Simulation 1","Hill Simulation 2",
                      "Hill Simulation 3","Hill Simulation 4",
                      "Hill Simulation 5","Hill Simulation 6",
-                     "hill Simulation 7")
+                     "hill Simulation 7","Hill Simulation 8")
+#estimates of the Log-normal variance 
+f1 = function(x){log(exp(x)*expm1(x))-(log(37.5^2) -2*log(481))}
+uniroot(f1,c(0,1))
+f2 = function(x){log(exp(x)*expm1(x))-(log(1.1454^2) -2*log(10.58))}
+uniroot(f2,c(0,1))
+ 
 ```
-# Basic simulation conditions
-We are interested in 
-# Continuous Model Averaging Hill Conditions
-For the simulation, three different distributions were concidered, the normal,log-normal and 
-inverse-Gaussian distributions. 
-\begin{align}
-g(y) &= \frac{1}{sqrt{2\pi\sigma}}
-\end{align}
+## Basic simulation conditions
+We are interested in basic simulation conditions meant to mimic a typical
+Rat bioassayl, and the chosen endpoints are weight loss and liver weight
+gain. All background weights were taken from [Piao et al (2013)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3620211/)
+Table 1 and the average Male/Female weight was used as well as the average of the standard
+deviation. 
 
-## Inverse-Gaussian Distribution 
+Dose-response experimental designs were based upon recommendations in [FDA's Redbook 2000](https://www.fda.gov/regulatory-information/search-fda-guidance-documents/redbook-2000-ivc3a-short-term-toxicity-studies-rodents#exp), which are generally standard across agencies.  Here 4 and 5 dose group + control studies were designed with both even and geometrically spaced dose designs. That is dose groups were $[0,20,40,60,80,100]$ and $[0,6.25,12.5,25,50,100]$, for the 5 dose group studies and they were $[0,25,50,75,100]$ and $[0,12.5,25,50,100]$ for the four group studies. 
+
+### Distributional Conditions
+For the simulation, three different distributions were considered, the normal and the
+inverse-Gaussian distributions. 
+
+**Normal:**
+\begin{align}
+g(y|dose) &= \frac{1}{\sqrt{2\pi\sigma^2}}\exp(-\frac{(y-\mu[dose])^2}{2\sigma^2})
+\end{align}
+For the body-weight conditions $\sigma = 37.5,$ and for the liver weight conditions,
+$\sigma = 1.145.$
+
+**Log-Normal:**
+\begin{align}
+g(y|dose) &= \frac{1}{y\sqrt{2\pi\sigma^2}}\exp(-\frac{(\log[y]-\mu[dose])^2}{2\sigma^2})
+\end{align}
+For the body weight conditions $\sigma = 0.0777$, and for the liver weight conditions
+$\sigma = 0.107302.$ These values were chosen so that the control group standard deviation
+matched with the other simulation conditions, which was the average SD from males and female rats in table 1 at 72 weeks from [Piao et al(2013)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3620211/).
+
+**Inverse-Gaussian:**
+\begin{align}
+g(y|dose) &= \sqrt{\frac{\lambda}{2\pi y^2}}\exp\bigg[ \frac{\lambda(y-\mu\{dose\})^2}{2\mu(dose)^2 y} \bigg]
+\end{align}
+For the body-weight conditions $\lambda = 78643.17,$ and for the liver weight conditions,
+$\lambda = 902.3632.$ These values were chosen so that the control group standard deviation
+matched with the other simulation conditions, which was the average SD from males and female rats in table 1 at 72 weeks from [Piao et al(2013)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3620211/).
+
+
+## Dose-Response  Conditions
+Here we define the basic dose-respone function $\mu(dose)$ for each of the 
+data distributions specified above. 
+
+###  Hill DR: 
 The Hill mean models were used for the simulation: 
 \begin{align}
 f(dose) = a + \frac{b\times dose^d}{c^d + dose^d}
 \end{align}
 ```{r cars, echo=FALSE}
-kable(hill)
+kable(hill,digits=3)
 ```
+Here are two generated datasets from Hill condition $2$ and $8$: 
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-set.seed(2020)
+```{r hill, echo=FALSE}
 model_list = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
                         distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
                                                "normal-ncv"))
-doses <- rep(c(0,25,50,75,100),each=20)
+doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
 
-mean <- cont_hill_f(as.numeric(hill[4,]),doses)
-y <- rinvgauss(length(mean),mean,400)
+mean <- cont_hill_f(as.numeric(hill[2,]),doses)
+y <- rinvgauss(length(mean),mean,78643.17)
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 plot(AA)
 
 mean <- cont_hill_f(as.numeric(hill[6,]),doses)
-y <- rinvgauss(length(mean),mean,2000)
+y <- rinvgauss(length(mean),mean,902.3632)
 
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
@@ -74,4 +115,647 @@ AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
 plot(AA)
 ```
 
+###  Exponential-5 DR: 
+Similar to the Hill condition we looked at 8 unique datasets generated from 
+the exponential dose-response  function. The exponential-5 dose-response function
+that we use in the simulation is
+\begin{align}
+  \mu(dose) = a\bigg[ c -(c-1)\exp(-\{b\times dose \}^d)\bigg]
+\end{align}
+```{r Exponential, echo=FALSE}
+#c is orig scale. 
+Exp5.p <- rbind(c(481,0.05,(1/1.42870),2),
+              c(481,0.02,(1/1.42870),2),
+              c(481,0.01,(1/1.42870),2),
+              c(481,0.1,(1/1.42870),2) ,
+                c(10.58,0.05,(1.5),1.5),
+                c(10.58,0.02,(1.5),1.5),
+                c(10.58,0.01,(1.5),1.5),
+                c(10.58,0.1, (1.5),1.5))
+Exp5 <- data.frame(a=Exp5.p[,1],b=Exp5.p[,2],
+                   c=Exp5.p[,3],d=Exp5.p[,4])
+row.names(Exp5) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
+                     "Exp-5 Simulation 3","Exp-5 Simulation 4",
+                     "Exp-5 Simulation 5","Exp-5 Simulation 6",
+                     "Exp-5 Simulation 7","Exp-5 Simulation 8")
+kable(Exp5,digits=3)
+```
 
+Here are two of the simulated datasets from condition 1 and 7 and fit using model
+averaging. 
+```{r Exponential Fits, echo=FALSE}
+#log-transformed for fitting as in ToxicR use
+Exp5.p <- rbind(c(481,0.05,log(1/1.42870),2),
+                c(481,0.02,log(1/1.42870),2),
+                c(481,0.01,log(1/1.42870),2),
+                c(481,0.1,log(1/1.42870),2) ,
+                c(10.58,0.05,log(1.5),1.5),
+                c(10.58,0.02,log(1.5),1.5),
+                c(10.58,0.01,log(1.5),1.5),
+                c(10.58,0.1,log(1.5),1.5))
+Exp5 <- data.frame(a=Exp5.p[,1],b=Exp5.p[,2],
+                   c=Exp5.p[,3],d=Exp5.p[,4])
+row.names(Exp5) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
+                     "Exp-5 Simulation 3","Exp-5 Simulation 4",
+                     "Exp-5 Simulation 5","Exp-5 Simulation 6",
+                     "Exp-5 Simulation 7","Exp-5 Simulation 8")
+doses <- rep(c(0,20,40,60,80,100),each=10)
+
+mean <- cont_exp_5_f(as.numeric(Exp5[1,]),doses)
+y <- rinvgauss(length(mean),mean,78643.17)
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+
+mean <- cont_exp_5_f(as.numeric(Exp5[7,]),doses)
+y <- rinvgauss(length(mean),mean, 902.3632)
+
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+```
+
+###  I-Spline DR:
+
+Further, we consider 4 dose-response functions that are not considered in 
+the parametric model suite.  These functions are representable as I-spline
+(monotone splines) functions. In this case, 
+\begin{align}
+\mu(dose) = b_0 \sum_{i=1}^{8} b_i is(dose)
+\end{align}
+```{r iSpline Fits, echo=FALSE}
+#log-transformed for fitting as in ToxicR use
+beta1 <- c(0.15486274,0.14054532,0.05806702,0.67421470,0.18371405,0.92821744,1.60669594,1.04508522) 
+beta2 <- c(0.677816175,0.322787366,3.356424380,0.102841870,0.009085238,0.087907971,0.344255936,0.100000000)
+#add 481 to get the background
+beta3 <- c(-45.715480,-53.668821,-14.266726, -8.066441,-1.620326 ,-1.800000,-1.800000 ,-1.800000)
+beta4 <- c(-11.9566632,-19.9908719,-39.3450020,-16.3895141,-2.8191037,-4.5801731,-0.834784,-0.7000000)
+iSpline <- rbind(beta1,beta2,beta3,beta4)
+
+iS <- data.frame(b1=iSpline[,1],b2=iSpline[,2],b3 = iSpline[,3],
+                   b4=iSpline[,4],b5=iSpline[,5],b6 = iSpline[,6],
+                   b7=iSpline[,7],b8=iSpline[,8])
+row.names(iS) <- c("iSpline Simulation 1","iSpline Simulation 2",
+                     "iSpline Simulation 3","iSpline Simulation 4")
+kable(iS,digits=3)
+doses <- rep(c(0,20,40,60,80,100),each=10)
+library(splines2)
+X <- iSpline(doses,knots=seq(30,90,20))
+
+mean <- X%*%t(iS[1,,drop=F]) + 10.58
+y <- rinvgauss(length(mean),mean,902.3632)
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
+library(splines2)
+X <- iSpline(doses,knots=seq(30,90,20))
+mean <- X%*%t(iS[3,,drop=F]) + 481
+y <- rinvgauss(length(mean),mean, 78643.17) 
+
+
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+plot(AA)
+```
+## Computed true BMD values
+
+For the simulation, the BMD is computed using the standard deviation (SD),
+relative deviation (RD), and hybrid (HB) approaches.  Each method 
+requires the specification of the benchmark response (BMR). For the standard deviation, 
+a $BMR = 1$ is used.  For the relative deviation, a $BMR = 0.1$ is used. Finally, 
+for the hybrid approach the $BMR = 0.1$ with the tail probability being $0.05$.
+
+### Tables of BMD values for SD approach
+
+```{r Hill BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean = cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_ig[i])
+  }else{
+    sdDif = sqrt(var_ig[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_no[i])
+  }else{
+    sdDif = sqrt(var_no[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+  bb  <-  function(d){abs(isM(d)-isM(0))-sqrt(var_m)} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Hill Simulation 1","Hill Simulation 2",
+                     "Hill Simulation 3","Hill Simulation 4",
+                     "Hill Simulation 5","Hill Simulation 6",
+                     "hill Simulation 7","Hill Simulation 8")
+kable(BMD_IS,digits=2,caption ="Hill Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+
+```{r Exp-5 BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean =  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_ig[i])
+  }else{
+    sdDif = sqrt(var_ig[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+   mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_no[i])
+  }else{
+    sdDif = sqrt(var_no[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+  bb  <-  function(d){abs(isM(d)-isM(0))-sqrt(var_m)} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
+                     "Exp-5 Simulation 3","Exp-5 Simulation 4",
+                     "Exp-5 Simulation 5","Exp-5 Simulation 6",
+                     "Exp-5 Simulation 7","Exp-5 Simulation 8")
+kable(BMD_IS,digits=2,caption ="Exponential-5 Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+
+```{r iSpline BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(902.3632,902.3632,78643.17,78643.17)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_ig[i])
+  }else{
+    sdDif = sqrt(var_ig[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+ 
+  if (isM(0) < isM(100)){
+    sdDif = sqrt(var_no[i])
+  }else{
+    sdDif = sqrt(var_no[i])
+  }
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.0777,0.0777,0.107302,0.107302)
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+  bb  <-  function(d){abs(isM(d)-isM(0))-sqrt(var_m)} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
+                    "I-Spline Simulation 3","I-Spline Simulation 4")
+kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+### Table of BMD values for RD approach
+```{r Hill Rel BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean = cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Hill Simulation 1","Hill Simulation 2",
+                     "Hill Simulation 3","Hill Simulation 4",
+                     "Hill Simulation 5","Hill Simulation 6",
+                     "hill Simulation 7","Hill Simulation 8")
+kable(BMD_IS,digits=2,caption ="Hill Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+
+```{r Exp-5 Rel BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean =  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+ 
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+   mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+ 
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
+                     "Exp-5 Simulation 3","Exp-5 Simulation 4",
+                     "Exp-5 Simulation 5","Exp-5 Simulation 6",
+                     "Exp-5 Simulation 7","Exp-5 Simulation 8")
+kable(BMD_IS,digits=2,caption ="Exponential-5 Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+
+```{r iSpline Rel BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(902.3632,902.3632,78643.17,78643.17)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+  
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+ 
+ 
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.0777,0.0777,0.107302,0.107302)
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+ 
+  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
+                    "I-Spline Simulation 3","I-Spline Simulation 4")
+kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation BMD across
+                                the three different distributional conditions.")
+```
+### Table of BMD values for HB approach
+
+```{r Hill Hybrid BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean = cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+ if (isM(0) < isM(100)){
+     temp <- qinvgauss(0.95,isM(0),lambda[i])
+     bb  <-  function(d){((1-pinvgauss(temp,isM(d),lambda[i])) -0.05)/0.95-0.1}
+  }else{
+      temp <- qinvgauss(0.05,isM(0),lambda[i])
+      bb  <-  function(d){((pinvgauss(temp,isM(d),lambda[i]))- 0.05)/0.95-0.1}
+  }
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+  if (isM(0) < isM(100)){
+     temp <- qnorm(0.95,isM(0),sqrt(var_no[i]))
+     bb  <-  function(d){((1-pnorm(temp,isM(d),sqrt(var_no[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qnorm(0.05,isM(0),sqrt(var_no[i]))
+      bb  <-  function(d){(pnorm(temp,isM(d),sqrt(var_no[i]))- 0.05)/0.95-0.1}
+  }
+  
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_hill_f(as.numeric(hill[i,]),doses)
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+  if (isM(0) < isM(100)){
+     temp <- qlnorm(0.95,log(isM(0)),sqrt(var_ln[i]))
+     bb  <-  function(d){((1-plnorm(temp,log(isM(d)),sqrt(var_ln[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qlnorm(0.05,log(isM(0)),sqrt(var_ln[i]))
+      bb  <-  function(d){(plnorm(temp,log(isM(d)),sqrt(var_ln[i]))- 0.05)/0.95-0.1}
+  }
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Hill Simulation 1","Hill Simulation 2",
+                     "Hill Simulation 3","Hill Simulation 4",
+                     "Hill Simulation 5","Hill Simulation 6",
+                     "hill Simulation 7","Hill Simulation 8")
+kable(BMD_IS,digits=2,caption ="Hill Simulation BMDs for Hybrid BMD across
+                                the three different distributional conditions.")
+```
+
+```{r Exp-5 Hybrid BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(78643.17,78643.17,78643.17,78643.17,902.3632,902.3632,902.3632,902.3632)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:8){
+  mean =  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+ if (isM(0) < isM(100)){
+     temp <- qinvgauss(0.95,isM(0),lambda[i])
+     bb  <-  function(d){((1-pinvgauss(temp,isM(d),lambda[i])) -0.05)/0.95-0.1}
+  }else{
+      temp <- qinvgauss(0.05,isM(0),lambda[i])
+      bb  <-  function(d){((pinvgauss(temp,isM(d),lambda[i]))- 0.05)/0.95-0.1}
+  } 
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:8){
+   mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+ 
+ if (isM(0) < isM(100)){
+     temp <- qnorm(0.95,isM(0),sqrt(var_no[i]))
+     bb  <-  function(d){((1-pnorm(temp,isM(d),sqrt(var_no[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qnorm(0.05,isM(0),sqrt(var_no[i]))
+      bb  <-  function(d){(pnorm(temp,isM(d),sqrt(var_no[i]))- 0.05)/0.95-0.1}
+  }
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.107302,0.107302,0.107302,0.107302,0.0777,0.0777,0.0777,0.0777)
+for(i in 1:8){
+  mean =  cont_exp_5_f(as.numeric(Exp5[i,]),doses)
+  isM <- splinefun(doses,mean)
+  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
+  if (isM(0) < isM(100)){
+     temp <- qlnorm(0.95,log(isM(0)),sqrt(var_ln[i]))
+     bb  <-  function(d){((1-plnorm(temp,log(isM(d)),sqrt(var_ln[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qlnorm(0.05,log(isM(0)),sqrt(var_ln[i]))
+      bb  <-  function(d){(plnorm(temp,log(isM(d)),sqrt(var_ln[i]))- 0.05)/0.95-0.1}
+  }
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
+                     "Exp-5 Simulation 3","Exp-5 Simulation 4",
+                     "Exp-5 Simulation 5","Exp-5 Simulation 6",
+                     "Exp-5 Simulation 7","Exp-5 Simulation 8")
+kable(BMD_IS,digits=2,caption ="Exponential-5 Simulation BMDs for Hybrid BMD across
+                                the three different distributional conditions.")
+```
+
+```{r iSpline Hybrid BMD, echo=FALSE}
+doses <- seq(0,100,0.5)
+X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
+bkg = c(10.58,10.58,481,481)
+lambda <- c(902.3632,902.3632,78643.17,78643.17)
+
+bmd_sd_ig <- c(0,0,0,0)
+bmd_sd_no <- c(0,0,0,0)
+bmd_sd_ln <- c(0,0,0,0)
+i = 1
+var_ig <- c(NA,NA,NA,NA)
+
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+
+  var_ig[i] <- isM(0)^3/lambda[i]
+  if (isM(0) < isM(100)){
+     temp <- qinvgauss(0.95,isM(0),lambda[i])
+     bb  <-  function(d){((1-pinvgauss(temp,isM(d),lambda[i])) -0.05)/0.95-0.1}
+  }else{
+      temp <- qinvgauss(0.05,isM(0),lambda[i])
+      bb  <-  function(d){((pinvgauss(temp,isM(d),lambda[i]))- 0.05)/0.95-0.1}
+  }
+  
+  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_no <- var_ig
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+ 
+ if (isM(0) < isM(100)){
+     temp <- qnorm(0.95,isM(0),sqrt(var_no[i]))
+     bb  <-  function(d){((1-pnorm(temp,isM(d),sqrt(var_no[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qnorm(0.05,isM(0),sqrt(var_no[i]))
+      bb  <-  function(d){(pnorm(temp,isM(d),sqrt(var_no[i]))- 0.05)/0.95-0.1}
+  }
+  
+  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
+}
+
+var_ln <- c(0.0777,0.0777,0.107302,0.107302)
+var_ln <- var_ln*var_ln
+for(i in 1:4){
+  mean = X%*%t(iS[i,,drop=F]) + bkg[i]
+  isM <- splinefun(doses,mean)
+  if (isM(0) < isM(100)){
+     temp <- qlnorm(0.95,log(isM(0)),sqrt(var_ln[i]))
+     bb  <-  function(d){((1-plnorm(temp,log(isM(d)),sqrt(var_ln[i]))) -0.05)/0.95-0.1}
+  }else{
+      temp <- qlnorm(0.05,log(isM(0)),sqrt(var_ln[i]))
+      bb  <-  function(d){(plnorm(temp,log(isM(d)),sqrt(var_ln[i]))- 0.05)/0.95-0.1}
+  }
+  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
+}
+
+BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
+names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
+row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
+                    "I-Spline Simulation 3","I-Spline Simulation 4")
+kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for Hybrid BMD across
+                                the three different distributional conditions.")
+```

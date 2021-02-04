@@ -369,7 +369,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (isBig){
 	   NI = 1000; // size of the initial population
   }else{
-     NI = 400; 
+     NI = 500; 
   }
   std::vector<double> llist(NI); // List of the likelihood values; 
   for(int j=0; j< llist.size(); j++){
@@ -402,7 +402,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   for (int i = 0; i < NI; i ++){
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j,0) = 1 + startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
+      test(j,0) = startV(j,0) + gsl_ran_flat(r,-1,1);// random number in the bounds
       
       if (test(j,0) > ub[j] ){
           test(j,0) = ub[j]; 
@@ -464,8 +464,8 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 200; 
-      ntourny = 15; 
+      ngenerations = 300; 
+      ntourny = 20; 
       tourny_size = 20; 
   }
   
@@ -518,12 +518,12 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
        
        int idx = (int)(cur_tourny_parms.size()-1)*gsl_rng_uniform(r) + 1;    
        Eigen::MatrixXd temp_delta = cur_tourny_parms[0] - cur_tourny_parms[idx];
-       Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.2*temp_delta*(2*gsl_rng_uniform(r)-1);
+       Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.8*temp_delta*(2*gsl_rng_uniform(r)-1);
        correctBounds = true; 
        
       
        for (int iii = 0; iii < M->nParms(); iii++) {
-             child(iii,0) = child(iii,0) + 0.2*abs(child(iii,0))*(2*gsl_rng_uniform(r)-1);
+             child(iii,0) = child(iii,0) + 0.8*abs(child(iii,0))*(2*gsl_rng_uniform(r)-1);
              if (lb[iii] > child(iii, 0) || ub[iii] < child(iii, 0)) {
                correctBounds = false;
                break;

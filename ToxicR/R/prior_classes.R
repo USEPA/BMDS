@@ -417,7 +417,7 @@ poor of a modeling choice.\n");
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,100),
-                               lnormprior(1,0.2,0,18),
+                               lnormprior(1,0.2,1,18),
                                normprior(0,2,-18,18)); 
   }
   
@@ -469,7 +469,7 @@ poor of a modeling choice.\n");
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,100),
-                               lnormprior(1,0.2,0.5,18),
+                               lnormprior(1,0.2,1,18),
                                normprior(0,2,-18,18)); 
   }
   prior <- unclass(prior)

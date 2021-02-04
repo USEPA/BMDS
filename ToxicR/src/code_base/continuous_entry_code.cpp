@@ -83,7 +83,7 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   double max_d = vec[vec.size()-1]; 
   double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
   prior(1,1)   = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d - prior(0,1))/max_d; 
-  prior(2,1)   = 0.2*max_d; 
+  prior(2,1)   = 0.05*max_d; 
   prior(3,1)   = 1.2;
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 

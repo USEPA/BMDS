@@ -27,18 +27,23 @@ library(dplyr)
 
 temp <- PFOA_Liver %>% filter(X1 == "SQLE_9935")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mcmc",sstat = F,)
-AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",sstat = F,)
+#AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "ACAA2_7955")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-3", distribution="normal",fit_type = "mle",sstat = F,)
-
-plot(BB)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+d <- seq(0,20,0.1)
+y <- cont_hill_f(BB$parameters,d)
+plot(log10(doses+0.01),v1,pch=16)
+lines(log10(d+0.01),y)
 
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle",sstat = F,)
+y <- cont_exp_5_f(BB$parameters,d)
+plot(log10(doses+0.01),v1,pch=16)
+lines(log10(d+0.01),y)
 
 plot(BB)
 
@@ -50,12 +55,23 @@ plot(BB)
 temp <- PFOA_Liver %>% filter(X1 == "ACADL_32776")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+
+d <- seq(0,20,0.01)
+y <- cont_hill_f(BB$parameters,d)
+plot(log10(doses+0.01),v1,pch=16)
+lines(log10(d+0.01),y)
+
 plot(BB)
+
 
 
 temp <- PFOA_Liver %>% filter(X1 == "LOC100912409_9106")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+d <- seq(0,20,0.01)
+y <- cont_hill_f(BB$parameters,d)
+plot(log10(doses+0.01),v1,pch=16)
+lines(log10(d+0.01),y)
 plot(BB)
 
 
@@ -81,11 +97,16 @@ G = single_continuous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit
 
 temp <- PFOA_Liver %>% filter(X1 == "SQLE_9935")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mcmc",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+
+y <- cont_hill_f(BB$parameters,d)
+plot(log10(doses+0.01),v1,pch=16)
+lines(log10(d+0.01),y)
 plot(BB)
 
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mcmc",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle",sstat = F,)
+
 plot(BB)
 
 mData <- matrix(c(0, 1,10,
