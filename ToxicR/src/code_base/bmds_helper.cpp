@@ -126,7 +126,7 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 }
 
 
-void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes){
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
 
   estimate_sm_laplace_dicho(anal, res, true);
 
@@ -145,10 +145,21 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 
   collect_dicho_bmd_values(anal, res, bmdsRes);
 
+  //calculate model chi^2 value
+  bmdsRes->chisq = 0.0;
+  for (int i=0; i<gofRes->n; i++){
+    bmdsRes->chisq += gofRes->residual[i]*gofRes->residual[i];
+  }
+
+  //calculate dichtomous analysis of deviance
+  calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
+
+
+
 }
 
 
-void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, bool detectAdvDir){
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
 
   if (detectAdvDir){
     determineAdvDir(anal);
@@ -196,6 +207,7 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
     GOFanal.prior_cols = prior_cols;
     bmdsConvertSStat(anal, &GOFanal);    
   }
+ 
 
   continuous_expected_result GOFres;
   GOFres.n = GOFanal.n;
@@ -203,17 +215,77 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   GOFres.sd = new double[GOFanal.n];
   continuous_expectation(&GOFanal, res, &GOFres);
 
-  calc_AOD(anal, res, bmdsRes, aod);
-  
 
+  gof->dose = GOFanal.doses;
+  gof->size = GOFanal.n_group;
+  gof->estMean = GOFres.expected;
+  gof->obsMean = GOFanal.Y;
+  gof->estSD = GOFres.sd;
+  gof->obsSD = GOFanal.sd;
+  for (int i=0; i<GOFanal.n; i++){
+    gof->res[i] = sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i];
+  }
+  if (anal->disttype == distribution::log_normal){
+    for (int i=0; i<GOFanal.n; i++){
+      gof->calcMean[i] = exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2);
+      gof->calcSD[i] = exp(sqrt(log(1.0 + pow(GOFanal.sd[i]/GOFanal.Y[i], 2.0))));
+    }
+  } else {
+    gof->calcMean = GOFanal.Y;
+    gof->calcSD = GOFanal.sd;
+  }
+
+  calc_contAOD(anal, res, bmdsRes, aod);
+  
   
 
 }
 
-//void calc_GOF(){
-//}
 
-void calc_AOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
+void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+  
+  struct dichotomous_aod aod;
+  double A1;
+  int N1;
+  double A2;
+  int N2;
+  aod.A1 = A1;
+  aod.N1 = N1;
+  aod.A2 = A2;
+  aod.N2 = N2;
+
+  deviance_dichotomous(DA, &aod);
+
+  bmdsAOD->A1 = -1*aod.A1;
+  bmdsAOD->N1 = aod.N1;
+  bmdsAOD->A2 = -1*aod.A2;
+  bmdsAOD->N2 = aod.N2;
+  bmdsAOD->fittedLL = -1*res->max;
+  int bounded = 0;
+  for(int i=0; i<DA->parms;i++){
+    if(bmdsRes->bounded[i]){
+      bounded++;
+    }
+  }
+  bmdsAOD->NFit = DA->parms - bounded;
+
+  double dev;
+  double df;
+
+  bmdsAOD->devFit = dev = 2*(bmdsAOD->A1 - bmdsAOD->fittedLL);
+  bmdsAOD->dfFit = df = DA->n - bmdsAOD->NFit;
+  bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(dev, df);
+
+
+  bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->A2);
+  bmdsAOD->dfRed = df = DA->n-1;
+  bmdsAOD->pvRed = 1.0 - gsl_cdf_chisq_P(dev, df);
+  
+  
+ 
+}
+
+void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
 
   continuous_deviance CD;  
 
@@ -376,9 +448,11 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
     if (canConvert){
       bool isLognormal = CA->disttype == distribution::log_normal;
       if (isLognormal) {
-        Y = cleanSuffStat(SSTAT,X,false);
+        //Y = cleanSuffStat(SSTAT,X,false);
+        Y = cleanSuffStat(SSTAT_LN,X,true,false);
       } else {
-        Y = cleanSuffStat(SSTAT_LN,X,true);
+        //Y = cleanSuffStat(SSTAT_LN,X,true);
+        Y = cleanSuffStat(SSTAT,X,false,false);
       }
       n_rows = X.rows();
 
@@ -402,7 +476,7 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
       CAss->n_group[i] = CA->n_group[i];
       CAss->sd[i] = CA->sd[i];
       CAss->n = CA->n;
-    }    
+    }
 
   }
   CAss->model = CA->model;

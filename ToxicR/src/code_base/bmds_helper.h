@@ -16,6 +16,7 @@ struct BMDS_results{
   double BMDL; 
   double BMDU; 
   double AIC;   
+  double chisq;
   bool *bounded;
 };
 
@@ -34,24 +35,33 @@ struct continuous_AOD{
   double addConst;
   struct testsOfInterest *TOI;
 };
-
-
-struct testsOfInterest1{
-  double *logLikeRatio;
-  double *tmp;
-//  double *DF;
-//  double *pValue;
+struct dicho_AOD{
+  double A1;
+  int N1;
+  double A2;
+  int N2;
+  double fittedLL;
+  int NFit;
+  double devFit;
+  double devRed;
+  int dfFit;
+  int dfRed;
+  double pvFit;
+  double pvRed;
 };
 
-//
-struct continuous_AOD1{
-  double *logLikelihood;
-  double *nparms;
-  double *AIC;
-  double addConst;
-  //struct testsOfInterest TOI;
+struct continuous_GOF {
+  double *dose;
+  double *size;
+  double *estMean;
+  double *calcMean;
+  double *obsMean;
+  double *estSD;
+  double *calcSD;
+  double *obsSD;
+  double *res;
+  int n; //total # of obs/doses  
 };
-
 
 //c entry
 #ifdef __cplusplus
@@ -64,7 +74,9 @@ void calcTestsOfInterest(struct continuous_AOD *aod);
 
 void determineAdvDir(struct continuous_analysis *anal);
 
-void calc_AOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod);
+void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod);
+
+void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD);
 
 //void collect_dicho_bmd_values(double *bmd_dist, struct BMD_results *BMDres);
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres);
@@ -72,10 +84,10 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
 
 
-void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes);
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 
-void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, bool detectAdvDir);
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
 #ifdef __cplusplus
 }
 #endif
