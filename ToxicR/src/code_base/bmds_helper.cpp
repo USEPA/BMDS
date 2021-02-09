@@ -256,10 +256,10 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
 
   deviance_dichotomous(DA, &aod);
 
-  bmdsAOD->A1 = -1*aod.A1;
-  bmdsAOD->N1 = aod.N1;
-  bmdsAOD->A2 = -1*aod.A2;
-  bmdsAOD->N2 = aod.N2;
+  bmdsAOD->fullLL = -1*aod.A1;
+  bmdsAOD->nFull = aod.N1;
+  bmdsAOD->redLL = -1*aod.A2;
+  bmdsAOD->nRed = aod.N2;
   bmdsAOD->fittedLL = -1*res->max;
   int bounded = 0;
   for(int i=0; i<DA->parms;i++){
@@ -267,17 +267,17 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
       bounded++;
     }
   }
-  bmdsAOD->NFit = DA->parms - bounded;
+  bmdsAOD->nFit = DA->parms - bounded;
 
   double dev;
   double df;
 
-  bmdsAOD->devFit = dev = 2*(bmdsAOD->A1 - bmdsAOD->fittedLL);
-  bmdsAOD->dfFit = df = DA->n - bmdsAOD->NFit;
+  bmdsAOD->devFit = dev = 2*(bmdsAOD->fullLL - bmdsAOD->fittedLL);
+  bmdsAOD->dfFit = df = DA->n - bmdsAOD->nFit;
   bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(dev, df);
 
 
-  bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->A2);
+  bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->redLL);
   bmdsAOD->dfRed = df = DA->n-1;
   bmdsAOD->pvRed = 1.0 - gsl_cdf_chisq_P(dev, df);
   

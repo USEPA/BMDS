@@ -21,13 +21,22 @@ struct BMDS_results{
 };
 
 
-//enum TestOfInterest {A1 = 1, A2 = 2, A3 = 3, fitted = 4, R = 5};
-
+//all arrays are length 4
 struct testsOfInterest {
   double *llRatio;
   double *DF;
   double *pVal;
 };
+
+
+//all arrays are of length 5
+//Likelihoods of Interest
+//indexing of arrays are:
+//0 - A1 Model
+//1 - A2 Model
+//2 - A3 Model
+//3 - fitted Model
+//4 - R Model
 struct continuous_AOD{
   double *LL;
   double *nParms;
@@ -35,13 +44,14 @@ struct continuous_AOD{
   double addConst;
   struct testsOfInterest *TOI;
 };
+
 struct dicho_AOD{
-  double A1;
-  int N1;
-  double A2;
-  int N2;
+  double fullLL;  //A1;  //fullLL - Full Model
+  int nFull;      //N1;     //NFull Full Model
+  double redLL;   //A2;  //redLL Reduced Model
+  int nRed;       //N2;     //NRed  Reduced Model
   double fittedLL;
-  int NFit;
+  int nFit;
   double devFit;
   double devRed;
   int dfFit;
@@ -50,6 +60,8 @@ struct dicho_AOD{
   double pvRed;
 };
 
+
+//each array has number of dose groups in suff_stat data
 struct continuous_GOF {
   double *dose;
   double *size;
