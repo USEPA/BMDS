@@ -30,6 +30,8 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Update 1. ggplot object 
 plot(A)
 
+#Base plot is updated 
+.plot.BMDdichotomous_MA(A)
 
 
 # Case 2: Dichotomous - laplace
@@ -37,6 +39,14 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
 # Test 2. Dichotomous MA Density Plot
+# We don't need this for laplace fitting
+
+# Base plot fitting
+plot(A)
+
+
+
+
 # Question to Matt.
 
 # This part should be double checked. Laplace fitting is not consistent with other fitting model

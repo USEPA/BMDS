@@ -23,35 +23,29 @@ S3method(print, BMDmodelprior, .print.BMDmodelprior)
 S3method(print, BMD_CDF, .print.BMD_CDF)
 S3method(print, BMDdich_fit, .print.BMDdich_fit)
 
+
+# Base plot for single case
+
 S3method(plot,  BMDdich_fit_MCMC, .plot.BMDdich_fit_MCMC)
 S3method(plot,  BMDdich_fit_maximized, .plot.BMDdich_fit_maximized)
+
+# Base plot for single case
 
 S3method(plot, BMDcont_fit_MCMC,      .plot.BMDcont_fit_MCMC)
 S3method(plot, BMDcont_fit_maximized, .plot.BMDcont_fit_maximized)
 
 
-# Work In Progress SL
-# In the next update, this part will be replaced to ggplot() object instead of plotly object
+# Base plot for MA case
 S3method(plot, BMDcontinuous_MA, .plot.BMDcontinuous_MA)
 S3method(plot, BMDdichotomous_MA, .plot.BMDdichotomous_MA) 
-#################################################################
 
-
-# S3 method First-define function name/Second-target fitting type/Third-function we are going to use
 S3method(cleveland_plot, BMDdichotomous_MA, .cleveland_plot.BMDdichotomous_MA) 
 S3method(cleveland_plot, BMDcontinuous_MA, .cleveland_plot.BMDcontinous_MA) 
 
 
-# MCMC / laplace mle etc..
+# Model Average plot for MCMC
 S3method(MAdensity_plot, BMDdichotomous_MA_mcmc, .plot.density.BMDdichotomous_MA_MCMC)
-S3method(MAdensity_plot, BMDdichotomous_MA_maximized, .plot.density.BMDdichotomous_MA_maximized)
-
 S3method(MAdensity_plot, BMDcontinuous_MA_mcmc, .plot.density.BMDcontinous_MA_MCMC)
-#S3method(MAdensity_plot, BMDcontinuous_MA_maximized, .plot.density.BMDcontinuous_MA_maximized)
 
 
-# Add clevland plot BMDcontinous_MA case
 
-
-## This part is defined in the inside of each function
-#UseMethod(".cleveland_plot.BMDdichotomous_MA","BMDdichotomous_MA")
