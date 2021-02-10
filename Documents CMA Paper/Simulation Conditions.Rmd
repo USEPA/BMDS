@@ -100,14 +100,14 @@ model_list = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",
 doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
 
 mean <- cont_hill_f(as.numeric(hill[2,]),doses)
-y <- rinvgauss(length(mean),mean,78643.17)
+y <- rinvgauss(length(mean),mean,78643.17/4)
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 plot(AA)
 
 mean <- cont_hill_f(as.numeric(hill[6,]),doses)
-y <- rinvgauss(length(mean),mean,902.3632)
+y <- rinvgauss(length(mean),mean,902.3632/4)
 
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
@@ -227,7 +227,7 @@ For the simulation, the BMD is computed using the standard deviation (SD),
 relative deviation (RD), and hybrid (HB) approaches.  Each method 
 requires the specification of the benchmark response (BMR). For the standard deviation, 
 a $BMR = 1$ is used.  For the relative deviation, a $BMR = 0.1$ is used. Finally, 
-for the hybrid approach the $BMR = 0.1$ with the tail probability being $0.05$.
+for the hybrid approach the $BMR = 0.05$ with the tail probability being $0.025$.
 
 ### Tables of BMD values for SD approach
 

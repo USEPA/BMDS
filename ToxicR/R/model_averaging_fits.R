@@ -66,7 +66,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     temp.fit <- lm(model_data$SSTAT[,2] ~ model_data$X,
                    weights=(1/model_data$SSTAT[,4]^2)*model_data$SSTAT[,3])
   }else{
-    temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
+    temp.fit <- lm(model_data$SSTAT[,2]~model_data$X)
   }
 
   #Determine if there is an increasing or decreasing trend for BMD
@@ -166,14 +166,15 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[ii]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
      
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
-         data_temp = data_temp[!is.na(data_temp[,1]),]
-         if (nrow(data_temp)>6){
-              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
-              temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-         }else{
-              temp[[ii]]$bmd     <- c(NA,NA,NA)              
+         if (rows(data_temp)>0){
+           data_temp = data_temp[!is.na(data_temp[,1]),]
+           if (nrow(data_temp)>6){
+                te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+                temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+           }else{
+                temp[[ii]]$bmd     <- c(NA,NA,NA)              
+           }
          }
-         
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
          class(temp[[ii]]) <- "BMDcont_fit_maximized"
