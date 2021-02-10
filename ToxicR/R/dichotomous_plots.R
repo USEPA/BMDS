@@ -116,7 +116,7 @@
     # We need to adjust the range here too
     # S3 object not fitted here for the title part
     out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose),max(dose)))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
@@ -224,7 +224,7 @@
       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
-      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "azure2", alpha=1)
+      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
 
       return(out5)
     }
@@ -247,18 +247,32 @@
       stop( "Quantile probability must be between 0 and 0.5")
     }
     
-    #Data structure was changed
-    probs <- (0.5+fit$Fitted_Model_1$data[,2,drop=T])/(1.0 + fit$Fitted_Model_1$data[,3,drop=T])
-    se <- sqrt(probs*(1-probs)/fit$Fitted_Model_1$data[,3,drop=T])
-    doses = fit$Fitted_Model_1$data[,1,drop=T]
+    probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
+    se <- sqrt(probs*(1-probs)/fit$data[,3,drop=T])
+    
+    
+    doses = fit$data[,1,drop=T]
     uerror <- apply(cbind(probs*0+1,probs+se),1,min)
     lerror <- apply(cbind(probs*0,probs-se),1,max)
     
     dose = c(doses,doses)
     Response = c(uerror,lerror)
+    
+    
+    
+    #Data structure was changed
+    # probs <- (0.5+fit$Fitted_Model_1$data[,2,drop=T])/(1.0 + fit$Fitted_Model_1$data[,3,drop=T])
+    # se <- sqrt(probs*(1-probs)/fit$Fitted_Model_1$data[,3,drop=T])
+    # doses = fit$Fitted_Model_1$data[,1,drop=T]
+    # uerror <- apply(cbind(probs*0+1,probs+se),1,min)
+    # lerror <- apply(cbind(probs*0,probs-se),1,max)
+    # 
+    # dose = c(doses,doses)
+    # Response = c(uerror,lerror)
+    
     #plot(dose,Response,type='n',main=fit$full_model...)
     out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose),max(dose)))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
     
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
@@ -303,10 +317,14 @@
       me <- .dich_weibull_f(fit$parameters, d=test_doses)    
     }
     
+    # temp <- fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
+    # temp <- temp[!is.infinite(temp)]
+    # test <- density(temp)
+
     
     temp_fit<-splinefun(test_doses,me)
     
-    
+  
     
     #BMD Estimates fit - MLE/Laplace why they don't have it yet..? 
     
@@ -314,49 +332,29 @@
     out2<-out+geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
     out3<-out2+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
     
+
+    return(out3)
     
-    temp_fit <- splinefun(test_doses,me)
-    # 
-    # if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    #   lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    #   lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    #   lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
-    # }
-    # 
-    # 
-    #This CDF needs to be fixed 
-    out3
-    # Adding CDF part should be fixed
     
-    # temp <- fit$bmd_dist
-    # temp <- temp[!is.infinite(temp[,1]),]
-    # temp <- temp[!is.nan(temp[,1]),]
-    # cdf_rows = nrow(temp)
-    # a = temp[,1]
-    # b = temp[,2]
-    # b = b[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-    # a = a[(!is.infinite(a))*(!is.na(a))*(!is.nan(a)) == 1]
-    # ta = a
-    # tb = ta*0
-    # a = c(min(a)*0.9,a,max(a)*1.1)
-    # b = c(0,b,1.0)
-    # cdf_est <- splinefun(a,b)
-    # 
-    # for(i in 1:length(ta)){
-    #   tb[i] = -qchisq(abs(0.5-cdf_est(ta[i])),df=1)*0.5 #approximate the profile
-    # }
-    # tb = tb - min(tb)
-    # tb = tb/(max(tb))*max(probs)*0.4
-    # tb[1] = 0; tb[length(tb)] = 0;
-    # polygon(ta,tb,col = alphablend(col="red",0.2),border =alphablend(col="red",0.2))
     
-    # 
-    # points(doses,probs,...)
-    # arrows(x0=doses, y0=lerror, x1=doses, 
-    #        y1=uerror, code=3, angle=90, length=0.1)
-    # 
-    # 
-    # 
+    # BMD Sample
+# 
+#     if (BMD_DENSITY ==TRUE){
+#       Dens =  density(temp,cut=c(max(doses)))
+#       # what is this 0.4 means? Scale?
+#       Dens$y = Dens$y/max(Dens$y) * max(probs)*0.4
+#       temp = which(Dens$x < max(doses))
+#       D1_y = Dens$y[temp]
+#       D1_x = Dens$x[temp]
+#       
+#       #geom ploygon 
+#       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
+#       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+#       
+#       out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
+#       
+#       return(out4)
+#     }
     
     
   }

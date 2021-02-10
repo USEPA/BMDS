@@ -19,8 +19,20 @@ mData <- matrix(c(0, 2,50,
                   32, 18,50,
                   33, 17,50),nrow=6,ncol=3,byrow=T)
 
+
+# Single model fitting
+A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
+.plot.BMDdich_fit_MCMC(A_single_mcmc)
+
+A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type="hill",fit_type = "laplace")
+.plot.BMDdich_fit_maximized(A_single_laplace)
+# Not ready
+
+
 # Case 1: Dichotomous - MCMC Fitting
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
+
+
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
 # Test 2. Dichotomous MA Density Plot 
