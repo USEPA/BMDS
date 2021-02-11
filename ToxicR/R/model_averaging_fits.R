@@ -141,7 +141,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     temp$ma_bmd = data_temp
     if (nrow(data_temp)>6){
-         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+         te <- splinefun(sort(data_temp[,2]),sort(data_temp[,1]),method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
@@ -166,10 +166,10 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[ii]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
      
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
-         if (rows(data_temp)>0){
+         if (nrow(data_temp)>0){
            data_temp = data_temp[!is.na(data_temp[,1]),]
            if (nrow(data_temp)>6){
-                te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+                te <- splinefun(sort(data_temp[,2]),sort(data_temp[,1]),method="hyman")
                 temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
            }else{
                 temp[[ii]]$bmd     <- c(NA,NA,NA)              
@@ -186,7 +186,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     temp_me = temp_me[!is.na(temp_me[,1]),]
     temp_me = temp_me[!is.nan(temp_me[,1]),]
     if( nrow(temp_me) > 5){
-      te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+      te <- splinefun(sort(temp_me[,2]),sort(temp_me[,1]),method="hyman")
       temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
       temp$bmd <- c(NA,NA,NA)
