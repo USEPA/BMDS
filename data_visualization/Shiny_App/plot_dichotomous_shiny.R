@@ -166,7 +166,7 @@
     
     out6
   }
-  .plot.BMDdich_fit_maximized <- function(fit,fit_type,qprob=0.05,...){
+  .plot.BMDdich_fit_maximized <- function(fit,fit_type="laplace",qprob=0.05,...){
     
     density_col="red"
     credint_col="lightblue1"

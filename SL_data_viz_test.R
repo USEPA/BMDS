@@ -24,25 +24,22 @@ mData <- matrix(c(0, 2,50,
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
+# Base density plot is required?
 A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type="hill",fit_type = "laplace")
 .plot.BMDdich_fit_maximized(A_single_laplace)
-# Not ready
+# Base density plot is required? 
 
+
+
+# MA
 
 # Case 1: Dichotomous - MCMC Fitting
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
-
-
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
-# Test 2. Dichotomous MA Density Plot 
+# Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)
-# Base plot
-
-# Update 1. ggplot object 
-plot(A)
-
-#Base plot is updated 
+#Base plot 
 .plot.BMDdichotomous_MA(A)
 
 
@@ -50,11 +47,9 @@ plot(A)
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
-# Test 2. Dichotomous MA Density Plot
-# We don't need this for laplace fitting
+# Base plot
 
-# Base plot fitting
-plot(A)
+
 
 
 
@@ -62,7 +57,7 @@ plot(A)
 # Question to Matt.
 
 # This part should be double checked. Laplace fitting is not consistent with other fitting model
-.plot.density.BMDdichotomous_MA_maximized(A)
+
 # This one shows the CDF of BMD 
 A$Fitted_Model_1$bmd_dist
 # Base plot needs to be fixed too. It has issue with Model- MA representation.

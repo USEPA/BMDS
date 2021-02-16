@@ -362,17 +362,19 @@
   .plot.BMDdichotomous_MA <- function(A,qprob=0.05,...){
     density_col="blueviolet"
     credint_col="azure2"
+    fit<-A
     class_list <- names(A)
     
-    fit_idx    <- grep("Individual_Model",class_list)
-    
+
     #plot the model average curve
     if ("BMDdichotomous_MA_mcmc" %in% class(A)){ # mcmc run
-      n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples); 
+
+      fit_idx    <- grep("Individual_Model",class_list)
+      n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples)
       data_d   <-  A[[fit_idx[1]]]$data
       max_dose <- max(data_d[,1])
       min_dose <- min(data_d[,1])
-      test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500); 
+      test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500)
       ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
       temp_f   <- matrix(0,n_samps,length(test_doses))
       print(dim(temp_f))
@@ -387,13 +389,10 @@
       dose = c(doses,doses)
       Response = c(uerror,lerror)
       
-      
-      #plot(dose,Response,type='n',main=fit$full_model...)
       out<-ggplot()+
         geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(-0.1,1))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA")+theme_minimal()
       
-      print(n_samps)
-      print(length(fit_idx))
+      
       for (ii in 1:n_samps){
         fit <- A[[fit_idx[ma_samps[ii]]]]
         
@@ -447,21 +446,11 @@
       
       out4<-out3+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
       
-      
-      # polygon(c(test_doses,test_doses[length(test_doses):1]),
-      #          c(uq,lq[length(test_doses):1]),col = col1,border=col1)
-      # lines(test_doses,me,lwd=2)
-      
+
       temp_fit <- splinefun(test_doses,me)
       bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
       
-      
-      # if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-      #   lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-      #   lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-      #   lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
-      # }
-      
+
       
       temp = temp_bmd[!is.nan(temp_bmd)]
       temp = temp[!is.infinite(temp)]
@@ -521,36 +510,138 @@
         
         
       }
+      out6<-out5+geom_line(aes(x=test_doses,y=temp_house[1,]),col="coral3",alpha=A$posterior_probs[1])
+      out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
+      out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
+      out9<-out8+geom_line(aes(x=test_doses,y=temp_house[4,]),col="coral3", alpha=A$posterior_probs[4])
+      out10<-out9+geom_line(aes(x=test_doses,y=temp_house[5,]),col="coral3", alpha=A$posterior_probs[5])
+      out11<-out10+geom_line(aes(x=test_doses,y=temp_house[6,]),col="coral3", alpha=A$posterior_probs[6])
+      out12<-out11+geom_line(aes(x=test_doses,y=temp_house[7,]),col="coral3", alpha=A$posterior_probs[7])
+      out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
+      out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
       
+      
+      out14
+      
+      
+      out15<-out14+geom_point(aes(x=doses,y=probs))
+      
+      return(out15)
       
     }
     
-    # Annotation by color - 8 models 
-    # I would like to show models if I hover the cursor
-    # Information should show --.. 
-    
 
-    # Assign variable # dynamically
+    else if ("BMDdich_fit_maximized" %in% class(A)){ # mcmc run
+      
+      
+      
+      fit_idx <- grep("Fitted_Model_",class_list)
+      num_model<-length(A$posterior_probs)
+      
+      data_d   <-  A[[1]]$data
+      max_dose <- max(data_d[,1])
+      min_dose <- min(data_d[,1])
+      test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500); 
+      
 
-    out6<-out5+geom_line(aes(x=test_doses,y=temp_house[1,]),col="coral3",alpha=A$posterior_probs[i])
-    out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
-    out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
-    out9<-out8+geom_line(aes(x=test_doses,y=temp_house[4,]),col="coral3", alpha=A$posterior_probs[4])
-    out10<-out9+geom_line(aes(x=test_doses,y=temp_house[5,]),col="coral3", alpha=A$posterior_probs[5])
-    out11<-out10+geom_line(aes(x=test_doses,y=temp_house[6,]),col="coral3", alpha=A$posterior_probs[6])
-    out12<-out11+geom_line(aes(x=test_doses,y=temp_house[7,]),col="coral3", alpha=A$posterior_probs[7])
-    out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
-    out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
+      
+      # Create 0 matrix
+      temp_f   <- matrix(0,num_model,length(test_doses))
+      temp_bmd <- rep(0,length(test_doses))
+      
+      probs <- (0.5+data_d[,2,drop=T])/(1.0 + data_d[,3,drop=T])
+      se <- sqrt(probs*(1-probs)/data_d[,3,drop=T])
+      doses = data_d[,1,drop=T]
+      uerror <- apply(cbind(probs*0+1,probs+se),1,min)
+      lerror <- apply(cbind(probs*0,probs-se),1,max)
+      
+      dose = c(doses,doses)
+      Response = c(uerror,lerror)
+      
+      
+      # Baseplot with minimal and maixmal dose with error bar
+      out<-ggplot()+
+        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(-0.1,1))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
+      
+      
+
+      # Line plot for based on each cases
+      for (ii in 1:num_model){
+        fit_loop<- A[[ii]]
+        
+        if (fit_loop$model=="hill"){
+          temp_f[ii,] <- .dich_hill_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="gamma"){
+          temp_f[ii,] <- .dich_gamma_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model == "logistic"){
+          temp_f[ii,] <- .dich_logist_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="log-logistic"){
+          temp_f[ii,] <- .dich_llogist_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="probit"){
+          temp_f[ii,] <- .dich_probit_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="log-probit"){
+          temp_f[ii,] <- .dich_lprobit_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="multistage"){
+          temp_f[ii,] <- .dich_multistage_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="qlinear"){
+          temp_f[ii,] <-  .dich_qlinear_f(fit_loop$parameters,test_doses)
+        }
+        if (fit_loop$model=="weibull"){
+          temp_f[ii,] <- .dich_weibull_f(fit_loop$parameters,test_doses)
+        }
+      }
+      
+      
+      me <- colMeans(temp_f)
+      
+      # Fitting line is not from sample- Need to double check with Matt
+      
+      lq <- apply(temp_f,2,quantile, probs = qprob)
+      uq <- apply(temp_f,2,quantile, probs = 1-qprob)
+      col1 = alphablend(credint_col,1)
+      
+      temp_fit<-splinefun(test_doses,me)
+      
+      
+      out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)+
+                  geom_smooth(aes(x=test_doses,y=me),col="blue")+
+                  geom_point(aes(x=doses,y=probs))
+      
+
+      # Laplace output doesn't have ..
+      five_pct<-which(abs(A$BMD_CDF[,2]-0.05)==min(abs(A$BMD_CDF[,2]-0.05)))
+      fifty_pct<-which(abs(A$BMD_CDF[,2]-0.5)==min(abs(A$BMD_CDF[,2]-0.5)))
+      nfive_pct<-which(abs(A$BMD_CDF[,2]-0.95)==min(abs(A$BMD_CDF[,2]-0.95)))
+      
+      BMDS<-c(A$BMD_CDF[five_pct,1],A$BMD_CDF[fifty_pct,1],A$BMD_CDF[nfive_pct,1])
+      
+      out4<-out3+geom_segment(aes(x=BMDS, y=temp_fit(x=BMDS), xend=BMDS, yend=0), color="Red")
+      out5<-out4+geom_line(aes(x=test_doses,y=temp_f[1,]),col="coral3",alpha=A$posterior_probs[1])
+      out6<-out5+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
+      out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
+      out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
+      out9<-out8+geom_line(aes(x=test_doses,y=temp_house[4,]),col="coral3", alpha=A$posterior_probs[4])
+      out10<-out9+geom_line(aes(x=test_doses,y=temp_house[5,]),col="coral3", alpha=A$posterior_probs[5])
+      out11<-out10+geom_line(aes(x=test_doses,y=temp_house[6,]),col="coral3", alpha=A$posterior_probs[6])
+      out12<-out11+geom_line(aes(x=test_doses,y=temp_house[7,]),col="coral3", alpha=A$posterior_probs[7])
+      out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
+      out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
+      
+      
+
+      return(out15)
+      
 
 
-    out14
-    
-    
-    out15<-out14+geom_point(aes(x=doses,y=probs))
+    }
 
-    
-    return(out15)
-  }
-  
+  }  
 }
 
