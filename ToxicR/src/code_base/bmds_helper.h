@@ -80,6 +80,10 @@ struct continuous_GOF {
 extern "C" {
 #endif
 
+void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_model_result *res);
+
+void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
+
 void bmdsConvertSStat(struct continuous_analysis *ca, struct continuous_analysis *newCA);
 
 void calcTestsOfInterest(struct continuous_AOD *aod);
@@ -100,6 +104,13 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 
 
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
+
+void test0();
+void test1(struct dichotomous_analysis *anal);
+void test2(struct dichotomous_analysis *anal, struct dichotomous_model_result *res);
+void test3(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes);
+void test4(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes);
+void test5(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 #ifdef __cplusplus
 }
 #endif
