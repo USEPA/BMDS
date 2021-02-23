@@ -143,7 +143,7 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   gofData.parms = anal->parms; 
 
 
-  for (int i=0; i< anal->n; i++){
+  for (int i=0; i< anal->parms; i++){
     bmdsRes->stdErr[i] = -9999.0;
     bmdsRes->lowerConf[i] = -9999.0;
     bmdsRes->upperConf[i] = -9999.0;
@@ -255,7 +255,7 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   estimate_sm_laplace_cont(anal, res);
 
 
-  for (int i=0; i< anal->n; i++){
+  for (int i=0; i< anal->parms; i++){
     bmdsRes->stdErr[i] = -9999.0;
     bmdsRes->lowerConf[i] = -9999.0;
     bmdsRes->upperConf[i] = -9999.0;
