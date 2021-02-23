@@ -20,34 +20,38 @@ mData <- matrix(c(0, 2,50,
                   33, 17,50),nrow=6,ncol=3,byrow=T)
 
 
-# Single model fitting
+# Single model fitting- MCMC
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
-# Base density plot is required?
+# Single model fitting- Laplace
 A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type="hill",fit_type = "laplace")
 .plot.BMDdich_fit_maximized(A_single_laplace)
 # Base density plot is required? 
 
 
 
-# MA
-
+# Dichotomous - Model Average
 # Case 1: Dichotomous - MCMC Fitting
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)
-#Base plot 
+### - Need to apply John's idea 
+
+#Base plot - MA density seems little bit odd
 .plot.BMDdichotomous_MA(A)
 
 
 # Case 2: Dichotomous - laplace
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
-# Test 1. Dichotomous MA Clevland Plot
+# Test 1. Dichotomous MA Clevland Plot-- For laplace case/works
 .cleveland_plot.BMDdichotomous_MA(A)
-# Base plot
+
+# This part needs to be double checked & density part should be re-derived
+# - Code / Need to assign dynamically
+.plot.BMDdichotomous_MA(A)
 
 
 
@@ -55,7 +59,6 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 
 
 # Question to Matt.
-
 # This part should be double checked. Laplace fitting is not consistent with other fitting model
 
 # This one shows the CDF of BMD 
@@ -84,7 +87,12 @@ A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_T
                     model_list = c("hill", "exp-3", "exp-5", "power", "FUNL"),
                      distribution_list = c(rep("normal",5)))
 
-A$Individual_Model_2$bmd
+
+# Condition might be added - if it is less than ... 0.05
+
+
+A$posterior_probs
+
 # Test 1. Dichotomous MA Clevland Plot
 .cleveland_plot.BMDcontinous_MA(A)
 # Bit weird result FUNL- Almost 1 other cases is 0;
@@ -92,7 +100,10 @@ A$Individual_Model_2$bmd
 # Base object should be updated by using Shiny App
 A$posterior_probs
 #It is dominated by the FUNL model. While the other 4 models are minor 
+
 # This continous baseplot should be updated
+
+
 plot(A)
 
 

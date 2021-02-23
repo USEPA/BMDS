@@ -89,6 +89,9 @@ cleveland_plot <- function (A, ...){
   # Grap function extract # of indices from the text with same pattern
   fit_idx    <- grep("Individual_Model",class_list)
   
+  
+  
+  
   # Create an empty matrix to contain BMD information from each model
   bmd_ind<-matrix(0,length(fit_idx)+1,5)
   
@@ -104,6 +107,8 @@ cleveland_plot <- function (A, ...){
     bmd_ind[i,5]<-A$posterior_probs[i]
   }
   
+  
+  
   bmd_ind[length(fit_idx)+1,1]<-A$bmd[1]
   bmd_ind[length(fit_idx)+1,2]<-A$bmd[2]
   bmd_ind[length(fit_idx)+1,3]<-A$bmd[3]
@@ -113,17 +118,20 @@ cleveland_plot <- function (A, ...){
   
   bmd_ind_df<-data.frame(bmd_ind)
   
+  bmd_ind_df <- 
+    bmd_ind_df %>% filter(as.numeric(X5)>0.005) 
+    
   #Drop NA value
-  bmd_ind_df<-data.frame(bmd_ind[which(!is.na(bmd_ind[,1])),])
+  bmd_ind_df2<-data.frame(bmd_ind_df[which(!is.na(bmd_ind_df[,1])),])
   
   ggplot()+
-    geom_point(data=bmd_ind_df, aes(x=as.numeric(X1), y=fct_reorder(X4,as.numeric(X5),.desc=T),size=(sqrt(as.numeric(X5)))), color="red")+
+    geom_point(data=bmd_ind_df2, aes(x=as.numeric(X1), y=fct_reorder(X4,as.numeric(X5),.desc=T),size=(sqrt(as.numeric(X5)))), color="red")+
     #scale_colour_gradient(low = "gray", high = "black")+
-    geom_vline(xintercept=as.numeric(bmd_ind_df$X1[length(fit_idx)+1]), linetype="dotted")+
+    geom_vline(xintercept=as.numeric(bmd_ind_df2$X1[length(fit_idx)+1]), linetype="dotted")+
     theme_minimal()+
     labs(x="Dose Level",y="", title="BMD Estimates by Each Model (Sorted by Posterior Probability)",size="Posterior Probability")+
     theme(legend.position="none")+
-    geom_errorbar(data=bmd_ind_df, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
+    geom_errorbar(data=bmd_ind_df2, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
   
   
 }

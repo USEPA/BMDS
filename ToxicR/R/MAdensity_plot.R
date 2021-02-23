@@ -146,6 +146,8 @@ MAdensity_plot <- function (A, ...){
 
   t_combine2<-rbind(t_combine,t_ma)
   
+  
+  t_combine2<-t_combine2 %>% filter(as.numeric(X3)>0.05)
   # From samples 
   p<-ggplot()+
     stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
@@ -423,11 +425,13 @@ MAdensity_plot <- function (A, ...){
   
   t_combine2<-rbind(t_combine,t_ma)
   
+  
+  t_combine3<-t_combine2 %>% filter(as.numeric(X3)>0.005)
   # From samples 
   p<-ggplot()+
-    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,fill="blue")+
-    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    xlim(c(0,quantile(t_combine3$X1,0.999)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+
     scale_fill_manual(
       name = "Probability",
@@ -437,7 +441,7 @@ MAdensity_plot <- function (A, ...){
     labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+theme_classic()
   
   p2<-p+
-    stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T), fill = factor(stat(quantile))),
                         geom = "density_ridges_gradient",
                         calc_ecdf = TRUE, quantiles = c(0.025, 0.975)
     )+ scale_fill_manual(

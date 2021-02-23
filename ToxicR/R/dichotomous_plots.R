@@ -531,7 +531,7 @@
     }
     
 
-    else if ("BMDdich_fit_maximized" %in% class(A)){ # mcmc run
+    else if ("BMDdichotomous_MA_maximized" %in% class(A)){ # mcmc run
       
       
       
