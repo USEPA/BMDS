@@ -18,6 +18,9 @@ struct BMDS_results{
   double AIC;   
   double chisq;
   bool *bounded;
+  double *stdErr;
+  double *lowerConf;
+  double *upperConf;
 };
 
 

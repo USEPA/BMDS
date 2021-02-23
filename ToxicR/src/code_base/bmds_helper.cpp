@@ -141,7 +141,13 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   gofData.doses = anal->doses;
   gofData.n_group = anal->n_group;
   gofData.parms = anal->parms; 
-  
+
+
+  for (int i=0; i< anal->n; i++){
+    bmdsRes->stdErr[i] = -9999.0;
+    bmdsRes->lowerConf[i] = -9999.0;
+    bmdsRes->upperConf[i] = -9999.0;
+  }  
 
   compute_dichotomous_pearson_GOF(&gofData, gofRes);
 
@@ -247,6 +253,14 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   }
 
   estimate_sm_laplace_cont(anal, res);
+
+
+  for (int i=0; i< anal->n; i++){
+    bmdsRes->stdErr[i] = -9999.0;
+    bmdsRes->lowerConf[i] = -9999.0;
+    bmdsRes->upperConf[i] = -9999.0;
+  }
+
 
   collect_cont_bmd_values(anal, res, bmdsRes);
   
