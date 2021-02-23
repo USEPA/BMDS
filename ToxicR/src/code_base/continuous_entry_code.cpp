@@ -1887,72 +1887,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     break; 
   
   }
- /* switch((cont_model)CA->model){
-  case cont_model::funl:
-     
-       init_opt =  bmd_continuous_optimization<normalFUNL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                    CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-       //updated prior updated 
-       RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                       max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
-                                       CA->disttype != distribution::normal_ncv); 
-       break; 
-    
-    case cont_model::hill:
-      init_opt = CA->disttype == distribution::log_normal ?
-      bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                                 CA->disttype != distribution::normal_ncv, CA->isIncreasing):
-      bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                 CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-      //updated prior updated 
-      RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                      max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
-                                      CA->disttype != distribution::normal_ncv); 
-      
-      break; 
-    case cont_model::exp_3:
-    case cont_model::exp_5:
-      init_opt = CA->disttype == distribution::log_normal ?
-      bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                                        CA->disttype != distribution::normal_ncv, CA->isIncreasing):
-      bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                        CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-     
-      RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                      max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
-                                      CA->disttype != distribution::normal_ncv); 
-
-      
-      break; 
-    case cont_model::power: 
-      init_opt = CA->disttype == distribution::log_normal ?
-      bmd_continuous_optimization<lognormalPOWER_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                                  CA->disttype != distribution::normal_ncv, CA->isIncreasing):
-      bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                  CA->disttype != distribution::normal_ncv, CA->isIncreasing);
-      
-      //updated prior updated 
-      RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                      max_dose, divisor, CA->isIncreasing,CA->disttype == distribution::log_normal,
-                                      CA->disttype != distribution::normal_ncv); 
-  case cont_model::polynomial:
-    init_opt =  bmd_continuous_optimization<normalPOLYNOMIAL_BMD_NC,IDPrior> (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                              CA->disttype != distribution::normal_ncv,
-                                                                              CA->isIncreasing,
-                                                                              CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
-    RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                    max_dose, divisor, 
-                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
-                                    CA->disttype != distribution::normal_ncv); RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
-                                    max_dose, divisor, 
-                                    CA->isIncreasing,CA->disttype == distribution::log_normal,
-                                    CA->disttype != distribution::normal_ncv); 
-      break; 
-  
-    default:
-      break; 
-      
- }*/
+ 
     
     a = CA->disttype == distribution::log_normal?
       mcmc_logNormal(orig_Y_LN, orig_X,

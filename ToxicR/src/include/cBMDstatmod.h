@@ -327,8 +327,8 @@ optimizationResult cfindMAX_W_EQUALITY( cBMDModel<LL, PR>  *M,
 		nlopt::opt local_opt(nlopt::LD_LBFGS, M->nParms()); //BOBYQA
 		nlopt::opt local_opt2(nlopt::LN_SBPLX, M->nParms());
 		/////////////////////////////////////////////////////////
-		local_opt.set_xtol_abs(1e-3); 
-		local_opt2.set_xtol_abs(1e-3);
+		local_opt.set_xtol_abs(1e-4); 
+		local_opt2.set_xtol_abs(1e-4);
 		local_opt.set_initial_step(1e-4);
 		local_opt2.set_initial_step(1e-4);
 		local_opt.set_maxeval(10000);

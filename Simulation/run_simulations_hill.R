@@ -24,8 +24,8 @@ for (ii in 1:length(file_list)){
   
   pprobs_ML1 = matrix(NA,1000,11)
   pprobs_ML2 = matrix(NA,1000,4)
-  for (jj in 221:240){#nrow(sim_data)){
-      #print(sprintf("File:%d Iter:%d.",ii,jj))
+  for (jj in 1:1000){#nrow(sim_data)){
+      print(sprintf("File:%d Iter:%d.",ii,jj))
       ###############################################################################
       y = sim_data[jj,]
    
