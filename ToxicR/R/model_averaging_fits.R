@@ -182,14 +182,15 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     
     temp_me <- temp$ma_bmd 
-    temp_me = temp_me[!is.infinite(temp_me[,1]),]
-    temp_me = temp_me[!is.na(temp_me[,1]),]
-    temp_me = temp_me[!is.nan(temp_me[,1]),]
-    if( nrow(temp_me) > 5){
-      te <- splinefun(sort(temp_me[,2]),sort(temp_me[,1]),method="hyman")
-      temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-    }else{
-      temp$bmd <- c(NA,NA,NA)
+    temp$bmd <- c(NA,NA,NA)
+    if (!is.null(dim(temp_me))){
+        temp_me = temp_me[!is.infinite(temp_me[,1]),]
+        temp_me = temp_me[!is.na(temp_me[,1]),]
+        temp_me = temp_me[!is.nan(temp_me[,1]),]
+      if( nrow(temp_me) > 5){
+        te <- splinefun(sort(temp_me[,2]),sort(temp_me[,1]),method="hyman")
+        temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+      }
     }
     names(temp$bmd) <- c("BMD","BMDL","BMDU")
     temp$posterior_probs = temp$posterior_probs;

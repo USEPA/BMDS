@@ -1,7 +1,7 @@
 library(ToxicR)
-model_list  = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
-                         distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
-                                                "normal-ncv"))
+model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                         distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv","lognormal"),2),
+                                                "normal", "normal-ncv"))
 model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
                          distribution_list =  c(rep(c("normal"),4)))
 
@@ -22,7 +22,7 @@ for (ii in 1:length(file_list)){
   BMD_result_HB_ML2_mcmc = matrix(NA,1000,3)
   BMD_result_HB_ML2_lapl = matrix(NA,1000,3)
   
-  pprobs_ML1 = matrix(NA,1000,11)
+  pprobs_ML1 = matrix(NA,1000,10)
   pprobs_ML2 = matrix(NA,1000,4)
   for (jj in 1:1000){#nrow(sim_data)){
       print(sprintf("File:%d Iter:%d.",ii,jj))

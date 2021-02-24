@@ -698,8 +698,8 @@ void bmd_range_find(continuousMA_result *res,
 		
 		// make sure we are not dealing with an infinite value
 		// or not a number
-		if (!isfinite(res->models[i]->bmd_dist[temp_idx]) && 
-			!isfinite(res->models[i]->bmd_dist[temp_idx])){
+		if (isfinite(res->models[i]->bmd_dist[temp_idx]) && 
+			  !isnan(res->models[i]->bmd_dist[temp_idx])){
 			if ( res->models[i]->bmd_dist[temp_idx] > current_max){
 				current_max = res->models[i]->bmd_dist[temp_idx]; 
 			}
@@ -943,7 +943,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     post_probs[j] = post_probs[j]/ norm_sum; 
     
     for (double  i = 0.0; i <= 0.99; i += 0.01 ){
-      if (!isfinite(b[j].BMD_CDF.inv(i))){
+      if (!isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
         post_probs[j] = 0;    // if the cdf has or infinite in the integrating region
                               // it is removed 
       }  
@@ -975,7 +975,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += !isfinite(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+      if (post_probs[j] > 0){ 
+          prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+      }
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
@@ -1187,7 +1189,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
     
-    if (!isfinite(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
+    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
 }
@@ -1445,8 +1447,9 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     post_probs[j] = post_probs[j]/ norm_sum; 
 
     for (double  i = 0.0; i <= 0.99; i += 0.01 ){
-      if ( !isfinite(b[j].BMD_CDF.inv(i))){
-         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
+      if ( !isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
+        // cerr << "I am here: " << i <<": "<< b[j].BMD_CDF.inv(i) << endl; 
+         post_probs[j] = 0;    // if the cdf has nan/inf in it then it needs a 0 posterior
       }  
     } 
   }
