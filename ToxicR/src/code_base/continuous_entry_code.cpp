@@ -498,6 +498,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                      riskType, bmrf,bk_prob,
                                      is_increasing, alpha, step_size,init);
     }
+    removeRow(a.MAP_ESTIMATE ,2);
     removeRow(a.COV,2);
     removeCol(a.COV,2);
     break; 
@@ -512,6 +513,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                   riskType, bmrf,bk_prob,
                                   is_increasing, alpha, step_size,init);
     }else{
+      
       a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                   (likelihood_lnexp5D,  model_prior, fixedB, fixedV,
                                   riskType, bmrf,bk_prob,
@@ -621,7 +623,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                              riskType, bmrf,bk_prob,
                              is_increasing, alpha, step_size,init);
     }
-  
+    removeRow(a.MAP_ESTIMATE ,2);
     removeRow(a.COV,2);
     removeCol(a.COV,2);
     break; 
@@ -696,8 +698,8 @@ void bmd_range_find(continuousMA_result *res,
 		
 		// make sure we are not dealing with an infinite value
 		// or not a number
-		if (!isnan(res->models[i]->bmd_dist[temp_idx]) && 
-			!isinf(res->models[i]->bmd_dist[temp_idx])){
+		if (!isfinite(res->models[i]->bmd_dist[temp_idx]) && 
+			!isfinite(res->models[i]->bmd_dist[temp_idx])){
 			if ( res->models[i]->bmd_dist[temp_idx] > current_max){
 				current_max = res->models[i]->bmd_dist[temp_idx]; 
 			}
@@ -858,6 +860,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           bmd_continuous_optimization<normalPOWER_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                       MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init);
           
+          
           RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
                                           max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
                                           MA->disttype[i] != distribution::normal_ncv); 
@@ -940,8 +943,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     post_probs[j] = post_probs[j]/ norm_sum; 
     
     for (double  i = 0.0; i <= 0.99; i += 0.01 ){
-      if ( isnan(b[j].BMD_CDF.inv(i))){
-        post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
+      if (!isfinite(b[j].BMD_CDF.inv(i))){
+        post_probs[j] = 0;    // if the cdf has or infinite in the integrating region
+                              // it is removed 
       }  
     } 
   }
@@ -971,7 +975,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+      prob += !isfinite(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
@@ -1024,6 +1028,10 @@ mcmcSamples mcmc_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                               (Y,  X, prior, fixedB, fixedV, is_increasing,
                                               bk_prob,suff_stat,bmrf, riskType, alpha,
                                               samples,adverseR,initV);
+      // remove the third entry
+      removeRow(a.map_cov, 2);
+      removeCol(a.map_cov, 2);
+      removeRow(a.map_estimate, 2);
     break; 
   case cont_model::exp_5:
   default: 
@@ -1111,6 +1119,11 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                                 (Y,  X, prior, fixedB, fixedV, is_increasing,
                                                  bk_prob,suff_stat,bmrf, riskType,bConstVar, alpha,
                                                  samples,adverseR,initV);
+    // remove the third entry
+    removeRow(a.map_cov, 2);
+    removeCol(a.map_cov, 2);
+    removeRow(a.map_estimate, 2);
+    
     break; 
   case cont_model::exp_5:
     adverseR = is_increasing?NORMAL_EXP5_UP: NORMAL_EXP5_DOWN; 
@@ -1174,7 +1187,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
     
-    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
+    if (!isfinite(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
 }
@@ -1432,7 +1445,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     post_probs[j] = post_probs[j]/ norm_sum; 
 
     for (double  i = 0.0; i <= 0.99; i += 0.01 ){
-      if ( isnan(b[j].BMD_CDF.inv(i))){
+      if ( !isfinite(b[j].BMD_CDF.inv(i))){
          post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
     } 
@@ -1466,7 +1479,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-        prob += isnan(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+        prob += !isfinite(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;

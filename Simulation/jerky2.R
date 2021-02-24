@@ -8,10 +8,29 @@ model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5"
 
 for (ii in 1:10000){
   print(ii)
-  AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                            fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+  AA_l <-
+    ma_continuous_fit(
+      as.matrix(doses),
+      as.matrix(y),
+      model_list = model_list,
+      fit_type = "laplace",BMD_TYPE = "hybrid",
+      BMR = 0.05,
+      point_p = 0.025
+    )
+
   print(AA_l$posterior_probs)
 }
-q = single_continuous_fit(as.matrix(doses),as.matrix(y),model_type = "exp-5",distribution = "normal-ncv",BMD_TYPE = "hybrid",
+q = single_continuous_fit(as.matrix(doses),as.matrix(y),model_type = "exp-3",distribution = "normal-ncv",BMD_TYPE = "hybrid",
                           BMR = 0.05,point_p = 0.025,fit_type = 'laplace',sstat = F)
+q$bmd_dist
+BB <-
+  ma_continuous_fit(
+    as.matrix(doses),
+    as.matrix(y),
+    model_list = model_list,
+    fit_type = "mcmc",BMD_TYPE = "hybrid",
+    BMR = 0.05,
+    point_p = 0.025
+  )
+
 q$bmd

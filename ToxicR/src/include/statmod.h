@@ -364,7 +364,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 {
 
 	std::vector<double> x(M->nParms());
- // cerr << "Entered Start" << endl; 
+
   int NI; 
   if (isBig){
 	   NI = 1000; // size of the initial population
@@ -445,6 +445,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (population.size() <= 25){
     // couln't find a good starting point return the starting value
     // and pray
+    gsl_rng_free(r); 
     for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
     return x; 
   }
@@ -467,7 +468,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 600; 
+      ngenerations = 300; 
       ntourny = 20; 
       tourny_size = 20; 
   }
@@ -604,6 +605,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     if (!isnormal(x[i])){
       x[i] = 0; }
   }
+  gsl_rng_free(r);
 	return x;
 
 }
@@ -638,7 +640,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
                                   lb, ub,op_size);
     }
     catch (...) {
-      std::cerr << "Holy Fuck!" <<  '\n';
+     
     }
   }else{
     for (int i = 0; i < x.size(); i++){
@@ -677,7 +679,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   int opt_iter;
   // look at 5 optimization algorithms :-)
   int start_iter = (OPTIM_USE_SUBPLX & flags)?0:1; 
-  for (opt_iter = 1; opt_iter < 5; opt_iter++){
+  for (opt_iter = start_iter; opt_iter < 5; opt_iter++){
     
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
@@ -714,7 +716,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_upper_bounds(ub);
     opt_ptr->set_ftol_rel(1e-8);
    // opt_ptr->set_ftol_abs(1e-8);
-    //opt_ptr->set_initial_step(1e-3); 
+    opt_ptr->set_initial_step(1e-4); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////
@@ -755,7 +757,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", general error: " << exc.what());
       // cout << "???" << endl; 
     }catch(...){
-      std::cerr << "Marco Polo" << std::endl; 
+       
     } // catch
     
     DEBUG_CLOSE_LOG(file);
@@ -771,9 +773,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   M->setEST(d);
   
   if (result < 0) {
-    
-    cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
-    
+    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
   }
 
   return oR;
