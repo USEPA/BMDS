@@ -4,7 +4,7 @@
 ##################################################
 ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                                   user_priors=NA, BMD_TYPE = "sd",
-                                  BMR = 0.1, point_p = 0.01, distribution_list = NA,
+                                  BMR = 0.1, point_p = 0.01, 
                                   alpha = 0.05,samples = 21000,
                                   burnin = 1000){
   myD = Y; 
@@ -27,13 +27,13 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
   
   
-  if (is.na(model_list)){
+  if (is.na(model_list[[1]][1])){
     model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2),rep("FUNL",2))
     distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv","normal","normal-ncv")
+    model_list = data.frame(model_list = model_list, distribution_list = distribution_list)
   }
-  
-  
-  prior_list = ma_continuous_list(model_list,distribution_list)
+
+  prior_list = ma_continuous_list(model_list$model_list,model_list$distribution_list)
   
   models <- rep(0,length(prior_list))
   dlists  <- rep(0,length(prior_list))
@@ -66,7 +66,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     temp.fit <- lm(model_data$SSTAT[,2] ~ model_data$X,
                    weights=(1/model_data$SSTAT[,4]^2)*model_data$SSTAT[,3])
   }else{
-    temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
+    temp.fit <- lm(model_data$SSTAT[,2]~model_data$X)
   }
 
   #Determine if there is an increasing or decreasing trend for BMD
@@ -94,7 +94,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[jj]]$fitted_model <- tempn[[ii]]
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)
-         temp[[jj]]$model <- model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+         temp[[jj]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
 
          #te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
          data_temp = temp[[jj]]$fitted_model$bmd_dist
@@ -141,7 +141,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     temp$ma_bmd = data_temp
     if (nrow(data_temp)>6){
-         te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
+         te <- splinefun(sort(data_temp[,2]),sort(data_temp[,1]),method="hyman")
          temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     }else{
          temp$bmd     <- c(NA,NA,NA)              
@@ -163,17 +163,18 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     for ( ii in idx){
          temp[[ii]]$prior <- priors[[which(ii == idx)]]
          temp[[ii]]$data  <- cbind(D,Y)
-         temp[[ii]]$model <- model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+         temp[[ii]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
      
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
-         data_temp = data_temp[!is.na(data_temp[,1]),]
-         if (nrow(data_temp)>6){
-              te <- splinefun(data_temp[,2],data_temp[,1],method="hyman")
-              temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-         }else{
-              temp[[ii]]$bmd     <- c(NA,NA,NA)              
+         if (nrow(data_temp)>0){
+           data_temp = data_temp[!is.na(data_temp[,1]),]
+           if (nrow(data_temp)>6){
+                te <- splinefun(sort(data_temp[,2]),sort(data_temp[,1]),method="hyman")
+                temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+           }else{
+                temp[[ii]]$bmd     <- c(NA,NA,NA)              
+           }
          }
-         
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
          class(temp[[ii]]) <- "BMDcont_fit_maximized"
@@ -181,14 +182,15 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     }
     
     temp_me <- temp$ma_bmd 
-    temp_me = temp_me[!is.infinite(temp_me[,1]),]
-    temp_me = temp_me[!is.na(temp_me[,1]),]
-    temp_me = temp_me[!is.nan(temp_me[,1]),]
-    if( nrow(temp_me) > 5){
-      te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
-      temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-    }else{
-      temp$bmd <- c(NA,NA,NA)
+    temp$bmd <- c(NA,NA,NA)
+    if (!is.null(dim(temp_me))){
+        temp_me = temp_me[!is.infinite(temp_me[,1]),]
+        temp_me = temp_me[!is.na(temp_me[,1]),]
+        temp_me = temp_me[!is.nan(temp_me[,1]),]
+      if( nrow(temp_me) > 5){
+        te <- splinefun(sort(temp_me[,2]),sort(temp_me[,1]),method="hyman")
+        temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+      }
     }
     names(temp$bmd) <- c("BMD","BMDL","BMDU")
     temp$posterior_probs = temp$posterior_probs;

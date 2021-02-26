@@ -609,6 +609,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
+  
 
   #pragma omp parallel
 {

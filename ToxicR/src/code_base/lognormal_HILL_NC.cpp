@@ -11,6 +11,9 @@
 
 #include "gsl/gsl_cdf.h"
 #include <gsl/gsl_randist.h>
+    
+#include <iostream>
+#include <math.h>      
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -706,5 +709,10 @@ double lognormalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF
 	}
 
 
-	return mid;
+	if (isfinite(mid)){
+	  return mid; 
+	}else{
+	  std::cerr << "Non-finite BMD returned: Exp-Log-Hill."<< std::endl;
+	  return std::numeric_limits<double>::infinity();
+	}
 }

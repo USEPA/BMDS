@@ -12,7 +12,8 @@
 #endif
 
 #include <gsl/gsl_randist.h>
-
+#include <iostream>
+#include <math.h>  
 
 /////////////////////////////////////////////////////////////////////////
 // function: parameter_to_remove()
@@ -695,8 +696,8 @@ double normalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
 	
 	double NOT_ADVERSE_P = 1.0 - TAIL_PROB;
     
-    ////////////////////////////////////////////////////////////////////
-    //Get the mean and variance at dose zero as well as a very high dose
+  ////////////////////////////////////////////////////////////////////
+  //Get the mean and variance at dose zero as well as a very high dose
 	double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d+max_d); 
 	Eigen::MatrixXd d(3,1); d << min_d, mid, max_d; 	
 	Eigen::MatrixXd temp_mean =     mean(theta,d); 
@@ -744,8 +745,8 @@ double normalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
 	double temp_test = test_prob - P;
 	 
 
-
-	while (fabs(temp_test) > 1e-5){
+  int iter = 0; 
+	while (fabs(temp_test) > 1e-5 && iter < 200){
 		// we have bounded the BMD now we use a root finding algorithm to 
 		// figure out what it is default difference is a probability of of 1e-5
 		if (temp_test  < 0){
@@ -764,10 +765,15 @@ double normalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
 		test_prob = isIncreasing ? gsl_cdf_ugaussian_P(test) : 1.0 - gsl_cdf_ugaussian_P(test);
 					
 		temp_test = test_prob - P;
-
+    iter ++; 
 		
 	}
 	
-	return mid; 
+	if (isfinite(mid)){
+	  return mid; 
+	}else{
+	  std::cerr << "Non-finite BMD returned: Hill-Normal."<< std::endl; 
+	  return std::numeric_limits<double>::infinity();
+	}
 }
 

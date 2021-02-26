@@ -369,7 +369,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (isBig){
 	   NI = 1000; // size of the initial population
   }else{
-     NI = 400; 
+     NI = 1000; 
   }
   std::vector<double> llist(NI); // List of the likelihood values; 
   for(int j=0; j< llist.size(); j++){
@@ -393,6 +393,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
+  gsl_rng_set(r, 8675309); // set the same seed for every GA run
   
   population.push_back(startV); 
   llist.push_back( M->negPenLike(test)); 
@@ -402,7 +403,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   for (int i = 0; i < NI; i ++){
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j,0) = 1 + startV(j,0) + gsl_ran_flat(r,-4,4);// random number in the bounds
+      test(j,0) = startV(j,0) + gsl_ran_flat(r,-1,1);// random number in the bounds
       
       if (test(j,0) > ub[j] ){
           test(j,0) = ub[j]; 
@@ -432,16 +433,19 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
     }
     
   }
-
+  
   for (int i = population.size()-1; i > 1; --i){
     if (population[i].size() == 0){
       population.erase(population.begin() + i);
+      i = population.size(); //removed the value 
+                             //start over
     }
   }
-  
-  if (population.size() <= 3){
+ 
+  if (population.size() <= 25){
     // couln't find a good starting point return the starting value
     // and pray
+    gsl_rng_free(r); 
     for (int i = 0; i < M->nParms(); i++)	x[i] = startV(i, 0);
     return x; 
   }
@@ -464,8 +468,8 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 200; 
-      ntourny = 15; 
+      ngenerations = 300; 
+      ntourny = 20; 
       tourny_size = 20; 
   }
   
@@ -518,11 +522,14 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
        
        int idx = (int)(cur_tourny_parms.size()-1)*gsl_rng_uniform(r) + 1;    
        Eigen::MatrixXd temp_delta = cur_tourny_parms[0] - cur_tourny_parms[idx];
-       Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.2*temp_delta*(2*gsl_rng_uniform(r)-1);
+       // Create a new child as a mix between the best and some other 
+       // value. 
+       Eigen::MatrixXd child =  cur_tourny_parms[0] + 0.8*temp_delta*(2*gsl_rng_uniform(r)-1);
        correctBounds = true; 
        
       
        for (int iii = 0; iii < M->nParms(); iii++) {
+             // perterb the individual values in the child
              child(iii,0) = child(iii,0) + 0.2*abs(child(iii,0))*(2*gsl_rng_uniform(r)-1);
              if (lb[iii] > child(iii, 0) || ub[iii] < child(iii, 0)) {
                correctBounds = false;
@@ -570,9 +577,11 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 	  
     llist.erase(it_l,llist.end()); population.erase(it_pop,population.end()); 
    }
-
   
-   test = population[0]; // the fittest is our starting value
+   if (population.size() > 0){
+      test = population[0]; // the fittest is our starting value
+   }
+  
    double t1 = M->negPenLike(test); 
    double t2 = M->negPenLike(startV); 
    if (t2 < t1){ // the random search was no better than the first value. 
@@ -589,13 +598,14 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
      test = startV; 
    }
 
- 
+//  cout << test <<  endl << endl; 
 	for (int i = 0; i < M->nParms(); i++)	x[i] = test(i, 0);
 
   for (int i = 0; i < M->nParms(); i++){
     if (!isnormal(x[i])){
       x[i] = 0; }
   }
+  gsl_rng_free(r);
 	return x;
 
 }
@@ -609,23 +619,29 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
 //Output: statMod<LL,PR> *M - The model with it's MAP parameter set.
 template <class LL, class PR>
 optimizationResult findMAP(statModel<LL, PR>  *M,
-                           Eigen::MatrixXd    startV, unsigned int flags = OPTIM_ALL_FLAGS) {
+                           Eigen::MatrixXd    startV,
+                           unsigned int flags =  OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX) {
   optimizationResult oR;
 
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
   temp_data = M->parmUB();
-  //cout << temp_data << endl;
+
   std::vector<double> ub(M->nParms());
-  
   
   for (int i = 0; i < M->nParms(); i++) ub[i] = temp_data(i, 0);
   std::vector<double> x(startV.rows());
   if (OPTIM_USE_GENETIC & flags){
      bool op_size = (OPTIM_USE_BIG_GENETIC & flags); 
-     x =  startValue_F(M, startV,
-                          lb, ub,op_size);
+    try {
+     
+      x =  startValue_F(M, startV,
+                                  lb, ub,op_size);
+    }
+    catch (...) {
+     
+    }
   }else{
     for (int i = 0; i < x.size(); i++){
       x[i] = startV(i,0);
@@ -635,9 +651,11 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
  
  
   for (int i = 0; i < M->nParms(); i++){
+    
     if (!isnormal(x[i])){
       x[i] = 0;
     }
+  
   }
 
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
@@ -698,7 +716,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_upper_bounds(ub);
     opt_ptr->set_ftol_rel(1e-8);
    // opt_ptr->set_ftol_abs(1e-8);
-    //opt_ptr->set_initial_step(1e-3); 
+    opt_ptr->set_initial_step(1e-4); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////
@@ -738,6 +756,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     catch (const std::exception &exc) {
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", general error: " << exc.what());
       // cout << "???" << endl; 
+    }catch(...){
+       
     } // catch
     
     DEBUG_CLOSE_LOG(file);
@@ -753,9 +773,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   M->setEST(d);
   
   if (result < 0) {
-    
-    cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
-    
+    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result << endl;
   }
 
   return oR;

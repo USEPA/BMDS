@@ -80,7 +80,7 @@ public:
               prior_spec(parm,1) += log(scale); 
               prior_spec(parm,3) *= scale;
               prior_spec(parm,4) *= scale;
-          //    std::cout << prior_spec << std::endl; 
+          //  std::cout << prior_spec << std::endl; 
             break; 
          case prior_iidtype::iid_mle: 
              prior_spec(parm,3) *= scale;
