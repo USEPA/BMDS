@@ -20,9 +20,6 @@ int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_r
 
 void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDSres){
 
-  printf("LL=%f\n",res->max);
-  printf("model_df=%f\n",res->model_df);
-
   bool freqModel = anal->prior[0] == 0;
 
   // First find number of bounded parms
@@ -36,9 +33,6 @@ void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_re
 }
 
 void calcContAIC(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDSres){
-
-  printf("LL=%f\n",res->max);
-  printf("model_df=%f\n",res->model_df);
 
   bool freqModel = anal->prior[0] == 0;
 
@@ -96,7 +90,6 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDSres){
 
   int distSize = res->dist_numE*2;
-  printf("distSize: %d\n",distSize);
 
   double dist[distSize/2][2];
   double quant[distSize/2];
@@ -176,6 +169,8 @@ void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_mode
     case dich_model::d_weibull:
     case dich_model::d_gamma:
     case dich_model::d_loglogistic:
+    case dich_model::d_qlinear:
+    case dich_model::d_logprobit:
       //rescale background parameter
       res->parms[0] = 1.0/(1.0+exp(-1.0*res->parms[0]));
       break;
@@ -196,13 +191,11 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   if (detectAdvDir){
     determineAdvDir(anal);
     int ind;
-    std::cout << "adjusting parms for adv dir" << endl;
     switch(anal->model){
       case cont_model::exp_3:
       case cont_model::exp_5:
     //if ((anal->model == cont_model::exp_5 || anal->model==cont_model::exp_3) && anal->prior[0] == 0){
       if (anal->prior[0] == 0){
-        std::cout << "adjusting exp parms" << std::endl;  
         if(anal->isIncreasing){
           if (anal->disttype == distribution::normal_ncv){
             anal->prior[20] = 0.0;  //c min
@@ -221,7 +214,6 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
       case cont_model::polynomial:
      // } else if (anal->model == cont_model::polynomial && anal->prior[0] == 0){
       if(anal->prior[0] == 0){
-        std::cout<<"adjusting poly parms"<<std::endl;
         if(anal->isIncreasing){
           if(anal->disttype == distribution::normal_ncv){
             ind = 13+3*(anal->degree-1);
@@ -246,10 +238,6 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
       }
       break;
     }  //end switch
-    std::cout<<"adjusted parms"<<std::endl;
-    for(int i=0; i<anal->parms*anal->prior_cols; i++){
-      std::cout<<"prior["<<i<<"]="<<anal->prior[i]<<std::endl;
-    }
   }
 
   estimate_sm_laplace_cont(anal, res);
@@ -339,7 +327,6 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
 void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res){
   //rescale alpha parameter for all continuous models
   //assumes alpha parameter is always last
-  std::cout<<"alpha b4 rescaling: " << res->parms[CA->parms-1] << std::endl;
   //res->parms[CA->parms-1] = 1.0/(exp(-1.0*res->parms[CA->parms-1])); 
   switch (CA->model){
     case cont_model::hill:
@@ -355,7 +342,6 @@ void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_r
  // if (!CA->model == cont_model::exp_3 && !CA->model == cont_model::exp_5){
  //   res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
  // }
-  std::cout<<"alpha after rescaling: " << res->parms[CA->parms-1] << std::endl;
 }
 
 
