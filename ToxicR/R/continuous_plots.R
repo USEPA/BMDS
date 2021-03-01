@@ -136,26 +136,32 @@ cont_power_f <-function(parms,d){
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
   }
-   
-  if (ncol(fit$data) == 4 ){ #sufficient statistics
-       mean <- fit$data[,2,drop=F]
-       se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-       doses = fit$data[,1,drop=F]
+     
+    
+  #sufficient statistics- This part dosen't makes senseArgument entry fixed 
+  if (ncol(fit$Individual_Model_1$data) == 4){ 
+       mean <- fit$Individual_Model_1$data[,2,drop=F]
+       se   <- fit$Individual_Model_1$data[,4,drop=F]/sqrt(fit$Individual_Model_1$data[,3,drop=F])
+       doses = fit$Individual_Model_1$data[,1,drop=F]
        uerror <- mean+se
        lerror <- mean-se
        
        dose = c(doses,doses)
        Response = c(uerror,lerror)
-       plot(dose,Response,type='n',...)
-       
+       plot(dose,Response,type='n')
   }else{
-       Response <- fit$data[,2,drop=F]
-       doses = fit$data[,1,drop=F]
-       plot(doses,Response,type='n',...)
+       Response <- fit$Individual_Model_1$data[,2,drop=F]
+       doses = fit$Individual_Model_1$data[,1,drop=F]
+       plot(doses,Response,type='n')
   }
-  
+  # I fixed some logic of inputs in if/else statement- they used to be fit$data
   
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  
+  
+  # This part should be loop 
+  
+  
   if (fit$model=="FUNL"){
        me <- cont_FUNL_f(fit$parameters,test_doses)
   }  
@@ -191,6 +197,7 @@ cont_power_f <-function(parms,d){
   
 }
 
+# Base plot- MCMC or BMD?
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
      density_col="blueviolet"
      credint_col="azure2"
@@ -253,6 +260,8 @@ cont_power_f <-function(parms,d){
           lq <- apply(temp_f,2,quantile, probs = qprob)
           uq <- apply(temp_f,2,quantile, probs = 1-qprob)
           col1 = alphablend(credint_col,1)
+          
+          # Data structure for polygon - this part should be re-implmeneted as ggplot object
           polygon(c(test_doses,test_doses[length(test_doses):1]),
                   c(uq,lq[length(test_doses):1]),col = col1,border=col1)
           
