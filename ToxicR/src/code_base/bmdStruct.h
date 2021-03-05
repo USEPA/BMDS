@@ -220,6 +220,8 @@ struct continuous_deviance{
   int N2; 
   double A3; 
   int N3; 
+  double R; 
+  int NR; 
 };
 
 // odds and ends

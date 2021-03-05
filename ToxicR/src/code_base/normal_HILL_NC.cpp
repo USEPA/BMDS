@@ -13,7 +13,9 @@
 
 #include <gsl/gsl_randist.h>
 #include <iostream>
+#include <cmath>
 #include <math.h>  
+using namespace std;
 
 /////////////////////////////////////////////////////////////////////////
 // function: parameter_to_remove()
