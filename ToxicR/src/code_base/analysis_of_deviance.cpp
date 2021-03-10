@@ -60,6 +60,30 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   /////////////////////////////////////////////////////////////////////////////////////
   // Test A1
   lognormalLLTESTA1 a1Test(Y, X, true);
+  // if it is a sufficient statistics model
+  std::vector<double> vec(X.data(), X.data() + X.rows() * X.cols());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
+  std::vector<double> udoses = vec; // this should be the unique dose group
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size()); 
+  Eigen::MatrixXd meanX2 = Eigen::MatrixXd::Ones(Y.rows(),1);
+  Eigen::MatrixXd W     = Eigen::MatrixXd::Zero(Y.rows(), Y.rows()); 
+  for (int i = 0; i < Y.rows(); i++){
+    W(i,i) = Y(i,2); 
+  }
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+    for (int j = 0; j < udoses.size(); j++) {
+      meanX(i, j) = udoses[j] == X(i, 0) ? 1.0 : 0.0; 
+    }
+  }
+  Eigen::MatrixXd InitA = (meanX.transpose()*W*meanX);
+  Eigen::MatrixXd InitB = (meanX2.transpose()*W*meanX2);
+  InitA = InitA.inverse()*meanX.transpose()*W*Y;
+  InitB = InitB.inverse()*meanX2.transpose()*W*Y;
+  //Eigen::MatrixXd startV1(a1Test.nParms(),1); 
+  
   int nParms = a1Test.nParms();
   std::vector<double> fix1(nParms); for (unsigned int i = 0; i < nParms; i++) { fix1[i] = 0.0; }
   std::vector<bool> isfix1(nParms); for (unsigned int i = 0; i < nParms; i++) { isfix1[i] = false; }
@@ -71,10 +95,11 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
   double tempV = 0.0; 
-  for (unsigned int i = 0; i < a1Test.nParms(); i++){
-    startV1(i,0) = exp(Y(i,0));
+  for (unsigned int i = 0; i < InitA.rows(); i++){
+    startV1(i,0) = exp(InitA(i,0));
   }
-  startV1(a1Test.nParms() - 1,0) = 0; 
+ 
+  startV1(a1Test.nParms() - 1,0) = InitB(0,1); 
    
   IDcontinuousPrior a1Init(a1Priors);
   statModel<lognormalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
@@ -97,14 +122,20 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     a2Priors.row(i) << 0, a1Result.max_parms(i), 1, 0, 1e8;
   }
   IDcontinuousPrior a2Init(a2Priors);
-
+  Eigen::MatrixXd startV2(nParms,1);
+  for (unsigned int i = 0; i < nParms/2; i++ ){
+    startV2(i,0) = exp(InitA(i,0)); 
+  } 
+  for (unsigned int i = nParms/2; i < nParms; i++ ){
+    startV2(i,0) = InitA(i,1); 
+  }
   statModel<lognormalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                           isfix2, fix2);
-  optimizationResult a2Result = findMAP<lognormalLLTESTA2, IDcontinuousPrior>(&a2Model);
+  optimizationResult a2Result = findMAP<lognormalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
   CD->A2 = a2Result.functionV;
   CD->N2 = a2Result.max_parms.rows();
   /////////////////////////////////////////////////////////////////////////////////////
-  // Test A3
+  // Test R
   lognormalLLTESTR rTest(Y, X, bSuffStat);
   nParms = rTest.nParms();
   std::vector<double> fix4(nParms); for (unsigned int i = 0; i < nParms; i++) { fix4[i] = 0.0; }
@@ -114,13 +145,17 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     rPriors.row(i) << 0, 1, 1, 0, 1e8;
   }
   rPriors.row(nParms - 1) << 0, 0, 1, -1e8, 1e8;
+
+  Eigen::MatrixXd startR(2,1);
+  startR(0,0) = exp(InitB(0,0));
+  startR(1,0) = InitB(0,1);
   IDcontinuousPrior rInit(rPriors);
   statModel<lognormalLLTESTR, IDcontinuousPrior> rModel(rTest, rInit,
                                                         isfix4, fix4);
-  optimizationResult rResult = findMAP<lognormalLLTESTR, IDcontinuousPrior>(&rModel);
+  optimizationResult rResult = findMAP<lognormalLLTESTR, IDcontinuousPrior>(&rModel,startR);
   
-  CD->A3 = rResult.functionV;
-  CD->N3 = rResult.max_parms.rows();
+  CD->R = rResult.functionV;
+  CD->NR = rResult.max_parms.rows();
 }
 
 /* normal_AOD
@@ -144,12 +179,36 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   }
   IDcontinuousPrior a1Init(a1Priors);
   
-  Eigen::MatrixXd startV1(a1Test.nParms(),1); 
-  double tempV = 0.0; 
-  for (unsigned int i = 0; i < a1Test.nParms(); i++){
-    startV1(i,0) = Y(i,0);
+  // if it is a sufficient statistics model
+  std::vector<double> vec(X.data(), X.data() + X.rows() * X.cols());
+  std::sort(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
+  std::vector<double> udoses = vec; // this should be the unique dose group
+  
+  Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size()); 
+  Eigen::MatrixXd meanX2 = Eigen::MatrixXd::Ones(Y.rows(),1);
+  Eigen::MatrixXd W     = Eigen::MatrixXd::Zero(Y.rows(), Y.rows()); 
+  for (int i = 0; i < Y.rows(); i++){
+    W(i,i) = Y(i,2); 
   }
-  startV1(a1Test.nParms() - 1,0) = 1; 
+  for (int i = 0; i < meanX.rows(); i++)
+  {
+    for (int j = 0; j < udoses.size(); j++) {
+      meanX(i, j) = udoses[j] == X(i, 0) ? 1.0 : 0.0; 
+    }
+  }
+  Eigen::MatrixXd InitA = (meanX.transpose()*W*meanX);
+  Eigen::MatrixXd InitB = (meanX2.transpose()*W*meanX2);
+  InitA = InitA.inverse()*meanX.transpose()*W*Y;
+  InitB = InitB.inverse()*meanX2.transpose()*W*Y;
+  Eigen::MatrixXd startV1(a1Test.nParms(),1); 
+  
+  double tempV = 0.0; 
+  
+  for (unsigned int i = 0; i < a1Test.nParms(); i++){
+    startV1(i,0) = InitA(i,0);
+  }
+  startV1(a1Test.nParms() - 1,0) = InitB(0,1)*InitB(0,1); 
   
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
@@ -169,10 +228,19 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   for (unsigned int i = 0; i < nParms / 2; i++) {
     a2Priors.row(i) << 0, a1Result.max_parms(i), 1, -1e8, 1e8;
   }
+  
   IDcontinuousPrior a2Init(a2Priors);
+  Eigen::MatrixXd startV2(nParms,1);
+  for (unsigned int i = 0; i < nParms/2; i++ ){
+    startV2(i,0) = InitA(i,0); 
+  } 
+  for (unsigned int i = nParms/2; i < nParms; i++ ){
+    startV2(i,0) = InitA(i,1)*InitA(i,1); 
+  }
   statModel<normalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                        isfix2, fix2);
-  optimizationResult a2Result = findMAP<normalLLTESTA2, IDcontinuousPrior>(&a2Model);
+
+  optimizationResult a2Result = findMAP<normalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
   CD->A2 = a2Result.functionV;
   CD->N2 = a2Result.max_parms.rows(); 
   //////////////////////////////////////////////////////////////////////
@@ -188,9 +256,46 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     a3Priors.row(i) << 0, a2Result.max_parms(i), 1, 0, 1e8;
   }
   IDcontinuousPrior a3Init(a3Priors);
+  
+  Eigen::MatrixXd startV3(nParms,1);
+  Eigen::MatrixXd meanX3 = Eigen::MatrixXd::Ones(InitA.rows(),2);
+  for (int i = 0; i < meanX3.rows(); i++){
+    meanX3(i,1) = InitA(i,0) > 0? log(InitA(i,0)):-13.8;  
+    InitA(i,1) = log(InitA(i,1)*InitA(i,1));   
+  }
+  for (unsigned int i = 0; i < nParms-2; i++ ){
+    startV3(i,0) = InitA(i,0); 
+  } 
+  
+  Eigen::MatrixXd InitC = (meanX3.transpose()*meanX3); 
+  InitC = InitC.inverse()*meanX3.transpose()*InitA.col(1); 
+  startV3(nParms-2) = InitC(1,0);
+  startV3(nParms-1) = InitC(0,0);
+ 
   statModel<normalLLTESTA3, IDcontinuousPrior> a3Model(a3Test, a3Init,
                                                        isfix3, fix3);
-  optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model);
+  optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model,startV3);
+  
   CD->A3 = a3Result.functionV;
   CD->N3 = a3Result.max_parms.rows(); 
+  
+  //////////////////////////////////////////////////////////////
+  normalLLTESTR RTest(Y, X, bSuffStat);
+  nParms = RTest.nParms();
+  std::vector<double> fixR(nParms); for (unsigned int i = 0; i < nParms; i++) { fixR[i] = 0.0; }
+  std::vector<bool> isfixR(nParms); for (unsigned int i = 0; i < nParms; i++) { isfixR[i] = false; }
+  Eigen::MatrixXd RPriors(nParms, NUM_PRIOR_COLS);
+
+  for (unsigned int i = 0; i < nParms; i++) {
+     RPriors.row(i) << 0, 0, 1, -1e8, 1e8;
+  }
+  IDcontinuousPrior RInit(RPriors);
+  Eigen::MatrixXd startR(2,1);
+  startR(0,0) = InitB(0,0);
+  startR(1,0) = InitB(0,1);
+  statModel<normalLLTESTR, IDcontinuousPrior> RModel(RTest, RInit,
+                                                       isfixR, fixR);
+  optimizationResult RResult = findMAP<normalLLTESTR, IDcontinuousPrior>(&RModel,startR);
+  CD->R = RResult.functionV;
+  CD->NR = RResult.max_parms.rows(); 
 }

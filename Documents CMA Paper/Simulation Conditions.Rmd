@@ -571,7 +571,7 @@ kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation 
 ```{r Hill Hybrid BMD, echo=FALSE}
 doses <- seq(0,100,0.5)
 bkg = c(10.58,10.58,481,481)
-lambda <- c(18528.14,18528.14,18528.14,18528.14,227.8176,227.8176,227.8176,227.8176)*0.5
+lambda <- c(18528.14,18528.14,18528.14,18528.14,227.8176,227.8176,227.8176,227.8176)
 
 bmd_sd_ig <- c(0,0,0,0)
 bmd_sd_no <- c(0,0,0,0)
@@ -737,6 +737,7 @@ for(i in 1:4){
 }
 
 var_no <- var_ig
+print(var_no)
 for(i in 1:4){
   mean = X%*%t(iS[i,,drop=F]) + bkg[i]
   isM <- splinefun(doses,mean)
@@ -752,7 +753,7 @@ for(i in 1:4){
   bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
 }
 
-var_ln <- c(0.2085732,0.2085732,0.1582215,0.1582215)
+var_ln <- c(0.209,0.209,0.158,0.158)
 var_ln <- var_ln*var_ln
 for(i in 1:4){
   mean = X%*%t(iS[i,,drop=F]) + bkg[i]

@@ -1477,12 +1477,15 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   // also get compute the MA BMD list
   bmd_range_find(res,range);
   double range_bmd = range[1] - range[0]; 
+  
   for (int i = 0; i < res->dist_numE; i ++){
     double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-        prob += !isfinite(b[j].BMD_CDF.P(cbmd))?0:b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+        if (post_probs[j] > 0){
+          prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+        }
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;

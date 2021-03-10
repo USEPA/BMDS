@@ -16,7 +16,9 @@
 #include "log_likelihoods.h"
 #include "lognormalModels.h"
 #include <iostream>
+#include <cmath>
 #include <math.h>  
+using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // function: parameter_to_remove()
 // purpose: Tell the optimizer which profile likelihood method is

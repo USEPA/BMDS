@@ -10,7 +10,10 @@
     #include <gsl/gsl_randist.h>
 #endif
 #include <iostream>
-#include <math.h>      
+#include <math.h>  
+#include <cmath>
+#include <math.h>  
+using namespace std;
 /////////////////////////////////////////////////////////////////////////
 // function: type_of_profile()
 // purpose: Tell the optimizer which profile likelihood method is

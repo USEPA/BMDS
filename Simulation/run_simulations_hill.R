@@ -5,8 +5,6 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5"
 model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
                          distribution_list =  c(rep(c("normal"),4)))
 
-
-
 file_list = dir()
 file_list = file_list[!(file_list %in% "results")]
 options(warn=-1)

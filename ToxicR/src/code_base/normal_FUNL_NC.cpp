@@ -12,6 +12,9 @@
 #endif
 
 #include <gsl/gsl_randist.h>
+#include <cmath>
+#include <math.h>  
+using namespace std;
 
 int normalFUNL_BMD_NC::type_of_profile(contbmd TYPE) {
       

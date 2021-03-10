@@ -25,7 +25,7 @@ X_e_5 <- iSpline(dose_e_5,knots=seq(30,90,20))
 X_g_4 <- iSpline(dose_g_4,knots=seq(30,90,20))
 X_e_4 <- iSpline(dose_e_4,knots=seq(30,90,20))
 bkg = c(10.58,10.58,481,481)
-sd    <- c(rep(2.28,4),rep(77.5,2))
+sd    <- c(rep(2.28,2),rep(77.5,2))
 #normal data
 for (i in 1:4){
   means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
@@ -47,7 +47,7 @@ for (i in 1:4){
   save(doses,sim_data,file=sprintf("NP_normal_e_4_sim_%d.Rdata",i))
 }
 #log-normal data
-sd    <- c(rep(0.209,2),rep(0.158,4))
+sd    <- c(rep(0.209,2),rep(0.158,2))
 for (i in 1:4){
   means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
   means_e_5 <- X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
@@ -70,7 +70,6 @@ for (i in 1:4){
 }
 #inv-gaussian data
 sd    <- c(rep(227.8176,2),rep(18528.14,2))
-#normal data
 for (i in 1:4){
   means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
   means_e_5 <- X_e_5%*%t(iS[i,,drop=F]) + bkg[i]

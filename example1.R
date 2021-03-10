@@ -28,7 +28,7 @@ library(dplyr)
 temp <- PFOA_Liver %>% filter(X1 == "SQLE_9935")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "laplace",sstat = F,)
-#AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "ACAA2_7955")
