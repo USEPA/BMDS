@@ -108,6 +108,11 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
 
+
+void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD);
+
+void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
+
 #ifdef __cplusplus
 }
 #endif

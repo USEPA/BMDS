@@ -298,14 +298,13 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   GOFres.sd = new double[GOFanal.n];
   continuous_expectation(&GOFanal, res, &GOFres);
 
-
-  gof->dose = GOFanal.doses;
-  gof->size = GOFanal.n_group;
-  gof->estMean = GOFres.expected;
-  gof->obsMean = GOFanal.Y;
-  gof->estSD = GOFres.sd;
-  gof->obsSD = GOFanal.sd;
   for (int i=0; i<GOFanal.n; i++){
+	gof->dose[i] = GOFanal.doses[i];
+    gof->size[i] = GOFanal.n_group[i];
+    gof->estMean[i] = GOFres.expected[i];
+    gof->obsMean[i] = GOFanal.Y[i];
+    gof->estSD[i] = GOFres.sd[i];
+    gof->obsSD[i] = GOFanal.sd[i];
     gof->res[i] = sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i];
   }
   if (anal->disttype == distribution::log_normal){
@@ -314,8 +313,10 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
       gof->calcSD[i] = exp(sqrt(log(1.0 + pow(GOFanal.sd[i]/GOFanal.Y[i], 2.0))));
     }
   } else {
-    gof->calcMean = GOFanal.Y;
-    gof->calcSD = GOFanal.sd;
+	for (int i=0; i<GOFanal.n; i++){
+	  gof->calcMean[i] = GOFanal.Y[i];
+      gof->calcSD[i] = GOFanal.sd[i];
+	}
   }
 
   calc_contAOD(anal, res, bmdsRes, aod);
@@ -598,4 +599,11 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
 }
 
 
+void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+	  runBMDSDichoAnalysis(anal, res, gofRes, bmdsRes, bmdsAOD);
+}
+
+void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
+  runBMDSContAnalysis(anal, res, bmdsRes, aod, gof, detectAdvDir);
+}
 
