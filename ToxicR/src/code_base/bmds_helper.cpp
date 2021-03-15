@@ -120,7 +120,7 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 }
 
 
-void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
 
 
   estimate_sm_laplace_dicho(anal, res, true);
@@ -140,16 +140,61 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
     bmdsRes->stdErr[i] = -9999.0;
     bmdsRes->lowerConf[i] = -9999.0;
     bmdsRes->upperConf[i] = -9999.0;
-  }  
+  } 
 
-  compute_dichotomous_pearson_GOF(&gofData, gofRes);
+  struct dichotomous_PGOF_result gofRes;
+  double gofExpected[anal->n];
+  double gofResidual[anal->n];
+  double gofTestStat;
+  double gofPVal;
+  double gofDF;
+  double ebUpper[anal->n];
+  double ebLower[anal->n];
+  gofRes.n = anal->n;
+  gofRes.expected = gofExpected;
+  gofRes.residual = gofResidual;
+  gofRes.test_statistic = gofTestStat;
+  gofRes.p_value = gofPVal;
+  gofRes.df = gofDF; 
+
+  compute_dichotomous_pearson_GOF(&gofData, &gofRes);
+
+  gof->test_statistic = gofRes.test_statistic;
+  gof->p_value = gofRes.p_value;
+  gof->df = gofRes.df;
+  gof->n = gofRes.n;
+  for (int i=0; i<gofRes.n; i++){
+    gof->expected[i] = gofRes.expected[i];
+	gof->residual[i] = gofRes.residual[i];
+  }
+  
+  //do error bar calcs
+  //  //gof->ebLower
+  //    //gof->ebUpper
+  double pHat;
+  double z;
+  double eb1;
+  double eb2Upper;
+  double eb2Lower;
+  double ebDenom;
+  double gofAlpha = 0.05;  //Alpha value for 95% confidence limit
+  for (int i=0; i<gof->n; i++){
+    pHat = anal->Y[i]/anal->n_group[i];  //observed probability
+    z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
+    eb1 = (2 * anal->Y[i] + z*z - 1);
+    eb2Lower = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
+    eb2Upper = z*sqrt(z*z + (2 - 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
+    ebDenom = 2.0 * (anal->n_group[i] + z * z);
+    gof->ebLower[i] = (eb1 + eb2Lower)/ ebDenom; 
+    gof->ebUpper[i] = (eb1 + eb2Upper)/ ebDenom;
+  }
 
   collect_dicho_bmd_values(anal, res, bmdsRes);
 
   //calculate model chi^2 value
   bmdsRes->chisq = 0.0;
-  for (int i=0; i<gofRes->n; i++){
-    bmdsRes->chisq += gofRes->residual[i]*gofRes->residual[i];
+  for (int i=0; i<gofRes.n; i++){
+    bmdsRes->chisq += gofRes.residual[i]*gofRes.residual[i];
   }
 
   //calculate dichtomous analysis of deviance
@@ -315,9 +360,15 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   } else {
 	for (int i=0; i<GOFanal.n; i++){
 	  gof->calcMean[i] = GOFanal.Y[i];
-      gof->calcSD[i] = GOFanal.sd[i];
+          gof->calcSD[i] = GOFanal.sd[i];
 	}
   }
+  for (int i=0; i<GOFanal.n; i++){
+    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
+    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
+  }
+
+  
 
   calc_contAOD(anal, res, bmdsRes, aod);
   
@@ -599,8 +650,8 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
 }
 
 
-void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-	  runBMDSDichoAnalysis(anal, res, gofRes, bmdsRes, bmdsAOD);
+void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+	  runBMDSDichoAnalysis(anal, res, gof, bmdsRes, bmdsAOD);
 }
 
 void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){

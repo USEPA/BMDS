@@ -76,6 +76,19 @@ struct continuous_GOF {
   double *obsSD;
   double *res;
   int n; //total # of obs/doses  
+  double *ebLower;
+  double *ebUpper;
+};
+
+struct dichotomous_GOF {
+  int     n;        // total number of observations obs/n 
+  double *expected; // 
+  double *residual; //size of the group
+  double  test_statistic; 
+  double  p_value; 
+  double  df;  
+  double *ebLower;
+  double *ebUpper;
 };
 
 //c entry
@@ -103,13 +116,13 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
 
 
-void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
 
 
-void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_PGOF_result *gofRes, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD);
+void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD);
 
 void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
 
