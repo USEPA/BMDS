@@ -97,8 +97,8 @@ double  normalFUNL_BMD_NC::bmd_start_absolute(unsigned n,
 	returnV   += pow(b5 - b[4],2); 
 	returnV   += pow(b6 - b[5],2); 
 	returnV	+= pow(theta(6, 0) - b[6], 2); // variance parameter
-	temp       = exp(-b[5]*(BMD - b[4])*(BMD - b[4]))*(1/(1+exp(-(BMD - b[2])/b[3]))); 
-	temp      -= exp(-b[5]*(0.0 - b[4])*(0.0 - b[4]))*(1/(1+exp(-(0.0 - b[2])/b[3]))); 
+	temp       = exp(-exp(b[5])*(BMD - b[4])*(BMD - b[4]))*(1/(1+exp(-(BMD - b[2])/b[3]))); 
+	temp      -= exp(-exp(b[5])*(0.0 - b[4])*(0.0 - b[4]))*(1/(1+exp(-(0.0 - b[2])/b[3]))); 
 	temp 	 = sdata->BMRF/temp; 
 	returnV 	+= pow(temp - b2,10.0); 
 	if (n == 8) {
@@ -124,8 +124,8 @@ std::vector<double> normalFUNL_BMD_NC::bmd_start_absolute_clean(std::vector<doub
 	double b6       = x[5];
 	double temp     = 0.0; 
 	
-	temp        = exp(-b6*(BMD - b5)*(BMD - b5))*(1/(1+exp(-(BMD - b3)/b4))); 
-	temp       -= exp(-b6*(0.0 - b5)*(0.0 - b5))*(1/(1+exp(-(0.0 - b3)/b4))); 
+	temp        = exp(-exp(b6)*(BMD - b5)*(BMD - b5))*(1/(1+exp(-(BMD - b3)/b4))); 
+	temp       -= exp(-exp(b6)*(0.0 - b5)*(0.0 - b5))*(1/(1+exp(-(0.0 - b3)/b4))); 
 	temp 	 = BMRF/temp; 
 	x[1] = temp; 
 	return x; 
@@ -171,7 +171,7 @@ double  normalFUNL_BMD_NC::bmd_start_reldev(unsigned n,
 	returnV   += pow(b6 - b[5],2); 
 	returnV	+= pow(theta(6, 0) - b[6], 2); // variance parameter
 	temp       = exp(-b6*(sdata->BMD - b5)*(sdata->BMD - b5))*(1/(1+exp(-(sdata->BMD - b3)/b4))); 
-	temp      -= (1+t)*exp(-b6*(0.0 - b5)*(0.0 - b5))*(1/(1+exp(-(0.0 - b3)/b4))); 
+	temp      -= (1+t)*exp(-exp(b6)*(0.0 - b5)*(0.0 - b5))*(1/(1+exp(-(0.0 - b3)/b4))); 
 	temp       = b[0]*t/temp;
 	temp = sdata->isIncreasing ? temp : -1.0*temp;
 	returnV   += pow(b2 - temp,2); 
@@ -196,7 +196,7 @@ std::vector<double> normalFUNL_BMD_NC::bmd_start_reldev_clean(std::vector<double
 
 	double temp; 
 	temp       = exp(-b[5]*(BMD - b[4])*(BMD - b[4]))*(1/(1+exp(-(BMD - b[2])/b[3]))); 
-	temp      -= (1+t)*exp(-b[5]*(0.0 - b[4])*(0.0 - b[4]))*(1/(1+exp(-(0.0 - b[2])/b[3]))); 
+	temp      -= (1+t)*exp(-exp(b[5])*(0.0 - b[4])*(0.0 - b[4]))*(1/(1+exp(-(0.0 - b[2])/b[3]))); 
 	temp       = b[0]*t/temp;
 	
 	b[1] = isIncreasing? temp:-1.0*temp;
@@ -313,7 +313,7 @@ double  normalFUNL_BMD_NC::bmd_start_point(unsigned n,
 	returnV   += pow(b5 - b[4],2); 
 	returnV   += pow(b6 - b[5],2); 
 	returnV	+= pow(theta(6, 0) - b[6], 2); // variance parameter
-	temp = (sdata->BMRF)/exp(-b[5]*(sdata->BMD - b[4])*(sdata->BMD - b[4]))*(1/(1+exp(-(sdata->BMD - b[2])/b[3]))); 
+	temp = (sdata->BMRF)/exp(-exp(b[5])*(sdata->BMD - b[4])*(sdata->BMD - b[4]))*(1/(1+exp(-(sdata->BMD - b[2])/b[3]))); 
 	returnV += pow(temp - b1, 2.0); 
 	
 	if (n == 8) {
@@ -328,7 +328,7 @@ std::vector<double> normalFUNL_BMD_NC::bmd_start_point_clean(std::vector<double>
                                                        	 bool isIncreasing)
 {
 	double temp = 0;
-     temp = (BMRF)/exp(-b[5]*(BMD - b[4])*(BMD - b[4]))*(1/(1+exp(-(BMD - b[2])/b[3]))); 
+     temp = (BMRF)/exp(-exp(b[5])*(BMD - b[4])*(BMD - b[4]))*(1/(1+exp(-(BMD - b[2])/b[3]))); 
 	b[0] = temp; 
 	return b;
 }

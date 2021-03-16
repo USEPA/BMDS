@@ -1,6 +1,6 @@
 # FUNL
 cont_FUNL_f <- function(A,doses){
-     b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
+     b <- A[1] + A[2]*exp(-exp(A[6])*(doses-A[5])^2)*(1/(1+exp(-(doses-A[3])/A[4])))
      return(b)
 }
 
@@ -139,10 +139,10 @@ cont_power_f <-function(parms,d){
      
     
   #sufficient statistics- This part dosen't makes senseArgument entry fixed 
-  if (ncol(fit$Individual_Model_1$data) == 4){ 
-       mean <- fit$Individual_Model_1$data[,2,drop=F]
-       se   <- fit$Individual_Model_1$data[,4,drop=F]/sqrt(fit$Individual_Model_1$data[,3,drop=F])
-       doses = fit$Individual_Model_1$data[,1,drop=F]
+  if (ncol(fit$data) == 4){ 
+       mean <- fit$data[,2,drop=F]
+       se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+       doses = fit$data[,1,drop=F]
        uerror <- mean+se
        lerror <- mean-se
        
@@ -150,8 +150,9 @@ cont_power_f <-function(parms,d){
        Response = c(uerror,lerror)
        plot(dose,Response,type='n')
   }else{
-       Response <- fit$Individual_Model_1$data[,2,drop=F]
-       doses = fit$Individual_Model_1$data[,1,drop=F]
+    
+       Response <- fit$data[,2,drop=F]
+       doses = fit$data[,1,drop=F]
        plot(doses,Response,type='n')
   }
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
