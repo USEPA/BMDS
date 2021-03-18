@@ -122,6 +122,7 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
 void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
 
+  bmdsRes->validResult = false;
 
   estimate_sm_laplace_dicho(anal, res, true);
 
@@ -202,6 +203,8 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 
   rescale_dichoParms(anal, res);
 
+  bmdsRes->validResult = true;
+
 }
 
 
@@ -232,6 +235,8 @@ void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_mode
 
 
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
+
+  bmdsRes->validResult = false;
 
   if (detectAdvDir){
     determineAdvDir(anal);
@@ -373,6 +378,8 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   calc_contAOD(anal, res, bmdsRes, aod);
   
   rescale_contParms(anal, res); 
+
+  bmdsRes->validResult = true;
 
 }
 

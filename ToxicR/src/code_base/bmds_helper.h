@@ -21,6 +21,7 @@ struct BMDS_results{
   double *stdErr;
   double *lowerConf;
   double *upperConf;
+  bool validResult;
 };
 
 
@@ -42,7 +43,7 @@ struct testsOfInterest {
 //4 - R Model
 struct continuous_AOD{
   double *LL;
-  double *nParms;
+  int *nParms;
   double *AIC;
   double addConst;
   struct testsOfInterest *TOI;
