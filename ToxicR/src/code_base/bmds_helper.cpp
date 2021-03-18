@@ -11,7 +11,7 @@ int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_r
       //5*i+5 is location of max in prior array
       if (fabs(parms[i]-prior[3*nparms+i]) < BMDS_EPS || fabs(parms[i]-prior[4*nparms+i]) < BMDS_EPS){
          bounded++;
-         BMDSres->bounded[i] = false;
+         BMDSres->bounded[i] = true;
       }
    }
    return bounded;
@@ -190,8 +190,6 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
     gof->ebUpper[i] = (eb1 + eb2Upper)/ ebDenom;
   }
 
-  collect_dicho_bmd_values(anal, res, bmdsRes);
-
   //calculate model chi^2 value
   bmdsRes->chisq = 0.0;
   for (int i=0; i<gofRes.n; i++){
@@ -202,6 +200,8 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
 
   rescale_dichoParms(anal, res);
+
+  collect_dicho_bmd_values(anal, res, bmdsRes);
 
   bmdsRes->validResult = true;
 
@@ -300,8 +300,6 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   }
 
 
-  collect_cont_bmd_values(anal, res, bmdsRes);
-  
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
   //arrays are needed for conversion to suff_stat
@@ -378,6 +376,8 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   calc_contAOD(anal, res, bmdsRes, aod);
   
   rescale_contParms(anal, res); 
+
+  collect_cont_bmd_values(anal, res, bmdsRes);
 
   bmdsRes->validResult = true;
 
