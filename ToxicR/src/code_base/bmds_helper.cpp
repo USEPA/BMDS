@@ -37,7 +37,7 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
   bool freqModel = anal->prior[0] == 0;
 
   // First find number of bounded parms
-   int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
+  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
   
   
   double estParmCount = res->model_df - bounded;
@@ -104,13 +104,6 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
-//  printf("dist:\n");
-//  for (int i = 0; i < distSize/2; i++)
-//  {
-//     printf("quant:%f, val:%f\n",dist[i][0],dist[i][1]);
-//     printf("quant:%f, val:%f\n",quant[i],val[i]);
-//  }
-
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
@@ -136,12 +129,6 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   gofData.n_group = anal->n_group;
   gofData.parms = anal->parms; 
 
-
-  for (int i=0; i< anal->parms; i++){
-    bmdsRes->stdErr[i] = -9999.0;
-    bmdsRes->lowerConf[i] = -9999.0;
-    bmdsRes->upperConf[i] = -9999.0;
-  } 
 
   struct dichotomous_PGOF_result gofRes;
   double gofExpected[anal->n];
@@ -199,9 +186,21 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   //calculate dichtomous analysis of deviance
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
 
+  collect_dicho_bmd_values(anal, res, bmdsRes);
+
   rescale_dichoParms(anal, res);
 
-  collect_dicho_bmd_values(anal, res, bmdsRes);
+  for (int i=0; i< anal->parms; i++){
+    //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
+    if ( bmdsRes->bounded[i]) {
+      bmdsRes->stdErr[i] = -9999.0;
+    } else {
+      bmdsRes->stdErr[i] = sqrt(res->cov[i*(anal->parms+1)]);
+    }
+    bmdsRes->lowerConf[i] = -9999.0;
+    bmdsRes->upperConf[i] = -9999.0;
+  } 
+
 
   bmdsRes->validResult = true;
 
@@ -293,11 +292,6 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   estimate_sm_laplace_cont(anal, res);
 
 
-  for (int i=0; i< anal->parms; i++){
-    bmdsRes->stdErr[i] = -9999.0;
-    bmdsRes->lowerConf[i] = -9999.0;
-    bmdsRes->upperConf[i] = -9999.0;
-  }
 
 
   //if not suff_stat, then convert
@@ -375,9 +369,20 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
 
   calc_contAOD(anal, res, bmdsRes, aod);
   
+  collect_cont_bmd_values(anal, res, bmdsRes);
+
   rescale_contParms(anal, res); 
 
-  collect_cont_bmd_values(anal, res, bmdsRes);
+  for (int i=0; i< anal->parms; i++){
+    //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
+    if ( bmdsRes->bounded[i]) {
+      bmdsRes->stdErr[i] = -9999.0;
+    } else {
+      bmdsRes->stdErr[i] = sqrt(res->cov[i*(anal->parms+1)]);
+    }
+    bmdsRes->lowerConf[i] = -9999.0;
+    bmdsRes->upperConf[i] = -9999.0;
+  }
 
   bmdsRes->validResult = true;
 
@@ -473,9 +478,8 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result
     }
   }
   aod->nParms[3] = CA->parms - bounded;
-  //TEMP DEBUG values
-  aod->LL[4] = -88.71521848;  //CD.R
-  aod->nParms[4] = 2;  //CD.NR
+  aod->LL[4] = -1*CD.R;
+  aod->nParms[4] = CD.NR;
 
 
   //add tests of interest
