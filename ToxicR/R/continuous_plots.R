@@ -41,15 +41,19 @@ cont_power_f <-function(parms,d){
 }
 
 
+# I temporarilyl need to update by my self
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-     density_col="blueviolet"
-     credint_col="azure2"
+  fit<-A
+  density_col="blueviolet"
+  credint_col="azure2"
   BMD_DENSITY = T
   
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
   }
+  
+  
   
   if (ncol(fit$data) == 4 ){ #sufficient statistics
     mean <- fit$data[,2,drop=F]
@@ -199,6 +203,9 @@ cont_power_f <-function(parms,d){
 
 # Base plot- MCMC or BMD?
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
+  
+  
+     
      density_col="blueviolet"
      credint_col="azure2"
      class_list <- names(A)
@@ -225,12 +232,14 @@ cont_power_f <-function(parms,d){
                
                dose = c(doses,doses)
                Response = c(uerror,lerror)
-               plot(dose,Response,type='n')#,...)
+               #plot(dose,Response,type='n')#,...)
+               
+               
                
           }else{
                Response <- data_d[,2,drop=F]
                doses = data_d[,1,drop=F]
-               plot(doses,Response,type='n')#,...)
+               
           }
           
           for (ii in 1:n_samps){
@@ -262,8 +271,22 @@ cont_power_f <-function(parms,d){
           col1 = alphablend(credint_col,1)
           
           # Data structure for polygon - this part should be re-implmeneted as ggplot object
-          polygon(c(test_doses,test_doses[length(test_doses):1]),
-                  c(uq,lq[length(test_doses):1]),col = col1,border=col1)
+          
+          
+          out<-ggplot()+
+            geom_point(aes(x=doses,y=Response))+
+            xlim(c(min(dose),max(dose)*1.03))+
+            labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+            theme_minimal()
+          
+          test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/500)
+          out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
+          
+          out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue")+
+            geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
+
+          #polygon(c(test_doses,test_doses[length(test_doses):1]),
+          #        c(uq,lq[length(test_doses):1]),col = col1,border=col1)
           
           lines(test_doses,me,lwd=2)
           temp_fit <- splinefun(test_doses,me)
@@ -286,8 +309,17 @@ cont_power_f <-function(parms,d){
           D1_y = Dens$y[temp]
           D1_x = Dens$x[temp]
           qm = min(Response)
-          polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+          
+          
+          
+          #polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
          
+          
+          
+          out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
+          
+          # GGplot line - 
+          
           for (ii in 1:length(fit_idx)){
                fit <- A[[fit_idx[ii]]]
                if (fit$model=="FUNL"){
@@ -306,8 +338,13 @@ cont_power_f <-function(parms,d){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
                col = alphablend(col='coral3',A$posterior_probs[ii])
-               lines(test_doses,f,col=col,lwd = 2)
+               
+               out4<-out4+geom_lines(aes(x=test_doses,y=f,colour=col))
+               
+               
           }
+          
+          out4
           
      }else{
          
@@ -326,12 +363,12 @@ cont_power_f <-function(parms,d){
                
                dose = c(doses,doses)
                Response = c(uerror,lerror)
-               plot(dose,Response,type='n',...)
+              # plot(dose,Response,type='n',...)
                
           }else{
                Response <- data_d[,2,drop=F]
                doses = data_d[,1,drop=F]
-               plot(doses,Response,type='n',...)
+              #plot(doses,Response,type='n',...)
           }
           
           for (ii in 1:length(fit_idx)){

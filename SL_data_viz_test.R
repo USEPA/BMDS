@@ -2,7 +2,6 @@
 # Author: Sooyeong Lim
 # Last Updated Date: 03/03/2021
 
-
 # Load packages
 library(ToxicR)
 library(ggridges)
@@ -21,6 +20,10 @@ mData <- matrix(c(0, 2,50,
 
 
 # Single model fitting- MCMC
+
+
+# too much white space- this needs to be adjusted automatically
+
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
@@ -28,7 +31,7 @@ A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type=
 A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type="hill",fit_type = "laplace")
 .plot.BMDdich_fit_maximized(A_single_laplace)
 # Base density plot is required? 
-
+ 
 
 
 # Dichotomous - Model Average
@@ -71,7 +74,6 @@ A$Fitted_Model_1$bmd
 
 
 
-
 # Sample Data - Continous Example
 
 D <-c(rep(seq(0,1.0,1/4),each=4))
@@ -79,14 +81,31 @@ mean <- 2.3  + 10/(1+exp(-(D-0.60)*8))*(1/(1+exp(-(0.99-D)*13)))
 Y <- mean + rnorm(length(mean),0,0.7)
 plot(D,Y)
 
+
+# Matt's code update
+#plot(doses,sim_data[1,])
+
+
 # Case 1: Dichotomous - MCMC Fitting
 # Question to Maatt continous case why there are 13 models?
 # Different Prior's- Should we show them separately?
 
-A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd',
-                    model_list = c("hill", "exp-3", "exp-5", "power", "FUNL"),
-                     distribution_list = c(rep("normal",5)))
+# Continous single fit is required to be tested
+k<-single_continuous_fit(D, Y, model_type = "hill", fit_type = "mcmc", prior = "default", 
+                      BMD_TYPE = "sd", sstat = T, BMR = 0.1, point_p = 0.01, distribution = "normal-ncv", 
+                      alpha = 0.05, samples = 21000, degree = 2, burnin = 1000)
 
+View(single_continuous_fit)
+
+
+# What I need to change is .. 1. Too much white space in the figure/ plot
+# Fitting example should be much simpler - 
+A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+
+plot(A)
+
+
+# There will be 13 models in this case- Let's fix something easier
 
 # Condition might be added - if it is less than ... 0.05
 
@@ -102,9 +121,7 @@ A$posterior_probs
 #It is dominated by the FUNL model. While the other 4 models are minor 
 
 # This continous baseplot should be updated
-
-
-plot(A)
+.plot.BMDcontinuous_MA(A)
 
 
 

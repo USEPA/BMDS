@@ -149,7 +149,6 @@ MAdensity_plot <- function (A, ...){
     filter(as.numeric(X3)>0.05)
   
   
-  View(t_combine3)
   
   
   # # Update to change color
