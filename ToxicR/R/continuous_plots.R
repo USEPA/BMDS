@@ -253,8 +253,8 @@ cont_power_f <-function(parms,d){
 # Base plot- MCMC or BMD?
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
   
-  
-     
+  # Should be matched with BMD_MA plots
+    
      density_col="blueviolet"
      credint_col="azure2"
      class_list <- names(A)
@@ -288,7 +288,6 @@ cont_power_f <-function(parms,d){
           }else{
                Response <- data_d[,2,drop=F]
                doses = data_d[,1,drop=F]
-               
           }
           
           for (ii in 1:n_samps){
@@ -337,21 +336,29 @@ cont_power_f <-function(parms,d){
           #polygon(c(test_doses,test_doses[length(test_doses):1]),
           #        c(uq,lq[length(test_doses):1]),col = col1,border=col1)
           
-          lines(test_doses,me,lwd=2)
-          temp_fit <- splinefun(test_doses,me)
+          # lines(test_doses,me,lwd=2)
+          # temp_fit <- splinefun(test_doses,me)
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-               lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-               lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-               lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
+            temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
+            temp = temp[!is.infinite(temp)]
+            Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
+            Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
+            temp = which(Dens$x < max(test_doses))
+            D1_y = Dens$y[temp]
+            D1_x = Dens$x[temp]
+            qm = min(Response)
+            
+            # BMD MA density needs to be double checked 
+            out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,0+D1_y,0)), fill = "lightblue1", alpha=0.6)
           }
           
           
+          # Weighted BMD sampling meaning should be added
           temp = temp_bmd[!is.nan(temp_bmd)]
           temp = temp[!is.infinite(temp)]
           temp = temp[temp < 20 * max_dose]
-          #return(temp)
-          #print(c(max(temp),median(temp),min(temp)))
+
           Dens =  density(temp,cut=c(quantile(temp,0.995,na.rm = TRUE)))
           Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
           temp = which(Dens$x < max(test_doses))
@@ -362,14 +369,22 @@ cont_power_f <-function(parms,d){
           
           
           #polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-         
-          
-          
           out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
           
-          # GGplot line - 
+
           
+          #Plot only level >2
+          
+        
+          (A$posterior_probs>0.05)==TRUE
+        
+          A$posterior_probs[[ii]]
+          
+          
+          df<-NULL
           for (ii in 1:length(fit_idx)){
+            
+            if (A$posterior_probs[ii]>0.05){
                fit <- A[[fit_idx[ii]]]
                if (fit$model=="FUNL"){
                     f <- cont_FUNL_f(fit$fitted_model$parameters,test_doses)
@@ -386,17 +401,28 @@ cont_power_f <-function(parms,d){
                if (fit$model=="power"){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
+               
                col = alphablend(col='coral3',A$posterior_probs[ii])
-               
-               out4<-out4+geom_lines(aes(x=test_doses,y=f,colour=col))
-               
-               
+               # Not using loop, but save data in the external data and load it later
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               df<-rbind(df,temp_df)
+            }
           }
           
-          out4
+        
+          out5<-out4+
+            geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+            theme_minimal()
+
+          
+          out5
+          
+          
+          
+          
           
      }else{
-         
+         ## Non MCMC case
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
