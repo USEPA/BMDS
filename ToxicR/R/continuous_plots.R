@@ -148,36 +148,37 @@ cont_power_f <-function(parms,d){
 
 .plot.BMDcont_fit_maximized<-function(fit,qprob=0.05,...){
   
-     density_col="blueviolet"
-     credint_col="azure2"
+  
+  fit<-A
+  density_col="blueviolet"
+  credint_col="azure2"
   
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
   }
      
+  
+  if (ncol(fit$data) == 4 ){ #sufficient statistics
+    mean <- fit$data[,2,drop=F]
+    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+    doses = fit$data[,1,drop=F]
+    uerror <- mean+se
+    lerror <- mean-se
     
-  #sufficient statistics- This part dosen't makes senseArgument entry fixed 
-  if (ncol(fit$Individual_Model_1$data) == 4){ 
-       mean <- fit$Individual_Model_1$data[,2,drop=F]
-       se   <- fit$Individual_Model_1$data[,4,drop=F]/sqrt(fit$Individual_Model_1$data[,3,drop=F])
-       doses = fit$Individual_Model_1$data[,1,drop=F]
-       uerror <- mean+se
-       lerror <- mean-se
-       
-       dose = c(doses,doses)
-       Response = c(uerror,lerror)
-       plot(dose,Response,type='n')
+    dose = c(doses,doses)
+    Response = c(uerror,lerror)
+    # plot(dose,Response,type='n',...)
   }else{
-       Response <- fit$Individual_Model_1$data[,2,drop=F]
-       doses = fit$Individual_Model_1$data[,1,drop=F]
-       plot(doses,Response,type='n')
+    Response <- fit$data[,2,drop=F]
+    doses = fit$data[,1,drop=F]
+    # plot(doses,Response,type='n',...)
   }
+  
+  
+  
+  
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
-  
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
-  
-  
-  # This part should be loop 
   
   
   if (fit$model=="FUNL"){
@@ -196,22 +197,56 @@ cont_power_f <-function(parms,d){
     me <- cont_power_f(fit$parameters,test_doses)
   }
   
-  lines(test_doses,me)
+  
+  Q <- t(Q)
+  me <- colMeans(Q)
+  lq <- apply(Q,2,quantile, probs = qprob)
+  uq <- apply(Q,2,quantile, probs = 1-qprob)
+  
+  # Continous case density? 
   temp_fit <- splinefun(test_doses,me)
   
+  
+  out<-ggplot()+
+    geom_line(aes(x=test_doses,y=me),color="blue")+
+    labs(x="Dose", y="Response",title=paste(fit$full_model, "MCMC",sep=",  Fit Type: " ))+theme_minimal()
+  
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
+    out2<-out+
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0),color="Red")
   }
   
-  if (ncol(fit$data) == 4){
-       points(doses,mean,...)
-       arrows(x0=doses, y0=lerror, x1=doses, 
-              y1=uerror, code=3, angle=90, length=0.1)
-  }else{
-       points(doses,Response,...)
-  }
+  # # Add density 
+  # if (BMD_DENSITY ==TRUE){
+  #   temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
+  #   temp = temp[!is.infinite(temp)]
+  #   Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
+  #   Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
+  #   temp = which(Dens$x < max(test_doses))
+  #   D1_y = Dens$y[temp]
+  #   D1_x = Dens$x[temp]
+  #   qm = min(Response)
+  #   
+  #   
+  #   out3<-out2+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,0+D1_y,0)), fill = "lightblue1", alpha=0.6)
+  #   # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+  # }
+  # 
+  # 
+  # if (ncol(fit$data) ==4){
+  #      points(doses,mean,...)
+  #      arrows(x0=doses, y0=lerror, x1=doses, 
+  #             y1=uerror, code=3, angle=90, length=0.1)
+  # }else{
+  #      points(doses,Response,...)
+  # }
+  # 
+  
+  out3<-out2+geom_point(aes(x=doses,y=Response))
+  
+  out4<-out3+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
+  out4
+  
   
 }
 
