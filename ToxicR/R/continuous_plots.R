@@ -41,7 +41,7 @@ cont_power_f <-function(parms,d){
 }
 
 
-# I temporarilyl need to update by my self
+
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
   fit<-A
@@ -64,16 +64,16 @@ cont_power_f <-function(parms,d){
     
     dose = c(doses,doses)
     Response = c(uerror,lerror)
-    plot(dose,Response,type='n',...)
-      
+    # plot(dose,Response,type='n',...)
   }else{
     Response <- fit$data[,2,drop=F]
     doses = fit$data[,1,drop=F]
-    plot(doses,Response,type='n',...)
+    # plot(doses,Response,type='n',...)
   }
   
-
+  # Single Model 
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  
   if (fit$model=="FUNL"){
      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses)   
   }
@@ -86,7 +86,6 @@ cont_power_f <-function(parms,d){
   if (fit$model=="exp-5"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
   }
-  
   if (fit$model=="power"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
   }
@@ -96,19 +95,24 @@ cont_power_f <-function(parms,d){
   me <- colMeans(Q)
   lq <- apply(Q,2,quantile, probs = qprob)
   uq <- apply(Q,2,quantile, probs = 1-qprob)
+  
+  # Continous case density? 
   temp_fit <- splinefun(test_doses,me)
   
   
-  polygon(c(test_doses,test_doses[length(test_doses):1]),
-          c(uq,lq[length(test_doses):1]),col = credint_col,border=credint_col)
-  lines(test_doses,me)
+  
+  # Geom_polygon ? etc..
+  
+  out<-ggplot()+
+    geom_line(aes(x=test_doses,y=me),color="blue")+
+    labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
+    out2<-out+
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0),color="Red")
   }
   
+# Add density 
   if (BMD_DENSITY ==TRUE){
     temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
     temp = temp[!is.infinite(temp)]
@@ -118,17 +122,27 @@ cont_power_f <-function(parms,d){
     D1_y = Dens$y[temp]
     D1_x = Dens$x[temp]
     qm = min(Response)
-    polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+    
+    
+    out3<-out2+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,0+D1_y,0)), fill = "lightblue1", alpha=0.6)
+    # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
   }
   
+  # 
+  # if (ncol(fit$data) ==4){
+  #      points(doses,mean,...)
+  #      arrows(x0=doses, y0=lerror, x1=doses, 
+  #             y1=uerror, code=3, angle=90, length=0.1)
+  # }else{
+  #      points(doses,Response,...)
+  # }
+  # 
   
-  if (ncol(fit$data) ==4){
-       points(doses,mean,...)
-       arrows(x0=doses, y0=lerror, x1=doses, 
-              y1=uerror, code=3, angle=90, length=0.1)
-  }else{
-       points(doses,Response,...)
-  }
+  out4<-out3+geom_point(aes(x=doses,y=Response))
+
+  out5<-out4+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),color="azure2",alpha=0.2)
+  out5
+  
 }
   
 

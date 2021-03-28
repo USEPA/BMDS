@@ -20,9 +20,8 @@ mData <- matrix(c(0, 2,50,
 
 
 # Single model fitting- MCMC
-
-
-# too much white space- this needs to be adjusted automatically
+# too much white space- this needs to be adjusted automatically - Not the for the first Priority, but needs to be updated once 
+# Continous part is updated
 
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
@@ -42,8 +41,7 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)
 ### - Need to apply John's idea 
-
-#Base plot - MA density seems little bit odd
+#Base plot - MA density curve seems little bit odd
 .plot.BMDdichotomous_MA(A)
 
 
@@ -90,13 +88,45 @@ plot(D,Y)
 # Question to Maatt continous case why there are 13 models?
 # Different Prior's- Should we show them separately?
 
-# Continous single fit is required to be tested
-k<-single_continuous_fit(D, Y, model_type = "hill", fit_type = "mcmc", prior = "default", 
-                      BMD_TYPE = "sd", sstat = T, BMR = 0.1, point_p = 0.01, distribution = "normal-ncv", 
-                      alpha = 0.05, samples = 21000, degree = 2, burnin = 1000)
 
-View(single_continuous_fit)
 
+c3ss <- T # Summarized dose-response data
+
+c3Dat <- matrix(0,nrow=5,ncol=4)
+colnames(c3Dat) <- c("Dose","Resp","N","StDev")
+c3Dat[, 1] <- c(0, 35, 105, 316, 625)
+c3Dat[, 2] <- c(1.61, 1.66, 1.75, 1.81, 1.89)
+c3Dat[, 3] <- 2
+c3Dat[, 4] <- c(0.12, 0.13, 0.11, 0.15, 0.13)
+c3Dat[, 4] <- 5
+c3Dat[, 3] <- c(0.12, 0.13, 0.11, 0.15, 0.13)
+c3_max_dose<-max(c3Dat[, 1])
+
+
+as.matrix(c3Dat[, 1])
+
+
+as.matrix(D)
+
+
+
+print("Running EXP-3 Opt1")
+
+
+# I don't understand why there is a difference in the inputs between 
+# ma_continuous_fit and single_continuous_fit's data input;
+# What is SSTAT stands for? 
+
+
+A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
+                            distribution="normal-ncv",fit_type = "mcmc",sstat = F)
+
+
+plot(A)
+
+# Test with Matt's example - bmd_single_Continuous3.R 
+
+A<-single_continuous_fit(D = )
 
 # What I need to change is .. 1. Too much white space in the figure/ plot
 # Fitting example should be much simpler - 
