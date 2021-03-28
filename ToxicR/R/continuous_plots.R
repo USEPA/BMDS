@@ -140,7 +140,7 @@ cont_power_f <-function(parms,d){
   
   out4<-out3+geom_point(aes(x=doses,y=Response))
 
-  out5<-out4+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),color="azure2",alpha=0.2)
+  out5<-out4+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
   out5
   
 }
