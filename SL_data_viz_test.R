@@ -79,14 +79,7 @@ mean <- 2.3  + 10/(1+exp(-(D-0.60)*8))*(1/(1+exp(-(0.99-D)*13)))
 Y <- mean + rnorm(length(mean),0,0.7)
 
 
-
-# Matt's code update
-#plot(doses,sim_data[1,])
-
-
-# Case 1: Dichotomous - MCMC Fitting
-# Question to Maatt continous case why there are 13 models?
-# Different Prior's- Should we show them separately?
+# Continous example  03/28/2021
 
 A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
                             distribution="normal-ncv",fit_type = "mcmc",sstat = F)
@@ -102,17 +95,21 @@ A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
 
 # Fitting example should be much simpler - 
 A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+
 .plot.BMDcontinuous_MA(A)
 
-# There will be 13 models in this case- Let's fix something easier
 
-# Condition might be added - if it is less than ... 0.05
+A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+
+.plot.BMDcontinuous_MA(A)
 
 
-A$posterior_probs
 
-# Test 1. Dichotomous MA Clevland Plot
+
+# Test 2. Dichotomous MA Cleveland Plot
+
 .cleveland_plot.BMDcontinous_MA(A)
+# The model's 
 # Bit weird result FUNL- Almost 1 other cases is 0;
 .plot.density.BMDcontinous_MA_MCMC(A)
 # Base object should be updated by using Shiny App
@@ -121,12 +118,3 @@ A$posterior_probs
 
 # This continous baseplot should be updated
 .plot.BMDcontinuous_MA(A)
-
-
-
-
-
-A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd',
-                     model_list = c("hill", "exp-3", "exp-5", "power", "FUNL"),
-                     distribution_list = c(rep("normal",5)))
-plot(A)
