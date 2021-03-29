@@ -77,7 +77,7 @@ A$Fitted_Model_1$bmd
 D <-c(rep(seq(0,1.0,1/4),each=4))
 mean <- 2.3  + 10/(1+exp(-(D-0.60)*8))*(1/(1+exp(-(0.99-D)*13)))
 Y <- mean + rnorm(length(mean),0,0.7)
-plot(D,Y)
+
 
 
 # Matt's code update
@@ -88,52 +88,21 @@ plot(D,Y)
 # Question to Maatt continous case why there are 13 models?
 # Different Prior's- Should we show them separately?
 
-
-
-c3ss <- T # Summarized dose-response data
-
-c3Dat <- matrix(0,nrow=5,ncol=4)
-colnames(c3Dat) <- c("Dose","Resp","N","StDev")
-c3Dat[, 1] <- c(0, 35, 105, 316, 625)
-c3Dat[, 2] <- c(1.61, 1.66, 1.75, 1.81, 1.89)
-c3Dat[, 3] <- 2
-c3Dat[, 4] <- c(0.12, 0.13, 0.11, 0.15, 0.13)
-c3Dat[, 4] <- 5
-c3Dat[, 3] <- c(0.12, 0.13, 0.11, 0.15, 0.13)
-c3_max_dose<-max(c3Dat[, 1])
-
-
-as.matrix(c3Dat[, 1])
-
-
-as.matrix(D)
-
-
-
-print("Running EXP-3 Opt1")
-
-
-# I don't understand why there is a difference in the inputs between 
-# ma_continuous_fit and single_continuous_fit's data input;
-# What is SSTAT stands for? 
-
-
 A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
                             distribution="normal-ncv",fit_type = "mcmc",sstat = F)
 
 
-plot(A)
+.plot.BMDcont_fit_MCMC(A)
 
-# Test with Matt's example - bmd_single_Continuous3.R 
+A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
+                          distribution="normal-ncv",fit_type = "laplace",sstat = F)
 
-A<-single_continuous_fit(D = )
+.plot.BMDcont_fit_maximized(A)
 
-# What I need to change is .. 1. Too much white space in the figure/ plot
+
 # Fitting example should be much simpler - 
 A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
-
-plot(A)
-
+.plot.BMDcontinuous_MA(A)
 
 # There will be 13 models in this case- Let's fix something easier
 
