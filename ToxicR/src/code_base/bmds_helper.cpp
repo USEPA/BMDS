@@ -183,6 +183,19 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
     bmdsRes->chisq += gofRes.residual[i]*gofRes.residual[i];
   }
 
+  //calculate bayesian BIC_equiv
+  Eigen::MatrixXd cov(res->nparms,res->nparms);
+  int row = 0;
+  int col = 0;
+  for(int i=0; i<res->nparms*res->nparms; i++){
+    col = i/res->nparms;
+    row = i - col*res->nparms;
+    cov(row,col) = res->cov[i];
+  }
+
+  bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
+  bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
+
   //calculate dichtomous analysis of deviance
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
 
@@ -365,7 +378,18 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
     gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
   }
 
-  
+ //calculate bayesian BIC_equiv
+  Eigen::MatrixXd cov(res->nparms,res->nparms);
+  int row = 0;
+  int col = 0;
+  for(int i=0; i<res->nparms*res->nparms; i++){
+    col = i/res->nparms;
+    row = i - col*res->nparms;
+    cov(row,col) = res->cov[i];
+  }
+
+  bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
+  bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
 
   calc_contAOD(anal, res, bmdsRes, aod);
   

@@ -16,6 +16,7 @@ struct BMDS_results{
   double BMDL; 
   double BMDU; 
   double AIC;   
+  double BIC_equiv;
   double chisq;
   bool *bounded;
   double *stdErr;
