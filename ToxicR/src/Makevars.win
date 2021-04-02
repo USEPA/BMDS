@@ -6,7 +6,7 @@ PKG_CPPFLAGS += -I"$(topdir)$(R_ARCH)/include/"
 
  
 PKG_LIBS = -fopenmp -L"$(topdir)/$(R_ARCH)/lib/" -fabi-version=2 -lgsl
-PKG_LIBS += -lnlopt -lRblas -lRlapack -lgslblas -fPIC -lgcc -lstdc++ 
+PKG_LIBS += -lnlopt -lRblas -lRlapack  -fPIC # -lgcc -lstdc++ 
 
 
 MAIN         = $(wildcard *.cpp)

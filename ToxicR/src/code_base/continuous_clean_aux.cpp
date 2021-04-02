@@ -216,7 +216,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
       parms(2,0) *= max_dose; 
       parms(3,0) *= max_dose; 
       parms(4,0) *= max_dose; 
-      parms(5,0) *= (1/max_dose)*(1/max_dose); 
+      parms(5,0) += 2*log(abs(1/max_dose));   
       if (!is_logNormal){
         if (parms.rows()==4){
           parms(6,0) += 2*log(bkground); 

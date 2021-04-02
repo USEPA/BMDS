@@ -531,8 +531,8 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       model_prior.scale_prior(max_dose,2); 
       model_prior.scale_prior(max_dose,3);
       model_prior.scale_prior(max_dose,4); 
-      model_prior.scale_prior((1/max_dose)*(1/max_dose),5);
-      
+    //  model_prior.scale_prior(1/max_dose,5);
+    // model_prior.add_mean_prior(1/max_dose*1/max_dose,5);
       if (!is_logNormal){
            if (is_const_var){
                 model_prior.add_mean_prior(2.0*log(divisor),6);

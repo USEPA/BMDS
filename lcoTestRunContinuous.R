@@ -18,6 +18,8 @@ data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
 
+A = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="laplace",model="FUNL",BMR=1,sstat = F)
+
 A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
 
 
@@ -108,13 +110,14 @@ data <- list(N=length(Y),
 
 
 c = single_continuous_fit(data$doses,data$y,sstat=F,
-                          BMD_TYPE="sd",BMR=2, distribution = "normal",
-                          fit_type="laplace",model_type = "hill")
+                          BMD_TYPE="sd",BMR=1, distribution = "normal",
+                          fit_type="laplace",model_type = "FUNL")
 library(ToxicR)
 c = single_continuous_fit(data$doses,data$y,sstat=F,
                           BMD_TYPE="sd",BMR=3, distribution = "normal",
                           fit_type="mcmc",model_type = "FUNL")
-B = ma_continuous_fit(data$doses,data$y,BMR=3,fit_type = "mcmc")
+
+B = ma_continuous_fit(data$doses,data$y,BMR=1,fit_type = "mcmc",model_list=model_list)
 
 
 

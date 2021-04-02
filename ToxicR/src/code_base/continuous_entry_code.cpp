@@ -1612,11 +1612,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                            CA->disttype != distribution::normal_ncv,
                                                                            CA->isIncreasing,temp_init);
 
+    
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-
-    
+  
     break; 
   case cont_model::hill:
     init_opt = CA->disttype == distribution::log_normal ?
@@ -1683,6 +1683,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             CA->tail_prob,  
                             CA->alpha, 0.05,init_opt);
     }else{
+      
       b = laplace_logNormal(orig_Y_LN, orig_X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
@@ -1703,6 +1704,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                         CA->isIncreasing,isNCV, CA->BMR, 
                         CA->tail_prob,  
                         CA->alpha, 0.02,init_opt,CA->degree);
+      
     }else{
 
       b = laplace_Normal(orig_Y, orig_X,
@@ -1710,6 +1712,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->isIncreasing,isNCV, CA->BMR, 
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt,CA->degree);
+        
     }
    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
                              CA->isIncreasing, CA->suff_stat, isNCV,tprior, 

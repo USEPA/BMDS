@@ -10,4 +10,11 @@ mData <- matrix(c(0,    0,100,
                   150, 65,100,
                   200, 90,100),nrow=5,ncol=3,byrow=T)
 
-system.time({Q = bmd_ma_dichotomous(mData,o1,o2,)})
+
+mData <- matrix(c(12,   1,5,
+                  15,   2,6,
+                  18,   3,7,
+                  21,   4,8),nrow=4,ncol=3,byrow=T)
+Q = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",
+                           fit_type = "mle")
+single_dichotomous_fit()

@@ -11,7 +11,9 @@
 
 #include <gsl/gsl_randist.h>
 #include <iostream>
+#include <cmath>
 #include <math.h>  
+ using namespace std;
 
 int normalEXPONENTIAL_BMD_NC::parameter_to_remove(contbmd TYPE) {
 

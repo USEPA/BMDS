@@ -154,9 +154,9 @@ poor of a modeling choice.\n");
          prior <- create_prior_list(normprior(0,0.1,-100,100),
                                   normprior(0,1,-100,100),
                                   lnormprior(0,0.5,0,100),
+                                  normprior(0.5,1,0,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0,10,-200,200),
                                   normprior (0,2,-18,18))
          return(prior)
   }
@@ -166,9 +166,9 @@ poor of a modeling choice.\n");
        prior <- create_prior_list(normprior(0,0.1,-100,100),
                                   normprior(0,1,-100,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0.5,1,0,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0,10,-200,200),
                                   lnormprior(0,0.75,0,18), 
                                   normprior(0,2,-18,18))
        return(prior)

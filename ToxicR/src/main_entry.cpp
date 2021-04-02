@@ -230,12 +230,14 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result);
     continuous_deviance aod1, aod2; 
+    estimate_log_normal_aod(&anal,
+                             &aod1);
+  //  cout <<"R-"<< aod1.R << ":A2-" << aod1.A2 << ":A1-" << aod1.A1 << endl; 
     
-    // estimate_log_normal_aod(&anal,
-    //                         &aod1);
+    estimate_normal_aod(&anal,
+                         &aod2);
+  //  cout <<"R-"<< aod2.R << ":A3-" << aod2.A3 << ":A2-" << aod2.A2 << ":A1-" << aod2.A1 << endl; 
     
-    // estimate_normal_aod(&anal,
-    //                     &aod2);
     continuous_expected_result expected;
     expected.n = anal.n; 
     expected.expected = new double[anal.n]; 
