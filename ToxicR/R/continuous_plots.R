@@ -212,7 +212,7 @@ cont_power_f <-function(parms,d){
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500); 
+          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))
@@ -231,7 +231,7 @@ cont_power_f <-function(parms,d){
           }else{
                Response <- data_d[,2,drop=F]
                doses = data_d[,1,drop=F]
-               plot(doses,Response,type='n')#,...)
+               plot(jitter(doses),Response,type='n',...)
           }
           
           for (ii in 1:n_samps){
@@ -245,6 +245,8 @@ cont_power_f <-function(parms,d){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
                if (fit$model=="exp-3"){
+                    
+                 
                     temp_f[ii,] <- cont_exp_3_f(fit$mcmc_result$PARM_samples[ii,],test_doses)
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
@@ -257,22 +259,32 @@ cont_power_f <-function(parms,d){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
           }
-          me <- colMeans(temp_f)
-          lq <- apply(temp_f,2,quantile, probs = qprob)
-          uq <- apply(temp_f,2,quantile, probs = 1-qprob)
+          temp_f[is.infinite(temp_f)] = NA
+        
+          me <- colMeans(temp_f,na.rm = TRUE)
+          
+          lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE)
+          uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE)
           col1 = alphablend(credint_col,1)
           
           # Data structure for polygon - this part should be re-implmeneted as ggplot object
           polygon(c(test_doses,test_doses[length(test_doses):1]),
                   c(uq,lq[length(test_doses):1]),col = col1,border=col1)
-          
+         #test_dose = test_doses[is.finite(me)==TRUE]
+         #me = me[is.finite(me) == TRUE]
           lines(test_doses,me,lwd=2)
           temp_fit <- splinefun(test_doses,me)
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
+        
+          lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
+          lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
+          lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
+          
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-               lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-               lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-               lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
+               
+               lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])),lwd=2,lty=2)
+               lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])),lwd=3,)
+               lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])),lwd=2,lty=2)
           }
           
           
@@ -281,7 +293,7 @@ cont_power_f <-function(parms,d){
           temp = temp[temp < 20 * max_dose]
           #return(temp)
           #print(c(max(temp),median(temp),min(temp)))
-          Dens =  density(temp,cut=c(quantile(temp,0.995,na.rm = TRUE)))
+          Dens =  density(temp,cut=c(quantile(temp,0.995,na.rm = TRUE)),bw=10)
           Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
           temp = which(Dens$x < max(test_doses))
           D1_y = Dens$y[temp]
@@ -298,7 +310,9 @@ cont_power_f <-function(parms,d){
                     f <- cont_hill_f(fit$fitted_model$parameters,test_doses)
                }
                if (fit$model=="exp-3"){
-                    f <- cont_exp_3_f(fit$fitted_model$parameters,test_doses)
+                   temp = fit$fitted_model$parameters 
+                   temp = c(temp[1:2],0,temp[3],temp[4])
+                    f <- cont_exp_3_f(temp,test_doses)
                }
                if (fit$model=="exp-5"){
                     f <- cont_exp_5_f(fit$fitted_model$parameters,test_doses)
@@ -306,7 +320,7 @@ cont_power_f <-function(parms,d){
                if (fit$model=="power"){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
-               col = alphablend(col='coral3',A$posterior_probs[ii])
+               col = alphablend(col='coral3',min(1,A$posterior_probs[ii]*2))
                lines(test_doses,f,col=col,lwd = 2)
           }
           
@@ -410,7 +424,7 @@ cont_power_f <-function(parms,d){
           arrows(x0=doses, y0=lerror, x1=doses, 
                  y1=uerror, code=3, angle=90, length=0.1)
      }else{
-          points(doses,Response,pch=16)
+          points(jitter(doses),Response,pch=16)
      }
-     
+
 }

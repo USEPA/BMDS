@@ -89,7 +89,14 @@ SD_ig_G_5 <- cbind(lap1.sd[,3,4],lap2.sd[,3,4],mcmc1.sd[,3,4],mcmc2.sd[,3,4])*10
 SD_ig_E_4 <- cbind(lap1.sd[,3,1],lap2.sd[,3,1],mcmc1.sd[,3,1],mcmc2.sd[,3,1])*100
 SD_ig_E_5 <- cbind(lap1.sd[,3,2],lap2.sd[,3,2],mcmc1.sd[,3,2],mcmc2.sd[,3,2])*100
 
-xtable(cbind(SD_ig_E_5,SD_ig_G_5), digits = 1)
+SD_no_G_4 <- cbind(lap1.sd[,2,3],lap2.sd[,2,3],mcmc1.sd[,2,3],mcmc2.sd[,2,3])*100
+SD_no_G_5 <- cbind(lap1.sd[,2,4],lap2.sd[,2,4],mcmc1.sd[,2,4],mcmc2.sd[,2,4])*100
+
+SD_no_E_4 <- cbind(lap1.sd[,2,1],lap2.sd[,2,1],mcmc1.sd[,2,1],mcmc2.sd[,2,1])*100
+SD_no_E_5 <- cbind(lap1.sd[,2,2],lap2.sd[,2,2],mcmc1.sd[,2,2],mcmc2.sd[,2,2])*100
+cbind(SD_no_E_5,SD_no_G_5)
+
+xtable(cbind(SD_ig_E_4,SD_ig_G_4), digits = 1)
 
 HB_ig_G_4 <- cbind(lap1.h[,3,3],lap2.h[,3,3],mcmc1.h[,3,3],mcmc2.h[,3,3])*100
 HB_ig_G_5 <- cbind(lap1.h[,3,4],lap2.h[,3,4],mcmc1.h[,3,4],mcmc2.h[,3,4])*100
@@ -97,6 +104,25 @@ HB_ig_G_5 <- cbind(lap1.h[,3,4],lap2.h[,3,4],mcmc1.h[,3,4],mcmc2.h[,3,4])*100
 HB_ig_E_4 <- cbind(lap1.h[,3,1],lap2.h[,3,1],mcmc1.h[,3,1],mcmc2.h[,3,1])*100
 HB_ig_E_5 <- cbind(lap1.h[,3,2],lap2.h[,3,2],mcmc1.h[,3,2],mcmc2.h[,3,2])*100
 
+HB_lno_G_4 <- cbind(lap1.h[,2,3],lap2.h[,2,3],mcmc1.h[,2,3],mcmc2.h[,2,3])*100
+HB_lno_G_5 <- cbind(lap1.h[,2,4],lap2.h[,2,4],mcmc1.h[,2,4],mcmc2.h[,2,4])*100
 
+HB_lno_E_4 <- cbind(lap1.h[,2,1],lap2.h[,2,1],mcmc1.h[,2,1],mcmc2.h[,2,1])*100
+HB_lno_E_5 <- cbind(lap1.h[,2,2],lap2.h[,2,2],mcmc1.h[,2,2],mcmc2.h[,2,2])*100
+
+HB_no_G_4 <- cbind(lap1.h[,1,3],lap2.h[,1,3],mcmc1.h[,1,3],mcmc2.h[,1,3])*100
+HB_no_G_5 <- cbind(lap1.h[,1,4],lap2.h[,1,4],mcmc1.h[,1,4],mcmc2.h[,1,4])*100
+
+HB_no_E_4 <- cbind(lap1.h[,1,1],lap2.h[,1,1],mcmc1.h[,1,1],mcmc2.h[,1,1])*100
+HB_no_E_5 <- cbind(lap1.h[,1,2],lap2.h[,1,2],mcmc1.h[,1,2],mcmc2.h[,1,2])*100
+
+
+xtable(cbind(HB_no_E_4,HB_no_G_4), digits = 1)
+xtable(cbind(HB_no_E_5,HB_no_G_5), digits = 1)
+
+xtable(cbind(HB_lno_E_4,HB_no_G_4), digits = 1)
+xtable(cbind(HB_lno_E_5,HB_no_G_5), digits = 1)
+
+xtable(cbind(HB_ig_E_4,HB_ig_G_4), digits = 1)
 xtable(cbind(HB_ig_E_5,HB_ig_G_5), digits = 1)
 

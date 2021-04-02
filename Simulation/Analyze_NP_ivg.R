@@ -67,3 +67,24 @@ for (ii in 1:length(files)){
   mcmc2.h[scond,simtype,even]  = mean(BMD_result_HB_ML2_mcmc[,2]  < true_BMD.h,na.rm=TRUE)
   
 }
+
+
+library(xtable)
+
+SD_ig_G_4 <- cbind(lap1.sd[,3,3],lap2.sd[,3,3],mcmc1.sd[,3,3],mcmc2.sd[,3,3])*100
+SD_ig_G_5 <- cbind(lap1.sd[,3,4],lap2.sd[,3,4],mcmc1.sd[,3,4],mcmc2.sd[,3,4])*100
+
+SD_ig_E_4 <- cbind(lap1.sd[,3,1],lap2.sd[,3,1],mcmc1.sd[,3,1],mcmc2.sd[,3,1])*100
+SD_ig_E_5 <- cbind(lap1.sd[,3,2],lap2.sd[,3,2],mcmc1.sd[,3,2],mcmc2.sd[,3,2])*100
+
+xtable(cbind(SD_ig_E_5,SD_ig_G_5), digits = 1)
+
+HB_ig_G_4 <- cbind(lap1.h[,3,3],lap2.h[,3,3],mcmc1.h[,3,3],mcmc2.h[,3,3])*100
+HB_ig_G_5 <- cbind(lap1.h[,3,4],lap2.h[,3,4],mcmc1.h[,3,4],mcmc2.h[,3,4])*100
+
+HB_ig_E_4 <- cbind(lap1.h[,3,1],lap2.h[,3,1],mcmc1.h[,3,1],mcmc2.h[,3,1])*100
+HB_ig_E_5 <- cbind(lap1.h[,3,2],lap2.h[,3,2],mcmc1.h[,3,2],mcmc2.h[,3,2])*100
+
+
+xtable(cbind(HB_ig_E_5,HB_ig_G_5), digits = 1)
+

@@ -1,24 +1,16 @@
-bmds.SD<- c(17.55,	17.56,	17.55,
-            43.87,	43.89,	43.87,
-            87.75,	87.79,	87.75,
-            8.77,	8.78,	8.77,
-            13.65,	13.65,	13.65,
-            34.13,	34.13,	34.13,
-            68.25,	68.25,	68.25,
-            6.83,	6.83,	6.83)
+bmds.H <- c(70.97,	72.03,	66.76,
+          16.06,	16.41,	14.8,
+           6.93,	6.49,	7.54,
+          22.15,	20.99,	23.74)
 
-bmds.H <- c(11.03,	18.84,	11.52,
-            27.57,	47.09,	28.79,
-            55.13,	94.18,	57.59,
-            5.51,	9.42,	5.76,
-            8.12,	17.11,	7.58,
-            20.31,	42.78,	18.95,
-            40.62,	85.56,	37.89,
-            4.06,	8.56,	3.79)
+bmds.SD <- c(88.55,	88.55,	88.55,
+             26.5,	26.5,	26.5,
+             17.12,	17.14,	17.12,
+             48.49,	48.54,	48.49)
 
-BMD.H  <- matrix(bmds.H,nrow=8,ncol=3,byrow=T)
-BMD.SD <- matrix(bmds.SD,nrow=8,ncol=3,byrow=T)
-setwd("~/Documents/r_software/RBMDS/Simulation/Exp-5/results")
+BMD.H  <- matrix(bmds.H,nrow=4,ncol=3,byrow=T)
+BMD.SD <- matrix(bmds.SD,nrow=4,ncol=3,byrow=T)
+setwd("~/Documents/r_software/RBMDS/Simulation/Non-Parametric/results")
 files <- dir()
 
 ivgSims = grepl("invGaussian",files)
@@ -28,24 +20,19 @@ lnorSims = grepl("lognormal",files)
 cond1 = grepl("sim_1",files)
 cond2 = grepl("sim_2",files)
 cond3 = grepl("sim_3",files)
-cond4 = grepl("sim_4",files)
-cond5 = grepl("sim_5",files)
-cond6 = grepl("sim_6",files)
-cond7 = grepl("sim_7",files)
-cond8 = !(cond1 | cond2 | cond3 | cond4 | cond5 | cond6 | cond7)
-
+cond4 = !(cond1 | cond2 | cond3)
 is_geom = grepl("_g_",files)
 is_4    = grepl("_4_",files)
 
-lap1.sd <- array(NA,c(8,3,4))
-lap2.sd <- array(NA,c(8,3,4))
-mcmc1.sd <- array(NA,c(8,3,4))
-mcmc2.sd <- array(NA,c(8,3,4))
+lap1.sd <- array(NA,c(4,3,4))
+lap2.sd <- array(NA,c(4,3,4))
+mcmc1.sd <- array(NA,c(4,3,4))
+mcmc2.sd <- array(NA,c(4,3,4))
 
-lap1.h <- array(NA,c(8,3,4))
-lap2.h <- array(NA,c(8,3,4))
-mcmc1.h <- array(NA,c(8,3,4))
-mcmc2.h <- array(NA,c(8,3,4))
+lap1.h <- array(NA,c(4,3,4))
+lap2.h <- array(NA,c(4,3,4))
+mcmc1.h <- array(NA,c(4,3,4))
+mcmc2.h <- array(NA,c(4,3,4))
 
 for (ii in 1:length(files)){
   load(files[ii]) 
@@ -65,7 +52,7 @@ for (ii in 1:length(files)){
     even = even + 1
   }
   #simulation condition
-  scond = which(c(cond1[ii],cond2[ii],cond3[ii],cond4[ii],cond5[ii],cond6[ii],cond7[ii],cond8[ii]))
+  scond = which(c(cond1[ii],cond2[ii],cond3[ii],cond4[ii]))
   true_BMD.h  = BMD.H[scond,simtype]
   true_BMD.sd = BMD.SD[scond,simtype]
   
@@ -81,6 +68,7 @@ for (ii in 1:length(files)){
   
 }
 
+
 library(xtable)
 
 SD_ig_G_4 <- cbind(lap1.sd[,3,3],lap2.sd[,3,3],mcmc1.sd[,3,3],mcmc2.sd[,3,3])*100
@@ -89,6 +77,12 @@ SD_ig_G_5 <- cbind(lap1.sd[,3,4],lap2.sd[,3,4],mcmc1.sd[,3,4],mcmc2.sd[,3,4])*10
 SD_ig_E_4 <- cbind(lap1.sd[,3,1],lap2.sd[,3,1],mcmc1.sd[,3,1],mcmc2.sd[,3,1])*100
 SD_ig_E_5 <- cbind(lap1.sd[,3,2],lap2.sd[,3,2],mcmc1.sd[,3,2],mcmc2.sd[,3,2])*100
 
+SD_no_G_4 <- cbind(lap1.sd[,2,3],lap2.sd[,2,3],mcmc1.sd[,2,3],mcmc2.sd[,2,3])*100
+SD_no_G_5 <- cbind(lap1.sd[,2,4],lap2.sd[,2,4],mcmc1.sd[,2,4],mcmc2.sd[,2,4])*100
+
+SD_no_E_4 <- cbind(lap1.sd[,2,1],lap2.sd[,2,1],mcmc1.sd[,2,1],mcmc2.sd[,2,1])*100
+SD_no_E_5 <- cbind(lap1.sd[,2,2],lap2.sd[,2,2],mcmc1.sd[,2,2],mcmc2.sd[,2,2])*100
+cbind(SD_no_E_5,SD_no_G_5)
 xtable(cbind(SD_ig_E_5,SD_ig_G_5), digits = 1)
 
 HB_ig_G_4 <- cbind(lap1.h[,3,3],lap2.h[,3,3],mcmc1.h[,3,3],mcmc2.h[,3,3])*100
@@ -97,25 +91,13 @@ HB_ig_G_5 <- cbind(lap1.h[,3,4],lap2.h[,3,4],mcmc1.h[,3,4],mcmc2.h[,3,4])*100
 HB_ig_E_4 <- cbind(lap1.h[,3,1],lap2.h[,3,1],mcmc1.h[,3,1],mcmc2.h[,3,1])*100
 HB_ig_E_5 <- cbind(lap1.h[,3,2],lap2.h[,3,2],mcmc1.h[,3,2],mcmc2.h[,3,2])*100
 
-HB_lno_G_4 <- cbind(lap1.h[,2,3],lap2.h[,2,3],mcmc1.h[,2,3],mcmc2.h[,2,3])*100
-HB_lno_G_5 <- cbind(lap1.h[,2,4],lap2.h[,2,4],mcmc1.h[,2,4],mcmc2.h[,2,4])*100
+HB_no_G_4 <- cbind(lap1.h[,2,3],lap2.h[,2,3],mcmc1.h[,2,3],mcmc2.h[,2,3])*100
+HB_no_G_5 <- cbind(lap1.h[,2,4],lap2.h[,2,4],mcmc1.h[,2,4],mcmc2.h[,2,4])*100
 
-HB_lno_E_4 <- cbind(lap1.h[,2,1],lap2.h[,2,1],mcmc1.h[,2,1],mcmc2.h[,2,1])*100
-HB_lno_E_5 <- cbind(lap1.h[,2,2],lap2.h[,2,2],mcmc1.h[,2,2],mcmc2.h[,2,2])*100
-
-HB_no_G_4 <- cbind(lap1.h[,1,3],lap2.h[,1,3],mcmc1.h[,1,3],mcmc2.h[,1,3])*100
-HB_no_G_5 <- cbind(lap1.h[,1,4],lap2.h[,1,4],mcmc1.h[,1,4],mcmc2.h[,1,4])*100
-
-HB_no_E_4 <- cbind(lap1.h[,1,1],lap2.h[,1,1],mcmc1.h[,1,1],mcmc2.h[,1,1])*100
-HB_no_E_5 <- cbind(lap1.h[,1,2],lap2.h[,1,2],mcmc1.h[,1,2],mcmc2.h[,1,2])*100
+HB_no_E_4 <- cbind(lap1.h[,2,1],lap2.h[,2,1],mcmc1.h[,2,1],mcmc2.h[,2,1])*100
+HB_no_E_5 <- cbind(lap1.h[,2,2],lap2.h[,2,2],mcmc1.h[,2,2],mcmc2.h[,2,2])*100
 
 
-xtable(cbind(HB_no_E_4,HB_no_G_4), digits = 1)
 xtable(cbind(HB_no_E_5,HB_no_G_5), digits = 1)
-
-xtable(cbind(HB_lno_E_4,HB_no_G_4), digits = 1)
-xtable(cbind(HB_lno_E_5,HB_no_G_5), digits = 1)
-
-xtable(cbind(HB_ig_E_4,HB_ig_G_4), digits = 1)
 xtable(cbind(HB_ig_E_5,HB_ig_G_5), digits = 1)
 

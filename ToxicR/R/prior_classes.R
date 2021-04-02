@@ -268,7 +268,7 @@ poor of a modeling choice.\n");
   #Exponential 
   if (dmodel == 2 && dvariance == 3){
     prior <- create_prior_list(lnormprior(0,0.1, 0,100), # a
-                               lnormprior(0,0.25, 0,30),     # b
+                               lnormprior(0,0.5, 0,30),     # b
                                normprior(0,1, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
                                normprior(0,2,-18,18))
