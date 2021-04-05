@@ -329,7 +329,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	rVal.type    = BMDType; 
 	rVal.COV = model.varMatrix(OptRes.max_parms);
 	rVal.MAP_ESTIMATE = OptRes.max_parms; 
-    //cout << "******&&&&& OptRes.functionV= " << OptRes.functionV << endl;
+  cout << "******&&&&& OptRes.functionV= " << OptRes.functionV << endl;
 	rVal.MAP = OptRes.functionV; 												   
 	
 	return rVal; 

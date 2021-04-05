@@ -215,6 +215,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
     retVal = init_pow_nor( Y_N,  X,  prior);
     break; 
   case cont_model::polynomial:
+    /*initialize at Least Squares inv(X.t()*X)*X.t()*Y)*/
     break; 
   default: 
     // this is a different model that shouldn't have MLE fits
@@ -656,7 +657,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       //cout << "Running Polynomial Model Normality-NCV Assumption using Laplace." << endl;
     }
 #endif
-
     a = bmd_analysis_CNC<normalPOLYNOMIAL_BMD_NC, IDcontinuousPrior>
                        (likelihood_npoly,  model_prior, fixedB, fixedV,
                         riskType, bmrf, bk_prob,

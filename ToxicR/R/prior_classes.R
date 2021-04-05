@@ -178,7 +178,7 @@ poor of a modeling choice.\n");
     prior <- create_prior_list(normprior(1,0.1,-100,100),
                                normprior(0,1,-100,100),
                                lnormprior(0,1,0,100),
-                               lnormprior(log(2),0.4215,0,100),
+                               lnormprior(log(1),0.05,0,100),
                                lnormprior(0, 0.75,0,100),
                                normprior(0, 2,-18,18));
     return(prior)

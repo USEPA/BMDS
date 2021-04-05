@@ -23,12 +23,12 @@ cont_exp_5_f <- function(parms,d){
   return (rval)
 }
 
-#dichotomous log-probit
+#
 cont_exp_3_f <-function(parms,d){
   g <- parms[1]
   b <- parms[2]
   e <- parms[4] 
-  rval <- g*exp((b*d)^e)
+  rval <- g*exp(-(b*d)^e)
   return (rval)
 }
 
