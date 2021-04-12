@@ -365,26 +365,30 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
          polynomial is against all that is holy. Use at your own risk and don't 
          forget that `I told you so` when it hits the fan.\n")
     if (dvariance == 1){
-      prior <- create_prior_list(normprior(0,5,-100,100))
+      prior <- create_prior_list(normprior(0,5,-1000,1000))
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,
-                                     normprior(0,5,-100,100))
+                                     normprior(0,5,-1000,1000))
       }
       
       prior <- combine_prior_lists(prior, create_prior_list(normprior (0,1,-18,18)))
+      prior[[1]][,1] = 0
+      return(prior)
     }
     
     if (dvariance == 2){
-      prior <- create_prior_list(normprior(0,5,-100,100))
+      prior <- create_prior_list(normprior(0,5,-1000,1000))
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,
-                                     normprior(0,5,-100,100))
+                                     normprior(0,5,-1000,1000))
       }
       prior <- combine_prior_lists(prior, 
                                    create_prior_list(lnormprior(0,1,0,100),
                                                      normprior (0,1,-18,18)))
+      prior[[1]][,1] = 0
+      return(prior)
       
     }
     if (dvariance == 3){

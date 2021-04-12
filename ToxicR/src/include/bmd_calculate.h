@@ -518,6 +518,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       if (!is_const_var){
         tot_e = 2; 
       }
+      model_prior.scale_prior(divisor,0); 
       for (int i =1; i < nparms - tot_e; i++){
         model_prior.scale_prior(divisor,i);
         model_prior.scale_prior(pow(1/max_dose,i),i);
