@@ -187,6 +187,28 @@ Eigen::MatrixXd init_exp_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::
   return init_exp_nor(Y_LN, X, prior); 
 }
 
+Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX, 
+                          Eigen::MatrixXd prior, int deg = 2){
+
+  Eigen::MatrixXd X = Eigen::MatrixXd::Ones(tX.rows(),deg+1);
+  Eigen::MatrixXd W = Eigen::MatrixXd::Identity(tX.rows(),tX.rows());
+ 
+  for (int i = 0; i < X.rows(); i++){
+    if (Y.cols()>1){
+      W(i,i) = Y(i,2)/Y(i,1)*Y(i,1); // Weights: \sigma^2/N
+    }
+    for (int j = 1; j < X.cols(); j++){
+      X(i,j) = pow(tX(i,0),j);  
+    }
+  }
+  
+  Eigen::MatrixXd B = Eigen::MatrixXd::Ones(deg+1,1);
+  B = X.transpose()*W*X; 
+  B = B.inverse()*X.transpose()*W*Y.col(0); 
+
+  return B; 
+}
+
 /*initialize_mle
  * This function is for MLE optimization it takes the data/model type and then tries 
  * to start the initializer on reasonable initial values. These values will then be fed
@@ -197,7 +219,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
                                  Eigen::MatrixXd prior, distribution data_dist, cont_model model){
   
   Eigen::MatrixXd retVal = prior; 
-  
+  int deg = 0; 
   switch (model){
   case cont_model::funl:
     retVal = init_funl_nor(Y_LN, X, prior);
@@ -212,9 +234,17 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
     init_exp_nor(Y_N, X, prior); 
     break; 
   case cont_model::power: 
+
     retVal = init_pow_nor( Y_N,  X,  prior);
     break; 
   case cont_model::polynomial:
+    /*initialize at Least Squares inv(X.t()*X)*X.t()*Y)
+     * 
+     */
+
+    deg = distribution::normal_ncv == data_dist? prior.rows() - 3: prior.rows() - 2;   
+    retVal = distribution::log_normal==data_dist ? init_poly(Y_LN, X, prior,deg):
+                                                   init_poly(Y_N, X, prior,deg); 
     break; 
   default: 
     // this is a different model that shouldn't have MLE fits
@@ -656,7 +686,6 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       //cout << "Running Polynomial Model Normality-NCV Assumption using Laplace." << endl;
     }
 #endif
-
     a = bmd_analysis_CNC<normalPOLYNOMIAL_BMD_NC, IDcontinuousPrior>
                        (likelihood_npoly,  model_prior, fixedB, fixedV,
                         riskType, bmrf, bk_prob,
@@ -1600,7 +1629,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   }
   
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
-                                                  tprior,(distribution)CA->disttype,CA->model ) ;
+                                                  tprior,(distribution)CA->disttype,CA->model) ;
   temp_init = temp_init.array(); 
  
   Eigen::MatrixXd init_opt; 
@@ -1615,8 +1644,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-
-    
+  
     break; 
   case cont_model::hill:
     init_opt = CA->disttype == distribution::log_normal ?
@@ -1662,6 +1690,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
+    
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, 
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
@@ -1683,6 +1712,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             CA->tail_prob,  
                             CA->alpha, 0.05,init_opt);
     }else{
+      
       b = laplace_logNormal(orig_Y_LN, orig_X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
@@ -1703,6 +1733,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                         CA->isIncreasing,isNCV, CA->BMR, 
                         CA->tail_prob,  
                         CA->alpha, 0.02,init_opt,CA->degree);
+      
     }else{
 
       b = laplace_Normal(orig_Y, orig_X,
@@ -1710,6 +1741,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                          CA->isIncreasing,isNCV, CA->BMR, 
                          CA->tail_prob,  
                          CA->alpha, 0.02,init_opt,CA->degree);
+        
     }
    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
                              CA->isIncreasing, CA->suff_stat, isNCV,tprior, 

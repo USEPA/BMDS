@@ -34,7 +34,7 @@ hill <- data.frame(a=Hill.p[,1],b=Hill.p[,2],
 row.names(hill) <- c("Hill Simulation 1","Hill Simulation 2",
                      "Hill Simulation 3","Hill Simulation 4",
                      "Hill Simulation 5","Hill Simulation 6",
-                     "hill Simulation 7","Hill Simulation 8")
+                     "Hill Simulation 7","Hill Simulation 8")
 #estimates of the Log-normal variance 
 f1 = function(x){log(exp(x)*expm1(x))-(log(77.5^2) -2*log(481))}
 sqrt(uniroot(f1,c(0,1))$root)
@@ -462,7 +462,7 @@ names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
 row.names(BMD_IS) <- c("Hill Simulation 1","Hill Simulation 2",
                      "Hill Simulation 3","Hill Simulation 4",
                      "Hill Simulation 5","Hill Simulation 6",
-                     "hill Simulation 7","Hill Simulation 8")
+                     "Hill Simulation 7","Hill Simulation 8")
 kable(BMD_IS,digits=2,caption ="Hill Simulation BMDs for standard deviation BMD across
                                 the three different distributional conditions.")
 ```
@@ -633,7 +633,7 @@ names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
 row.names(BMD_IS) <- c("Hill Simulation 1","Hill Simulation 2",
                      "Hill Simulation 3","Hill Simulation 4",
                      "Hill Simulation 5","Hill Simulation 6",
-                     "hill Simulation 7","Hill Simulation 8")
+                     "Hill Simulation 7","Hill Simulation 8")
 kable(BMD_IS,digits=2,caption ="Hill Simulation BMDs for Hybrid BMD across
                                 the three different distributional conditions.")
 ```

@@ -638,6 +638,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
      
       x =  startValue_F(M, startV,
                                   lb, ub,op_size);
+
     }
     catch (...) {
      

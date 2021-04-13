@@ -154,9 +154,9 @@ poor of a modeling choice.\n");
          prior <- create_prior_list(normprior(0,0.1,-100,100),
                                   normprior(0,1,-100,100),
                                   lnormprior(0,0.5,0,100),
+                                  normprior(0.5,1,0,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0,10,-200,200),
                                   normprior (0,2,-18,18))
          return(prior)
   }
@@ -166,9 +166,9 @@ poor of a modeling choice.\n");
        prior <- create_prior_list(normprior(0,0.1,-100,100),
                                   normprior(0,1,-100,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0.5,1,0,100),
                                   lnormprior(0,0.5,0,100),
-                                  lnormprior(0,1,0,100),
+                                  normprior(0,10,-200,200),
                                   lnormprior(0,0.75,0,18), 
                                   normprior(0,2,-18,18))
        return(prior)
@@ -178,7 +178,7 @@ poor of a modeling choice.\n");
     prior <- create_prior_list(normprior(1,0.1,-100,100),
                                normprior(0,1,-100,100),
                                lnormprior(0,1,0,100),
-                               lnormprior(log(2),0.4215,0,100),
+                               lnormprior(log(1),0.05,0,100),
                                lnormprior(0, 0.75,0,100),
                                normprior(0, 2,-18,18));
     return(prior)
@@ -268,7 +268,7 @@ poor of a modeling choice.\n");
   #Exponential 
   if (dmodel == 2 && dvariance == 3){
     prior <- create_prior_list(lnormprior(0,0.1, 0,100), # a
-                               lnormprior(0,0.25, 0,30),     # b
+                               lnormprior(0,0.5, 0,30),     # b
                                normprior(0,1, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
                                normprior(0,2,-18,18))
@@ -365,26 +365,30 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
          polynomial is against all that is holy. Use at your own risk and don't 
          forget that `I told you so` when it hits the fan.\n")
     if (dvariance == 1){
-      prior <- create_prior_list(normprior(0,5,-100,100))
+      prior <- create_prior_list(normprior(0,5,-1000,1000))
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,
-                                     normprior(0,5,-100,100))
+                                     normprior(0,5,-1000,1000))
       }
       
       prior <- combine_prior_lists(prior, create_prior_list(normprior (0,1,-18,18)))
+      prior[[1]][,1] = 0
+      return(prior)
     }
     
     if (dvariance == 2){
-      prior <- create_prior_list(normprior(0,5,-100,100))
+      prior <- create_prior_list(normprior(0,5,-1000,1000))
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,
-                                     normprior(0,5,-100,100))
+                                     normprior(0,5,-1000,1000))
       }
       prior <- combine_prior_lists(prior, 
                                    create_prior_list(lnormprior(0,1,0,100),
                                                      normprior (0,1,-18,18)))
+      prior[[1]][,1] = 0
+      return(prior)
       
     }
     if (dvariance == 3){

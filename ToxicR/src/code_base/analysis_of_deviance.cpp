@@ -105,9 +105,9 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   statModel<lognormalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                           isfix1, fix1);
   optimizationResult a1Result = findMAP<lognormalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
-
+  
   CD->A1 = a1Result.functionV;
-  CD->N1 = a1Result.max_parms.rows();
+  CD->N1 = a1Result.max_parms.rows()-1;
   /////////////////////////////////////////////////////////////////////////////////////
   // Test A2
   lognormalLLTESTA2 a2Test(Y, X, bSuffStat);
@@ -133,7 +133,7 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                                                           isfix2, fix2);
   optimizationResult a2Result = findMAP<lognormalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
   CD->A2 = a2Result.functionV;
-  CD->N2 = a2Result.max_parms.rows();
+  CD->N2 = a2Result.max_parms.rows()/2;
   /////////////////////////////////////////////////////////////////////////////////////
   // Test R
   lognormalLLTESTR rTest(Y, X, bSuffStat);
@@ -155,7 +155,7 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   optimizationResult rResult = findMAP<lognormalLLTESTR, IDcontinuousPrior>(&rModel,startR);
   
   CD->R = rResult.functionV;
-  CD->NR = rResult.max_parms.rows();
+  CD->NR = rResult.max_parms.rows()-1;
 }
 
 /* normal_AOD
@@ -213,9 +213,9 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
   optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
-  //cout << a1Result.max_parms << endl; 
+  
   CD->A1 = a1Result.functionV;
-  CD->N1 = a1Result.max_parms.rows(); 
+  CD->N1 = a1Result.max_parms.rows()-2; 
   ////////////////////////////////////////////////////////////////////
   normalLLTESTA2 a2Test(Y, X, bSuffStat);
   nParms = a2Test.nParms();
@@ -242,7 +242,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 
   optimizationResult a2Result = findMAP<normalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
   CD->A2 = a2Result.functionV;
-  CD->N2 = a2Result.max_parms.rows(); 
+  CD->N2 = a2Result.max_parms.rows()/2; 
   //////////////////////////////////////////////////////////////////////
   normalLLTESTA3 a3Test(Y, X, bSuffStat);
   nParms = a3Test.nParms();
@@ -277,7 +277,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model,startV3);
   
   CD->A3 = a3Result.functionV;
-  CD->N3 = a3Result.max_parms.rows(); 
+  CD->N3 = a3Result.max_parms.rows()-2; 
   
   //////////////////////////////////////////////////////////////
   normalLLTESTR RTest(Y, X, bSuffStat);
@@ -297,5 +297,5 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                                                        isfixR, fixR);
   optimizationResult RResult = findMAP<normalLLTESTR, IDcontinuousPrior>(&RModel,startR);
   CD->R = RResult.functionV;
-  CD->NR = RResult.max_parms.rows(); 
+  CD->NR = RResult.max_parms.rows()-1; 
 }
