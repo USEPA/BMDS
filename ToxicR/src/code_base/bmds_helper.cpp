@@ -57,7 +57,13 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target){
 
    for (int i=0; i < arrSize; i++){
       if (fabs(quant[i] - target) < BMDS_EPS && std::isfinite(val[i]) ){
+         //exact match
          retVal = val[i];
+         break;
+      } else if (quant[i] > target && i>0){ 
+        // linear interpolation
+        retVal = val[i-1] + ((val[i] - val[i-1])/(quant[i] - quant[i-1])) * (target - quant[i-1]);
+        break;
       }
    }
    return retVal;
@@ -85,6 +91,47 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
   BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
 
+}
+
+
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres){
+
+  int distSize = res->dist_numE*2;
+
+//  double dist[distSize/2][2];
+  double quant[distSize/2];
+  double val[distSize/2];
+
+  for (int i = 0; i < distSize/2; i++){
+//    dist[i][1] = res->bmd_dist[i];
+    val[i] = res->bmd_dist[i];
+  }
+  for (int i = distSize/2; i < distSize; i++){
+//    dist[i-distSize/2][0] = res->bmd_dist[i];
+    quant[i-distSize/2] = res->bmd_dist[i];
+  }
+
+//  calculate MA quantiles
+  BMDSres->BMD_MA = findQuantileVals(quant, val, distSize/2, 0.50);
+  BMDSres->BMDL_MA = findQuantileVals(quant, val, distSize/2, 0.05);
+  BMDSres->BMDU_MA = findQuantileVals(quant, val, distSize/2, 0.95);
+
+// calculate individual model quantiles
+  for (int j=0; j<anal->nmodels; j++){
+      std::cout<<"Internal model:" << j << std::endl;
+      for(int i=0; i<distSize; i++){
+        std::cout<<res->models[j]->bmd_dist[i]<<std::endl;
+      }
+      for (int i = 0; i < distSize/2; i++){
+        val[i] = res->models[j]->bmd_dist[i];
+      }
+      for (int i = distSize/2; i < distSize; i++){
+        quant[i-distSize/2] = res->models[j]->bmd_dist[i];
+      }
+      BMDSres->BMD[j] = findQuantileVals(quant, val, distSize/2, 0.50);
+      BMDSres->BMDL[j] = findQuantileVals(quant, val, distSize/2, 0.05);
+      BMDSres->BMDU[j] = findQuantileVals(quant, val, distSize/2, 0.95);
+  }
 }
 
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDSres){
@@ -219,7 +266,20 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
 
 }
 
+void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
+  estimate_ma_laplace_dicho(MA, DA, res);
+
+  for (int j=0; j<MA->nmodels; j++){
+      std::cout<<"runBMDSDichoMA Individual model:" << j << std::endl;
+      for(int i=0; i<2*res->models[j]->dist_numE; i++){
+        std::cout<<res->models[j]->bmd_dist[i]<<std::endl;
+      }
+  }
+
+  collect_dichoMA_bmd_values(MA, res, bmdsRes);
+
+}
 
 //transform parameters which were computed using a logistic dist.
 void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_model_result *res){

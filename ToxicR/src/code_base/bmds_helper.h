@@ -25,6 +25,15 @@ struct BMDS_results{
   bool validResult;
 };
 
+struct BMDSMA_results{
+  double BMD_MA;
+  double BMDL_MA;
+  double BMDU_MA;
+  double *BMD;
+  double *BMDL;
+  double *BMDU;
+};
+
 
 //all arrays are length 4
 struct testsOfInterest {
@@ -115,18 +124,21 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
 //void collect_dicho_bmd_values(double *bmd_dist, struct BMD_results *BMDres);
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres);
 
-void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres);
 
+void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
 
 void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
-
 void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
 
+void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
 void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD);
 
 void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir);
+
+
 
 #ifdef __cplusplus
 }
