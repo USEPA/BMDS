@@ -15,6 +15,6 @@ mData <- matrix(c(12,   1,5,
                   15,   2,6,
                   18,   3,7,
                   21,   4,8),nrow=4,ncol=3,byrow=T)
-Q = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",
-                           fit_type = "mle")
+Q = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],
+                           fit_type = "mcmc")
 single_dichotomous_fit()

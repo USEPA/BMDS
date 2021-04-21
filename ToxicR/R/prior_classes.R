@@ -382,7 +382,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,
-                                     normprior(0,5,-1000,1000))
+                                     normprior(0,5,-10000,10000))
       }
       prior <- combine_prior_lists(prior, 
                                    create_prior_list(lnormprior(0,1,0,100),
