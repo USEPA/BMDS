@@ -428,7 +428,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
   signed int  flags = OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX; 
 	optimizationResult oR = findMAP<LL, PR>(&model,flags);
-	cerr << oR.max_parms << endl; 
+
 	bmd_analysis rVal;
 	double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
 
