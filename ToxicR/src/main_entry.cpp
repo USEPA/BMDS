@@ -131,6 +131,7 @@ List run_single_dichotomous(NumericVector model,
   GOFres.residual = new double[Anal.n]; 
 
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
+
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);
   
