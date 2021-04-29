@@ -396,7 +396,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   
   // value to return
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
-  cout << "simple optimization:"<< Y << endl;
+ 
   LL      likelihood(Y, X, suff_stat, is_const_var, degree);//for polynomial models
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
@@ -407,6 +407,36 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   
   rVal = OptRes.max_parms;
 
+  return rVal; 
+  
+}
+
+/**********************************************************
+* fast BMD
+* 
+* 
+***********************************************************/
+template <class LL, class PR>
+Eigen::MatrixXd bmd_fast_BMD(Eigen::MatrixXd Y, Eigen::MatrixXd X, 
+                             Eigen::MatrixXd prior, 
+                             std::vector<bool> fixedB,std::vector<double> fixedV,
+                             bool is_const_var,
+                             bool is_increasing,
+                             int degree) {
+  
+  // value to return
+  bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
+  
+  LL      likelihood(Y, X, suff_stat, is_const_var, degree);//for polynomial models
+  PR   	model_prior(prior);
+  Eigen::MatrixXd rVal;
+  // create the Continuous BMD model
+  cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);								  
+  // Find the maximum a-posteriori and compute the BMD
+  optimizationResult OptRes = findMAP<LL, PR>(&model);
+  
+  rVal = OptRes.max_parms;
+  
   return rVal; 
   
 }
