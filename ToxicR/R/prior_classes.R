@@ -152,7 +152,7 @@ poor of a modeling choice.\n");
   #FUNL
   if (dmodel ==5 && dvariance == 1){
          prior <- create_prior_list(normprior(0,0.1,-100,100),
-                                    normprior(0,1,-100,100),
+                                    normprior(0,10,-1e4,1e4),
                                     lnormprior(0,0.5,0,100),
                                     normprior(0.5,1,0,100),
                                     lnormprior(0,0.5,0,100),
@@ -164,7 +164,7 @@ poor of a modeling choice.\n");
   #FUNL
   if (dmodel ==5 && dvariance == 2){
        prior <- create_prior_list(normprior(0,0.1,-100,100),
-                                  normprior(0,1,-100,100),
+                                  normprior(0,10,-1e4,1e4),
                                   lnormprior(0,0.5,0,100),
                                   normprior(0.5,1,0,100),
                                   lnormprior(0,0.5,0,100),
@@ -176,7 +176,7 @@ poor of a modeling choice.\n");
   #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,10,-100,100),
+                               normprior(0,10,-1e4,1e4),
                                lnormprior(0,1,0,100),
                                lnormprior(log(2),0.4215,0,18),
                                lnormprior(0, 0.75,0,100),
@@ -220,17 +220,17 @@ poor of a modeling choice.\n");
   #Hill model
   if (dmodel == 1 && dvariance == 1){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior( 0, 10,-100,100),#normprior(1,2,-18,18),
+                               normprior( 0, 10,-1e4,1e4),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,100),
                                lnormprior(log(2),0.4215,0,18),
                                normprior(0,2,-18,18)); 
     return(prior)
   }
   
-  #Exponential 
+  #Exponential-3
   if (dmodel == 2 && dvariance == 1){
     prior <- create_prior_list(normprior(1,0.1, -100,100), # a
-                               lnormprior(0,1, 0,30),     # b
+                               lnormprior(0,0.5, 0,30),     # b
                                normprior(0,1, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
                                normprior(0,2,-18,18))
