@@ -622,7 +622,6 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
                            Eigen::MatrixXd    startV,
                            unsigned int flags =  OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX) {
   optimizationResult oR;
-
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
@@ -650,13 +649,14 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   }
   int yy = x.size(); 
  
- 
+
   for (int i = 0; i < M->nParms(); i++){
-    
+     
     if (!isnormal(x[i])){
       x[i] = 0;
+      
     }
-  
+      //cout << x[i] << endl; 
   }
 
  // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
@@ -770,7 +770,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   oR.result = result;
   oR.functionV = minf;
   oR.max_parms = d; 
-
+ // cout << "Result Opt:" << result << "\n---\n"<< endl << d ; 
+  
   M->setEST(d);
   
   if (result < 0) {

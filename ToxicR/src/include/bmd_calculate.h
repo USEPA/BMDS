@@ -355,7 +355,6 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             Eigen::MatrixXd init = Eigen::MatrixXd::Zero(10, 10)) {
 
   // value to return
- 
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   PR   	model_prior(prior);
@@ -397,7 +396,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   
   // value to return
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
-
+  cout << "simple optimization:"<< Y << endl;
   LL      likelihood(Y, X, suff_stat, is_const_var, degree);//for polynomial models
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
@@ -429,10 +428,11 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
   signed int  flags = OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX; 
 	optimizationResult oR = findMAP<LL, PR>(&model,flags);
+
 	bmd_analysis rVal;
 	double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
 
-  
+
 	Eigen::MatrixXd result; 
 	std::vector<double> x;
 	std::vector<double> y;	
@@ -474,7 +474,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		}
 	  	
 	}	
-	
+
 	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){
     
@@ -496,7 +496,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	rVal.COV = model.varMatrix(oR.max_parms);
 	rVal.MAP_ESTIMATE = oR.max_parms; 
 	rVal.MAP = oR.functionV; 
-	
+
 	return rVal; 
 }
 
@@ -506,7 +506,9 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
                              bool is_increasing, bool is_logNormal, bool is_const_var){
   Eigen::MatrixXd te_b = *betas; 
   PR   	  model_prior(*prior);
+  divisor = max(1.0,divisor); 
   Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
+  
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 

@@ -105,9 +105,20 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   std::sort(vec.begin(), vec.end());
   vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
   //udoses = vec; // this should be the unique dose group
+  double minDose = X.minCoeff(); 
+  double init = 0; 
+  int nmin = 0; 
+  
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==minDose){
+      nmin++; 
+      init += Y_N(i,0); 
+    }
+  }
+  init *= init/double(nmin); 
   
   Eigen::MatrixXd betas = quadraticRegression(Y_N,  X);
-  prior(0,1) = betas(0,0); 
+  prior(0,1) = init; 
   double max_d = vec[vec.size()-1]; 
   double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
   prior(1,1)   = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d - prior(0,1))/max_d; 
@@ -1631,7 +1642,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
   temp_init = temp_init.array(); 
- 
+  
   Eigen::MatrixXd init_opt; 
 
   switch((cont_model)CA->model){
@@ -1647,16 +1658,21 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   
     break; 
   case cont_model::hill:
-    init_opt = CA->disttype == distribution::log_normal ?
-    bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                              CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
-    bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+
+    if( CA->disttype == distribution::log_normal ){
+      init_opt = bmd_continuous_optimization<lognormalHILL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
+                                                              CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
+    }else{
+      init_opt = bmd_continuous_optimization<normalHILL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-   
+
+    
+    }
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-
+    
+    
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
