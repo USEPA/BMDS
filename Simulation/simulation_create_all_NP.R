@@ -4,8 +4,8 @@
 library(ToxicR)
 library(actuar)
 
-set.seed(90101)
-setwd('./Non-Parametric')
+set.seed(90210)
+setwd('./Non-Parametric-2')
 #log-transformed for fitting as in ToxicR use
 beta1 <- c(0.15486274,0.14054532,0.05806702,0.67421470,0.18371405,0.92821744,1.60669594,1.04508522) 
 beta2 <- c(0.677816175,0.322787366,3.356424380,0.102841870,0.009085238,0.087907971,0.344255936,0.100000000)
@@ -29,10 +29,10 @@ bkg = c(10.58,10.58,481,481)
 sd    <- c(rep(2.28,2),rep(77.5,2))
 #normal data
 for (i in 1:4){
-  means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_5 <- X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_g_4 <- X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_4 <- X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_5 <- 2*X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_5 <- 2*X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_4 <- 2*X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_4 <- 2*X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
   
   doses = dose_g_5
   sim_data <- matrix(rnorm(1000*length(dose_g_5),means_g_5,sd[i]),nrow=1000,ncol=length(dose_g_5),byrow=T)
@@ -50,10 +50,10 @@ for (i in 1:4){
 #log-normal data
 sd    <- c(rep(0.209,2),rep(0.158,2))
 for (i in 1:4){
-  means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_5 <- X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_g_4 <- X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_4 <- X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_5 <- 2*X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_5 <- 2*X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_4 <- 2*X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_4 <- 2*X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
   
   
   doses = dose_g_5
@@ -72,10 +72,10 @@ for (i in 1:4){
 #inv-gaussian data
 sd    <- c(rep(227.8176,2),rep(18528.14,2))
 for (i in 1:4){
-  means_g_5 <- X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_5 <- X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
-  means_g_4 <- X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
-  means_e_4 <- X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_5 <- 2*X_g_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_5 <- 2*X_e_5%*%t(iS[i,,drop=F]) + bkg[i]
+  means_g_4 <- 2*X_g_4%*%t(iS[i,,drop=F]) + bkg[i]
+  means_e_4 <- 2*X_e_4%*%t(iS[i,,drop=F]) + bkg[i]
   
   doses = dose_g_5
   sim_data <- matrix(rinvgauss(1000*length(dose_g_5),means_g_5,sd[i]),nrow=1000,ncol=length(dose_g_5),byrow=T)

@@ -21,14 +21,24 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            0.625,	0.625,	0.625,	1.25,	1.25,	1.25,	2.5,	2.5,	2.5,	5,5,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
+
+
 #B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "laplace",sstat = F)
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 library(dplyr)
 
-temp <- PFOA_Liver %>% filter(X1 == "CYP3A1_32809")
+temp <- PFOA_Liver %>% filter(X1 == "BDNF_32390")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",sstat = F,)
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",sstat = F,)
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 3,sstat = F)
+C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
+
+temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
+v1 <- as.numeric(temp[2:length(temp)])
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 3,sstat = F)
+C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
+
+
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",sstat = F,)
 
 #AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 #plot(BB)
@@ -56,7 +66,7 @@ plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "ACADL_32776")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",sstat = F,)
 
 d <- seq(0,20,0.01)
 y <- cont_hill_f(BB$parameters,d)
@@ -69,7 +79,7 @@ plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "LOC100912409_9106")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",sstat = F,)
 d <- seq(0,20,0.01)
 y <- cont_hill_f(BB$parameters,d)
 plot(log10(doses+0.01),v1,pch=16)

@@ -11,10 +11,18 @@ mData <- matrix(c(0,    0,100,
                   200, 90,100),nrow=5,ncol=3,byrow=T)
 
 
-mData <- matrix(c(12,   1,5,
-                  15,   2,6,
-                  18,   3,7,
-                  21,   4,8),nrow=4,ncol=3,byrow=T)
-Q = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",
-                           fit_type = "mle")
-single_dichotomous_fit()
+mData <- matrix(c(0,    5,100,
+                  50,   10,100,
+                  100, 33,100,
+                  150, 67,100,
+                  200, 99,100),nrow=5,ncol=3,byrow=T)
+
+#mData <- matrix(c(12,   1,5,
+#                  15,   2,6,
+#                  18,   3,7,
+#                  21,   4,8),nrow=4,ncol=3,byrow=T)
+#Q = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],
+#                           fit_type = "mcmc")
+
+
+R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistage",degree = 4,fit_type = "mle")

@@ -348,7 +348,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
                                                        DA->BMR, DA->BMD_type,
                                                        DA->alpha*0.5,0.02);
     Xd = X_gradient<dich_gammaModelNC>(a.MAP_ESTIMATE,Y,D); 
-    cv_t = X_cov<dich_gammaModelNC>(a.MAP_ESTIMATE,Y,D); 
+    cv_t =  X_cov<dich_gammaModelNC>(a.MAP_ESTIMATE,Y,D); 
     pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
     pr   = Xd.transpose()*cv_t*Xd + pr; 
     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
@@ -395,17 +395,18 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
        
     break; 
   case dich_model::d_multistage:
-   
-    a =   bmd_analysis_DNC<dich_multistageNC,IDPrior> (Y,D,prior,
+       a =   bmd_analysis_DNC<dich_multistageNC,IDPrior> (Y,D,prior,
                                                        fixedB, fixedV, DA->degree,
                                                        DA->BMR, DA->BMD_type, 
                                                        0.5*DA->alpha, 0.02);
+
        Xd = X_gradient<dich_multistageNC>(a.MAP_ESTIMATE,Y,D,DA->degree); 
        cv_t = X_cov<dich_multistageNC>(a.MAP_ESTIMATE,Y,D); 
        pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
        pr   = Xd.transpose()*cv_t*Xd + pr; 
        Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
        res->model_df   = Xd.diagonal().array().sum();
+
     break;
   case dich_model::d_probit: 
     a =   bmd_analysis_DNC<dich_probitModelNC,IDPrior> (Y,D,prior,
@@ -446,7 +447,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   default: 
     break; 
   }
-  
+
   if (do_a_rescale){
       rescale_var_matrix(&a.COV,a.MAP_ESTIMATE,
                          (dich_model)DA->model,
@@ -456,12 +457,14 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
               max_dose);
      
   }
-  
+
   transfer_dichotomous_model(a,res);
+
   // rescale the BMD 
    for (int i = 0; i < res->dist_numE; i++){
     res->bmd_dist[i] *= max_dose; 
   }
+  
   res->model = DA->model; 
   return; 
 }
@@ -805,7 +808,11 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
      }
      res->n = data->n;        // total number of observations obs 
      res->test_statistic =   sqresid.array().sum();
-     res->p_value        =   1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df); 
+     if ( data->n-data->model_df > 0.0){
+      res->p_value        =   1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df); 
+     }else{
+       res->p_value       = 1.0; 
+     }
      res->df             =   data->n-data->model_df; 
 }
 

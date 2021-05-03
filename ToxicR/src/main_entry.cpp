@@ -131,6 +131,7 @@ List run_single_dichotomous(NumericVector model,
   GOFres.residual = new double[Anal.n]; 
 
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
+
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);
   
@@ -237,7 +238,7 @@ List run_continuous_single(IntegerVector model,
     estimate_normal_aod(&anal,
                          &aod2);
   
-    cout <<"R:"<< aod2.R << ":A3:" << aod2.A3 << ":A2:" << aod2.A2 << ":A1:" << aod2.A1 << endl; 
+   // cout <<"R:"<< aod2.R << ":A3:" << aod2.A3 << ":A2:" << aod2.A2 << ":A1:" << aod2.A1 << endl; 
     
     continuous_expected_result expected;
     expected.n = anal.n; 
