@@ -369,7 +369,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   if (isBig){
 	   NI = 1000; // size of the initial population
   }else{
-     NI = 1000; 
+     NI = 500; 
   }
   std::vector<double> llist(NI); // List of the likelihood values; 
   for(int j=0; j< llist.size(); j++){
@@ -469,8 +469,8 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       tourny_size = 40; 
   }else{
       ngenerations = 300; 
-      ntourny = 20; 
-      tourny_size = 20; 
+      ntourny = 15; 
+      tourny_size = 15; 
   }
   
   for ( int xx = 0; xx < ngenerations; xx++){
@@ -693,15 +693,15 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     switch(opt_iter){
     case  0:
       opt_ptr = &opt1;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(250);
       break;
     case  1:
       opt_ptr = &opt2 ;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(250);
       break;
     case 2:
       opt_ptr = &opt3;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(250);
       break;
     case 3:
       opt_ptr = &opt4;

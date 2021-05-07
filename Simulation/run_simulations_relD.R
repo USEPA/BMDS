@@ -23,14 +23,20 @@ for (ii in 1:length(file_list)){
       ###############################################################################
       y = sim_data[jj,]
    
+      fit <- lm(y ~ doses)
+      if (fit[[1]][2] < 0){
+        BMR = 0.9
+      }else{
+        BMR = 0.1
+      }
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = 0.1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = BMR ,samples = 25000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = 0.1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = BMR,samples = 25000)
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = 0.1)
+                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = BMR)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = 0.1)
+                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = BMR)
       BMD_result_REL_ML1_mcmc[jj,] = AA$bmd
       BMD_result_REL_ML1_lapl[jj,] = AA_l$bmd
       BMD_result_REL_ML2_mcmc[jj,] = BB$bmd
@@ -41,9 +47,7 @@ for (ii in 1:length(file_list)){
       ################################################################################
     }
   
-  save(BMD_result_HB_ML1_lapl,BMD_result_HB_ML2_lapl,
-       BMD_result_HB_ML1_mcmc,BMD_result_HB_ML2_mcmc,
-       BMD_result_SD_ML1_lapl,BMD_result_SD_ML2_lapl,
-       BMD_result_SD_ML1_mcmc,BMD_result_SD_ML2_mcmc,
+  save(BMD_result_REL_ML1_lapl,BMD_result_REL_ML2_lapl,
+       BMD_result_REL_ML1_mcmc,BMD_result_REL_ML2_mcmc,
        pprobs_ML1,pprobs_ML2,file=sprintf("./results2/simrun_%s",file_list[ii]))
 }

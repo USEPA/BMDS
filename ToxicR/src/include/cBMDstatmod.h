@@ -57,10 +57,11 @@ class cBMDModel : public statModel<LL,PR> {
 		double returnBMD(contbmd BMDType, double BMRF,double advP){return returnBMD(this->theta,BMDType,BMRF,advP);};  
 		double returnBMD(Eigen::MatrixXd theta, contbmd BMDType, double BMRF ,double advP); 
 		////////////////////////////////////////////////////////////////////
-	
+
+	  ////////////////////////////////////////////////////////////////////
 		double equality_constraint(Eigen::MatrixXd theta, 
 										     double *grad, contbmd BMDType,
-									          double BMD, double BMRF, double advP);
+									       double BMD, double BMRF, double advP);
 
 		////////////////////////////////////////////////////////////////////
 		//

@@ -53,11 +53,13 @@ void gradient(Eigen::MatrixXd v, double *g, void *data, std::function<double(Eig
 		// subtract h
 		hvector(i, 0) = x - h[i];
 		f2 = math_func(hvector,data);
+	
 		// estimate the derivative
 		g[i]  = (f1 - f2) / (2.0*h[i]);
+
 		hvector(i, 0) = x;
+		
 	}
 	return;
 }
-
 
