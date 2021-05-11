@@ -233,7 +233,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
   int deg = 0; 
   switch (model){
   case cont_model::funl:
-    retVal = init_funl_nor(Y_LN, X, prior);
+    retVal = init_funl_nor(Y_N, X, prior);
     break; 
   case cont_model::hill:
     retVal = distribution::log_normal==data_dist ? init_hill_lognor(Y_LN, X, prior):

@@ -151,7 +151,7 @@ poor of a modeling choice.\n");
   
   #FUNL
   if (dmodel ==5 && dvariance == 1){
-         prior <- create_prior_list(normprior(0,0.1,-100,100),
+         prior <- create_prior_list(normprior(0,10,-100,100),
                                     normprior(0,10,-1e4,1e4),
                                     lnormprior(0,0.5,0,100),
                                     normprior(0.5,1,0,100),
@@ -163,7 +163,7 @@ poor of a modeling choice.\n");
   
   #FUNL
   if (dmodel ==5 && dvariance == 2){
-       prior <- create_prior_list(normprior(0,0.1,-100,100),
+       prior <- create_prior_list(normprior(0,10,-100,100),
                                   normprior(0,10,-1e4,1e4),
                                   lnormprior(0,0.5,0,100),
                                   normprior(0.5,1,0,100),
