@@ -481,10 +481,13 @@ void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_r
     case cont_model::power:
     case cont_model::funl:
     case cont_model::polynomial:
+      //rescale alpha
       res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
       break;
     case cont_model::exp_3:
     case cont_model::exp_5:
+      //rescale c
+      res->parms[2] = exp(res->parms[2]);
       break;
   }
  // if (!CA->model == cont_model::exp_3 && !CA->model == cont_model::exp_5){
