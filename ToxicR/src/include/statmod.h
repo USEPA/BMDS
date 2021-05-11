@@ -656,10 +656,10 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       x[i] = 0;
       
     }
-      //cout << x[i] << endl; 
+
   }
 
- // for (int i = 0; i < M->nParms(); i++) cerr << x[i] << endl; 
+
   double minf;
   nlopt::result result = nlopt::FAILURE;
   
@@ -680,7 +680,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   int opt_iter;
   // look at 5 optimization algorithms :-)
   int start_iter = (OPTIM_USE_SUBPLX & flags)?0:1; 
-  for (opt_iter = start_iter; opt_iter < 5; opt_iter++){
+
+  for (opt_iter = start_iter; opt_iter < 4; opt_iter++){
     
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
@@ -765,7 +766,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   } // for opt_iter
   
   
-  
+
   Eigen::Map<Eigen::MatrixXd> d(x.data(),M->nParms(), 1);
   oR.result = result;
   oR.functionV = minf;

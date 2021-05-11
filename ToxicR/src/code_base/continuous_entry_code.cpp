@@ -64,7 +64,6 @@ Eigen::MatrixXd quadraticRegression(Eigen::MatrixXd Y_N, Eigen::MatrixXd X){
     }
   }
   
-  
   Eigen::MatrixXd betas = mX.transpose()*W*mX;
   betas = betas.inverse()*mX.transpose()*W*Y_N.col(0);
   return betas;
@@ -1591,7 +1590,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 
     for (double  i = 0.0; i <= 0.99; i += 0.01 ){
       if ( !isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
-        // cerr << "I am here: " << i <<": "<< b[j].BMD_CDF.inv(i) << endl; 
+        
          post_probs[j] = 0;    // if the cdf has nan/inf in it then it needs a 0 posterior
       }  
     } 
@@ -1759,6 +1758,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
+
   
     break; 
   case cont_model::hill:

@@ -370,7 +370,6 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   if ( init.cols() == 10 && init.rows() ==10){
     OptRes = findMAP<LL, PR>(&model);
   }else{
-   
     OptRes = findMAP<LL, PR>(&model,init);
   }
   rVal = OptRes.max_parms;
@@ -610,9 +609,12 @@ template  <class PR>
 void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 
                              double max_dose, double divisor, 
                              bool is_increasing, bool is_logNormal, bool is_const_var){
+
   Eigen::MatrixXd te_b = *betas; 
+
   PR   	  model_prior(*prior);
   divisor = max(1.0,divisor); 
+
   Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
   
   //fixme: in the future we might need to change a few things
@@ -620,6 +622,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
   int adverseR = 0; 
   int nparms = te_b.rows();
   int tot_e = 1;
+
   switch(CM){ 
     case cont_model::polynomial:
       // TODO: RESCALE POLYNOMIAL BETAS?
@@ -634,7 +637,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       break;
     case cont_model::funl:
       // b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
-      
+
       model_prior.scale_prior(divisor,0); 
       model_prior.scale_prior(divisor,1); 
       model_prior.scale_prior(max_dose,2); 
@@ -649,6 +652,8 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
                 model_prior.add_mean_prior(2.0*log(divisor),6);
            }
       }
+
+      
       break; 
     case cont_model::hill:
       model_prior.scale_prior(divisor,0);
