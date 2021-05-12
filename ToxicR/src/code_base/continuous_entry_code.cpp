@@ -333,7 +333,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
 
 double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
                           bool is_increasing, bool suff_stat,  bool CV, Eigen::MatrixXd prior,
-                          cont_model CM){
+                          cont_model CM,int degree){
   double DOF = 0; 
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd cv_t; 
@@ -342,9 +342,9 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   int offset = CV? 1:2; 
   switch(CM){
   case cont_model::polynomial:
-    Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV);
+    Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree);
     Xd = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
-    cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
+    cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
     pr   = Xd.transpose()*cv_t*Xd + pr; 
@@ -1868,7 +1868,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     
    DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
                              CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
-                             CA->model); 
+                             CA->model,CA->degree); 
     
   }
 
