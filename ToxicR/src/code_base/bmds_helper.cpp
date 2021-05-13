@@ -118,10 +118,6 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
 
 // calculate individual model quantiles
   for (int j=0; j<anal->nmodels; j++){
-      std::cout<<"Internal model:" << j << std::endl;
-      for(int i=0; i<distSize; i++){
-        std::cout<<res->models[j]->bmd_dist[i]<<std::endl;
-      }
       for (int i = 0; i < distSize/2; i++){
         val[i] = res->models[j]->bmd_dist[i];
       }
@@ -270,13 +266,6 @@ void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analys
 
   estimate_ma_laplace_dicho(MA, DA, res);
 
-  for (int j=0; j<MA->nmodels; j++){
-      std::cout<<"runBMDSDichoMA Individual model:" << j << std::endl;
-      for(int i=0; i<2*res->models[j]->dist_numE; i++){
-        std::cout<<res->models[j]->bmd_dist[i]<<std::endl;
-      }
-  }
-
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
 
 }
@@ -362,10 +351,8 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
     }  //end switch
   }
 
+
   estimate_sm_laplace_cont(anal, res);
-
-
-
 
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
@@ -411,6 +398,7 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   GOFres.n = GOFanal.n;
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
+
   continuous_expectation(&GOFanal, res, &GOFres);
 
   for (int i=0; i<GOFanal.n; i++){
@@ -549,7 +537,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result
     estimate_normal_aod(CA, &CD);
   }
 
-
   //fill aod with results and calculate tests of interest
   aod->LL[0] = -1*CD.A1;
   aod->nParms[0] = CD.N1;
@@ -585,8 +572,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result
     aod->addConst = -1*CA->n*log(2*M_PI)/2;
   }
 
-  
-  
   calcTestsOfInterest(aod);
 }
 
@@ -601,23 +586,23 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   //Test #1 - A2 vs Reduced - does mean and/or variance differ across dose groups
   TOI->llRatio[0] = dev = 2 * (aod->LL[1] - aod->LL[4]);
   TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
-  TOI->pVal[0] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[0] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
   TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
   TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
-  TOI->pVal[1] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[1] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #3 - A2 vs A3 - Does the model describe variances adequately
   TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
   TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
-  TOI->pVal[2] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[2] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
   TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
   TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
-  TOI->pVal[3] = (dev < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
- 
+  TOI->pVal[3] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+
 }
 
 void determineAdvDir(struct continuous_analysis *CA){
