@@ -20,6 +20,9 @@ dose_e_5 <- rep(c(0,20,40,60,80,100),each=10)
 dose_g_4 <- rep(c(0,12.5,25,50,100),each=10) 
 dose_e_4 <- rep(c(0,25,50,75,100),each=10) 
 sd    <- c(rep(77.5,4),rep(2.28,4))
+
+doses2 <- seq(0,100,1)
+lines(doses2,cont_exp_5_f(Exp5.p[2,],doses2))
 #normal data
 for (i in 1:8){
   means_g_5 <- cont_exp_5_f(Exp5.p[i,],dose_g_5)

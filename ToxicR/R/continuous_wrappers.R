@@ -31,7 +31,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    prior="default", BMD_TYPE = "sd", sstat = T,
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
                                    alpha = 0.05,samples = 21000,degree=2,
-                                   burnin = 1000){
+                                   burnin = 1000,isFast = FALSE){
     myD = Y; 
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
 
@@ -124,7 +124,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     }
     tmodel <- permuteMat[dmodel,2] 
     
-    options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,point_p,samples)
+    options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,burnin,samples)
     
     ## pick a distribution type 
     if (is_log_normal){
@@ -155,7 +155,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       return(rvals)
     }else{
       
-      
+      options[7] <- (isFast == TRUE)*1
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
   						                          PR[[1]],options, dist_type)
      # print(rvals$bmd_dist)

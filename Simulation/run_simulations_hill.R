@@ -6,19 +6,15 @@ model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5"
                          distribution_list =  c(rep(c("normal"),4)))
 
 file_list = dir()
-file_list = file_list[!(file_list %in% "results")]
+file_list = file_list[!(file_list %in% c("results","results2"))]
 options(warn=-1)
 for (ii in 1:length(file_list)){
   load(file_list[ii])
-  BMD_result_SD_ML1_mcmc = matrix(NA,1000,3)
-  BMD_result_SD_ML1_lapl = matrix(NA,1000,3)
-  BMD_result_SD_ML2_mcmc = matrix(NA,1000,3)
-  BMD_result_SD_ML2_lapl = matrix(NA,1000,3)
+  BMD_result_REL_ML1_mcmc = matrix(NA,1000,3)
+  BMD_result_REL_ML1_lapl = matrix(NA,1000,3)
+  BMD_result_REL_ML2_mcmc = matrix(NA,1000,3)
+  BMD_result_REL_ML2_lapl = matrix(NA,1000,3)
   
-  BMD_result_HB_ML1_mcmc = matrix(NA,1000,3)
-  BMD_result_HB_ML1_lapl = matrix(NA,1000,3)
-  BMD_result_HB_ML2_mcmc = matrix(NA,1000,3)
-  BMD_result_HB_ML2_lapl = matrix(NA,1000,3)
   
   pprobs_ML1 = matrix(NA,1000,10)
   pprobs_ML2 = matrix(NA,1000,4)
@@ -28,40 +24,26 @@ for (ii in 1:length(file_list)){
       y = sim_data[jj,]
    
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = 0.1,samples = 75000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'rel',BMR = 0.1,samples = 75000)
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = 0.1)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
-      BMD_result_SD_ML1_mcmc[jj,] = AA$bmd
-      BMD_result_SD_ML1_lapl[jj,] = AA_l$bmd
-      BMD_result_SD_ML2_mcmc[jj,] = BB$bmd
-      BMD_result_SD_ML2_lapl[jj,] = BB_l$bmd
+                              fit_type = "laplace",BMD_TYPE = 'rel',BMR = 0.1)
+      BMD_result_REL_ML1_mcmc[jj,] = AA$bmd
+      BMD_result_REL_ML1_lapl[jj,] = AA_l$bmd
+      BMD_result_REL_ML2_mcmc[jj,] = BB$bmd
+      BMD_result_REL_ML2_lapl[jj,] = BB_l$bmd
       
       pprobs_ML1[jj,] = AA$posterior_probs
       pprobs_ML2[jj,] = BB$posterior_probs
-      ###############################################################################
-      AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
-      BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
-
-      AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
-      BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
-      BMD_result_HB_ML1_mcmc[jj,] = AA$bmd
-      BMD_result_HB_ML1_lapl[jj,] = AA_l$bmd
-      BMD_result_HB_ML2_mcmc[jj,] = BB$bmd
-      BMD_result_HB_ML2_lapl[jj,] = BB_l$bmd
-     ################################################################################
+      ################################################################################
     }
   
   save(BMD_result_HB_ML1_lapl,BMD_result_HB_ML2_lapl,
        BMD_result_HB_ML1_mcmc,BMD_result_HB_ML2_mcmc,
        BMD_result_SD_ML1_lapl,BMD_result_SD_ML2_lapl,
        BMD_result_SD_ML1_mcmc,BMD_result_SD_ML2_mcmc,
-       pprobs_ML1,pprobs_ML2,file=sprintf("./results/simrun_%s",file_list[ii]))
+       pprobs_ML1,pprobs_ML2,file=sprintf("./results2/simrun_%s",file_list[ii]))
 }

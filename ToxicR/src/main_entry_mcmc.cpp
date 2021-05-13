@@ -236,7 +236,7 @@ List run_continuous_single_mcmc(NumericVector model,
                                 bool is_logNormal,bool suff_stat){
   unsigned int samples = (unsigned int) options[7]; 
   unsigned int burnin  = (unsigned int) options[8];
-  double tail_p = (double) options[6]; 
+  double tail_p = (double) options[2]; 
   bool bConstVar = (bool)options[5]; // check if it is constant variance
   bool is_increasing = (bool)options[4];
   double alpha = (double)options[3];

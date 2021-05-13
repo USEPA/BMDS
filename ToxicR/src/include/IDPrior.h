@@ -94,7 +94,7 @@ public:
 	// do nothing with the  other stuff
 	// only if it is in the bounds
 	void add_mean_prior(double  scale, int parm){
-	  if (parm >= 0 && parm << prior_spec.rows()){
+	  if (parm >= 0 && parm < prior_spec.rows()){
 	    switch (prior_iidtype(prior_spec(parm,0))){
 	    case prior_iidtype::iid_normal:
 	      if (prior_spec(parm,1) + scale > prior_spec(parm,3) &&

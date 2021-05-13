@@ -169,7 +169,7 @@ Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
                               double max_dose, double bkground,bool is_logNormal)
   {
-    
+ 
     switch(model){
       case cont_model::hill:
         parms(0,0) *= bkground; parms(1,0) *= bkground; parms(2,0)*=max_dose; 
@@ -223,7 +223,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
       parms(4,0) *= max_dose; 
       parms(5,0) += 2*log(abs(1/max_dose));   
       if (!is_logNormal){
-        if (parms.rows()==4){
+        if (parms.rows()==7){
           parms(6,0) += 2*log(bkground); 
         }else{
           parms(7,0) += 2*log(bkground); 
@@ -231,6 +231,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
       }
       break; 
       default:
+        // don't know what to do so we return
         break; 
     }
     
