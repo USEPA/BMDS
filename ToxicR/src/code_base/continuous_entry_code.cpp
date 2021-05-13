@@ -2086,10 +2086,14 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   return; 
 }
 
+void estimate_sm_laplace_cont(continuous_analysis *CA ,
+                         continuous_model_result *res){
 
+   estimate_sm_laplace(CA, res, false);
 
+}
 
-/*
+ /*
  * 
  */
 void estimate_log_normal_aod(continuous_analysis *CA,
