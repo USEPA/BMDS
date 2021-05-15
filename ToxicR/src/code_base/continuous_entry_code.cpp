@@ -40,8 +40,6 @@
 
 using namespace std; 
 
-
-
 Eigen::MatrixXd quadraticRegression(Eigen::MatrixXd Y_N, Eigen::MatrixXd X){
   
   Eigen::MatrixXd mX = Eigen::MatrixXd::Zero(Y_N.rows(), 3); 
@@ -105,8 +103,9 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
   //udoses = vec; // this should be the unique dose group
   double minDose = X.minCoeff(); 
+  double maxDose = X.maxCoeff(); 
   double init = 0; 
-  int nmin = 0; 
+  int nmin = 0, nmax = 0;  
   
   for (int i = 0; i < X.rows(); i++){
     if (X(i,0)==minDose){
@@ -118,18 +117,25 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   
   Eigen::MatrixXd betas = quadraticRegression(Y_N,  X);
   prior(0,1) = init; 
-  double max_d = vec[vec.size()-1]; 
-  double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
-  prior(1,1)   = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d - prior(0,1))/max_d; 
-  prior(2,1)   = 0.05*max_d; 
-  prior(3,1)   = 1.2;
+  init = 0;
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==maxDose){
+      nmax++; 
+      init += Y_N(i,0); 
+    }
+  }
+  init *= init/double(nmin); 
+  
+  prior(1,1)   =  (init - prior(0,1))/(maxDose-minDose); 
+  prior(2,1)   = 0.001*maxDose; 
+  prior(3,1)   = 1.3;
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
-  
+
   return prior; 
 }
 
@@ -160,6 +166,7 @@ Eigen::MatrixXd init_hill_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen:
   Y_LN.col(0) = exp(Y_LN.col(0).array());
   Y_LN.col(1) = exp(Y_LN.col(1).array());
   return init_hill_nor(Y_LN,  X, prior); 
+  
 }
 
 
@@ -180,13 +187,14 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
   temp =  -(temp-exp(prior(2,1)))/(exp(prior(2,1))-1.0);
   
   prior(1,1) = 0.05; 
-  prior(3,1)   = 1.2; 
+  prior(3,1)   = 2.5; 
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
+  
   
   return prior; 
 }
@@ -452,6 +460,9 @@ bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
  
      }
   
+  }else{
+    *SSTAT    = createSuffStat( Y, X, false);
+    *SSTAT_LN = createSuffStat(Y,X,true); 
   }
   
   
@@ -2118,12 +2129,21 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  bool can_be_suff = true; 
+  if (Y.cols() == 1){
+     can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  }
+  else{
+    SSTAT     = cleanSuffStat(Y,X,false,false); 
+    SSTAT_LN  = cleanSuffStat(Y,X,true,false);
+    UX = X; 
+  }
   Y_LN = SSTAT_LN; 
   Eigen::MatrixXd temp = Y_LN.col(2);
   Y_LN.col(2) = Y_LN.col(1);
   Y_LN.col(1) = temp; 
   if(!can_be_suff){
+     aod->R  =  std::numeric_limits<double>::infinity();
      aod->A1 =  std::numeric_limits<double>::infinity();
      aod->A2 =  std::numeric_limits<double>::infinity();
      aod->A3 =  std::numeric_limits<double>::infinity();
@@ -2165,18 +2185,32 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  bool can_be_suff = true; 
+  if (Y.cols() == 1){ 
+    //individual data
+     can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  }else{
+    
+    SSTAT     = cleanSuffStat(Y,X,false,false); 
+    SSTAT_LN  = cleanSuffStat(Y,X,true,false);
+    UX = X; 
+  }
   Y_N = SSTAT; 
   Eigen::MatrixXd temp = Y_N.col(2);
   Y_N.col(2) = Y_N.col(1);
   Y_N.col(1) = temp; 
   
   if(!can_be_suff){
+    
+    cout << Y << endl; 
+    aod->R  =  std::numeric_limits<double>::infinity();
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();
     aod->A3 =  std::numeric_limits<double>::infinity();
+  
     return;   
   }else{
+
     normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 

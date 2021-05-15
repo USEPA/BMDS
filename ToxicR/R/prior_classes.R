@@ -410,7 +410,7 @@ poor of a modeling choice.\n");
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior(0,1000,-1e6,1e6),
-                               lnormprior(0,1,0,100),
+                               lnormprior(0,1,0,18),
                                lnormprior(log(1.2),1,1,18),
                                lnormprior(-2, 1,0,100),
                                normprior(0, 2,-18,18));
@@ -451,7 +451,7 @@ poor of a modeling choice.\n");
   if (dmodel == 1 &&  dvariance == 1){
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior( 0, 1000,-1e6,1e6),#normprior(1,2,-18,18),
-                               lnormprior(0 ,1,0,100),
+                               lnormprior(0 ,1,0,18),
                                lnormprior(1,0.2,1,18),
                                normprior(0,2,-18,18)); 
   }
@@ -476,7 +476,7 @@ poor of a modeling choice.\n");
   if (dmodel == 3 && dvariance == 1){
     prior <- create_prior_list(normprior(0,0.1, -100,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,2, -20,20),    # log(c)
+                               normprior(0,2, -10,10),    # log(c)
                                lnormprior(1,0.2,1,18), #d 
                                normprior(0,2,-18,18))
   }
@@ -485,7 +485,7 @@ poor of a modeling choice.\n");
   if (dmodel == 3 && dvariance == 3){
     prior <- create_prior_list(normprior(0,0.1, -100,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,2, -20,20),    # log(c)
+                               normprior(0,2, -10,10),    # log(c)
                                lnormprior(1,0.2,1,18), #d 
                                normprior(0,2,-18,18))
   }
@@ -503,7 +503,7 @@ poor of a modeling choice.\n");
   if (dmodel == 1 &&  dvariance == 3){
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
-                               lnormprior(0 ,1,0,100),
+                               lnormprior(0 ,1,0,18),
                                lnormprior(1,0.2,1,18),
                                normprior(0,2,-18,18)); 
   }

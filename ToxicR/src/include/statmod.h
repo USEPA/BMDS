@@ -468,9 +468,9 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 300; 
-      ntourny = 15; 
-      tourny_size = 15; 
+      ngenerations = 600; 
+      ntourny = 20; 
+      tourny_size = 20; 
   }
   
   for ( int xx = 0; xx < ngenerations; xx++){
@@ -636,7 +636,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     try {
      
       x =  startValue_F(M, startV,
-                                  lb, ub,op_size);
+                        lb, ub,op_size);
 
     }
     catch (...) {
@@ -679,7 +679,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   
   int opt_iter;
   // look at 5 optimization algorithms :-)
-  int start_iter = (OPTIM_USE_SUBPLX & flags)?0:1; 
+  int start_iter = 1; //(OPTIM_USE_SUBPLX & flags)?0:1; 
 
   for (opt_iter = start_iter; opt_iter < 4; opt_iter++){
     
@@ -694,15 +694,15 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     switch(opt_iter){
     case  0:
       opt_ptr = &opt1;
-      opt_ptr->set_maxeval(250);
+      opt_ptr->set_maxeval(1000);
       break;
     case  1:
       opt_ptr = &opt2 ;
-      opt_ptr->set_maxeval(250);
+      opt_ptr->set_maxeval(1000);
       break;
     case 2:
       opt_ptr = &opt3;
-      opt_ptr->set_maxeval(250);
+      opt_ptr->set_maxeval(1000);
       break;
     case 3:
       opt_ptr = &opt4;
