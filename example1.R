@@ -28,9 +28,9 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 library(dplyr)
 
-temp <- PFOA_Liver %>% filter(X1 == "HP_8823")
+temp <- PFOA_Liver %>% filter(X1 == "ITIH4_32725")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-3", distribution="normal",fit_type = "mle",BMR = 1,sstat = F)
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="lognormal",fit_type = "mle",BMR = 1,sstat = F,isFast = FALSE)
 plot(B)
 A  <-  single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "mle",BMR = 1,sstat = F)
 plot(A)

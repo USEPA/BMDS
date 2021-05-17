@@ -291,9 +291,14 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     cv_t = X_cov_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) == 0){
+      DOF = 4.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     
     break; 
   case cont_model::exp_3:
@@ -313,8 +318,14 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     
     pr   = Xd.transpose()*cv_t*Xd + subBlock; 
     
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum();  
+    if( fabs(subBlock.diagonal().array().sum()) == 0){
+      DOF = 3.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }  
+
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
@@ -329,11 +340,17 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
    
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) == 0){
+      DOF = 4.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   }
+  
+
   return DOF; 
 
 }
@@ -355,9 +372,13 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF = pr.diagonal().size(); 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   case cont_model::hill:
     Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
@@ -365,9 +386,14 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF = 4.0; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     
     break; 
   case cont_model::exp_3:
@@ -391,12 +417,13 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
     
-
-    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
-
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
- 
+    if( fabs(subBlock.diagonal().array().sum()) ==0){
+      DOF = 3; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + subBlock; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
@@ -411,22 +438,33 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF =4.0; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
+  
     break; 
   case cont_model::power: 
-    
     Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     Xd = Xd.block(0,0,Xd.rows(),3); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,3,3); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF =3.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
+   
     break;
-  }    
+  }   
+  
   return DOF; 
   
 }
