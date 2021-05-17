@@ -216,6 +216,7 @@ List run_continuous_single(IntegerVector model,
       
     }
    
+   
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 

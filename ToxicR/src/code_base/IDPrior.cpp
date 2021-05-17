@@ -91,7 +91,7 @@ Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
       //returnV(i,0) = - 0.5*mean*mean / (sd*sd) ;// -log(sd) - log(theta(i, 0)) + pi_const;
       break;
     default: // in the default case we remove all prior info
-      returnV(i,0) = 0;
+      returnV(i,0) = fabs(0.0);
     break;
     }
     

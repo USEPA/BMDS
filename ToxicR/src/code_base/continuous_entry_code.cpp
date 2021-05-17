@@ -282,6 +282,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
+  Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
   switch(CM){
   case cont_model::hill:
@@ -303,19 +304,17 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
       Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
       cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
-    subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
-                Xd(1,0), Xd(1,1), Xd(1,3),
-                Xd(3,0), Xd(3,1), Xd(3,3);
-    Xd = subBlock; 
-    
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
-    pr = subBlock; 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    
+    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
+    
     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    DOF =  Xd.diagonal().array().sum();  
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
@@ -346,6 +345,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
+  Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
   int offset = CV? 1:2; 
   switch(CM){
@@ -378,19 +378,25 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
       Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
       cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
+   /* cout << Xd << endl; 
     subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
                 Xd(1,0), Xd(1,1), Xd(1,3),
                 Xd(3,0), Xd(3,1), Xd(3,3);
-    Xd = subBlock; 
-    
+    cout << cv_t << endl; */
+   
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
-    pr = subBlock; 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
+    
+
+    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
+
     Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
     DOF =  Xd.diagonal().array().sum(); 
+ 
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
