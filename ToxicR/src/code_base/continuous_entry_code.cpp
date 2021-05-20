@@ -1037,11 +1037,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         break; 
       
       case cont_model::exp_5:
- /*     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
-                                                                          CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
-        bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
-                                                                          CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-*/        
+        
      
         init_opt = MA->disttype[i] == distribution::log_normal ?
         bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
@@ -1114,10 +1110,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         
         bool isNCV = MA->disttype[i] == distribution::normal_ncv? false:true; 
         if (CA->suff_stat ){
-          if ((cont_model)MA->models[i] == cont_model::exp_5){
-            cout << "------IO-----\n" << init_opt << "-----------" << endl; 
-          }
-          b[i] = laplace_Normal(orig_Y, orig_X,
+           b[i] = laplace_Normal(orig_Y, orig_X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  

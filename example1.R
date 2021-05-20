@@ -37,7 +37,7 @@ plot(A)
 
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace")
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_list=model_list,
                         fit_type = "laplace",BMR = 1,samples = 75000)
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
