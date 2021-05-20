@@ -40,8 +40,6 @@
 
 using namespace std; 
 
-
-
 Eigen::MatrixXd quadraticRegression(Eigen::MatrixXd Y_N, Eigen::MatrixXd X){
   
   Eigen::MatrixXd mX = Eigen::MatrixXd::Zero(Y_N.rows(), 3); 
@@ -105,8 +103,9 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   vec.erase(std::unique(vec.begin(), vec.end()),	vec.end());
   //udoses = vec; // this should be the unique dose group
   double minDose = X.minCoeff(); 
+  double maxDose = X.maxCoeff(); 
   double init = 0; 
-  int nmin = 0; 
+  int nmin = 0, nmax = 0;  
   
   for (int i = 0; i < X.rows(); i++){
     if (X(i,0)==minDose){
@@ -118,18 +117,25 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   
   Eigen::MatrixXd betas = quadraticRegression(Y_N,  X);
   prior(0,1) = init; 
-  double max_d = vec[vec.size()-1]; 
-  double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
-  prior(1,1)   = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d - prior(0,1))/max_d; 
-  prior(2,1)   = 0.05*max_d; 
-  prior(3,1)   = 1.2;
+  init = 0;
+  for (int i = 0; i < X.rows(); i++){
+    if (X(i,0)==maxDose){
+      nmax++; 
+      init += Y_N(i,0); 
+    }
+  }
+  init *= init/double(nmin); 
+  
+  prior(1,1)   =  (init - prior(0,1))/(maxDose-minDose); 
+  prior(2,1)   = 0.001*maxDose; 
+  prior(3,1)   = 1.3;
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
-  
+
   return prior; 
 }
 
@@ -160,6 +166,7 @@ Eigen::MatrixXd init_hill_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen:
   Y_LN.col(0) = exp(Y_LN.col(0).array());
   Y_LN.col(1) = exp(Y_LN.col(1).array());
   return init_hill_nor(Y_LN,  X, prior); 
+  
 }
 
 
@@ -180,13 +187,14 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
   temp =  -(temp-exp(prior(2,1)))/(exp(prior(2,1))-1.0);
   
   prior(1,1) = 0.05; 
-  prior(3,1)   = 1.2; 
+  prior(3,1)   = 2.5; 
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
+  
   
   return prior; 
 }
@@ -274,6 +282,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
+  Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
   switch(CM){
   case cont_model::hill:
@@ -282,9 +291,14 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     cv_t = X_cov_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) == 0){
+      DOF = 4.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     
     break; 
   case cont_model::exp_3:
@@ -295,19 +309,23 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
       Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
       cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
-    subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
-                Xd(1,0), Xd(1,1), Xd(1,3),
-                Xd(3,0), Xd(3,1), Xd(3,3);
-    Xd = subBlock; 
-    
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
-    pr = subBlock; 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
+    
+    if( fabs(subBlock.diagonal().array().sum()) == 0){
+      DOF = 3.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }  
+
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
@@ -322,13 +340,17 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
    
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) == 0){
+      DOF = 4.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   }
-  return DOF; 
 
+  return DOF; 
 }
 
 double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
@@ -338,6 +360,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   Eigen::MatrixXd Xd; 
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
+  Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
   int offset = CV? 1:2; 
   switch(CM){
@@ -347,9 +370,13 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF = pr.diagonal().size(); 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   case cont_model::hill:
     Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
@@ -357,9 +384,14 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF = 4.0; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     
     break; 
   case cont_model::exp_3:
@@ -370,19 +402,26 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
       Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
       cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
+   /* cout << Xd << endl; 
     subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
                 Xd(1,0), Xd(1,1), Xd(1,3),
                 Xd(3,0), Xd(3,1), Xd(3,3);
-    Xd = subBlock; 
-    
+    cout << cv_t << endl; */
+   
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
-    pr = subBlock; 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(subBlock.diagonal().array().sum()) ==0){
+      DOF = 3; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + subBlock; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
     break; 
   case cont_model::exp_5: 
     if (is_increasing){
@@ -397,22 +436,33 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,4,4); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF =4.0; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
+  
     break; 
   case cont_model::power: 
-    
     Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     Xd = Xd.block(0,0,Xd.rows(),3); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     pr = pr.block(0,0,3,3); 
-    pr   = Xd.transpose()*cv_t*Xd + pr; 
-    Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
-    DOF =  Xd.diagonal().array().sum(); 
+    
+    if( fabs(pr.diagonal().array().sum()) ==0){
+      DOF =3.0; 
+    }else{
+      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      DOF =  Xd.diagonal().array().sum(); 
+    }
+   
     break;
-  }    
+  }   
+  
   return DOF; 
   
 }
@@ -452,6 +502,9 @@ bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
  
      }
   
+  }else{
+    *SSTAT    = createSuffStat( Y, X, false);
+    *SSTAT_LN = createSuffStat(Y,X,true); 
   }
   
   
@@ -957,7 +1010,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         }
       }
       Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
-                                                      tprior,(distribution)CA->disttype,CA->model ) ;
+                                                      tprior,(distribution)MA->disttype[i],(cont_model)MA->models[i]) ;
       temp_init = temp_init.array(); 
       
       
@@ -982,8 +1035,21 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                           MA->disttype[i] != distribution::normal_ncv); 
           
         break; 
-      case cont_model::exp_3:
+      
       case cont_model::exp_5:
+        
+     
+        init_opt = MA->disttype[i] == distribution::log_normal ?
+        bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
+                                                                          MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init):
+        bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
+                                                                          MA->disttype[i]!= distribution::normal_ncv, CA->isIncreasing,temp_init);
+
+        RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
+                                        max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+                                        MA->disttype[i] != distribution::normal_ncv); 
+      break; 
+      case cont_model::exp_3:
           init_opt = MA->disttype[i] == distribution::log_normal ?
           bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                             MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init):
@@ -1044,7 +1110,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         
         bool isNCV = MA->disttype[i] == distribution::normal_ncv? false:true; 
         if (CA->suff_stat ){
-          b[i] = laplace_Normal(orig_Y, orig_X,
+           b[i] = laplace_Normal(orig_Y, orig_X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
@@ -1402,67 +1468,70 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
- 
-  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
-  Eigen::MatrixXd orig_X = X; 
-  
-  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
-  Eigen::MatrixXd Y_LN, Y_N;
- 
-  if(!CA->suff_stat){
-    //convert to sufficient statistics for speed if we can
-    CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-    if (CA->suff_stat)// it can be converted
-    {
-      X = UX; 
-      Y_N = cleanSuffStat(SSTAT,UX,false);  
-      Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
-      orig_X = UX;  
-      orig_Y = SSTAT; 
-      orig_Y_LN = SSTAT_LN;
-      
-    }else{
-      Y = (1/divisor)*Y; // scale the data with the divisor term. 
-      X = X/max_dose;
-      Y_N = Y; 
-      Y_LN = Y; 
-    }
-  }else{
-    orig_Y = cleanSuffStat(Y,X,false,false); 
-    orig_Y_LN = cleanSuffStat(Y,X,true,false);
-    SSTAT = cleanSuffStat(Y,X,false); 
-    SSTAT_LN = cleanSuffStat(Y,X,true);
-    
-    std::vector<double> tux = unique_list(X); 
-    UX = Eigen::MatrixXd(tux.size(),1); 
-    for (unsigned int i = 0; i < tux.size(); i++){
-      UX(i,0) = tux[i]; 
-    }
-    Y_N = SSTAT; 
-    X = UX; 
-    Y_LN = SSTAT_LN; 
-  }
 
-  if (CA->suff_stat){
-    X = UX; 
-    //  Y_N = cleanSuffStat(SSTAT,UX,false);  
-    //  Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
-    Eigen::MatrixXd temp; 
-    temp = Y_N.col(2);
-    Y_N.col(2) = Y_N.col(1);
-    Y_N.col(1) = temp; 
-    temp = Y_LN.col(2);
-    Y_LN.col(2) = Y_LN.col(1);
-    Y_LN.col(1) = temp; 
-    temp = orig_Y.col(2);
-    orig_Y.col(2) = orig_Y.col(1);
-    orig_Y.col(1) = temp; 
-    temp = orig_Y_LN.col(2);
-    orig_Y_LN.col(2) = orig_Y_LN.col(1);
-    orig_Y_LN.col(1) = temp; 
-    X = X/max_dose;
-  }
-
+ 
+ Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+ Eigen::MatrixXd orig_X = X; 
+ 
+ Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+ Eigen::MatrixXd Y_LN, Y_N;
+ 
+ if(!CA->suff_stat){
+   //convert to sufficient statistics for speed if we can
+   CA->suff_stat = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+   if (CA->suff_stat)// it can be converted
+   {
+     X = UX; 
+     Y_N = cleanSuffStat(SSTAT,UX,false);  
+     Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+     orig_X = UX;  
+     orig_Y = SSTAT; 
+     orig_Y_LN = SSTAT_LN;
+     
+   }else{
+     Y = (1/divisor)*Y; // scale the data with the divisor term. 
+     X = X/max_dose;
+     Y_N = Y; 
+     Y_LN = Y; 
+   }
+ }else{
+   orig_Y = cleanSuffStat(Y,X,false,false); 
+   orig_Y_LN = cleanSuffStat(Y,X,true,false);
+   SSTAT = cleanSuffStat(Y,X,false); 
+   SSTAT_LN = cleanSuffStat(Y,X,true);
+   
+   
+   std::vector<double> tux = unique_list(X); 
+   UX = Eigen::MatrixXd(tux.size(),1); 
+   for (unsigned int i = 0; i < tux.size(); i++){
+     UX(i,0) = tux[i]; 
+   }
+   Y_N = SSTAT; 
+   X = UX; 
+   Y_LN = SSTAT_LN; 
+ }
+ 
+ 
+ 
+ if (CA->suff_stat){
+   X = UX; 
+   
+   Eigen::MatrixXd temp; 
+   temp = Y_N.col(2);
+   Y_N.col(2) = Y_N.col(1);
+   Y_N.col(1) = temp; 
+   temp = Y_LN.col(2);
+   Y_LN.col(2) = Y_LN.col(1);
+   Y_LN.col(1) = temp; 
+   temp = orig_Y.col(2);
+   orig_Y.col(2) = orig_Y.col(1);
+   orig_Y.col(1) = temp; 
+   temp = orig_Y_LN.col(2);
+   orig_Y_LN.col(2) = orig_Y_LN.col(1);
+   orig_Y_LN.col(1) = temp; 
+   X = X/max_dose;
+ }
+ 
   
   mcmcSamples a[MA->nmodels];
 
@@ -1485,9 +1554,9 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
           tprior(m,n) = MA->priors[i][m + n*MA->nparms[i]]; 
         }
     }
+  Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
+                                                    tprior,(distribution)MA->disttype[i],(cont_model)MA->models[i]) ;
     
-   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
-                                                    tprior,(distribution)CA->disttype,CA->model ) ;
    temp_init = temp_init.array(); 
     
    Eigen::MatrixXd init_opt; 
@@ -1780,13 +1849,12 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
-
+    
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
     bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
@@ -1850,7 +1918,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
 
     bool isNCV = CA->disttype != distribution::normal_ncv; 
      if (CA->suff_stat ){
-      b = laplace_Normal(orig_Y, orig_X,
+       b = laplace_Normal(orig_Y, orig_X,
                         tprior, CA->BMD_type, (cont_model) CA->model,
                         CA->isIncreasing,isNCV, CA->BMR, 
                         CA->tail_prob,  
@@ -2029,7 +2097,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
     bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-    
+    cout << init_opt << endl; 
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
@@ -2122,26 +2190,21 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff;
-  if (!CA->suff_stat){
-    can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
-    Y_LN = SSTAT_LN; 
-    Eigen::MatrixXd temp = Y_LN.col(2);
-    Y_LN.col(2) = Y_LN.col(1);
-    Y_LN.col(1) = temp; 
-  } else {
-    UX.resize(CA->n,1);
-    Y_LN.resize(CA->n,3);
-    for(int i=0; i<CA->n; i++){
-      UX(i) = CA->doses[i];
-      Y_LN.col(0)[i] = CA->Y[i];
-      Y_LN.col(2)[i] = CA->n_group[i];
-      Y_LN.col(1)[i] = CA->sd[i];
-    }
-    can_be_suff = true;
+  bool can_be_suff = true; 
+  if (Y.cols() == 1){
+     can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
   }
-
+  else{
+    SSTAT     = cleanSuffStat(Y,X,false,false); 
+    SSTAT_LN  = cleanSuffStat(Y,X,true,false);
+    UX = X; 
+  }
+  Y_LN = SSTAT_LN; 
+  Eigen::MatrixXd temp = Y_LN.col(2);
+  Y_LN.col(2) = Y_LN.col(1);
+  Y_LN.col(1) = temp; 
   if(!can_be_suff){
+     aod->R  =  std::numeric_limits<double>::infinity();
      aod->A1 =  std::numeric_limits<double>::infinity();
      aod->A2 =  std::numeric_limits<double>::infinity();
      aod->A3 =  std::numeric_limits<double>::infinity();
@@ -2183,31 +2246,32 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
   Eigen::MatrixXd Y_LN, Y_N;
-  bool can_be_suff;
-  if (!CA->suff_stat){
-    can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX);
-    Y_N = SSTAT; 
-    Eigen::MatrixXd temp = Y_N.col(2);
-    Y_N.col(2) = Y_N.col(1);
-    Y_N.col(1) = temp; 
-  } else {
-    UX.resize(CA->n,1);
-    Y_N.resize(CA->n,3);
-    for(int i=0; i<CA->n; i++){
-      UX(i) = CA->doses[i];
-      Y_N.col(0)[i] = CA->Y[i];
-      Y_N.col(2)[i] = CA->n_group[i];
-      Y_N.col(1)[i] = CA->sd[i];
-    }
-    can_be_suff = true;
+  bool can_be_suff = true; 
+  if (Y.cols() == 1){ 
+    //individual data
+     can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  }else{
+    
+    SSTAT     = cleanSuffStat(Y,X,false,false); 
+    SSTAT_LN  = cleanSuffStat(Y,X,true,false);
+    UX = X; 
   }
-
+  Y_N = SSTAT; 
+  Eigen::MatrixXd temp = Y_N.col(2);
+  Y_N.col(2) = Y_N.col(1);
+  Y_N.col(1) = temp; 
+  
   if(!can_be_suff){
+    
+    cout << Y << endl; 
+    aod->R  =  std::numeric_limits<double>::infinity();
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();
     aod->A3 =  std::numeric_limits<double>::infinity();
+  
     return;   
   }else{
+
     normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 

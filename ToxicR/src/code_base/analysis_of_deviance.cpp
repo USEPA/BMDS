@@ -169,7 +169,8 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                      bool bSuffStat, continuous_deviance * CD){
   
   //////////////////////////////////////////////////////////////////////
-  normalLLTESTA1 a1Test(Y, X, bSuffStat);
+
+  normalLLTESTA1 a1Test(Y, X, true);
   int  nParms = a1Test.nParms();
   std::vector<double> fix1(nParms); for (unsigned int i = 0; i < nParms; i++) { fix1[i] = 0.0; }
   std::vector<bool> isfix1(nParms); for (unsigned int i = 0; i < nParms; i++) { isfix1[i] = false; }
@@ -201,6 +202,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   Eigen::MatrixXd InitB = (meanX2.transpose()*W*meanX2);
   InitA = InitA.inverse()*meanX.transpose()*W*Y;
   InitB = InitB.inverse()*meanX2.transpose()*W*Y;
+ 
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
   
   double tempV = 0.0; 
@@ -212,6 +214,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
+  
   optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
   
   CD->A1 = a1Result.functionV;

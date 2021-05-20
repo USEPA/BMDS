@@ -494,15 +494,23 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
       double q = x[i];
       y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
     }
+  }else{
+    x.resize(2);
+    y.resize(2); 
+    x[0] =0.0; 
+    x[1] = std::numeric_limits<double>::infinity(); 
+    y[0] = 0.0; 
+    y[1] = 1.0; 
   }
   
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
-       isnormal(var(0,0)) ){
+       x.size() > 2 ){
 
     bmd_cdf cdf(x, y);
     rVal.BMD_CDF = cdf;
   }
   
+
   
   rVal.MAP_BMD = BMD; 
   rVal.BMR = BMRF;
@@ -582,8 +590,6 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 
 	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){
-    
-    
     
 		bmd_cdf cdf(x, y);
 		rVal.BMD_CDF = cdf;
