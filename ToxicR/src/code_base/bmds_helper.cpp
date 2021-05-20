@@ -18,14 +18,15 @@ int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_r
 }
 
 
-void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDSres){
+void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDSres, double estParmCount){
 
   bool freqModel = anal->prior[0] == 0;
 
-  // First find number of bounded parms
-  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
+//  // First find number of bounded parms
+//  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
+//
+//  double estParmCount = res->model_df - bounded;
 
-  double estParmCount = res->model_df - bounded;
   //if freq then model_df should be rounded to nearest whole number
   if (freqModel)
      estParmCount = round(estParmCount);
@@ -69,7 +70,7 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target){
    return retVal;
 }
 
-void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDSres){
+void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDSres, double estParmCount){
 
   int distSize = res->dist_numE*2;
 
@@ -86,7 +87,7 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
-  calcDichoAIC(anal, res, BMDSres);
+  calcDichoAIC(anal, res, BMDSres, estParmCount);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
@@ -161,6 +162,16 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   bmdsRes->validResult = false;
 
   estimate_sm_laplace_dicho(anal, res, true);
+
+  // First find number of bounded parms
+  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, bmdsRes);
+  double estParmCount = res->model_df - bounded;
+
+
+  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
+
+  //overwrite model_df with BMDS method for calculating DF
+  res->model_df = estParmCount;
 
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
@@ -239,10 +250,10 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
 
+
+
   //calculate dichtomous analysis of deviance
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
-
-  collect_dicho_bmd_values(anal, res, bmdsRes);
 
   rescale_dichoParms(anal, res);
 
@@ -472,7 +483,9 @@ void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_r
       //rescale alpha
       res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
       break;
-    case cont_model::exp_3:
+    //case cont_model::exp_3:
+      //no rescaling needed
+      //break;
     case cont_model::exp_5:
       //rescale c
       res->parms[2] = exp(res->parms[2]);
