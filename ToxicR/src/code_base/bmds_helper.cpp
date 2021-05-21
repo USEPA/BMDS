@@ -312,6 +312,13 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
 
   if (detectAdvDir){
     determineAdvDir(anal);
+    if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
+      if(anal->model !=cont_model::exp_3 || anal->model != cont_model::exp_5){
+        //only exp_3 and exp_5 models are supported for lognormal decreasing data
+        return;
+      }
+    }
+
     int ind;
     switch(anal->model){
       case cont_model::exp_3:
