@@ -1150,9 +1150,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
     
-    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+    for (double  i = 0.0; i <= 0.50; i += 0.01 ){
       if (!isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
-        post_probs[j] = 0;    // if the cdf has or infinite in the integrating region
+        post_probs[j] = 0;    // if the cdf is infinite before the median
                               // it is removed 
       }  
     } 
@@ -1657,10 +1657,11 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
 
-    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+    for (double  i = 0.0; i <= 0.5; i += 0.01 ){
       if ( !isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
         
-         post_probs[j] = 0;    // if the cdf has nan/inf in it then it needs a 0 posterior
+         post_probs[j] = 0;    // if the cdf has nan/inf before the median
+                               // it is removed from the calculation and given a 0 posterior
       }  
     } 
   }
@@ -2097,7 +2098,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
     bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-    cout << init_opt << endl; 
+   
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
@@ -2259,7 +2260,7 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   if(!can_be_suff){
     
-    cout << Y << endl; 
+    
     aod->R  =  std::numeric_limits<double>::infinity();
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();

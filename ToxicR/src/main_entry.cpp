@@ -233,7 +233,7 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result,isFast);
     continuous_deviance aod1, aod2; 
-    estimate_log_normal_aod(&anal,
+   /* estimate_log_normal_aod(&anal,
                              &aod1);
      cout <<"R:"<< aod1.R << ":A2:" << aod1.A2 << ":A1:" << aod1.A1 << endl; 
     
@@ -246,9 +246,9 @@ List run_continuous_single(IntegerVector model,
     expected.expected = new double[anal.n]; 
     expected.sd = new double[anal.n]; 
     continuous_expectation( &anal, result, 
-                                 &expected);  
+                                 &expected); 
     delete expected.sd; 
-    delete expected.expected; 
+    delete expected.expected; */
     List rV = convert_continuous_fit_to_list(result); 	
     
     ////////////////////////////////////
