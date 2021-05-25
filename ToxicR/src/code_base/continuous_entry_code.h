@@ -203,7 +203,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                bool is_increasing, 
                                double bmrf,   double bk_prob, 
                                double alpha, double step_size,
-                               Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1));
+                               Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1), bool isFast = false);
                                
 bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             Eigen::MatrixXd prior, contbmd riskType, cont_model CM,
@@ -211,7 +211,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                             double bmrf,   double bk_prob, 
                             double alpha, double step_size,
                             Eigen::MatrixXd init = Eigen::MatrixXd::Zero(1,1),
-                            int degree = 2);
+                            int degree = 2, bool isFast = false);
 
                             
 void transfer_continuous_model(bmd_analysis a, continuous_model_result *model); 
@@ -297,8 +297,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
  *                  2) These funcions are overloaded with continuous counterparts 
  *                  that use the exact same estimation algorithms for continuous data.  
  */
+
 void estimate_sm_laplace(continuous_analysis *CA ,
-                         continuous_model_result *res);
+                         continuous_model_result *res, bool isFast = false);
 
 /* Function: estimate_sm_mcmc
  * Purpose:  This function performs a single model estimate for continuous data  

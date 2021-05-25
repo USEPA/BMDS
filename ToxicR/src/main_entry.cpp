@@ -131,6 +131,7 @@ List run_single_dichotomous(NumericVector model,
   GOFres.residual = new double[Anal.n]; 
 
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
+
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);
   
@@ -174,6 +175,7 @@ List run_continuous_single(IntegerVector model,
     double tail_p = (double)options[2]; 	double bmrf  = (double)options[1];
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
+    bool isFast = (bool) options[6]; 
     
     ////////////////////////////////////////////////
     /// Set up the analysis
@@ -214,6 +216,7 @@ List run_continuous_single(IntegerVector model,
       
     }
    
+   
     for (int i = 0; i < Y.rows(); i++){
       anal.Y[i] = Y(i,0); 
       anal.doses[i] = X(i,0); 
@@ -228,14 +231,16 @@ List run_continuous_single(IntegerVector model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
     ////////////////////////////////////
-    estimate_sm_laplace(&anal,result);
+    estimate_sm_laplace(&anal,result,isFast);
     continuous_deviance aod1, aod2; 
+   /* estimate_log_normal_aod(&anal,
+                             &aod1);
+     cout <<"R:"<< aod1.R << ":A2:" << aod1.A2 << ":A1:" << aod1.A1 << endl; 
     
-    // estimate_log_normal_aod(&anal,
-    //                         &aod1);
-    
-    // estimate_normal_aod(&anal,
-    //                     &aod2);
+    estimate_normal_aod(&anal,
+                         &aod2);
+ 
+    cout <<"R:"<< aod2.R << ":A3:" << aod2.A3 << ":A2:" << aod2.A2 << ":A1:" << aod2.A1 << endl; 
     continuous_expected_result expected;
     expected.n = anal.n; 
     expected.expected = new double[anal.n]; 
@@ -243,7 +248,7 @@ List run_continuous_single(IntegerVector model,
     continuous_expectation( &anal, result, 
                                  &expected); 
     delete expected.sd; 
-    delete expected.expected; 
+    delete expected.expected; */
     List rV = convert_continuous_fit_to_list(result); 	
     
     ////////////////////////////////////

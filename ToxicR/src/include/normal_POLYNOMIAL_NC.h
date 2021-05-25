@@ -82,6 +82,7 @@ class normalPOLYNOMIAL_BMD_NC : public normalLLModel {
 				
 		Eigen::MatrixXd rV = theta(0, 0) + 0.0*pow(d.array(), 0); 
 		Eigen::MatrixXd temp; 
+		
 		for (int i = 1; i < deg + 1; i++) {
 			 temp  =   theta(i, 0)*pow(d.array(), double(i)); // sum up each degree of the polynomial
 			 rV.col(0) += temp; 

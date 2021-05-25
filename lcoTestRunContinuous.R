@@ -8,8 +8,8 @@ library(ToxicR)
 M =matrix(0,nrow=26,ncol=4)
 colnames(M) <- c("Dose","Resp","","")
 M[,1] <- c(0,0,0,0,0,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,49,49,49,49,49)
-M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,
-           55.2,55.1,59.1,56.3,52.9,53.7)
+M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,55.4,53.2,
+           55.2,53.1,56.1,54.3,52.9,51.7)
 #M[,1]  = c(0, 0,   0,   0,        18,  18,  18,  18,  18,      20,   20,  20,  20,     30,  30,  30,   30,    35,    35,  35,  35,    40,  40,  40,  40,  40);
 #M[,2] = c(  39,38.4,36.3,37.1,    30.2,35.3,32.1,38.3,35.9,     22.5,25.2,20.1,29.8,   10.1,13.4,11.2,12.1,    6.1,   6.4, 6.2,6.2,     3.1, 3.4, 3.3,2.9,3.7);
 
@@ -17,6 +17,8 @@ M[,2] <- c(39.0,39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,42.5,45.2,40.1,39.8,50.1,5
 data <- list(N=length(M[,1]),
              d = M[,1], 
              y = M[,2])
+
+A = single_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",model="hill",BMR=1,sstat = F)
 
 A = ma_continuous_fit(M[,1,drop=F],M[,2,drop=F],fit_type="mcmc",BMR=2)
 
@@ -108,13 +110,14 @@ data <- list(N=length(Y),
 
 
 c = single_continuous_fit(data$doses,data$y,sstat=F,
-                          BMD_TYPE="sd",BMR=2, distribution = "normal",
-                          fit_type="laplace",model_type = "hill")
+                          BMD_TYPE="sd",BMR=1, distribution = "normal",
+                          fit_type="laplace",model_type = "FUNL")
 library(ToxicR)
 c = single_continuous_fit(data$doses,data$y,sstat=F,
                           BMD_TYPE="sd",BMR=3, distribution = "normal",
                           fit_type="mcmc",model_type = "FUNL")
-B = ma_continuous_fit(data$doses,data$y,BMR=3,fit_type = "mcmc")
+
+B = ma_continuous_fit(data$doses,data$y,BMR=1,fit_type = "mcmc",model_list=model_list)
 
 
 

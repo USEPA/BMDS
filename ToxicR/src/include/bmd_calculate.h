@@ -30,6 +30,8 @@
 #include <cfloat>
 #endif
 
+#include <vector>
+#include <iostream>
 #ifdef R_COMPILATION
     //necessary things to run in R    
     #include <RcppEigen.h>
@@ -44,6 +46,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
+#include "gradient.h"
 #include "normal_EXP_NC.h"
 #include "dBMDstatmod.h"
 #include "cBMDstatmod.h"
@@ -329,7 +332,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	rVal.type    = BMDType; 
 	rVal.COV = model.varMatrix(OptRes.max_parms);
 	rVal.MAP_ESTIMATE = OptRes.max_parms; 
-    //cout << "******&&&&& OptRes.functionV= " << OptRes.functionV << endl;
+  //cout << "******&&&&& OptRes.functionV= " << OptRes.functionV << endl;
 	rVal.MAP = OptRes.functionV; 												   
 	
 	return rVal; 
@@ -355,7 +358,6 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
                                             Eigen::MatrixXd init = Eigen::MatrixXd::Zero(10, 10)) {
 
   // value to return
- 
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   PR   	model_prior(prior);
@@ -368,7 +370,6 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   if ( init.cols() == 10 && init.rows() ==10){
     OptRes = findMAP<LL, PR>(&model);
   }else{
-   
     OptRes = findMAP<LL, PR>(&model,init);
   }
   rVal = OptRes.max_parms;
@@ -397,7 +398,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   
   // value to return
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
-
+ 
   LL      likelihood(Y, X, suff_stat, is_const_var, degree);//for polynomial models
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
@@ -408,6 +409,133 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   
   rVal = OptRes.max_parms;
 
+  return rVal; 
+  
+}
+
+/**********
+ * Struct for lambda function
+ * 
+ */
+template <class LL, class PR> 
+class fastBMDData{
+    public:
+      cBMDModel<LL, PR> *model; 
+      contbmd BMDType; 
+      double BMRF; 
+      double advP;
+}; 
+/**********************************************************
+* bmd_fast_BMD_cont:
+* This particular function computes BMD confidence intervals using Wald based 
+* estimates vs. the standard profile likelihood.  It is primarily used in 
+* high-throughput genomic DR analyses. 
+***********************************************************/
+template <class LL, class PR>
+bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior, 
+                                  std::vector<bool> fixedB, std::vector<double> fixedV,
+                                  contbmd BMDType, double BMRF,   double tail_prob, 
+                                  bool is_increasing, 
+                                  Eigen::MatrixXd init = Eigen::MatrixXd::Zero(10,10)){
+  
+  
+  bmd_analysis rVal;  // Return Value
+  optimizationResult oR; // Optimization result
+  cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, is_increasing);	//Model specification					  
+  /************************************************
+   * Lambda Function 
+   * for BMD Gradient computation
+   ************************************************/
+  auto bmd = [](Eigen::MatrixXd a, void * b) {
+    fastBMDData< LL,PR> *data = (fastBMDData< LL,PR> *)b; 
+    return data->model->returnBMD(a,data->BMDType,data->BMRF,
+                                  data->advP);
+  };
+  /*******************************************/
+   
+  if (init.rows() == 10 && init.cols() ==10) //Optimize  
+    oR = findMAP<LL, PR>(&model);
+  else
+    oR = findMAP<LL, PR>(&model,init);
+  
+  Eigen::MatrixXd parms = oR.max_parms; 
+  
+  /*
+   * Start Computing the BMD CI
+   */
+  fastBMDData<LL,PR> data;
+  data.model = &model; data.advP = tail_prob; 
+  data.BMDType = BMDType; 
+  data.BMRF = BMRF; 
+
+  double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
+
+  /*
+   * Calculate the Gradient for the delta Method
+   */
+  double *g = new(double[parms.rows()]);
+  gradient(parms, g, &data, bmd); // get the gradient vector
+  Eigen::MatrixXd grad = parms*0;  
+  for (int i = 0; i < grad.rows();i++){
+        grad(i,0) = g[i]; 
+  }
+  delete(g); 
+
+  rVal.COV = model.varMatrix(parms);
+  Eigen::MatrixXd var = grad.transpose()*rVal.COV*grad; // Delta Method Variance
+
+  /*
+   * Compute CI using the Gaussian distribution. Here the Delta method is used again
+   * as the log(BMD) CI is computed.  This gaurantees the BMDL > 0.  It is then exponentiated. 
+   */  
+  std::vector<double> x(100);
+  std::vector<double> y(100);
+  if (isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD))){
+    for (int i = 0; i < x.size(); i++){
+      x[i] = double(i)/double(x.size()); 
+      double q = x[i];
+      y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
+    }
+  
+    
+      for (int i= y.size(); i > 0; i--){
+ 
+        if (y[i] == y[i-1] || isinf(y[i]) ){
+        
+          auto p1 = std::next(x.begin(),i);
+          auto p2 = std::next(y.begin(),i); 
+          y.erase(p2); x.erase(p1); 
+
+        }
+      }
+    
+  }else{
+    x.resize(2);
+    y.resize(2); 
+    x[0] =0.0; 
+    x[1] = std::numeric_limits<double>::infinity(); 
+    y[0] = 0.0; 
+    y[1] = 1.0; 
+  }
+
+
+  if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
+       x.size() > 5 ){
+
+    bmd_cdf cdf(x, y);
+    rVal.BMD_CDF = cdf;
+  }
+  
+
+  
+  rVal.MAP_BMD = BMD; 
+  rVal.BMR = BMRF;
+  rVal.isExtra = false;
+  rVal.type    = BMDType; 
+  rVal.MAP_ESTIMATE = oR.max_parms; 
+  rVal.MAP = oR.functionV; 												   
+  
+  
   return rVal; 
   
 }
@@ -429,10 +557,11 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
   signed int  flags = OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX; 
 	optimizationResult oR = findMAP<LL, PR>(&model,flags);
+
 	bmd_analysis rVal;
 	double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
 
-  
+
 	Eigen::MatrixXd result; 
 	std::vector<double> x;
 	std::vector<double> y;	
@@ -474,11 +603,9 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		}
 	  	
 	}	
-	
+
 	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){
-    
-    
     
 		bmd_cdf cdf(x, y);
 		rVal.BMD_CDF = cdf;
@@ -496,7 +623,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	rVal.COV = model.varMatrix(oR.max_parms);
 	rVal.MAP_ESTIMATE = oR.max_parms; 
 	rVal.MAP = oR.functionV; 
-	
+
 	return rVal; 
 }
 
@@ -504,20 +631,27 @@ template  <class PR>
 void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::MatrixXd *betas, 
                              double max_dose, double divisor, 
                              bool is_increasing, bool is_logNormal, bool is_const_var){
+
   Eigen::MatrixXd te_b = *betas; 
+
   PR   	  model_prior(*prior);
+  divisor = max(1.0,divisor); 
+
   Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
+  
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
   int nparms = te_b.rows();
   int tot_e = 1;
+
   switch(CM){ 
     case cont_model::polynomial:
       // TODO: RESCALE POLYNOMIAL BETAS?
       if (!is_const_var){
         tot_e = 2; 
       }
+      model_prior.scale_prior(divisor,0); 
       for (int i =1; i < nparms - tot_e; i++){
         model_prior.scale_prior(divisor,i);
         model_prior.scale_prior(pow(1/max_dose,i),i);
@@ -525,26 +659,28 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
       break;
     case cont_model::funl:
       // b <- A[1] + A[2]*exp((doses-A[5])^2*(-A[6]))*(1/(1+exp(-(doses-A[3])/A[4])))
-      
+
       model_prior.scale_prior(divisor,0); 
       model_prior.scale_prior(divisor,1); 
       model_prior.scale_prior(max_dose,2); 
       model_prior.scale_prior(max_dose,3);
       model_prior.scale_prior(max_dose,4); 
-      model_prior.scale_prior((1/max_dose)*(1/max_dose),5);
-      
+    //  model_prior.scale_prior(1/max_dose,5);
+    // model_prior.add_mean_prior(1/max_dose*1/max_dose,5);
       if (!is_logNormal){
            if (is_const_var){
-                model_prior.add_mean_prior(2.0*log(divisor),6);
+                model_prior.add_mean_prior(2.0*log(divisor),5);
            }else{
-                model_prior.add_mean_prior(2.0*log(divisor),7);
+                model_prior.add_mean_prior(2.0*log(divisor),6);
            }
       }
+
+      
       break; 
     case cont_model::hill:
       model_prior.scale_prior(divisor,0);
       model_prior.scale_prior(divisor,1);
-      model_prior.scale_prior(max_dose,1);
+      //model_prior.scale_prior(1/max_dose,1);
       model_prior.scale_prior(max_dose,2);
       if (!is_logNormal){
          if (is_const_var){

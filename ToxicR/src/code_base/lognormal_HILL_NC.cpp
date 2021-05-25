@@ -11,8 +11,12 @@
 
 #include "gsl/gsl_cdf.h"
 #include <gsl/gsl_randist.h>
+    
+#include <iostream>
+#include <cmath>
+#include <math.h>      
 
-
+using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // function: parameter_to_remove()
 // purpose: Tell the optimizer which profile likelihood method is
@@ -706,5 +710,10 @@ double lognormalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF
 	}
 
 
-	return mid;
+	if (isfinite(mid)){
+	  return mid; 
+	}else{
+	  std::cerr << "Non-finite BMD returned: Exp-Log-Hill."<< std::endl;
+	  return std::numeric_limits<double>::infinity();
+	}
 }

@@ -13,6 +13,7 @@
 #endif
 
 #include <gsl/gsl_randist.h>
+#include <math.h>
 #include "log_likelihoods.h"
 
 
@@ -70,8 +71,8 @@ public:
 				Eigen::MatrixXd sqerr = pow(log(Y.col(0).array())-mu.array(),2); 
 				returnV = -log(Y.col(0).array())-(0.5)*log(2*M_PI*var.array())-(1/(2.0*var.array()))*sqerr.array(); 
 		 }
-		// cout << returnV.sum() << " ";
-		 return -returnV.sum();
+		 double temp = -returnV.sum(); 
+		 return temp; //isnan(temp)? -std::numeric_limits<double>::has_infinity:temp;
 	}; 
 
 	protected: 

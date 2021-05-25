@@ -12,9 +12,13 @@
 
 
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_cdf.h>
 #include "log_likelihoods.h"
 #include "lognormalModels.h"
-
+#include <iostream>
+#include <cmath>
+#include <math.h>  
+using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // function: parameter_to_remove()
 // purpose: Tell the optimizer which profile likelihood method is
@@ -712,24 +716,25 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_extra(Eigen::MatrixXd theta, double BMRF
 double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing, double TAIL_PROB) {
 
 	double NOT_ADVERSE_P = 1.0 - TAIL_PROB;
-
+  double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d + max_d);
+  Eigen::MatrixXd d(3, 1); d << min_d, mid, max_d;
+  Eigen::MatrixXd temp_mean = mean(theta, d);
+  Eigen::MatrixXd temp_var = variance(theta, d);
+  //////////////////////////////////////////////////////////////////////
+  double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
+  double ct_off = gsl_cdf_lognormal_Pinv(isIncreasing ? NOT_ADVERSE_P : TAIL_PROB, mu_zero, std_zero); // CUTOFF AT DOSE = 0
+  double P = TAIL_PROB + BMRF * NOT_ADVERSE_P;
+  //double bmr_mult =  0.0; //gsl_cdf_lognormal_Pinv(NOT_ADVERSE_P - BMRF * (NOT_ADVERSE_P));
+  
+  double test_prob; 
+  try{
 	////////////////////////////////////////////////////////////////////
 	//Get the mean and variance at dose zero as well as a very high dose
-	double min_d = 0.0; double max_d =  X.maxCoeff(); double mid = 0.5*(min_d + max_d);
-	Eigen::MatrixXd d(3, 1); d << min_d, mid, max_d;
-	Eigen::MatrixXd temp_mean = mean(theta, d);
-	Eigen::MatrixXd temp_var = variance(theta, d);
-	//////////////////////////////////////////////////////////////////////
-	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
-	double ct_off = gsl_cdf_lognormal_Pinv(isIncreasing ? NOT_ADVERSE_P : TAIL_PROB, mu_zero, std_zero); // CUTOFF AT DOSE = 0
-	double P = TAIL_PROB + BMRF * NOT_ADVERSE_P;
-	//double bmr_mult =  0.0; //gsl_cdf_lognormal_Pinv(NOT_ADVERSE_P - BMRF * (NOT_ADVERSE_P));
+	//	double test = 0;
 
-	double test_prob = isIncreasing ? 1.0 - gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0)))
-		: gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0))); //standardize
-//	double test = 0;
-
-
+	test_prob = isIncreasing ? 1.0 - gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0)))
+    : gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0))); //standardize
+    
 	int k = 0;
 	while (test_prob < P  && k < 10) { // Go up to 2^10 times the maximum tested dose
 								 // if we cant find it after that we return infinity
@@ -742,20 +747,27 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doub
 			: gsl_cdf_lognormal_P(ct_off, temp_mean(2, 0), sqrt(temp_var(2, 0)));
 
 		k++;
-	}
 
+	}
+  
 	if (k == 10 || test_prob < P) // have not been able to bound the BMD
 	{
 		return std::numeric_limits<double>::infinity();
 	}
-
+ 
+  }catch(...){
+    
+    std::exception_ptr p = std::current_exception();
+    std::cerr <<(p ? p.__cxa_exception_type()->name() : "null") << std::endl;
+  }
 
 	test_prob = isIncreasing ? 1.0 - gsl_cdf_lognormal_P(ct_off, temp_mean(1, 0), sqrt(temp_var(1, 0)))
 		: gsl_cdf_lognormal_P(ct_off, temp_mean(1, 0), sqrt(temp_var(1, 0)));
 
 	double temp_test = test_prob - P;
 	///////////////////////////////////////////////////////////////////////////// 
-	while (fabs(temp_test) > 1e-5) {
+	int iter = 0; 
+	while (fabs(temp_test) > 1e-5 && iter < 200) {
 		// we have bounded the BMD now we use a root finding algorithm to 
 		// figure out what it is default difference is a probability of of 1e-5
 		if (temp_test > 0) {
@@ -775,8 +787,14 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doub
 			: gsl_cdf_lognormal_P(ct_off, temp_mean(1, 0), sqrt(temp_var(1, 0)));
 
 		temp_test = test_prob - P;
+		iter++;
 	}
 
 
-	return mid;
+	if (isfinite(mid)){
+	  return mid; 
+	}else{
+	  std::cerr << "Non-finite BMD returned: Exp-Log-Normal."<< std::endl; 
+	  return std::numeric_limits<double>::infinity();
+	}
 }

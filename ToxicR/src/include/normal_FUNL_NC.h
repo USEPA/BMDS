@@ -67,7 +67,7 @@ class normalFUNL_BMD_NC : public normalLLModel {
 		Eigen::MatrixXd pdf = d; 
 		for(int i = 0; i < d.rows(); i++){
 		  cdf(i,0) =  1/(1+exp(-(d(i,0) - b3)/b4)); 
-		  pdf(i,0) = exp(-b6*(d(i,0) - b5)*(d(i,0) - b5)); 
+		  pdf(i,0) = exp(-exp(b6)*(d(i,0) - b5)*(d(i,0) - b5)); 
 		}
 		Eigen::MatrixXd rV = b1 + b2*pdf.array()*cdf.array();		
 		
@@ -77,12 +77,12 @@ class normalFUNL_BMD_NC : public normalLLModel {
 
   double FUNL_mean(double d, Eigen::MatrixXd A){
     
-    double rV = A(0,0) + A(1,0)*exp(-A(5,0)*(d-A(4,0))*(d-A(4,0)))/(1  + exp(-(1/A(3,0))*(d-A(2,0))));
+    double rV = A(0,0) + A(1,0)*exp(-exp(A(5,0))*(d-A(4,0))*(d-A(4,0)))/(1  + exp(-(1/A(3,0))*(d-A(2,0))));
     return rV; 
   }
 	
   double dFUNL_mean(double d,Eigen::MatrixXd A){
-    double rV = -2*A(5,0)*(d-A(4,0)) + (1/A(3,0))*exp(-(1/A(3,0))*(d-A(2,0)))/(1  + exp(-(1/A(3,0))*(d-A(2,0))));
+    double rV = -2*exp(A(5,0))*(d-A(4,0)) + (1/A(3,0))*exp(-(1/A(3,0))*(d-A(2,0)))/(1  + exp(-(1/A(3,0))*(d-A(2,0))));
     return rV; 
   }
 	
@@ -90,7 +90,7 @@ class normalFUNL_BMD_NC : public normalLLModel {
     double temp = (1/A(3,0)); temp *= temp; 
     double temp2= ((1  + exp(-(1/A(3,0))*(d-A(2,0))))); temp2 *= temp2; 
     
-    double rV = -2*A(5,0) - (temp)*exp(-(1/A(3,0))*(d-A(2,0)))/temp2; 
+    double rV = -2*exp(A(5,0)) - (temp)*exp(-(1/A(3,0))*(d-A(2,0)))/temp2; 
     return rV; 
   }
 	

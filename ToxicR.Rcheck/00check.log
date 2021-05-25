@@ -1,0 +1,615 @@
+* using log directory ‘/Users/wheelermw/Documents/r_software/RBMDS/ToxicR.Rcheck’
+* using R version 4.0.3 (2020-10-10)
+* using platform: x86_64-apple-darwin17.0 (64-bit)
+* using session charset: UTF-8
+* using option ‘--as-cran’
+* checking for file ‘ToxicR/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘ToxicR’ version ‘1.0’
+* checking CRAN incoming feasibility ... NOTE
+Maintainer: ‘Matt Wheeler <matt.wheeler@nih.gov>’
+
+New submission
+
+Unknown, possibly mis-spelled, fields in DESCRIPTION:
+  ‘Include’
+
+The Title field should be in title case. Current version is:
+‘This package for analyzing toxicology dose-response data.’
+In title case that is:
+‘This Package for Analyzing Toxicology Dose-Response Data.’
+
+The Description field should not start with the package name,
+  'This package' or similar.
+
+Size of tarball: 67346916 bytes
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... NOTE
+Found the following apparent object files/libraries:
+  src/code_base/DichGammaBMD_NC.o src/code_base/DichLogProbitBMD_NC.o
+  src/code_base/DichLogisticBMD_NC.o src/code_base/DichProbitBMD_NC.o
+  src/code_base/DichQlinearBMD_NC.o src/code_base/DichWeibullBMD_NC.o
+  src/code_base/IDPrior.o src/code_base/analysis_of_deviance.o
+  src/code_base/bmdStruct.o src/code_base/continuous_clean_aux.o
+  src/code_base/continuous_entry_code.o
+  src/code_base/continuous_model_functions.o
+  src/code_base/dichotomous_entry_code.o src/code_base/gradient.o
+  src/code_base/helperfunctions.o src/code_base/lognormalModels.o
+  src/code_base/lognormal_EXP_NC.o src/code_base/lognormal_HILL_NC.o
+  src/code_base/lognormal_POLYNOMIAL_NC.o
+  src/code_base/lognormal_POWER_NC.o src/code_base/normalModels.o
+  src/code_base/normal_EXP_NC.o src/code_base/normal_FUNL_NC.o
+  src/code_base/normal_HILL_NC.o src/code_base/normal_POLYNOMIAL_NC.o
+  src/code_base/normal_POWER_NC.o src/code_base/normal_likelihoods.o
+  src/code_base/stdafx.o
+Object files/libraries should not be included in a source package.
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking serialization versions ... OK
+* checking whether package ‘ToxicR’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Malformed Title field: should not end in a period.
+License components which are templates and need '+ file LICENSE':
+  MIT
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking use of S3 registration ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... WARNING
+MAdensity_plot:
+  function(A, ...)
+MAdensity_plot.BMDdichotomous_MA_mcmc:
+  function(A)
+
+MAdensity_plot:
+  function(A, ...)
+MAdensity_plot.BMDdichotomous_MA_maximized:
+  function(A)
+
+MAdensity_plot:
+  function(A, ...)
+MAdensity_plot.BMDcontinuous_MA_mcmc:
+  function(A)
+
+cleveland_plot:
+  function(A, ...)
+cleveland_plot.BMDdichotomous_MA:
+  function(A)
+
+cleveland_plot:
+  function(A, ...)
+cleveland_plot.BMDcontinuous_MA:
+  function(A)
+
+plot:
+  function(x, ...)
+plot.BMDdich_fit_MCMC:
+  function(fit, fit_type, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDdich_fit_maximized:
+  function(fit, fit_type, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcont_fit_MCMC:
+  function(fit, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcont_fit_maximized:
+  function(fit, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcontinuous_MA:
+  function(A, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDdichotomous_MA:
+  function(A, qprob, ...)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_MCMC:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_laplace:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_mle:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcontinuous_bayesian_model:
+  function(data_model)
+
+print:
+  function(x, ...)
+print.BMDdich_fit_MCMC:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDprior:
+  function(prior)
+
+print:
+  function(x, ...)
+print.BMDmodelprior:
+  function(priors)
+
+print:
+  function(x, ...)
+print.BMD_CDF:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDdich_fit:
+  function(p)
+
+See section ‘Generic functions and methods’ in the ‘Writing R
+Extensions’ manual.
+
+Found the following apparent S3 methods exported but not registered:
+  print.BMDcont_fit_MCMC print.BMDcont_fit_laplace
+  print.BMDcont_fit_mle print.BMDcontinuous_bayesian_model
+  print.BMDdich_fit_MCMC print.BMDprior
+See section ‘Registering S3 methods’ in the ‘Writing R Extensions’
+manual.
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘ggplot’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘geom_point’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘aes’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X1’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X4’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X5’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘geom_vline’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘theme_minimal’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘labs’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘theme’
+.cleveland_plot.BMDcontinous_MA: no visible global function definition
+  for ‘geom_errorbar’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X2’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X3’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘ggplot’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘geom_point’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘aes’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X1’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X4’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X5’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘geom_vline’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘theme_minimal’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘labs’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘theme’
+.cleveland_plot.BMDdichotomous_MA: no visible global function
+  definition for ‘geom_errorbar’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X2’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X3’
+.dich_gamma_f: no visible global function definition for ‘pgamma’
+.dich_probit_f: no visible global function definition for ‘pnorm’
+.plot.BMDcont_fit_MCMC: no visible binding for global variable
+  ‘quantile’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘polygon’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘lines’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘density’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘points’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘arrows’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘lines’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘points’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘arrows’
+.plot.BMDcontinuous_MA: no visible binding for global variable
+  ‘quantile’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘polygon’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘lines’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘quantile’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘density’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘runif’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘points’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘arrows’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘ggplot’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_errorbar’
+.plot.BMDdich_fit_MCMC: no visible global function definition for ‘aes’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘xlim’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘ylim’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘labs’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘theme_minimal’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘density’
+.plot.BMDdich_fit_MCMC: no visible binding for global variable
+  ‘quantile’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_ribbon’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_polygon’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_smooth’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_point’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘geom_segment’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘ggplot’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘geom_errorbar’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘aes’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘xlim’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘ylim’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘labs’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘theme_minimal’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘geom_smooth’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘geom_point’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘geom_segment’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘ggplot’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_errorbar’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘aes’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘xlim’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘ylim’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘labs’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘theme_minimal’
+.plot.BMDdichotomous_MA: no visible binding for global variable
+  ‘quantile’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_ribbon’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_smooth’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_point’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_segment’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘quantile’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘density’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_polygon’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘geom_line’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘density’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘t_1’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘t_2’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘t_3’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘t_4’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘t_5’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X1’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X2’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X3’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘ggplot’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘aes’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘xlim’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘geom_vline’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘scale_fill_manual’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘labs’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘theme_classic’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘stat’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘quantile’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘theme’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘density’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_1’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_2’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_3’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_4’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_5’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_6’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_7’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_8’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘t_9’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X1’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X2’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X3’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘ggplot’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘aes’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘xlim’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘geom_vline’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘scale_fill_manual’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘labs’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘theme_classic’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘stat’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘quantile’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘theme’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_1’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_2’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_3’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_4’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_5’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_6’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_7’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_8’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_9’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘c3’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X1’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X2’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X3’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘ggplot’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘aes’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘xlim’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘geom_vline’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘scale_fill_manual’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘labs’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘theme_classic’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘stat’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘quantile’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘theme’
+.print.BMD_CDF: no visible global function definition for ‘splinefun’
+.print.BMDdich_fit: no visible global function definition for
+  ‘splinefun’
+alphablend: no visible global function definition for ‘col2rgb’
+alphablend: no visible global function definition for ‘rgb’
+alphablend: no visible binding for global variable ‘rgb’
+clean_continuous_analysis: no visible binding for global variable ‘EST’
+ma_continuous_fit: no visible global function definition for ‘lm’
+ma_continuous_fit: no visible global function definition for
+  ‘coefficients’
+ma_continuous_fit: no visible global function definition for
+  ‘splinefun’
+ma_dichotomous_fit: no visible global function definition for
+  ‘splinefun’
+print.BMDcont_fit_MCMC: no visible global function definition for
+  ‘quantile’
+print.BMDdich_fit_MCMC: no visible global function definition for
+  ‘quantile’
+single_continuous_fit: no visible global function definition for ‘lm’
+single_continuous_fit: no visible global function definition for
+  ‘coefficients’
+single_continuous_fit: no visible global function definition for
+  ‘quantile’
+single_continuous_fit: no visible global function definition for
+  ‘splinefun’
+single_dichotomous_fit: no visible global function definition for
+  ‘splinefun’
+single_dichotomous_fit: no visible global function definition for
+  ‘quantile’
+Undefined global functions or variables:
+  EST X1 X2 X3 X4 X5 aes arrows c3 coefficients col2rgb density
+  geom_errorbar geom_line geom_point geom_polygon geom_ribbon
+  geom_segment geom_smooth geom_vline ggplot labs lines lm pgamma pnorm
+  points polygon quantile rgb runif scale_fill_manual splinefun stat
+  t_1 t_2 t_3 t_4 t_5 t_6 t_7 t_8 t_9 theme theme_classic theme_minimal
+  xlim ylim
+Consider adding
+  importFrom("grDevices", "col2rgb", "rgb")
+  importFrom("graphics", "arrows", "lines", "points", "polygon")
+  importFrom("stats", "coefficients", "density", "lm", "pgamma", "pnorm",
+             "quantile", "runif", "splinefun")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... WARNING
+Undocumented code objects:
+  ‘MAdensity_plot’ ‘MLE_bounds_continuous’ ‘alphablend’
+  ‘bayesian_prior_continuous’ ‘bayesian_prior_dich’
+  ‘bmd_default_bayesian_prior’ ‘bmd_default_frequentist_settings’
+  ‘clean_continuous_analysis’ ‘clean_parameters’ ‘cleveland_plot’
+  ‘combine_prior_lists’ ‘cont_FUNL_f’ ‘cont_exp_3_f’ ‘cont_exp_5_f’
+  ‘cont_hill_f’ ‘cont_power_f’ ‘create_prior_list’ ‘lnormprior’
+  ‘ma_continuous_fit’ ‘ma_continuous_list’ ‘ma_dichotomous_fit’
+  ‘normprior’ ‘print.BMDcont_fit_MCMC’ ‘print.BMDcont_fit_laplace’
+  ‘print.BMDcont_fit_mle’ ‘print.BMDcontinuous_bayesian_model’
+  ‘print.BMDdich_fit_MCMC’ ‘print.BMDprior’ ‘run_continuous_ma_laplace’
+  ‘run_continuous_ma_mcmc’ ‘run_continuous_single’
+  ‘run_continuous_single_mcmc’ ‘run_dichotomous_single_mcmc’
+  ‘run_ma_dichotomous’ ‘run_single_dichotomous’ ‘single_continuous_fit’
+  ‘single_dichotomous_fit’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking for code/documentation mismatches ... WARNING
+Functions or methods with usage in documentation object 'rcpp_hello_world' but not in code:
+  ‘rcpp_hello_world’
+
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking line endings in C/C++/Fortran sources/headers ... OK
+* checking line endings in Makefiles ... OK
+* checking compilation flags in Makevars ... WARNING
+Non-portable flags in variable 'PKG_CPPFLAGS':
+  -O3 -funroll-loops -std=c++11 -mavx2 -ftree-vectorize -Wno-ignored-attributes -march=native -flto -fopenmp
+* checking for GNU extensions in Makefiles ... WARNING
+Found the following file(s) containing GNU extensions:
+  src/Makevars
+Portable Makefiles do not use GNU extensions such as +=, :=, $(shell),
+$(wildcard), ifeq ... endif, .NOTPARALLEL See section ‘Writing portable
+packages’ in the ‘Writing R Extensions’ manual.
+* checking for portable use of $(BLAS_LIBS) and $(LAPACK_LIBS) ... OK
+* checking use of PKG_*FLAGS in Makefiles ... OK
+* checking use of SHLIB_OPENMP_*FLAGS in Makefiles ... OK
+* checking pragmas in C/C++ headers and code ... OK
+* checking compilation flags used ... WARNING
+Compilation used the following non-portable flag(s):
+  ‘-Wno-ignored-attributes’ ‘-march=native’ ‘-mavx2’
+including flag(s) suppressing warnings
+* checking compiled code ... NOTE
+File ‘ToxicR/libs/ToxicR.so’:
+  Found ‘__ZSt4cerr’, possibly from ‘std::cerr’ (C++)
+    Objects: ‘code_base/analysis_of_deviance.o’,
+      ‘code_base/continuous_entry_code.o’,
+      ‘code_base/dichotomous_entry_code.o’
+  Found ‘__ZSt4cout’, possibly from ‘std::cout’ (C++)
+    Objects: ‘code_base/analysis_of_deviance.o’,
+      ‘code_base/continuous_entry_code.o’,
+      ‘code_base/dichotomous_entry_code.o’
+
+Compiled code should not call entry points which might terminate R nor
+write to stdout/stderr instead of to the console, nor use Fortran I/O
+nor system RNGs.
+
+See ‘Writing portable packages’ in the ‘Writing R Extensions’ manual.
+* checking examples ... OK
+* checking PDF version of manual ... OK
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+Status: 6 WARNINGs, 5 NOTEs

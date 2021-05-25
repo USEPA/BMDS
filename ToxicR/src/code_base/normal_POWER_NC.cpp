@@ -11,7 +11,9 @@
  
 #endif
 #include <gsl/gsl_randist.h>
-
+#include <cmath>
+#include <math.h>  
+using namespace std;
 
 int normalPOWER_BMD_NC::parameter_to_remove(contbmd TYPE) {
 
@@ -699,27 +701,34 @@ double normalPOWER_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, 
 	 
 
 
-	while (fabs(temp_test) > 1e-5){
-		// we have bounded the BMD now we use a root finding algorithm to 
-		// figure out what it is default difference is a probability of of 1e-5
-		if (temp_test  < 0){
-				max_d = mid; 
-		} else {
-				min_d = mid; 
-		}
-		mid = 0.5*(max_d+min_d);
-		d << min_d, mid, max_d; 
-		
-		temp_mean =     mean(theta,d); 
-		temp_var  = variance(theta,d);  
-			
-		test =  temp_const - temp_mean(1,0) ; //standardize
-		test  *= 1/pow(temp_var(1,0),0.5); 
-		test_prob = isIncreasing ? gsl_cdf_ugaussian_P(test) : 1.0 - gsl_cdf_ugaussian_P(test);
-					
-		temp_test = test_prob - P;
-	
+	 int iter = 0; 
+	 while (fabs(temp_test) > 1e-5 && iter < 200){
+	   // we have bounded the BMD now we use a root finding algorithm to 
+	   // figure out what it is default difference is a probability of of 1e-5
+	   if (temp_test  < 0){
+	     max_d = mid; 
+	   } else {
+	     min_d = mid; 
+	   }
+	   mid = 0.5*(max_d+min_d);
+	   d << min_d, mid, max_d; 
+	   
+	   temp_mean =     mean(theta,d); 
+	   temp_var  = variance(theta,d);  
+	   
+	   test =  temp_const - temp_mean(1,0) ; //standardize
+	   test  *= 1/pow(temp_var(1,0),0.5); 
+	   test_prob = isIncreasing ? gsl_cdf_ugaussian_P(test) : 1.0 - gsl_cdf_ugaussian_P(test);
+	   
+	   temp_test = test_prob - P;
+	   iter ++; 
+	   
+	 }
+	 
+	if (isfinite(mid)){
+    	return mid; 
+	}else{
+	    std::cerr << "Non-finite BMD returned: Power-Normal."<< std::endl; 
+	    return std::numeric_limits<double>::infinity();
 	}
-	
-	return mid; 
 }
