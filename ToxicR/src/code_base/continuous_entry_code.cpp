@@ -350,7 +350,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     break; 
   }
 
-  return DOF; 
+  return DOF + 1; 
 }
 
 double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
@@ -463,7 +463,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     break;
   }   
   
-  return DOF; 
+  return DOF + offset; 
   
 }
 
@@ -2269,7 +2269,6 @@ void estimate_normal_aod(continuous_analysis *CA,
     return;   
   }else{
 
-    normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 
   }
