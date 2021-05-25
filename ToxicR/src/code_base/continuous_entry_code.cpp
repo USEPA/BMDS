@@ -350,7 +350,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     break; 
   }
 
-  return DOF + 1; 
+  return DOF; 
 }
 
 double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd estimate, 
@@ -1400,7 +1400,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
     if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
-}
+  }
 
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
@@ -2269,6 +2269,7 @@ void estimate_normal_aod(continuous_analysis *CA,
     return;   
   }else{
 
+    normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 
   }
