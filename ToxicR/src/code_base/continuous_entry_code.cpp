@@ -181,7 +181,7 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
   prior(0,1) = betas(0,0); 
   double max_d = vec[vec.size()-1]; 
   double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
-  prior(2,1)   = log(max_r/prior(0,1)); 
+  prior(2,1)   = log(0.01);  
   double temp = max_r/prior(0,1);
   
   temp =  -(temp-exp(prior(2,1)))/(exp(prior(2,1))-1.0);
@@ -463,7 +463,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     break;
   }   
   
-  return DOF; 
+  return DOF + offset; 
   
 }
 
@@ -1150,9 +1150,9 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
     
-    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+    for (double  i = 0.0; i <= 0.50; i += 0.01 ){
       if (!isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
-        post_probs[j] = 0;    // if the cdf has or infinite in the integrating region
+        post_probs[j] = 0;    // if the cdf is infinite before the median
                               // it is removed 
       }  
     } 
@@ -1400,7 +1400,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
     if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
-}
+  }
 
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
@@ -1657,10 +1657,11 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
 
-    for (double  i = 0.0; i <= 0.99; i += 0.01 ){
+    for (double  i = 0.0; i <= 0.5; i += 0.01 ){
       if ( !isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
         
-         post_probs[j] = 0;    // if the cdf has nan/inf in it then it needs a 0 posterior
+         post_probs[j] = 0;    // if the cdf has nan/inf before the median
+                               // it is removed from the calculation and given a 0 posterior
       }  
     } 
   }
@@ -1849,7 +1850,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
-    
+  //  cerr << temp_init << endl << "-----" << endl; 
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
@@ -2097,7 +2098,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
     bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init);
-    cout << init_opt << endl; 
+   
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     max_dose, divisor, CA->isIncreasing, CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
@@ -2263,7 +2264,7 @@ void estimate_normal_aod(continuous_analysis *CA,
   
   if(!can_be_suff){
     
-    cout << Y << endl; 
+    
     aod->R  =  std::numeric_limits<double>::infinity();
     aod->A1 =  std::numeric_limits<double>::infinity();
     aod->A2 =  std::numeric_limits<double>::infinity();

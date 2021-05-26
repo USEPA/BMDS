@@ -19,7 +19,7 @@ c3Dat[, 3] <- c(0.12, 0.13, 0.11, 0.15, 0.13)
 c3_max_dose<-max(c3Dat[, 1])
 
 
-
+c3Dat
 
 
 print("Running EXP-3 Opt1")

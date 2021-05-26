@@ -64,16 +64,26 @@ cleveland_plot <- function (A, ...){
   
   
   
+  bmd_ind_df1 <- 
+    bmd_ind_df %>% filter(as.numeric(X5)>0.05) 
   
-  ggplot()+
-    geom_point(data=bmd_ind_df, aes(x=as.numeric(X1), y=fct_reorder(X4,X5,.desc=T),size=(sqrt(as.numeric(X5)))), color="red")+
-    #scale_colour_gradient(low = "gray", high = "black")+
-    geom_vline(xintercept=as.numeric(bmd_ind_df$X1[10]), linetype="dotted")+
+  bmd_ind_df2<-bmd_ind_df %>% mutate(X5_numeric=as.numeric(X5))
+  
+  step1<-ggplot(bmd_ind_df2, aes(x=as.numeric(X1),y=fct_reorder(X4,X5,.desc=T)))+
+    geom_point(aes(colour=cut(X5_numeric,c(0,0.999,1)),size=(sqrt(as.numeric(X5)))))+
+    scale_colour_manual(name="X5_numeric", values=c("(0,0.999]"="grey", "(0.999,1]"="red"))
+  
+  
+  step1
+  
+  step2<-step1+
+    geom_vline(xintercept=as.numeric(A$bmd[1]), linetype="dotted")+
     theme_minimal()+
     labs(x="Dose Level",y="",title="BMD Estimates by Each Model (Sorted by Posterior Probability)",size="Posterior Probability")+
     theme(legend.position="none")+
     geom_errorbar(data=bmd_ind_df, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
-  
+
+  step2  
 }
 
 
@@ -119,7 +129,7 @@ cleveland_plot <- function (A, ...){
   bmd_ind_df<-data.frame(bmd_ind)
   
   bmd_ind_df <- 
-    bmd_ind_df %>% filter(as.numeric(X5)>0.005) 
+    bmd_ind_df %>% filter(as.numeric(X5)>0.05) 
     
   #Drop NA value
   bmd_ind_df2<-data.frame(bmd_ind_df[which(!is.na(bmd_ind_df[,1])),])

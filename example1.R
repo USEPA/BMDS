@@ -1,5 +1,5 @@
 library(ToxicR)
-
+library(ggplot2)
 v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,
   13.249991,	12.992931,	13.022338,	13.614057,	13.287018,	13.449239,	13.950747,
   13.239134,	13.82321,	15.080262,	14.85966,	14.7805395,	15.238369,	14.749196,
@@ -24,20 +24,30 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 
 
 #B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle",sstat = F)
-
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
-library(dplyr)
 
+library(dplyr)
+library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal-ncv",fit_type = "laplace",BMR = 1,sstat = F,isFast = FALSE)
-plot(B)
-system.time({A  <-  single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "mle",BMR = 1,sstat = F,isFast = FALSE)})
-plot(A)
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
+plot(B) 
+
+model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
+                         distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
+                                                "normal", "normal-ncv"))
+
+
+
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
+
+library(ToxicR)
+library(ggplot2)
+plot(BB)
 
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace")
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_list=model_list,
                         fit_type = "laplace",BMR = 1,samples = 75000)
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
