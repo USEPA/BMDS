@@ -310,11 +310,17 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
 
   bmdsRes->validResult = false;
 
+  if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
+    std::cout << "lognormal distribution not compatible with polynomial model\n";
+    return; 
+  }
+
   if (detectAdvDir){
     determineAdvDir(anal);
     if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
-      if(anal->model !=cont_model::exp_3 || anal->model != cont_model::exp_5){
+      if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
         //only exp_3 and exp_5 models are supported for lognormal decreasing data
+        std::cout << "lognormal dist and  adverse direction down not compatible with selected model\n";
         return;
       }
     }
@@ -562,8 +568,14 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result
   aod->nParms[0] = CD.N1;
   aod->LL[1] = -1*CD.A2;
   aod->nParms[1] = CD.N2;
-  aod->LL[2] = -1*CD.A3;
-  aod->nParms[2] = CD.N3;
+  //A3 is strictly NCV test.  If CV use results from A1
+  if (CA->disttype == distribution::normal_ncv) {
+    aod->LL[2] = -1*CD.A3;
+    aod->nParms[2] = CD.N3;
+  } else {
+    aod->LL[2] = -1*CD.A1;
+    aod->nParms[2] = CD.N1;
+  }
   aod->LL[3] = -1*res->max;
   int bounded = 0;
   for(int i=0; i<CA->parms;i++){
