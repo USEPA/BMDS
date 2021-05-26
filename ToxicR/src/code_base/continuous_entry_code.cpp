@@ -181,7 +181,7 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
   prior(0,1) = betas(0,0); 
   double max_d = vec[vec.size()-1]; 
   double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
-  prior(2,1)   = log(max_r/prior(0,1)); 
+  prior(2,1)   = log(0.01);  
   double temp = max_r/prior(0,1);
   
   temp =  -(temp-exp(prior(2,1)))/(exp(prior(2,1))-1.0);
@@ -1850,7 +1850,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
-    
+  //  cerr << temp_init << endl << "-----" << endl; 
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):

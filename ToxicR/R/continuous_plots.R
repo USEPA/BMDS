@@ -171,11 +171,11 @@ cont_power_f <-function(parms,d){
     Response <- fit$data[,2,drop=F]
     doses = fit$data[,1,drop=F]
     # plot(doses,Response,type='n',...)
-
   }
+ 
   
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/300)
   
   
   if (fit$model=="FUNL"){
@@ -194,36 +194,26 @@ cont_power_f <-function(parms,d){
     me <- cont_power_f(fit$parameters,test_doses)
   }
   
-  # 
-  # Q <- t(Q)
-  # me <- colMeans(Q)
-  # lq <- apply(Q,2,quantile, probs = qprob)
-  # uq <- apply(Q,2,quantile, probs = 1-qprob)
-  # 
-  # Continous case density? 
+
   temp_fit <- splinefun(test_doses,me)
   
   
   out<-ggplot()+
-    geom_line(aes(x=test_doses,y=me),color="blue")+
-    labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+theme_minimal()
+          geom_line(aes(x=test_doses,y=me),color="blue")+
+          labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
+          theme_minimal() + ylim(c(min(Response)*0.95,max(Response)*1.05)) +
+          xlim(c(min(test_doses),max(test_doses)))
+                   
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     out2<-out+
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0),color="Red")
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response)*0.95),color="Red")
   }
-  
- 
-  
   
   data_in<-data.frame(cbind(doses,Response))
   out3<-out2+
-    geom_point(data=data_in,aes(x=Dose,y=Resp))
+        geom_point(data=data_in,aes(x=Dose,y=Resp))
   
-  # out4<-out3+
-  #   geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),
-  #                    y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
-  # out4
   
   out3
   
@@ -258,13 +248,9 @@ cont_power_f <-function(parms,d){
                doses = data_d[,1,drop=F]
                uerror <- mean+se
                lerror <- mean-se
-               
                dose = c(doses,doses)
                Response = c(uerror,lerror)
-               #plot(dose,Response,type='n')#,...)
-               
-               
-               
+  
           }else{
                Response <- data_d[,2,drop=F]
                doses = data_d[,1,drop=F]
@@ -298,45 +284,46 @@ cont_power_f <-function(parms,d){
           temp_f[is.infinite(temp_f)] = NA
         
           me <- colMeans(temp_f,na.rm = TRUE)
-          
           lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE)
           uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE)
-          col1 = alphablend(credint_col,1)
+ 
           
-          # Data structure for polygon - this part should be re-implmeneted as ggplot object
-
-          out<-ggplot()+
-            geom_point(aes(x=doses,y=Response))+
-            xlim(c(min(doses),max(doses)*1.03))+
-            labs(x="Dose", y="Proportion",title="Continous MA fitting")+
-            theme_minimal()
+         
+          plot_gg<-ggplot()+
+                  geom_point(aes(x=doses,y=Response))+
+                  xlim(c(min(doses),max(doses)*1.03))+
+                  labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+                  theme_minimal()
           
-          test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/500)
-          out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
-          
-          out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue")+
-            geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
-
+         plot_gg<-plot_gg+
+                  geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
+         
+         plot_gg<-plot_gg+
+                  geom_line(aes(x=test_doses,y=me),col="blue")
        
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-        
-          lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-          lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-          lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
+
           
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-
-            temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
-            temp = temp[!is.infinite(temp)]
-            Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
+            temp = temp_bmd[temp_bmd < 10*max(test_doses)]
+            temp = temp[!is.infinite(temp_bmd)]
+            temp = temp[!is.na(temp)]
+       
+            Dens =  density(temp,cut=c(max(test_doses)))
+          
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
             temp = which(Dens$x < max(test_doses))
             D1_y = Dens$y[temp]
             D1_x = Dens$x[temp]
             qm = min(Response)
-            
+            scale = (max(Response)-min(Response))/max(D1_y) *.75
+            print(scale)
+            print(max(D1_y))
             # BMD MA density needs to be double checked 
-            out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,0+D1_y,0)), fill = "lightblue1", alpha=0.6)
+            plot_gg<-plot_gg+
+                    geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
+                                     y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
+                                     fill = "blueviolet", alpha=0.6)
 
            }
           
@@ -355,11 +342,10 @@ cont_power_f <-function(parms,d){
           D1_x = Dens$x[temp]
           qm = min(Response)
           
-          out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
+          #out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
           
           #Plot only level >2
-          
-        
+
           df<-NULL
           for (ii in 1:length(fit_idx)){
             
@@ -390,14 +376,10 @@ cont_power_f <-function(parms,d){
             }
           }
           
-        
-          out5<-out4+
-            geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-            theme_minimal()
+          plot_gg<- plot_gg+
+                 geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+                 theme_minimal()
 
-          out5
-    
-          
      }
-
+     return(plot_gg)
 }

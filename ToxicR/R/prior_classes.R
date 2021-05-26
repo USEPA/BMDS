@@ -186,7 +186,7 @@ poor of a modeling choice.\n");
   
   #Exponential NonConstant Normal Prior
   if (dmodel == 2 && dvariance == 2){
-      prior <- create_prior_list(lnormprior(0,0.1,0,100),
+      prior <- create_prior_list( lnormprior(0,1,0,100),
                                   lnormprior(0,1, 0,100),
                                   normprior(0,1, -20,20),    # log(c)
                                   lnormprior(log(2),0.4215,0,18),  #d 
@@ -196,7 +196,7 @@ poor of a modeling choice.\n");
   }
   #Exp-5 Nonconstnat Normal 
   if (dmodel == 3 && dvariance == 2){
-    prior <- create_prior_list(lnormprior(0,0.1,0,100),
+    prior <- create_prior_list(lnormprior(0,1,1e-8,100),
                                normprior(0,10, -100,100),
                                normprior(0, 1, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
@@ -207,7 +207,7 @@ poor of a modeling choice.\n");
   
   #Power NonConstant Normal Prior
   if (dmodel == 4 && dvariance == 2){
-    prior <- create_prior_list(lnormprior(0,0.1,0,100), # a
+    prior <- create_prior_list(lnormprior(0,1,0,100), # a
                                normprior(0,10,  -1e4,1e4),     # b
                                lnormprior(log(2),0.4215, 0,40),  #k
                                lnormprior(0,0.75,0,18),
@@ -247,7 +247,7 @@ poor of a modeling choice.\n");
   
   #Exponential-5
   if (dmodel == 3 && dvariance == 1){
-    prior <- create_prior_list(lnormprior(0,0.5, 0,100), # a
+    prior <- create_prior_list(lnormprior(0,1, 1e-8,100), # a
                                normprior(0,10, -30,30),     # b
                                normprior(0,2, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
@@ -267,7 +267,7 @@ poor of a modeling choice.\n");
   
   #Exponential 
   if (dmodel == 2 && dvariance == 3){
-    prior <- create_prior_list(lnormprior(0,0.5, 0,100), # a
+    prior <- create_prior_list(lnormprior(0,1, 0,100), # a
                                lnormprior(0,1, 0,100),     # b
                                normprior(0,1, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
@@ -278,7 +278,7 @@ poor of a modeling choice.\n");
   
   #Exponential-5
   if (dmodel == 3 && dvariance == 3){
-    prior <- create_prior_list(lnormprior(0,0.1, 0,100), # a
+    prior <- create_prior_list(lnormprior(0,1, 0,100), # a
                                lnormprior(0,1, 0,100),     # b
                                normprior(0,2, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
