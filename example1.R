@@ -39,11 +39,11 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 
 
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 4,model_list = model_list )
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
 
 library(ToxicR)
 library(ggplot2)
-plot(BB) 
+plot(BB)
 
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
