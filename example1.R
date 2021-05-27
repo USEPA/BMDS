@@ -30,7 +30,7 @@ library(dplyr)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
 plot(B) 
 
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
@@ -56,7 +56,7 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
 v1 <- as.numeric(temp[2:length(temp)])
 system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F,isFast=FALSE)})
-
+plot(B)
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))
 
@@ -70,7 +70,9 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR=
 
 temp <- PFOA_Liver %>% filter(X1 == "CYP3A1_32809")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,BMR=3)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",sstat = F,BMR=3,isFast = T)})
+plot(BB)
+
 g <- matrix(c(0,-0.747871,0.560669,0.703165, 0.832507), nrow = 1)
 g%*%BB$covariance%*%t(g)
 d <- seq(0,20,0.1)
@@ -94,6 +96,7 @@ plot(BB)
 temp <- PFOA_Liver %>% filter(X1 == "ACADL_32776")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+plot(BB)
 
 d <- seq(0,20,0.01)
 y <- cont_hill_f(BB$parameters,d)

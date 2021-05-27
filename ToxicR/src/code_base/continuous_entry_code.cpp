@@ -1797,7 +1797,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     X = X/max_dose;
   }
  
-
+  cerr << Y_LN << "--------" << endl; 
   
   bmd_analysis b; 
   std::vector<bool> fixedB; 

@@ -49,7 +49,7 @@ cont_power_f <-function(parms,d){
 
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-  fit<-A
+
   density_col="blueviolet"
   credint_col="azure2"
   BMD_DENSITY = T
@@ -59,21 +59,29 @@ cont_power_f <-function(parms,d){
   }
   
   
+  data_d = fit$data
   
-  if (ncol(fit$data) == 4 ){ #sufficient statistics
-    mean <- fit$data[,2,drop=F]
-    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-    doses = fit$data[,1,drop=F]
-    uerror <- mean+se
-    lerror <- mean-se
-    
+  IS_SUFFICIENT = FALSE
+  if (ncol(data_d) == 4 ){ #sufficient statistics
+    IS_SUFFICIENT = TRUE
+    mean <- data_d[,2,drop=F]
+    se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+    doses = data_d[,1,drop=F]
+    uerror <- mean+2*se
+    lerror <- mean-2*se
     dose = c(doses,doses)
     Response = c(uerror,lerror)
-    # plot(dose,Response,type='n',...)
+    lm_fit = lm(mean ~ doses,weights = 1/se*se)
   }else{
-    Response <- fit$data[,2,drop=F]
-    doses = fit$data[,1,drop=F]
-    # plot(doses,Response,type='n',...)
+    Response <- data_d[,2,drop=F]
+    doses = data_d[,1,drop=F]
+    lm_fit = lm(Response~doses)
+  }
+  
+  if (coefficients(lm_fit)[2] < 0){
+    decrease = TRUE
+  }else{
+    decrease = FALSE
   }
   
   # Single Model 
@@ -86,7 +94,7 @@ cont_power_f <-function(parms,d){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses)
   }
   if (fit$model=="exp-3"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="exp-5"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
@@ -95,26 +103,25 @@ cont_power_f <-function(parms,d){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
   }
   
- 
   Q <- t(Q)
-  me <- colMeans(Q)
+  me <- apply(Q,2,quantile, probs = 0.5)
   lq <- apply(Q,2,quantile, probs = qprob)
   uq <- apply(Q,2,quantile, probs = 1-qprob)
   
   # Continous case density? 
   temp_fit <- splinefun(test_doses,me)
   
-  
-  
   # Geom_polygon ? etc..
-  
-  out<-ggplot()+
-    geom_line(aes(x=test_doses,y=me),color="blue")+
-    labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+theme_minimal()
+  plot_gg <- ggplot() +
+    geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
+    labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
+    ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05)) +
+    xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05)) +
+    theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    out2<-out+
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0),color="Red")
+    plot_gg<-plot_gg +
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response)),color="Red")
   }
   
 # Add density 
@@ -129,24 +136,23 @@ cont_power_f <-function(parms,d){
     qm = min(Response)
     
     
-    out3<-out2+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,0+D1_y,0)), fill = "lightblue1", alpha=0.6)
-    # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+    plot_gg<-plot_gg+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),min(Response)+D1_y,min(Response))), fill = "blueviolet", alpha=0.6)
   }
-  
-  # 
-  # if (ncol(fit$data) ==4){
-  #      points(doses,mean,...)
-  #      arrows(x0=doses, y0=lerror, x1=doses, 
-  #             y1=uerror, code=3, angle=90, length=0.1)
-  # }else{
-  #      points(doses,Response,...)
-  # }
-  # 
-  
-  out4<-out3+geom_point(aes(x=doses,y=Response))
 
-  out5<-out4+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
-  out5
+  
+  if (IS_SUFFICIENT){
+    plot_gg<- plot_gg +
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
+      geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+    
+  }else{
+    data_in<-data.frame(cbind(doses,Response))
+    plot_gg<-plot_gg +
+      geom_point(data=data_in,aes(x=Dose,y=Response))
+  }
+
+  plot_gg <-plot_gg+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
+  plot_gg
   
 }
   
@@ -162,26 +168,32 @@ cont_power_f <-function(parms,d){
     stop( "Quantile probability must be between 0 and 0.5")
   }
      
-  
-  if (ncol(fit$data) == 4 ){ #sufficient statistics
-    mean <- fit$data[,2,drop=F]
-    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-    doses = fit$data[,1,drop=F]
-    uerror <- mean+se
-    lerror <- mean-se
+  data_d = A$data
+  IS_SUFFICIENT = FALSE
+  if (ncol(data_d) == 4 ){ #sufficient statistics
+    IS_SUFFICIENT = TRUE
+    mean <- data_d[,2,drop=F]
+    se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+    doses = data_d[,1,drop=F]
+    uerror <- mean+2*se
+    lerror <- mean-2*se
     dose = c(doses,doses)
     Response = c(uerror,lerror)
-    # plot(dose,Response,type='n',...)
+    lm_fit = lm(mean ~ doses,weights = 1/se*se)
   }else{
-    Response <- fit$data[,2,drop=F]
-    doses = fit$data[,1,drop=F]
-    # plot(doses,Response,type='n',...)
+    Response <- data_d[,2,drop=F]
+    doses = data_d[,1,drop=F]
+    lm_fit = lm(Response~doses)
   }
- 
+  
+  if (coefficients(lm_fit)[2] < 0){
+    decrease = TRUE
+  }else{
+    decrease = FALSE
+  }
   
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/300)
-  
   
   if (fit$model=="FUNL"){
      me <- cont_FUNL_f(fit$parameters,test_doses)
@@ -190,7 +202,7 @@ cont_power_f <-function(parms,d){
     me <- cont_hill_f(fit$parameters,test_doses)
   }
   if (fit$model=="exp-3"){
-    me <- cont_exp_3_f(fit$parameters,test_doses)
+    me <- cont_exp_3_f(fit$parameters,test_doses,decrease )
   }
   if (fit$model=="exp-5"){
     me <- cont_exp_5_f(fit$parameters,test_doses)
@@ -203,24 +215,34 @@ cont_power_f <-function(parms,d){
   temp_fit <- splinefun(test_doses,me)
   
   
-  out<-ggplot()+
-          geom_line(aes(x=test_doses,y=me),color="blue")+
+  plot_gg<-ggplot()+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
-          theme_minimal() + ylim(c(min(Response)*0.95,max(Response)*1.05)) +
-          xlim(c(min(test_doses),max(test_doses)))
-                   
+          theme_minimal() + ylim(c(min(Response,me)*0.95,max(Response,me)*1.05)) +
+          xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05))
+  
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    out2<-out+
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response)*0.95),color="Red")
+    if (!sum(is.na(fit$bmd))){
+    plot_gg <- plot_gg +
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
+    }
   }
   
-  data_in<-data.frame(cbind(doses,Response))
-  out3<-out2+
-        geom_point(data=data_in,aes(x=Dose,y=Resp))
+  
+  if (IS_SUFFICIENT){
+    plot_gg<- plot_gg +
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
+              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+    
+  }else{
+    data_in<-data.frame(cbind(doses,Response))
+    plot_gg<-plot_gg +
+          geom_point(data=data_in,aes(x=Dose,y=Response))
+  }
   
   
-  out3
+  plot_gg
   
 }
 
@@ -233,7 +255,6 @@ cont_power_f <-function(parms,d){
      density_col="blueviolet"
      credint_col="azure2"
      class_list <- names(A)
-     
      fit_idx    <- grep("Individual_Model",class_list)
      
      #plot the model average curve
@@ -256,7 +277,7 @@ cont_power_f <-function(parms,d){
             lerror <- mean-se
             dose = c(doses,doses)
             Response = c(uerror,lerror)
-            lm_fit = lm(mean = doses,weights = 1/se*se)
+            lm_fit = lm(mean ~ doses,weights = 1/se*se)
           }else{
             Response <- data_d[,2,drop=F]
             doses = data_d[,1,drop=F]
@@ -294,28 +315,28 @@ cont_power_f <-function(parms,d){
                }
           }
           temp_f[is.infinite(temp_f)] = NA
-        
-          me <- colMeans(temp_f,na.rm = TRUE)
+          temp_f[abs(temp_f) > 1e10] = NA
+          me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE)
           lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE)
           uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE)
  
-          
-         
+
           plot_gg<-ggplot()+
                   geom_point(aes(x=doses,y=Response))+
                   xlim(c(min(doses),max(doses)*1.03))+
                   labs(x="Dose", y="Proportion",title="Continous MA fitting")+
                   theme_minimal()
           
-         plot_gg<-plot_gg+
-                  geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
+          plot_gg<-plot_gg+
+                   geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
          
-         plot_gg<-plot_gg+
-                  geom_line(aes(x=test_doses,y=me),col="blue",size=2)
+          plot_gg<-plot_gg+
+                   geom_line(aes(x=test_doses,y=me),col="blue",size=2)
          
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
 
           ## Plot the CDF of the Posterior
+          
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
             temp = temp_bmd[temp_bmd < 10*max(test_doses)]
             temp = temp[!is.infinite(temp_bmd)]
@@ -347,7 +368,7 @@ cont_power_f <-function(parms,d){
           #Plot only level >2
 
           df<-NULL
-         
+        
           for (ii in 1:length(fit_idx)){
             
             if (A$posterior_probs[ii]>0.05){
@@ -373,17 +394,17 @@ cont_power_f <-function(parms,d){
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                df<-rbind(df,temp_df)
                # Not using loop, but save data in the external data and load it later
-               if (A$posterior_probs[ii] > 0.01){
-                   temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-                   df<-rbind(df,temp_df)
-               }
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               df<-rbind(df,temp_df)
+               plot_gg<- plot_gg+
+                        geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+                        theme_minimal()
             }
             
+          
           }
           
-          plot_gg<- plot_gg+
-                 geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-                 theme_minimal()
+          
 
      }
      else{ # mcmc run
@@ -402,7 +423,7 @@ cont_power_f <-function(parms,d){
          lerror <- mean-se
          dose = c(doses,doses)
          Response = c(uerror,lerror)
-         lm_fit = lm(mean = doses,weights = 1/se*se)
+         lm_fit = lm(mean ~ doses,weights = 1/se*se)
        }else{
          Response <- data_d[,2,drop=F]
          doses = data_d[,1,drop=F]
