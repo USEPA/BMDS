@@ -31,18 +31,23 @@ library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
 B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
+
+
+# I guess based on my understanding we do not need Density plot for laplace fitting case - SL 
 plot(B) 
+
+
 
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
                          distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
                                                 "normal", "normal-ncv"))
-
-
-
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
 
-library(ToxicR)
-library(ggplot2)
+
+# 05/28 SL Try to focus on the issue here
+# 1. CI Band seems odd
+# 2. BMD Density plot looks odd 
+# 3. Color Theme update for giving user more option
 plot(BB)
 
 

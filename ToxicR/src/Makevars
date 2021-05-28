@@ -4,7 +4,7 @@
  #-fopenmp
 
 PKG_CPPFLAGS =  -I"./include" -I"./code_base"  -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize
-PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto -fopenmp
+PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto
 
 PKG_LIBS     = -lgsl -lnlopt 
 
