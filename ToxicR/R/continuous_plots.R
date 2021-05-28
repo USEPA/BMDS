@@ -248,6 +248,7 @@ cont_power_f <-function(parms,d){
 
 
 # Base plot- MCMC or BMD?
+
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
   
   # Should be matched with BMD_MA plots
@@ -407,6 +408,11 @@ cont_power_f <-function(parms,d){
           
 
      }
+     
+
+     
+     ## I think this if-else part needs to be clear since it's already in A part ; 
+     
      else{ # mcmc run
        
        data_d   <-  A[[fit_idx[1]]]$data
@@ -449,27 +455,30 @@ cont_power_f <-function(parms,d){
          if (fit$model=="hill"){
             
            t <- cont_hill_f(fit$parameters,test_doses)
-           if(BB$posterior_probs[ii] > 0){
-             me = t*BB$posterior_probs[ii] + me
+           
+           # SL comment - why the name of object is BB? At the beginning it was declared as A-  05/28/21
+           # I guess this part should be A as well 
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
            }
          }
          if (fit$model=="exp-3"){
            t <- cont_exp_3_f(fit$parameters,test_doses,decrease)
    
-           if(BB$posterior_probs[ii] > 0){
-             me = t*BB$posterior_probs[ii] + me
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
            }
          }
          if (fit$model=="exp-5"){
            t <- cont_exp_5_f(fit$parameters,test_doses)
-           if(BB$posterior_probs[ii] > 0){
-             me = t*BB$posterior_probs[ii] + me
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
            }
          }
          if (fit$model=="power"){
            t <- cont_power_f(fit$parameters,test_doses)
-           if(BB$posterior_probs[ii] > 0){
-             me = t*BB$posterior_probs[ii] + me
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
            }
          }
        }
@@ -477,7 +486,8 @@ cont_power_f <-function(parms,d){
        plot_gg<-ggplot()+
          geom_point(aes(x=doses,y=Response))+
          xlim(c(min(doses),max(doses)*1.03))+
-         labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+         # Change the label for Y axis - SL 05/28/21
+         labs(x="Dose", y="Response",title="Continous MA fitting")+
          theme_minimal()
        
         
@@ -493,6 +503,8 @@ cont_power_f <-function(parms,d){
          geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
        
        
+       
+       # Not sure about this part - SL 05/28/21
        #Plot only level >2
        
        df<-NULL
