@@ -467,6 +467,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   data.model = &model; data.advP = tail_prob; 
   data.BMDType = BMDType; 
   data.BMRF = BMRF; 
+
   double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
 
   /*
@@ -479,6 +480,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
         grad(i,0) = g[i]; 
   }
   delete(g); 
+
   rVal.COV = model.varMatrix(parms);
   Eigen::MatrixXd var = grad.transpose()*rVal.COV*grad; // Delta Method Variance
 
@@ -494,6 +496,19 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
       double q = x[i];
       y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
     }
+  
+    
+      for (int i= y.size(); i > 0; i--){
+ 
+        if (y[i] == y[i-1] || isinf(y[i]) ){
+        
+          auto p1 = std::next(x.begin(),i);
+          auto p2 = std::next(y.begin(),i); 
+          y.erase(p2); x.erase(p1); 
+
+        }
+      }
+    
   }else{
     x.resize(2);
     y.resize(2); 
@@ -502,9 +517,10 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
     y[0] = 0.0; 
     y[1] = 1.0; 
   }
-  
+
+
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
-       x.size() > 2 ){
+       x.size() > 5 ){
 
     bmd_cdf cdf(x, y);
     rVal.BMD_CDF = cdf;

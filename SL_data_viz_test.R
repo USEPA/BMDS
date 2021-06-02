@@ -1,7 +1,6 @@
 # Purpose: Test data visualization part for ToxicR package
 # Author: Sooyeong Lim
-# Last Updated Date: 01/24/2021
-
+# Last Updated Date: 03/03/2021
 
 # Load packages
 library(ToxicR)
@@ -21,6 +20,9 @@ mData <- matrix(c(0, 2,50,
 
 
 # Single model fitting- MCMC
+# too much white space- this needs to be adjusted automatically - Not the for the first Priority, but needs to be updated once 
+# Continous part is updated
+
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
@@ -28,7 +30,7 @@ A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type=
 A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type="hill",fit_type = "laplace")
 .plot.BMDdich_fit_maximized(A_single_laplace)
 # Base density plot is required? 
-
+ 
 
 
 # Dichotomous - Model Average
@@ -39,8 +41,7 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)
 ### - Need to apply John's idea 
-
-#Base plot - MA density seems little bit odd
+#Base plot - MA density curve seems little bit odd
 .plot.BMDdichotomous_MA(A)
 
 
@@ -71,30 +72,44 @@ A$Fitted_Model_1$bmd
 
 
 
-
 # Sample Data - Continous Example
 
 D <-c(rep(seq(0,1.0,1/4),each=4))
 mean <- 2.3  + 10/(1+exp(-(D-0.60)*8))*(1/(1+exp(-(0.99-D)*13)))
 Y <- mean + rnorm(length(mean),0,0.7)
-plot(D,Y)
-
-# Case 1: Dichotomous - MCMC Fitting
-# Question to Maatt continous case why there are 13 models?
-# Different Prior's- Should we show them separately?
-
-A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd',
-                    model_list = c("hill", "exp-3", "exp-5", "power", "FUNL"),
-                     distribution_list = c(rep("normal",5)))
 
 
-# Condition might be added - if it is less than ... 0.05
+# Continous example  03/28/2021
+
+A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
+                            distribution="normal-ncv",fit_type = "mcmc",sstat = F)
 
 
-A$posterior_probs
+.plot.BMDcont_fit_MCMC(A)
 
-# Test 1. Dichotomous MA Clevland Plot
+A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
+                          distribution="normal-ncv",fit_type = "laplace",sstat = F)
+
+.plot.BMDcont_fit_maximized(A)
+
+
+# Fitting example should be much simpler - 
+A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+
+.plot.BMDcontinuous_MA(A)
+
+
+A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+
+.plot.BMDcontinuous_MA(A)
+
+
+
+
+# Test 2. Dichotomous MA Cleveland Plot
+
 .cleveland_plot.BMDcontinous_MA(A)
+# The model's 
 # Bit weird result FUNL- Almost 1 other cases is 0;
 .plot.density.BMDcontinous_MA_MCMC(A)
 # Base object should be updated by using Shiny App
@@ -102,15 +117,4 @@ A$posterior_probs
 #It is dominated by the FUNL model. While the other 4 models are minor 
 
 # This continous baseplot should be updated
-
-
-plot(A)
-
-
-
-
-
-A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd',
-                     model_list = c("hill", "exp-3", "exp-5", "power", "FUNL"),
-                     distribution_list = c(rep("normal",5)))
-plot(A)
+.plot.BMDcontinuous_MA(A)

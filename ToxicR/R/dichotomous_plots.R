@@ -89,9 +89,7 @@
     if (qprob < 0 || qprob > 0.5){
       stop( "Quantile probability must be between 0 and 0.5")
     }
-    
-    
-    
+
     # How this is calculated?
     # This part - how it is derived?
     probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
@@ -174,16 +172,9 @@
     
     temp_fit <- splinefun(test_doses,me)
     
-    
     # Object 2
-    # Option- color , border- credint_col 
-    # Ploygon object alpha need to be decided- should be transparent
-    
-    # Input - color , check 
-    #polygon(c(test_doses,test_doses[length(test_doses):1]),
-    #        c(uq,lq[length(test_doses):1]),col = credint_col, border=credint_col)
-    
     # Polygon changed to Geom_ribbon
+    
     out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
     out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
     
@@ -377,7 +368,6 @@
       test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500)
       ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
       temp_f   <- matrix(0,n_samps,length(test_doses))
-      print(dim(temp_f))
       temp_bmd <- rep(0,length(test_doses))
       
       probs <- (0.5+data_d[,2,drop=T])/(1.0 + data_d[,3,drop=T])
@@ -510,6 +500,8 @@
         
         
       }
+      
+      # How to add layers dynamically? - Question
       out6<-out5+geom_line(aes(x=test_doses,y=temp_house[1,]),col="coral3",alpha=A$posterior_probs[1])
       out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
       out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
@@ -520,13 +512,9 @@
       out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
       out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
       
-      
-      out14
-      
-      
       out15<-out14+geom_point(aes(x=doses,y=probs))
       
-      return(out15)
+      out15
       
     }
     
