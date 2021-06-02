@@ -315,6 +315,10 @@ cont_power_f <-function(parms,d){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
           }
+          
+          # Need to sample the data from BMD for each model fitting case 05/28/21
+          # Please refer about the clevland plot and other function 05/28/21
+          
           temp_f[is.infinite(temp_f)] = NA
           temp_f[abs(temp_f) > 1e10] = NA
           me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE)
