@@ -188,6 +188,10 @@ cont_power_f <-function(parms,d){
   }else{
     Response <- data_d[,2,drop=F]
     doses = data_d[,1,drop=F]
+    # SL: Question about model fitting
+    # Is it a valid approach to get the fitting parameters?
+    # Looks like it is using a simple linear regression parameter
+    # -> LM is just for checking the trend decrease or increase coefficient for exponential 3 case
     lm_fit = lm(Response~doses)
   }
   
@@ -198,8 +202,10 @@ cont_power_f <-function(parms,d){
   }
   
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
+  # SL : Should Plot's x axis be based on test_dose? 
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/300)
   
+  #Pre defined function- lm_fit can be used for fitting parameters?
   if (fit$model=="FUNL"){
      me <- cont_FUNL_f(fit$parameters,test_doses)
   }  
@@ -207,7 +213,7 @@ cont_power_f <-function(parms,d){
     me <- cont_hill_f(fit$parameters,test_doses)
   }
   if (fit$model=="exp-3"){
-    me <- cont_exp_3_f(fit$parameters,test_doses,decrease )
+    me <- cont_exp_3_f(fit$parameters,test_doses,decrease)
   }
   if (fit$model=="exp-5"){
     me <- cont_exp_5_f(fit$parameters,test_doses)
@@ -220,18 +226,27 @@ cont_power_f <-function(parms,d){
   temp_fit <- splinefun(test_doses,me)
   
   
-  plot_gg<-ggplot()+
-          geom_line(aes(x=test_doses,y=me),color="blue",size=1)+
-          labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
-          theme_minimal() + ylim(c(min(Response,me)*0.95,max(Response,me)*1.05)) +
-          xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05))
-
   
-  # BMD is out of bound this case -- Needed to discuss this with Matt;
-  # In this B fitting case problem, BMDU is way over BMD
+  # I think aes y=me is not matching because me's fitting output is not matching with ...
+  
+  # ggplot()+
+  #   geom_line(aes(x=test_doses, y=temp_fit(test_doses)))
+  # 
+  plot_gg<-ggplot()+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
+          labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
+          theme_minimal()
+          #xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05))
+          
+  
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     if (!sum(is.na(fit$bmd))){
+      # This is part which makes plot bit weird...
+      
+      # BMD is out of bound this case -- Needed to discuss this with Matt;
+      # In this B fitting case problem, BMDU is way over BMD
+      
     plot_gg <- plot_gg +
       geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
     }
@@ -241,15 +256,25 @@ cont_power_f <-function(parms,d){
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
               geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
-              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
+              xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
+              ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
+    
               
     
   }else{
     data_in<-data.frame(cbind(doses,Response))
     plot_gg<-plot_gg +
-          geom_point(data=data_in,aes(x=Dose,y=Response))
+          geom_point(aes(x=doses,y=Response))+
+          # Added dose level can't go down less than 0
+          xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
+          ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
+    
+      
+
   }
   
+  # I guess we needed to add BMR information for this case? 
   plot_gg
   
 }
