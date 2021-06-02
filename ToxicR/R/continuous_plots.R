@@ -157,6 +157,7 @@ cont_power_f <-function(parms,d){
 }
   
 
+# This part matches with single_continous_fit part- SL 06/02/21 
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
   
@@ -170,6 +171,10 @@ cont_power_f <-function(parms,d){
      
   data_d = A$data
   IS_SUFFICIENT = FALSE
+  
+  # Can you do this for checking number of row? because this case only has two column 
+  # What example would be for 4 column? SL
+  
   if (ncol(data_d) == 4 ){ #sufficient statistics
     IS_SUFFICIENT = TRUE
     mean <- data_d[,2,drop=F]
@@ -216,11 +221,14 @@ cont_power_f <-function(parms,d){
   
   
   plot_gg<-ggplot()+
-          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=1)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
           theme_minimal() + ylim(c(min(Response,me)*0.95,max(Response,me)*1.05)) +
           xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05))
+
   
+  # BMD is out of bound this case -- Needed to discuss this with Matt;
+  # In this B fitting case problem, BMDU is way over BMD
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     if (!sum(is.na(fit$bmd))){
@@ -234,13 +242,13 @@ cont_power_f <-function(parms,d){
     plot_gg<- plot_gg +
               geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
               geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+              
     
   }else{
     data_in<-data.frame(cbind(doses,Response))
     plot_gg<-plot_gg +
           geom_point(data=data_in,aes(x=Dose,y=Response))
   }
-  
   
   plot_gg
   
