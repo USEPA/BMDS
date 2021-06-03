@@ -37,6 +37,8 @@ B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", 
 # Aesthetically, why it dosen't show the other bmd line? 
 plot(B) 
 
+# Updated 06/02/21
+.plot.BMDcont_fit_maximized(B)
 
 # Multiple parameters, and they have power different cases;
 # It can be repeated 
@@ -46,7 +48,7 @@ plot(B)
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
                          distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
                                                 "normal", "normal-ncv"))
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
+
 
 
 # 05/28 SL Try to focus on the issue here
@@ -55,7 +57,20 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2
 # 3. Color Theme update for giving user more option
 
 # I think it is useful that which model is dominant in terms of the line- color
+# Range max-min part should be updated... 
+# BMDU is out of bound
+
+
+# How about the log scale?
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
+
+# X - axis is bit odd for log10() case 
+# For model average why it shows only one model?
+
 plot(BB)
+
+# X - axis is bit odd for log10() case 
+plot(BB)+scale_x_log10()
 
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)

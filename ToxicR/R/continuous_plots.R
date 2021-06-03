@@ -285,7 +285,8 @@ cont_power_f <-function(parms,d){
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
   
   # Should be matched with BMD_MA plots
-    
+  # SL 06/02 Updated 
+  # Later, we'll have it 
      density_col="blueviolet"
      credint_col="azure2"
      class_list <- names(A)
@@ -349,14 +350,16 @@ cont_power_f <-function(parms,d){
                }
           }
           
-          # Need to sample the data from BMD for each model fitting case 05/28/21
-          # Please refer about the clevland plot and other function 05/28/21
-          
           temp_f[is.infinite(temp_f)] = NA
           temp_f[abs(temp_f) > 1e10] = NA
-          me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE)
-          lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE)
-          uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE)
+          
+          # If temp_bmd== Inf then delete;
+          # Updated 06/02/21 SL
+          temp_bmd[is.infinite(temp_bmd)] = NA
+          
+          me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE) # BMD
+          lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE) # BMDL
+          uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE) # BMDU
  
 
           plot_gg<-ggplot()+
@@ -371,15 +374,26 @@ cont_power_f <-function(parms,d){
           plot_gg<-plot_gg+
                    geom_line(aes(x=test_doses,y=me),col="blue",size=2)
          
+          
+          # Updated to remove Inf bmd 06/02/21 SL
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-
+    
+          # Compare this with BMD sample case- SL
+          # Why this number is so different ? 
+          BB$bmd
           ## Plot the CDF of the Posterior
+          
+          
+          ## SL's comment- I think we already have MCMC sample, and we can plot bmd directly from samples
+          
+          
           
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
             temp = temp_bmd[temp_bmd < 10*max(test_doses)]
             temp = temp[!is.infinite(temp_bmd)]
             temp = temp[!is.na(temp)]
        
+            # Density only creates few data points SL
             Dens =  density(temp,cut=c(max(test_doses)))
           
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
@@ -388,7 +402,17 @@ cont_power_f <-function(parms,d){
             D1_x = Dens$x[temp]
             qm = min(Response)
             scale = (max(Response)-min(Response))/max(D1_y) *.75
+            
             # BMD MA density needs to be double checked 
+            # It's BMD is spiky by nature of sampling I guess;
+            ggplot()+
+              geom_density(aes(x=temp))+xlim(c(0,15))
+            
+            plot_gg<-plot_gg+
+              stat_density_ridges(aes(x=temp))
+            
+            
+            ## Add super imposed density plot instead of using polygon... 
             plot_gg<-plot_gg+
                     geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
                                      y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
@@ -401,12 +425,20 @@ cont_power_f <-function(parms,d){
           ma_BMD = A$bmd
           plot_gg = plot_gg + 
                      geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
+
+          
+          plot_gg = plot_gg + 
+            geom_segment(aes(x=bmd, y=ma_mean(bmd), xend=bmd, yend=min(Response)),color="Red")
           
            
           #Plot only level >2
 
           df<-NULL
         
+          
+          # Problem of the loop using this case- the ggplot is not added automatically, 
+          # It replaces the last one;
+          
           for (ii in 1:length(fit_idx)){
             
             if (A$posterior_probs[ii]>0.05){
@@ -449,6 +481,7 @@ cont_power_f <-function(parms,d){
 
      
      ## I think this if-else part needs to be clear since it's already in A part ; 
+     ## Why this part is added? 
      
      else{ # mcmc run
        
