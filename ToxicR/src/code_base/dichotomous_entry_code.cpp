@@ -169,6 +169,7 @@ void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model)
   if (model){
     model->nparms = a.COV.rows(); 
     model->max = a.MAP; 
+    model->bmd = a.MAP_BMD; 
     for (int i = 0; i< model->dist_numE; i ++){
       double temp = double(i)/double(model->dist_numE); 
       model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
@@ -288,7 +289,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   for (int i = 0; i < res->dist_numE; i++){
     res->bmd_dist[i] *= max_dose; 
   }
-  
+  res->bmd *= max_dose; 
   res->model = DA->model; 
   return; 
 }
@@ -459,7 +460,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   }
 
   transfer_dichotomous_model(a,res);
-
+  res->bmd *= max_dose; 
   // rescale the BMD 
    for (int i = 0; i < res->dist_numE; i++){
     res->bmd_dist[i] *= max_dose; 
@@ -606,15 +607,11 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   return; 
 }
 
-
-
-
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
   
-
-  #pragma omp parallel
+#pragma omp parallel
 {
 #pragma omp for  
   for (int i = 0; i < MA->nmodels ; i++){

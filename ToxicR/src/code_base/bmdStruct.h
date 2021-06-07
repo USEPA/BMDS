@@ -1,5 +1,4 @@
 /*
- 
  * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
  * 
  *
@@ -107,6 +106,7 @@ struct dichotomous_model_result{
   double      model_df;        // Used model degrees of freedom
   double      total_df;        // Total degrees of freedom
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  double  bmd;              // the central estimate of the BMD
 };
 
 //
@@ -163,6 +163,7 @@ struct continuous_analysis{
   int parms; // number of parameters 
   int prior_cols; 
 };
+
 struct continuousMA_analysis{
   int    nmodels;         //number of models for each 
   double **priors;        // pointer to pointer arrays for the prior
@@ -184,9 +185,10 @@ struct continuous_model_result{
   double  *cov;             // Covariance Estimate
   double   max;             // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;       // number of entries in rows for the bmd_dist
-  double      model_df;        // Used model degrees of freedom
-  double      total_df;        // Total degrees of freedom
-  double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
+  double    bmd;             // The bmd at the maximum
+  double   *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
 
 struct continuousMA_result{

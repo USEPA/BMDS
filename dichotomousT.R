@@ -21,9 +21,8 @@ mData <- matrix(c(0,   1,5,
                   15,   2,6,
                   18,   3,7,
                   21,   4,8),nrow=4,ncol=3,byrow=T)
-Q = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],
-                           fit_type = "mcmc")
+Q = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
 
 
-R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistage",degree = 2,fit_type = "mcmc")
+R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",degree = 2,fit_type = "laplace")
 

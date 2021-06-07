@@ -89,9 +89,7 @@
     if (qprob < 0 || qprob > 0.5){
       stop( "Quantile probability must be between 0 and 0.5")
     }
-    
-    
-    
+
     # How this is calculated?
     # This part - how it is derived?
     probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
@@ -174,16 +172,9 @@
     
     temp_fit <- splinefun(test_doses,me)
     
-    
     # Object 2
-    # Option- color , border- credint_col 
-    # Ploygon object alpha need to be decided- should be transparent
-    
-    # Input - color , check 
-    #polygon(c(test_doses,test_doses[length(test_doses):1]),
-    #        c(uq,lq[length(test_doses):1]),col = credint_col, border=credint_col)
-    
     # Polygon changed to Geom_ribbon
+    
     out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
     out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
     
