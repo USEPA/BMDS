@@ -236,8 +236,8 @@ cont_power_f <-function(parms,d){
           geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
           theme_minimal()
-          #xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05))
-          
+          # xlim(max(c(0,c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075))), max(test_doses)*1.05)
+          # Updated max dose level not goes to below 0;
   
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
@@ -253,11 +253,15 @@ cont_power_f <-function(parms,d){
   }
   
   
+  # Assign them temporarily 
+  width=3
+  
+  
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
-              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.5, width=3)+
               geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
-              xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
+              xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
               ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
     
               
@@ -267,7 +271,7 @@ cont_power_f <-function(parms,d){
     plot_gg<-plot_gg +
           geom_point(aes(x=doses,y=Response))+
           # Added dose level can't go down less than 0
-          xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
+          xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
           ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
     
       
@@ -618,3 +622,4 @@ cont_power_f <-function(parms,d){
      }
      return(plot_gg)
 }
+ 

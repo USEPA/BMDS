@@ -1,3 +1,5 @@
+
+#06/07/21 SL update 
 library(ToxicR)
 M2           <- matrix(0,nrow=5,ncol=4)
 colnames(M2) <- c("Dose","Resp","N","StDev")
@@ -11,6 +13,15 @@ M2[, 4]      <- c(3, 4, 5, 6, 7)
 #double SD[] = {3, 4, 5, 6, 7};
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1, 
                           distribution = "normal",fit_type="mle",model_type = "power")
+
+# Adjust size of the interval bar;
+plot(c)
+
+# Changed error bar with reasonable size 
+# However, there is still some error bar gap 
+# I think it's inevitable have some space between 
+.plot.BMDcont_fit_maximized(c,qprob=0.05)
+
 
 
 doses = c( 0, 0, 0, 0, 18, 18, 18, 18, 18, 20, 20, 20, 20, 30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40);
