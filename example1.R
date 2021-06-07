@@ -30,16 +30,16 @@ library(dplyr)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
+B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 1,sstat = F,isFast = FALSE)
 
 
 # I guess based on my understanding we do not need Density plot for laplace fitting case - SL 
-# Aesthetically, why it dosen't show the other bmd line? 
+# Aesthetically, why it doesn't show the other bmd line? 
 plot(B) 
 
 # Updated 06/02/21
 .plot.BMDcont_fit_maximized(B)
-
+B$bmd
 # Multiple parameters, and they have power different cases;
 # It can be repeated 
 
@@ -62,15 +62,19 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 
 # How about the log scale?
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2.05,model_list = model_list )
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
 # X - axis is bit odd for log10() case 
 # For model average why it shows only one model?
 
 plot(BB)
 
+# Question not sure why BMD is superimposed? 
+.plot.BMDcontinuous_MA(BB, qprob=0.05)
+
 # X - axis is bit odd for log10() case 
-plot(BB)+scale_x_log10()
+.plot.BMDcontinuous_MA(BB, qprob=0.05)+scale_x_log10()
+
 
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)

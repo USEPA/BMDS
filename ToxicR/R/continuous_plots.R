@@ -380,7 +380,7 @@ cont_power_f <-function(parms,d){
     
           # Compare this with BMD sample case- SL
           # Why this number is so different ? 
-          BB$bmd
+          # BB$bmd
           ## Plot the CDF of the Posterior
           
           
@@ -394,7 +394,9 @@ cont_power_f <-function(parms,d){
             temp = temp[!is.na(temp)]
        
             # Density only creates few data points SL
-            Dens =  density(temp,cut=c(max(test_doses)))
+            
+            # Fixed part 06/04/21
+            Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
           
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
             temp = which(Dens$x < max(test_doses))
@@ -405,15 +407,12 @@ cont_power_f <-function(parms,d){
             
             # BMD MA density needs to be double checked 
             # It's BMD is spiky by nature of sampling I guess;
-            ggplot()+
-              geom_density(aes(x=temp))+xlim(c(0,15))
-            
-            plot_gg<-plot_gg+
-              stat_density_ridges(aes(x=temp))
-            
-            
-            ## Add super imposed density plot instead of using polygon... 
-            plot_gg<-plot_gg+
+            # ggplot()+
+            #   geom_density(aes(x=temp))+xlim(c(0,15))
+            # 
+            # plot_gg<-plot_gg+
+            #   stat_density_ridges(aes(x=temp))
+             plot_gg<-plot_gg+
                     geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
                                      y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
                                      fill = "blueviolet", alpha=0.6)
@@ -423,12 +422,17 @@ cont_power_f <-function(parms,d){
           # Add lines to the BMD
           ma_mean <- splinefun(test_doses,me)
           ma_BMD = A$bmd
+          
+          
+          # Question to Matt not sure 
+          
           plot_gg = plot_gg + 
                      geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
 
+          # Which one is duplicated?
           
-          plot_gg = plot_gg + 
-            geom_segment(aes(x=bmd, y=ma_mean(bmd), xend=bmd, yend=min(Response)),color="Red")
+          # plot_gg = plot_gg + 
+          #   geom_segment(aes(x=bmd, y=ma_mean(bmd), xend=bmd, yend=min(Response)),color="Red")
           
            
           #Plot only level >2
