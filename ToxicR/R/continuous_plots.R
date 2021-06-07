@@ -139,10 +139,11 @@ cont_power_f <-function(parms,d){
     plot_gg<-plot_gg+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),min(Response)+D1_y,min(Response))), fill = "blueviolet", alpha=0.6)
   }
 
+  width=3
   
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8)+
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
       geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
     
   }else{
