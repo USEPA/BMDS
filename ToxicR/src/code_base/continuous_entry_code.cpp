@@ -867,8 +867,10 @@ void transfer_continuous_model(bmd_analysis a, continuous_model_result *model){
 	if (model){
 	  model->nparms = a.COV.rows(); 
 		model->max = a.MAP; 
+		model->bmd = a.MAP_BMD; 
 		for (int i = 0; i< model->dist_numE; i ++){
 				double temp = double(i)/double(model->dist_numE); 
+		    
 				model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
 				model->bmd_dist[model->dist_numE + i] = temp; // probability 
 		}
@@ -1392,7 +1394,8 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   rV.MAP          = s.map; 
   rV.MAP_ESTIMATE = s.map_estimate; 
   rV.COV          = s.map_cov; 
-  
+  rV.MAP_BMD      = 0; 
+ 
 
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
@@ -1401,7 +1404,8 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
   }
-
+  double sum = std::accumulate(v.begin(), v.end(), 0.0); 
+  rV.MAP_BMD = sum/v.size(); 
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
   double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
@@ -1797,7 +1801,6 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     X = X/max_dose;
   }
  
-  cerr << Y_LN << "--------" << endl; 
   
   bmd_analysis b; 
   std::vector<bool> fixedB; 
@@ -1945,7 +1948,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   for (int i ; i < orig_X.rows(); i++){
     v[i] = orig_X(i,0); 
   } 
-  
+ 
   transfer_continuous_model(b,res);
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 

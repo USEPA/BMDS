@@ -17,7 +17,7 @@ PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt",
                           col_names = FALSE)
 
 
-doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
+doses2	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            0.625,	0.625,	0.625,	1.25,	1.25,	1.25,	2.5,	2.5,	2.5,	5,5,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
@@ -30,7 +30,7 @@ library(dplyr)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
+B  <- single_continuous_fit(as.matrix(doses2),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "laplace",BMR = 2,sstat = F,isFast = FALSE)
 plot(B) 
 
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
