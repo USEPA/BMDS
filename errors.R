@@ -35,6 +35,36 @@ plot(c2)
 .plot.BMDcont_fit_MCMC(c2,qprob=0.05)
 
 
+# Data generation for testing purpose
+
+
+model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
+                         distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
+                                                "normal", "normal-ncv"))
+
+
+
+# 05/28 SL Try to focus on the issue here
+# 1. CI Band seems odd
+# 2. BMD Density plot looks odd 
+# 3. Color Theme update for giving user more option
+
+# I think it is useful that which model is dominant in terms of the line- color
+# Range max-min part should be updated... 
+# BMDU is out of bound
+
+
+# How about the log scale?
+c3 <- ma_continuous_fit(M2[,1,drop=F],M2[,2:4],fit_type = "mcmc",BMR = 2,model_list = model_list )
+
+plot(c3)
+.plot.BMDcontinuous_MA(c3)
+
+
+
+
+
+
 # This is not a sufficent statistics one. BMDL ? is way too high? I guess
 # If the test doses are high and BMD
 

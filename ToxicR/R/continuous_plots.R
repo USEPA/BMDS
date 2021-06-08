@@ -311,12 +311,17 @@ cont_power_f <-function(parms,d){
           temp_bmd <- rep(0,length(test_doses))
           
           
+          # 06/07/21 SL Update
+          IS_SUFFICIENT=FALSE
+          
+          
           if (ncol(data_d) == 4 ){ #sufficient statistics
+            IS_SUFFICIENT = TRUE
             mean <- data_d[,2,drop=F]
             se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
             doses = data_d[,1,drop=F]
-            uerror <- mean+se
-            lerror <- mean-se
+            uerror <- mean+2*se
+            lerror <- mean-2*se
             dose = c(doses,doses)
             Response = c(uerror,lerror)
             lm_fit = lm(mean ~ doses,weights = 1/se*se)
@@ -369,11 +374,23 @@ cont_power_f <-function(parms,d){
           uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE) # BMDU
  
 
-          plot_gg<-ggplot()+
-                  geom_point(aes(x=doses,y=Response))+
-                  xlim(c(min(doses),max(doses)*1.03))+
+          width=3
+          # 06/02/21 SL update
+          if (IS_SUFFICIENT){
+              plot_gg<-ggplot()+
+                  geom_point(aes(x=data_d[,1],y=data_d[,2]))+
+                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
+                  xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
                   labs(x="Dose", y="Proportion",title="Continous MA fitting")+
                   theme_minimal()
+          }else{
+            plot_gg<-ggplot()+
+              geom_point(aes(x=doses,y=Response))+
+              xlim(c(min(doses),max(doses)*1.03))+
+              labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+              theme_minimal()
+          }
+          
           
           plot_gg<-plot_gg+
                    geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
@@ -436,6 +453,8 @@ cont_power_f <-function(parms,d){
           plot_gg = plot_gg + 
                      geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
 
+          
+          
           # Which one is duplicated?
           
           # plot_gg = plot_gg + 

@@ -44,6 +44,7 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)
 ### - Need to apply John's idea 
+
 #Base plot - MA density curve seems little bit odd
 .plot.BMDdichotomous_MA(A)
 
