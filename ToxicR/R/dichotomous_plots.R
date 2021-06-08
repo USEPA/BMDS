@@ -179,14 +179,14 @@
     out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
     
     
-    out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
+    out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
     
     
     # This part is for referecne 
     #geom_segment(data=bmd_dots, aes(x=H.bmd, y=.dich_weibull_f.H.fitted_model.parameters..H.bmd., xend=H.bmd, yend=0), color="Red")+
     
     out4<-out3+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
-    out4
+    # out4
     
     
     
@@ -204,7 +204,7 @@
     # Object 3 - Density object - In Shiny we can on / off this 
     # Density - Polygon/Other option?
     if (BMD_DENSITY ==TRUE){
-      Dens =  density(temp,cut=c(max(doses)))
+      Dens =  density(temp,cut=c(max(doses)), n=512, from=min(doses), to=max(doses))
       # what is this 0.4 means? Scale?
       Dens$y = Dens$y/max(Dens$y) * max(probs)*0.4
       temp = which(Dens$x < max(doses))
@@ -215,7 +215,7 @@
       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
-      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
+      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "blueviolet", alpha=0.6)
 
       return(out5)
     }
@@ -423,6 +423,7 @@
           temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii] 
         }
       }
+      
       me <- colMeans(temp_f)
       lq <- apply(temp_f,2,quantile, probs = qprob)
       uq <- apply(temp_f,2,quantile, probs = 1-qprob)
@@ -431,7 +432,7 @@
       temp_fit<-splinefun(test_doses,me)
       
       out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
-      out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
+      out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
       temp_fit <- splinefun(test_doses,me)
       
       out4<-out3+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
@@ -453,7 +454,7 @@
       qm = min(Response)
       # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
     
-      out5 <- out4 + geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "lightblue1", alpha=0.5)
+      out5 <- out4 + geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "blueviolet", alpha=0.6)
       
       
       #plot the individual models proportional to their weight

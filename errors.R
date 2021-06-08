@@ -29,10 +29,10 @@ c2 = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=F,BMD_TYPE="sd",BMR=1,
                           distribution = "normal",fit_type="mcmc",model_type = "power")
 
 
+# 06/07/21 SL -- tested and updated for MCMC - single continous fit 
+
 plot(c2)
 .plot.BMDcont_fit_MCMC(c2,qprob=0.05)
-
-
 
 
 # This is not a sufficent statistics one. BMDL ? is way too high? I guess
@@ -42,9 +42,8 @@ plot(c2)
 doses = c( 0, 0, 0, 0, 18, 18, 18, 18, 18, 20, 20, 20, 20, 30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40);
 Y = c(39,38.4,36.3,37.1, 40.2,45.3,42.1,38.3,35.9, 42.5,45.2,40.1,39.8, 50.1,53.4,48.2,52.1, 56.1,50.4,53.2,55.2, 35.1,39.1,36.3,32.9,33.7);
 Y[doses==20] = Y[doses==20] + 5.6
-library(ToxicR)
 B  <- single_continuous_fit(as.matrix(doses),as.matrix(Y),model_type = "polynomial", distribution="normal",fit_type = "laplace",degree=3,BMR = 1,sstat = F,samples = 150000)
 
-
+# SL - This is not a sufficient Statistics so we don't need to add 
 plot(B)
 .plot.BMDcont_fit_maximized(B,qprob=0.05)

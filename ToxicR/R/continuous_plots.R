@@ -128,7 +128,9 @@ cont_power_f <-function(parms,d){
   if (BMD_DENSITY ==TRUE){
     temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
     temp = temp[!is.infinite(temp)]
-    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
+    # Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
+    
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses) to=max(test_doses))
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]
@@ -272,7 +274,7 @@ cont_power_f <-function(parms,d){
     plot_gg<-plot_gg +
           geom_point(aes(x=doses,y=Response))+
           # Added dose level can't go down less than 0
-          xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
+          xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
           ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
     
       

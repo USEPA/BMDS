@@ -24,6 +24,9 @@ mData <- matrix(c(0, 2,50,
 # Continous part is updated
 
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
+
+#Need to color Match with Continous plot 
+plot(A_single_mcmc)
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
 # Single model fitting- Laplace
