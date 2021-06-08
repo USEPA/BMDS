@@ -161,7 +161,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
      # print(rvals$bmd_dist)
       rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),,drop=F]
       rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1]),,drop=F]
-      rvals$bmd     <- c(NA,NA,NA)
+      rvals$bmd     <- c(rvals$bmd,NA,NA)
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       if (!identical(rvals$bmd_dist, numeric(0))){
         temp_me = rvals$bmd_dist
@@ -171,9 +171,9 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
         
         if( nrow(temp_me) > 5){
           te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
-          rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+          rvals$bmd[2:3]  <- c(te(alpha),te(1-alpha))
         }else{
-          rvals$bmd <- c(NA,NA,NA)
+          rvals$bmd[2:3] <- c(NA,NA)
         }
       }
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")

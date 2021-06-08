@@ -47,7 +47,7 @@
 
 #include "lognormalTests.h"
 #include "normalTests.h"
-  
+#include <iostream>
 /* log_normal_AOD
  * 
  * 
@@ -274,6 +274,8 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   InitC = InitC.inverse()*meanX3.transpose()*InitA.col(1); 
   startV3(nParms-2) = InitC(1,0);
   startV3(nParms-1) = InitC(0,0);
+ 
+  cerr << "I am here "<< InitC << endl << endl; 
  
   statModel<normalLLTESTA3, IDcontinuousPrior> a3Model(a3Test, a3Init,
                                                        isfix3, fix3);

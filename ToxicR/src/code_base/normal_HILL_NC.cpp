@@ -35,6 +35,7 @@ int normalHILL_BMD_NC::parameter_to_remove(contbmd TYPE) {
 	switch (TYPE) {
 	case CONTINUOUS_BMD_ABSOLUTE:
 		return 1; // slope
+	  break; 
 	case CONTINUOUS_BMD_STD_DEV:
 		return nParms() - 1;
 		break;
@@ -630,7 +631,6 @@ double normalHILL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool 
 	temp = (pow(BMRF/nu,1.0/n_exp))*k; 
 	temp = temp/pow(1.0-BMRF/nu,1.0/n_exp); 
 
-
 	return temp; 
 	
 }
@@ -774,7 +774,7 @@ double normalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
 	if (isfinite(mid)){
 	  return mid; 
 	}else{
-	  std::cerr << "Non-finite BMD returned: Hill-Normal."<< std::endl; 
+	  // std::cerr << "Non-finite BMD returned: Hill-Normal."<< std::endl; 
 	  return std::numeric_limits<double>::infinity();
 	}
 }
