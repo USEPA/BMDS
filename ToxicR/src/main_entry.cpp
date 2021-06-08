@@ -233,29 +233,28 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     estimate_sm_laplace(&anal,result,isFast);
     
-    continuous_deviance aod1, aod2; 
-   /* estimate_log_normal_aod(&anal,
+    continuous_deviance aod1; 
+    
+    if (anal.disttype == distribution::log_normal){
+      estimate_log_normal_aod(&anal,
+                              &aod1);
+    }else{
+      estimate_normal_aod(&anal,
                              &aod1);
-     cout <<"R:"<< aod1.R << ":A2:" << aod1.A2 << ":A1:" << aod1.A1 << endl; 
+    }
+
+    NumericMatrix AOD(5,2);
+    AOD(0,0) = aod1.A1; AOD(0,1) = aod1.N1; 
+    AOD(1,0) = aod1.A2; AOD(1,1) = aod1.N2;
+    AOD(2,0) = aod1.A3; AOD(2,1) = aod1.N3;
+    AOD(3,0) = aod1.R; AOD(3,1) = aod1.NR;
+    AOD(4,0) = result->max; AOD(4,1) = result->total_df;
     
-    estimate_normal_aod(&anal,
-                         &aod2);
- 
-    cout <<"R:"<< aod2.R << ":A3:" << aod2.A3 << ":A2:" << aod2.A2 << ":A1:" << aod2.A1 << endl; 
-    continuous_expected_result expected;
-    expected.n = anal.n; 
-    expected.expected = new double[anal.n]; 
-    expected.sd = new double[anal.n]; 
-    continuous_expectation( &anal, result, 
-                                 &expected); 
-    delete expected.sd; 
-    delete expected.expected; */
-    List rV = convert_continuous_fit_to_list(result); 	
-    
-    ////////////////////////////////////
-    
+    List rV = convert_continuous_fit_to_list(result); 
+    rV.push_back(AOD,"Deviance");
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);
+    ////////////////////////////////////
     return rV; 
     
   }
