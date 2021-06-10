@@ -37,6 +37,7 @@
 #include <vector>
 #include <limits>
 #include <set>
+#include <numeric>
 
 using namespace std; 
 
