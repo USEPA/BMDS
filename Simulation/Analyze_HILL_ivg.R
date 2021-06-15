@@ -22,7 +22,7 @@ setwd("~/Documents/r_software/RBMDS/Simulation/Hill/results")
 files <- dir()
 
 ivgSims = grepl("invGaussian",files)
-norSims = grepl("normal",files)
+norSims = grepl("_normal",files)
 lnorSims = grepl("lognormal",files)
 
 cond1 = grepl("sim_1",files)

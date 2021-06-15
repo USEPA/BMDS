@@ -1,11 +1,11 @@
 # FUNL
-cont_FUNL_f <- function(A,doses){
+cont_FUNL_f <- function(A,doses,decrease=F){
      b <- A[1] + A[2]*exp(-exp(A[6])*(doses-A[5])^2)*(1/(1+exp(-(doses-A[3])/A[4])))
      return(b)
 }
 
 #dichotomous hill
-cont_hill_f <- function(parms,d){
+cont_hill_f <- function(parms,d,decrease=F){
   g  <- parms[1] 
   nu <- parms[2]
   k  <- parms[3];
@@ -14,7 +14,7 @@ cont_hill_f <- function(parms,d){
   return (rval)
 }
 #dichotomous log-logistic
-cont_exp_5_f <- function(parms,d){
+cont_exp_5_f <- function(parms,d,decrease=F){
   g <- parms[1]
   b <- parms[2];
   c <- parms[3];
@@ -37,7 +37,7 @@ cont_exp_3_f <-function(parms,d,decrease = TRUE){
   return (rval)
 }
 
-cont_power_f <-function(parms,d){
+cont_power_f <-function(parms,d,decrease=F){
   g <- parms[1]; 
   b <- parms[2];
   a <- parms[3]; 
@@ -88,19 +88,19 @@ cont_power_f <-function(parms,d){
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
   
   if (fit$model=="FUNL"){
-     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses)   
+     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses,decrease=decrease)   
   }
   if (fit$model=="hill"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="exp-3"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="exp-5"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="power"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses,decrease=decrease)
   }
   
   Q <- t(Q)
@@ -130,13 +130,12 @@ cont_power_f <-function(parms,d){
     temp = temp[!is.infinite(temp)]
     # Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
     
-    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses) to=max(test_doses))
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses), to=max(test_doses))
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]
     D1_x = Dens$x[temp]
     qm = min(Response)
-    
     
     plot_gg<-plot_gg+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),min(Response)+D1_y,min(Response))), fill = "blueviolet", alpha=0.6)
   }
@@ -254,11 +253,8 @@ cont_power_f <-function(parms,d){
       geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
     }
   }
-  
-  
   # Assign them temporarily 
   width=3
-  
   
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
@@ -266,9 +262,7 @@ cont_power_f <-function(parms,d){
               geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
               xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
               ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
-    
-              
-    
+
   }else{
     data_in<-data.frame(cbind(doses,Response))
     plot_gg<-plot_gg +
@@ -276,8 +270,6 @@ cont_power_f <-function(parms,d){
           # Added dose level can't go down less than 0
           xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
           ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
-    
-      
 
   }
   

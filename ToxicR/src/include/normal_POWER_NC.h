@@ -53,6 +53,9 @@ class normalPOWER_BMD_NC : public normalLLModel {
 	
 	virtual int parameter_to_remove(contbmd TYPE);
 
+	virtual cont_model mean_type(){
+	  return cont_model::power; 
+	}	
 	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
 		double gamma = theta(0,0); 

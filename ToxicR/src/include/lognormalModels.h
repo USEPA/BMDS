@@ -21,7 +21,7 @@
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 #include "normalModels.h"
-
+#include "cmodeldefs.h"
 
 /*class loglognormalLLModel
  * This class defines a log-normal log-likelihood where the data 
@@ -41,6 +41,10 @@ public:
 					          bool SS, bool CV = true) : lognormalLL(tY, tX,SS) {
 		  
 	};
+	
+	virtual cont_model mean_type(){
+	  return cont_model::generic; 
+	}	
 	
 	int    nParms() { 
 				return 3; // linear regression + constant variance	

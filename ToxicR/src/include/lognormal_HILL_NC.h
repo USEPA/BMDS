@@ -36,6 +36,10 @@ class lognormalHILL_BMD_NC : public lognormalLLModel {
 	  // if it is a sufficient statistics model 
 	};
 	
+	virtual cont_model mean_type(){
+	  return cont_model::hill; 
+	}	
+	
 	lognormalHILL_BMD_NC(){
 	
 	};

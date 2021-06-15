@@ -242,16 +242,25 @@ List run_continuous_single(IntegerVector model,
       estimate_normal_aod(&anal,
                              &aod1);
     }
-
-    NumericMatrix AOD(5,2);
-    AOD(0,0) = aod1.A1; AOD(0,1) = aod1.N1; 
-    AOD(1,0) = aod1.A2; AOD(1,1) = aod1.N2;
-    AOD(2,0) = aod1.A3; AOD(2,1) = aod1.N3;
-    AOD(3,0) = aod1.R; AOD(3,1) = aod1.NR;
-    AOD(4,0) = result->max; AOD(4,1) = result->total_df;
+   
     
+   continuous_expected_result exp_r; 
+   exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
+   exp_r.sd       = new double[anal.n];
+   continuous_expectation(&anal, result,
+                                &exp_r);
+ 
+   NumericMatrix AOD(5,2);
+   AOD(0,0) = aod1.A1; AOD(0,1) = aod1.N1; 
+   AOD(1,0) = aod1.A2; AOD(1,1) = aod1.N2;
+   AOD(2,0) = aod1.A3; AOD(2,1) = aod1.N3;
+   AOD(3,0) = aod1.R; AOD(3,1) = aod1.NR;
+   AOD(4,0) = exp_r.like; AOD(4,1) = result->model_df;
+
     List rV = convert_continuous_fit_to_list(result); 
     rV.push_back(AOD,"Deviance");
+    delete(exp_r.expected); 
+    delete(exp_r.sd); 
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);
     ////////////////////////////////////

@@ -19,6 +19,7 @@ output:
 library(knitr)
 library(ToxicR)
 library(actuar)
+library(ggplot2)
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 Hill.p <- rbind(c(481,-250.3,70,3.3),
@@ -100,14 +101,15 @@ model_list  = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5"
 model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
                         distribution_list =  c(rep(c("normal"),4)))
 doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
+dosesq <- rep(c(0,6.25,12.5,25,50,100),each=30)
 
 mean <- cont_hill_f(as.numeric(hill[2,]),doses)
 y <- rinvgauss(length(mean),mean,18528.14)
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
 AA$bmd
-#plot(AA)
+plot(AA)
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 AA$bmd
@@ -167,12 +169,13 @@ row.names(Exp5) <- c("Exp-5 Simulation 1","Exp-5 Simulation 2",
                      "Exp-5 Simulation 5","Exp-5 Simulation 6",
                      "Exp-5 Simulation 7","Exp-5 Simulation 8")
 doses <- rep(c(0,20,40,60,80,100),each=10)
+dosesq <- rep(c(0,20,40,60,80,100),each=30)
 
 mean <- cont_exp_5_f(as.numeric(Exp5[1,]),doses)
 y <- rinvgauss(length(mean),mean,18528.14)
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
 plot(AA)
 
 mean <- cont_exp_5_f(as.numeric(Exp5[7,]),doses)
@@ -180,8 +183,29 @@ y <- rinvgauss(length(mean),mean, 227.8176)
 
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
 plot(AA)
+
+mean <- cont_exp_5_f(as.numeric(Exp5[2,]),doses)
+y <- rnorm(length(mean),mean,77.5)
+mydoses <- seq(0,100,1)
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+Pl1 = plot(AA) + geom_line(aes(x=mydoses,y=cont_exp_5_f(unlist(Exp5[2,]),mydoses)),color="grey",linetype = "dashed",size=2) +
+           coord_cartesian(ylim=c(250,525),xlim=c(38,82)) + ggtitle("")
+AA$bmd
+Pl1
+
+mean <- cont_exp_5_f(as.numeric(Exp5[2,]),dosesq)
+y <- rnorm(length(mean),mean,77.5)
+mydoses <- seq(0,100,1)
+AA <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
+                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+Pl2 = plot(AA) + geom_line(aes(x=mydoses,y=cont_exp_5_f(unlist(Exp5[2,]),mydoses)),color="grey",linetype = "dashed",size=2) +
+                 coord_cartesian(ylim=c(250,525),xlim=c(38,82))+ggtitle("")
+AA$bmd
+require(gridExtra)
+grid.arrange(Pl1+ylab(""),Pl2+ylab(""),ncol=2)
 ```
 
 ###  I-Spline DR:
@@ -208,14 +232,30 @@ row.names(iS) <- c("iSpline Simulation 1","iSpline Simulation 2",
                      "iSpline Simulation 3","iSpline Simulation 4")
 kable(iS,digits=3)
 doses <- rep(c(0,20,40,60,80,100),each=10)
+dosesq <- rep(c(0,20,40,60,80,100),each=100)
 library(splines2)
 X <- iSpline(doses,knots=seq(30,90,20))
 
-mean <- X%*%t(iS[1,,drop=F]) + 10.58
+mydoses <- seq(0,100,1)
+X3 <- iSpline(mydoses,knots=seq(30,90,20))
+tmean <- X3%*%t(iS[2,,drop=F]) + 10.58
+
+mean <- X%*%t(iS[2,,drop=F]) + 10.58
 y <- rinvgauss(length(mean),mean,227.8176)
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+AA$bmd
+
+X2 <- iSpline(dosesq,knots=seq(30,90,20))
+mean <- X2%*%t(iS[2,,drop=F]) + 10.58
+y <- rinvgauss(length(mean),mean,227.8176)
+
+BB <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
+                        fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+BB$bmd
+plot(BB)+geom_line(aes(y=tmean,x=mydoses),color="grey",linetype="dotted",size=2)
+
 plot(AA)
 doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
 library(splines2)
@@ -265,6 +305,7 @@ for(i in 1:8){
 }
 
 var_no <- var_ig
+print(var_no)
 for(i in 1:8){
   mean =  cont_hill_f(as.numeric(hill[i,]),doses)
   isM <- splinefun(doses,mean)
@@ -275,7 +316,7 @@ for(i in 1:8){
     sdDif = sqrt(var_no[i])
   }
   
-  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
+  bb  <-  function(d){abs(cont_hill_f(as.numeric(hill[i,]),d)-cont_hill_f(as.numeric(hill[i,]),0))-sdDif} 
   bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
 }
 

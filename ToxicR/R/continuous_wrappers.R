@@ -28,11 +28,15 @@
 #
 ##################################################
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
-                                   prior="default", BMD_TYPE = "sd", sstat = T,
+                                   prior="default", BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
-                                   alpha = 0.05,samples = 21000,degree=2,
+                                   alpha = 0.05, samples = 25000,degree=2,
                                    burnin = 1000,isFast = FALSE){
     myD = Y; 
+    sstat = F # set sufficient statistics to false if there is only one column
+    if (ncol(Y) > 1){
+        sstat=T
+    }
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
 
     rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
@@ -143,7 +147,13 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                           PR[[1]],options, is_log_normal, sstat) 
       if (model_type == "exp-3"){
         rvals$PARMS = rvals$PARMS[,-3]
+        rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
       }
+      
+      ##compute the p-value
+      rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
+      ##
+      
       class(rvals) <- "BMDcont_fit_MCMC"; 
       rvals$model <- model_type
       rvals$options <- options
