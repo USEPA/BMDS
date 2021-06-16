@@ -306,7 +306,7 @@ void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_mode
 }
 
 
-void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir){
 
   bmdsRes->validResult = false;
 
@@ -315,8 +315,9 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
     return; 
   }
 
-  if (detectAdvDir){
+  if (*detectAdvDir){
     determineAdvDir(anal);
+
     if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
       if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
         //only exp_3 and exp_5 models are supported for lognormal decreasing data
@@ -764,12 +765,4 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
 
 }
 
-
-void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-	  runBMDSDichoAnalysis(anal, res, gof, bmdsRes, bmdsAOD);
-}
-
-void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
-  runBMDSContAnalysis(anal, res, bmdsRes, aod, gof, detectAdvDir);
-}
 
