@@ -114,7 +114,7 @@
     # We need to adjust the range here too
     # S3 object not fitted here for the title part
     out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
@@ -380,7 +380,7 @@
       Response = c(uerror,lerror)
       
       out<-ggplot()+
-        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(-0.1,1))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA")+theme_minimal()
+        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA")+theme_minimal()
       
       
       for (ii in 1:n_samps){
@@ -442,7 +442,7 @@
       bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
       
 
-      
+      # Density needs to be re derived ... based on the continous logic in the MA case      
       temp = temp_bmd[!is.nan(temp_bmd)]
       temp = temp[!is.infinite(temp)]
       temp = temp[temp < 30*max(doses)]
@@ -454,7 +454,11 @@
       qm = min(Response)
       # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
     
-      out5 <- out4 + geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "blueviolet", alpha=0.6)
+      out5 <- out4 +geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
+                                                        y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
+                                                    fill = "blueviolet", alpha=0.6)
+      
+      # geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "blueviolet", alpha=0.6)
       
       
       #plot the individual models proportional to their weight
@@ -550,7 +554,7 @@
       
       # Baseplot with minimal and maixmal dose with error bar
       out<-ggplot()+
-        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(-0.1,1))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
+        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
       
       
 
