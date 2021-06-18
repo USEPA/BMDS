@@ -72,11 +72,13 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 c3 <- ma_continuous_fit(M2[,1,drop=F],M2[,2:4],fit_type = "mcmc",BMR = 2,model_list = model_list )
 plot(c3)
+
+# Fix n=512
 .plot.BMDcontinuous_MA(c3)
 
 
 
-# 3. Dichotomous densitycolor matching with continous density plot 
+# 3. Dichotomous density color matching with continous density plot 
 
 
 
@@ -99,4 +101,4 @@ A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type=
 
 #Need to color Match with Continous plot 
 plot(A_single_mcmc)
-.plot.BMDdich_fit_MCMC(A_single_mcmc)
+.plot.BMDdich_fit_MCMC(A_single_mcmc)+scale_y

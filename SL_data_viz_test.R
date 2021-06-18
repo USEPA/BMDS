@@ -11,6 +11,7 @@ library(dplyr)
 
 
 # Sample Data - Dichotomous Example
+
 mData <- matrix(c(0, 2,50,
                   1, 2,50,
                   3, 10, 50,
@@ -21,7 +22,7 @@ mData <- matrix(c(0, 2,50,
 
 # Single model fitting- MCMC
 # too much white space- this needs to be adjusted automatically - Not the for the first Priority, but needs to be updated once 
-# Continous part is updated
+# Continuous part is updated
 
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 
@@ -39,7 +40,7 @@ A_single_laplace = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_ty
 # Dichotomous - Model Average
 # Case 1: Dichotomous - MCMC Fitting
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
-# Test 1. Dichotomous MA Clevland Plot
+# Test 1. Dichotomous MA Cleveland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
 .plot.density.BMDdichotomous_MA_MCMC(A)

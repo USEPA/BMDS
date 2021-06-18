@@ -14,7 +14,7 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
+PFOA_Liver <- read_table2("PFOA_Liver.txt", 
                           col_names = FALSE)
 
 
