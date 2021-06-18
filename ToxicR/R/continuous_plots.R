@@ -305,7 +305,7 @@ cont_power_f <-function(parms,d){
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
+          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200) 
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))

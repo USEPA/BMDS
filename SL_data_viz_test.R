@@ -46,6 +46,8 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 .plot.density.BMDdichotomous_MA_MCMC(A)
 ### - Need to apply John's idea 
 
+# Density seems bit odd... need to adjust continuous case
+plot(A)
 #Base plot - MA density curve seems little bit odd
 .plot.BMDdichotomous_MA(A)
 
