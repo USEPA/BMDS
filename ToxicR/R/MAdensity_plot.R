@@ -487,12 +487,11 @@ MAdensity_plot <- function (A, ...){
   }
 
   
-  
-  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
-    j<-sample(nrow(df_samples), size=1, replace=TRUE)
-    print(i)
-    print(df_samples[j,idx[i]])
-  }  
+  # for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
+  #   j<-sample(nrow(df_samples), size=1, replace=TRUE)
+  #   print(i)
+  #   print(df_samples[j,idx[i]])
+  # }  
 
   BMD_MA<-data.frame(BMD_MA)
   
@@ -510,7 +509,7 @@ MAdensity_plot <- function (A, ...){
   
   # John's comment- I want to fill the color as 
   p<-ggplot()+
-    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.99,1))), 
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.999,1))), 
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,scale=0.9)+
     xlim(c(0,quantile(t_combine$X1,0.999)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+
