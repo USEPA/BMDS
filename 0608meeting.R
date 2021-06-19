@@ -27,11 +27,17 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2
 
 plot(BB)
 
+# 06/19/21 Test
+
+# Need to distinguish the names for each models
+.cleveland_plot.BMDcontinous_MA(BB)
+
+
 # Question not sure why BMD is superimposed? 
 .plot.BMDcontinuous_MA(BB, qprob=0.05)
 
 
-# 2. Error bar fix for sufficient statistics - continous
+# 2. Error bar fix for sufficient statistics - continuous
 
 M2           <- matrix(0,nrow=5,ncol=4)
 colnames(M2) <- c("Dose","Resp","N","StDev")
