@@ -381,13 +381,13 @@ cont_power_f <-function(parms,d){
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
                   geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
-                  labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+                  labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
           }else{
             plot_gg<-ggplot()+
               geom_point(aes(x=doses,y=Response))+
               xlim(c(min(doses),max(doses)*1.03))+
-              labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+              labs(x="Dose", y="Response",title="Continous MA fitting")+
               theme_minimal()
           }
           
@@ -491,8 +491,8 @@ cont_power_f <-function(parms,d){
                }
                col = alphablend(col='coral3',A$posterior_probs[ii])
                # Not using loop, but save data in the external data and load it later
-               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               df<-rbind(df,temp_df)
+               # temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               # df<-rbind(df,temp_df)
                # Not using loop, but save data in the external data and load it later
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                df<-rbind(df,temp_df)

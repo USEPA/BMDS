@@ -103,14 +103,9 @@ A<- single_continuous_fit(as.matrix(D),as.matrix(Y),model_type = "exp-5",
 # Fitting example should be much simpler - 
 A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
 
+
+# This part's alpha part needs to be fixed as of dichotomous case;
 .plot.BMDcontinuous_MA(A)
-
-
-A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
-
-.plot.BMDcontinuous_MA(A)
-
-
 
 
 # Test 2. Dichotomous MA Cleveland Plot
@@ -123,5 +118,17 @@ A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BM
 A$posterior_probs
 #It is dominated by the FUNL model. While the other 4 models are minor 
 
-# This continous baseplot should be updated
+# This continuous base plot should be updated
 .plot.BMDcontinuous_MA(A)
+
+
+
+
+
+
+
+A<-ma_continuous_fit(D,Y,fit_type="laplace",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+.plot.BMDcontinuous_MA(A)
+
+
+

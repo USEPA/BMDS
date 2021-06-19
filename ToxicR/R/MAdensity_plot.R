@@ -211,6 +211,7 @@ MAdensity_plot <- function (A, ...){
 
 
 # Laplace case- Is it even possible to do this? 
+# No we don't need this part
 
 .plot.density.BMDdichotomous_MA_maximized<-function(A){
   
@@ -349,6 +350,10 @@ MAdensity_plot <- function (A, ...){
   doses<-data[,1]
   
   
+  
+  t_combine<-NA
+  
+  
   for (i in fit_idx){
     # Loop for the model
     fit<-A[[i]]
@@ -405,48 +410,90 @@ MAdensity_plot <- function (A, ...){
     
     
     temp_density<-data.frame(matrix(0,length(temp),3))
-    temp_density[,2]=fit$model
+    temp_density[,2]=substr(fit$fitted_model$full_model,8,999)
     temp_density[,1]=temp
     temp_density[,3]=A$posterior_probs[i]
     
-    assign(paste("t",i,sep="_"),temp_density)
+    # assign(paste("t",i,sep="_"),temp_density)
+    
+    t<-temp_density
+    
+    t_combine<-rbind(t_combine,t)
     
   }
-  
-  # So far add the 5 models 01/24/2021
-  t_combine<-rbind(t_1,t_2,t_3,t_4,t_5)
+
+  t_combine<-t_combine[-1,]
   
   
   
   # This part is needed to get MA density plots
   # Model ~xxx..
-  idx <- sample(1:5, length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
+  # Number of model should be fixed 
   
-  m1<-A$Individual_Model_1
-  c1<-m1$mcmc_result$BMD_samples
+  # Grep function -- index
+  fit_idx
+
   
   
-  m2<-A$Individual_Model_2
-  c2<-m2$mcmc_result$BMD_samples
+  idx <- sample(1:length(fit_idx), length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
   
-  m3<-A$Individual_Model_3
-  c3<-m3$mcmc_result$BMD_samples
   
-  m4<-A$Individual_Model_4
-  c4<-m4$mcmc_result$BMD_samples
   
-  m5<-A$Individual_Model_5
-  c5<-m5$mcmc_result$BMD_samples
+
+  # rbind(A[[1]]$mcmc_result$BMD_samples)  
+
+  df<-NA
+
+  
+  # How should I initialize this?
+  for (i in 1:length(fit_idx)){
+    m<-A[[i]]
+    c<-m$mcmc_result$BMD_samples
+    df<-data.frame(cbind(df,c))
+  }
+  # 
+  # m1<-A$Individual_Model_1
+  # c1<-m1$mcmc_result$BMD_samples
+  # 
+  # 
+  # m2<-A$Individual_Model_2
+  # c2<-m2$mcmc_result$BMD_samples
+  # 
+  # m3<-A$Individual_Model_3
+  # c3<-m3$mcmc_result$BMD_samples
+  # 
+  # m4<-A$Individual_Model_4
+  # c4<-m4$mcmc_result$BMD_samples
+  # 
+  # m5<-A$Individual_Model_5
+  # c5<-m5$mcmc_result$BMD_samples
 
   # This part should be dynamically assigned... 
-  combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5))
+  # combine_samples2<-data.frame(cbind(c1,c2,c3,c4,c5))
+
+  df_samples<-data.frame(df[,-1])
+  
+  
+
+  
   
   # Select MA values
-  BMD_MA<-matrix(NA,length(A$Individual_Model_1$mcmc_result$BMD_samples),1)
-  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
-    BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
-  }
   
+  BMD_MA<-matrix(NA,length(A$Individual_Model_1$mcmc_result$BMD_samples),1)
+  
+  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
+    j<-sample(nrow(df_samples), size=1, replace=TRUE)
+    BMD_MA[i,1]<-df_samples[j,idx[i]]
+  }
+
+  
+  
+  for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
+    j<-sample(nrow(df_samples), size=1, replace=TRUE)
+    print(i)
+    print(df_samples[j,idx[i]])
+  }  
+
   BMD_MA<-data.frame(BMD_MA)
   
   t_ma<-BMD_MA %>% mutate(X1=BMD_MA,X2="Model Average",X3=1)
@@ -458,12 +505,12 @@ MAdensity_plot <- function (A, ...){
   t_combine2<-rbind(t_combine,t_ma)
   
   
-  t_combine3<-t_combine2 %>% filter(as.numeric(X3)>0.005)
+  t_combine3<-t_combine2 %>% filter(as.numeric(X3)>0.05 , as.numeric(X1)!=Inf)
   
   
   # John's comment- I want to fill the color as 
   p<-ggplot()+
-    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.999,1))), 
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.99,1))), 
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,scale=0.9)+
     xlim(c(0,quantile(t_combine$X1,0.999)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+

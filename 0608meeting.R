@@ -6,6 +6,9 @@
 library(dplyr)
 library(ToxicR)
 library(readr)
+library(ggplot2)
+library(forcats)
+library(ggridges)
 PFOA_Liver <- read_table2("PFOA_Liver.txt", 
                           col_names = FALSE)
 
@@ -25,16 +28,18 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
+# Before update
 plot(BB)
+# Question not sure why BMD is superimposed? 
+.plot.BMDcontinuous_MA(BB)
 
 # 06/19/21 Test
+.plot.density.BMDcontinous_MA_MCMC(BB)
 
 # Need to distinguish the names for each models
+# Need to ask Matt BMDU case
 .cleveland_plot.BMDcontinous_MA(BB)
 
-
-# Question not sure why BMD is superimposed? 
-.plot.BMDcontinuous_MA(BB, qprob=0.05)
 
 
 # 2. Error bar fix for sufficient statistics - continuous

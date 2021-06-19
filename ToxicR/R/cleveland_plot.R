@@ -113,7 +113,7 @@ cleveland_plot <- function (A, ...){
     # BMD -95%
     bmd_ind[i,3]<-A[[i]]$bmd[3]
     # Model name 
-    bmd_ind[i,4]<-A[[i]]$model
+    bmd_ind[i,4]<-substr(A[[i]]$fitted_model$full_model, 8,999)
     bmd_ind[i,5]<-A$posterior_probs[i]
   }
   
@@ -123,6 +123,8 @@ cleveland_plot <- function (A, ...){
   bmd_ind[length(fit_idx)+1,2]<-A$bmd[2]
   bmd_ind[length(fit_idx)+1,3]<-A$bmd[3]
   
+  
+  # Add model average case 
   bmd_ind[length(fit_idx)+1,4]<-"Model Average"
   bmd_ind[length(fit_idx)+1,5]<-1
   
@@ -141,7 +143,7 @@ cleveland_plot <- function (A, ...){
     theme_minimal()+
     labs(x="Dose Level",y="", title="BMD Estimates by Each Model (Sorted by Posterior Probability)",size="Posterior Probability")+
     theme(legend.position="none")+
-    geom_errorbar(data=bmd_ind_df2, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="blue",alpha=0.3)
+    geom_errorbar(data=bmd_ind_df2, width=0.2,aes(xmin=as.numeric(X2), xmax=as.numeric(X3), y=fct_reorder(X4,X5,.desc=T)),color="black",alpha=0.3)
   
   
 }

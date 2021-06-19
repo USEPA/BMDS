@@ -65,7 +65,7 @@ plot(c3)
 
 
 
-# This is not a sufficent statistics one. BMDL ? is way too high? I guess
+# This is not a sufficient statistics one. BMDL ? is way too high? I guess
 # If the test doses are high and BMD
 
 
