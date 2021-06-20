@@ -113,9 +113,7 @@
     #plot(dose,Response,type='n',main=fit$fitted_model$full_model)
     # We need to adjust the range here too
     # S3 object not fitted here for the title part
-    out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
-    
+ 
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
     if (fit$model=="hill"){
@@ -168,28 +166,36 @@
     lq <- apply(Q,2,quantile, probs = qprob)
     uq <- apply(Q,2,quantile, probs = 1-qprob)
     
-    # Splien function is used to test column everage from MCMC
+    out<-ggplot()+
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
+      xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,lerror,uerror)*1.05))+
+      labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+
+      theme_minimal()
+    
+    # Splien function is used to test column average from MCMC
     
     temp_fit <- splinefun(test_doses,me)
     
     # Object 2
     # Polygon changed to Geom_ribbon
     
+    # Need to check
     out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
-    out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
+    #out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
     
     
-    out3<-out2+geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
+    out3<-out2+
+      geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
     
     
     # This part is for referecne 
     #geom_segment(data=bmd_dots, aes(x=H.bmd, y=.dich_weibull_f.H.fitted_model.parameters..H.bmd., xend=H.bmd, yend=0), color="Red")+
     
-    out4<-out3+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
+    out4<-out3+
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
+      # geom_segment(aes(x=fit$bmd[2], y=temp_fit(x=fit$bmd), xend=fit$bmd[1], yend=0), color="Red")
+      
     # out4
-    
-    
-    
     
     # 
     # if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
@@ -215,7 +221,8 @@
       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
-      out5<-out4+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "blueviolet", alpha=0.6)
+      out5<-out4+
+        geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "blueviolet", alpha=0.6)
 
       return(out5)
     }

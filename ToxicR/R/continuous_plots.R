@@ -495,10 +495,24 @@ cont_power_f <-function(parms,d){
                # df<-rbind(df,temp_df)
                # Not using loop, but save data in the external data and load it later
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               # df<-rbind(df,temp_df)
+               # 
+
+               # plot_gg<- plot_gg+
+               #          geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+               #          theme_minimal()
+               
+               # # 06/19/21 SL update 
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                df<-rbind(df,temp_df)
+               
+               #SL Updated 06/18/21 -- Transparency update based on posterior probability and Y scale for dichotomous case
+               temp_data<-df %>% 
+                 filter(model_no==ii)
+               
                plot_gg<- plot_gg+
-                        geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-                        theme_minimal()
+                 geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
+                 theme_minimal()
             }
             
           
