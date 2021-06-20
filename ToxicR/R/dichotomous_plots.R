@@ -233,14 +233,16 @@
     #arrows(x0=doses, y0=lerror, x1=doses, 
     #       y1=uerror, code=3, angle=90, length=0.1)
     
-    out4
+    else {
+      return(out4)
+    }
   }
   
   .plot.BMDdich_fit_maximized <- function(fit,fit_type="laplace",qprob=0.05,...){
     
     density_col="red"
-    credint_col="lightblue1"
-    
+    credint_col="azure2"
+
     if (qprob < 0 || qprob > 0.5){
       stop( "Quantile probability must be between 0 and 0.5")
     }
@@ -268,10 +270,7 @@
     # dose = c(doses,doses)
     # Response = c(uerror,lerror)
     
-    #plot(dose,Response,type='n',main=fit$full_model...)
-    out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(0,1))+labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
-    
+
     
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
@@ -322,14 +321,23 @@
     
     temp_fit<-splinefun(test_doses,me)
     
-  
+    #plot(dose,Response,type='n',main=fit$full_model...)
+    out<-ggplot()+
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
+      xlim(c(min(dose)-0.5,max(dose)+0.5))+
+      ylim(c(min(Response,me)*0.95,max(Response,lerror,uerror)*1.05))+
+      labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
+    
+    
     
     #BMD Estimates fit - MLE/Laplace why they don't have it yet..? 
     
     
-    out2<-out+geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
-    out3<-out2+geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=0), color="Red")
-    
+    out2<-out+
+      geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
+
+    out3<-out2+
+      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
 
     return(out3)
     

@@ -108,7 +108,7 @@ cont_power_f <-function(parms,d){
   lq <- apply(Q,2,quantile, probs = qprob)
   uq <- apply(Q,2,quantile, probs = 1-qprob)
   
-  # Continous case density? 
+  # Continuous case density? 
   temp_fit <- splinefun(test_doses,me)
   
   # Geom_polygon ? etc..
@@ -130,7 +130,7 @@ cont_power_f <-function(parms,d){
     temp = temp[!is.infinite(temp)]
     # Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
     
-    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses) to=max(test_doses))
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses), to=max(test_doses))
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]

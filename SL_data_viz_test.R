@@ -26,7 +26,7 @@ mData <- matrix(c(0, 2,50,
 
 A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type="hill",fit_type="mcmc")
 
-#Need to color Match with Continous plot 
+#Need to color Match with Continuous plot 
 plot(A_single_mcmc)
 .plot.BMDdich_fit_MCMC(A_single_mcmc)
 
