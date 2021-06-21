@@ -96,8 +96,16 @@ plot(A)
 .plot.BMDcont_fit_maximized(A)
 
 
+
+
+model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
+                         distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
+                                                "normal", "normal-ncv"))
+
+
+
 # Fitting example should be much simpler - 
-A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd')
+A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_TYPE='sd', model_list=model_list)
 
 
 # This part's alpha part needs to be fixed as of dichotomous case;
@@ -112,3 +120,15 @@ plot(A)
 # Update based on prior probability for continous case 
 .cleveland_plot.BMDcontinous_MA(A)
 .plot.density.BMDcontinous_MA_MCMC(A)
+
+
+
+
+
+
+
+# Sufficient statistics test
+
+
+
+

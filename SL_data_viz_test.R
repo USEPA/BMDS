@@ -106,7 +106,7 @@ A<-ma_continuous_fit(D,Y,fit_type="mcmc",samples=25000,burnin=2500,BMR=0.1,BMD_T
 
 # This part's alpha part needs to be fixed as of dichotomous case;
 .plot.BMDcontinuous_MA(A)
-
+plot(A)
 
 # Test 2. Dichotomous MA Cleveland Plot
 

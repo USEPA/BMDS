@@ -16,6 +16,10 @@ MAdensity_plot <- function (A, ...){
   data<-A$Individual_Model_1$data
   doses<-data[,1]
   
+  # Needs to be fixed the MA model fitting result print
+  
+  t_combine<-NA
+  
   
   for (i in fit_idx){
     # Loop for the model
@@ -87,53 +91,81 @@ MAdensity_plot <- function (A, ...){
     temp_density[,1]=temp
     temp_density[,3]=A$posterior_probs[i]
     
-    assign(paste("t",i,sep="_"),temp_density)
+    # assign(paste("t",i,sep="_"),temp_density)
+    # 06/21/21 Update
+    t<-temp_density
     
+    t_combine<-rbind(t_combine,t)
   }
   
+  t_combine<-t_combine[-1,]
   
-  t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
-  
+  # 
+  # t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
+  # 
   
   
   # This part is needed to get MA density plots
-  
-  idx <- sample(1:9, length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
+  # 
+  # idx <- sample(1:9, length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
 
-  m1<-A$Individual_Model_1
-  c1<-m1$mcmc_result$BMD_samples
+  idx <- sample(1:length(fit_idx), length(A$Individual_Model_1$mcmc_result$BMD_samples),replace=TRUE,prob=A$posterior_probs)
   
-  
-  m2<-A$Individual_Model_2
-  c2<-m2$mcmc_result$BMD_samples
-  
-  m3<-A$Individual_Model_3
-  c3<-m3$mcmc_result$BMD_samples
-  
-  m4<-A$Individual_Model_4
-  c4<-m4$mcmc_result$BMD_samples
-  
-  m5<-A$Individual_Model_5
-  c5<-m5$mcmc_result$BMD_samples
-  
-  m6<-A$Individual_Model_6
-  c6<-m6$mcmc_result$BMD_samples
-  
-  m7<-A$Individual_Model_7
-  c7<-m7$mcmc_result$BMD_samples
-  
-  m8<-A$Individual_Model_8
-  c8<-m5$mcmc_result$BMD_samples
-  
-  m9<-A$Individual_Model_9
-  c9<-m9$mcmc_result$BMD_samples
-  
-  combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5,c6,c7,c8,c9))
+  df<-NA
+  # 
+  # m1<-A$Individual_Model_1
+  # c1<-m1$mcmc_result$BMD_samples
+  # 
+  # 
+  # m2<-A$Individual_Model_2
+  # c2<-m2$mcmc_result$BMD_samples
+  # 
+  # m3<-A$Individual_Model_3
+  # c3<-m3$mcmc_result$BMD_samples
+  # 
+  # m4<-A$Individual_Model_4
+  # c4<-m4$mcmc_result$BMD_samples
+  # 
+  # m5<-A$Individual_Model_5
+  # c5<-m5$mcmc_result$BMD_samples
+  # 
+  # m6<-A$Individual_Model_6
+  # c6<-m6$mcmc_result$BMD_samples
+  # 
+  # m7<-A$Individual_Model_7
+  # c7<-m7$mcmc_result$BMD_samples
+  # 
+  # m8<-A$Individual_Model_8
+  # c8<-m5$mcmc_result$BMD_samples
+  # 
+  # m9<-A$Individual_Model_9
+  # c9<-m9$mcmc_result$BMD_samples
+  # 
+  # combine_samples<-data.frame(cbind(c1,c2,c3,c4,c5,c6,c7,c8,c9))
 
+  
+  # How should I initialize this?
+  for (i in 1:length(fit_idx)){
+    m<-A[[i]]
+    c<-m$mcmc_result$BMD_samples
+    df<-data.frame(cbind(df,c))
+  }
+  
+  df_samples<-data.frame(df[,-1])
+  
+  
+  
+  
+  
+  
   # Select MA values
   BMD_MA<-matrix(NA,length(A$Individual_Model_1$mcmc_result$BMD_samples),1)
+  
   for (i in 1:length(A$Individual_Model_1$mcmc_result$BMD_samples)){
-    BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
+    # BMD_MA[i,1]<-combine_samples[sample(nrow(combine_samples), size=1, replace=TRUE),idx[i]]
+    j<-sample(nrow(df_samples), size=1, replace=TRUE)
+    BMD_MA[i,1]<-df_samples[j,idx[i]]  
+    
   }
   
   BMD_MA<-data.frame(BMD_MA)
@@ -146,7 +178,7 @@ MAdensity_plot <- function (A, ...){
   
   t_combine2<-rbind(t_combine,t_ma2)
   t_combine3<-t_combine2 %>%
-    filter(as.numeric(X3)>0.05)
+    filter(as.numeric(X3)>0.05  , as.numeric(X1)!=Inf)
   
   
   
@@ -275,7 +307,7 @@ MAdensity_plot <- function (A, ...){
   
   t_combine<-rbind(t_1,t_2,t_3,t_4,t_5,t_6,t_7,t_8,t_9)
   
-
+  # This part needs to be fixed
   idx <- sample(1:9, nrow(t_1),replace=TRUE,prob=A$posterior_probs)
   
   c1<-t_1$X1

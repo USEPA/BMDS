@@ -398,7 +398,7 @@
       
       plot_gg<-ggplot()+
         geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-        xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+
+        xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,lerror))*0.95,max(Response,uerror)*1.05)+
         labs(x="Dose", y="Proportion",title="Model : Dichotomous MA")+theme_minimal()
       
       

@@ -38,7 +38,7 @@ plot(BB)
 
 # Need to distinguish the names for each models
 # Need to ask Matt BMDU case
-.cleveland_plot.BMDcontinous_MA(BB)
+.cleveland_plot.BMDcontinous_MA(BB)+scale_x_log10()
 
 
 
