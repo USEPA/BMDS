@@ -468,7 +468,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 600; 
+      ngenerations = 350; 
       ntourny = 20; 
       tourny_size = 20; 
   }
@@ -735,7 +735,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       // Exit the loop if good result and not first try.
       // lco: should change to a break statement since "10"
       // could be legitimate iteration in the future
-      if (opt_iter >= 1
+      if (opt_iter >= 0
             && result > 0
             && result < 5) {
 

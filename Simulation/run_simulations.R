@@ -11,7 +11,7 @@ file_list = file_list[!(file_list %in% c("results","results2"))]
 #file_list = file_list[grep("_normal_",file_list)]
 options(warn=-1)
 
-for (ii in 1:length(file_list)){
+for (ii in 9:length(file_list)){
   load(file_list[ii])
   BMD_result_SD_ML1_mcmc = matrix(NA,1000,3)
   BMD_result_SD_ML1_lapl = matrix(NA,1000,3)
@@ -66,5 +66,5 @@ for (ii in 1:length(file_list)){
        BMD_result_HB_ML1_mcmc,BMD_result_HB_ML2_mcmc,
        BMD_result_SD_ML1_lapl,BMD_result_SD_ML2_lapl,
        BMD_result_SD_ML1_mcmc,BMD_result_SD_ML2_mcmc,
-       pprobs_ML1,pprobs_ML2,file=sprintf("./results/simrun_%s",file_list[ii]))
+       pprobs_ML1,pprobs_ML2,file=sprintf("./results2/simrun_%s",file_list[ii]))
 }
