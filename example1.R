@@ -1,6 +1,15 @@
 library(ToxicR)
 library(ggplot2)
 
+prior <- create_prior_list(normprior(0,1,-100,100),
+                           normprior(0,10,-1e4,1e4),
+                           lnormprior(0,1,0,100),
+                           lnormprior(log(2),0.4215,0,18),
+                           #lnormprior(0, 0.75,0,100),
+                           normprior(0, 10,-100,100));
+
+bob = create_continuous_prior(prior,"exp-5","lognormal")
+
 v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,
         13.249991,	12.992931,	13.022338,	13.614057,	13.287018,	13.449239,	13.950747,
         13.239134,	13.82321,	15.080262,	14.85966,	14.7805395,	15.238369,	14.749196,
@@ -24,7 +33,7 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 
 
 
-#B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle",sstat = F)
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle")
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 
 library(dplyr)

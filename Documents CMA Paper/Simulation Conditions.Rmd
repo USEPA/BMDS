@@ -3,10 +3,12 @@ title: "Simulation Conditions for CMA"
 author: "Matt Wheeler"
 date: "2/02/2021"
 output:
+  word_document:
+    toc: yes
+  pdf_document: default
   html_document:
     toc: yes
     toc_float: yes
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
