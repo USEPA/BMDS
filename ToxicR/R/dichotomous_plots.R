@@ -559,7 +559,7 @@
     else if ("BMDdichotomous_MA_maximized" %in% class(A)){ # mcmc run
       
       
-      
+      class_list <- names(A)
       fit_idx <- grep("Fitted_Model_",class_list)
       num_model<-length(A$posterior_probs)
       
@@ -582,12 +582,6 @@
       
       dose = c(doses,doses)
       Response = c(uerror,lerror)
-      
-      
-      # Baseplot with minimal and maixmal dose with error bar
-      out<-ggplot()+
-        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
-      
       
 
       # Line plot for based on each cases
@@ -635,6 +629,12 @@
       temp_fit<-splinefun(test_doses,me)
       
       
+      # Baseplot with minimal and maixmal dose with error bar
+      out<-ggplot()+
+        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
+      
+      
+      
       out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)+
                   geom_smooth(aes(x=test_doses,y=me),col="blue")+
                   geom_point(aes(x=doses,y=probs))
@@ -646,22 +646,59 @@
       nfive_pct<-which(abs(A$BMD_CDF[,2]-0.95)==min(abs(A$BMD_CDF[,2]-0.95)))
       
       BMDS<-c(A$BMD_CDF[five_pct,1],A$BMD_CDF[fifty_pct,1],A$BMD_CDF[nfive_pct,1])
+      out3<-out2+geom_segment(aes(x=BMDS, y=temp_fit(x=BMDS), xend=BMDS, yend=0), color="Red")
       
-      out4<-out3+geom_segment(aes(x=BMDS, y=temp_fit(x=BMDS), xend=BMDS, yend=0), color="Red")
-      out5<-out4+geom_line(aes(x=test_doses,y=temp_f[1,]),col="coral3",alpha=A$posterior_probs[1])
-      out6<-out5+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
-      out7<-out6+geom_line(aes(x=test_doses,y=temp_house[2,]),col="coral3", alpha=A$posterior_probs[2])
-      out8<-out7+geom_line(aes(x=test_doses,y=temp_house[3,]),col="coral3", alpha=A$posterior_probs[3])
-      out9<-out8+geom_line(aes(x=test_doses,y=temp_house[4,]),col="coral3", alpha=A$posterior_probs[4])
-      out10<-out9+geom_line(aes(x=test_doses,y=temp_house[5,]),col="coral3", alpha=A$posterior_probs[5])
-      out11<-out10+geom_line(aes(x=test_doses,y=temp_house[6,]),col="coral3", alpha=A$posterior_probs[6])
-      out12<-out11+geom_line(aes(x=test_doses,y=temp_house[7,]),col="coral3", alpha=A$posterior_probs[7])
-      out13<-out12+geom_line(aes(x=test_doses,y=temp_house[8,]),col="coral3", alpha=A$posterior_probs[8])
-      out14<-out13+geom_line(aes(x=test_doses,y=temp_house[9,]),col="coral3", alpha=A$posterior_probs[9])
+      df<-NULL
+      
+      for (ii in 1:length(fit_idx)){
+        
+        if(A$posterior_probs[ii]>0.05){
+          fit <- A[[ii]]
+          if (fit$model=="hill"){
+            f <- .dich_hill_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="gamma"){
+            f <- .dich_gamma_f(fit$parameters,test_doses)
+          }
+          if (fit$model == "logistic"){
+            f <- .dich_logist_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="log-logistic"){
+            f <- .dich_llogist_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="probit"){
+            f <- .dich_probit_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="log-probit"){
+            f<- .dich_lprobit_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="multistage"){
+            f <- .dich_multistage_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="qlinear"){
+            f<- .dich_qlinear_f(fit$parameters,test_doses)
+          }
+          if (fit$model=="weibull"){
+            f<- .dich_weibull_f(fit$parameters,test_doses)
+          }
+          
+          col = alphablend(col='coral3',A$posterior_probs[ii])
+          temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+          df<-rbind(df,temp_df)
+          
+          #SL Updated 06/18/21 -- Transparency update based on posterior probability and Y scale for dichotomous case
+          temp_data<-df %>% 
+            filter(model_no==ii)
+          
+          out3<- out3+
+            geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
+            theme_minimal()
+        }
+        
+      }
       
       
-
-      return(out15)
+      return(out3)
       
 
 

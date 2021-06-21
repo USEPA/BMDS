@@ -214,11 +214,11 @@ MAdensity_plot <- function (A, ...){
 
   
   p<-ggplot()+
-    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.999,1))), 
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.99,1))), 
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,scale=0.9)+
-    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    xlim(c(0,quantile(t_combine$X1,0.99)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+
-    scale_fill_manual(name="X3", values=c("(0,0.999]"="darkgrey", "(0.999,1]"="red"))+
+    scale_fill_manual(name="X3", values=c("(0,0.99]"="darkgrey", "(0.99,1]"="red"))+
     labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+
     theme_classic()
   
@@ -343,7 +343,7 @@ MAdensity_plot <- function (A, ...){
   p<-ggplot()+
     stat_density_ridges(data=t_combine2, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),alpha=sqrt(X3)),
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,fill="blue")+
-    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    xlim(c(0,quantile(t_combine$X1,0.99)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+
     scale_fill_manual(
       name = "Probability",
@@ -541,11 +541,11 @@ MAdensity_plot <- function (A, ...){
   
   # John's comment- I want to fill the color as 
   p<-ggplot()+
-    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.999,1))), 
+    stat_density_ridges(data=t_combine3, aes(x=X1, y=fct_reorder(X2,X3,.desc=T),group=X2 ,alpha=sqrt(X3), fill=cut(X3,c(0,0.99,1))), 
                         calc_ecdf=TRUE,quantiles=c(0.025,0.975),na.rm=T,quantile_lines=T,scale=0.9)+
-    xlim(c(0,quantile(t_combine$X1,0.999)))+
+    xlim(c(0,quantile(t_combine$X1,0.99)))+
     geom_vline(xintercept = A$bmd[1],linetype="longdash")+
-    scale_fill_manual(name="X3", values=c("(0,0.999]"="darkgrey", "(0.999,1]"="red"))+
+    scale_fill_manual(name="X3", values=c("(0,0.99]"="darkgrey", "(0.99,1]"="red"))+
     labs(x="Dose Level (Dotted Line : MA BMD)",y="", title="Density plots for each fitted model (Fit type: MCMC)")+
     theme_classic()
   

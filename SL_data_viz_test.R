@@ -43,6 +43,8 @@ A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 # Test 1. Dichotomous MA Cleveland Plot
 .cleveland_plot.BMDdichotomous_MA(A)
 # Test 2. Dichotomous MA Density Plot - Update for base-color later
+
+# X axis is shown up to 99 percentile 
 .plot.density.BMDdichotomous_MA_MCMC(A)
 ### - Need to apply John's idea 
 

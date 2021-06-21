@@ -262,7 +262,7 @@ cont_power_f <-function(parms,d){
   
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
-              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.5, width=3)+
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey",size=0.5, width=3)+
               geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
               xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
               ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
@@ -379,7 +379,7 @@ cont_power_f <-function(parms,d){
           if (IS_SUFFICIENT){
               plot_gg<-ggplot()+
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
-                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
+                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
                   labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
@@ -420,7 +420,7 @@ cont_power_f <-function(parms,d){
             # Density only creates few data points SL
             
             # Fixed part 06/04/21
-            Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
+            Dens =  density(temp,cut=c(max(test_doses)), n=1000, from=0, to=max(test_doses))
           
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
             temp = which(Dens$x < max(test_doses))
