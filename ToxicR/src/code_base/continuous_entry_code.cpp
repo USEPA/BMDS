@@ -1825,6 +1825,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+  cerr << Y_N << endl <<"-------" << endl; 
+  
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
   temp_init = temp_init.array(); 
@@ -2354,8 +2356,12 @@ void estimate_normal_variance(continuous_analysis *CA,
  */
 void continuous_expectation( const continuous_analysis *CA, const continuous_model_result *MR,
                              continuous_expected_result *expected){
+
+  // copy the origional data
+  
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  bool tempsa = CA->suff_stat; 
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
   // copy the origional data
@@ -2368,26 +2374,92 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
       Y(i,1) = CA->n_group[i]; 
     }
   }
+  
+  
+  double divisor = get_divisor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+  
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+  Eigen::MatrixXd orig_X = X; 
+  
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+  Eigen::MatrixXd Y_LN, Y_N;
+  bool suff_stat = false; 
+  if(!CA->suff_stat){
+    //convert to sufficient statistics for speed if we can
+    suff_stat  = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+    if (suff_stat)// it can be converted
+    {
+      X = UX; 
+      Y_N = cleanSuffStat(SSTAT,UX,false);  
+      Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+      orig_X = UX;  
+      orig_Y = SSTAT; 
+      orig_Y_LN = SSTAT_LN;
+      
+    }else{
+      Y = Y; // scale the data with the divisor term.
+      Y_N = Y; 
+      Y_LN = Y; 
+    }
+  }else{
+    suff_stat = true; 
+    orig_Y = cleanSuffStat(Y,X,false,false); 
+    orig_Y_LN = cleanSuffStat(Y,X,true,false);
+    SSTAT = cleanSuffStat(Y,X,false); 
+    SSTAT_LN = cleanSuffStat(Y,X,true);
+    
+    std::vector<double> tux = unique_list(X); 
+    UX = Eigen::MatrixXd(tux.size(),1); 
+    for (unsigned int i = 0; i < tux.size(); i++){
+      UX(i,0) = tux[i]; 
+    }
+    Y_N = SSTAT; 
+    X = UX; 
+    Y_LN = SSTAT_LN; 
+  }
+  
+  if (suff_stat){
+  
+    X = UX; 
+    //  Y_N = cleanSuffStat(SSTAT,UX,false);  
+    //  Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+    Eigen::MatrixXd temp; 
+    temp = Y_N.col(2);
+    Y_N.col(2) = Y_N.col(1);
+    Y_N.col(1) = temp; 
+    temp = Y_LN.col(2);
+    Y_LN.col(2) = Y_LN.col(1);
+    Y_LN.col(1) = temp; 
+    temp = orig_Y.col(2);
+    orig_Y.col(2) = orig_Y.col(1);
+    orig_Y.col(1) = temp; 
+    temp = orig_Y_LN.col(2);
+    orig_Y_LN.col(2) = orig_Y_LN.col(1);
+    orig_Y_LN.col(1) = temp; 
+  }
+  
+  
   ///////////////////////////////////////////////////////////////////////////////////////////
-  bool suff_stat = CA->suff_stat;
   bool bConstVar = (CA->disttype == distribution::normal);
   int  degree    = CA->parms - 2 - (CA->disttype == distribution::normal_ncv );
   double neg_like; 
+  // 
   ///////////////////////////////////////////////////////////////////////////////////////////
-  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(Y, X, suff_stat, bConstVar, degree);
-  normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
-  normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
-  normalFUNL_BMD_NC  likelihood_funl(Y, X, suff_stat, bConstVar, 0);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
+  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(orig_Y , X, suff_stat, bConstVar, degree);
+  normalHILL_BMD_NC  likelihood_nhill(orig_Y , X, suff_stat, bConstVar, 0);
+  normalPOWER_BMD_NC likelihood_power(orig_Y , X, suff_stat, bConstVar, 0);
+  normalFUNL_BMD_NC  likelihood_funl(orig_Y, X, suff_stat, bConstVar, 0);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP5_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP3_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
   
-  lognormalHILL_BMD_NC  likelihood_lnhill(Y, X, suff_stat, 0);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y, X, suff_stat, NORMAL_EXP5_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y, X, suff_stat, NORMAL_EXP3_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y, X, suff_stat, NORMAL_EXP5_DOWN);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat, NORMAL_EXP3_DOWN);
+  lognormalHILL_BMD_NC  likelihood_lnhill(Y_LN, X, suff_stat, 0);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y_LN, X, suff_stat, NORMAL_EXP5_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y_LN, X, suff_stat, NORMAL_EXP3_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y_LN, X, suff_stat, NORMAL_EXP5_DOWN);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y_LN, X, suff_stat, NORMAL_EXP3_DOWN);
   
   Eigen::MatrixXd mean; 
   Eigen::MatrixXd var; 
@@ -2395,7 +2467,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
   for (int i=0; i < MR->nparms; i++){
     theta(i,0) = MR->parms[i];  
   }
-  
+ 
   if (CA->disttype == distribution::log_normal){
     switch (CA->model){
       case cont_model::hill:

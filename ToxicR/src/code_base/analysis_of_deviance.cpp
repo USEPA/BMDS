@@ -236,7 +236,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     startV2(i,0) = InitA(i,0); 
   } 
   for (unsigned int i = nParms/2; i < nParms; i++ ){
-    startV2(i,0) = InitA(i,1)*InitA(i,1); 
+    startV2(i,0) = log(InitA(i,1)*InitA(i,1)); 
   }
   statModel<normalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                        isfix2, fix2);
@@ -253,9 +253,11 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   for (unsigned int i = 0; i < nParms; i++) {
     a3Priors.row(i) << 0, 0, 1, -1e8, 1e8;
   }
-  for (unsigned int i = 0; i < nParms - 2; i++) {
-    a3Priors.row(i) << 0, a2Result.max_parms(i), 1, 0, 1e8;
-  }
+ 
+  
+  a3Priors.row(nParms - 2) << 0, a2Result.max_parms(nParms - 2), 1, -1e4, 1e4;
+  a3Priors.row(nParms - 1) << 0, a2Result.max_parms(nParms - 1), 0, -1e4, 1e4;
+ 
   IDcontinuousPrior a3Init(a3Priors);
   
   Eigen::MatrixXd startV3(nParms,1);
@@ -264,19 +266,21 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     meanX3(i,1) = InitA(i,0) > 0? log(InitA(i,0)):-13.8;  
     InitA(i,1) = log(InitA(i,1)*InitA(i,1));   
   }
+  
   for (unsigned int i = 0; i < nParms-2; i++ ){
-    startV3(i,0) = InitA(i,0); 
+    startV3(i,0) = a2Result.max_parms(i); 
   } 
   
+
   Eigen::MatrixXd InitC = (meanX3.transpose()*meanX3); 
   InitC = InitC.inverse()*meanX3.transpose()*InitA.col(1); 
-  startV3(nParms-2) = InitC(1,0);
-  startV3(nParms-1) = log(InitC(0,0));
- 
+  startV3(nParms-2,0) = 0;
+  startV3(nParms-1,0) = a1Result.max_parms(a1Result.max_parms.rows()-1,0);
+
+  
   statModel<normalLLTESTA3, IDcontinuousPrior> a3Model(a3Test, a3Init,
                                                        isfix3, fix3);
   optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model,startV3);
-  
   CD->A3 = a3Result.functionV;
   CD->N3 = a3Result.max_parms.rows(); 
   
@@ -293,7 +297,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   IDcontinuousPrior RInit(RPriors);
   Eigen::MatrixXd startR(2,1);
   startR(0,0) = InitB(0,0);
-  startR(1,0) = InitB(0,1);
+  startR(1,0) = log(InitB(0,1)*InitB(0,1));
   statModel<normalLLTESTR, IDcontinuousPrior> RModel(RTest, RInit,
                                                        isfixR, fixR);
   optimizationResult RResult = findMAP<normalLLTESTR, IDcontinuousPrior>(&RModel,startR);

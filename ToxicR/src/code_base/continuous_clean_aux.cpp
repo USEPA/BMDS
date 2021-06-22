@@ -83,14 +83,14 @@ Eigen::MatrixXd cleanSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool is_logN
       divisor += Y(i,0); 
     }
   }
+  
   if (use_divisor){
-     divisor = divisor/double(nmin); //average background dose
+     divisor = get_divisor(Y,X);  //average background dose
   }else{
      divisor = 1.0; 
   } 
   
-  if (divisor < 0.01)
-      divisor = 0.01;
+  
   
   Y.col(0).array() = Y.col(0).array()/divisor; //divide mean
   Y.col(2).array() = Y.col(2).array()/divisor; //divide sd; 
@@ -119,7 +119,7 @@ double get_divisor(Eigen::MatrixXd Y, Eigen::MatrixXd X){
   }
   divisor = divisor/double(nmin); 
   
-  return  fabs(divisor) < 0.01 ? 0.01: fabs(divisor); // return the absolute value of the divisor so we don't 
+  return  fabs(divisor) < 1 ? 1: fabs(divisor); // return the absolute value of the divisor so we don't 
                         // flip the sign of the dose-response curve. 
 }
 
@@ -138,8 +138,7 @@ Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
       divisor += Y(i,0); 
     }
   }
-  divisor = divisor/double(nmin); 
-  if (divisor < 0.01) divisor = 0.01; 
+  divisor =  get_divisor(X,Y) ;
   
   // build the sufficient statistics
   Eigen::MatrixXd SSTAT(uniqueX.size(),3); 

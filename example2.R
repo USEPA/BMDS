@@ -23,8 +23,13 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
+PFOA_Liver <- read_table2("~/OneDrive - National Institutes of Health/Projects/2021/Continuous MA/data/PFOA_Liver_lin_Control_Ratio.txt", 
                           col_names = FALSE)
+
+PFOA_Liver <- read_table2("~/OneDrive - National Institutes of Health/Projects/2021/Continuous MA/data/PFOA_Liver.txt", 
+                          col_names = FALSE)
+
+PFOA_Liver <- PFOA_Liver[-(1:2),]
 
 
 doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
@@ -41,7 +46,9 @@ library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast = FALSE)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 1,isFast = FALSE)
+R2  <- single_continuous_fit(as.matrix(doses),as.matrix(v1)/sd(v1[doses==0]),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast = FALSE)
+
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
 
 

@@ -4,17 +4,24 @@ library(ToxicR)
 M2           <- matrix(0,nrow=5,ncol=4)
 library(ToxicR)
 M2 <- matrix(0,nrow=5,ncol=4)
+
+# double D[] = {0,50, 100, 150, 200};
+# double Y[] = {10, 0 , -10, -20 ,-30};
+# double N[] = {100, 100, 100, 100, 100};
+# double SD[] = {3, 4, 5, 6, 7};
 colnames(M2) <- c("Dose","Resp","N","StDev")
 M2[, 1]      <- c(0,50, 100, 150, 200)
-M2[, 2]      <- c(10, 20 , 30, 40 ,50)
+M2[, 2]      <- c(10, 0 , -10, -20 ,-30)
 M2[, 3]      <- c(100, 100, 100, 100, 100)
 M2[, 4]      <- c(3, 4, 5, 6, 7)
 #double D[] = {0,50, 100, 150, 200};
 #double Y[] = {10, 20 , 30, 40 ,50};
 #double N[] = {100, 100, 100, 100, 100};
 #double SD[] = {3, 4, 5, 6, 7};
-c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],sstat=T,BMD_TYPE="sd",BMR=1, 
-                          distribution = "normal",fit_type="laplace",model_type = "hill")
+library(ToxicR)
+
+c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, 
+                          distribution = "normal-ncv",fit_type="laplace",model_type = "power")
 
 
 

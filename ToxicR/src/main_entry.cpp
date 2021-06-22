@@ -104,8 +104,7 @@ List run_single_dichotomous(NumericVector model,
   for (int i = 0; i < data.rows(); i++){
     Anal.doses[i] = data(i,0); 
   }
-  
-  
+
   cp_prior(pr,Anal.prior);
   
   dichotomous_model_result res; 
