@@ -108,7 +108,7 @@ cont_power_f <-function(parms,d){
   lq <- apply(Q,2,quantile, probs = qprob)
   uq <- apply(Q,2,quantile, probs = 1-qprob)
   
-  # Continous case density? 
+  # Continuous case density? 
   temp_fit <- splinefun(test_doses,me)
   
   # Geom_polygon ? etc..
@@ -130,7 +130,7 @@ cont_power_f <-function(parms,d){
     temp = temp[!is.infinite(temp)]
     # Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
     
-    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses) to=max(test_doses))
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses), to=max(test_doses))
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]
@@ -262,7 +262,7 @@ cont_power_f <-function(parms,d){
   
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
-              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.5, width=3)+
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey",size=0.5, width=3)+
               geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
               xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
               ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
@@ -305,7 +305,7 @@ cont_power_f <-function(parms,d){
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
+          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200) 
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))
@@ -379,15 +379,15 @@ cont_power_f <-function(parms,d){
           if (IS_SUFFICIENT){
               plot_gg<-ggplot()+
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
-                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
+                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
-                  labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+                  labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
           }else{
             plot_gg<-ggplot()+
               geom_point(aes(x=doses,y=Response))+
               xlim(c(min(doses),max(doses)*1.03))+
-              labs(x="Dose", y="Proportion",title="Continous MA fitting")+
+              labs(x="Dose", y="Response",title="Continous MA fitting")+
               theme_minimal()
           }
           
@@ -420,7 +420,7 @@ cont_power_f <-function(parms,d){
             # Density only creates few data points SL
             
             # Fixed part 06/04/21
-            Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
+            Dens =  density(temp,cut=c(max(test_doses)), n=1000, from=0, to=max(test_doses))
           
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
             temp = which(Dens$x < max(test_doses))
@@ -491,14 +491,28 @@ cont_power_f <-function(parms,d){
                }
                col = alphablend(col='coral3',A$posterior_probs[ii])
                # Not using loop, but save data in the external data and load it later
-               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               df<-rbind(df,temp_df)
+               # temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               # df<-rbind(df,temp_df)
                # Not using loop, but save data in the external data and load it later
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               # df<-rbind(df,temp_df)
+               # 
+
+               # plot_gg<- plot_gg+
+               #          geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+               #          theme_minimal()
+               
+               # # 06/19/21 SL update 
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                df<-rbind(df,temp_df)
+               
+               #SL Updated 06/18/21 -- Transparency update based on posterior probability and Y scale for dichotomous case
+               temp_data<-df %>% 
+                 filter(model_no==ii)
+               
                plot_gg<- plot_gg+
-                        geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-                        theme_minimal()
+                 geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
+                 theme_minimal()
             }
             
           

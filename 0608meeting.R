@@ -6,6 +6,9 @@
 library(dplyr)
 library(ToxicR)
 library(readr)
+library(ggplot2)
+library(forcats)
+library(ggridges)
 PFOA_Liver <- read_table2("PFOA_Liver.txt", 
                           col_names = FALSE)
 
@@ -25,13 +28,21 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
+# Before update
 plot(BB)
-
 # Question not sure why BMD is superimposed? 
-.plot.BMDcontinuous_MA(BB, qprob=0.05)
+.plot.BMDcontinuous_MA(BB)
+
+# 06/19/21 Test
+.plot.density.BMDcontinous_MA_MCMC(BB)
+
+# Need to distinguish the names for each models
+# Need to ask Matt BMDU case
+.cleveland_plot.BMDcontinous_MA(BB)+scale_x_log10()
 
 
-# 2. Error bar fix for sufficient statistics - continous
+
+# 2. Error bar fix for sufficient statistics - continuous
 
 M2           <- matrix(0,nrow=5,ncol=4)
 colnames(M2) <- c("Dose","Resp","N","StDev")
@@ -72,11 +83,13 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 c3 <- ma_continuous_fit(M2[,1,drop=F],M2[,2:4],fit_type = "mcmc",BMR = 2,model_list = model_list )
 plot(c3)
+
+# Fix n=512
 .plot.BMDcontinuous_MA(c3)
 
 
 
-# 3. Dichotomous densitycolor matching with continous density plot 
+# 3. Dichotomous density color matching with continous density plot 
 
 
 
@@ -99,4 +112,4 @@ A_single_mcmc<-single_dichotomous_fit(mData[,1],mData[,2],mData[,3], model_type=
 
 #Need to color Match with Continous plot 
 plot(A_single_mcmc)
-.plot.BMDdich_fit_MCMC(A_single_mcmc)
+.plot.BMDdich_fit_MCMC(A_single_mcmc)+scale_y

@@ -64,12 +64,16 @@ c3 <- ma_continuous_fit(M2[,1,drop=F],M2[,2:4],fit_type = "mcmc",BMR = 2,model_l
 plot(c3)
 .plot.BMDcontinuous_MA(c3)
 
+# Update based on prior probability for continous case 
+.cleveland_plot.BMDcontinous_MA(c3)
+.plot.density.BMDcontinous_MA_MCMC(c3)
 
 
 
 
 
-# This is not a sufficent statistics one. BMDL ? is way too high? I guess
+
+# This is not a sufficient statistics one. BMDL ? is way too high? I guess
 # If the test doses are high and BMD
 
 
