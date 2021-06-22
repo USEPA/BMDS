@@ -23,7 +23,7 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
+PFOA_Liver <- read_table2("PFOA_Liver.txt", 
                           col_names = FALSE)
 
 
@@ -84,11 +84,17 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2
 
 plot(BB)
 
+
+
 # Question not sure why BMD is superimposed? 
 .plot.BMDcontinuous_MA(BB, qprob=0.05)
 
 # X - axis is bit odd for log10() case 
 .plot.BMDcontinuous_MA(BB, qprob=0.05)+scale_x_log10()
+
+# Update based on prior probability for continous case 
+.cleveland_plot.BMDcontinous_MA(BB)
+.plot.density.BMDcontinous_MA_MCMC(BB)
 
 
 
