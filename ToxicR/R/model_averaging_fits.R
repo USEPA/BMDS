@@ -92,6 +92,11 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
+         #remove the unecessary 'c' column from the exponential fit
+         if ("exp-3" %in% model_list$model_list[jj]){
+           temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
+         }
+         
          temp[[jj]]$fitted_model <- tempn[[ii]]
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)

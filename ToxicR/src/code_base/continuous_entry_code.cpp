@@ -1399,7 +1399,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   return a; 
 }
 
-bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
+bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,double max_d){
   bmd_analysis rV;
   rV.MAP          = s.map; 
   rV.MAP_ESTIMATE = s.map_estimate; 
@@ -1410,7 +1410,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
     
-    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
+    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 5*max_d){ // always look at 5x max dose tested
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
   }
@@ -1421,12 +1421,13 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
   if (v.size() > 0){
     std::sort(v.begin(), v.end());
-    for (double k = 0.004; k <= 0.9999; k += 0.005){
+   for (double k = 0.004; k <= 0.9999; k += 0.005){
     	    prob.push_back(k*inf_prob); 
           int idx = int(k*double(v.size()));
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
-    }
+   }
+   
     // fix numerical quantile issues.
     for (int i = 1; i < bmd_q.size(); i++){
       if (bmd_q[i] <= bmd_q[i-1]){
@@ -1646,9 +1647,9 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 }  
 
   bmd_analysis b[MA->nmodels]; 
-
+  double temp_m_dose = orig_X.maxCoeff();
   for (int i = 0; i < MA->nmodels; i++){
-    b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
+    b[i] = create_bmd_analysis_from_mcmc(burnin,a[i],temp_m_dose);
   }
 
   double post_probs[MA->nmodels]; 
@@ -2148,20 +2149,21 @@ void estimate_sm_mcmc(continuous_analysis *CA,
  
     
     a = CA->disttype == distribution::log_normal?
-      mcmc_logNormal(orig_Y_LN, orig_X,
+       mcmc_logNormal(orig_Y_LN, orig_X,
                      tprior, CA->BMD_type, (cont_model)CA->model,
                      CA->isIncreasing, CA->BMR, 
                      CA->tail_prob,  
                      CA->alpha, samples, burnin,init_opt):
-      mcmc_Normal(orig_Y, orig_X,
-                  tprior, CA->BMD_type, (cont_model)CA->model,
-                  CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
+        mcmc_Normal(orig_Y, orig_X,
+                      tprior, CA->BMD_type, (cont_model)CA->model,
+                    CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
                   CA->tail_prob,  
-                  CA->alpha,samples, burnin,init_opt,CA->degree);
+                   CA->alpha,samples, burnin,init_opt,CA->degree);
     
   bmd_analysis b; 
   CA->suff_stat = tempsa;
-  b = create_bmd_analysis_from_mcmc(burnin,a);
+  double temp_m_dose = orig_X.maxCoeff();
+  b = create_bmd_analysis_from_mcmc(burnin,a,temp_m_dose);
   transfer_continuous_model(b,res);
   transfer_mcmc_output(a,mcmc); 
   res->model = CA->model; 

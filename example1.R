@@ -33,17 +33,20 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 
 
 
-B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle")
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "laplace")
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 
 library(dplyr)
+library(ggplot2)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
+kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =2,model_list = model_list,samples = 35000 )
+plot(kk)+scale_x_continuous(trans="pseudo_log")
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast = FALSE)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = FALSE)
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
-
+plot(R)+scale_x_continuous(trans="pseudo_log")
 
 # I guess based on my understanding we do not need Density plot for laplace fitting case - SL 
 # Aesthetically, why it doesn't show the other bmd line? 
@@ -66,31 +69,14 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 
 
-# 05/28 SL Try to focus on the issue here
-# 1. CI Band seems odd
-# 2. BMD Density plot looks odd 
-# 3. Color Theme update for giving user more option
 
-# I think it is useful that which model is dominant in terms of the line- color
-# Range max-min part should be updated... 
-# BMDU is out of bound
-
-
-# How about the log scale?
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
-
-# X - axis is bit odd for log10() case 
-# For model average why it shows only one model?
 
 plot(BB)
 
 
 
-# Question not sure why BMD is superimposed? 
-.plot.BMDcontinuous_MA(BB, qprob=0.05)
 
-# X - axis is bit odd for log10() case 
-.plot.BMDcontinuous_MA(BB, qprob=0.05)+scale_x_log10()
 
 # Update based on prior probability for continous case 
 .cleveland_plot.BMDcontinous_MA(BB)
@@ -107,15 +93,15 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F,isFast=FALSE)})
-plot(B)
+system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 3,isFast=FALSE)})
+plot(B) + scale_x_continuous(trans = "pseudo_log")
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))
 
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
 
 
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR=1.5)
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR=1.5)
 
 #AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 #plot(BB)
@@ -123,7 +109,7 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR=
 temp <- PFOA_Liver %>% filter(X1 == "CYP3A1_32809")
 v1 <- as.numeric(temp[2:length(temp)])
 system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "mle",BMR=3,isFast = T)})
-plot(BB)
+plot(BB)+ scale_x_continuous(trans = "pseudo_log")
 
 g <- matrix(c(0,-0.747871,0.560669,0.703165, 0.832507), nrow = 1)
 g%*%BB$covariance%*%t(g)
@@ -148,6 +134,7 @@ plot(BB)
 temp <- PFOA_Liver %>% filter(X1 == "ACADL_32776")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle")
+plot(BB) + scale_x_continuous(trans = "pseudo_log")
 
 exp = cont_exp_5_f(BB$parameters,doses)
 sum(dnorm(v1,exp,exp(BB$parameters[5]*0.5),log=T))
@@ -167,7 +154,8 @@ plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "LOC100912409_9106")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mcmc")
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mcmc",BMR = 2)
+plot(BB) + scale_x_continuous(trans = "pseudo_log")
 d <- seq(0,20,0.01)
 y <- cont_hill_f(BB$parameters,d)
 plot(log10(doses+0.01),v1,pch=16)

@@ -110,19 +110,25 @@ cont_power_f <-function(parms,d,decrease=F){
   
   # Continuous case density? 
   temp_fit <- splinefun(test_doses,me)
-  
+  ma_mean = temp_fit
   # Geom_polygon ? etc..
   plot_gg <- ggplot() +
     geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
     labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
-    ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05)) +
-    xlim(c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075, max(test_doses)*1.05)) +
     theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    plot_gg<-plot_gg +
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response)),color="Red")
-  }
+    print(fit$bmd,4)
+    plot_gg <- plot_gg +
+      geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
+                       yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+      annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
+                label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+      annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
+               label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+      annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
+               size = 5, color="darkslategrey",shape=17, alpha=0.6)
+   }
   
 # Add density 
   if (BMD_DENSITY ==TRUE){
@@ -136,8 +142,10 @@ cont_power_f <-function(parms,d,decrease=F){
     D1_y = Dens$y[temp]
     D1_x = Dens$x[temp]
     qm = min(Response)
-    
-    plot_gg<-plot_gg+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),min(Response)+D1_y,min(Response))), fill = "blueviolet", alpha=0.6)
+    scale = (max(Response)-min(Response))/max(D1_y) *.40
+    plot_gg<-plot_gg +
+             geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),
+                        min(Response)+D1_y*scale,min(Response))), fill = "blueviolet", alpha=0.6)
   }
 
   width=3
@@ -153,8 +161,10 @@ cont_power_f <-function(parms,d,decrease=F){
       geom_point(data=data_in,aes(x=Dose,y=Response))
   }
 
-  plot_gg <-plot_gg+geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
-  plot_gg
+  plot_gg <-plot_gg +
+            geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
+  return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
+
   
 }
   
@@ -226,14 +236,7 @@ cont_power_f <-function(parms,d,decrease=F){
   
 
   temp_fit <- splinefun(test_doses,me)
-  
-  
-  
-  # I think aes y=me is not matching because me's fitting output is not matching with ...
-  
-  # ggplot()+
-  #   geom_line(aes(x=test_doses, y=temp_fit(test_doses)))
-  # 
+  ma_mean  <- temp_fit
   plot_gg<-ggplot()+
           geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
@@ -244,13 +247,16 @@ cont_power_f <-function(parms,d,decrease=F){
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     if (!sum(is.na(fit$bmd))){
-      # This is part which makes plot bit weird...
-      
-      # BMD is out of bound this case -- Needed to discuss this with Matt;
-      # In this B fitting case problem, BMDU is way over BMD
-      
-    plot_gg <- plot_gg +
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
+        
+      plot_gg <- plot_gg +
+        geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
+                         yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+        annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
+                  label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+        annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
+                 label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+        annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
+                 size = 5, color="darkslategrey",shape=17, alpha=0.6)
     }
   }
   # Assign them temporarily 
@@ -259,22 +265,16 @@ cont_power_f <-function(parms,d,decrease=F){
   if (IS_SUFFICIENT){
     plot_gg<- plot_gg +
               geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey",size=0.5, width=3)+
-              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")+
-              xlim(min(-width/2, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
-              ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
-
+              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+        
   }else{
     data_in<-data.frame(cbind(doses,Response))
     plot_gg<-plot_gg +
-          geom_point(aes(x=doses,y=Response))+
-          # Added dose level can't go down less than 0
-          xlim(max(0, c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075)), max(test_doses)*1.05)+
-          ylim(c(min(Response,me)*0.95,max(Response,me)*1.05))
-
+          geom_point(aes(x=doses,y=Response))
   }
   
-  # I guess we needed to add BMR information for this case? 
-  plot_gg
+  return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
+  
   
 }
 
@@ -364,8 +364,8 @@ cont_power_f <-function(parms,d,decrease=F){
           me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE) # BMD
           lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE) # BMDL
           uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE) # BMDU
- 
 
+          
           width=3
           # 06/02/21 SL update
           if (IS_SUFFICIENT){
@@ -386,22 +386,12 @@ cont_power_f <-function(parms,d,decrease=F){
           
           plot_gg<-plot_gg+
                    geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
-         
+          
           plot_gg<-plot_gg+
                    geom_line(aes(x=test_doses,y=me),col="blue",size=2)
          
-          
-          # Updated to remove Inf bmd 06/02/21 SL
           bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-    
-          # Compare this with BMD sample case- SL
-          # Why this number is so different ? 
-          # BB$bmd
-          ## Plot the CDF of the Posterior
-          
-          
-          ## SL's comment- I think we already have MCMC sample, and we can plot bmd directly from samples
-          
+  
           
           
           if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
@@ -412,52 +402,30 @@ cont_power_f <-function(parms,d,decrease=F){
             # Density only creates few data points SL
             
             # Fixed part 06/04/21
-            Dens =  density(temp,cut=c(max(test_doses)), n=1000, from=0, to=max(test_doses))
+            Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses))
           
             Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
             temp = which(Dens$x < max(test_doses))
             D1_y = Dens$y[temp]
             D1_x = Dens$x[temp]
             qm = min(Response)
-            scale = (max(Response)-min(Response))/max(D1_y) *.75
+            scale = (max(Response)-min(Response))/max(D1_y) *.40
             
-            # BMD MA density needs to be double checked 
-            # It's BMD is spiky by nature of sampling I guess;
-            # ggplot()+
-            #   geom_density(aes(x=temp))+xlim(c(0,15))
-            # 
-            # plot_gg<-plot_gg+
-            #   stat_density_ridges(aes(x=temp))
+          
              plot_gg<-plot_gg+
-                    geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
+                    geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(D1_x)),
                                      y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
                                      fill = "blueviolet", alpha=0.6)
 
-           }
+          }
+          
           ## 
           # Add lines to the BMD
           ma_mean <- splinefun(test_doses,me)
           ma_BMD = A$bmd
-          
-          
-          # Question to Matt not sure 
-          
-          plot_gg = plot_gg + 
-                     geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
-
-          
-          
-          # Which one is duplicated?
-          
-          # plot_gg = plot_gg + 
-          #   geom_segment(aes(x=bmd, y=ma_mean(bmd), xend=bmd, yend=min(Response)),color="Red")
-          
-           
-          #Plot only level >2
-
+       
           df<-NULL
-        
-          
+           
           # Problem of the loop using this case- the ggplot is not added automatically, 
           # It replaces the last one;
           
@@ -482,17 +450,7 @@ cont_power_f <-function(parms,d,decrease=F){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
                col = alphablend(col='coral3',A$posterior_probs[ii])
-               # Not using loop, but save data in the external data and load it later
-               # temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               # df<-rbind(df,temp_df)
-               # Not using loop, but save data in the external data and load it later
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               # df<-rbind(df,temp_df)
-               # 
-
-               # plot_gg<- plot_gg+
-               #          geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-               #          theme_minimal()
                
                # # 06/19/21 SL update 
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
@@ -505,6 +463,16 @@ cont_power_f <-function(parms,d,decrease=F){
                plot_gg<- plot_gg+
                  geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
                  theme_minimal()
+               
+               plot_gg <- plot_gg +
+                         geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=A$bmd[3],
+                                          yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                         annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
+                                   label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                         annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
+                                  label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+                         annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
+                                  size = 5, color="darkslategrey",shape=17, alpha=0.6)
             }
             
           
@@ -515,11 +483,7 @@ cont_power_f <-function(parms,d,decrease=F){
      }
      
 
-     
-     ## I think this if-else part needs to be clear since it's already in A part ; 
-     ## Why this part is added? 
-     
-     else{ # mcmc run
+     else{ #laplace run
        
        data_d   <-  A[[fit_idx[1]]]$data
        max_dose <- max(data_d[,1])
@@ -605,28 +569,23 @@ cont_power_f <-function(parms,d,decrease=F){
        # Add lines to the BMD
        ma_mean <- splinefun(test_doses,me)
        ma_BMD = A$bmd
-       plot_gg = plot_gg + 
-         geom_segment(aes(x=A$bmd, y=ma_mean(A$bmd), xend=A$bmd, yend=min(Response)),color="Red")
-       
-       
-       
+
        # Not sure about this part - SL 05/28/21
        #Plot only level >2
        
        df<-NULL
        for (ii in 1:length(fit_idx)){
-         
+
          if (A$posterior_probs[ii]>0.05){
            fit <- A[[fit_idx[ii]]]
            if (fit$model=="FUNL"){
              f <- cont_FUNL_f(fit$parameters,test_doses)
-           }  
+           }
            if (fit$model=="hill"){
              f <- cont_hill_f(fit$parameters,test_doses)
            }
            if (fit$model=="exp-3"){
-             temp = fit$parameters 
-             #temp = c(temp[1:2],0,temp[3],temp[4])
+             temp = fit$parameters
              f <- cont_exp_3_f(temp,test_doses,decrease)
            }
            if (fit$model=="exp-5"){
@@ -635,19 +594,29 @@ cont_power_f <-function(parms,d,decrease=F){
            if (fit$model=="power"){
              f <- cont_power_f(fit$parameters,test_doses)
            }
-           
+
            col = alphablend(col='coral3',A$posterior_probs[ii])
            # Not using loop, but save data in the external data and load it later
            temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
            df<-rbind(df,temp_df)
          }
        }
-       
+
        plot_gg<- plot_gg+
          geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
          theme_minimal()
        
+       plot_gg <- plot_gg +
+                   geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=A$bmd[3],
+                                    yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                   annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
+                             label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                   annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
+                            label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+                   annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
+                            size = 5, color="darkslategrey",shape=17, alpha=0.6)
+       
      }
-     return(plot_gg)
+     return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
 }
  

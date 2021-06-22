@@ -19,6 +19,7 @@ output:
 # Body Weight 
 
 library(knitr)
+library(dplyr)
 library(ToxicR)
 library(actuar)
 library(ggplot2)
@@ -254,7 +255,7 @@ mean <- X2%*%t(iS[2,,drop=F]) + 10.58
 y <- rinvgauss(length(mean),mean,227.8176)
 
 BB <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
-                        fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+                        fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
 BB$bmd
 plot(BB)+geom_line(aes(y=tmean,x=mydoses),color="grey",linetype="dotted",size=2)
 
