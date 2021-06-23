@@ -224,7 +224,7 @@ List convert_continuous_fit_to_list(continuous_model_result *result){
 	bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
 
   } 
-
+  
   List rV = List::create(Named("full_model") = str,
                          Named("bmd")        = result->bmd,
 						             Named("parameters") = parms, 

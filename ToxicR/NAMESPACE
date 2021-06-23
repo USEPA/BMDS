@@ -7,10 +7,9 @@ importFrom(forcats,fct_reorder)
 # Necessary Packages
 ###############################
 import(tidyverse)
-#import(ggplot2)
 import(shiny)
-import(plotly)
 import(scales)
+import(ggplot2)
 
 # Added two additional package 2012/12/08 SL
 import(ggridges)

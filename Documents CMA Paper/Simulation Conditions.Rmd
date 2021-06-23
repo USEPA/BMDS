@@ -7,6 +7,8 @@ output:
     toc: yes
     toc_float: yes
   pdf_document: default
+  word_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -17,6 +19,7 @@ output:
 # Body Weight 
 
 library(knitr)
+library(dplyr)
 library(ToxicR)
 library(actuar)
 library(ggplot2)
@@ -252,7 +255,7 @@ mean <- X2%*%t(iS[2,,drop=F]) + 10.58
 y <- rinvgauss(length(mean),mean,227.8176)
 
 BB <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
-                        fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+                        fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
 BB$bmd
 plot(BB)+geom_line(aes(y=tmean,x=mydoses),color="grey",linetype="dotted",size=2)
 
@@ -458,65 +461,7 @@ kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation 
                                 the three different distributional conditions.")
 ```
 
-```{r iSpline2.0 sd BMD, echo=FALSE}
-doses <- seq(0,100,0.5)
-X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
-bkg = c(10.58,10.58,481,481)
-lambda <- c(227.8176,227.8176,18528.14,18528.14)
 
-bmd_sd_ig <- c(0,0,0,0)
-bmd_sd_no <- c(0,0,0,0)
-bmd_sd_ln <- c(0,0,0,0)
-i = 1
-var_ig <- c(NA,NA,NA,NA)
-
-for(i in 1:4){
-  mean = 2.0*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
-
-  var_ig[i] <- isM(0)^3/lambda[i]
-  if (isM(0) < isM(100)){
-    sdDif = sqrt(var_ig[i])
-  }else{
-    sdDif = sqrt(var_ig[i])
-  }
-  
-  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
-  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_no <- var_ig
-for(i in 1:4){
-  mean = 2.0*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
- 
-  if (isM(0) < isM(100)){
-    sdDif = sqrt(var_no[i])
-  }else{
-    sdDif = sqrt(var_no[i])
-  }
-  
-  bb  <-  function(d){abs(isM(d)-isM(0))-sdDif} 
-  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_ln <- c(0.2085732,0.2085732,0.1582215,0.1582215)
-for(i in 1:4){
-  mean = 2.0*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
-  var_m <- expm1(var_ln[i]^2)*exp(2*log(isM(0))+var_ln[i]^2)
-  bb  <-  function(d){abs(isM(d)-isM(0))-sqrt(var_m)} 
-  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
-}
-
-BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
-names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
-row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
-                    "I-Spline Simulation 3","I-Spline Simulation 4")
-kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation BMD across
-                                the three different distributional conditions.")
-```
-### Table of BMD values for RD approach
 ```{r Hill Rel BMD, echo=FALSE}
 doses <- seq(0,100,0.5)
 bkg = c(10.58,10.58,481,481)
@@ -669,58 +614,6 @@ kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation 
 
 ```
 
-
-```{r iSpline-2 Rel BMD, echo=FALSE}
-doses <- seq(0,100,0.5)
-X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
-bkg = c(10.58,10.58,481,481)
-lambda <- c(227.8176,227.8176,18528.14,18528.14)
-
-bmd_sd_ig <- c(0,0,0,0)
-bmd_sd_no <- c(0,0,0,0)
-bmd_sd_ln <- c(0,0,0,0)
-i = 1
-var_ig <- c(NA,NA,NA,NA)
-
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
-
-  var_ig[i] <- isM(0)^3/lambda[i]
-  
-  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
-  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_no <- var_ig
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
- 
- 
-  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
-  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_ln <- c(0.2085732,0.2085732,0.1582215,0.1582215)
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
- 
-  bb  <-  function(d){abs(isM(d)-isM(0))/isM(0)-0.1} 
-  bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
-}
-
-BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
-names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
-row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
-                    "I-Spline Simulation 3","I-Spline Simulation 4")
-kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation BMD across
-                                the three different distributional conditions.")
-
-
-```
-### Table of BMD values for HB approach
 
 ```{r Hill Hybrid BMD, echo=FALSE}
 doses <- seq(0,100,0.5)
@@ -931,77 +824,5 @@ names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
 row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
                     "I-Spline Simulation 3","I-Spline Simulation 4")
 kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for Hybrid BMD across
-                                the three different distributional conditions.")
-```
-
-```{r iSpline2.0 Hybrid BMD, echo=FALSE}
-doses <- seq(0,100,0.5)
-X <- iSpline(doses,knots=seq(30,90,20),intercept=TRUE)
-bkg = c(10.58,10.58,481,481)
-lambda <- c(227.8176,227.8176,18528.14,18528.14)
-
-bmd_sd_ig <- c(0,0,0,0)
-bmd_sd_no <- c(0,0,0,0)
-bmd_sd_ln <- c(0,0,0,0)
-i = 1
-var_ig <- c(NA,NA,NA,NA)
-
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
-
-  var_ig[i] <- isM(0)^3/lambda[i]
-  if (isM(0) < isM(100)){
-     temp <- qinvgauss(0.975,isM(0),lambda[i])
-     bb  <-  function(d){((1-pinvgauss(temp,isM(d),lambda[i])) -0.0275)/0.975-0.05}
-  }else{
-      temp <- qinvgauss(0.0275,isM(0),lambda[i])
-      bb  <-  function(d){((pinvgauss(temp,isM(d),lambda[i]))- 0.0275)/0.975-0.05}
-  }
-  
-  bmd_sd_ig[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_no <- var_ig
-print(var_no)
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
- 
- if (isM(0) < isM(100)){
-     temp <- qnorm(0.975,isM(0),sqrt(var_no[i]))
-     bb  <-  function(d){((1-pnorm(temp,isM(d),sqrt(var_no[i]))) -0.0275)/0.975-0.05}
-  }else{
-      temp <- qnorm(0.0275,isM(0),sqrt(var_no[i]))
-      bb  <-  function(d){(pnorm(temp,isM(d),sqrt(var_no[i]))- 0.0275)/0.975-0.05}
-  }
-  
-  bmd_sd_no[i] <- uniroot(bb,c(0,100))$root
-}
-
-var_ln <- c(0.209,0.209,0.158,0.158)
-var_ln <- var_ln*var_ln
-for(i in 1:4){
-  mean = 2*X%*%t(iS[i,,drop=F]) + bkg[i]
-  isM <- splinefun(doses,mean)
-  if (isM(0) < isM(100)){
-     temp <- qlnorm(0.975,log(isM(0)),sqrt(var_ln[i]))
-     bb  <-  function(d){((1-plnorm(temp,log(isM(d)),sqrt(var_ln[i]))) -0.0275)/0.975-0.05}
-  }else{
-      temp <- qlnorm(0.0275,log(isM(0)),sqrt(var_ln[i]))
-      bb  <-  function(d){(plnorm(temp,log(isM(d)),sqrt(var_ln[i]))- 0.0275)/0.975-0.05}
-  }
-   if (bb(100) > 0){
-    bmd_sd_ln[i] <- uniroot(bb,c(0,100))$root
-  }else{
-    bmd_sd_ln[i] <- NA
-  }
-}
-
-BMD_IS <- as.data.frame(t(rbind(bmd_sd_no,bmd_sd_ln,bmd_sd_ig)))
-names(BMD_IS) <- c("Normal","Log-Normal","Inverse-Gaussian")
-row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
-                    "I-Spline Simulation 3","I-Spline Simulation 4")
-kable(BMD_IS,digits=2,caption ="I-Spline 2.0 Simulation BMDs for Hybrid BMD across
                                 the three different distributional conditions.")
 ```

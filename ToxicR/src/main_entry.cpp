@@ -104,8 +104,7 @@ List run_single_dichotomous(NumericVector model,
   for (int i = 0; i < data.rows(); i++){
     Anal.doses[i] = data(i,0); 
   }
-  
-  
+
   cp_prior(pr,Anal.prior);
   
   dichotomous_model_result res; 
@@ -234,6 +233,7 @@ List run_continuous_single(IntegerVector model,
     estimate_sm_laplace(&anal,result,isFast);
     
     continuous_deviance aod1; 
+    
     
     if (anal.disttype == distribution::log_normal){
       estimate_log_normal_aod(&anal,
