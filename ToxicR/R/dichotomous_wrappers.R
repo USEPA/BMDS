@@ -55,7 +55,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$model   = model_type; 
     temp$data    = DATA
     class(temp) <- "BMDdich_fit_maximized"
-    names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
     return(temp)
   }
   if (prior == 'default'){
@@ -72,7 +72,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$model =  model_type; 
     temp$data = DATA
     class(temp) <- "BMDdich_fit_maximized"
-    names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
     return(temp)
   }
   if (fitter ==3){
@@ -86,7 +86,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$data    = DATA
     temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE)))
     class(temp) <- "BMDdich_fit_MCMC"
-    names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+    names(temp$bmd) <- c("BMD","BMDL","BMDU")
     return(temp)
   }
  

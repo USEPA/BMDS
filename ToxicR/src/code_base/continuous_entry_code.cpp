@@ -1826,10 +1826,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
-  cerr << Y_N << endl <<"-------" << endl; 
+  // cerr << Y_N << endl <<"-------" << endl; 
   
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
+  
   temp_init = temp_init.array(); 
   
   Eigen::MatrixXd init_opt; 
@@ -1956,15 +1957,15 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                              CA->model,CA->degree); 
     
   }
-
   std::vector<double> v(orig_X.rows()); 
   for (int i ; i < orig_X.rows(); i++){
     v[i] = orig_X(i,0); 
   } 
- 
   transfer_continuous_model(b,res);
+
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
+
   res->model = CA->model; 
   res->dist  = CA->disttype; 
   CA->suff_stat = tempsa;
@@ -2159,7 +2160,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                     CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
                   CA->tail_prob,  
                    CA->alpha,samples, burnin,init_opt,CA->degree);
-    
+
   bmd_analysis b; 
   CA->suff_stat = tempsa;
   double temp_m_dose = orig_X.maxCoeff();
@@ -2173,13 +2174,12 @@ void estimate_sm_mcmc(continuous_analysis *CA,
 }
 
 
-
-
 /*
  * 
  */
 void estimate_log_normal_aod(continuous_analysis *CA,
                              continuous_deviance *aod){
+  
   
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
@@ -2377,7 +2377,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
     }
   }
   
-  
+  Eigen::MatrixXd myX = X; 
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
   
@@ -2441,7 +2441,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
     orig_Y_LN.col(1) = temp; 
   }
   
-  
+
   ///////////////////////////////////////////////////////////////////////////////////////////
   bool bConstVar = (CA->disttype == distribution::normal);
   int  degree    = CA->parms - 2 - (CA->disttype == distribution::normal_ncv );
@@ -2473,29 +2473,29 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
   if (CA->disttype == distribution::log_normal){
     switch (CA->model){
       case cont_model::hill:
-          mean = likelihood_lnhill.mean(theta); 
-          var  = likelihood_lnhill.variance(theta); 
+          mean = likelihood_lnhill.mean(theta,myX); 
+          var  = likelihood_lnhill.variance(theta,myX); 
           neg_like = likelihood_lnhill.negLogLikelihood(theta); 
           break; 
       case cont_model::exp_3:
         if (CA->isIncreasing){
-          mean = likelihood_lnexp3U.mean(theta); 
-          var  = likelihood_lnexp3U.variance(theta);
+          mean = likelihood_lnexp3U.mean(theta,myX); 
+          var  = likelihood_lnexp3U.variance(theta,myX);
           neg_like = likelihood_lnexp3U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_lnexp3D.mean(theta); 
-          var  = likelihood_lnexp3D.variance(theta);
+          mean = likelihood_lnexp3D.mean(theta,myX); 
+          var  = likelihood_lnexp3D.variance(theta,myX);
           neg_like = likelihood_lnexp3D.negLogLikelihood(theta); 
         }
         break; 
       case cont_model::exp_5:
         if (CA->isIncreasing){
-          mean = likelihood_lnexp5U.mean(theta); 
-          var  = likelihood_lnexp5U.variance(theta);
+          mean = likelihood_lnexp5U.mean(theta,myX); 
+          var  = likelihood_lnexp5U.variance(theta,myX);
           neg_like = likelihood_lnexp5U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_lnexp5D.mean(theta); 
-          var  = likelihood_lnexp5D.variance(theta);
+          mean = likelihood_lnexp5D.mean(theta,myX); 
+          var  = likelihood_lnexp5D.variance(theta,myX);
           neg_like = likelihood_lnexp5D.negLogLikelihood(theta); 
         }
         break; 
@@ -2505,44 +2505,44 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
 
     switch (CA->model){
       case cont_model::funl:
-          mean = likelihood_funl.mean(theta); 
-          var  = likelihood_funl.variance(theta);
+          mean = likelihood_funl.mean(theta,myX); 
+          var  = likelihood_funl.variance(theta,myX);
           neg_like = likelihood_funl.negLogLikelihood(theta); 
           break; 
       case cont_model::power:
-          mean = likelihood_power.mean(theta); 
-          var  = likelihood_power.variance(theta); 
+          mean = likelihood_power.mean(theta,myX); 
+          var  = likelihood_power.variance(theta,myX); 
           neg_like = likelihood_power.negLogLikelihood(theta); 
           break; 
       case cont_model::polynomial:
-          mean = likelihood_npoly.mean(theta); 
-          var  = likelihood_npoly.variance(theta); 
+          mean = likelihood_npoly.mean(theta,myX); 
+          var  = likelihood_npoly.variance(theta,myX); 
           neg_like = likelihood_npoly.negLogLikelihood(theta); 
           break; 
       case cont_model::hill:
-          mean = likelihood_nhill.mean(theta); 
-          var  = likelihood_nhill.variance(theta); 
+          mean = likelihood_nhill.mean(theta,myX); 
+          var  = likelihood_nhill.variance(theta,myX); 
           neg_like = likelihood_nhill.negLogLikelihood(theta); 
           break; 
       case cont_model::exp_3:
         if (CA->isIncreasing){
-          mean = likelihood_nexp3U.mean(theta); 
-          var  = likelihood_nexp3U.variance(theta);
+          mean = likelihood_nexp3U.mean(theta,myX); 
+          var  = likelihood_nexp3U.variance(theta,myX);
           neg_like = likelihood_nexp3U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_nexp3D.mean(theta); 
-          var  = likelihood_nexp3D.variance(theta);
+          mean = likelihood_nexp3D.mean(theta,myX); 
+          var  = likelihood_nexp3D.variance(theta,myX);
           neg_like = likelihood_nexp3D.negLogLikelihood(theta); 
         }
         break; 
       case cont_model::exp_5:
         if (CA->isIncreasing){
-          mean = likelihood_nexp5U.mean(theta); 
-          var  = likelihood_nexp5U.variance(theta);
+          mean = likelihood_nexp5U.mean(theta,myX); 
+          var  = likelihood_nexp5U.variance(theta,myX);
           neg_like = likelihood_nexp5U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_nexp5D.mean(theta); 
-          var  = likelihood_nexp5D.variance(theta);
+          mean = likelihood_nexp5D.mean(theta,myX); 
+          var  = likelihood_nexp5D.variance(theta,myX);
           neg_like = likelihood_nexp5D.negLogLikelihood(theta); 
         }
         break; 
@@ -2551,7 +2551,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
     }
     
   }
-  
+
   for (int i = 0; i < expected->n ; i++){
     expected->expected[i] = mean(i,0);
     expected->sd[i] = pow(var(i,0),0.5);

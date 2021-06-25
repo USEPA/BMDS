@@ -85,7 +85,7 @@ cont_power_f <-function(parms,d,decrease=F){
   }
   
   # Single Model 
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/500)
   
   if (fit$model=="FUNL"){
      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses,decrease=decrease)   
@@ -112,7 +112,7 @@ cont_power_f <-function(parms,d,decrease=F){
   temp_fit <- splinefun(test_doses,me)
   ma_mean = temp_fit
   # Geom_polygon ? etc..
-  plot_gg <- ggplot() +
+  plot_gg <- ggplot() +xlim(-max(test_doses)*5,min(test_doses)*5)+
     geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
     labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
     theme_minimal()
@@ -121,13 +121,13 @@ cont_power_f <-function(parms,d,decrease=F){
     print(fit$bmd,4)
     plot_gg <- plot_gg +
       geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
-                       yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                       yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
       annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
-                label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                label = "[", size = 10,color="darkslategrey", alpha=0.9)+
       annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
-               label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+               label = "]", size = 10,color="darkslategrey", alpha=0.9) +
       annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
-               size = 5, color="darkslategrey",shape=17, alpha=0.6)
+               size = 5, color="darkslategrey",shape=17, alpha=0.9)
    }
   
 # Add density 
@@ -215,7 +215,7 @@ cont_power_f <-function(parms,d,decrease=F){
   
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
   # SL : Should Plot's x axis be based on test_dose? 
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/300)
+  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/500)
   
   #Pre defined function- lm_fit can be used for fitting parameters?
   if (fit$model=="FUNL"){
@@ -238,25 +238,23 @@ cont_power_f <-function(parms,d,decrease=F){
   temp_fit <- splinefun(test_doses,me)
   ma_mean  <- temp_fit
   plot_gg<-ggplot()+
-          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+xlim(-max(test_doses)*5,min(test_doses)*5)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
           theme_minimal()
-          # xlim(max(c(0,c(min(test_doses) - (max(test_doses)-min(test_doses))*0.075))), max(test_doses)*1.05)
-          # Updated max dose level not goes to below 0;
-  
+        
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     if (!sum(is.na(fit$bmd))){
         
       plot_gg <- plot_gg +
         geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
-                         yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                         yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
         annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
-                  label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                  label = "[", size = 10,color="darkslategrey", alpha=0.9)+
         annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
-                 label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+                 label = "]", size = 10,color="darkslategrey", alpha=0.9) +
         annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
-                 size = 5, color="darkslategrey",shape=17, alpha=0.6)
+                 size = 5, color="darkslategrey",shape=17, alpha=0.9)
     }
   }
   # Assign them temporarily 
@@ -297,7 +295,7 @@ cont_power_f <-function(parms,d,decrease=F){
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200) 
+          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500) 
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))
@@ -369,14 +367,14 @@ cont_power_f <-function(parms,d,decrease=F){
           width=3
           # 06/02/21 SL update
           if (IS_SUFFICIENT){
-              plot_gg<-ggplot()+
+              plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
                   geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
                   labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
           }else{
-            plot_gg<-ggplot()+
+            plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
               geom_point(aes(x=doses,y=Response))+
               xlim(c(min(doses),max(doses)*1.03))+
               labs(x="Dose", y="Response",title="Continous MA fitting")+
@@ -465,14 +463,14 @@ cont_power_f <-function(parms,d,decrease=F){
                  theme_minimal()
                
                plot_gg <- plot_gg +
-                         geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=A$bmd[3],
-                                          yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                         geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=min(max(doses),A$bmd[3]),
+                                          yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
                          annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
-                                   label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                                   label = "[", size = 10,color="darkslategrey", alpha=0.9)+
                          annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
-                                  label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+                                  label = "]", size = 10,color="darkslategrey", alpha=0.9) +
                          annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
-                                  size = 5, color="darkslategrey",shape=17, alpha=0.6)
+                                  size = 5, color="darkslategrey",shape=17, alpha=0.9)
             }
             
           
@@ -555,7 +553,7 @@ cont_power_f <-function(parms,d,decrease=F){
 
        plot_gg<-ggplot()+
          geom_point(aes(x=doses,y=Response))+
-         xlim(c(min(doses),max(doses)*1.03))+
+         xlim(c(-5*min(doses),max(doses)*25))+
          # Change the label for Y axis - SL 05/28/21
          labs(x="Dose", y="Response",title="Continous MA fitting")+
          theme_minimal()
@@ -603,20 +601,19 @@ cont_power_f <-function(parms,d,decrease=F){
        }
 
        plot_gg<- plot_gg+
-         geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-         theme_minimal()
+               geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+               theme_minimal()
        
        plot_gg <- plot_gg +
-                   geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=A$bmd[3],
-                                    yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.6) +
+                   geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=min(max(doses),abs(A$bmd[3])),
+                                    yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
                    annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
-                             label = "[", size = 10,color="darkslategrey", alpha=0.6)+
+                             label = "[", size = 10,color="darkslategrey", alpha=0.9)+
                    annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
-                            label = "]", size = 10,color="darkslategrey", alpha=0.6) +
+                            label = "]", size = 10,color="darkslategrey", alpha=0.9) +
                    annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
-                            size = 5, color="darkslategrey",shape=17, alpha=0.6)
-       
-     }
+                            size = 5, color="darkslategrey",shape=17, alpha=0.9)
+           }
      return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
 }
  

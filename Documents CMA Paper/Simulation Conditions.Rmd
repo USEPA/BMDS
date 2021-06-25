@@ -460,7 +460,7 @@ row.names(BMD_IS) <- c("I-Spline Simulation 1","I-Spline Simulation 2",
 kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation BMD across
                                 the three different distributional conditions.")
 ```
-
+### Tables of BMD values for Rel-Dev approach
 
 ```{r Hill Rel BMD, echo=FALSE}
 doses <- seq(0,100,0.5)
@@ -614,7 +614,7 @@ kable(BMD_IS,digits=2,caption ="I-Spline Simulation BMDs for standard deviation 
 
 ```
 
-
+### Tables of BMD values for Hybrid approach
 ```{r Hill Hybrid BMD, echo=FALSE}
 doses <- seq(0,100,0.5)
 bkg = c(10.58,10.58,481,481)

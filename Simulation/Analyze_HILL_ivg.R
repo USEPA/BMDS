@@ -18,7 +18,7 @@ bmds.H <- c(41.49,	57.19,	42.61,
 
 BMD.H  <- matrix(bmds.H,nrow=8,ncol=3,byrow=T)
 BMD.SD <- matrix(bmds.SD,nrow=8,ncol=3,byrow=T)
-setwd("~/Documents/r_software/RBMDS/Simulation/Hill/results")
+setwd("~/Documents/r_software/RBMDS/Simulation/Hill/results2")
 files <- dir()
 
 ivgSims = grepl("invGaussian",files)

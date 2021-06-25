@@ -496,6 +496,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   std::vector<double> x(100);
   std::vector<double> y(100);
   if ( isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD)) ){
+ 
     for (int i = 0; i < x.size(); i++){
       x[i] = double(i)/double(x.size()); 
       double q = x[i];
@@ -509,34 +510,43 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
           y.erase(p2); x.erase(p1); 
           i = y.size();
       }
-       
+     
     }
     
   }else{
     x.resize(2);
     y.resize(2); 
     x[0] =0.0; 
-    x[1] = std::numeric_limits<double>::infinity(); 
+    x[1] = 1.0; //std::numeric_limits<double>::infinity(); 
     y[0] = 0.0; 
     y[1] = 1.0; 
   }
 
 
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
-       x.size() > 5 ){
+       x.size() > 6 ){
 
     bmd_cdf cdf(x, y);
     rVal.BMD_CDF = cdf;
   }
   
-
+  
+  
+  Eigen::MatrixXd  estimated = model.log_likelihood.mean(oR.max_parms);
+  
+  rVal.expected.resize(estimated.rows());
+  
+  for (int i = 0; i < rVal.expected.size(); i++) {
+    rVal.expected[i] = estimated(i, 0);
+  }
   
   rVal.MAP_BMD = BMD; 
   rVal.BMR = BMRF;
   rVal.isExtra = false;
   rVal.type    = BMDType; 
   rVal.MAP_ESTIMATE = oR.max_parms; 
-  rVal.MAP = oR.functionV; 												   
+  rVal.MAP = oR.functionV; 		
+
   
   
   return rVal; 

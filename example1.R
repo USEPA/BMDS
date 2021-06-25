@@ -23,7 +23,7 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table2("PFOA_Liver.txt", 
+PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
                           col_names = FALSE)
 
 
@@ -33,7 +33,9 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 
 
 
-B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "laplace")
+
+
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle",isFast = T)
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 
 library(dplyr)
@@ -41,12 +43,12 @@ library(ggplot2)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =2,model_list = model_list,samples = 35000 )
+kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR =1.5,model_list = model_list,samples = 35000 )
 plot(kk)+scale_x_continuous(trans="pseudo_log")
 
 R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = FALSE)
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
-plot(R)+scale_x_continuous(trans="pseudo_log")
+plot(R) + scale_x_continuous(trans="pseudo_log")
 
 # I guess based on my understanding we do not need Density plot for laplace fitting case - SL 
 # Aesthetically, why it doesn't show the other bmd line? 
@@ -93,7 +95,7 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 3,isFast=FALSE)})
+system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",BMR = 3,isFast=FALSE)})
 plot(B) + scale_x_continuous(trans = "pseudo_log")
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))

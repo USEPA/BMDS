@@ -187,15 +187,18 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size()); 
   Eigen::MatrixXd meanX2 = Eigen::MatrixXd::Ones(Y.rows(),1);
   Eigen::MatrixXd W     = Eigen::MatrixXd::Zero(Y.rows(), Y.rows()); 
+ 
   for (int i = 0; i < Y.rows(); i++){
     W(i,i) = Y(i,2); 
   }
+ 
   for (int i = 0; i < meanX.rows(); i++)
   {
     for (int j = 0; j < udoses.size(); j++) {
       meanX(i, j) = udoses[j] == X(i, 0) ? 1.0 : 0.0; 
     }
   }
+ 
   Eigen::MatrixXd InitA = (meanX.transpose()*W*meanX);
   Eigen::MatrixXd InitB = (meanX2.transpose()*W*meanX2);
   InitA = InitA.inverse()*meanX.transpose()*W*Y;
@@ -204,15 +207,15 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
   
   double tempV = 0.0; 
-  
-  for (unsigned int i = 0; i < a1Test.nParms(); i++){
+ 
+  for (unsigned int i = 0; i < a1Test.nParms()-1; i++){
     startV1(i,0) = InitA(i,0);
   }
   startV1(a1Test.nParms() - 1,0) = log(InitB(0,1)*InitB(0,1)); 
-  
+ 
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
-  
+ 
   optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
   
   CD->A1 = a1Result.functionV;
@@ -235,9 +238,11 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   for (unsigned int i = 0; i < nParms/2; i++ ){
     startV2(i,0) = InitA(i,0); 
   } 
-  for (unsigned int i = nParms/2; i < nParms; i++ ){
-    startV2(i,0) = log(InitA(i,1)*InitA(i,1)); 
+  
+  for (unsigned int i = 0;  i < nParms/2; i++ ){
+    startV2(i+nParms/2,0) = log(InitA(i,1)*InitA(i,1)); 
   }
+ 
   statModel<normalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                        isfix2, fix2);
 
@@ -254,23 +259,23 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
     a3Priors.row(i) << 0, 0, 1, -1e8, 1e8;
   }
  
-  
+
   a3Priors.row(nParms - 2) << 0, a2Result.max_parms(nParms - 2), 1, -1e4, 1e4;
   a3Priors.row(nParms - 1) << 0, a2Result.max_parms(nParms - 1), 0, -1e4, 1e4;
  
   IDcontinuousPrior a3Init(a3Priors);
-  
+
   Eigen::MatrixXd startV3(nParms,1);
   Eigen::MatrixXd meanX3 = Eigen::MatrixXd::Ones(InitA.rows(),2);
   for (int i = 0; i < meanX3.rows(); i++){
     meanX3(i,1) = InitA(i,0) > 0? log(InitA(i,0)):-13.8;  
     InitA(i,1) = log(InitA(i,1)*InitA(i,1));   
   }
-  
+ 
   for (unsigned int i = 0; i < nParms-2; i++ ){
     startV3(i,0) = a2Result.max_parms(i); 
   } 
-  
+
 
   Eigen::MatrixXd InitC = (meanX3.transpose()*meanX3); 
   InitC = InitC.inverse()*meanX3.transpose()*InitA.col(1); 

@@ -166,87 +166,71 @@
     lq <- apply(Q,2,quantile, probs = qprob)
     uq <- apply(Q,2,quantile, probs = 1-qprob)
     
-    out<-ggplot()+
-      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-      xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,lerror,uerror)*1.05))+
-      labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+
-      theme_minimal()
+    plot_gg <-ggplot()+
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
+              labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+
+              theme_minimal()+
+              xlim(0-5*max(test_doses),5*max(test_doses))
     
-    # Splien function is used to test column average from MCMC
+    # Spline function is used to test column average from MCMC
     
     temp_fit <- splinefun(test_doses,me)
     
     # Object 2
     # Polygon changed to Geom_ribbon
     
-    # Need to check
-    out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
-    #out2<-out+geom_polygon(aes(x=c(test_doses[length(test_doses):1],test_doses),y=c(uq[length(test_doses):1],lq)),fill="blue",alpha=0.1)
+    plot_gg<-plot_gg+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1) 
+    plot_gg<-plot_gg+
+              geom_line(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
     
     
-    out3<-out2+
-      geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+geom_point(aes(x=doses,y=probs))
+     plot_gg <- plot_gg +
+      geom_segment(aes(x=fit$bmd[2], y=temp_fit(fit$bmd[1]), xend=fit$bmd[3],
+                       yend=temp_fit(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+      annotate( geom = "text", x = fit$bmd[2], y = temp_fit(fit$bmd[1]),
+                label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+      annotate(geom = "text", x = fit$bmd[3], y = temp_fit(fit$bmd[1]),
+               label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+      annotate(geom = "point", x = fit$bmd[1], y = temp_fit(fit$bmd[1]),
+               size = 5, color="darkslategrey",shape=17, alpha=0.9)
     
     
-    # This part is for referecne 
-    #geom_segment(data=bmd_dots, aes(x=H.bmd, y=.dich_weibull_f.H.fitted_model.parameters..H.bmd., xend=H.bmd, yend=0), color="Red")+
-    
-    out4<-out3+
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
-      # geom_segment(aes(x=fit$bmd[2], y=temp_fit(x=fit$bmd), xend=fit$bmd[1], yend=0), color="Red")
-      
-    # out4
-    
-    # 
-    # if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    #   lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    #   lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    #   lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
-    # }
-    # 
+    # plot_gg<-plot_gg+
+    #   geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
+    #   
+   
     
     # Adding density 
     
     # Object 3 - Density object - In Shiny we can on / off this 
     # Density - Polygon/Other option?
     if (BMD_DENSITY ==TRUE){
-      Dens =  density(temp,cut=c(max(doses)), n=512, from=min(doses), to=max(doses))
-      # what is this 0.4 means? Scale?
-      Dens$y = Dens$y/max(Dens$y) * max(probs)*0.4
-      temp = which(Dens$x < max(doses))
+      Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses))
+      
+      Dens$y = Dens$y/max(Dens$y) * (max(uerror)-min(lerror))*0.6
+      temp = which(Dens$x < max(test_doses))
       D1_y = Dens$y[temp]
       D1_x = Dens$x[temp]
+      qm = min(lerror)
+      scale = (max(uerror)-min(lerror))/max(D1_y) *.40
       
-      #geom ploygon 
-      # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
-      #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
       
-      out5<-out4+
-        geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "blueviolet", alpha=0.6)
-
-      return(out5)
+      plot_gg<-plot_gg+
+        geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(D1_x)),
+                         y=c(min(lerror),min(lerror)+D1_y*scale,min(lerror))),
+                     fill = "blueviolet", alpha=0.6)
+     
     }
     
-    
-    # Already reflected from above 
-    #points(doses,probs)
-    #arrows(x0=doses, y0=lerror, x1=doses, 
-    #       y1=uerror, code=3, angle=90, length=0.1)
-    
-    else {
-      return(out4)
-    }
+    return(plot_gg + coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
+   
   }
   
-  .plot.BMDdich_fit_maximized <- function(fit,fit_type="laplace",qprob=0.05,...){
+.plot.BMDdich_fit_maximized <- function(fit,fit_type="Maximized",...){
     
     density_col="red"
     credint_col="azure2"
 
-    if (qprob < 0 || qprob > 0.5){
-      stop( "Quantile probability must be between 0 and 0.5")
-    }
-    
     probs <- (0.5+fit$data[,2,drop=T])/(1.0 + fit$data[,3,drop=T])
     se <- sqrt(probs*(1-probs)/fit$data[,3,drop=T])
     
@@ -260,72 +244,46 @@
     
     
     
-    #Data structure was changed
-    # probs <- (0.5+fit$Fitted_Model_1$data[,2,drop=T])/(1.0 + fit$Fitted_Model_1$data[,3,drop=T])
-    # se <- sqrt(probs*(1-probs)/fit$Fitted_Model_1$data[,3,drop=T])
-    # doses = fit$Fitted_Model_1$data[,1,drop=T]
-    # uerror <- apply(cbind(probs*0+1,probs+se),1,min)
-    # lerror <- apply(cbind(probs*0,probs-se),1,max)
-    # 
-    # dose = c(doses,doses)
-    # Response = c(uerror,lerror)
-    
-
-    
     test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
     
     
     # Need to check loop 
     if (fit$model=="hill"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
-      #fit$parameters[2] = .logit(fit$parameters[2])
       me <- .dich_hill_f(fit$parameters, d=test_doses)
     }
     if (fit$model=="gamma"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
       me <- .dich_gamma_f(fit$parameters, d=test_doses)
     }
     if (fit$model=="logistic"){
       me <- .dich_logist_f(fit$parameters, d=test_doses)
     }
     if (fit$model=="log-logistic"){
-      #fit$parameters[1] = logit(fit$parameters[1])
       me <- .dich_llogist_f(fit$parameters, d=test_doses)    
     }
     if (fit$model=="probit"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
-      print
       me <- .dich_probit_f(fit$parameters, d=test_doses)    
     }
     if (fit$model=="log-probit"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
-      me <- .dich_lprobit_f(fit$parameters, d=test_doses)    
+       me <- .dich_lprobit_f(fit$parameters, d=test_doses)    
     }
     if (fit$model=="multistage"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
       me <- .dich_multistage_f(fit$parameters, d=test_doses)    
     }
     if (fit$model=="qlinear"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
       me <- .dich_qlinear_f(fit$parameters, d=test_doses)    
     }
     if (fit$model=="weibull"){
-      #fit$parameters[1] = .logit(fit$parameters[1])
       me <- .dich_weibull_f(fit$parameters, d=test_doses)    
     }
     
-    # temp <- fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
-    # temp <- temp[!is.infinite(temp)]
-    # test <- density(temp)
-
+ 
     
     temp_fit<-splinefun(test_doses,me)
     
-    #plot(dose,Response,type='n',main=fit$full_model...)
-    out<-ggplot()+
+    
+    plot_gg<-ggplot()+
       geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-      xlim(c(min(dose)-0.5,max(dose)+0.5))+
-      ylim(c(min(Response,me)*0.95,max(Response,lerror,uerror)*1.05))+
+      xlim(c(min(dose)-5*max(dose),max(dose)*5)) +
       labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
     
     
@@ -333,39 +291,25 @@
     #BMD Estimates fit - MLE/Laplace why they don't have it yet..? 
     
     
-    out2<-out+
-      geom_smooth(aes(x=test_doses,y=me),col="blue")+geom_point(aes(x=doses,y=probs))
+    plot_gg<-plot_gg+
+             geom_line(aes(x=test_doses,y=me),col="blue",size=1.2)+geom_point(aes(x=doses,y=probs))
 
-    out3<-out2+
-      geom_segment(aes(x=fit$bmd, y=temp_fit(x=fit$bmd), xend=fit$bmd, yend=min(Response,me)*0.95),color="Red")
-
-    return(out3)
     
+    plot_gg <- plot_gg +
+      geom_segment(aes(x=fit$bmd[2], y=temp_fit(fit$bmd[1]), xend=fit$bmd[3],
+                       yend=temp_fit(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+      annotate( geom = "text", x = fit$bmd[2], y = temp_fit(fit$bmd[1]),
+                label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+      annotate(geom = "text", x = fit$bmd[3], y = temp_fit(fit$bmd[1]),
+               label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+      annotate(geom = "point", x = fit$bmd[1], y = temp_fit(fit$bmd[1]),
+               size = 5, color="darkslategrey",shape=17, alpha=0.9)
     
+    return(plot_gg + coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
     
-    # BMD Sample
-# 
-#     if (BMD_DENSITY ==TRUE){
-#       Dens =  density(temp,cut=c(max(doses)))
-#       # what is this 0.4 means? Scale?
-#       Dens$y = Dens$y/max(Dens$y) * max(probs)*0.4
-#       temp = which(Dens$x < max(doses))
-#       D1_y = Dens$y[temp]
-#       D1_x = Dens$x[temp]
-#       
-#       #geom ploygon 
-#       # geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])), fill="blue",alpha=0.1)
-#       #polygon(c(0,D1_x,max(doses)),c(0,D1_y,0),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-#       
-#       out4<-out3+geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(0,D1_y,0)), fill = "lightblue", alpha=0.7)
-#       
-#       return(out4)
-#     }
-    
-    
-  }
+}
   
-  .plot.BMDdichotomous_MA <- function(A,qprob=0.05,...){
+.plot.BMDdichotomous_MA <- function(A,qprob=0.05,...){
     density_col="blueviolet"
     credint_col="azure2"
     fit_origin<-A #Updated SL
@@ -398,7 +342,7 @@
       
       plot_gg<-ggplot()+
         geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-        xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,lerror))*0.95,max(Response,uerror)*1.05)+
+        xlim(c(-5*max(dose)),5*max(dose))+
         labs(x="Dose", y="Proportion",title="Model : Dichotomous MA")+theme_minimal()
       
       
@@ -448,47 +392,50 @@
       #me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE) # BMD
       lq <- apply(temp_f,2,quantile, probs = qprob, na.rm=TRUE)
       uq <- apply(temp_f,2,quantile, probs = 1-qprob, na.rm=TRUE)
-      col1 = alphablend(credint_col,1)
-      
       
       plot_gg<-plot_gg+
         geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
       
       plot_gg<-plot_gg+
-        geom_smooth(aes(x=test_doses,y=me),col="blue",size=2)+
+        geom_line(aes(x=test_doses,y=me),col="blue",size=2)+
         geom_point(aes(x=doses,y=probs))
       
       
       temp_fit <- splinefun(test_doses,me)
       
-      plot_gg<-plot_gg+
-        geom_segment(aes(x=fit_origin$bmd, y=temp_fit(x=fit_origin$bmd), xend=fit_origin$bmd, yend=0), color="Red")
+      fit = A
+
+      plot_gg <- plot_gg +
+        geom_segment(aes(x=A$bmd[2], y=temp_fit(A$bmd[1]), xend=A$bmd[3],
+                         yend=temp_fit(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9)
+      plot_gg <-plot_gg +
+         annotate( geom = "text", x = A$bmd[2], y = temp_fit(A$bmd[1]),
+                   label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+         annotate(geom = "text", x = A$bmd[3], y = temp_fit(A$bmd[1]),
+                  label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+         annotate(geom = "point", x = A$bmd[1], y = temp_fit(A$bmd[1]),
+                  size = 5, color="darkslategrey",shape=17, alpha=0.9)
       
-      # out4<-plot_gg+geom_segment(aes(x=bmd, y=temp_fit(x=bmd), xend=bmd, yend=0), color="Red")
-      # bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-      # SL muted
 
       # Density needs to be re derived ... based on the continous logic in the MA case      
       temp = temp_bmd[!is.nan(temp_bmd)]
       temp = temp[!is.infinite(temp)]
-      temp = temp[temp < 30*max(doses)]
+      temp = temp[temp < 5*max(doses)]
       
-      Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
-      # Dens =  density(temp,cut=c(quantile(temp_bmd,0.995,na.rm = TRUE)))
-      # 
+      Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses))
       
-      Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
-      temp = which(Dens$x < max(test_doses*30))
+      Dens$y = Dens$y/max(Dens$y) * (max(uerror)-min(lerror))*0.6
+      temp = which(Dens$x < max(test_doses))
       D1_y = Dens$y[temp]
       D1_x = Dens$x[temp]
-      qm = min(Response)
-      scale = ((max(Response)-min(Response))/max(D1_y) )*.75
-      # polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-    
-      plot_gg <- plot_gg +geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(0,min(D1_x))),
-                                                        y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
-                                                    fill = "blueviolet", alpha=0.6)
+      qm = min(lerror)
+      scale = (max(uerror)-min(lerror))/max(D1_y) *.40
       
+      
+      plot_gg<-plot_gg+
+               geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(D1_x)),
+                           y=c(min(lerror),min(lerror)+D1_y*scale,min(lerror))),
+                           fill = "blueviolet", alpha=0.6)
       # geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(qm,qm+D1_y,qm)), fill = "blueviolet", alpha=0.6)
 
       
@@ -549,16 +496,10 @@
       }
       
       
-      return(plot_gg)
-    }
-    
-
-    
-    # This part needs to be fixed as well
-    
-    else if ("BMDdichotomous_MA_maximized" %in% class(A)){ # mcmc run
+      return(plot_gg + coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
       
-      
+    }else if ("BMDdichotomous_MA_maximized" %in% class(A)){ # mcmc run
+   
       class_list <- names(A)
       fit_idx <- grep("Fitted_Model_",class_list)
       num_model<-length(A$posterior_probs)
@@ -567,8 +508,6 @@
       max_dose <- max(data_d[,1])
       min_dose <- min(data_d[,1])
       test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500); 
-      
-
       
       # Create 0 matrix
       temp_f   <- matrix(0,num_model,length(test_doses))
@@ -582,8 +521,7 @@
       
       dose = c(doses,doses)
       Response = c(uerror,lerror)
-      
-
+    
       # Line plot for based on each cases
       for (ii in 1:num_model){
         fit_loop<- A[[ii]]
@@ -616,38 +554,38 @@
           temp_f[ii,] <- .dich_weibull_f(fit_loop$parameters,test_doses)
         }
       }
-      
-      
+   
       me <- colMeans(temp_f)
       
       # Fitting line is not from sample- Need to double check with Matt
       
       lq <- apply(temp_f,2,quantile, probs = qprob)
       uq <- apply(temp_f,2,quantile, probs = 1-qprob)
-      col1 = alphablend(credint_col,1)
-      
+    
       temp_fit<-splinefun(test_doses,me)
-      
-      
       # Baseplot with minimal and maixmal dose with error bar
-      out<-ggplot()+
-        geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+xlim(c(min(dose)-0.5,max(dose)+0.5))+ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+theme_minimal()
+      plot_gg<-ggplot() + xlim(-max(doses)*5,max(doses)*5) +
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
+              ylim(c(min(Response,me,lq,uq)*0.95,max(Response,me,lq,uq)*1.05))+
+              labs(x="Dose", y="Proportion",title="Model : Dichotomous MA, Fit type : Laplace")+
+              theme_minimal()
       
-      
-      
-      out2<-out+geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)+
-                  geom_smooth(aes(x=test_doses,y=me),col="blue")+
-                  geom_point(aes(x=doses,y=probs))
+      plot_gg<-plot_gg+ geom_line(aes(x=test_doses,y=me),col="blue",size=1.2)+
+                        geom_point(aes(x=doses,y=probs))
       
 
       # Laplace output doesn't have ..
-      five_pct<-which(abs(A$BMD_CDF[,2]-0.05)==min(abs(A$BMD_CDF[,2]-0.05)))
-      fifty_pct<-which(abs(A$BMD_CDF[,2]-0.5)==min(abs(A$BMD_CDF[,2]-0.5)))
-      nfive_pct<-which(abs(A$BMD_CDF[,2]-0.95)==min(abs(A$BMD_CDF[,2]-0.95)))
       
-      BMDS<-c(A$BMD_CDF[five_pct,1],A$BMD_CDF[fifty_pct,1],A$BMD_CDF[nfive_pct,1])
-      out3<-out2+geom_segment(aes(x=BMDS, y=temp_fit(x=BMDS), xend=BMDS, yend=0), color="Red")
-      
+      plot_gg <- plot_gg +
+        geom_segment(aes(x=A$bmd[2], y=temp_fit(A$bmd[1]), xend=A$bmd[3],
+                         yend=temp_fit(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9)
+      plot_gg <-plot_gg +
+        annotate( geom = "text", x = A$bmd[2], y = temp_fit(A$bmd[1]),
+                  label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+        annotate(geom = "text", x = A$bmd[3], y = temp_fit(A$bmd[1]),
+                 label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+        annotate(geom = "point", x = A$bmd[1], y = temp_fit(A$bmd[1]),
+                 size = 5, color="darkslategrey",shape=17, alpha=0.9)
       df<-NULL
       
       for (ii in 1:length(fit_idx)){
@@ -690,15 +628,15 @@
           temp_data<-df %>% 
             filter(model_no==ii)
           
-          out3<- out3+
-            geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
-            theme_minimal()
+          plot_gg<- plot_gg+
+                    geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
+                    theme_minimal()
         }
         
       }
       
       
-      return(out3)
+      return(plot_gg+ coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
       
 
 

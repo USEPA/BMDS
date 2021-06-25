@@ -10,7 +10,7 @@ bmds.SD <- c(88.55,	88.55,	88.55,
 
 BMD.H  <- matrix(bmds.H,nrow=4,ncol=3,byrow=T)
 BMD.SD <- matrix(bmds.SD,nrow=4,ncol=3,byrow=T)
-setwd("~/Documents/r_software/RBMDS/Simulation/Non-Parametric/results")
+setwd("~/Documents/r_software/RBMDS/Simulation/Non-Parametric/results2")
 files <- dir()
 
 ivgSims = grepl("invGaussian",files)
