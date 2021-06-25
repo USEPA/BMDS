@@ -216,19 +216,17 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
   double pHat;
   double z;
   double eb1;
-  double eb2Upper;
-  double eb2Lower;
+  double eb2;
   double ebDenom;
   double gofAlpha = 0.05;  //Alpha value for 95% confidence limit
+  z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
   for (int i=0; i<gof->n; i++){
     pHat = anal->Y[i]/anal->n_group[i];  //observed probability
-    z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
-    eb1 = (2 * anal->Y[i] + z*z - 1);
-    eb2Lower = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
-    eb2Upper = z*sqrt(z*z + (2 - 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
+    eb1 = (2 * anal->Y[i] + z*z);
+    eb2 = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
     ebDenom = 2.0 * (anal->n_group[i] + z * z);
-    gof->ebLower[i] = (eb1 + eb2Lower)/ ebDenom; 
-    gof->ebUpper[i] = (eb1 + eb2Upper)/ ebDenom;
+    gof->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom; 
+    gof->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
   }
 
   //calculate model chi^2 value
