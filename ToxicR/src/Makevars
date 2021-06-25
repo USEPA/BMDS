@@ -3,8 +3,8 @@
 #USE_SIMD = 2 USE AVX2512 INSTRUCTIONS-DUSE_SIMD=1 -DNDEBUG -DEIGEN_NO_DEBUG 
  #-fopenmp
 
-PKG_CPPFLAGS =  -I"./include" -I"./code_base"  -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize  #-DNDEBUG
-PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto -fopenmp #-DEIGEN_NO_DEBUG -fopenmp
+PKG_CPPFLAGS =  -I"./include" -I"./code_base"  -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize  -DNDEBUG
+PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto -fopenmp -DEIGEN_NO_DEBUG 
 
 PKG_LIBS     = -lgsl -lnlopt 
 

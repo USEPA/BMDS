@@ -524,6 +524,7 @@ void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
   matrix.conservativeResize(numRows,numCols);
 }
 
+
 void removeCol(Eigen::MatrixXd& matrix, unsigned int colToRemove)
 {
   unsigned int numRows = matrix.rows();
@@ -574,6 +575,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     //cout << "Running Hill Model Log-Normality Assumption." << endl;
 #endif
     if (isFast){
+      
       a =  bmd_fast_BMD_cont <lognormalHILL_BMD_NC, IDcontinuousPrior>
                                 (likelihood_lnhill,  model_prior, fixedB, fixedV,
                                  riskType, bmrf, bk_prob,
@@ -1848,6 +1850,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
 
   
     break; 
+    
   case cont_model::hill:
 
     if( CA->disttype == distribution::log_normal ){

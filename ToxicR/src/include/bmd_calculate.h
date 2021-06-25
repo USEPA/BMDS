@@ -458,7 +458,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   if (init.rows() == 10 && init.cols() ==10) //Optimize  
     oR = findMAP<LL, PR>(&model);
   else
-    oR = findMAP<LL, PR>(&model,init);
+    oR = findMAP<LL, PR>(&model,init,OPTIM_NO_FLAGS);
   
   Eigen::MatrixXd parms = oR.max_parms; 
   
