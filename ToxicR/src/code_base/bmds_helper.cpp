@@ -444,9 +444,10 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
           gof->calcSD[i] = GOFanal.sd[i];
 	}
   }
+
   for (int i=0; i<GOFanal.n; i++){
-    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
-    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
+    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
+    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
   }
 
  //calculate bayesian BIC_equiv
