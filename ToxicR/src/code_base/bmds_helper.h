@@ -5,6 +5,7 @@
 #include "dichotomous_entry_code.h"
 
 const double BMDS_EPS = 1.0e-6;
+const double BMDS_MISSING = -9999.0;
 
 // BMDS helper structures
 
@@ -107,6 +108,8 @@ struct dichotomous_GOF {
 extern "C" {
 #endif
 
+void cleanDouble(double *val);
+
 void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_model_result *res);
 
 void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
@@ -127,6 +130,12 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres);
 
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
+
+void clean_dicho_results(struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+
+void clean_cont_results(struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof);
+
+void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
 void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

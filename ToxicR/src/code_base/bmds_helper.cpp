@@ -266,8 +266,10 @@ void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_
     bmdsRes->upperConf[i] = -9999.0;
   } 
 
-
   bmdsRes->validResult = true;
+
+
+  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
 }
 
@@ -276,6 +278,8 @@ void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analys
   estimate_ma_laplace_dicho(MA, DA, res);
 
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
+
+  clean_dicho_MA_results(res, bmdsRes);
 
 }
 
@@ -481,6 +485,8 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
   }
 
   bmdsRes->validResult = true;
+
+  clean_cont_results(res, bmdsRes, aod, gof);
 
 }
 
@@ -765,3 +771,166 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
 }
 
 
+//replace any double values containing NaN or infinity with BMDS_MISSING
+void clean_dicho_results(struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod) {
+
+  //dichotomous_model_result
+  for (int i=0; i<res->nparms; i++){
+    cleanDouble(&res->parms[i]);
+  }   
+
+  for (int i=0; i<res->nparms*res->nparms; i++){
+    cleanDouble(&res->cov[i]);
+  }
+
+  cleanDouble(&res->max);
+  cleanDouble(&res->model_df);
+  cleanDouble(&res->total_df);
+  cleanDouble(&res->bmd);
+
+  for (int i=0; i<res->dist_numE*2; i++){
+    cleanDouble(&res->bmd_dist[i]);
+  }
+
+  //dichotomous_GOF
+  for (int i=0; i<gof->n; i++){
+    cleanDouble(&gof->expected[i]);
+    cleanDouble(&gof->residual[i]);
+    cleanDouble(&gof->ebLower[i]);
+    cleanDouble(&gof->ebUpper[i]);
+  }
+  cleanDouble(&gof->test_statistic);
+  cleanDouble(&gof->p_value);
+  cleanDouble(&gof->df);
+ 
+  //BMDS_results
+  cleanDouble(&bmdsRes->BMD);
+  cleanDouble(&bmdsRes->BMDL);
+  cleanDouble(&bmdsRes->BMDU);
+  cleanDouble(&bmdsRes->AIC);
+  cleanDouble(&bmdsRes->BIC_equiv);
+  cleanDouble(&bmdsRes->chisq);
+
+  for (int i=0; i<res->nparms; i++){
+    cleanDouble(&bmdsRes->stdErr[i]);
+    cleanDouble(&bmdsRes->lowerConf[i]);
+    cleanDouble(&bmdsRes->upperConf[i]);
+  }
+
+  //dicho_AOD
+  cleanDouble(&aod->fullLL);
+  cleanDouble(&aod->redLL);
+  cleanDouble(&aod->fittedLL);
+  cleanDouble(&aod->devFit);
+  cleanDouble(&aod->devRed);
+  cleanDouble(&aod->pvFit);
+  cleanDouble(&aod->pvRed);
+
+}
+
+void clean_cont_results(struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof){
+
+  //continuous_model_result
+  for (int i=0; i<res->nparms; i++){
+    cleanDouble(&res->parms[i]);
+  }
+  for (int i=0; i<res->nparms*res->nparms; i++){
+    cleanDouble(&res->cov[i]);
+  } 
+
+  cleanDouble(&res->max);
+  cleanDouble(&res->model_df);
+  cleanDouble(&res->total_df);
+  cleanDouble(&res->bmd);
+  for (int i=0; i<res->dist_numE*2; i++){
+    cleanDouble(&res->bmd_dist[i]);
+  }
+
+  //BMDS_results
+  cleanDouble(&bmdsRes->BMD);
+  cleanDouble(&bmdsRes->BMDL);
+  cleanDouble(&bmdsRes->BMDU);
+  cleanDouble(&bmdsRes->AIC);
+  cleanDouble(&bmdsRes->BIC_equiv);
+  cleanDouble(&bmdsRes->chisq);
+  for (int i=0; i<res->nparms; i++){
+    cleanDouble(&bmdsRes->stdErr[i]);
+    cleanDouble(&bmdsRes->lowerConf[i]);
+    cleanDouble(&bmdsRes->upperConf[i]);
+  } 
+
+  //continuous_AOD and testsOfInterest
+  for (int i=0; i<5; i++){
+    cleanDouble(&aod->LL[i]);
+    cleanDouble(&aod->AIC[i]);
+    for (int j=0; j<4; j++){
+      cleanDouble(&aod->TOI->llRatio[j]);
+      cleanDouble(&aod->TOI->DF[j]);
+      cleanDouble(&aod->TOI->pVal[j]);
+    }        
+  }
+  cleanDouble(&aod->addConst);
+
+  //continuous_GOF
+  for (int i=0; i<gof->n; i++){
+    cleanDouble(&gof->dose[i]);
+    cleanDouble(&gof->size[i]);
+    cleanDouble(&gof->estMean[i]);
+    cleanDouble(&gof->calcMean[i]);
+    cleanDouble(&gof->obsMean[i]);
+    cleanDouble(&gof->estSD[i]);
+    cleanDouble(&gof->calcSD[i]);
+    cleanDouble(&gof->obsSD[i]);
+    cleanDouble(&gof->res[i]);
+    cleanDouble(&gof->ebLower[i]);
+    cleanDouble(&gof->ebUpper[i]);
+  }
+
+}
+
+void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes) {
+
+  //dichotomousMA_result
+  for (int i=0; i<res->nmodels; i++){
+    cleanDouble(&res->post_probs[i]);
+    for (int j=0; j<res->models[i]->nparms; j++){
+      cleanDouble(&res->models[i]->parms[j]);
+    }
+    for (int j=0; j<res->models[i]->nparms*res->models[i]->nparms; j++){
+      cleanDouble(&res->models[i]->cov[j]);
+    }
+    cleanDouble(&res->models[i]->max);
+    cleanDouble(&res->models[i]->model_df);
+    cleanDouble(&res->models[i]->total_df);
+    cleanDouble(&res->models[i]->bmd);
+    for (int j=0; j<res->models[i]->dist_numE*2; j++){
+      cleanDouble(&res->models[i]->bmd_dist[j]);
+    }
+  }
+  for (int i=0; i<res->dist_numE*2; i++){
+    cleanDouble(&res->bmd_dist[i]);
+  }
+
+  //BMDSMA_results
+  cleanDouble(&bmdsRes->BMD_MA);
+  cleanDouble(&bmdsRes->BMDL_MA);
+  cleanDouble(&bmdsRes->BMDU_MA);
+  for (int i=0; i<res->nmodels; i++){
+    cleanDouble(&bmdsRes->BMD[i]);
+    cleanDouble(&bmdsRes->BMDL[i]);
+    cleanDouble(&bmdsRes->BMDU[i]);
+  }
+
+}
+
+
+
+//replace any double values containing NaN or infinity with BMDS_MISSING
+void cleanDouble(double *val){
+  //std::cout << "incoming val: " << val << "\n";  
+  //*val = BMDS_MISSING;
+  //std::cout << "outgoing val: " << val << "\n";  
+  if(!isfinite(*val)) {
+     *val = BMDS_MISSING;
+  }
+}
