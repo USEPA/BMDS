@@ -92,6 +92,11 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
+         #remove the unecessary 'c' column from the exponential fit
+         if ("exp-3" %in% model_list$model_list[jj]){
+           temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
+         }
+         
          temp[[jj]]$fitted_model <- tempn[[ii]]
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)
@@ -185,6 +190,9 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
            if (nrow(data_temp)>6){
                 te <- splinefun(sort(data_temp[,2,drop=F]),sort(data_temp[,1,drop=F]),method="hyman")
                 temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+                if(max(data_temp[,2])< 1-alpha){
+                  temp[[ii]]$bmd[3] = 1e300
+                }
            }else{
                 temp[[ii]]$bmd     <- c(NA,NA,NA)              
            }
@@ -206,6 +214,10 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       {
         te <- splinefun(sort(temp_me[,2,drop=F]),sort(temp_me[,1,drop=F]),method="hyman")
         temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+        print(max(temp_me[,2]))
+        if(max(temp_me[,2])< 1-alpha){
+          temp$bmd[3] = 1e300
+        }
       }else{
         temp$bmd     <- c(Inf, 0, Inf)
       }
@@ -279,6 +291,11 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp <- run_ma_dichotomous(data, temp_priors, model_i,
                                model_p, FALSE, o1, o2)
     #clean up the run
+    temp$bmd_dist <- temp$BMD_CDF
+    #TO DO : DELETE temp$BMD_CDF
+    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],
+                    temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
+    temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     t_names <- names(temp)
     
     idx     <- grep("Fitted_Model",t_names)

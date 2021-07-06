@@ -40,6 +40,10 @@ class normalHILL_BMD_NC : public normalLLModel {
 	
 	};
 	
+	virtual cont_model mean_type(){
+	  return cont_model::hill; 
+	}	
+	
 	normalHILL_BMD_NC(normalHILL_BMD_NC &M){
 		 sufficient_statistics = M.sufficient_statistics; 
 		 Y = M.Y; 

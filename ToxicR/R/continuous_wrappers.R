@@ -28,11 +28,15 @@
 #
 ##################################################
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
-                                   prior="default", BMD_TYPE = "sd", sstat = T,
+                                   prior="default", BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
-                                   alpha = 0.05,samples = 21000,degree=2,
+                                   alpha = 0.05, samples = 25000,degree=2,
                                    burnin = 1000,isFast = FALSE){
     myD = Y; 
+    sstat = F # set sufficient statistics to false if there is only one column
+    if (ncol(Y) > 1){
+        sstat=T
+    }
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
 
     rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
@@ -143,12 +147,32 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                           PR[[1]],options, is_log_normal, sstat) 
       if (model_type == "exp-3"){
         rvals$PARMS = rvals$PARMS[,-3]
+        rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
+      }
+      
+      ##compute the p-value
+      rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
+      ##
+      rvals$bmd      <- c(rvals$fitted_model$bmd,NA,NA) 
+      print(rvals$fitted_model$bmd)
+      rvals$bmd_dist <- rvals$fitted_model$bmd_dist
+      if (!identical(rvals$bmd_dist, numeric(0))){
+        temp_me = rvals$bmd_dist
+        temp_me = temp_me[!is.infinite(temp_me[,1]),]
+        temp_me = temp_me[!is.na(temp_me[,1]),]
+        temp_me = temp_me[!is.nan(temp_me[,1]),]
+        
+        if( nrow(temp_me) > 5){
+          te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+          rvals$bmd[2:3]  <- c(te(alpha),te(1-alpha))
+        }else{
+          rvals$bmd[2:3] <- c(NA,NA)
+        }
       }
       class(rvals) <- "BMDcont_fit_MCMC"; 
-      rvals$model <- model_type
+      rvals$model  <- model_type
       rvals$options <- options
       rvals$data <- DATA
-      rvals$bmd <- c(mean(rvals$mcmc_result$BMD_samples,na.rm=TRUE),quantile(rvals$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE))
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
       rvals$prior <- PR
       class(rvals) <- "BMDcont_fit_MCMC"

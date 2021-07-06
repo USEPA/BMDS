@@ -37,6 +37,10 @@ class normalFUNL_BMD_NC : public normalLLModel {
 	
 	};
 	
+	virtual cont_model mean_type(){
+	  return cont_model::funl; 
+	}	
+	
 	normalFUNL_BMD_NC(normalFUNL_BMD_NC &M){
 		 sufficient_statistics = M.sufficient_statistics; 
 		 Y = M.Y; 

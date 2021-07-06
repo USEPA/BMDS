@@ -196,6 +196,9 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
 void deviance_dichotomous(dichotomous_analysis *DA,
                               dichotomous_aod *AOD); 
 
+void estimate_normal_variance(continuous_analysis *CA,
+                              double *v_c, double *v_nc, double *v_pow);
+
 #endif
 
 //c entry

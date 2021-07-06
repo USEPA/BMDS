@@ -275,7 +275,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   }
   
   bmd_analysis b; 
-  b = create_bmd_analysis_from_mcmc(DA->burnin,a);
+  b = create_bmd_analysis_from_mcmc(DA->burnin,a,1.0);
   mcmc->model = DA->model; 
   mcmc->burnin = DA->burnin; 
   mcmc->samples = DA->samples; 

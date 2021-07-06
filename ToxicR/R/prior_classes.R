@@ -22,7 +22,6 @@
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-
 normprior<-function(mean = 0, sd = 1, lb = -100,ub=100){
       if (ub < lb){
         stop("Upper Bound must be greater than lower bound")
@@ -47,6 +46,7 @@ lnormprior<-function(mean = 0, sd = 1, lb = -100,ub=100){
 }
 
 print.BMDprior<-function(prior){
+  
   if(prior[1] == 1){
     cat(sprintf("Prior: Normal(mu = %1.2f, sd = %1.3f) 1[%1.2f,%1.2f]\n",prior[2],
                 prior[3],prior[4],prior[5]))
@@ -63,13 +63,16 @@ print.BMDprior<-function(prior){
 create_prior_list <- function(x1,x2,...){
   cl <- match.call()
   mf <- as.list(match.call(expand.dots = TRUE))[-1]
+  
   X <- matrix(0,nrow=length(mf),ncol=5)
   for (ii in 1:length(mf)){
        X[ii,] = eval(mf[[ii]])
   }
-  X <- list(X)
-  class(X) <- "BMDmodelprior"
-  return(X)
+  Y <- list()
+  Y[[1]] <- X
+  names(Y) <- c("priors")
+  class(Y) <- "BMDmodelprior"
+  return(Y)
 }
 
 combine_prior_lists<-function(p1,p2){
@@ -94,12 +97,29 @@ combine_prior_lists<-function(p1,p2){
 
 .print.BMDmodelprior <- function(priors){
   X = priors[[1]]
-  cat("Model Parameter Priors\n ")
+  if (!is.null(priors$model)){
+    cat(priors$model," Parameter Priors\n")
+  }else{
+    cat("Model Parameter Priors\n ")
+  }
+  
   cat("------------------------------------------------------------------------\n")
   for (ii in 1:nrow(X)){
     V = X[ii,]
-    class(V) <- "BMDprior"
-    print(V)
+    if (!is.null(priors$parameters)){
+      temp_text = sprintf("Prior [%s]:",priors$parameters[ii])
+    }else{
+      temp_text = "Prior: "
+    }
+    if(V[1] == 1){
+      cat(sprintf("%sNormal(mu = %1.2f, sd = %1.3f) 1[%1.2f,%1.2f]\n",temp_text,V[2],
+                  V[3],V[4],V[5]))
+    }
+    if (V[1] == 2){
+      cat(sprintf("%sLog-Normal(log-mu = %1.2f, log-sd = %1.3f) 1[%1.2f,%1.2f]\n",temp_text,V[2],
+                  V[3],V[4],V[5]))
+    }
+  
   }
 }
 
@@ -125,7 +145,7 @@ bayesian_prior_continuous  <- function(model,variance,degree=2){
                                      normprior(0,5,-100,100))
       }
       
-      prior <- combine_prior_lists(prior, create_prior_list(normprior (0,1,-18,18)))
+      prior <- combine_prior_lists(prior, create_prior_list(normprior (0,10,-100,100)))
     }
   
     if (dvariance == 2){
@@ -137,7 +157,7 @@ bayesian_prior_continuous  <- function(model,variance,degree=2){
       }
       prior <- combine_prior_lists(prior, 
                                    create_prior_list(lnormprior(0,1,0,100),
-                                                     normprior (0,2,-18,18)))
+                                                     normprior (0,10,-100,100)))
       
     }
     if (dvariance == 3){
@@ -156,8 +176,8 @@ poor of a modeling choice.\n");
                                     lnormprior(0,0.5,0,100),
                                     normprior(0.5,1,0,100),
                                     lnormprior(0,0.5,0,100),
-                                  normprior(0,10,-200,200),
-                                  normprior (0,2,-18,18))
+                                    normprior(0,10,-200,200),
+                                    normprior (0,10,-100,100))
          return(prior)
   }
   
@@ -170,17 +190,18 @@ poor of a modeling choice.\n");
                                   lnormprior(0,0.5,0,100),
                                   normprior(0,10,-200,200),
                                   lnormprior(0,0.75,0,18), 
-                                  normprior(0,2,-18,18))
+                                  normprior(0,10,-100,100))
        return(prior)
   }
   #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,10,-1e4,1e4),
-                               lnormprior(0,1,0,100),
+                               normprior(0,100,-1e4,1e4),
+                               lnormprior(log(0.5),0.5,0,100),
                                lnormprior(log(2),0.4215,0,18),
+                              # lnormprior(log(1.5),0.35,0,18),
                                lnormprior(0, 0.75,0,100),
-                               normprior(0, 2,-18,18));
+                               normprior(0, 10,-100,100));
     return(prior)
   }
   
@@ -188,20 +209,22 @@ poor of a modeling choice.\n");
   if (dmodel == 2 && dvariance == 2){
       prior <- create_prior_list( lnormprior(0,1,0,100),
                                   lnormprior(0,1, 0,100),
-                                  normprior(0,1, -20,20),    # log(c)
+                                  normprior(0,0.5, -20,20),    # log(c)
                                   lnormprior(log(2),0.4215,0,18),  #d 
+                                  #lnormprior(log(1.5),0.35,0,18),
                                   lnormprior(0,0.75,0,18), 
-                                  normprior(0,2,-18,18));
+                                  normprior(0,10,-100,100));
       return(prior)
   }
   #Exp-5 Nonconstnat Normal 
   if (dmodel == 3 && dvariance == 2){
     prior <- create_prior_list(lnormprior(0,1,1e-8,100),
                                normprior(0,10, -100,100),
-                               normprior(0, 1, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
+                               #lnormprior(log(1.5),0.35,0,18),
                                lnormprior(0,0.75,0,18), 
-                               normprior(0,2,-18,18));
+                               normprior(0,10,-100,100));
     return(prior)
   }
   
@@ -209,9 +232,9 @@ poor of a modeling choice.\n");
   if (dmodel == 4 && dvariance == 2){
     prior <- create_prior_list(lnormprior(0,1,0,100), # a
                                normprior(0,10,  -1e4,1e4),     # b
-                               lnormprior(log(2),0.4215, 0,40),  #k
-                               lnormprior(0,0.75,0,18),
-                               normprior(0,2,-18,18))
+                               lnormprior(log(2),0.6, 0,40),  #k
+                               lnormprior(0,0.75,0,18), 
+                               normprior(0,10,-100,100))
     return(prior)
   }
   
@@ -219,11 +242,12 @@ poor of a modeling choice.\n");
   
   #Hill model
   if (dmodel == 1 && dvariance == 1){
-    prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior( 0, 10,-1e4,1e4),#normprior(1,2,-18,18),
-                               lnormprior(0 ,1,0,100),
+    prior <- create_prior_list(normprior(0,  1,-100,100),
+                               normprior( 0, 100,-1e4,1e4),#normprior(1,2,-18,18),
+                               lnormprior(log(0.5) ,0.5,0,100),
                                lnormprior(log(2),0.4215,0,18),
-                               normprior(0,2,-18,18)); 
+                               #lnormprior(log(1.5),0.35,0,18),
+                               normprior(0,10,-100,100)); 
     return(prior)
   }
   
@@ -231,17 +255,18 @@ poor of a modeling choice.\n");
   if (dmodel == 2 && dvariance == 1){
     prior <- create_prior_list(normprior(1,0.1, -100,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,1, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
-                               normprior(0,2,-18,18))
+                               #lnormprior(log(1.5),0.35,0,18),
+                               normprior(0,10,-100,100))
     return(prior)
   }
-  #Power NonConstant Normal Prior
+  #Power Constant Normal Prior
   if (dmodel == 4 && dvariance == 1){
    prior <-create_prior_list(normprior(0,1,-100,100), # a
                              normprior(0,10,  -1e2,1e2),     # b
-                             lnormprior(log(2),0.4215, 0,40),  #k
-                             normprior(0,2,-18,18))
+                             lnormprior(log(2),0.6, 0,40),  #k
+                             normprior(0,10,-100,100))
    return(prior)
   }
   
@@ -249,19 +274,21 @@ poor of a modeling choice.\n");
   if (dmodel == 3 && dvariance == 1){
     prior <- create_prior_list(lnormprior(0,1, 1e-8,100), # a
                                normprior(0,10, -30,30),     # b
-                               normprior(0,2, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
-                               normprior(0,2,-18,18))
+                              #lnormprior(log(1.5),0.35,0,18),
+                               normprior(0,10,-100,100))
     return(prior)
   }
   
   #Hill model
   if (dmodel == 1 && dvariance == 3){
     prior <- create_prior_list(lnormprior(0,1,0,100),
-                               normprior( 0, 10,-100,100),#normprior(1,2,-18,18),
-                               lnormprior(0 ,1,0,100),
+                               normprior( 0, 3.3,-100,100),#normprior(1,2,-18,18),
+                               lnormprior(log(0.5) ,0.5,0,100),
                                lnormprior(log(2),0.4215,0,18),
-                               normprior(0,2,-18,18)); 
+                               #lnormprior(log(1.5),0.35,0,18),
+                               normprior(0,10,-100,100)); 
     return(prior)
   }
   
@@ -269,9 +296,10 @@ poor of a modeling choice.\n");
   if (dmodel == 2 && dvariance == 3){
     prior <- create_prior_list(lnormprior(0,1, 0,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,1, -20,20),    # log(c)
-                               lnormprior(log(2),0.4215,0,18), #d 
-                               normprior(0,2,-18,18))
+                               normprior(0,0.5, -20,20),    # log(c)
+                               #lnormprior(log(2),0.4215,0,18), #d 
+                               lnormprior(log(1.5),0.35,0,18),
+                               normprior(0,10,-100,100))
     return(prior)
   }
   
@@ -280,9 +308,10 @@ poor of a modeling choice.\n");
   if (dmodel == 3 && dvariance == 3){
     prior <- create_prior_list(lnormprior(0,1, 0,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,2, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(log(2),0.4215,0,18), #d 
-                               normprior(0,2,-18,18))
+                               #lnormprior(log(1.5),0.25,0,18),
+                               normprior(0,10,-100,100))
     return(prior)
   }
 }
@@ -409,7 +438,7 @@ poor of a modeling choice.\n");
   #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,1000,-1e6,1e6),
+                               normprior(0,2,-1e6,1e6),
                                lnormprior(0,1,0,18),
                                lnormprior(log(1.2),1,1,18),
                                lnormprior(-2, 1,0,100),
@@ -420,7 +449,7 @@ poor of a modeling choice.\n");
   if (dmodel == 2 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-0,100),
                                lnormprior(0,0.5, 0,100),
-                               normprior(0,1, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(0,0.3,1,18),  #d 
                                lnormprior(0,0.5,0,18), 
                                normprior(0,2,-18,18));
@@ -430,7 +459,7 @@ poor of a modeling choice.\n");
   if (dmodel == 3 && dvariance == 2){
     prior <- create_prior_list(normprior(0,0.1,-100,100),
                                normprior(0,1, 0,100),
-                               normprior(0, 1, -20,20),    # log(c)
+                               normprior(0, 0.5, -20,20),    # log(c)
                                lnormprior(0,0.2,1,18), #d 
                                lnormprior(0,0.5,0,18), 
                                normprior(0,2,-18,18));
@@ -450,7 +479,7 @@ poor of a modeling choice.\n");
   #Hill model
   if (dmodel == 1 &&  dvariance == 1){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior( 0, 1000,-1e6,1e6),#normprior(1,2,-18,18),
+                               normprior(0,2,-1e6,1e6),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,18),
                                lnormprior(1,0.2,1,18),
                                normprior(0,2,-18,18)); 
@@ -460,7 +489,7 @@ poor of a modeling choice.\n");
   if (dmodel == 2 && dvariance == 1){
     prior <- create_prior_list(normprior(0,0.1, 0,100), # a
                                lnormprior(0,1, 0,100),     # b
-                               normprior(0,1, -20,20),    # log(c)
+                               normprior(0,0.5, -20,20),    # log(c)
                                lnormprior(1,0.2,1,18), #d 
                                normprior(0,2,-18,18))
   }
@@ -475,7 +504,7 @@ poor of a modeling choice.\n");
   #Exponential-5
   if (dmodel == 3 && dvariance == 1){
     prior <- create_prior_list(normprior(0,0.1, -100,100), # a
-                               lnormprior(0,1, 0,100),     # b
+                               lnormprior(0,0.5, 0,100),     # b
                                normprior(0,2, -10,10),    # log(c)
                                lnormprior(1,0.2,1,18), #d 
                                normprior(0,2,-18,18))

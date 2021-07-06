@@ -165,7 +165,9 @@ Eigen::MatrixXd init_pow_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
 
 Eigen::MatrixXd init_hill_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::MatrixXd prior){
   Y_LN.col(0) = exp(Y_LN.col(0).array());
-  Y_LN.col(1) = exp(Y_LN.col(1).array());
+  if (Y_LN.cols() ==3 ){
+    Y_LN.col(1) = exp(Y_LN.col(1).array());
+  }
   return init_hill_nor(Y_LN,  X, prior); 
   
 }
@@ -201,8 +203,11 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
 }
 
 Eigen::MatrixXd init_exp_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::MatrixXd prior){
+ //right here
   Y_LN.col(0) = exp(Y_LN.col(0).array());
-  Y_LN.col(1) = exp(Y_LN.col(1).array());
+  if (Y_LN.cols() ==3 ){
+      Y_LN.col(1) = exp(Y_LN.col(1).array());
+  }
   return init_exp_nor(Y_LN, X, prior); 
 }
 
@@ -250,7 +255,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
   case cont_model::exp_3:
   case cont_model::exp_5:
     retVal = distribution::log_normal==data_dist ? init_exp_lognor(Y_LN, X, prior):
-    init_exp_nor(Y_N, X, prior); 
+                                                    init_exp_nor(Y_N, X, prior); 
     break; 
   case cont_model::power: 
 
@@ -403,11 +408,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
       Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
       cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
-   /* cout << Xd << endl; 
-    subBlock << Xd(0,0), Xd(0,1), Xd(0,3),
-                Xd(1,0), Xd(1,1), Xd(1,3),
-                Xd(3,0), Xd(3,1), Xd(3,3);
-    cout << cv_t << endl; */
+
    
     temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
     Xd = temp; 
@@ -994,11 +995,12 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   } 
   
   bmd_analysis b[MA->nmodels];
- 
+
 #pragma omp parallel
 {
-#pragma omp for  
+  #pragma omp for  
   for (int i = 0; i < MA->nmodels; i++ ){
+
       std::vector<bool> fixedB; 
       std::vector<double> fixedV;
       // on each iteration make sure there parameters are emptied
@@ -1012,8 +1014,10 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           tprior(m,n) = MA->priors[i][m + n*MA->nparms[i]]; 
         }
       }
+
       Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                       tprior,(distribution)MA->disttype[i],(cont_model)MA->models[i]) ;
+      
       temp_init = temp_init.array(); 
       
       
@@ -1041,7 +1045,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
       case cont_model::exp_5:
         
-     
+ 
         init_opt = MA->disttype[i] == distribution::log_normal ?
         bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                           MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init):
@@ -1053,12 +1057,16 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                         MA->disttype[i] != distribution::normal_ncv); 
       break; 
       case cont_model::exp_3:
+         
           init_opt = MA->disttype[i] == distribution::log_normal ?
+        
           bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                             MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init):
           bmd_continuous_optimization<normalEXPONENTIAL_BMD_NC,IDPrior>    (Y_N, X, tprior,  fixedB, fixedV, 
                                                                             MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing,temp_init);
-
+          
+          
+          //cerr << "I am here:" << endl << Y_LN << endl; 
           RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
                                           max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
                                           MA->disttype[i] != distribution::normal_ncv); 
@@ -1132,7 +1140,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
   }
 } 
-  
+
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
@@ -1194,6 +1202,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
   CA->suff_stat = tempsa;
+ 
   return;  
 }
 
@@ -1390,7 +1399,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   return a; 
 }
 
-bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
+bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,double max_d){
   bmd_analysis rV;
   rV.MAP          = s.map; 
   rV.MAP_ESTIMATE = s.map_estimate; 
@@ -1401,7 +1410,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
     
-    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 1e9){
+    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 5*max_d){ // always look at 5x max dose tested
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
   }
@@ -1412,12 +1421,13 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s){
   double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
   if (v.size() > 0){
     std::sort(v.begin(), v.end());
-    for (double k = 0.004; k <= 0.9999; k += 0.005){
+   for (double k = 0.004; k <= 0.9999; k += 0.005){
     	    prob.push_back(k*inf_prob); 
           int idx = int(k*double(v.size()));
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
-    }
+   }
+   
     // fix numerical quantile issues.
     for (int i = 1; i < bmd_q.size(); i++){
       if (bmd_q[i] <= bmd_q[i-1]){
@@ -1637,9 +1647,9 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 }  
 
   bmd_analysis b[MA->nmodels]; 
-
+  double temp_m_dose = orig_X.maxCoeff();
   for (int i = 0; i < MA->nmodels; i++){
-    b[i] = create_bmd_analysis_from_mcmc(burnin,a[i]);
+    b[i] = create_bmd_analysis_from_mcmc(burnin,a[i],temp_m_dose);
   }
 
   double post_probs[MA->nmodels]; 
@@ -1816,8 +1826,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     }
   }
   
+  // cerr << Y_N << endl <<"-------" << endl; 
+  
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
+  
   temp_init = temp_init.array(); 
   
   Eigen::MatrixXd init_opt; 
@@ -1944,15 +1957,15 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                              CA->model,CA->degree); 
     
   }
-
   std::vector<double> v(orig_X.rows()); 
   for (int i ; i < orig_X.rows(); i++){
     v[i] = orig_X(i,0); 
   } 
- 
   transfer_continuous_model(b,res);
+
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
+
   res->model = CA->model; 
   res->dist  = CA->disttype; 
   CA->suff_stat = tempsa;
@@ -2137,20 +2150,21 @@ void estimate_sm_mcmc(continuous_analysis *CA,
  
     
     a = CA->disttype == distribution::log_normal?
-      mcmc_logNormal(orig_Y_LN, orig_X,
+       mcmc_logNormal(orig_Y_LN, orig_X,
                      tprior, CA->BMD_type, (cont_model)CA->model,
                      CA->isIncreasing, CA->BMR, 
                      CA->tail_prob,  
                      CA->alpha, samples, burnin,init_opt):
-      mcmc_Normal(orig_Y, orig_X,
-                  tprior, CA->BMD_type, (cont_model)CA->model,
-                  CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
+        mcmc_Normal(orig_Y, orig_X,
+                      tprior, CA->BMD_type, (cont_model)CA->model,
+                    CA->isIncreasing, CA->disttype != distribution::normal_ncv, CA->BMR,  
                   CA->tail_prob,  
-                  CA->alpha,samples, burnin,init_opt,CA->degree);
-    
+                   CA->alpha,samples, burnin,init_opt,CA->degree);
+
   bmd_analysis b; 
   CA->suff_stat = tempsa;
-  b = create_bmd_analysis_from_mcmc(burnin,a);
+  double temp_m_dose = orig_X.maxCoeff();
+  b = create_bmd_analysis_from_mcmc(burnin,a,temp_m_dose);
   transfer_continuous_model(b,res);
   transfer_mcmc_output(a,mcmc); 
   res->model = CA->model; 
@@ -2166,11 +2180,12 @@ void estimate_sm_laplace_cont(continuous_analysis *CA ,
 
 }
 
- /*
+/*
  * 
  */
 void estimate_log_normal_aod(continuous_analysis *CA,
                              continuous_deviance *aod){
+  
   
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
@@ -2283,12 +2298,9 @@ void estimate_normal_aod(continuous_analysis *CA,
   }
 }
 
-/*
- * 
- * 
- */
-void continuous_expectation( const continuous_analysis *CA, const continuous_model_result *MR,
-                             continuous_expected_result *expected){
+void estimate_normal_variance(continuous_analysis *CA,
+                              double *v_c, double *v_nc, double *v_pow){
+  
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
   Eigen::MatrixXd Y(n_rows,n_cols); 
@@ -2303,93 +2315,241 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
       Y(i,1) = CA->n_group[i]; 
     }
   }
+  
+  double divisor = get_divisor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+  
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+  Eigen::MatrixXd orig_X = X; 
+  
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+  Eigen::MatrixXd Y_LN, Y_N;
+  bool can_be_suff = true; 
+  if (Y.cols() == 1){ 
+    //individual data
+    can_be_suff = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+  }else{
+    
+    SSTAT     = cleanSuffStat(Y,X,false,false); 
+    SSTAT_LN  = cleanSuffStat(Y,X,true,false);
+    UX = X; 
+  }
+  Y_N = SSTAT; 
+  Eigen::MatrixXd temp = Y_N.col(2);
+  Y_N.col(2) = Y_N.col(1);
+  Y_N.col(1) = temp; 
+  
+  if(!can_be_suff){
+    
+    
+    *v_c   =  std::numeric_limits<double>::infinity();
+    *v_nc  =  std::numeric_limits<double>::infinity();
+    *v_pow =  std::numeric_limits<double>::infinity();
+    
+    
+    return;   
+  }else{
+    
+    variance_fits(Y_N, UX, 
+                    can_be_suff, 
+                    v_c, v_nc, v_pow);
+    return; 
+  }
+}
+
+                   
+/*
+ * 
+ * 
+ */
+void continuous_expectation( const continuous_analysis *CA, const continuous_model_result *MR,
+                             continuous_expected_result *expected){
+
+  // copy the origional data
+  
+  // standardize the data
+  int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
+  bool tempsa = CA->suff_stat; 
+  Eigen::MatrixXd Y(n_rows,n_cols); 
+  Eigen::MatrixXd X(n_rows,1); 
+  // copy the origional data
+  
+  for (int i = 0; i < n_rows; i++){
+    Y(i,0) = CA->Y[i]; 
+    X(i,0) = CA->doses[i]; 
+    if(CA->suff_stat){
+      Y(i,2) = CA->sd[i]; 
+      Y(i,1) = CA->n_group[i]; 
+    }
+  }
+  
+  Eigen::MatrixXd myX = X; 
+  double divisor = get_divisor( Y,  X); 
+  double  max_dose = X.maxCoeff(); 
+  
+  Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
+  Eigen::MatrixXd orig_X = X; 
+  
+  Eigen::MatrixXd SSTAT, SSTAT_LN, UX; 
+  Eigen::MatrixXd Y_LN, Y_N;
+  bool suff_stat = false; 
+  if(!CA->suff_stat){
+    //convert to sufficient statistics for speed if we can
+    suff_stat  = convertSStat(Y, X, &SSTAT, &SSTAT_LN,&UX); 
+    if (suff_stat)// it can be converted
+    {
+      X = UX; 
+      Y_N = cleanSuffStat(SSTAT,UX,false);  
+      Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+      orig_X = UX;  
+      orig_Y = SSTAT; 
+      orig_Y_LN = SSTAT_LN;
+      
+    }else{
+      Y = Y; // scale the data with the divisor term.
+      Y_N = Y; 
+      Y_LN = Y; 
+    }
+  }else{
+    suff_stat = true; 
+    orig_Y = cleanSuffStat(Y,X,false,false); 
+    orig_Y_LN = cleanSuffStat(Y,X,true,false);
+    SSTAT = cleanSuffStat(Y,X,false); 
+    SSTAT_LN = cleanSuffStat(Y,X,true);
+    
+    std::vector<double> tux = unique_list(X); 
+    UX = Eigen::MatrixXd(tux.size(),1); 
+    for (unsigned int i = 0; i < tux.size(); i++){
+      UX(i,0) = tux[i]; 
+    }
+    Y_N = SSTAT; 
+    X = UX; 
+    Y_LN = SSTAT_LN; 
+  }
+  
+  if (suff_stat){
+  
+    X = UX; 
+    //  Y_N = cleanSuffStat(SSTAT,UX,false);  
+    //  Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
+    Eigen::MatrixXd temp; 
+    temp = Y_N.col(2);
+    Y_N.col(2) = Y_N.col(1);
+    Y_N.col(1) = temp; 
+    temp = Y_LN.col(2);
+    Y_LN.col(2) = Y_LN.col(1);
+    Y_LN.col(1) = temp; 
+    temp = orig_Y.col(2);
+    orig_Y.col(2) = orig_Y.col(1);
+    orig_Y.col(1) = temp; 
+    temp = orig_Y_LN.col(2);
+    orig_Y_LN.col(2) = orig_Y_LN.col(1);
+    orig_Y_LN.col(1) = temp; 
+  }
+  
+
   ///////////////////////////////////////////////////////////////////////////////////////////
-  bool suff_stat = CA->suff_stat;
   bool bConstVar = (CA->disttype == distribution::normal);
   int  degree    = CA->parms - 2 - (CA->disttype == distribution::normal_ncv );
+  double neg_like; 
+  // 
   ///////////////////////////////////////////////////////////////////////////////////////////
-  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(Y, X, suff_stat, bConstVar, degree);
-  normalHILL_BMD_NC  likelihood_nhill(Y, X, suff_stat, bConstVar, 0);
-  normalPOWER_BMD_NC likelihood_power(Y, X, suff_stat, bConstVar, 0);
-  normalFUNL_BMD_NC  likelihood_funl(Y, X, suff_stat, bConstVar, 0);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(Y, X, suff_stat, bConstVar, NORMAL_EXP5_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(Y, X, suff_stat, bConstVar, NORMAL_EXP3_UP);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(Y, X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
-  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(Y, X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
+  normalPOLYNOMIAL_BMD_NC  likelihood_npoly(orig_Y , X, suff_stat, bConstVar, degree);
+  normalHILL_BMD_NC  likelihood_nhill(orig_Y , X, suff_stat, bConstVar, 0);
+  normalPOWER_BMD_NC likelihood_power(orig_Y , X, suff_stat, bConstVar, 0);
+  normalFUNL_BMD_NC  likelihood_funl(orig_Y, X, suff_stat, bConstVar, 0);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5U(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP5_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3U(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP3_UP);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp5D(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP5_DOWN);
+  normalEXPONENTIAL_BMD_NC likelihood_nexp3D(orig_Y , X, suff_stat, bConstVar, NORMAL_EXP3_DOWN);
   
-  lognormalHILL_BMD_NC  likelihood_lnhill(Y, X, suff_stat, 0);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y, X, suff_stat, NORMAL_EXP5_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y, X, suff_stat, NORMAL_EXP3_UP);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y, X, suff_stat, NORMAL_EXP5_DOWN);
-  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y, X, suff_stat, NORMAL_EXP3_DOWN);
-
+  lognormalHILL_BMD_NC  likelihood_lnhill(Y_LN, X, suff_stat, 0);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5U(Y_LN, X, suff_stat, NORMAL_EXP5_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3U(Y_LN, X, suff_stat, NORMAL_EXP3_UP);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp5D(Y_LN, X, suff_stat, NORMAL_EXP5_DOWN);
+  lognormalEXPONENTIAL_BMD_NC likelihood_lnexp3D(Y_LN, X, suff_stat, NORMAL_EXP3_DOWN);
+  
   Eigen::MatrixXd mean; 
   Eigen::MatrixXd var; 
   Eigen::MatrixXd theta(MR->nparms,1); 
   for (int i=0; i < MR->nparms; i++){
     theta(i,0) = MR->parms[i];  
   }
-  
+ 
   if (CA->disttype == distribution::log_normal){
     switch (CA->model){
       case cont_model::hill:
-          mean = likelihood_lnhill.mean(theta); 
-          var  = likelihood_lnhill.variance(theta); 
+          mean = likelihood_lnhill.mean(theta,myX); 
+          var  = likelihood_lnhill.variance(theta,myX); 
+          neg_like = likelihood_lnhill.negLogLikelihood(theta); 
           break; 
       case cont_model::exp_3:
         if (CA->isIncreasing){
-          mean = likelihood_lnexp3U.mean(theta); 
-          var  = likelihood_lnexp3U.variance(theta);
+          mean = likelihood_lnexp3U.mean(theta,myX); 
+          var  = likelihood_lnexp3U.variance(theta,myX);
+          neg_like = likelihood_lnexp3U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_lnexp3D.mean(theta); 
-          var  = likelihood_lnexp3D.variance(theta);
+          mean = likelihood_lnexp3D.mean(theta,myX); 
+          var  = likelihood_lnexp3D.variance(theta,myX);
+          neg_like = likelihood_lnexp3D.negLogLikelihood(theta); 
         }
         break; 
       case cont_model::exp_5:
         if (CA->isIncreasing){
-          mean = likelihood_lnexp5U.mean(theta); 
-          var  = likelihood_lnexp5U.variance(theta);
+          mean = likelihood_lnexp5U.mean(theta,myX); 
+          var  = likelihood_lnexp5U.variance(theta,myX);
+          neg_like = likelihood_lnexp5U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_lnexp5D.mean(theta); 
-          var  = likelihood_lnexp5D.variance(theta);
+          mean = likelihood_lnexp5D.mean(theta,myX); 
+          var  = likelihood_lnexp5D.variance(theta,myX);
+          neg_like = likelihood_lnexp5D.negLogLikelihood(theta); 
         }
         break; 
       break; 
     }
   }else{
+
     switch (CA->model){
       case cont_model::funl:
-          mean = likelihood_funl.mean(theta); 
-          var  = likelihood_funl.variance(theta);
+          mean = likelihood_funl.mean(theta,myX); 
+          var  = likelihood_funl.variance(theta,myX);
+          neg_like = likelihood_funl.negLogLikelihood(theta); 
           break; 
       case cont_model::power:
-          mean = likelihood_power.mean(theta); 
-          var  = likelihood_power.variance(theta); 
+          mean = likelihood_power.mean(theta,myX); 
+          var  = likelihood_power.variance(theta,myX); 
+          neg_like = likelihood_power.negLogLikelihood(theta); 
           break; 
       case cont_model::polynomial:
-          mean = likelihood_npoly.mean(theta); 
-          var  = likelihood_npoly.variance(theta); 
+          mean = likelihood_npoly.mean(theta,myX); 
+          var  = likelihood_npoly.variance(theta,myX); 
+          neg_like = likelihood_npoly.negLogLikelihood(theta); 
           break; 
       case cont_model::hill:
-          mean = likelihood_nhill.mean(theta); 
-          var  = likelihood_nhill.variance(theta); 
+          mean = likelihood_nhill.mean(theta,myX); 
+          var  = likelihood_nhill.variance(theta,myX); 
+          neg_like = likelihood_nhill.negLogLikelihood(theta); 
           break; 
       case cont_model::exp_3:
         if (CA->isIncreasing){
-          mean = likelihood_nexp3U.mean(theta); 
-          var  = likelihood_nexp3U.variance(theta);
+          mean = likelihood_nexp3U.mean(theta,myX); 
+          var  = likelihood_nexp3U.variance(theta,myX);
+          neg_like = likelihood_nexp3U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_nexp3D.mean(theta); 
-          var  = likelihood_nexp3D.variance(theta);
+          mean = likelihood_nexp3D.mean(theta,myX); 
+          var  = likelihood_nexp3D.variance(theta,myX);
+          neg_like = likelihood_nexp3D.negLogLikelihood(theta); 
         }
         break; 
       case cont_model::exp_5:
         if (CA->isIncreasing){
-          mean = likelihood_nexp5U.mean(theta); 
-          var  = likelihood_nexp5U.variance(theta);
+          mean = likelihood_nexp5U.mean(theta,myX); 
+          var  = likelihood_nexp5U.variance(theta,myX);
+          neg_like = likelihood_nexp5U.negLogLikelihood(theta); 
         }else{
-          mean = likelihood_nexp5D.mean(theta); 
-          var  = likelihood_nexp5D.variance(theta);
+          mean = likelihood_nexp5D.mean(theta,myX); 
+          var  = likelihood_nexp5D.variance(theta,myX);
+          neg_like = likelihood_nexp5D.negLogLikelihood(theta); 
         }
         break; 
       break; 
@@ -2397,11 +2557,11 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
     }
     
   }
+
   for (int i = 0; i < expected->n ; i++){
     expected->expected[i] = mean(i,0);
-//    expected->expected[i] = pow((i,0),0.5);
     expected->sd[i] = pow(var(i,0),0.5);
+    expected->like = neg_like; 
   }
- 
   
 }

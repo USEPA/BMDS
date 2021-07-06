@@ -1,10 +1,6 @@
 #include "log_likelihoods.h"
 
-#ifdef USE_SIMD
-#if USE_SIMD > 0
-  #include <immintrin.h>
-#endif 
-#endif
+
 #pragma once
 #ifndef normal_likelihoodsH
 #define normal_likelihoodsH
@@ -20,7 +16,7 @@
 
 
 #include <gsl/gsl_randist.h>
-
+#include "cmodeldefs.h"
 
 template <typename T> int sgn(T val) {
 	return (T(0) < val) - (val < T(0));
@@ -42,6 +38,8 @@ public:
  
 	};
 	
+	
+	
 	int    nParms() { return 2; }; 		// the model assumes one mean
 										                // and constan variance
 	bool isSuffStat(){
@@ -59,7 +57,7 @@ public:
 		Eigen::MatrixXd rV = Eigen::MatrixXd::Ones(Y.rows(),1)*var; 
 		return rV;  // variance is constant											
 	};
-
+  
 	double negLogLikelihood(Eigen::MatrixXd theta);
 	protected: 
 		bool sufficient_statistics; 

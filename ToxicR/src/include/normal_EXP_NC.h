@@ -70,12 +70,25 @@ class normalEXPONENTIAL_BMD_NC : public normalLLModel {
 			return add; 
 	}
 	
-						 							    	
+	virtual cont_model mean_type(){
+	  switch(deg){
+    	  case NORMAL_EXP3_DOWN:
+    	  case NORMAL_EXP3_UP:
+    	    return cont_model::exp_3;
+    	    break; 
+    	  case NORMAL_EXP5_DOWN:
+    	  case NORMAL_EXP5_UP:
+    	    return cont_model::exp_5; 
+    	  default:
+    	    return cont_model::generic;     
+	  }
+	  return cont_model::generic;
+	}		
+	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
 				
 		Eigen::MatrixXd rV; 
-    
-
+	  
 		double sign = 1.0; 
 		switch(deg){
 			case NORMAL_EXP2_DOWN:
@@ -98,7 +111,6 @@ class normalEXPONENTIAL_BMD_NC : public normalLLModel {
 				rV = theta(0,0)*(exp(theta(2,0))-(exp(theta(2,0))-1.0)*exp(-pow(theta(1,0)*d.array(),theta(3,0))));
 			
 		}
-
 		return rV; 
 	}
 
