@@ -18,17 +18,16 @@
 #* 
 #  * 
 #  */
-#################################################33
-#get_prior_list <- a list of Default priors for an analysis
-#
-##################################################
+
+
+
 
 #################################################
 # bmd_single_continous - Run a single BMD model
 #
 ##################################################
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
-                                   prior="default", BMD_TYPE = "sd", 
+                                   prior=NA, BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
                                    alpha = 0.05, samples = 25000,degree=2,
                                    burnin = 1000,isFast = FALSE){
@@ -37,6 +36,19 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (ncol(Y) > 1){
         sstat=T
     }
+    
+    if (!is.na(prior[1])){
+      #parse the prior
+      if (class(prior) != "BMD_Bayes_continuous_model"){
+        stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
+      }
+      result <- .parse_prior(prior)
+      distribution <- result$distribution
+      model_type   <- result$model
+      prior = result$prior
+      
+    }
+    
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
 
     rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
@@ -45,7 +57,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     }
     dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
     
-    dmodel = which(model_type==c("hill","exp-3","exp-5","power","FUNL","polynomial"))
+    dmodel = which(model_type==.continuous_models)
     
     if (identical(dmodel, integer(0))){
       stop('Please specify one of the following model types: \n
@@ -77,14 +89,18 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
          stop("Polynomial models are currently not defined for the Log-Normal distribution.")
     }
     
-    if (prior[1] =="default"){
-      PR = bayesian_prior_continuous(model_type,distribution,degree)
+    #For Bayesian Analysis
+    if (is.na(prior[1])){
+      PR = bayesian_prior_continuous_default(model_type,distribution,degree)
+      PR = PR$prior
     }else{
       PR = prior; 
     }
-    
+
+    #For MLE
     if (type_of_fit == 2){
       PR = MLE_bounds_continuous(model_type,distribution,degree)
+      PR = PR$prior
     }
 
     
@@ -140,11 +156,13 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
           dist_type = 2 # normal-ncv
       }
     }
-    
+  ##  print(PR)
+  # // return(PR)
     if (fit_type == "mcmc"){
       
       rvals <- run_continuous_single_mcmc(fitmodel,model_data$SSTAT,model_data$X,
-                                          PR[[1]],options, is_log_normal, sstat) 
+                                          PR ,options, is_log_normal, sstat) 
+      
       if (model_type == "exp-3"){
         rvals$PARMS = rvals$PARMS[,-3]
         rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
@@ -181,7 +199,8 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       
       options[7] <- (isFast == TRUE)*1
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
-  						                          PR[[1]],options, dist_type)
+  						                          PR,options, dist_type)
+     
      # print(rvals$bmd_dist)
       rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),,drop=F]
       rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1]),,drop=F]

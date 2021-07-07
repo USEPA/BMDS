@@ -31,9 +31,32 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2),rep("FUNL",2))
     distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv","normal","normal-ncv")
     model_list = data.frame(model_list = model_list, distribution_list = distribution_list)
+    prior_list = ma_continuous_list(model_list$model_list,model_list$distribution_list)
+    for(ii in 1:length(prior_list)){
+      prior_list[[ii]]$prior = prior_list[[ii]]$prior[[1]]
+    }
+  }else{
+    prior_list <- list()
+    for (ii in 1:length(model_list)){
+      temp_prior = model_list[[ii]]
+      
+      
+      if (class(temp_prior) != "BMD_Bayes_continuous_model"){
+        stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
+      }
+      result <- .parse_prior(temp_prior)
+      distribution <- result$distribution
+      model_type   <- result$model
+      
+      if (model_type == "polynomial"){
+        stop("Polynomial models are not allowed in model averaging.")
+      }
+      a = list(model = model_type, dist = distribution,
+               prior = result$prior)
+      prior_list[[ii]] = a
+    }  
+    
   }
-
-  prior_list = ma_continuous_list(model_list$model_list,model_list$distribution_list)
   
   models <- rep(0,length(prior_list))
   dlists  <- rep(0,length(prior_list))
@@ -41,7 +64,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   permuteMat = cbind(c(1,2,3,4,5),c(6,3,5,8,10)) #c++ internal adjustment
   for(ii in 1:length(prior_list)){
       models[ii]   <- permuteMat[which(prior_list[[ii]]$model == current_models),2] #readjust for c++ internal
-      priors[[ii]] <- prior_list[[ii]]$prior[[1]]
+      priors[[ii]] <- prior_list[[ii]]$prior
       dlists[ii]   <- which(prior_list[[ii]]$dist == current_dists)
   }
 
@@ -100,12 +123,12 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[jj]]$fitted_model <- tempn[[ii]]
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)
-         temp[[jj]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+         temp[[jj]]$model <- prior_list[[jj]]$model# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
 
          #te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
          data_temp = temp[[jj]]$fitted_model$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
-#         data_temp = data_temp[!is.na(data_temp[,1]),]
+#        data_temp = data_temp[!is.na(data_temp[,1]),]
          temp[[jj]]$bmd     <- c(NA,NA,NA)     
          
      
@@ -144,14 +167,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
    
     if (length(data_temp) > 0){
         ii = nrow(data_temp)
-        #while(ii > 2){
-        #  if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
-        #    data_temp = data_temp[-ii,]
-        #    ii = nrow(data_temp)
-        #  }else{
-        #    ii = ii - 1; 
-        #  }
-        #}
+    
         temp$ma_bmd = data_temp
         tempn$posterior_probs[is.nan(tempn$posterior_probs)] = 0
         if (length(data_temp)>10 && (abs(sum(tempn$posterior_probs) -1) <= 1e-8)){
@@ -182,7 +198,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     for ( ii in idx){
          temp[[ii]]$prior <- priors[[which(ii == idx)]]
          temp[[ii]]$data  <- cbind(D,Y)
-         temp[[ii]]$model <- model_list$model_list[jj]# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
+         temp[[ii]]$model <- prior_list[[jj]]$model 
      
          data_temp = temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),]
          if (length(data_temp)>0){
@@ -214,7 +230,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       {
         te <- splinefun(sort(temp_me[,2,drop=F]),sort(temp_me[,1,drop=F]),method="hyman")
         temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
-        print(max(temp_me[,2]))
+   
         if(max(temp_me[,2])< 1-alpha){
           temp$bmd[3] = 1e300
         }

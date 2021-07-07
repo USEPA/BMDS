@@ -22,12 +22,13 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            lnormprior(0,1,0,18),
                            normprior(0,2,-18,18)); 
 
+Bob <- ma_continuous_fit(as.matrix(doses),as.matrix(v1)+10,fit_type ="mcmc",BMR = 1,model_list = a )
+
+
 library(readr)
 PFOA_Liver <- read_table2("~/OneDrive - National Institutes of Health/Projects/2021/Continuous MA/data/PFOA_Liver_lin_Control_Ratio.txt", 
                           col_names = FALSE)
 
-PFOA_Liver <- read_table2("~/OneDrive - National Institutes of Health/Projects/2021/Continuous MA/data/PFOA_Liver.txt", 
-                          col_names = FALSE)
 
 PFOA_Liver <- PFOA_Liver[-(1:2),]
 
@@ -38,7 +39,7 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
 
 
 
-B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle")
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1)+10,model_type = "hill", fit_type = "mle")
 #BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 
 library(dplyr)
@@ -84,7 +85,7 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
 
 
 # How about the log scale?
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
+Bob <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
 # X - axis is bit odd for log10() case 
 # For model average why it shows only one model?

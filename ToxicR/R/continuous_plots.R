@@ -112,7 +112,7 @@ cont_power_f <-function(parms,d,decrease=F){
   temp_fit <- splinefun(test_doses,me)
   ma_mean = temp_fit
   # Geom_polygon ? etc..
-  plot_gg <- ggplot() +xlim(-max(test_doses)*5,min(test_doses)*5)+
+  plot_gg <- ggplot() +xlim(-max(test_doses)*5,max(test_doses)*5)+
     geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
     labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
     theme_minimal()
@@ -196,14 +196,10 @@ cont_power_f <-function(parms,d,decrease=F){
     lerror <- mean-2*se
     dose = c(doses,doses)
     Response = c(uerror,lerror)
-    lm_fit = lm(mean ~ doses,weights = 1/se*se)
+    lm_fit = lm(mean ~ doses,weights = 1/(se*se))
   }else{
     Response <- data_d[,2,drop=F]
     doses = data_d[,1,drop=F]
-    # SL: Question about model fitting
-    # Is it a valid approach to get the fitting parameters?
-    # Looks like it is using a simple linear regression parameter
-    # -> LM is just for checking the trend decrease or increase coefficient for exponential 3 case
     lm_fit = lm(Response~doses)
   }
   
@@ -238,10 +234,11 @@ cont_power_f <-function(parms,d,decrease=F){
   temp_fit <- splinefun(test_doses,me)
   ma_mean  <- temp_fit
   plot_gg<-ggplot()+
-          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+xlim(-max(test_doses)*5,min(test_doses)*5)+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+xlim(-max(test_doses)*5,max(test_doses)*5)+
           labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
           theme_minimal()
         
+
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
     if (!sum(is.na(fit$bmd))){
@@ -515,8 +512,8 @@ cont_power_f <-function(parms,d,decrease=F){
          fit <- A[[fit_idx[ii]]]
          if (fit$model=="FUNL"){
            t <- cont_FUNL_f(fit$parameters,test_doses)
-           if(BB$posterior_probs[ii] > 0){
-             me = t*BB$posterior_probs[ii] + me
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
            }
           
          }  
