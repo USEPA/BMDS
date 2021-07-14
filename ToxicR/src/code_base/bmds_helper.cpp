@@ -352,26 +352,27 @@ void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_mod
       case cont_model::polynomial:
      // } else if (anal->model == cont_model::polynomial && anal->prior[0] == 0){
       if(anal->prior[0] == 0){
+        int numRows = 2+anal->degree;
+        int ind; //index in prior array
+        if (anal->disttype == distribution::normal_ncv){
+          numRows++;
+        }
+        //set ind to target min or max for parameters
+        //min for increasing, max for decreasing
         if(anal->isIncreasing){
-          if(anal->disttype == distribution::normal_ncv){
-            ind = 13+3*(anal->degree-1);
-            anal->prior[ind] = 0.0;                    //beta1 min
-            anal->prior[ind + anal->degree + 1] = 0.0; //alpha min
-          } else {
-            ind = 10+3*(anal->degree-1);
-            anal->prior[ind] = 0.0;                 //beta1 min
-            anal->prior[ind + anal->degree] = 0.0;  //alpha min
-          }
+          ind = 3*numRows+1;          
+        } else { 
+          ind = 4*numRows+1;
+        }  
+        //beta terms
+        for (int i=ind; i<ind+anal->degree; i++){
+          anal->prior[i] = 0.0;  // beta min or max 
+        }
+        //alpha
+        if(anal->disttype == distribution::normal_ncv){ 
+           anal->prior[ind+anal->degree+1] = 0.0;  //alpha min or max
         } else {
-          if(anal->disttype == distribution::normal_ncv){
-            ind = 17+4*(anal->degree-1);
-            anal->prior[ind] = 0.0;                    //beta1 max
-            anal->prior[ind + anal->degree + 1] = 0.0; //alpha max
-          } else {
-            ind = 13+4*(anal->degree-1);
-            anal->prior[ind] = 0.0;                //beta1 max
-            anal->prior[ind + anal->degree] = 0.0; //alpha max
-          }
+           anal->prior[ind+anal->degree] = 0.0;  //alpha min or max
         }
       }
       break;
