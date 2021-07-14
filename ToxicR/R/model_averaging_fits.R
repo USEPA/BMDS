@@ -3,8 +3,7 @@
 #
 ##################################################
 ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
-                                  user_priors=NA, BMD_TYPE = "sd",
-                                  BMR = 0.1, point_p = 0.01, 
+                                  BMD_TYPE = "sd", BMR = 0.1, point_p = 0.01, 
                                   alpha = 0.05,samples = 21000,
                                   burnin = 1000){
   myD = Y; 
@@ -46,7 +45,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       }
       result <- .parse_prior(temp_prior)
       distribution <- result$distribution
-      model_type   <- result$model
+      model_type   <- result$mean
       
       if (model_type == "polynomial"){
         stop("Polynomial models are not allowed in model averaging.")
@@ -125,23 +124,14 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[jj]]$data  <- cbind(D,Y)
          temp[[jj]]$model <- prior_list[[jj]]$model# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
 
-         #te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
          data_temp = temp[[jj]]$fitted_model$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
-#        data_temp = data_temp[!is.na(data_temp[,1]),]
          temp[[jj]]$bmd     <- c(NA,NA,NA)     
          
      
          if (length(data_temp) > 0){
            ii = nrow(data_temp)
-            # while(ii > 2){
-            #   if (abs(data_temp[ii,2] - data_temp[ii-1,2]) < 1e-4){
-            #     data_temp = data_temp[-ii,]
-            #     ii = nrow(data_temp)
-            #   }else{
-            #     ii = ii - 1; 
-            #   }
-            # }
+
              temp[[jj]]$fitted_model$bmd_dist = data_temp
              if (length(data_temp)>10 ){
              
@@ -150,7 +140,6 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
              }
          }
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
-        # temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
     }
@@ -252,8 +241,9 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
    #d_qlinear=8,d_weibull=9};
   result = which(model_name ==c("hill","gamma","logistic","log-logistic","log-probit","multistage","probit",
                                  "qlinear","weibull"))
+ 
   if ((identical(result,integer(0)))){
-    stop("The model requested to be fit is not defined.")
+    stop("The model requested is not defined.")
   }
  
   return(result)
@@ -264,12 +254,46 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
 #
 ##################################################
 ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace",
-                              user_priors=integer(0), BMD_TYPE = "extra",
+                              BMD_TYPE = "extra",
                               BMR = 0.1, point_p = 0.01, distribution_list = NA,
                               alpha = 0.05,samples = 21000,
                               burnin = 1000){
+  priors <- list()
+  temp_prior_l <- list()
+  tmodel_list  <- list()
+  if (length(model_list) < 1){
+    
+    model_list =  .dichotomous_models 
+    model_i = rep(0,length(model_list))
+    for (ii in 1:length(model_list)){
+      temp_prior_l[[ii]] = bayesian_prior_dich(model_list[ii])
+      priors[[ii]] = temp_prior_l[[ii]]$priors
+      model_i[ii]  = .dichotomous_model_type(model_list[ii])
+    }
+    
+  }else{
+    if(class(model_list) != "list"){
+      stop("Please pass a list of priors.")
+    }
+    tmodel_list = model_list
+    model_list =  rep("",length(model_list))
+    model_i = rep(0,length(model_list))
+    for (ii in 1:length(model_list)){
+      if (class(tmodel_list[[ii]]) != "BMD_Bayes_dichotomous_model"){
+        stop("One of the specified models is not a 'BMD_Bayes_dichotomous_model.'")
+      }
+        temp_prior_l   = tmodel_list[[ii]]
+        priors[[ii]]   = temp_prior_l$priors
+        model_list[ii] = temp_prior_l$mean
+        model_i[ii]    = .dichotomous_model_type(model_list[ii])
+      
+    }
+    
+  }
   
-  model_p <- rep(1,9)/9; # background prior is even
+  #return(list(priors,model_list,model_i))
+  
+  model_p <- rep(1,length(model_list))/length(model_list); # background prior is even
   o1 <- c(BMR, alpha)
   
   if (BMD_TYPE == "extra"){
@@ -279,32 +303,11 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
   }
   
   o2 <- c(BTYPE,2,samples, burnin)
-  
-  priors <- list();
 
-  if (length(model_list) < 1){
-
-    model_list =  c("hill","gamma","logistic","log-logistic","log-probit","multistage","probit",
-                    "qlinear","weibull")
-    model_i = rep(0,length(model_list))
-    for (ii in 1:length(model_list)){
-      priors[[ii]] = bayesian_prior_dich(model_list[ii])
-    
-      model_i[ii]  = .dichotomous_model_type(model_list[ii])
-    }
-  
-  }
-  ## prepare the prior list for C++ internal 
-  ## by stripping it of all 'extra' class info
-  temp_priors <-list(); 
-  for (ii in 1:length(priors)){
-       temp_priors[ii] <- priors[[ii]]
-  }
-  
   data <- as.matrix(cbind(D,Y,N))
   if ( fit_type == "laplace"){
     #Laplace Run
-    temp <- run_ma_dichotomous(data, temp_priors, model_i,
+    temp <- run_ma_dichotomous(data, priors, model_i,
                                model_p, FALSE, o1, o2)
     #clean up the run
     temp$bmd_dist <- temp$BMD_CDF
@@ -316,7 +319,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     
     idx     <- grep("Fitted_Model",t_names)
     for ( ii in idx){
-         temp[[ii]]$prior <- priors[[which(ii == idx)]]
+        # temp[[ii]]$prior <- priors[[which(ii == idx)]]
          temp[[ii]]$data  <- data
          temp[[ii]]$model <- tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
          if (temp[[ii]]$model =="quantal-linear" ){
@@ -331,7 +334,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_maximized")  
   }else{
     #MCMC run
-    temp_r <- run_ma_dichotomous(data, temp_priors, model_i,
+    temp_r <- run_ma_dichotomous(data, priors, model_i,
                                model_p, TRUE, o1, o2)
     tempn <- temp_r$ma_results
     tempm <- temp_r$mcmc_runs
@@ -344,7 +347,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
          temp[[jj]]$fitted_model <- tempn[[ii]]
-         temp[[jj]]$prior <- priors[[which(ii == idx)]]
+         #temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- data
          temp[[jj]]$model <- tolower(trimws(gsub("Model: ","",tempn[[ii]]$full_model)))
          temp[[jj]]$options <- c(o1,o2)
@@ -357,7 +360,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          jj <- jj + 1
     }
    # for (ii in idx_mcmc)
-    names(temp) <- sprintf("Individual_Model_%s",1:length(temp_priors))
+    names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
     temp$ma_bmd <- tempn$BMD_CDF
     te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd   <- c(te(0.5),te(alpha),te(1-alpha))

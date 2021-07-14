@@ -95,7 +95,7 @@ combine_prior_lists<-function(p1,p2){
   return(retval)
 }
 
-.print.BMDmodelprior <- function(priors){
+.print.BMD_Bayes_model <- function(priors){
   X = priors[[1]]
   if (!is.null(priors$model)){
     cat(priors$model," Parameter Priors\n")
@@ -329,21 +329,24 @@ bayesian_prior_dich  <- function(model,degree=2){
                                normprior( 0,	3,	-40,	40),
                                normprior(-3,	3.3,	-40,	40),
                                lnormprior(0.693147,	0.5,	0,	40))
+    prior <- create_dichotomous_prior(prior,"hill")
   }
   if (dmodel==2){ #GAMMA
     prior <- create_prior_list(normprior(	0,	2,	-18,	18),
                                lnormprior(	0.693147180559945,	0.424264068711929,	0.2,	20),
                                lnormprior(	0,	1,	0,	1e4))
-    
+    prior <- create_dichotomous_prior(prior,"gamma")
   }
   if (dmodel == 3){ #LOGISTIC
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
                                lnormprior(0.1,	1,	0,	40))
+    prior <- create_dichotomous_prior(prior,"logistic")
   }
   if (dmodel == 4){ #LOG-LOGISTIC
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
                                normprior(0,	1,	-40,	40),
                                lnormprior(0.693147180559945,	0.5,	0,	20))
+    prior <- create_dichotomous_prior(prior,"log-logistic")
   }
   if (dmodel == 5){ #LOG-PROBIT
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
@@ -352,28 +355,32 @@ bayesian_prior_dich  <- function(model,degree=2){
   }
   
   if (dmodel == 6){ #MULTISTAGE
-    startP <- create_prior_list(normprior(	0,	2,	-20,	20),
+     startP <- create_prior_list(normprior(	0,	2,	-20,	20),
                                 lnormprior( 	0,	0.5,	0,	100))
-    
+    degree = floor(degree)
     if (degree >= 2){#make sure it is a positive degree
       for (ii in (2:degree)){
         startP <- combine_prior_lists(startP,lnormprior(0,1,0,1e6))
       }
     }
     prior <- startP
+    prior <- create_dichotomous_prior(prior,"multistage")
   }
   if (dmodel == 7){ #PROBIT
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
                                lnormprior(0.1,	1,	0,	40))
+    prior <- create_dichotomous_prior(prior,"probit")
   }
   if (dmodel == 8){ #QLINEAR
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
                                lnormprior(0.15,  1,	0,	18))
+    prior <- create_dichotomous_prior(prior,"qlinear")
   }
   if (dmodel == 9){ #WEIBULL
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
                                lnormprior(0.424264068711929,	0.5,	0,	40),
                                lnormprior(0,	1.5,	0,	1e4))
+    prior <- create_dichotomous_prior(prior,"weibull")
   }  
   
   return(prior)

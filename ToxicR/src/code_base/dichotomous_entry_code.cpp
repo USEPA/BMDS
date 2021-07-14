@@ -328,6 +328,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
   
+  
   switch ((dich_model)DA->model){
   case dich_model::d_hill:
     a =   bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
@@ -759,7 +760,7 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           Y(i,0) = data->Y[i]; Y(i,1) = data->n_group[i]; 
           D(i,0) = data->doses[i]; 
      }
-     
+
      switch (data->model){
      case dich_model::d_hill:
           mean_d =  X_compute_mean<dich_hillModelNC> (Y,D,parms);
@@ -791,14 +792,13 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           break; 
      }
      
-
      Eigen::MatrixXd expected = Y.col(1).array()*mean_d.array(); 
-     Eigen::MatrixXd residual = Y - expected; 
+ 
+     Eigen::MatrixXd residual = Y.col(0) - expected; 
      residual = residual.array()/sqrt(expected.array()); 
      Eigen::MatrixXd sqresid  = residual.array()*residual.array();
      Eigen::MatrixXd resultsTable(Y.rows(),5); 
      resultsTable << Y.col(0) , Y.col(1) , expected , residual, sqresid;
- 
      for (int i = 0; i < data->n; i++){
        res->expected[i] = expected(i,0);
        res->residual[i] = residual(i,0);          

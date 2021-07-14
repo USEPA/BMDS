@@ -105,7 +105,7 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
     if (sum(temp[,4]>temp[,5])> 0){
       stop("One of the parameter's lower bounds is greater than the upper bound.")
     }
-    if (temp[5,5] < 0){
+    if (temp[5,4] < 0){
       stop("The prior on \rho (parameter 5) can not have a lower bound less than zero.")
     }
     prior$model = "Hill Model [normal-ncv]"
@@ -276,8 +276,9 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
     if (nrow(temp) < 3){
       stop("Normal Polynomial models require 3 or more parameters.")
     }
-    prior$model = "Hill Model [normal]"
+    prior$model = "Polynomial Model [normal]"
     prior$parameters <- c(temp_p,"log(sigma^2)")
+    prior$degree = nrow(temp) - 2
   }
   
   if (distribution == "normal-ncv"){
@@ -286,17 +287,19 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
       stop("Normal Polynomial models require 4 or more parameters.")
     }
 
-    if (temp[nrow(temp)-2,5] < 0){
+    if (temp[nrow(temp)-2,4] < 0){
       stop("The prior on \rho (parameter 5) can not have a lower bound less than zero.")
     }
-    prior$model = "Hill Model [normal-ncv]"
+    prior$model = "Polynomial Model [normal-ncv]"
     temp_p[length(temp_p)] = "rho"
     prior$parameters <- c(temp_p,"log(sigma^2)")
+    prior$degree = nrow(temp) - 3
   }
   
   if (distribution == "lognormal"){
     stop("Log-Normal/Polynomial specification is not presently available.")
   }
+   
   prior$mean = .continuous_models[6]
   return(prior)
 }
@@ -337,5 +340,245 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   prior$mean = .continuous_models[5]
   return(prior)
 }
+
+create_dichotomous_prior <- function( prior,model){
+  
+  if (class(prior) != "BMDmodelprior"){
+    stop("Prior is not of a 'BMDmodelprior' class. A probable solution is to 
+          define the prior using function `create_prior_list`.")
+  }
+  if (!(model %in% .dichotomous_models  )){
+    stop(cat("Model Type must be one of:", .dichotomous_models ,"\n"))
+  }
+
+  
+  p = NA
+  temp = prior[[1]]
+  
+  if (sum(temp[,4]>temp[,5])> 0){
+    stop("One of the parameter's lower bounds is greater than the upper bound.")
+  }
+  
+  if ("hill" == model){
+    p = .check_d_hill(prior) 
+  }
+  
+  if ("gamma" == model){
+    p = .check_d_gamma(prior) 
+  }
+  
+  if ("logistic" == model){
+    p = .check_d_logistic(prior) 
+  }
+  
+  if ("log-logistic" == model){
+    p = .check_d_llogistic(prior) 
+  }
+  
+  if ("multistage" == model){
+    p = .check_d_multistage(prior) 
+  }
+  
+  if ("probit" == model){
+    p = .check_d_probit(prior) 
+  }
+  
+  if ("log-probit" == model){
+    p = .check_d_lprobit(prior) 
+  }
+  
+  if ("qlinear" == model){
+    p = .check_d_qlinear(prior) 
+  }
+  
+  if ("weibull" == model){
+    p = .check_d_weibull(prior) 
+  }
+  
+  class(p)<- "BMD_Bayes_dichotomous_model"
+  
+  return(p)
+}
+
+.check_d_gamma   <- function(prior){
+  
+    temp = prior[[1]]
+    
+    if (nrow(temp) != 3){
+      stop("Dichotomous Gamma  model prior requires 3 parameters.")
+    }
+    
+    if (temp[2,4] < 0){
+      stop("The prior on b (parameter 2) can not have a lower bound less than zero.")
+    }
+    
+    if (temp[3,4] < 0){
+      stop("The prior on d (parameter 3) can not have a lower bound less than zero.")
+    }
+    
+    prior$model = "Gamma Model [binomial]"
+    prior$mean  = "gamma"
+    prior$parameters <- c("logit(g)","a","b")
+    return(prior)
+}
+
+.check_d_weibull <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 3){
+    stop("Dichotomous Weibull  model prior requires 3 parameters.")
+  }
+  
+  if (temp[2,4] < 0){
+    stop("The prior on b (parameter 2) can not have a lower bound less than zero.")
+  }
+  
+  if (temp[3,4] < 0){
+    stop("The prior on d (parameter 3) can not have a lower bound less than zero.")
+  }
+  
+
+  prior$model = "Weibull Model [binomial]"
+  prior$mean  = "weibull"
+  prior$parameters <- c("logit(g)","a","b")
+  return(prior)
+}
+
+.check_d_lprobit <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 3){
+    stop("Dichotomous Log-Probit  model prior requires 3 parameters.")
+  }
+
+  if (temp[3,4] < 0){
+    stop("The prior on b1 (parameter 3) can not have a lower bound less than zero.")
+  }
+
+  prior$model = "Log-Probit Model [binomial]"
+  prior$mean  = "log-probit"
+  prior$parameters <- c("logit(g)","b0","b1")
+  return(prior)
+}
+
+.check_d_llogistic <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 3){
+    stop("Dichotomous Log-Logistic model prior requires 3 parameters.")
+  }
+  
+
+  if (temp[3,4] < 0){
+    stop("The prior on b1 (parameter 3) can not have a lower bound less than zero.")
+  }
+  
+  
+  prior$model = "Log-Logistic Model [binomial]"
+  prior$mean  = "log-logistic"
+  prior$parameters <- c("logit(g)","b0","b1")
+  return(prior)
+}
+
+.check_d_logistic <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 2){
+    stop("Dichotomous logistic model prior requires 2 parameters.")
+  }
+  
+  if (temp[2,4] < 0){
+    stop("The prior on b (parameter 2) can not have a lower bound less than zero.")
+  }
+  
+  prior$model = "Logistic Model [binomial]"
+  prior$mean  = "logistic"
+  prior$parameters <- c("a","b")
+  return(prior)
+}
+
+.check_d_probit     <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 2){
+    stop("Dichotomous probit model prior requires 2 parameters.")
+  }
+  
+  if (temp[2,4] < 0){
+    stop("The prior on b (parameter 2) can not have a lower bound less than zero.")
+  }
+  
+  prior$model = "Probit Model [binomial]"
+  prior$mean  = "probit"
+  prior$parameters <- c("a","b")
+  return(prior)
+}
+
+.check_d_qlinear    <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 2){
+    stop("Dichotomous Quantal  model prior requires 2 parameters.")
+  }
+  
+  if (temp[2,4] < 0){
+    stop("The prior on b (parameter 2) can not have a lower bound less than zero.")
+  }
+
+  prior$model = "Quantal Linear Model [binomial]"
+  prior$mean  = "qlinear"
+  prior$parameters <- c("logit(g)","b")
+  return(prior)
+}
+
+.check_d_multistage <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) < 2 ){
+    stop("Multistage model prior requires 2 or more parameters.")
+  }
+  
+  names <- c("logit(g)")
+  for (ii in 2:nrow(temp)){
+    names <- c(names,sprintf("b%d",ii-1))
+  }
+  
+  if (sum(temp[2:nrow(temp),4] < 0) > 0){
+    stop("The prior on bx  can not have a lower bounds less than zero.")
+  }
+  rV <- list()
+  rV$priors = temp
+  rV$model = sprintf("Multistage-%d Model [binomial]",nrow(temp)-1)
+  rV$mean  = "multistage"
+  rV$degree = nrow(temp)-1
+  rV$parameters <- names
+  return(rV)
+  
+}
+
+.check_d_hill <- function(prior){
+  
+  temp = prior[[1]]
+  
+  if (nrow(temp) != 4){
+    stop("Dichotomous Hill  model prior requires 3 parameters.")
+  }
+  
+  if (temp[4,4] < 0){
+    stop("The prior on d (parameter 4) can not have a lower bound less than zero.")
+  }
+  prior$model = "Hill Model [binomial]"
+  prior$mean  = "hill"
+  prior$parameters <- c("logit(g)","b","c","d")
+  return(prior)
+}
+
 
 

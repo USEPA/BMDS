@@ -45,11 +45,8 @@ cont_power_f <-function(parms,d,decrease=F){
   return (rval)
 }
 
-
-
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-
   density_col="blueviolet"
   credint_col="azure2"
   BMD_DENSITY = T
@@ -168,7 +165,6 @@ cont_power_f <-function(parms,d,decrease=F){
   
 }
   
-
 # This part matches with single_continous_fit part- SL 06/02/21 
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
@@ -273,9 +269,7 @@ cont_power_f <-function(parms,d,decrease=F){
   
 }
 
-
 # Base plot- MCMC or BMD?
-
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
   
   # Should be matched with BMD_MA plots

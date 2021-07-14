@@ -19,14 +19,38 @@ mData <- matrix(c(0,    5,100,
 library(ToxicR)
 library(ggplot2)
 library(dplyr)
-mData <- matrix(c(0,   2,10,
-                  15,   4,16,
-                  18,   6,14,
-                  21,   18,20),nrow=4,ncol=3,byrow=T)
-Q = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
-plot(Q) + scale_x_continuous(trans="sqrt")
 
-R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",degree = 2,fit_type = "mcmc")
+prior <- create_prior_list(normprior(0,10,-100,100),
+                           lnormprior(0,1,0,100),
+                           lnormprior(0,1,0,100));
+
+a <- create_dichotomous_prior(prior,"gamma")
+b <- create_dichotomous_prior(prior,"weibull")
+prior2 <- create_prior_list(normprior(0,10,-100,100),
+                            normprior(0,1 ,-100,100),
+                            lnormprior(0,1,0,100));
+
+c <- create_dichotomous_prior(prior2,"log-logistic")
+
+vi <- list(a,b,c)
+
+library(ToxicR)
+
+mData <- matrix(c(0,	8,	50,
+                  209.8,	17,	50,
+                  444.6,	26,	50,
+                  978.1,	42,	50),nrow=4,ncol=3,byrow=T)
+#Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_list = vi, fit_type = "mcmc")
+#Q1 = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")
+#plot(Q) + scale_x_continuous(trans="sqrt")
+
+
+R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",degree = 3, fit_type = "mle")
+S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",degree = 3, fit_type = "laplace")
+
+R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],prior = q,degree = 2,fit_type = "laplace")
+S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma",degree = 2,fit_type = "laplace")
+
 plot(R)
 
 R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",degree = 2,fit_type = "mcmc")

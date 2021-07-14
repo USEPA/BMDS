@@ -81,7 +81,7 @@ List run_single_dichotomous(NumericVector model,
   dichotomous_analysis Anal; 
   Anal.BMD_type =  (options1[0]==1)?eExtraRisk:eAddedRisk;
   Anal.BMR      =  options1[0]; 
-  Anal.alpha    = options1[1];
+  Anal.alpha    =  options1[1];
   Anal.parms    = pr.rows(); 
   Anal.model    = (dich_model)model[0]; 
   Anal.Y        = new double[data.rows()] ; 
@@ -129,8 +129,10 @@ List run_single_dichotomous(NumericVector model,
   GOFres.expected = new double[Anal.n]; 
   GOFres.residual = new double[Anal.n]; 
 
+ 
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
 
+  
   Eigen::VectorXd resid(Anal.n); 
   Eigen::VectorXd expec(Anal.n);
   

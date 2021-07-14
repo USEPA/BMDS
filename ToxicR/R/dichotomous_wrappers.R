@@ -6,11 +6,28 @@
 ##########################################################
 single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
-                                     alpha = 0.05, degree=2,samples = 21000,
-                                     burnin = 1000){
+                                    alpha = 0.05, degree=2,samples = 21000,
+                                    burnin = 1000){
+  
+  if (class(prior) == "character"){
+    prior =  bayesian_prior_dich(model_type,degree);
+    
+  }else{
+    if (class(prior) !="BMD_Bayes_dichotomous_model"){
+      stop("Prior is not correctly specified.")
+    }
+    model_type = prior$mean
+    if (model_type == "multistage"){
+      degree = prior$degree
+    }
+    if (fit_type == "mle"){
+      stop("A Bayesian prior model was specified, but MLE was requested.")
+    }
+  }   
+  
   dmodel = which(model_type==c("hill","gamma","logistic", "log-logistic",
-                                "log-probit"  ,"multistage"  ,"probit",
-                                "qlinear","weibull"))
+                              "log-probit"  ,"multistage"  ,"probit",
+                              "qlinear","weibull"))
   DATA <- cbind(D,Y,N)
   o1 <- c(BMR,alpha, -9999)
   o2 <- c(1,degree)
@@ -58,12 +75,10 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     names(temp$bmd) <- c("BMD","BMDL","BMDU")
     return(temp)
   }
-  if (prior == 'default'){
-      prior =  bayesian_prior_dich(model_type,degree);
-  }    
+ 
   if (fitter == 2){ #laplace fit
     
-    temp = run_single_dichotomous(dmodel,DATA,prior[[1]],o1,o2); 
+    temp = run_single_dichotomous(dmodel,DATA,prior$priors,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(temp$bmd,te(alpha),te(1-alpha))
@@ -77,7 +92,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   }
   if (fitter ==3){
     
-    temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior[[1]],
+    temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
                                        c(BMR, alpha,samples,burnin))
     #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
