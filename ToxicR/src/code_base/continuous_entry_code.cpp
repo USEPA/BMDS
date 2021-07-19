@@ -1408,7 +1408,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
   rV.COV          = s.map_cov; 
   rV.MAP_BMD      = 0; 
  
-
+ 
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
     
@@ -1445,10 +1445,12 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
         rV.BMD_CDF = bmd_cdf(prob,bmd_q);
     }
   }
+ 
   return rV; 
 }
 
 void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
+
   if (b){
     b->samples = a.samples.cols(); 
     b->nparms  = a.samples.rows(); 
@@ -1460,6 +1462,7 @@ void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
       }
     }
   }
+
 }
 
 
@@ -2152,7 +2155,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   }
  
     
-    a = CA->disttype == distribution::log_normal?
+  a = CA->disttype == distribution::log_normal?
        mcmc_logNormal(orig_Y_LN, orig_X,
                      tprior, CA->BMD_type, (cont_model)CA->model,
                      CA->isIncreasing, CA->BMR, 
@@ -2346,10 +2349,11 @@ void estimate_normal_variance(continuous_analysis *CA,
     
     return;   
   }else{
-    
+  
     variance_fits(Y_N, UX, 
                     can_be_suff, 
                     v_c, v_nc, v_pow);
+    
     return; 
   }
 }

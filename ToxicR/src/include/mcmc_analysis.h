@@ -197,8 +197,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   }else{
     oR = findMAP<LL, PR>(model,init_vals);
   } 
- // cout << "iv:" << init_vals << endl << endl;  
- // cout <<"bubba" << oR.max_parms << endl << endl; 
+
   mcmcSamples rVal;
   
   rVal.map = 	oR.functionV;
@@ -239,6 +238,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   nSamples.col(0) = mu; // starting value of the MCMC
   
   penLike(0,0) =  -model->negPenLike(nSamples.col(0));
+ 
   for (int i = 1; i < samples ; i++){//nSamples.col(i-1); 
     //Metropolis-Hasings proposal
     // make sure the proposal isn't imposible

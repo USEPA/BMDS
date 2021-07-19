@@ -232,6 +232,7 @@ List run_continuous_single_mcmc(NumericVector model,
                                 Eigen::MatrixXd Y, Eigen::MatrixXd D,
                                 Eigen::MatrixXd priors, NumericVector options,
                                 bool is_logNormal,bool suff_stat){
+  
   unsigned int samples = (unsigned int) options[7]; 
   unsigned int burnin  = (unsigned int) options[8];
   double tail_p = (double) options[2]; 
@@ -319,6 +320,8 @@ List run_continuous_single_mcmc(NumericVector model,
   double v_c, v_nc, v_pow; 
   estimate_normal_variance(mcmcAnal,
                            &v_c, &v_nc, &v_pow);
+
+  
   NumericVector v_inform(3);
   v_inform[0] = v_c; v_inform[1] = v_nc; v_inform[2] = v_pow; 
   List rV = convert_continuous_fit_to_list(res); 

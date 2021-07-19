@@ -126,7 +126,7 @@ combine_prior_lists<-function(p1,p2){
 #################################################33
 # bayesian_prior_dich(model,variance)
 ##################################################
-bayesian_prior_continuous  <- function(model,variance,degree=2){
+bayesian_prior_continuous_default <- function(model,variance,degree=2){
   
   dmodel = which(model==c("hill","exp-3","exp-5","power","FUNL","polynomial"))
   dvariance = which(variance == c("normal","normal-ncv","lognormal"))

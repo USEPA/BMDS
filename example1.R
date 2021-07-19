@@ -32,11 +32,7 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
 
-
-
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "laplace",isFast = F)})
-
-#BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "exp-5", fit_type = "mcmc",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
