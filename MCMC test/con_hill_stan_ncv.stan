@@ -22,8 +22,9 @@ data {
 parameters {
   real a;
   real b;
-  real c;
-  real<lower=0> d; 
+  real<lower=0> c;
+  real<lower=0> rho; 
+  real<lower=0.5,upper=18> d; 
   real  sigma;
 }
 //prior <- create_prior_list(lnormprior(0,1,-100,100),
@@ -39,10 +40,12 @@ model {
   b     ~ normal(0*scale,scale*1); 
   c     ~ lognormal(0,1); 
   d     ~ lognormal(log(1.5),.25); 
+  rho   ~ lognormal(0,0.75);
   sigma ~ normal(0,2); 
   
   for ( i in 1:N){
-     y[i] ~ normal(a + b*pow(x[i],d)/(pow(c,d) + pow(x[i],d)), exp(0.5*sigma));
+     y[i] ~ normal(a + b*pow(x[i],d)/(pow(c,d) + pow(x[i],d)),
+                  sqrt(exp(sigma)*pow(a + b*pow(x[i],d)/(pow(c,d) + pow(x[i],d)),rho)));
   }
 }
 
