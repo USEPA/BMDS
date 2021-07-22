@@ -15,7 +15,7 @@
 #include <gsl/gsl_randist.h>
 #include <math.h>
 #include "log_likelihoods.h"
-
+#include "cmodeldefs.h"
 
 /*class normalLL : public LL
  * This class defines a normal log-likelihood where the data 
@@ -36,7 +36,8 @@ public:
 	bool isSuffStat(){
 			return sufficient_statistics; 
 	}; 
-										    	
+	
+						    	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		double mean = theta(0,0); 
 		Eigen::MatrixXd rV = Eigen::MatrixXd::Ones(Y.rows(),1)*mean; 

@@ -78,6 +78,10 @@ class normalPOLYNOMIAL_BMD_NC : public normalLLModel {
 	virtual int type_of_profile(contbmd TYPE);
 	virtual int parameter_to_remove(contbmd TYPE);
 
+	virtual cont_model mean_type(){
+	  return cont_model::polynomial; 
+	}	
+	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
 				
 		Eigen::MatrixXd rV = theta(0, 0) + 0.0*pow(d.array(), 0); 

@@ -128,6 +128,7 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
                          Named("parameters") = parms, 
                          Named("covariance") = covM, 
                          Named("bmd_dist")   = bmd_distribution,
+                         Named("bmd")        = result->bmd,
                          Named("maximum")    = maximum);  
  
  
@@ -223,9 +224,10 @@ List convert_continuous_fit_to_list(continuous_model_result *result){
 	bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
 
   } 
-
+  
   List rV = List::create(Named("full_model") = str,
-						 Named("parameters") = parms, 
+                         Named("bmd")        = result->bmd,
+						             Named("parameters") = parms, 
                          Named("covariance") = covM, 
                          Named("bmd_dist")   = bmd_distribution,
                          Named("maximum")    = maximum);  

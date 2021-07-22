@@ -359,6 +359,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
 
   // value to return
   bool suff_stat = (Y.cols() == 3); // it is a SS model if there are three parameters
+
   LL      likelihood(Y, X, suff_stat, is_const_var, is_increasing);
   PR   	model_prior(prior);
   Eigen::MatrixXd rVal;
@@ -367,6 +368,7 @@ Eigen::MatrixXd bmd_continuous_optimization(Eigen::MatrixXd Y, Eigen::MatrixXd X
   cBMDModel<LL, PR>  model(likelihood, model_prior, fixedB, fixedV, is_increasing);		
   optimizationResult OptRes;
   // Find the maximum a-posteriori and compute the BMD
+
   if ( init.cols() == 10 && init.rows() ==10){
     OptRes = findMAP<LL, PR>(&model);
   }else{
@@ -456,7 +458,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   if (init.rows() == 10 && init.cols() ==10) //Optimize  
     oR = findMAP<LL, PR>(&model);
   else
-    oR = findMAP<LL, PR>(&model,init);
+    oR = findMAP<LL, PR>(&model,init,OPTIM_NO_FLAGS);
   
   Eigen::MatrixXd parms = oR.max_parms; 
   
@@ -464,9 +466,10 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
    * Start Computing the BMD CI
    */
   fastBMDData<LL,PR> data;
-  data.model = &model; data.advP = tail_prob; 
+  data.model   = &model; data.advP = tail_prob; 
   data.BMDType = BMDType; 
-  data.BMRF = BMRF; 
+  data.BMRF    = BMRF; 
+
   double BMD = model.returnBMD(BMDType, BMRF, tail_prob); 
 
   /*
@@ -478,8 +481,12 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   for (int i = 0; i < grad.rows();i++){
         grad(i,0) = g[i]; 
   }
+  
   delete(g); 
+
   rVal.COV = model.varMatrix(parms);
+  
+  
   Eigen::MatrixXd var = grad.transpose()*rVal.COV*grad; // Delta Method Variance
 
   /*
@@ -488,36 +495,58 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
    */  
   std::vector<double> x(100);
   std::vector<double> y(100);
-  if (isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD))){
+  if ( isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD)) ){
+ 
     for (int i = 0; i < x.size(); i++){
       x[i] = double(i)/double(x.size()); 
       double q = x[i];
       y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
     }
+  
+    for (int i = y.size(); i >= 1; i--){
+      if (y[i] == y[i-1] || isinf(y[i]) ){
+          auto p1 = std::next(x.begin(),i);
+          auto p2 = std::next(y.begin(),i); 
+          y.erase(p2); x.erase(p1); 
+          i = y.size();
+      }
+     
+    }
+    
   }else{
     x.resize(2);
     y.resize(2); 
     x[0] =0.0; 
-    x[1] = std::numeric_limits<double>::infinity(); 
+    x[1] = 1.0; //std::numeric_limits<double>::infinity(); 
     y[0] = 0.0; 
     y[1] = 1.0; 
   }
-  
+
+
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
-       x.size() > 2 ){
+       x.size() > 6 ){
 
     bmd_cdf cdf(x, y);
     rVal.BMD_CDF = cdf;
   }
   
-
+  
+  
+  Eigen::MatrixXd  estimated = model.log_likelihood.mean(oR.max_parms);
+  
+  rVal.expected.resize(estimated.rows());
+  
+  for (int i = 0; i < rVal.expected.size(); i++) {
+    rVal.expected[i] = estimated(i, 0);
+  }
   
   rVal.MAP_BMD = BMD; 
   rVal.BMR = BMRF;
   rVal.isExtra = false;
   rVal.type    = BMDType; 
   rVal.MAP_ESTIMATE = oR.max_parms; 
-  rVal.MAP = oR.functionV; 												   
+  rVal.MAP = oR.functionV; 		
+
   
   
   return rVal; 

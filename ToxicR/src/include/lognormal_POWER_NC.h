@@ -43,7 +43,11 @@ class lognormalPOWER_BMD_NC : public lognormalLLModel {
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return mean(theta, X);
 	}
-
+	
+	virtual cont_model mean_type(){
+	  return cont_model::power; 
+	}
+	
 	lognormalPOWER_BMD_NC(lognormalPOWER_BMD_NC &M){
 		 sufficient_statistics = M.sufficient_statistics; 
 		 Y = M.Y; 

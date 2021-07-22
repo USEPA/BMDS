@@ -29,15 +29,16 @@ for (ii in 1:length(file_list)){
       print(sprintf("File:%d Iter:%d.",ii,jj))
       ###############################################################################
       y = sim_data[jj,]
-   
+
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                               fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
                               fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+
       BMD_result_SD_ML1_mcmc[jj,] = AA$bmd
       BMD_result_SD_ML1_lapl[jj,] = AA_l$bmd
       BMD_result_SD_ML2_mcmc[jj,] = BB$bmd
@@ -45,16 +46,18 @@ for (ii in 1:length(file_list)){
       
       pprobs_ML1[jj,] = AA$posterior_probs
       pprobs_ML2[jj,] = BB$posterior_probs
+
       ###############################################################################
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 50000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 50000)
 
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                               fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
                               fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+ 
       BMD_result_HB_ML1_mcmc[jj,] = AA$bmd
       BMD_result_HB_ML1_lapl[jj,] = AA_l$bmd
       BMD_result_HB_ML2_mcmc[jj,] = BB$bmd

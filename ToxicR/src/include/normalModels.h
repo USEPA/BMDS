@@ -26,6 +26,7 @@
 #include <gsl/gsl_cdf.h>
 
 
+
 typedef  int contbmd; 
 /*class normalLLModel
  * This class defines a normal log-likelihood where the data 
@@ -43,12 +44,16 @@ public:
 		  // if it is a sufficient statistics model 
 	};
 	
+	cont_model mean_type(){
+	  return cont_model::generic; 
+	}
+	
 	int    nParms() { 
 				if (constant_variance){
 					return 3; // linear regression + constant variance
 				} else{
 					return 4; // linear regression + variance proportional to mean
-				}  ; 		  
+				}; 		  
 	}
 	
 	bool isConstVar(){

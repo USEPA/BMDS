@@ -29,6 +29,9 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, 
                      bool bSuffStat, continuous_deviance * CD);
 
+void variance_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat,
+                   double *v_c, double *v_nc, double *v_pow);
+
 #endif
 
 

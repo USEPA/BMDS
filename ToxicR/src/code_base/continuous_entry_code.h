@@ -188,7 +188,7 @@ Eigen::MatrixXd X_cov_cont( Eigen::MatrixXd theta,Eigen::MatrixXd Y, Eigen::Matr
   
 }
 
-bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s);
+bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,double );
 void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b); 
 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,

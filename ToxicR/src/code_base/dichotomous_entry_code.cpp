@@ -169,6 +169,7 @@ void transfer_dichotomous_model(bmd_analysis a, dichotomous_model_result *model)
   if (model){
     model->nparms = a.COV.rows(); 
     model->max = a.MAP; 
+    model->bmd = a.MAP_BMD; 
     for (int i = 0; i< model->dist_numE; i ++){
       double temp = double(i)/double(model->dist_numE); 
       model->bmd_dist[i] = a.BMD_CDF.inv(temp);     // BMD @ probability
@@ -274,7 +275,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   }
   
   bmd_analysis b; 
-  b = create_bmd_analysis_from_mcmc(DA->burnin,a);
+  b = create_bmd_analysis_from_mcmc(DA->burnin,a,1.0);
   mcmc->model = DA->model; 
   mcmc->burnin = DA->burnin; 
   mcmc->samples = DA->samples; 
@@ -288,7 +289,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   for (int i = 0; i < res->dist_numE; i++){
     res->bmd_dist[i] *= max_dose; 
   }
-  
+  res->bmd *= max_dose; 
   res->model = DA->model; 
   return; 
 }
@@ -326,6 +327,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   Eigen::MatrixXd Xd ;
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
+  
   
   switch ((dich_model)DA->model){
   case dich_model::d_hill:
@@ -459,7 +461,7 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
   }
 
   transfer_dichotomous_model(a,res);
-
+  res->bmd *= max_dose; 
   // rescale the BMD 
    for (int i = 0; i < res->dist_numE; i++){
     res->bmd_dist[i] *= max_dose; 
@@ -606,15 +608,11 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   return; 
 }
 
-
-
-
 void estimate_ma_laplace(dichotomousMA_analysis *MA,
                          dichotomous_analysis *DA ,
                          dichotomousMA_result *res){
   
-
-  #pragma omp parallel
+#pragma omp parallel
 {
 #pragma omp for  
   for (int i = 0; i < MA->nmodels ; i++){
@@ -762,7 +760,7 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           Y(i,0) = data->Y[i]; Y(i,1) = data->n_group[i]; 
           D(i,0) = data->doses[i]; 
      }
-     
+
      switch (data->model){
      case dich_model::d_hill:
           mean_d =  X_compute_mean<dich_hillModelNC> (Y,D,parms);
@@ -794,14 +792,13 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           break; 
      }
      
-
      Eigen::MatrixXd expected = Y.col(1).array()*mean_d.array(); 
-     Eigen::MatrixXd residual = Y - expected; 
+ 
+     Eigen::MatrixXd residual = Y.col(0) - expected; 
      residual = residual.array()/sqrt(expected.array()); 
      Eigen::MatrixXd sqresid  = residual.array()*residual.array();
      Eigen::MatrixXd resultsTable(Y.rows(),5); 
      resultsTable << Y.col(0) , Y.col(1) , expected , residual, sqresid;
- 
      for (int i = 0; i < data->n; i++){
        res->expected[i] = expected(i,0);
        res->residual[i] = residual(i,0);          

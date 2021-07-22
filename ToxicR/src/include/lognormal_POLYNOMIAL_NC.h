@@ -40,6 +40,10 @@ class lognormalPOLYNOMIAL_BMD_NC : public lognormalLLModel {
 
 	};
 
+	virtual cont_model mean_type(){
+	  return cont_model::polynomial; 
+	}	
+	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta) {
 		return mean(theta, X);
 	}

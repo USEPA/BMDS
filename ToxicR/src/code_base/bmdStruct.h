@@ -1,5 +1,4 @@
 /*
- 
  * Copyright 2020  NIEHS <matt.wheeler@nih.gov>
  * 
  *
@@ -26,14 +25,7 @@
 #ifndef BMD_ANALYSIS_h
 #define BMD_ANALYSIS_h
 
-
-enum est_method {est_mle = 1, est_laplace=2, est_mcmc=3}; 
-enum dich_model {d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
-                 d_logprobit=5, d_multistage=6,d_probit=7,
-                 d_qlinear=8,d_weibull=9}; 
-
-enum cont_model {hill = 6,exp_3 = 3,exp_5=5,power=8, funl = 10, polynomial = 666}; 
-enum distribution {normal = 1, normal_ncv = 2, log_normal = 3}; 
+#include "cmodeldefs.h"
 
 // Dichotomous Structures
 //
@@ -90,6 +82,7 @@ struct continuous_expected_result{
   int     n;        // total number of observations obs/n 
   double *expected; // 
   double *sd; 
+  double like; 
 };
 
 //
@@ -107,6 +100,7 @@ struct dichotomous_model_result{
   double      model_df;        // Used model degrees of freedom
   double      total_df;        // Total degrees of freedom
   double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  double  bmd;              // the central estimate of the BMD
 };
 
 //
@@ -163,6 +157,7 @@ struct continuous_analysis{
   int parms; // number of parameters 
   int prior_cols; 
 };
+
 struct continuousMA_analysis{
   int    nmodels;         //number of models for each 
   double **priors;        // pointer to pointer arrays for the prior
@@ -184,9 +179,10 @@ struct continuous_model_result{
   double  *cov;             // Covariance Estimate
   double   max;             // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;       // number of entries in rows for the bmd_dist
-  double      model_df;        // Used model degrees of freedom
-  double      total_df;        // Total degrees of freedom
-  double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
+  double    bmd;             // The bmd at the maximum
+  double   *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
 };
 
 struct continuousMA_result{

@@ -97,7 +97,6 @@ using Eigen::MatrixXd;
 using Rcpp::as;
 
 
-
 Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max){
 
   // Note: Samples are by column. 
@@ -136,7 +135,6 @@ Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max){
   
   return A;   
 }
-
 
 
 // [[Rcpp::depends(RcppGSL)]]
@@ -234,6 +232,7 @@ List run_continuous_single_mcmc(NumericVector model,
                                 Eigen::MatrixXd Y, Eigen::MatrixXd D,
                                 Eigen::MatrixXd priors, NumericVector options,
                                 bool is_logNormal,bool suff_stat){
+  
   unsigned int samples = (unsigned int) options[7]; 
   unsigned int burnin  = (unsigned int) options[8];
   double tail_p = (double) options[2]; 
@@ -317,12 +316,19 @@ List run_continuous_single_mcmc(NumericVector model,
   estimate_sm_mcmc(mcmcAnal,
                    res     ,
                    output) ;
- 
   
+  double v_c, v_nc, v_pow; 
+  estimate_normal_variance(mcmcAnal,
+                           &v_c, &v_nc, &v_pow);
+
+  
+  NumericVector v_inform(3);
+  v_inform[0] = v_c; v_inform[1] = v_nc; v_inform[2] = v_pow; 
   List rV = convert_continuous_fit_to_list(res); 
   List t2 = convert_MCMC_fit_to_list(output);
-  List data_out  = List::create(Named("mcmc_result")=t2,
-                                Named("fitted_model")=rV); 
+  List data_out  = List::create(Named("mcmc_result")  = t2,
+                                Named("fitted_model") = rV,
+                                Named("varOpt")       = v_inform); 
 
   del_mcmc_analysis(output);
   del_continuous_model_result(res); 

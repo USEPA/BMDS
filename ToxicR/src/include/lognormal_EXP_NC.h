@@ -70,7 +70,21 @@ class lognormalEXPONENTIAL_BMD_NC : public lognormalLLModel {
 			return 5; 
 	}
 	
-						 							    	
+	virtual cont_model mean_type(){
+	  switch(deg){
+	  case LOGNORMAL_EXP3_DOWN:
+	  case LOGNORMAL_EXP3_UP:
+	    return cont_model::exp_3;
+	    break; 
+	  case LOGNORMAL_EXP5_DOWN:
+	  case LOGNORMAL_EXP5_UP:
+	    return cont_model::exp_5; 
+	  default:
+	    return cont_model::generic;     
+	  }
+	  return cont_model::generic; 
+	}	
+	
 	virtual Eigen::MatrixXd mean(Eigen::MatrixXd theta,Eigen::MatrixXd d){
 				
 		Eigen::MatrixXd rV; 
@@ -101,36 +115,6 @@ class lognormalEXPONENTIAL_BMD_NC : public lognormalLLModel {
 		ret = log(rV.array());
 		return ret; 
 	}
-/*
-     virtual Eigen::MatrixXd variance(Eigen::MatrixXd theta, Eigen::MatrixXd d){
-          int correctN_parms = nParms(); 
-          if (theta.rows() < correctN_parms){ //only some of the parameters
-               Eigen::MatrixXd temp_theta(correctN_parms,1); 
-               switch(deg){
-         			case LOGNORMAL_EXP2_DOWN:
-	     	     case LOGNORMAL_EXP2_UP:
-                         temp_theta(0,0) = theta(0,0); temp_theta(1,0) = theta(1,0); 
-				     break; 
-			     case LOGNORMAL_EXP3_DOWN:
-			     case LOGNORMAL_EXP3_UP:
-                         temp_theta(0,0) = theta(0,0); temp_theta(1,0) = theta(1,0); 
-                         temp_theta(3,0) = theta(2,0); 
-     			     break; 
-			     case LOGNORMAL_EXP4_DOWN:
-			     case LOGNORMAL_EXP4_UP:
-                         temp_theta(0,0) = theta(0,0); temp_theta(1,0) = theta(1,0); 
-                         temp_theta(2,0) = theta(2,0); 
-				     break; 
-			     case LOGNORMAL_EXP5_DOWN:
-			     case LOGNORMAL_EXP5_UP:
-			          temp_theta = theta; // full model is ok always.                                            
-               }
-          }	
-     
-          return lognormalLLModel::variance(theta,d); 
-     
-     }; 
-*/
 	// return true if it is a increasing function
 
 	//BASIC BMD Computation absolute to hybrid
@@ -139,34 +123,25 @@ class lognormalEXPONENTIAL_BMD_NC : public lognormalLLModel {
 	double bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing); 
 	double bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing); 
 	double bmd_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing); 
-     double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB);
+  double bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool isIncreasing,double BPROB);
     
-    //BASIC BMD Computation absolute to hybrid
-	double bmd_absolute_bound(Eigen::MatrixXd theta,	 double BMD,double BMRF, bool isIncreasing); 
-	double bmd_stdev_bound(Eigen::MatrixXd theta, 	     double BMD,double BMRF, bool isIncreasing); 
+  //BASIC BMD Computation absolute to hybrid
+	double bmd_absolute_bound(Eigen::MatrixXd theta,	   double BMD,double BMRF, bool isIncreasing); 
+	double bmd_stdev_bound (Eigen::MatrixXd theta, 	     double BMD,double BMRF, bool isIncreasing); 
 	double bmd_reldev_bound(Eigen::MatrixXd theta,       double BMD,double BMRF, bool isIncreasing); 
-	double bmd_point_bound(Eigen::MatrixXd theta,        double BMD,double BMRF, bool isIncreasing); 
-	double bmd_extra_bound(Eigen::MatrixXd theta,        double BMD,double BMRF, bool isIncreasing); 
-    double bmd_hybrid_extra_bound(Eigen::MatrixXd theta, double BMD,double BMRF, bool isIncreasing,
-								  double TAIL_PROB);
+	double bmd_point_bound (Eigen::MatrixXd theta,       double BMD,double BMRF, bool isIncreasing); 
+	double bmd_extra_bound (Eigen::MatrixXd theta,       double BMD,double BMRF, bool isIncreasing); 
+  double bmd_hybrid_extra_bound(Eigen::MatrixXd theta, double BMD,double BMRF, bool isIncreasing,
+								                                       double TAIL_PROB);
 
-	///
-	/*Eigen::MatrixXd bmd_start_extra_hybrid(Eigen::MatrixXd theta, double BMD,
-											double BMRF, bool isIncreasing,
-											double TAIL_PROB);*/
-	//
 	virtual double bmd_start_absolute(unsigned n,
 									  const double *b,
 									  double *grad,
 									  void   *data); 
+	
 	virtual std::vector<double>  bmd_start_absolute_clean(std::vector<double> x,
 															double BMRF, double BMD, bool isIncreasing);
 	
-	//
-	/*Eigen::MatrixXd bmd_start_stdev(Eigen::MatrixXd theta, double BMD,
-									double BMRF, bool isIncreasing,
-									double TAIL_PROB);
-	//*/
 	virtual double bmd_start_reldev(unsigned n,
 									const double *b,
 									double *grad,
@@ -179,8 +154,8 @@ class lognormalEXPONENTIAL_BMD_NC : public lognormalLLModel {
 
 	/////////////////////////////////////////////////////////////////////////
 	// standard deviation starting value code
-	//
 	/////////////////////////////////////////////////////////////////////////
+	
 	virtual double bmd_start_stddev(unsigned n,
 									const double *b,
 									double *grad,
