@@ -23,7 +23,7 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
+PFOA_Liver <- read_table("~/Documents/PFOA_Liver.txt", 
                           col_names = FALSE)
 
 
@@ -32,7 +32,7 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "exp-5", fit_type = "mcmc",isFast = T)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal-ncv",model_type = "hill", fit_type = "laplace",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
