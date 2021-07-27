@@ -177,7 +177,8 @@ List run_continuous_single(IntegerVector model,
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
     bool isFast = (bool) options[6]; 
-    
+     
+   
     ////////////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////
@@ -204,6 +205,7 @@ List run_continuous_single(IntegerVector model,
     //
     // Check on the polynomial stuff
     //
+
     if (anal.model == cont_model::polynomial){
       // figure out the degree
       if (anal.disttype == distribution::normal ){
@@ -227,18 +229,18 @@ List run_continuous_single(IntegerVector model,
       }
     }
     
+    
     ////////////////////////////////////
     continuous_model_result *result = new_continuous_model_result(anal.model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
     ////////////////////////////////////
-    
     estimate_sm_laplace(&anal,result,isFast);
     
     continuous_deviance aod1; 
    
     if (anal.disttype == distribution::log_normal){
-      cerr << "I am here" << endl; 
+    
       estimate_log_normal_aod(&anal,
                               &aod1);
     }else{
@@ -277,4 +279,4 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     return rV; 
     
-  }
+}

@@ -96,20 +96,13 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (fitmodel == 666 && dis_type == 3){
          stop("Polynomial models are currently not defined for the Log-Normal distribution.")
     }
-  
-    #For Bayesian Analysis
-    if (is.na(prior[1])){
 
-    }else{
-      PR = prior; 
-    }
-    #For MLE
+    #For MLE 
     if (type_of_fit == 2){
       PR = MLE_bounds_continuous(model_type,distribution,degree)
-      PR = PR$prior
+      PR = PR$priors
     }
 
-    
     if (distribution == "lognormal"){
       is_log_normal = TRUE
     }else{

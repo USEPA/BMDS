@@ -27,8 +27,8 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   
   
   if (is.na(model_list[[1]][1])){
-    model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2),rep("FUNL",2))
-    distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv","normal","normal-ncv")
+    model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2))#,rep("FUNL",2))
+    distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv")#,"normal","normal-ncv")
     model_list = data.frame(model_list = model_list, distribution_list = distribution_list)
     prior_list = ma_continuous_list(model_list$model_list,model_list$distribution_list)
     for(ii in 1:length(prior_list)){
@@ -175,7 +175,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_mcmc")  
     return(temp)
   }else{
-  
+    print("I am here before the function")
     temp   <-  run_continuous_ma_laplace(priors, models, dlists,Y,D,
                                           options)
     

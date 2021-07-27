@@ -1,3 +1,13 @@
+
+cont_polynomial_f <- function(A,doses,decrease=F){
+  print(A)
+  B <- as.matrix(A,ncol=1)
+  X <- matrix(1,nrow = length(doses),ncol=length(A))
+  for (ii in 2:nrow(B)){
+    X[,ii] = doses^(ii-1)
+  }
+  return(X%*%B)
+}
 # FUNL
 cont_FUNL_f <- function(A,doses,decrease=F){
      b <- A[1] + A[2]*exp(-exp(A[6])*(doses-A[5])^2)*(1/(1+exp(-(doses-A[3])/A[4])))
@@ -99,6 +109,7 @@ cont_power_f <-function(parms,d,decrease=F){
   if (fit$model=="power"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses,decrease=decrease)
   }
+ 
   
   Q <- t(Q)
   me <- apply(Q,2,quantile, probs = 0.5)
@@ -169,7 +180,7 @@ cont_power_f <-function(parms,d,decrease=F){
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
   
-  fit<-A
+  fit <-A
   density_col="blueviolet"
   credint_col="azure2"
   
@@ -225,7 +236,14 @@ cont_power_f <-function(parms,d,decrease=F){
   if (fit$model=="power"){
     me <- cont_power_f(fit$parameters,test_doses)
   }
-  
+  if (fit$model=="polynomial"){
+    if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
+      degree = length(BB$parameters) - 2
+    }else{
+      degree = length(BB$parameters) - 1
+    }
+    me <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
+  }
 
   temp_fit <- splinefun(test_doses,me)
   ma_mean  <- temp_fit
@@ -290,7 +308,7 @@ cont_power_f <-function(parms,d,decrease=F){
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))
-          
+          width= (max_dose-min_dose)/20
           
           # 06/07/21 SL Update
           IS_SUFFICIENT=FALSE
@@ -299,7 +317,7 @@ cont_power_f <-function(parms,d,decrease=F){
           if (ncol(data_d) == 4 ){ #sufficient statistics
             IS_SUFFICIENT = TRUE
             mean <- data_d[,2,drop=F]
-            se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+            se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
             doses = data_d[,1,drop=F]
             uerror <- mean+2*se
             lerror <- mean-2*se
@@ -355,15 +373,16 @@ cont_power_f <-function(parms,d,decrease=F){
           uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE) # BMDU
 
           
-          width=3
           # 06/02/21 SL update
           if (IS_SUFFICIENT){
+            print("Boom")
               plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
                   geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
                   labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
+            print("Doom")
           }else{
             plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
               geom_point(aes(x=doses,y=Response))+
@@ -477,18 +496,21 @@ cont_power_f <-function(parms,d,decrease=F){
        data_d   <-  A[[fit_idx[1]]]$data
        max_dose <- max(data_d[,1])
        min_dose <- min(data_d[,1])
+       width= (max_dose-min_dose)/20
        test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
        temp_bmd <- rep(0,length(test_doses))
-       
+       IS_SUFFICIENT = F
        if (ncol(data_d) == 4 ){ #sufficient statistics
          mean <- data_d[,2,drop=F]
-         se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+         se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
          doses = data_d[,1,drop=F]
          uerror <- mean+se
          lerror <- mean-se
          dose = c(doses,doses)
          Response = c(uerror,lerror)
+         print(se)
          lm_fit = lm(mean ~ doses,weights = 1/se*se)
+         IS_SUFFICIENT = T
        }else{
          Response <- data_d[,2,drop=F]
          doses = data_d[,1,drop=F]
@@ -542,18 +564,30 @@ cont_power_f <-function(parms,d,decrease=F){
          }
        }
 
-       plot_gg<-ggplot()+
-         geom_point(aes(x=doses,y=Response))+
-         xlim(c(-5*min(doses),max(doses)*25))+
-         # Change the label for Y axis - SL 05/28/21
-         labs(x="Dose", y="Response",title="Continous MA fitting")+
-         theme_minimal()
+       if (IS_SUFFICIENT){
+
+         plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+           geom_point(aes(x=data_d[,1],y=data_d[,2]))+
+           geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
+           xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
+           labs(x="Dose", y="Response",title="Continous MA fitting")+
+           theme_minimal()
+           y_min = min(lerror)
+           y_max = max(uerror)
+       }else{
+         plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+           geom_point(aes(x=doses,y=Response))+
+           xlim(c(min(doses),max(doses)*1.03))+
+           labs(x="Dose", y="Response",title="Continous MA fitting")+
+           theme_minimal()
+           y_min = min(Response)
+           y_max = max(Response)
+       }
        
         
        plot_gg<-plot_gg+
          geom_line(aes(x=test_doses,y=me),col="blue",size=2)
-       
-      
+ 
        ## 
        # Add lines to the BMD
        ma_mean <- splinefun(test_doses,me)
@@ -605,6 +639,7 @@ cont_power_f <-function(parms,d,decrease=F){
                    annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
                             size = 5, color="darkslategrey",shape=17, alpha=0.9)
            }
-     return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
+     return(plot_gg + coord_cartesian(
+                                      xlim=c(min(test_doses)-width,max(test_doses)+width),expand=F))
 }
  

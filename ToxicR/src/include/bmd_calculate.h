@@ -53,6 +53,7 @@
 #include "bmdStruct.h"
 #include "continuous_clean_aux.h"
 
+
 class bmd_cdf {
 public:
 	bmd_cdf():probs(),BMD() {
@@ -60,7 +61,7 @@ public:
 		spline_bmd_inv = NULL;
 		acc_bmd_cdf = NULL;
 		acc_bmd_inv = NULL;
-				
+		multiple = 1.0; 		
 		max_BMD = 0.0; 
 		min_BMD = 0.0;
 
@@ -72,7 +73,7 @@ public:
 		
 		probs = M.probs;
 		BMD = M.BMD;
-
+		multiple = M.multiple; 
 		max_BMD = M.max_BMD; min_BMD = M.min_BMD;
 		max_prob = M.max_prob; min_prob = M.min_prob;
 		int error = 0;
@@ -160,7 +161,7 @@ public:
 	double inv(double p) {
 		if (spline_bmd_cdf !=NULL && acc_bmd_cdf != NULL) {
 			if (p > min_prob && p < max_prob)
-				return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv);
+				return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
 			if (p < min_prob)
 				return 0;
 			if (p > max_prob)
@@ -172,21 +173,28 @@ public:
 
 	double P(double dose) {
 		if (spline_bmd_cdf != NULL && acc_bmd_cdf != NULL) {
-			if (dose > min_BMD && dose < max_BMD)
-				return gsl_spline_eval(spline_bmd_cdf, dose, acc_bmd_cdf);
-			if (dose < min_BMD)
+			if (dose/multiple > min_BMD && dose/multiple < max_BMD)
+				return gsl_spline_eval(spline_bmd_cdf, dose/multiple, acc_bmd_cdf);
+			if (dose/multiple < min_BMD)
 				return 0.0;
-			if (dose > max_BMD)
+			if (dose/multiple > max_BMD)
 				return 1.0; 
 		}
 		return NAN;
 	}
-	
+	void set_multiple(double m) {
+	 if (m > 0.0 && std::isnormal(m)){
+	   multiple = m; 
+	 }else{
+	   multiple = 1.0; 
+	 }
+	  
+	}
 
 private:
 	double min_BMD; 
 	double max_BMD; 
-
+  double multiple; 
 	double min_prob;
 	double max_prob; 
 	std::vector<double> probs; 

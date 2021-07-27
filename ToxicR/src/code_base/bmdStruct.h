@@ -220,6 +220,7 @@ struct continuous_deviance{
   int NR; 
 };
 
+
 // odds and ends
 struct bmd_analysis_MCMC * new_mcmc_analysis(int model,
                                        int parms, 
