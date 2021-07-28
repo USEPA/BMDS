@@ -22,7 +22,7 @@
  * 
  */
 #ifndef _DEFINE_MCMC_STRUCT_H
-#define DEFINE_MCMC_STRUCT_H
+#define _DEFINE_MCMC_STRUCT_H
 
 #ifdef R_COMPILATION
 //necessary things to run in R

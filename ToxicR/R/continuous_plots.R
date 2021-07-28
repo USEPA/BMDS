@@ -1,6 +1,6 @@
 
 cont_polynomial_f <- function(A,doses,decrease=F){
-  print(A)
+
   B <- as.matrix(A,ncol=1)
   X <- matrix(1,nrow = length(doses),ncol=length(A))
   for (ii in 2:nrow(B)){
@@ -8,6 +8,7 @@ cont_polynomial_f <- function(A,doses,decrease=F){
   }
   return(X%*%B)
 }
+
 # FUNL
 cont_FUNL_f <- function(A,doses,decrease=F){
      b <- A[1] + A[2]*exp(-exp(A[6])*(doses-A[5])^2)*(1/(1+exp(-(doses-A[3])/A[4])))
@@ -109,7 +110,17 @@ cont_power_f <-function(parms,d,decrease=F){
   if (fit$model=="power"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses,decrease=decrease)
   }
- 
+  if (fit$model=="polynomial"){
+    if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
+      degree = ncol(fit$mcmc_result$PARM_samples) - 2
+    }else{
+      degree = ncol(fit$mcmc_result$PARM_samples) - 1
+    }
+    Q <- apply(fit$mcmc_result$PARM_samples[,1:degree],1,cont_polynomial_f, 
+               d=test_doses,decrease=decrease)
+    
+  }
+  
   
   Q <- t(Q)
   me <- apply(Q,2,quantile, probs = 0.5)

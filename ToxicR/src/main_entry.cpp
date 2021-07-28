@@ -25,6 +25,7 @@
 #include <RcppEigen.h>
 #include <RcppGSL.h>
 
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -247,8 +248,7 @@ List run_continuous_single(IntegerVector model,
       estimate_normal_aod(&anal,
                              &aod1);
     }
-   
-
+    
    continuous_expected_result exp_r; 
    exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
    exp_r.sd       = new double[anal.n];
@@ -261,14 +261,7 @@ List run_continuous_single(IntegerVector model,
    AOD(2,0) = aod1.A3; AOD(2,1) = aod1.N3;
    AOD(3,0) = aod1.R; AOD(3,1) = aod1.NR;
    AOD(4,0) = exp_r.like; AOD(4,1) = result->model_df;
-// continuous_expected_result exp_r; 
-// exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
-// exp_r.sd       = new double[anal.n];
- /*  AOD(0,0) = 1; AOD(0,1) = 1; 
-   AOD(1,0) = 1; AOD(1,1) = 1;
-   AOD(2,0) = 1; AOD(2,1) = 1;
-   AOD(3,0) = 1; AOD(3,1) = 1;
-   AOD(4,0) = 1; AOD(4,1) = 1; //result->model_df;*/
+
     List rV = convert_continuous_fit_to_list(result); 
 
     rV.push_back(AOD,"Deviance");

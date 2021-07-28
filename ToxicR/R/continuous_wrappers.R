@@ -161,14 +161,15 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       
       rvals <- run_continuous_single_mcmc(fitmodel,model_data$SSTAT,model_data$X,
                                           PR ,options, is_log_normal, sstat) 
-      
+   
       if (model_type == "exp-3"){
         rvals$PARMS = rvals$PARMS[,-3]
         rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
       }
-      
+     # print("1.0")
       ##compute the p-value
-      rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
+     # rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
+      #print("2.0")
       ##
       rvals$bmd      <- c(rvals$fitted_model$bmd,NA,NA) 
       print(rvals$fitted_model$bmd)
@@ -187,6 +188,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
           rvals$bmd[2:3] <- c(NA,NA)
         }
       }
+      
       class(rvals) <- "BMDcont_fit_MCMC"; 
       rvals$model  <- model_type
       rvals$options <- options

@@ -29,7 +29,7 @@
 #ifndef WIN32
 #include <cfloat>
 #endif
-
+#include <chrono>
 #include <vector>
 #include <iostream>
 #ifdef R_COMPILATION
@@ -72,9 +72,9 @@ public:
 	bmd_cdf & operator=(const bmd_cdf &M) {
 		
 		probs = M.probs;
-		BMD = M.BMD;
+		BMD   = M.BMD;
 		multiple = M.multiple; 
-		max_BMD = M.max_BMD; min_BMD = M.min_BMD;
+		max_BMD  = M.max_BMD; min_BMD = M.min_BMD;
 		max_prob = M.max_prob; min_prob = M.min_prob;
 		int error = 0;
 
@@ -89,15 +89,14 @@ public:
 			if (error) {
 			//	Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
 				spline_bmd_inv = NULL;
-				acc_bmd_inv = NULL;
+				acc_bmd_inv    = NULL;
 			}
-
+  
 			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+			
 			if (error) {
-			//	Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
-			//	Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
 				spline_bmd_cdf = NULL;
-				acc_bmd_cdf = NULL;
+				acc_bmd_cdf    = NULL;
 			}
 		}
 		
@@ -109,31 +108,33 @@ public:
 
 	bmd_cdf(std::vector<double> tx, std::vector<double> ty) :probs(tx), BMD(ty) {
 		int error; 
-
+	  multiple = 1.0; 
 		max_prob = *max_element(probs.begin(), probs.end()); 
 		min_prob = *min_element(probs.begin(), probs.end());
 
 		max_BMD = *max_element(BMD.begin(), BMD.end());
 		min_BMD = *min_element(BMD.begin(), BMD.end());
 		
-		if (probs.size() == BMD.size() && BMD.size() >0) {
+		if (probs.size() == BMD.size() && BMD.size() > 0) {
 			acc_bmd_inv = gsl_interp_accel_alloc();
 			acc_bmd_cdf = gsl_interp_accel_alloc();
 			spline_bmd_inv = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
 			spline_bmd_cdf = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
 			error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
 		
+		
+		
 			if (error) {
-				//Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
 				spline_bmd_inv = NULL;
-				acc_bmd_inv = NULL;
+				acc_bmd_inv    = NULL;
 			}
 
 			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+		
 			if (error) {
 				//Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
 				spline_bmd_cdf = NULL;
-				acc_bmd_cdf = NULL;
+				acc_bmd_cdf    = NULL;
 			}
 		}
 
@@ -152,16 +153,17 @@ public:
 		if (acc_bmd_inv) {
 			gsl_interp_accel_free(acc_bmd_inv);
 		}
-		acc_bmd_inv = NULL;
-		acc_bmd_cdf = NULL;
+		acc_bmd_inv    = NULL;
+		acc_bmd_cdf    = NULL;
 		spline_bmd_cdf = NULL; 
 		spline_bmd_inv = NULL;
 	}
 
 	double inv(double p) {
 		if (spline_bmd_cdf !=NULL && acc_bmd_cdf != NULL) {
-			if (p > min_prob && p < max_prob)
-				return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
+			if (p > min_prob && p < max_prob){
+					return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
+			}
 			if (p < min_prob)
 				return 0;
 			if (p > max_prob)

@@ -303,9 +303,9 @@ void rescale_mcmc(mcmcSamples *a, cont_model model,
                                    max_dose, 1.0,
                                    is_logNormal,  degree); 
    
-   for (int i = 0; i < a->samples(0,0); i++){
+   for (int i = 0; i < a->samples.cols(); i++){
      a->BMD(0,i) = a->BMD(0,i)*max_dose; 
-     a->samples.col(i).array() = rescale_parms(a->samples.col(i).transpose(),  model, 
+     a->samples.col(i).array() = rescale_parms(a->samples.col(i),  model, 
                                                 max_dose, 1.0,
                                                 is_logNormal,  degree); 
    }

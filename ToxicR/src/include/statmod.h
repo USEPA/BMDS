@@ -660,7 +660,6 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
 
   }
 
-
   double minf;
   nlopt::result result = nlopt::FAILURE;
   
@@ -670,8 +669,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -695,7 +694,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     switch(opt_iter){
     case  0:
       opt_ptr = &opt1;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(100);
       break;
     case  1:
       opt_ptr = &opt2 ;
@@ -717,9 +716,9 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     
     opt_ptr->set_lower_bounds(lb);
     opt_ptr->set_upper_bounds(ub);
-    opt_ptr->set_ftol_rel(1e-8);
-   // opt_ptr->set_ftol_abs(1e-8);
-    opt_ptr->set_initial_step(1e-5); 
+   // opt_ptr->set_ftol_rel(1e-8);
+    opt_ptr->set_ftol_abs(1e-8);
+   // opt_ptr->set_initial_step(1e-5); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////

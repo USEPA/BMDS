@@ -33,6 +33,8 @@
 #include "analysis_of_deviance.h"
 #include "mcmc_analysis.h"
 #include "bmd_calculate.h"
+ 
+#include <chrono>
 #include <algorithm>
 #include <vector>
 #include <limits>
@@ -142,6 +144,7 @@ Eigen::MatrixXd init_funl_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   
   return prior; 
 }
+///////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::MatrixXd prior){
   
@@ -1483,6 +1486,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
     }
   }
+  
   double sum = std::accumulate(v.begin(), v.end(), 0.0); 
   rV.MAP_BMD = sum/v.size(); 
   std::vector<double>  prob;
@@ -1496,7 +1500,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
    }
-   
+ 
     // fix numerical quantile issues.
     for (int i = 1; i < bmd_q.size(); i++){
       if (bmd_q[i] <= bmd_q[i-1]){
@@ -1512,7 +1516,7 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
         rV.BMD_CDF = bmd_cdf(prob,bmd_q);
     }
   }
- 
+  cout << rV.BMD_CDF.inv(0.05) << endl; 
   return rV; 
 }
 
@@ -1653,7 +1657,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                                                            MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing);
        
        RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
-                                       max_dose, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                       1.0, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
                                        MA->disttype[i] != distribution::normal_ncv); 
        
        break; 
@@ -1665,7 +1669,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                                                                 MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing, temp_init);
           //updated prior updated 
            RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
-                                          max_dose, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
+                                          1.0, divisor, CA->isIncreasing, MA->disttype[i] == distribution::log_normal,
                                           MA->disttype[i] != distribution::normal_ncv); 
            
          break; 
@@ -1678,8 +1682,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                                                                                      MA->disttype[i] != distribution::normal_ncv, CA->isIncreasing, temp_init);
          //updated prior updated 
          //updated prior updated 
-         RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
-                                         max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+         RescaleContinuousModel<IDPrior>((cont_model) MA->models[i], &tprior, &init_opt, 
+                                         1.0, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
                                          MA->disttype[i] != distribution::normal_ncv); 
                    
          break; 
@@ -1692,7 +1696,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
                  
          //updated prior updated 
          RescaleContinuousModel<IDPrior>((cont_model)MA->models[i], &tprior, &init_opt, 
-                                                   max_dose, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
+                                                   1.0, divisor, CA->isIncreasing,MA->disttype[i] == distribution::log_normal,
                                                    MA->disttype[i] != distribution::normal_ncv); 
          
          break; 
@@ -1703,12 +1707,12 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
      }
       
     a[i] = MA->disttype[i] == distribution::log_normal?
-                              mcmc_logNormal(orig_Y_LN, orig_X,
+                              mcmc_logNormal(orig_Y_LN, X,
                                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                                 CA->isIncreasing, CA->BMR, 
                                                 CA->tail_prob,  
                                                 CA->alpha, samples, burnin,init_opt):
-                              mcmc_Normal(orig_Y, orig_X,
+                              mcmc_Normal(orig_Y, X,
                                               tprior, CA->BMD_type, (cont_model)MA->models[i],
                                               CA->isIncreasing, MA->disttype[i] != distribution::normal_ncv, CA->BMR,  
                                               CA->tail_prob,  
@@ -1758,7 +1762,28 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     norm_sum += post_probs[i]; 
   }
   
-
+  
+  /////////////////////////////////////////
+  /////////// Rescale mcmc
+  for (int  i = 0; i < MA->nmodels; i++){
+      rescale_mcmc(&a[i], (cont_model)MA->models[i],
+                   max_dose, MA->disttype[i] , 2);
+    
+      
+  }
+  
+  
+  for (int j = 0; j < MA->nmodels; j++){
+    b[j].COV =  rescale_cov_matrix(b[j].COV, 
+                                   b[j].MAP_ESTIMATE, CA->model,
+                                   max_dose, 1.0, false);
+    
+    b[j].MAP_ESTIMATE = rescale_parms(b[j].MAP_ESTIMATE,  (cont_model)MA->models[j],
+                                      max_dose,1.0, false);
+    b[j].MAP_BMD *= max_dose; 
+    b[j].BMD_CDF.set_multiple(max_dose);
+  }
+   ////////////////////////////////////////////
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
     res->post_probs[i] = post_probs[i];
@@ -1788,24 +1813,20 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
-    ////cout << res->bmd_dist[i] << " " << res->bmd_dist[i+res->dist_numE] << endl;  
   }
   CA->suff_stat = tempsa;
   return; 
 }
 
-
 /*estimate a single model using laplace/profile likelihood*/
 void estimate_sm_laplace(continuous_analysis *CA ,
                          continuous_model_result *res, bool isFast){
-
   // standardize the data
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
   bool tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
-//  cerr << "Here" << endl; 
-  // copy the origional data
+
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
     X(i,0) = CA->doses[i]; 
@@ -1905,7 +1926,14 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   temp_init = temp_init.array(); 
   
   Eigen::MatrixXd init_opt; 
- // cerr << "Here 2.0" << endl; 
+
+  using std::chrono::high_resolution_clock;
+  using std::chrono::duration_cast;
+  using std::chrono::duration;
+  using std::chrono::milliseconds;
+  
+  /* Getting number of milliseconds as an integer. */
+  
   switch((cont_model)CA->model){
   case cont_model::funl:
  
@@ -1980,9 +2008,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     
   }
 
-  
+ 
   double DOF = 0; 
   // now you fit it based upon the origional data
+  
   if (CA->disttype == distribution::log_normal){
     
     if (CA->suff_stat ){
@@ -1992,14 +2021,14 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.05,init_opt,isFast);
+                            CA->alpha, 0.02,init_opt,isFast);
     }else{
       
       b = laplace_logNormal(orig_Y_LN, X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
                             CA->isIncreasing, CA->BMR, 
                             CA->tail_prob,  
-                            CA->alpha, 0.05,init_opt,isFast);
+                            CA->alpha, 0.02,init_opt,isFast);
       
     }
     DOF =  compute_lognormal_dof(orig_Y_LN,X, b.MAP_ESTIMATE, 
@@ -2031,7 +2060,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                              CA->model,CA->degree); 
     
   }
+  
+  /* Getting number of milliseconds as a double. */
 
+  
   ///////////////////////////////////////////////////////
   // NOTE: need to rescale the covariance first
   b.COV =  rescale_cov_matrix(b.COV, 
@@ -2143,11 +2175,9 @@ void estimate_sm_mcmc(continuous_analysis *CA,
     X = X/max_dose;
   }
   
-  
   mcmcSamples a;
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
-  
   
   std::vector<bool> fixedB; 
   std::vector<double> fixedV; 
@@ -2247,17 +2277,16 @@ void estimate_sm_mcmc(continuous_analysis *CA,
                     CA->tail_prob,  
                     CA->alpha,samples, burnin,init_opt,CA->degree);
   
-  /////////////////////////////////
+  ///////////////////////////////////
   /////////// Rescale mcmc
-  rescale_mcmc(    &a, (cont_model)CA->model,
+  rescale_mcmc(&a, (cont_model)CA->model,
                 max_dose, CA->disttype,CA->degree);
-  /////////////////////////////////
+  ///////////////////////////////////
   
 
   bmd_analysis b; 
   CA->suff_stat = tempsa;
-  double temp_m_dose = orig_X.maxCoeff();
-  b = create_bmd_analysis_from_mcmc(burnin,a,temp_m_dose);
+  b = create_bmd_analysis_from_mcmc(burnin,a,max_dose);
   transfer_continuous_model(b,res);
   transfer_mcmc_output(a,mcmc); 
   res->model = CA->model; 
@@ -2646,6 +2675,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
     
   }
 
+  
   for (int i = 0; i < expected->n ; i++){
     expected->expected[i] = mean(i,0);
     expected->sd[i] = pow(var(i,0),0.5);
