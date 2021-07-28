@@ -4,11 +4,35 @@
 //#include "bmdStruct.h"
 #include "dichotomous_entry_code.h"
 
+//define __stdcall to nothing if not on Windows platform
+#ifndef WIN32
+#define __stdcall
+#endif
+
+//define import/export attributes if on Windows platform
+#ifndef R_COMPILATION
+#  ifndef _WIN32
+#    define BMDS_ENTRY_API
+#  else
+#    ifdef RBMDS_EXPORTS
+#      define BMDS_ENTRY_API __declspec(dllexport)
+#    else
+#      define BMDS_ENTRY_API __declspec(dllimport)
+#    endif // BMDS_MODELS_EXPORTS
+#  endif
+#else
+#  define BMDS_ENTRY_API
+#endif
+
 const double BMDS_EPS = 1.0e-6;
 const double BMDS_MISSING = -9999.0;
 
 // BMDS helper structures
-
+#ifdef _WIN64
+#pragma pack(8)
+#elif _WIN32
+#pragma pack(4)
+#endif
 // BMD_results:
 //   Purpose - Contains various BMD values returned by BMDS.
 //   It is used to facilitate returning results needed for BMDS software. 
@@ -103,6 +127,10 @@ struct dichotomous_GOF {
   double *ebUpper;
 };
 
+#ifdef _WIN32
+#pragma pack()
+#endif
+
 //c entry
 #ifdef __cplusplus
 extern "C" {
@@ -137,11 +165,11 @@ void clean_cont_results(struct continuous_model_result *res, struct BMDS_results
 
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
-void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
-void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir);
+void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir);
 
-void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
+void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
 
 #ifdef __cplusplus
