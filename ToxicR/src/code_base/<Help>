@@ -74,13 +74,16 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 
   int distSize = res->dist_numE*2;
 
-  double* quant = (double*)malloc(distSize / 2 * sizeof(double));
-  double* val = (double*)malloc(distSize / 2 * sizeof(double));
+  double dist[distSize/2][2];
+  double quant[distSize/2];
+  double val[distSize/2];
 
   for (int i = 0; i < distSize/2; i++){
+    dist[i][1] = res->bmd_dist[i];
     val[i] = res->bmd_dist[i];
   }
   for (int i = distSize/2; i < distSize; i++){
+    dist[i-distSize/2][0] = res->bmd_dist[i];
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
@@ -96,13 +99,16 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
 
   int distSize = res->dist_numE*2;
 
-  double* quant = (double*)malloc(distSize / 2 * sizeof(double));
-  double* val = (double*)malloc(distSize / 2 * sizeof(double));
+//  double dist[distSize/2][2];
+  double quant[distSize/2];
+  double val[distSize/2];
 
   for (int i = 0; i < distSize/2; i++){
+//    dist[i][1] = res->bmd_dist[i];
     val[i] = res->bmd_dist[i];
   }
   for (int i = distSize/2; i < distSize; i++){
+//    dist[i-distSize/2][0] = res->bmd_dist[i];
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
@@ -129,13 +135,16 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   int distSize = res->dist_numE*2;
 
-  double* quant = (double*)malloc(distSize / 2 * sizeof(double));
-  double* val = (double*)malloc(distSize / 2 * sizeof(double));
+  double dist[distSize/2][2];
+  double quant[distSize/2];
+  double val[distSize/2];
 
   for (int i = 0; i < distSize/2; i++){
+    dist[i][1] = res->bmd_dist[i];
     val[i] = res->bmd_dist[i];
   }
   for (int i = distSize/2; i < distSize; i++){
+    dist[i-distSize/2][0] = res->bmd_dist[i];
     quant[i-distSize/2] = res->bmd_dist[i];
   }
 
@@ -148,7 +157,7 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 }
 
 
-void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+void runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
 
   bmdsRes->validResult = false;
 
@@ -176,13 +185,13 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 
   struct dichotomous_PGOF_result gofRes;
-  double* gofExpected = (double*)malloc(anal->n * sizeof(double));
-  double* gofResidual = (double*)malloc(anal->n * sizeof(double));
+  double gofExpected[anal->n];
+  double gofResidual[anal->n];
   double gofTestStat;
   double gofPVal;
   double gofDF;
-  double* ebUpper = (double*)malloc(anal->n * sizeof(double));
-  double* ebLower = (double*)malloc(anal->n * sizeof(double));
+  double ebUpper[anal->n];
+  double ebLower[anal->n];
   gofRes.n = anal->n;
   gofRes.expected = gofExpected;
   gofRes.residual = gofResidual;
@@ -207,17 +216,19 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   double pHat;
   double z;
   double eb1;
-  double eb2;
+  double eb2Upper;
+  double eb2Lower;
   double ebDenom;
   double gofAlpha = 0.05;  //Alpha value for 95% confidence limit
-  z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
   for (int i=0; i<gof->n; i++){
     pHat = anal->Y[i]/anal->n_group[i];  //observed probability
-    eb1 = (2 * anal->Y[i] + z*z);
-    eb2 = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
+    z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
+    eb1 = (2 * anal->Y[i] + z*z - 1);
+    eb2Lower = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
+    eb2Upper = z*sqrt(z*z + (2 - 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
     ebDenom = 2.0 * (anal->n_group[i] + z * z);
-    gof->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom; 
-    gof->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
+    gof->ebLower[i] = (eb1 + eb2Lower)/ ebDenom; 
+    gof->ebUpper[i] = (eb1 + eb2Upper)/ ebDenom;
   }
 
   //calculate model chi^2 value
@@ -257,20 +268,16 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     bmdsRes->upperConf[i] = -9999.0;
   } 
 
+
   bmdsRes->validResult = true;
-
-
-  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
 }
 
-void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
+void runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
   estimate_ma_laplace_dicho(MA, DA, res);
 
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
-
-  clean_dicho_MA_results(res, bmdsRes);
 
 }
 
@@ -299,7 +306,7 @@ void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_mode
 }
 
 
-void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir){
+void runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir){
 
   bmdsRes->validResult = false;
 
@@ -310,7 +317,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   if (*detectAdvDir){
     determineAdvDir(anal);
-
     if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
       if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
         //only exp_3 and exp_5 models are supported for lognormal decreasing data
@@ -343,27 +349,26 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
       case cont_model::polynomial:
      // } else if (anal->model == cont_model::polynomial && anal->prior[0] == 0){
       if(anal->prior[0] == 0){
-        int numRows = 2+anal->degree;
-        int ind; //index in prior array
-        if (anal->disttype == distribution::normal_ncv){
-          numRows++;
-        }
-        //set ind to target min or max for parameters
-        //min for increasing, max for decreasing
         if(anal->isIncreasing){
-          ind = 3*numRows+1;          
-        } else { 
-          ind = 4*numRows+1;
-        }  
-        //beta terms
-        for (int i=ind; i<ind+anal->degree; i++){
-          anal->prior[i] = 0.0;  // beta min or max 
-        }
-        //alpha
-        if(anal->disttype == distribution::normal_ncv){ 
-           anal->prior[ind+anal->degree+1] = 0.0;  //alpha min or max
+          if(anal->disttype == distribution::normal_ncv){
+            ind = 13+3*(anal->degree-1);
+            anal->prior[ind] = 0.0;                    //beta1 min
+            anal->prior[ind + anal->degree + 1] = 0.0; //alpha min
+          } else {
+            ind = 10+3*(anal->degree-1);
+            anal->prior[ind] = 0.0;                 //beta1 min
+            anal->prior[ind + anal->degree] = 0.0;  //alpha min
+          }
         } else {
-           anal->prior[ind+anal->degree] = 0.0;  //alpha min or max
+          if(anal->disttype == distribution::normal_ncv){
+            ind = 17+4*(anal->degree-1);
+            anal->prior[ind] = 0.0;                    //beta1 max
+            anal->prior[ind + anal->degree + 1] = 0.0; //alpha max
+          } else {
+            ind = 13+4*(anal->degree-1);
+            anal->prior[ind] = 0.0;                //beta1 max
+            anal->prior[ind + anal->degree] = 0.0; //alpha max
+          }
         }
       }
       break;
@@ -376,10 +381,10 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
   //arrays are needed for conversion to suff_stat
-  double* doses = (double*)malloc(anal->n*sizeof(double));
-  double* means = (double*)malloc(anal->n * sizeof(double));
-  double* n_group = (double*)malloc(anal->n * sizeof(double));
-  double* sd = (double*)malloc(anal->n * sizeof(double));
+  double doses[anal->n];
+  double means[anal->n];
+  double n_group[anal->n];
+  double sd[anal->n];
   bool isIncreasing;
   double BMR;
   double tail_prob;
@@ -440,10 +445,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
           gof->calcSD[i] = GOFanal.sd[i];
 	}
   }
-
   for (int i=0; i<GOFanal.n; i++){
-    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
-    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
+    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
+    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->n));
   }
 
  //calculate bayesian BIC_equiv
@@ -478,8 +482,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   bmdsRes->validResult = true;
 
-  clean_cont_results(res, bmdsRes, aod, gof);
-
 }
 
 void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res){
@@ -511,10 +513,10 @@ void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_r
 void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
   
   struct dichotomous_aod aod;
-  double A1 = BMDS_MISSING;
-  int N1 = BMDS_MISSING;
-  double A2 = BMDS_MISSING;
-  int N2 = BMDS_MISSING;
+  double A1;
+  int N1;
+  double A2;
+  int N2;
   aod.A1 = A1;
   aod.N1 = N1;
   aod.A2 = A2;
@@ -640,11 +642,10 @@ void determineAdvDir(struct continuous_analysis *CA){
   int n_rows;
 
   struct continuous_analysis CAnew;
-  //allocate memory for individual size.  Will not use entire array for summary data.
-  double* doses = (double*)malloc(CA->n * sizeof(double));
-  double* means = (double*)malloc(CA->n * sizeof(double));
-  double* n_group = (double*)malloc(CA->n * sizeof(double));
-  double* sd = (double*)malloc(CA->n * sizeof(double));
+  double doses[CA->n];  //allocate memory for individual size.  Will not use entire array for summary data.
+  double means[CA->n];
+  double n_group[CA->n];
+  double sd[CA->n];
   
   CAnew.doses = doses;
   CAnew.Y = means;
@@ -764,166 +765,11 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
 }
 
 
-//replace any double values containing NaN or infinity with BMDS_MISSING
-void clean_dicho_results(struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod) {
-
-  //dichotomous_model_result
-  for (int i=0; i<res->nparms; i++){
-    cleanDouble(&res->parms[i]);
-  }   
-
-  for (int i=0; i<res->nparms*res->nparms; i++){
-    cleanDouble(&res->cov[i]);
-  }
-
-  cleanDouble(&res->max);
-  cleanDouble(&res->model_df);
-  cleanDouble(&res->total_df);
-  cleanDouble(&res->bmd);
-
-  for (int i=0; i<res->dist_numE*2; i++){
-    cleanDouble(&res->bmd_dist[i]);
-  }
-
-  //dichotomous_GOF
-  for (int i=0; i<gof->n; i++){
-    cleanDouble(&gof->expected[i]);
-    cleanDouble(&gof->residual[i]);
-    cleanDouble(&gof->ebLower[i]);
-    cleanDouble(&gof->ebUpper[i]);
-  }
-  cleanDouble(&gof->test_statistic);
-  cleanDouble(&gof->p_value);
-  cleanDouble(&gof->df);
- 
-  //BMDS_results
-  cleanDouble(&bmdsRes->BMD);
-  cleanDouble(&bmdsRes->BMDL);
-  cleanDouble(&bmdsRes->BMDU);
-  cleanDouble(&bmdsRes->AIC);
-  cleanDouble(&bmdsRes->BIC_equiv);
-  cleanDouble(&bmdsRes->chisq);
-
-  for (int i=0; i<res->nparms; i++){
-    cleanDouble(&bmdsRes->stdErr[i]);
-    cleanDouble(&bmdsRes->lowerConf[i]);
-    cleanDouble(&bmdsRes->upperConf[i]);
-  }
-
-  //dicho_AOD
-  cleanDouble(&aod->fullLL);
-  cleanDouble(&aod->redLL);
-  cleanDouble(&aod->fittedLL);
-  cleanDouble(&aod->devFit);
-  cleanDouble(&aod->devRed);
-  cleanDouble(&aod->pvFit);
-  cleanDouble(&aod->pvRed);
-
+void excelDicho(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+	  runBMDSDichoAnalysis(anal, res, gof, bmdsRes, bmdsAOD);
 }
 
-void clean_cont_results(struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof){
-
-  //continuous_model_result
-  for (int i=0; i<res->nparms; i++){
-    cleanDouble(&res->parms[i]);
-  }
-  for (int i=0; i<res->nparms*res->nparms; i++){
-    cleanDouble(&res->cov[i]);
-  } 
-
-  cleanDouble(&res->max);
-  cleanDouble(&res->model_df);
-  cleanDouble(&res->total_df);
-  cleanDouble(&res->bmd);
-  for (int i=0; i<res->dist_numE*2; i++){
-    cleanDouble(&res->bmd_dist[i]);
-  }
-
-  //BMDS_results
-  cleanDouble(&bmdsRes->BMD);
-  cleanDouble(&bmdsRes->BMDL);
-  cleanDouble(&bmdsRes->BMDU);
-  cleanDouble(&bmdsRes->AIC);
-  cleanDouble(&bmdsRes->BIC_equiv);
-  cleanDouble(&bmdsRes->chisq);
-  for (int i=0; i<res->nparms; i++){
-    cleanDouble(&bmdsRes->stdErr[i]);
-    cleanDouble(&bmdsRes->lowerConf[i]);
-    cleanDouble(&bmdsRes->upperConf[i]);
-  } 
-
-  //continuous_AOD and testsOfInterest
-  for (int i=0; i<5; i++){
-    cleanDouble(&aod->LL[i]);
-    cleanDouble(&aod->AIC[i]);
-    for (int j=0; j<4; j++){
-      cleanDouble(&aod->TOI->llRatio[j]);
-      cleanDouble(&aod->TOI->DF[j]);
-      cleanDouble(&aod->TOI->pVal[j]);
-    }        
-  }
-  cleanDouble(&aod->addConst);
-
-  //continuous_GOF
-  for (int i=0; i<gof->n; i++){
-    cleanDouble(&gof->dose[i]);
-    cleanDouble(&gof->size[i]);
-    cleanDouble(&gof->estMean[i]);
-    cleanDouble(&gof->calcMean[i]);
-    cleanDouble(&gof->obsMean[i]);
-    cleanDouble(&gof->estSD[i]);
-    cleanDouble(&gof->calcSD[i]);
-    cleanDouble(&gof->obsSD[i]);
-    cleanDouble(&gof->res[i]);
-    cleanDouble(&gof->ebLower[i]);
-    cleanDouble(&gof->ebUpper[i]);
-  }
-
+void excelCont(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool detectAdvDir){
+  runBMDSContAnalysis(anal, res, bmdsRes, aod, gof, detectAdvDir);
 }
 
-void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes) {
-
-  //dichotomousMA_result
-  for (int i=0; i<res->nmodels; i++){
-    cleanDouble(&res->post_probs[i]);
-    for (int j=0; j<res->models[i]->nparms; j++){
-      cleanDouble(&res->models[i]->parms[j]);
-    }
-    for (int j=0; j<res->models[i]->nparms*res->models[i]->nparms; j++){
-      cleanDouble(&res->models[i]->cov[j]);
-    }
-    cleanDouble(&res->models[i]->max);
-    cleanDouble(&res->models[i]->model_df);
-    cleanDouble(&res->models[i]->total_df);
-    cleanDouble(&res->models[i]->bmd);
-    for (int j=0; j<res->models[i]->dist_numE*2; j++){
-      cleanDouble(&res->models[i]->bmd_dist[j]);
-    }
-  }
-  for (int i=0; i<res->dist_numE*2; i++){
-    cleanDouble(&res->bmd_dist[i]);
-  }
-
-  //BMDSMA_results
-  cleanDouble(&bmdsRes->BMD_MA);
-  cleanDouble(&bmdsRes->BMDL_MA);
-  cleanDouble(&bmdsRes->BMDU_MA);
-  for (int i=0; i<res->nmodels; i++){
-    cleanDouble(&bmdsRes->BMD[i]);
-    cleanDouble(&bmdsRes->BMDL[i]);
-    cleanDouble(&bmdsRes->BMDU[i]);
-  }
-
-}
-
-
-
-//replace any double values containing NaN or infinity with BMDS_MISSING
-void cleanDouble(double *val){
-  //std::cout << "incoming val: " << val << "\n";  
-  //*val = BMDS_MISSING;
-  //std::cout << "outgoing val: " << val << "\n";  
-  if(!isfinite(*val)) {
-     *val = BMDS_MISSING;
-  }
-}

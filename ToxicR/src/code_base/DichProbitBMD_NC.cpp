@@ -1,4 +1,4 @@
-#include <DichProbitBMD_NC.h>
+#include "DichProbitBMD_NC.h"
 
 #ifdef R_COMPILATION
         //necessary things to run in R

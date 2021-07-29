@@ -1,4 +1,4 @@
-#include <DichWeibullBMD_NC.h>
+#include "DichWeibullBMD_NC.h"
 
 #ifdef R_COMPILATION
         //necessary things to run in R

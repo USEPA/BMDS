@@ -994,7 +994,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = X/max_dose;
   } 
   
-  bmd_analysis b[MA->nmodels];
+  //bmd_analysis b[MA->nmodels];
+  bmd_analysis *b = new bmd_analysis[MA->nmodels];
 
 #pragma omp parallel
 {
@@ -1141,7 +1142,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 } 
 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels];
+  double * post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -1548,7 +1550,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
  }
  
   
-  mcmcSamples a[MA->nmodels];
+  //mcmcSamples a[MA->nmodels];
+  mcmcSamples * a = new mcmcSamples[MA->nmodels];
 
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
@@ -1646,13 +1649,15 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   }
 }  
 
-  bmd_analysis b[MA->nmodels]; 
+  //bmd_analysis b[MA->nmodels]; 
+  bmd_analysis * b = new bmd_analysis[MA->nmodels];
   double temp_m_dose = orig_X.maxCoeff();
   for (int i = 0; i < MA->nmodels; i++){
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i],temp_m_dose);
   }
 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels]; 
+  double * post_probs = new double[MA->nmodels];
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){

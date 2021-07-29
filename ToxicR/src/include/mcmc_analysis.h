@@ -51,7 +51,7 @@
 #include "cBMDstatmod.h"
 #include "bmd_calculate.h"
 #include <sys/time.h>
-#include <bmdStruct.h>
+#include "bmdStruct.h"
 
 using namespace std;  
  

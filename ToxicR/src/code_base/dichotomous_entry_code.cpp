@@ -495,7 +495,8 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
                      false); 
   }
 } 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels];
+  double * post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -631,7 +632,8 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   }
 } 
 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels];
+  double * post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
