@@ -7,6 +7,10 @@ importFrom(forcats,fct_reorder)
 # Necessary Packages
 ###############################
 import(tidyverse)
+import(doBy)
+import(dplyr)
+import(plyr)
+import(multcomp)
 import(shiny)
 import(scales)
 import(ggplot2)

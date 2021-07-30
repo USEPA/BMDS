@@ -87,21 +87,51 @@ public:
 			error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
 			
 			if (error) {
-			//	Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
-				spline_bmd_inv = NULL;
-				acc_bmd_inv    = NULL;
-			}
-  
-			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
-			
-			if (error) {
-				spline_bmd_cdf = NULL;
-				acc_bmd_cdf    = NULL;
+			  if (spline_bmd_inv) {
+			    gsl_spline_free(spline_bmd_inv);
+			  }
+			  if (spline_bmd_cdf) {
+			    gsl_spline_free(spline_bmd_cdf);
+			  }
+			  if (acc_bmd_cdf) {
+			    gsl_interp_accel_free(acc_bmd_cdf);
+			  }
+			  if (acc_bmd_inv) {
+			    gsl_interp_accel_free(acc_bmd_inv);
+			  }
+			  spline_bmd_inv = NULL;
+			  acc_bmd_inv    = NULL;
+			  spline_bmd_inv = NULL;
+			  acc_bmd_inv    = NULL;
+			}else{
+			  error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+			  
+			  if (error) {
+			    if (spline_bmd_inv) {
+			      gsl_spline_free(spline_bmd_inv);
+			    }
+			    if (spline_bmd_cdf) {
+			      gsl_spline_free(spline_bmd_cdf);
+			    }
+			    if (acc_bmd_cdf) {
+			      gsl_interp_accel_free(acc_bmd_cdf);
+			    }
+			    if (acc_bmd_inv) {
+			      gsl_interp_accel_free(acc_bmd_inv);
+			    }
+			    //Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
+			    spline_bmd_cdf = NULL;
+			    acc_bmd_cdf    = NULL;
+			    spline_bmd_inv = NULL;
+			    acc_bmd_inv    = NULL;
+			  }
 			}
 		}
 		
+		
 		return *this; 
 	}
+	
 	bmd_cdf(const bmd_cdf &M) {
 		*this = M;
 	}
@@ -123,18 +153,45 @@ public:
 			error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
 		
 		
-		
 			if (error) {
+			  if (spline_bmd_inv) {
+			    gsl_spline_free(spline_bmd_inv);
+			  }
+			  if (spline_bmd_cdf) {
+			    gsl_spline_free(spline_bmd_cdf);
+			  }
+			  if (acc_bmd_cdf) {
+			    gsl_interp_accel_free(acc_bmd_cdf);
+			  }
+			  if (acc_bmd_inv) {
+			    gsl_interp_accel_free(acc_bmd_inv);
+			  }
 				spline_bmd_inv = NULL;
 				acc_bmd_inv    = NULL;
-			}
-
-			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
-		
-			if (error) {
-				//Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
-				spline_bmd_cdf = NULL;
-				acc_bmd_cdf    = NULL;
+				spline_bmd_inv = NULL;
+				acc_bmd_inv    = NULL;
+			}else{
+  			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+  		
+  			if (error) {
+  			  if (spline_bmd_inv) {
+  			    gsl_spline_free(spline_bmd_inv);
+  			  }
+  			  if (spline_bmd_cdf) {
+  			    gsl_spline_free(spline_bmd_cdf);
+  			  }
+  			  if (acc_bmd_cdf) {
+  			    gsl_interp_accel_free(acc_bmd_cdf);
+  			  }
+  			  if (acc_bmd_inv) {
+  			    gsl_interp_accel_free(acc_bmd_inv);
+  			  }
+  				//Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
+  				spline_bmd_cdf = NULL;
+  				acc_bmd_cdf    = NULL;
+  				spline_bmd_inv = NULL;
+  				acc_bmd_inv    = NULL;
+  			}
 			}
 		}
 
@@ -485,7 +542,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   /*
    * Calculate the Gradient for the delta Method
    */
-  double *g = new(double[parms.rows()]);
+  double *g = new double[parms.rows()];
   gradient(parms, g, &data, bmd); // get the gradient vector
   Eigen::MatrixXd grad = parms*0;  
   for (int i = 0; i < grad.rows();i++){
@@ -526,7 +583,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   }else{
     x.resize(2);
     y.resize(2); 
-    x[0] =0.0; 
+    x[0] = 0.0; 
     x[1] = 1.0; //std::numeric_limits<double>::infinity(); 
     y[0] = 0.0; 
     y[1] = 1.0; 
@@ -557,8 +614,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   rVal.MAP_ESTIMATE = oR.max_parms; 
   rVal.MAP = oR.functionV; 		
 
-  
-  
+
   return rVal; 
   
 }
