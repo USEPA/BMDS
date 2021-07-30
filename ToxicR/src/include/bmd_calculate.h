@@ -55,157 +55,214 @@
 
 
 class bmd_cdf {
-public:
-	bmd_cdf():probs(),BMD() {
-		spline_bmd_cdf = NULL;
-		spline_bmd_inv = NULL;
-		acc_bmd_cdf = NULL;
-		acc_bmd_inv = NULL;
-		multiple = 1.0; 		
-		max_BMD = 0.0; 
-		min_BMD = 0.0;
-
-		min_prob = 0.0; 
-		max_prob = 0.0; 
-	}; 
-
-	bmd_cdf & operator=(const bmd_cdf &M) {
-		
-		probs = M.probs;
-		BMD   = M.BMD;
-		multiple = M.multiple; 
-		max_BMD  = M.max_BMD; min_BMD = M.min_BMD;
-		max_prob = M.max_prob; min_prob = M.min_prob;
-		int error = 0;
-
-	    
-		if (probs.size() == BMD.size() && BMD.size() >0) {
-			acc_bmd_inv = gsl_interp_accel_alloc();
-			acc_bmd_cdf = gsl_interp_accel_alloc();
-			spline_bmd_inv = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
-			spline_bmd_cdf = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
-			error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
-			
-			if (error) {
-			//	Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
-				spline_bmd_inv = NULL;
-				acc_bmd_inv    = NULL;
-			}
-  
-			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
-			
-			if (error) {
-				spline_bmd_cdf = NULL;
-				acc_bmd_cdf    = NULL;
-			}
-		}
-		
-		return *this; 
-	}
-	bmd_cdf(const bmd_cdf &M) {
-		*this = M;
-	}
-
-	bmd_cdf(std::vector<double> tx, std::vector<double> ty) :probs(tx), BMD(ty) {
-		int error; 
-	  multiple = 1.0; 
-		max_prob = *max_element(probs.begin(), probs.end()); 
-		min_prob = *min_element(probs.begin(), probs.end());
-
-		max_BMD = *max_element(BMD.begin(), BMD.end());
-		min_BMD = *min_element(BMD.begin(), BMD.end());
-		
-		if (probs.size() == BMD.size() && BMD.size() > 0) {
-			acc_bmd_inv = gsl_interp_accel_alloc();
-			acc_bmd_cdf = gsl_interp_accel_alloc();
-			spline_bmd_inv = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
-			spline_bmd_cdf = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
-			error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
-		
-		
-		
-			if (error) {
-				spline_bmd_inv = NULL;
-				acc_bmd_inv    = NULL;
-			}
-
-			error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
-		
-			if (error) {
-				//Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
-				spline_bmd_cdf = NULL;
-				acc_bmd_cdf    = NULL;
-			}
-		}
-
-	}
-
-	~bmd_cdf() {
-		if (spline_bmd_inv) {
-			gsl_spline_free(spline_bmd_inv);
-		}
-		if (spline_bmd_cdf) {
-			gsl_spline_free(spline_bmd_cdf);
-		}
-		if (acc_bmd_cdf) {
-			gsl_interp_accel_free(acc_bmd_cdf);
-		}
-		if (acc_bmd_inv) {
-			gsl_interp_accel_free(acc_bmd_inv);
-		}
-		acc_bmd_inv    = NULL;
-		acc_bmd_cdf    = NULL;
-		spline_bmd_cdf = NULL; 
-		spline_bmd_inv = NULL;
-	}
-
-	double inv(double p) {
-		if (spline_bmd_cdf !=NULL && acc_bmd_cdf != NULL) {
-			if (p > min_prob && p < max_prob){
-					return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
-			}
-			if (p < min_prob)
-				return 0;
-			if (p > max_prob)
-				return std::numeric_limits<double>::infinity();
-		}
-		return NAN; 
-	}
-
-
-	double P(double dose) {
-		if (spline_bmd_cdf != NULL && acc_bmd_cdf != NULL) {
-			if (dose/multiple > min_BMD && dose/multiple < max_BMD)
-				return gsl_spline_eval(spline_bmd_cdf, dose/multiple, acc_bmd_cdf);
-			if (dose/multiple < min_BMD)
-				return 0.0;
-			if (dose/multiple > max_BMD)
-				return 1.0; 
-		}
-		return NAN;
-	}
-	void set_multiple(double m) {
-	 if (m > 0.0 && std::isnormal(m)){
-	   multiple = m; 
-	 }else{
-	   multiple = 1.0; 
-	 }
-	  
-	}
-
-private:
-	double min_BMD; 
-	double max_BMD; 
-  double multiple; 
-	double min_prob;
-	double max_prob; 
-	std::vector<double> probs; 
-	std::vector<double> BMD;
-	gsl_interp_accel  *acc_bmd_cdf;
-	gsl_spline     *spline_bmd_cdf;
-	gsl_interp_accel  *acc_bmd_inv;
-	gsl_spline     *spline_bmd_inv;
-};
+    public:
+      bmd_cdf():probs(),BMD() {
+        spline_bmd_cdf = NULL;
+        spline_bmd_inv = NULL;
+        acc_bmd_cdf = NULL;
+        acc_bmd_inv = NULL;
+        multiple = 1.0; 		
+        max_BMD = 0.0; 
+        min_BMD = 0.0;
+        
+        min_prob = 0.0; 
+        max_prob = 0.0; 
+      }; 
+      
+      bmd_cdf & operator=(const bmd_cdf &M) {
+        
+        probs = M.probs;
+        BMD   = M.BMD;
+        multiple = M.multiple; 
+        max_BMD  = M.max_BMD; min_BMD = M.min_BMD;
+        max_prob = M.max_prob; min_prob = M.min_prob;
+        int error = 0;
+        
+        
+        if (probs.size() == BMD.size() && BMD.size() >0) {
+          acc_bmd_inv = gsl_interp_accel_alloc();
+          acc_bmd_cdf = gsl_interp_accel_alloc();
+          spline_bmd_inv = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
+          spline_bmd_cdf = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
+          error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
+          
+          if (error) {
+            if (spline_bmd_inv) {
+              gsl_spline_free(spline_bmd_inv);
+            }
+            if (spline_bmd_cdf) {
+              gsl_spline_free(spline_bmd_cdf);
+            }
+            if (acc_bmd_cdf) {
+              gsl_interp_accel_free(acc_bmd_cdf);
+            }
+            if (acc_bmd_inv) {
+              gsl_interp_accel_free(acc_bmd_inv);
+            }
+            spline_bmd_inv = NULL;
+            acc_bmd_inv    = NULL;
+            spline_bmd_inv = NULL;
+            acc_bmd_inv    = NULL;
+          }else{
+            error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+            
+            if (error) {
+              if (spline_bmd_inv) {
+                gsl_spline_free(spline_bmd_inv);
+              }
+              if (spline_bmd_cdf) {
+                gsl_spline_free(spline_bmd_cdf);
+              }
+              if (acc_bmd_cdf) {
+                gsl_interp_accel_free(acc_bmd_cdf);
+              }
+              if (acc_bmd_inv) {
+                gsl_interp_accel_free(acc_bmd_inv);
+              }
+              //Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
+              spline_bmd_cdf = NULL;
+              acc_bmd_cdf    = NULL;
+              spline_bmd_inv = NULL;
+              acc_bmd_inv    = NULL;
+            }
+          }
+        }
+        
+        
+        return *this; 
+      }
+      
+      bmd_cdf(const bmd_cdf &M) {
+        *this = M;
+      }
+      
+      bmd_cdf(std::vector<double> tx, std::vector<double> ty) :probs(tx), BMD(ty) {
+        int error; 
+        multiple = 1.0; 
+        max_prob = *max_element(probs.begin(), probs.end()); 
+        min_prob = *min_element(probs.begin(), probs.end());
+        
+        max_BMD = *max_element(BMD.begin(), BMD.end());
+        min_BMD = *min_element(BMD.begin(), BMD.end());
+        
+        if (probs.size() == BMD.size() && BMD.size() > 0) {
+          acc_bmd_inv = gsl_interp_accel_alloc();
+          acc_bmd_cdf = gsl_interp_accel_alloc();
+          spline_bmd_inv = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
+          spline_bmd_cdf = gsl_spline_alloc(gsl_interp_steffen, BMD.size());
+          error = gsl_spline_init(spline_bmd_inv, probs.data(), BMD.data(), BMD.size());
+          
+          
+          if (error) {
+            if (spline_bmd_inv) {
+              gsl_spline_free(spline_bmd_inv);
+            }
+            if (spline_bmd_cdf) {
+              gsl_spline_free(spline_bmd_cdf);
+            }
+            if (acc_bmd_cdf) {
+              gsl_interp_accel_free(acc_bmd_cdf);
+            }
+            if (acc_bmd_inv) {
+              gsl_interp_accel_free(acc_bmd_inv);
+            }
+            spline_bmd_inv = NULL;
+            acc_bmd_inv    = NULL;
+            spline_bmd_inv = NULL;
+            acc_bmd_inv    = NULL;
+          }else{
+            error = gsl_spline_init(spline_bmd_cdf, BMD.data(), probs.data(), BMD.size());
+            
+            if (error) {
+              if (spline_bmd_inv) {
+                gsl_spline_free(spline_bmd_inv);
+              }
+              if (spline_bmd_cdf) {
+                gsl_spline_free(spline_bmd_cdf);
+              }
+              if (acc_bmd_cdf) {
+                gsl_interp_accel_free(acc_bmd_cdf);
+              }
+              if (acc_bmd_inv) {
+                gsl_interp_accel_free(acc_bmd_inv);
+              }
+              //Rcpp::Rcout << "error: %s\n" << gsl_strerror (error) << endl; 
+              spline_bmd_cdf = NULL;
+              acc_bmd_cdf    = NULL;
+              spline_bmd_inv = NULL;
+              acc_bmd_inv    = NULL;
+            }
+          }
+        }
+        
+      }
+      
+      ~bmd_cdf() {
+        if (spline_bmd_inv) {
+          gsl_spline_free(spline_bmd_inv);
+        }
+        if (spline_bmd_cdf) {
+          gsl_spline_free(spline_bmd_cdf);
+        }
+        if (acc_bmd_cdf) {
+          gsl_interp_accel_free(acc_bmd_cdf);
+        }
+        if (acc_bmd_inv) {
+          gsl_interp_accel_free(acc_bmd_inv);
+        }
+        acc_bmd_inv    = NULL;
+        acc_bmd_cdf    = NULL;
+        spline_bmd_cdf = NULL; 
+        spline_bmd_inv = NULL;
+      }
+      
+      double inv(double p) {
+        if (spline_bmd_cdf !=NULL && acc_bmd_cdf != NULL) {
+          if (p > min_prob && p < max_prob){
+            return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
+          }
+          if (p < min_prob)
+            return 0;
+          if (p > max_prob)
+            return std::numeric_limits<double>::infinity();
+        }
+        return NAN; 
+      }
+      
+      
+      double P(double dose) {
+        if (spline_bmd_cdf != NULL && acc_bmd_cdf != NULL) {
+          if (dose/multiple > min_BMD && dose/multiple < max_BMD)
+            return gsl_spline_eval(spline_bmd_cdf, dose/multiple, acc_bmd_cdf);
+          if (dose/multiple < min_BMD)
+            return 0.0;
+          if (dose/multiple > max_BMD)
+            return 1.0; 
+        }
+        return NAN;
+      }
+      void set_multiple(double m) {
+        if (m > 0.0 && std::isnormal(m)){
+          multiple = m; 
+        }else{
+          multiple = 1.0; 
+        }
+        
+      }
+      
+    private:
+      double min_BMD; 
+      double max_BMD; 
+      double multiple; 
+      double min_prob;
+      double max_prob; 
+      std::vector<double> probs; 
+      std::vector<double> BMD;
+      gsl_interp_accel  *acc_bmd_cdf;
+      gsl_spline     *spline_bmd_cdf;
+      gsl_interp_accel  *acc_bmd_inv;
+      gsl_spline     *spline_bmd_inv;
+  };
 
 
 class bmd_analysis {
@@ -485,14 +542,14 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   /*
    * Calculate the Gradient for the delta Method
    */
-  double *g = new(double[parms.rows()]);
+  double g[parms.rows()];
   gradient(parms, g, &data, bmd); // get the gradient vector
   Eigen::MatrixXd grad = parms*0;  
   for (int i = 0; i < grad.rows();i++){
         grad(i,0) = g[i]; 
   }
   
-  delete(g); 
+ 
 
   rVal.COV = model.varMatrix(parms);
   
@@ -513,12 +570,12 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
       y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
     }
   
-    for (int i = y.size(); i >= 1; i--){
+    for (int i = y.size() - 1; i >= 1; i--){
       if (y[i] == y[i-1] || isinf(y[i]) ){
           auto p1 = std::next(x.begin(),i);
           auto p2 = std::next(y.begin(),i); 
           y.erase(p2); x.erase(p1); 
-          i = y.size();
+          i = y.size() - 1;
       }
      
     }
@@ -531,7 +588,6 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
     y[0] = 0.0; 
     y[1] = 1.0; 
   }
-
 
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
        x.size() > 6 ){
@@ -556,7 +612,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   rVal.type    = BMDType; 
   rVal.MAP_ESTIMATE = oR.max_parms; 
   rVal.MAP = oR.functionV; 		
-
+ // delete g; 
   
   
   return rVal; 

@@ -442,7 +442,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     Xd = Xd.block(0,0,Xd.rows(),4); 
     cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr = pr.block(0,0,4,4); 
+    pr =    pr.block(0,0,4,4); 
     
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = 4.0; 
