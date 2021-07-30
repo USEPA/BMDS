@@ -57,6 +57,8 @@ struct BMDSMA_results{
   double *BMD;
   double *BMDL;
   double *BMDU;
+  double *ebLower;  //size is number of dose groups
+  double *ebUpper;  //size is number of dose groups
 };
 
 
@@ -138,7 +140,7 @@ extern "C" {
 
 void cleanDouble(double *val);
 
-void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_model_result *res);
+void rescale_dichoParms(int model, struct dichotomous_model_result *res);
 
 void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
 

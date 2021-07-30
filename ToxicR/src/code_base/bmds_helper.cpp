@@ -244,7 +244,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //calculate dichtomous analysis of deviance
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
 
-  rescale_dichoParms(anal, res);
+  rescale_dichoParms(anal->model, res);
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
@@ -270,14 +270,35 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
 
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
 
+  for(int i=0; i<MA->nmodels; i++){
+    rescale_dichoParms(MA->models[i], res->models[i]);
+  }
+
+  //calc error bars for graphs
+  double pHat;
+  double z;
+  double eb1;
+  double eb2;
+  double ebDenom;
+  double gofAlpha = 0.05;  //Alpha value for 95% confidence limit
+  z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
+  for (int i=0; i<DA->n; i++){
+  pHat = DA->Y[i]/DA->n_group[i];  //observed probability
+  eb1 = (2 * DA->Y[i] + z*z);
+  eb2 = z*sqrt(z*z - (2 + 1/DA->n_group[i]) + 4*pHat*((DA->n_group[i] - DA->Y[i]) + 1));
+  ebDenom = 2.0 * (DA->n_group[i] + z * z);
+  bmdsRes->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom;
+  bmdsRes->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
+  }
+
   clean_dicho_MA_results(res, bmdsRes);
 
 }
 
 //transform parameters which were computed using a logistic dist.
-void rescale_dichoParms(struct dichotomous_analysis *DA, struct dichotomous_model_result *res){
+void rescale_dichoParms(int model, struct dichotomous_model_result *res){
   //rescale background parameters for all models and v parameter for DHill model
-  switch(DA->model){
+  switch(model){
     case dich_model::d_multistage:
     case dich_model::d_weibull:
     case dich_model::d_gamma:
