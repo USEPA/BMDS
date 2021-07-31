@@ -55,6 +55,7 @@
 
 
 class bmd_cdf {
+
 public:
 	bmd_cdf():probs(),BMD() {
 		spline_bmd_cdf = NULL;
@@ -542,14 +543,15 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   /*
    * Calculate the Gradient for the delta Method
    */
-  double *g = new double[parms.rows()];
+
+  double g[parms.rows()];
+
   gradient(parms, g, &data, bmd); // get the gradient vector
   Eigen::MatrixXd grad = parms*0;  
   for (int i = 0; i < grad.rows();i++){
         grad(i,0) = g[i]; 
   }
   
-  delete(g); 
 
   rVal.COV = model.varMatrix(parms);
   
@@ -570,12 +572,12 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
       y[i] =  exp(gsl_cdf_gaussian_Pinv(q, (1.0/BMD)*pow(var(0,0),0.5)) + log(BMD)); 
     }
   
-    for (int i = y.size(); i >= 1; i--){
+    for (int i = y.size() - 1; i >= 1; i--){
       if (y[i] == y[i-1] || isinf(y[i]) ){
           auto p1 = std::next(x.begin(),i);
           auto p2 = std::next(y.begin(),i); 
           y.erase(p2); x.erase(p1); 
-          i = y.size();
+          i = y.size() - 1;
       }
      
     }
@@ -588,7 +590,6 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
     y[0] = 0.0; 
     y[1] = 1.0; 
   }
-
 
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
        x.size() > 6 ){
@@ -613,8 +614,6 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   rVal.type    = BMDType; 
   rVal.MAP_ESTIMATE = oR.max_parms; 
   rVal.MAP = oR.functionV; 		
-
-
   return rVal; 
   
 }
