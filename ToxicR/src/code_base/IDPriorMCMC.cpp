@@ -11,7 +11,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_randist.h>
-#include "IDPrior.h"
+#include "IDPriorMCMC.h"
 ///////////////////////////////////////////////////////////
 // Function: neg_log_prior(Eigen::MatrixXd theta)
 // Return the negative log prior for the prior specification
@@ -23,7 +23,7 @@
 //         For the improper prior, this is not used but it still defines an \
 	//         option for the initialization.  The third column specifies the 
 //		   dispersion parameter. 
-double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
+double IDPriorMCMC::neg_log_prior(Eigen::MatrixXd theta) {
 	double returnV = double(theta.rows())*log(0.5*M_2_SQRTPI * M_SQRT1_2);
 	double mean = 0;
 	double sd = 0;
@@ -34,7 +34,7 @@ double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
 		int t = int(prior_spec(i, 0));
 	  if (theta(i,0) < prior_spec(i,3) ||
        theta(i,0) > prior_spec(i,4)){
-//  returnV = std::numeric_limits<double>::infinity();
+            returnV = std::numeric_limits<double>::infinity();
 	     break; 
 	  }
 		switch (t) {
@@ -69,7 +69,7 @@ double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
 //         For the improper prior, this is not used but it still defines an \
 //         option for the initialization.  The third column specifies the 
 //		   dispersion parameter. 
-Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
+Eigen::MatrixXd IDPriorMCMC::log_prior(Eigen::MatrixXd theta) {
   double pi_const = log(0.5*M_2_SQRTPI * M_SQRT1_2);
   Eigen::MatrixXd returnV(theta.rows(),1); 
   double mean = 0;
@@ -111,7 +111,7 @@ Eigen::MatrixXd IDPrior::log_prior(Eigen::MatrixXd theta) {
 // Output: Returns the prior mean for normal and median for the log normal distributions
 //		   for improper prior it returns the value that is in column 2, which 
 //         can be used for initial starting points. 
-Eigen::MatrixXd IDPrior::prior_mean() {
+Eigen::MatrixXd IDPriorMCMC::prior_mean() {
 	Eigen::MatrixXd pmean(prior_spec.rows(), 1);
 
 	for (int i = 0; i < prior_spec.rows(); i++) {

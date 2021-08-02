@@ -128,8 +128,6 @@ public:
 			  }
 			}
 		}
-		
-		
 		return *this; 
 	}
 	
@@ -218,7 +216,9 @@ public:
 	}
 
 	double inv(double p) {
+	 
 		if (spline_bmd_cdf !=NULL && acc_bmd_cdf != NULL) {
+		
 			if (p > min_prob && p < max_prob){
 					return gsl_spline_eval(spline_bmd_inv, p, acc_bmd_inv)*multiple;
 			}
@@ -372,7 +372,8 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	// Prepare the results to form an X/Y tuple
     	// X - BMD values 
     	// Y - Cumulative Probabilities associated with the corresponding X row
-	//cout << result << endl; 
+
+ 
 	result = convertresult_to_probs(result);	
 	x.resize(result.rows());
 	y.resize(result.rows());
@@ -562,8 +563,8 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
    * Compute CI using the Gaussian distribution. Here the Delta method is used again
    * as the log(BMD) CI is computed.  This gaurantees the BMDL > 0.  It is then exponentiated. 
    */  
-  std::vector<double> x(100);
-  std::vector<double> y(100);
+  std::vector<double> x(500);
+  std::vector<double> y(500);
   if ( isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD)) ){
  
     for (int i = 0; i < x.size(); i++){

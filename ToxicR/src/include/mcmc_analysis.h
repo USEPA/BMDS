@@ -163,6 +163,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
 	rVal.log_posterior = penLike;
   rVal.BMR = BMR;
     //////////////////////////////////////////////////////////////////
+  
 	return rVal;
 }
 

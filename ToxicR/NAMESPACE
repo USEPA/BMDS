@@ -8,8 +8,6 @@ importFrom(forcats,fct_reorder)
 ###############################
 import(tidyverse)
 import(doBy)
-import(dplyr)
-import(plyr)
 import(multcomp)
 import(shiny)
 import(scales)

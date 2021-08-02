@@ -1,16 +1,16 @@
-//File:    IDPrior.h
+//File:    IDPriorMCMC.h
 //Purpose: Sets the priors for the binomial model  and continuous model parameters these methods are general
 //         and should be able to be used across  classes without much modification
 //Creator: Matt Wheeler
 //Date   : 12/18/2017
-//Changes: 4/13/2018 - Changed the class IDbinomPrior to IDPrior and 
+//Changes: 4/13/2018 - Changed the class IDbinomPrior to IDPriorMCMC and 
 //                     added typdef for IDbinomPrior.  This allows this 
 //                     basic definition to be used across types of models (continuous/dichotomous etc)
 //
 //
 //
-#ifndef IDPriorH
-#define IDPriorH
+#ifndef IDPriorMCMCH
+#define IDPriorMCMCH
 
 #define _USE_MATH_DEFINES
 
@@ -29,22 +29,22 @@
 #include "cmodeldefs.h"
 
 
-// IDPrior
+// IDPriorMCMC
 // Creates a class where each parameter specified is given an independent
 // prior.  This is done in the matrix prior_spec. The first column of this
 // matrix is either 1 or 2, which indicates if the parameter is normally (1)
 // or log normally (2) distributed. The second column specifies the prior mean
 // and the third column specifies the prior standard deviation. 
-class IDPrior{
+class IDPriorMCMC{
 public:
 
-	IDPrior(IDPrior &M){
+	IDPriorMCMC(IDPriorMCMC &M){
 		
 		prior_spec = M.prior_spec; 
 	}
 
 	// Binomial Prior Coinstructor
-	IDPrior(Eigen::MatrixXd tP):prior_spec(tP){
+	IDPriorMCMC(Eigen::MatrixXd tP):prior_spec(tP){
 		// TODO: do some error checking to make sure you are passing in
 		// the correct size matrix and that the bounds make sense in relation
 		// to the mean. 
@@ -129,8 +129,8 @@ public:
 
 //set different typdefs for the type of prior continuous or binomial
 //model
-typedef IDPrior IDbinomPrior ; 
-typedef IDPrior IDcontinuousPrior ; 
+typedef IDPriorMCMC IDbinomPriorMCMC ; 
+typedef IDPriorMCMC IDcontinuousPriorMCMC; 
 
 
 

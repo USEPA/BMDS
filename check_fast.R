@@ -1,8 +1,6 @@
 library(ToxicR)
 library(ggplot2)
 
-
-
 library(readr)
 PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
                          col_names = FALSE)
@@ -17,10 +15,19 @@ library(dplyr)
 library(ggplot2)
 library(ToxicR)
 
-#for (ii in 1:10){
-#  print(ii)
-  ii = 1
+for (ii in 1:5){
+  print(ii)
+
   temp <- PFOA_Liver[ii,]
   v1 <- as.numeric(temp[2:length(temp)])
-  BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "hill", fit_type = "laplace",isFast = T)
-#}
+  library(ToxicR)
+  SS<- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal-ncv",model_type = "hill",
+                              BMD_TYPE = "sd",BMR = 1 , fit_type = "laplace",isFast = F)
+   TT <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal-ncv",model_type = "hill",
+                            BMD_TYPE = "sd",BMR = 1 , fit_type = "laplace",isFast = T)
+  
+  RR<- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal-ncv",model_type = "hill",
+                              BMD_TYPE = "sd",BMR = 1 , fit_type = "mcmc",isFast = F)
+  print(BB$bmd)
+  plot(BB)
+}
