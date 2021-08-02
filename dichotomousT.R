@@ -45,7 +45,7 @@ mData <- matrix(c(0,	8,	50,
 #plot(Q) + scale_x_continuous(trans="sqrt")
 
 
-system.time({R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",degree = 3, fit_type = "laplace")})
+system.time({R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",degree = 3, fit_type = "mcmc")})
 S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",degree = 3, fit_type = "laplace")
 
 R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],prior = q,degree = 2,fit_type = "laplace")
