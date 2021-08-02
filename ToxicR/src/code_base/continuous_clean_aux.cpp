@@ -217,7 +217,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model, double ma
         }
         break; 
       case cont_model::polynomial:
-  
+      
       for (int i = 1; i <= degree; i++){
         parms(i,0) *= pow(1/max_dose,i); 
       }
@@ -228,6 +228,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model, double ma
           parms(degree+2,0) += 2*log(bkground); 
         }
       }
+    
       break; 
     case cont_model::funl:
       parms(0,0) *= bkground; parms(1,0) *= bkground; 

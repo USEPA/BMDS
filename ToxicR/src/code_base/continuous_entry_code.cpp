@@ -279,12 +279,13 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
       X(i,j) = pow(tX(i,0),j);  
     }
   }
-  
   Eigen::MatrixXd B = Eigen::MatrixXd::Ones(deg+1,1);
-  B = X.transpose()*W*X; 
+  B = X.transpose()*W*X;
   B = B.inverse()*X.transpose()*W*Y.col(0); 
-
-  return B; 
+  for(int i = 0; i < B.rows(); i++){
+    prior(i,1) = B(i,0); 
+  } 
+  return prior; 
 }
 
 /*initialize_mle
@@ -329,8 +330,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
     // so we don't do anything
     break; 
   }
-  
-  
+
   return retVal.col(1);  
 }
 
@@ -1920,8 +1920,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
       tprior(m,n) = CA->prior[m + n*CA->parms]; 
     }
   }
-  
-  
+   
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
   
@@ -1995,7 +1994,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::polynomial:
     // Polynomials are ONLY normal models. 
- //   cerr << "Here 3.0" << endl << tprior << endl;  
+    
     init_opt =  bmd_continuous_optimization<normalPOLYNOMIAL_BMD_NC,IDPrior> (Y_N, X, tprior,  fixedB, fixedV, 
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
@@ -2009,7 +2008,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
     
   }
-
+ 
  
   double DOF = 0; 
   // now you fit it based upon the origional data
@@ -2069,10 +2068,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   
   ///////////////////////////////////////////////////////
   // NOTE: need to rescale the covariance first
+
   b.COV =  rescale_cov_matrix(b.COV, 
                               b.MAP_ESTIMATE, CA->model,
                               max_dose, 1.0, false,CA->degree);
-  
+
   b.MAP_ESTIMATE = rescale_parms(b.MAP_ESTIMATE, CA->model,
                                  max_dose,1.0, false, CA->degree);
   b.MAP_BMD *= max_dose; 
