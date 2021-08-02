@@ -41,7 +41,6 @@ temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
 kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
 
-,model_list = model_list,samples = 35000 )
 plot(kk)+scale_x_continuous(trans="pseudo_log")
 
 R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = TR)
