@@ -11,7 +11,7 @@ file_list = file_list[!(file_list %in% "results")]
 #file_list = file_list[c (grep("_lognormal_",file_list), grep("_invGaussian_",file_list)) ]
 options(warn=-1)
 
-for (ii in 8:length(file_list)){
+for (ii in 1:length(file_list)){
   load(file_list[ii])
   BMD_result_SD_ML1_mcmc = matrix(NA,1000,3)
   BMD_result_SD_ML1_lapl = matrix(NA,1000,3)
