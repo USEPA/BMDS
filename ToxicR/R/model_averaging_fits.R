@@ -175,11 +175,10 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     class(temp) <- c("BMDcontinuous_MA","BMDcontinuous_MA_mcmc")  
     return(temp)
   }else{
-    print("I am here before the function")
+    
     temp   <-  run_continuous_ma_laplace(priors, models, dlists,Y,D,
                                           options)
-    
-    #clean up the run
+
     t_names <- names(temp)
     
     idx     <- grep("Fitted_Model",t_names)

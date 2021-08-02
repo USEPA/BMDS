@@ -23,7 +23,7 @@ prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior(0,2,-18,18)); 
 
 library(readr)
-PFOA_Liver <- read_table("~/Documents/PFOA_Liver.txt", 
+PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
                           col_names = FALSE)
 
 
@@ -39,7 +39,9 @@ library(ggplot2)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR =1.5,model_list = model_list,samples = 35000 )
+kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+
+,model_list = model_list,samples = 35000 )
 plot(kk)+scale_x_continuous(trans="pseudo_log")
 
 R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = TR)
@@ -66,15 +68,9 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 
 
-
-
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
 plot(BB)
-
-
-
-
 
 # Update based on prior probability for continous case 
 .cleveland_plot.BMDcontinous_MA(BB)
