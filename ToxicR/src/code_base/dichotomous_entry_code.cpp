@@ -296,7 +296,6 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   }
   res->bmd *= max_dose; 
   res->model = DA->model; 
-
   return; 
 }
 
