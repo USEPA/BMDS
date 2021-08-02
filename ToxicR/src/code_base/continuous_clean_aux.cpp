@@ -36,8 +36,9 @@ using namespace Rcpp;
 
 #include <gsl/gsl_randist.h>
 
-#include "continuous_clean_aux.h"
+
 #include "bmdStruct.h"
+#include "continuous_clean_aux.h"
 #include <iostream>
 #include <numeric> 
 
@@ -165,8 +166,8 @@ Eigen::MatrixXd createSuffStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
 }
  
 // FIXME: CHECK IF WE ARE RESCALING THE VARIANCE PARAMETERS CORRECTLY
-Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
-                              double max_dose, double bkground,bool is_logNormal)
+Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model, double max_dose, double bkground,
+                              bool is_logNormal, int degree)
   {
  
     switch(model){
@@ -181,6 +182,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         }
         break; 
       case cont_model::exp_3:
+        
         parms(0,0) *= bkground; parms(1,0) *= 1/max_dose; 
         if (!is_logNormal){
           if (parms.rows()== 5){
@@ -189,6 +191,7 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
             parms(5,0) += 2*log(bkground); 
           }
         }
+       
         break; 
       case cont_model::exp_5:
         
@@ -214,6 +217,17 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
         }
         break; 
       case cont_model::polynomial:
+  
+      for (int i = 1; i <= degree; i++){
+        parms(i,0) *= pow(1/max_dose,i); 
+      }
+      if (!is_logNormal){
+        if (parms.rows()== degree +2){
+          parms(degree+1,0) += 2*log(bkground); 
+        }else{
+          parms(degree+2,0) += 2*log(bkground); 
+        }
+      }
       break; 
     case cont_model::funl:
       parms(0,0) *= bkground; parms(1,0) *= bkground; 
@@ -242,33 +256,59 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model,
  Eigen::MatrixXd rescale_cov_matrix(Eigen::MatrixXd COV, 
 									Eigen::MatrixXd parms, cont_model model,
 									double max_dose, double bkground,
-									bool is_logNormal)
+									bool is_logNormal,int degree)
   {
+   
     Eigen::MatrixXd scaleMatrix = Eigen::MatrixXd::Identity(COV.rows(), COV.cols());
     switch(model){
       case cont_model::hill:
         scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground; scaleMatrix(2,2)*= max_dose; 
-        COV = scaleMatrix*COV*scaleMatrix; 
+        COV = scaleMatrix*COV*scaleMatrix.transpose(); 
         break; 
       case cont_model::exp_3:
         scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = 1/max_dose;  
-        COV = scaleMatrix*COV*scaleMatrix; 
+        COV = scaleMatrix*COV*scaleMatrix.transpose(); 
         break; 
       case cont_model::exp_5:
         scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = 1/max_dose; 
-        COV = scaleMatrix*COV*scaleMatrix; 
+        COV = scaleMatrix*COV*scaleMatrix.transpose(); 
         break; 
-      
       case cont_model::power: 
         parms(0,0) *= bkground; parms(1,0) *= bkground*pow(1/max_dose,parms(2,0)); 
         scaleMatrix(0,0) = bkground; scaleMatrix(1,1) = bkground*pow(1/max_dose,parms(2,0));
         scaleMatrix(1,2) = bkground*parms(1,0)*log(1/max_dose)*pow(1/max_dose,parms(2,0));  
-        COV = scaleMatrix*COV*scaleMatrix; 
+        COV = scaleMatrix*COV*scaleMatrix.transpose(); 
         break; 
       case cont_model::polynomial:
+        
+        for (int i = 1; i <= degree; i++){
+          scaleMatrix(i,i) *= pow(1/max_dose,i); 
+        }
+        COV = scaleMatrix*COV*scaleMatrix.transpose(); 
         break; 
     }
     return COV; 
 
   }
+ 
+
+void rescale_mcmc(mcmcSamples *a, cont_model model,
+                   double max_dose, bool is_logNormal,int degree){
+   
+   a->map_cov      = rescale_cov_matrix(a->map_cov, 
+                                        a->map_estimate, model,
+                                        max_dose, 1.0,
+                                        is_logNormal, degree);
+   a->map_estimate = rescale_parms(a->map_estimate,  model, 
+                                   max_dose, 1.0,
+                                   is_logNormal,  degree); 
+   
+   for (int i = 0; i < a->samples.cols(); i++){
+     a->BMD(0,i) = a->BMD(0,i)*max_dose; 
+     a->samples.col(i).array() = rescale_parms(a->samples.col(i),  model, 
+                                                max_dose, 1.0,
+                                                is_logNormal,  degree); 
+   }
+   return; 
+}
  

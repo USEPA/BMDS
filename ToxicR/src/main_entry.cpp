@@ -25,6 +25,7 @@
 #include <RcppEigen.h>
 #include <RcppGSL.h>
 
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -177,7 +178,8 @@ List run_continuous_single(IntegerVector model,
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
     bool isFast = (bool) options[6]; 
-    
+     
+   
     ////////////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////
@@ -204,6 +206,7 @@ List run_continuous_single(IntegerVector model,
     //
     // Check on the polynomial stuff
     //
+
     if (anal.model == cont_model::polynomial){
       // figure out the degree
       if (anal.disttype == distribution::normal ){
@@ -227,26 +230,25 @@ List run_continuous_single(IntegerVector model,
       }
     }
     
+    
     ////////////////////////////////////
     continuous_model_result *result = new_continuous_model_result(anal.model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
     ////////////////////////////////////
-    
     estimate_sm_laplace(&anal,result,isFast);
     
     continuous_deviance aod1; 
    
     if (anal.disttype == distribution::log_normal){
-      cerr << "I am here" << endl; 
+    
       estimate_log_normal_aod(&anal,
                               &aod1);
     }else{
       estimate_normal_aod(&anal,
                              &aod1);
     }
-   
-
+    
    continuous_expected_result exp_r; 
    exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
    exp_r.sd       = new double[anal.n];
@@ -259,14 +261,7 @@ List run_continuous_single(IntegerVector model,
    AOD(2,0) = aod1.A3; AOD(2,1) = aod1.N3;
    AOD(3,0) = aod1.R; AOD(3,1) = aod1.NR;
    AOD(4,0) = exp_r.like; AOD(4,1) = result->model_df;
-// continuous_expected_result exp_r; 
-// exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
-// exp_r.sd       = new double[anal.n];
- /*  AOD(0,0) = 1; AOD(0,1) = 1; 
-   AOD(1,0) = 1; AOD(1,1) = 1;
-   AOD(2,0) = 1; AOD(2,1) = 1;
-   AOD(3,0) = 1; AOD(3,1) = 1;
-   AOD(4,0) = 1; AOD(4,1) = 1; //result->model_df;*/
+
     List rV = convert_continuous_fit_to_list(result); 
 
     rV.push_back(AOD,"Deviance");
@@ -277,4 +272,4 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     return rV; 
     
-  }
+}

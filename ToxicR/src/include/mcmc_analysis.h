@@ -50,8 +50,10 @@
 #include "dBMDstatmod.h"
 #include "cBMDstatmod.h"
 #include "bmd_calculate.h"
+#include "mcmc_struct.h"
 #include <sys/time.h>
 #include <bmdStruct.h>
+    
 
 using namespace std;  
  
@@ -60,20 +62,7 @@ using namespace std;
 
 
 
-struct mcmcSamples{
-  /*******************
-  *for model averaging
-  *********************/
-    double map; 
-    Eigen::MatrixXd map_estimate; 
-    Eigen::MatrixXd map_cov; 
-    /**********************/
-    Eigen::MatrixXd BMD;
-    Eigen::MatrixXd samples;
-    Eigen::MatrixXd log_posterior;
-  	double BMR;
-  	bool isExtra;
-};
+
 
 /**********************************************************************
  *  function: MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
@@ -174,6 +163,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
 	rVal.log_posterior = penLike;
   rVal.BMR = BMR;
     //////////////////////////////////////////////////////////////////
+  
 	return rVal;
 }
 

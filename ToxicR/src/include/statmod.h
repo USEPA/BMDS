@@ -624,6 +624,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   optimizationResult oR;
   Eigen::MatrixXd temp_data = M->parmLB();
   std::vector<double> lb(M->nParms());
+ 
   for (int i = 0; i < M->nParms(); i++) lb[i] = temp_data(i, 0);
   temp_data = M->parmUB();
 
@@ -649,7 +650,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   }
   int yy = x.size(); 
  
-
+ 
   for (int i = 0; i < M->nParms(); i++){
      
     if (!isnormal(x[i])){
@@ -658,7 +659,6 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     }
 
   }
-
 
   double minf;
   nlopt::result result = nlopt::FAILURE;
@@ -716,9 +716,9 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     
     opt_ptr->set_lower_bounds(lb);
     opt_ptr->set_upper_bounds(ub);
-   // opt_ptr->set_ftol_rel(1e-8);
-    opt_ptr->set_ftol_abs(1e-8);
-   // opt_ptr->set_initial_step(1e-4); 
+    opt_ptr->set_ftol_rel(1e-8);
+   // opt_ptr->set_ftol_abs(1e-8);
+   // opt_ptr->set_initial_step(1e-5); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
     ////////////////////////////////////////////////
@@ -735,7 +735,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       // Exit the loop if good result and not first try.
       // lco: should change to a break statement since "10"
       // could be legitimate iteration in the future
-      if (opt_iter >= 0
+      if (opt_iter >= 1
             && result > 0
             && result < 5) {
 

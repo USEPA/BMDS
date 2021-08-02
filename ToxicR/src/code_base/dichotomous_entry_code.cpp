@@ -27,6 +27,7 @@
 #include "DichProbitBMD_NC.h"
 #include "binomialTests.h"
 #include "IDPrior.h"
+#include "IDPriorMCMC.h"
 
 #include "bmds_entry.h"
 #include "bmdStruct.h"
@@ -152,13 +153,14 @@ void rescale_var_matrix(Eigen::MatrixXd *var,
 void rescale_dichotomous_model(mcmcSamples *v, dich_model model,
                                double max_dose){
   //rescale the dichotomous to the origional values
+
   for (int i = 0; i < v->samples.cols(); i++ ){
        Eigen::MatrixXd temp = v->samples.col(i); 
-       rescale(&temp, model,max_dose);  
+       rescale(&temp, model,max_dose);
        v->samples.col(i) = temp; 
-       v->BMD(i,0) *= max_dose; 
+       v->BMD(0,i) *= max_dose; 
   }
-  
+
   rescale_var_matrix(&v->map_cov,v->map_estimate,(dich_model)model,max_dose); 
   rescale(&v->map_estimate,(dich_model)model,max_dose); 
   
@@ -220,50 +222,50 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
 
   switch (DA->model){
     case dich_model::d_hill:
-      a =  MCMC_bmd_analysis_DNC<dich_hillModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_hillModelNC,IDPriorMCMC> (Y,D,prior,
                                      fixedB, fixedV, DA->degree,
                                      DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
      
     break; 
     case dich_model::d_gamma:
-      a =  MCMC_bmd_analysis_DNC<dich_gammaModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_gammaModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
   
     break; 
     case dich_model::d_logistic:
-      a =  MCMC_bmd_analysis_DNC<dich_logisticModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_logisticModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_loglogistic:
-      a =  MCMC_bmd_analysis_DNC<dich_loglogisticModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_loglogisticModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break;
     case dich_model::d_logprobit:
-      a =  MCMC_bmd_analysis_DNC<dich_logProbitModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_logProbitModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_multistage:
      
-      a =  MCMC_bmd_analysis_DNC<dich_multistageNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_multistageNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break;
     case dich_model::d_probit: 
-      a =  MCMC_bmd_analysis_DNC<dich_probitModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_probitModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break;
     case dich_model::d_qlinear: 
-      a =  MCMC_bmd_analysis_DNC<dich_qlinearModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_qlinearModelNC,IDPriorMCMC> (Y,D,prior,
                                                             fixedB, fixedV, DA->degree,
                                                             DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     break; 
     case dich_model::d_weibull:
-      a =  MCMC_bmd_analysis_DNC<dich_weibullModelNC,IDPrior> (Y,D,prior,
+      a =  MCMC_bmd_analysis_DNC<dich_weibullModelNC,IDPriorMCMC> (Y,D,prior,
                                                              fixedB, fixedV, DA->degree,
                                                              DA->BMR, DA->BMD_type, DA->alpha, DA->samples);
     default: 
@@ -273,7 +275,7 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   if (do_a_rescale){
   
   }
-  
+
   bmd_analysis b; 
   b = create_bmd_analysis_from_mcmc(DA->burnin,a,1.0);
   mcmc->model = DA->model; 
@@ -281,8 +283,11 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
   mcmc->samples = DA->samples; 
   mcmc->nparms = DA->parms; 
   // rescale mcmc information
+ 
   rescale_dichotomous_model(&a, (dich_model)DA->model, max_dose); 
+
   transfer_mcmc_output(a,mcmc); 
+ 
   transfer_dichotomous_model(b,res);
   // rescale the BMD 
   // has nothing to do with the do_a_rescale

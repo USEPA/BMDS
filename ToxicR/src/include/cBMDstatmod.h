@@ -495,7 +495,6 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR>  *M,
 	double minf = 0;
 	nlopt::result result = nlopt::FAILURE;
     int vecSize = start.rows() - 1;
-    DEBUG_OPEN_LOG("bmds.log", file);
     std::vector<double> x(vecSize); // drop the number of parameters by 1
 	std::vector<double> lb(vecSize); std::vector<double> ub(vecSize);
 	Eigen::MatrixXd datal = M->parmLB(); Eigen::MatrixXd datau = M->parmUB();
@@ -516,16 +515,7 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR>  *M,
       } // end if
 	} // end for
 
-#ifdef DEBUGLOG
-    file << "Initial values:\n";
-    //file << std::scientific << setprecision(17);
-    for (int i = 0; i < vecSize; i++) {
-      file << "\tx[" << i << "]= " << x[i]
-        << ", lb[" << i << "]= " << lb[i]
-        << ", ub[" << i << "]= " << ub[i] << endl;
-    }
-    flush(file);
-#endif // DEBUGLOG
+
 
     ///////////////////////////////////////////////////////////////////////////////
 	c_optimInfo<LL, PR> info; 	info.BMR = BMRF; 	info.cBMD = BMD; info.isInc = isInc; 
@@ -730,9 +720,7 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 		
 	}
  
-    //DEBUG_LOG(file, "Finished upper profile: CBMD= " << CBMD << ", max_iters= " << max_iters);
-
-	// Take the lists and put them in one big
+ 	// Take the lists and put them in one big
 	// matrix to return. 
 	Eigen::MatrixXd returnMat(CL.size(), 3);
 	int ii = 0; 
@@ -741,16 +729,8 @@ Eigen::MatrixXd profile_cBMDNC(   cBMDModel<LL, PR>  *M,
 		ii++; 
 	}
 	
-    //cout << "***%%% returnMat from profile_cBMDNC() %%%***" << endl;
-    //cout << " > before rounding:" << endl;
-    //cout << returnMat << endl;
-    returnMat.col(0).array() =  round(round(1e4*returnMat.col(0).array()) - round(1e4*MAP_LIKE))/1e4; // round it to be within the optimizers tol
-    //cout << " > after rounding:" << endl;
-    //cout << returnMat << endl;
-    //flush(cout);
-
-    //DEBUG_CLOSE_LOG(file);
-
+  returnMat.col(0).array() =  round(round(1e4*returnMat.col(0).array()) - round(1e4*MAP_LIKE))/1e4; // round it to be within the optimizers tol
+  
 	return returnMat; 
 }
 
