@@ -1196,20 +1196,25 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
   }
 } 
-
+ cerr << orig_Y_LN << endl; 
  
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
-    max_prob = temp > max_prob? temp:max_prob; 
-    post_probs[i] = temp; 
+    if (std::isfinite(temp)){
+      max_prob = temp > max_prob? temp:max_prob; 
+      post_probs[i] = temp; 
+    }else{
+      post_probs[i] = -1*std::numeric_limits<double>::infinity();
+    }
   }
   
   double norm_sum = 0.0; 
 
   for (int i = 0; i < MA->nmodels; i++){
+    cerr << MA->modelPriors[i] << endl; 
     post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]);
     norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
@@ -1968,7 +1973,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
-  //  cerr << temp_init << endl << "-----" << endl; 
+
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):

@@ -15,7 +15,7 @@ v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,
         13.239134,	13.82321,	15.080262,	14.85966,	14.7805395,	15.238369,	14.749196,
         14.913585,	15.181719,	15.051697,	15.065641,	15.16396,	15.484345,	16.493923,
         15.633442,	15.96033,	15.388061)
-
+v2 <- v1/mean(v1[doses==0])
 prior <- create_prior_list(lnormprior(0,1,-100,100),
                            normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
                            lnormprior(0 ,1,0,100),
@@ -68,7 +68,7 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 
 
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
+BB <- ma_continuous_fit(as.matrix(doses)/20,as.matrix(v2),fit_type = "laplace",BMR = 1)
 
 plot(BB)
 
@@ -95,7 +95,7 @@ sqrt(g%*%B$covariance%*%t(g))
 C  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F)
 
 
-BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR=1.5)
+BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR=1.5)
 
 #AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc")
 #plot(BB)
