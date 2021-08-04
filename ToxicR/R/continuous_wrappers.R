@@ -18,35 +18,59 @@
 #* 
 #  * 
 #  */
-#################################################33
-#get_prior_list <- a list of Default priors for an analysis
-#
-##################################################
+
 
 #################################################
 # bmd_single_continous - Run a single BMD model
 #
 ##################################################
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
-                                   prior="default", BMD_TYPE = "sd", sstat = T,
+                                   prior=NA, BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
-                                   alpha = 0.05,samples = 21000,degree=2,
+                                   alpha = 0.05, samples = 25000,degree=2,
                                    burnin = 1000,isFast = FALSE){
     myD = Y; 
-    type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
+    sstat = F # set sufficient statistics to false if there is only one column
+    if (ncol(Y) > 1){
+        sstat=T
+    }
+    
+    if (!is.na(prior[1])){
+      #parse the prior
+      if (class(prior) != "BMD_Bayes_continuous_model"){
+        stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
+      }
+      t_prior_result <- .parse_prior(prior)
+      distribution <- t_prior_result$distribution
+      model_type   <- t_prior_result$model
+      prior = t_prior_result$prior
+    }else{
+      dmodel = which(model_type==.continuous_models)
+      
+      if (identical(dmodel, integer(0))){
+        stop('Please specify one of the following model types: \n
+            "hill","exp-3","exp-5","power","FUNL","polynomial"')
+      }
 
+      PR    = bayesian_prior_continuous_default(model_type,distribution,degree)
+      t_prior_result = create_continuous_prior(PR,model_type,distribution,degree)
+      PR = PR$prior
+    }
+    dmodel = which(model_type==.continuous_models)
+    
+    type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
+    if (identical(type_of_fit,integer(0))){
+      stop("Please choose one of the following fit types: 'laplace','mle','mcmc.' ")
+    }
+    
     rt = which(BMD_TYPE==c('abs','sd','rel','hybrid'))
+    
     if (rt == 4){
       rt = 6; 
     }
     dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
     
-    dmodel = which(model_type==c("hill","exp-3","exp-5","power","FUNL","polynomial"))
-    
-    if (identical(dmodel, integer(0))){
-      stop('Please specify one of the following model types: \n
-            "hill","exp-3","exp-5","power","FUNL","polynomial"')
-    }
+
     
     if(identical(dis_type,integer(0))){
       stop('Please specify the distribution as one of the following:\n
@@ -72,18 +96,13 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (fitmodel == 666 && dis_type == 3){
          stop("Polynomial models are currently not defined for the Log-Normal distribution.")
     }
-    
-    if (prior[1] =="default"){
-      PR = bayesian_prior_continuous(model_type,distribution,degree)
-    }else{
-      PR = prior; 
-    }
-    
+
+    #For MLE 
     if (type_of_fit == 2){
       PR = MLE_bounds_continuous(model_type,distribution,degree)
+      PR = PR$priors
     }
 
-    
     if (distribution == "lognormal"){
       is_log_normal = TRUE
     }else{
@@ -136,33 +155,26 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
           dist_type = 2 # normal-ncv
       }
     }
-    
+  ##  print(PR)
+  # // return(PR)
     if (fit_type == "mcmc"){
       
       rvals <- run_continuous_single_mcmc(fitmodel,model_data$SSTAT,model_data$X,
-                                          PR[[1]],options, is_log_normal, sstat) 
+                                          PR ,options, is_log_normal, sstat) 
+   
       if (model_type == "exp-3"){
         rvals$PARMS = rvals$PARMS[,-3]
+        rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
       }
-      class(rvals) <- "BMDcont_fit_MCMC"; 
-      rvals$model <- model_type
-      rvals$options <- options
-      rvals$data <- DATA
-      rvals$bmd <- c(mean(rvals$mcmc_result$BMD_samples,na.rm=TRUE),quantile(rvals$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE))
-      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
-      rvals$prior <- PR
-      class(rvals) <- "BMDcont_fit_MCMC"
-      return(rvals)
-    }else{
-      
-      options[7] <- (isFast == TRUE)*1
-      rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
-  						                          PR[[1]],options, dist_type)
-     # print(rvals$bmd_dist)
-      rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),,drop=F]
-      rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1]),,drop=F]
-      rvals$bmd     <- c(NA,NA,NA)
-      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+     # print("1.0")
+      ##compute the p-value
+     # rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
+      #print("2.0")
+      ##
+      rvals$bmd      <- c(rvals$fitted_model$bmd,NA,NA) 
+      print(rvals$fitted_model$bmd)
+      rvals$prior    <- t_prior_result
+      rvals$bmd_dist <- rvals$fitted_model$bmd_dist
       if (!identical(rvals$bmd_dist, numeric(0))){
         temp_me = rvals$bmd_dist
         temp_me = temp_me[!is.infinite(temp_me[,1]),]
@@ -171,9 +183,44 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
         
         if( nrow(temp_me) > 5){
           te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
-          rvals$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+          rvals$bmd[2:3]  <- c(te(alpha),te(1-alpha))
         }else{
-          rvals$bmd <- c(NA,NA,NA)
+          rvals$bmd[2:3] <- c(NA,NA)
+        }
+      }
+      
+      class(rvals) <- "BMDcont_fit_MCMC"; 
+      rvals$model  <- model_type
+      rvals$options <- options
+      rvals$data <- DATA
+      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+      rvals$prior <- PR
+      class(rvals) <- "BMDcont_fit_MCMC"
+      return(rvals)
+    }else{
+      
+      options[7] <- (isFast == TRUE)*1
+      rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
+  						                          PR,options, dist_type)
+     
+      rvals$bmd_dist = rvals$bmd_dist[!is.infinite(rvals$bmd_dist[,1]),,drop=F]
+      rvals$bmd_dist = rvals$bmd_dist[!is.na(rvals$bmd_dist[,1]),,drop=F]
+      rvals$bmd     <- c(rvals$bmd,NA,NA)
+      names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+      if (fit_type == "laplace"){
+        rvals$prior    <- t_prior_result
+      }
+      if (!identical(rvals$bmd_dist, numeric(0))){
+        temp_me = rvals$bmd_dist
+        temp_me = temp_me[!is.infinite(temp_me[,1]),]
+        temp_me = temp_me[!is.na(temp_me[,1]),]
+        temp_me = temp_me[!is.nan(temp_me[,1]),]
+        
+        if( nrow(temp_me) > 5){
+          te <- splinefun(temp_me[,2],temp_me[,1],method="hyman")
+          rvals$bmd[2:3]  <- c(te(alpha),te(1-alpha))
+        }else{
+          rvals$bmd[2:3] <- c(NA,NA)
         }
       }
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")

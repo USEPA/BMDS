@@ -18,11 +18,11 @@ bmds.H <- c(41.49,	57.19,	42.61,
 
 BMD.H  <- matrix(bmds.H,nrow=8,ncol=3,byrow=T)
 BMD.SD <- matrix(bmds.SD,nrow=8,ncol=3,byrow=T)
-setwd("~/Documents/r_software/RBMDS/Simulation/Hill/results")
+setwd("~/Documents/r_software/RBMDS/Simulation/Hill/results2")
 files <- dir()
 
 ivgSims = grepl("invGaussian",files)
-norSims = grepl("normal",files)
+norSims = grepl("_normal",files)
 lnorSims = grepl("lognormal",files)
 
 cond1 = grepl("sim_1",files)
@@ -100,7 +100,7 @@ SD_ig_G_5 <- cbind(lap1.sd[,3,4],lap2.sd[,3,4],mcmc1.sd[,3,4],mcmc2.sd[,3,4])*10
 SD_ig_E_4 <- cbind(lap1.sd[,3,1],lap2.sd[,3,1],mcmc1.sd[,3,1],mcmc2.sd[,3,1])*100
 SD_ig_E_5 <- cbind(lap1.sd[,3,2],lap2.sd[,3,2],mcmc1.sd[,3,2],mcmc2.sd[,3,2])*100
 
-xtable(cbind(SD_no_E_4,SD_no_G_4), digits = 1)
+xtable(cbind(SD_no_E_4,SD_no_G_4) ,digits = 1)
 xtable(cbind(SD_no_E_5,SD_no_G_5), digits = 1)
 
 xtable(cbind(SD_lno_E_4,SD_lno_G_4), digits = 1)

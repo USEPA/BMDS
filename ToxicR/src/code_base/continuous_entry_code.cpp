@@ -1165,12 +1165,14 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
                                    CA->alpha, 0.025,init_opt,false);
+
         }else{
           b[i] = laplace_logNormal(orig_Y_LN, X,
                                    tprior, CA->BMD_type, (cont_model)MA->models[i],
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
                                    CA->alpha, 0.025,init_opt,false);
+
           
         }
       
@@ -1183,12 +1185,14 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
                                 CA->alpha, 0.025,init_opt,false);
+
         }else{
           b[i] = laplace_Normal(orig_Y, X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
                                 CA->alpha, 0.025,init_opt,false);
+
           
         }
         
@@ -1196,13 +1200,14 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
   }
 } 
+
  
   double post_probs[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
-    
+
     if (std::isfinite(temp)){
       max_prob = temp > max_prob? temp:max_prob; 
       post_probs[i] = temp; 
@@ -1214,17 +1219,18 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   double norm_sum = 0.0; 
 
   for (int i = 0; i < MA->nmodels; i++){
+    cerr << MA->modelPriors[i] << endl; 
     post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]);
     norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
   }
+  
   
   for (int j = 0; j < MA->nmodels; j++){
     
     b[j].COV =  rescale_cov_matrix(b[j].COV, 
                                    b[j].MAP_ESTIMATE, (cont_model) MA->models[j],
                                                                              max_dose, 1.0, false);
-    
     b[j].MAP_ESTIMATE = rescale_parms(b[j].MAP_ESTIMATE,  (cont_model)MA->models[j],
                                       max_dose,1.0, false);
     b[j].MAP_BMD *= max_dose; 
@@ -1250,6 +1256,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   
 
   double range[2]; 
+
   // define the BMD distribution ranges
   // also get compute the MA BMD list
   // this MUST occur after the poster probabilities ABOVE are computed
@@ -2009,7 +2016,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
- 
+
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     1.0, divisor, 
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
@@ -2040,6 +2047,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             CA->alpha, 0.025,init_opt,isFast);
       
     }
+
      DOF =  compute_lognormal_dof(orig_Y_LN,X, b.MAP_ESTIMATE, 
                                  CA->isIncreasing, CA->suff_stat, tprior, 
                                  CA->model); 
@@ -2070,6 +2078,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     
   }
   
+
 
 
    ///////////////////////////////////////////////////////

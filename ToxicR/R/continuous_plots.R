@@ -1,11 +1,22 @@
+
+cont_polynomial_f <- function(A,doses,decrease=F){
+
+  B <- as.matrix(A,ncol=1)
+  X <- matrix(1,nrow = length(doses),ncol=length(A))
+  for (ii in 2:nrow(B)){
+    X[,ii] = doses^(ii-1)
+  }
+  return(X%*%B)
+}
+
 # FUNL
-cont_FUNL_f <- function(A,doses){
+cont_FUNL_f <- function(A,doses,decrease=F){
      b <- A[1] + A[2]*exp(-exp(A[6])*(doses-A[5])^2)*(1/(1+exp(-(doses-A[3])/A[4])))
      return(b)
 }
 
 #dichotomous hill
-cont_hill_f <- function(parms,d){
+cont_hill_f <- function(parms,d,decrease=F){
   g  <- parms[1] 
   nu <- parms[2]
   k  <- parms[3];
@@ -14,7 +25,7 @@ cont_hill_f <- function(parms,d){
   return (rval)
 }
 #dichotomous log-logistic
-cont_exp_5_f <- function(parms,d){
+cont_exp_5_f <- function(parms,d,decrease=F){
   g <- parms[1]
   b <- parms[2];
   c <- parms[3];
@@ -24,15 +35,20 @@ cont_exp_5_f <- function(parms,d){
 }
 
 #
-cont_exp_3_f <-function(parms,d){
+cont_exp_3_f <-function(parms,d,decrease = TRUE){
+  if (decrease){
+    f_sign = -1; 
+  }else{
+    f_sign = 1; 
+  }
   g <- parms[1]
   b <- parms[2]
-  e <- parms[4] 
-  rval <- g*exp(-(b*d)^e)
+  e <- parms[3] 
+  rval <- g*exp(f_sign*(b*d)^e)
   return (rval)
 }
 
-cont_power_f <-function(parms,d){
+cont_power_f <-function(parms,d,decrease=F){
   g <- parms[1]; 
   b <- parms[2];
   a <- parms[3]; 
@@ -40,137 +56,190 @@ cont_power_f <-function(parms,d){
   return (rval)
 }
 
-
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-     density_col="blueviolet"
-     credint_col="azure2"
+  density_col="blueviolet"
+  credint_col="azure2"
   BMD_DENSITY = T
   
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
   }
   
-  if (ncol(fit$data) == 4 ){ #sufficient statistics
-    mean <- fit$data[,2,drop=F]
-    se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-    doses = fit$data[,1,drop=F]
-    uerror <- mean+se
-    lerror <- mean-se
-    
+  
+  data_d = fit$data
+  
+  IS_SUFFICIENT = FALSE
+  if (ncol(data_d) == 4 ){ #sufficient statistics
+    IS_SUFFICIENT = TRUE
+    mean <- data_d[,2,drop=F]
+    se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+    doses = data_d[,1,drop=F]
+    uerror <- mean+2*se
+    lerror <- mean-2*se
     dose = c(doses,doses)
     Response = c(uerror,lerror)
-    plot(dose,Response,type='n',...)
-      
+    lm_fit = lm(mean ~ doses,weights = 1/se*se)
   }else{
-    Response <- fit$data[,2,drop=F]
-    doses = fit$data[,1,drop=F]
-    plot(doses,Response,type='n',...)
+    Response <- data_d[,2,drop=F]
+    doses = data_d[,1,drop=F]
+    lm_fit = lm(Response~doses)
   }
   
-
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
+  if (coefficients(lm_fit)[2] < 0){
+    decrease = TRUE
+  }else{
+    decrease = FALSE
+  }
+  
+  # Single Model 
+  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/500)
+  
   if (fit$model=="FUNL"){
-     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses)   
+     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses,decrease=decrease)   
   }
   if (fit$model=="hill"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_hill_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="exp-3"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses,decrease=decrease)
   }
   if (fit$model=="exp-5"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses,decrease=decrease)
   }
-  
   if (fit$model=="power"){
-    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses)
+    Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses,decrease=decrease)
+  }
+  if (fit$model=="polynomial"){
+    if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
+      degree = ncol(fit$mcmc_result$PARM_samples) - 2
+    }else{
+      degree = ncol(fit$mcmc_result$PARM_samples) - 1
+    }
+    Q <- apply(fit$mcmc_result$PARM_samples[,1:degree],1,cont_polynomial_f, 
+               d=test_doses,decrease=decrease)
+    
   }
   
- 
+  
   Q <- t(Q)
-  me <- colMeans(Q)
+  me <- apply(Q,2,quantile, probs = 0.5)
   lq <- apply(Q,2,quantile, probs = qprob)
   uq <- apply(Q,2,quantile, probs = 1-qprob)
+  
+  # Continuous case density? 
   temp_fit <- splinefun(test_doses,me)
-  
-  
-  polygon(c(test_doses,test_doses[length(test_doses):1]),
-          c(uq,lq[length(test_doses):1]),col = credint_col,border=credint_col)
-  lines(test_doses,me)
+  ma_mean = temp_fit
+  # Geom_polygon ? etc..
+  plot_gg <- ggplot() +xlim(-max(test_doses)*5,max(test_doses)*5)+
+    geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
+    labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
+    theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
-  }
+    print(fit$bmd,4)
+    plot_gg <- plot_gg +
+      geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
+                       yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+      annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
+                label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+      annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
+               label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+      annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
+               size = 5, color="darkslategrey",shape=17, alpha=0.9)
+   }
   
+# Add density 
   if (BMD_DENSITY ==TRUE){
     temp = fit$mcmc_result$BMD_samples[!is.nan(fit$mcmc_result$BMD_samples)]
     temp = temp[!is.infinite(temp)]
-    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
+    # Dens =  density(temp,cut=c(max(test_doses)), n=512, from=0, to=max(test_doses))
+    
+    Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5, n=512, from=min(test_doses), to=max(test_doses))
     Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
     temp = which(Dens$x < max(test_doses))
     D1_y = Dens$y[temp]
     D1_x = Dens$x[temp]
     qm = min(Response)
-    polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+    scale = (max(Response)-min(Response))/max(D1_y) *.40
+    plot_gg<-plot_gg +
+             geom_polygon(aes(x=c(0,D1_x,max(doses)),y=c(min(Response),
+                        min(Response)+D1_y*scale,min(Response))), fill = "blueviolet", alpha=0.6)
   }
+
+  width=3
   
-  
-  if (ncol(fit$data) ==4){
-       points(doses,mean,...)
-       arrows(x0=doses, y0=lerror, x1=doses, 
-              y1=uerror, code=3, angle=90, length=0.1)
+  if (IS_SUFFICIENT){
+    plot_gg<- plot_gg +
+      geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="black",size=0.8,width=width)+
+      geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+    
   }else{
-       points(doses,Response,...)
+    data_in<-data.frame(cbind(doses,Response))
+    plot_gg<-plot_gg +
+      geom_point(data=data_in,aes(x=Dose,y=Response))
   }
+
+  plot_gg <-plot_gg +
+            geom_polygon(aes(x=c(test_doses,test_doses[length(test_doses):1]),y=c(uq,lq[length(test_doses):1])),fill="blue",alpha=0.1)
+  return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
+
+  
 }
   
-
-.plot.BMDcont_fit_maximized<-function(fit,qprob=0.05,...){
+# This part matches with single_continous_fit part- SL 06/02/21 
+.plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
-     density_col="blueviolet"
-     credint_col="azure2"
+  
+  fit <-A
+  density_col="blueviolet"
+  credint_col="azure2"
   
   if (qprob < 0 || qprob > 0.5){
     stop( "Quantile probability must be between 0 and 0.5")
   }
      
-    
-  #sufficient statistics- This part dosen't makes senseArgument entry fixed 
-  if (ncol(fit$data) == 4){ 
-       mean <- fit$data[,2,drop=F]
-       se   <- fit$data[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-       doses = fit$data[,1,drop=F]
-       uerror <- mean+se
-       lerror <- mean-se
-       
-       dose = c(doses,doses)
-       Response = c(uerror,lerror)
-       plot(dose,Response,type='n')
+  data_d = A$data
+  IS_SUFFICIENT = FALSE
+  
+  # Can you do this for checking number of row? because this case only has two column 
+  # What example would be for 4 column? SL
+  
+  if (ncol(data_d) == 4 ){ #sufficient statistics
+    IS_SUFFICIENT = TRUE
+    mean <- data_d[,2,drop=F]
+    se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
+    doses = data_d[,1,drop=F]
+    uerror <- mean+2*se
+    lerror <- mean-2*se
+    dose = c(doses,doses)
+    Response = c(uerror,lerror)
+    lm_fit = lm(mean ~ doses,weights = 1/(se*se))
   }else{
-    
-       Response <- fit$data[,2,drop=F]
-       doses = fit$data[,1,drop=F]
-       plot(doses,Response,type='n')
+    Response <- data_d[,2,drop=F]
+    doses = data_d[,1,drop=F]
+    lm_fit = lm(Response~doses)
   }
+  
+  if (coefficients(lm_fit)[2] < 0){
+    decrease = TRUE
+  }else{
+    decrease = FALSE
+  }
+  
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
+  # SL : Should Plot's x axis be based on test_dose? 
+  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/500)
   
-  test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/100)
-  
-  
-  # This part should be loop 
-  
-  
+  #Pre defined function- lm_fit can be used for fitting parameters?
   if (fit$model=="FUNL"){
-       me <- cont_FUNL_f(fit$parameters,test_doses)
+     me <- cont_FUNL_f(fit$parameters,test_doses)
   }  
   if (fit$model=="hill"){
     me <- cont_hill_f(fit$parameters,test_doses)
   }
   if (fit$model=="exp-3"){
-    me <- cont_exp_3_f(fit$parameters,test_doses)
+    me <- cont_exp_3_f(fit$parameters,test_doses,decrease)
   }
   if (fit$model=="exp-5"){
     me <- cont_exp_5_f(fit$parameters,test_doses)
@@ -178,60 +247,104 @@ cont_power_f <-function(parms,d){
   if (fit$model=="power"){
     me <- cont_power_f(fit$parameters,test_doses)
   }
-  
-  lines(test_doses,me)
+  if (fit$model=="polynomial"){
+    if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
+      degree = length(BB$parameters) - 2
+    }else{
+      degree = length(BB$parameters) - 1
+    }
+    me <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
+  }
+
   temp_fit <- splinefun(test_doses,me)
+  ma_mean  <- temp_fit
+  plot_gg<-ggplot()+
+          geom_line(aes(x=test_doses,y=me),color="blue",size=2)+xlim(-max(test_doses)*5,max(test_doses)*5)+
+          labs(x="Dose", y="Response",title=paste(fit$full_model, "Maximized",sep=",  Fit Type: " ))+
+          theme_minimal()
+        
+
   
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    lines( c(fit$bmd[1],fit$bmd[1]),c(0,temp_fit(fit$bmd[1])))
-    lines( c(fit$bmd[2],fit$bmd[2]),c(0,temp_fit(fit$bmd[2])))
-    lines( c(fit$bmd[3],fit$bmd[3]),c(0,temp_fit(fit$bmd[3])))
+    if (!sum(is.na(fit$bmd))){
+        
+      plot_gg <- plot_gg +
+        geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
+                         yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+        annotate( geom = "text", x = fit$bmd[2], y = ma_mean(fit$bmd[1]),
+                  label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+        annotate(geom = "text", x = fit$bmd[3], y = ma_mean(fit$bmd[1]),
+                 label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+        annotate(geom = "point", x = fit$bmd[1], y = ma_mean(fit$bmd[1]),
+                 size = 5, color="darkslategrey",shape=17, alpha=0.9)
+    }
+  }
+  # Assign them temporarily 
+  width=3
+  
+  if (IS_SUFFICIENT){
+    plot_gg<- plot_gg +
+              geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey",size=0.5, width=3)+
+              geom_point(aes(x=doses,y=mean),size=3, shape=21, fill="white")
+        
+  }else{
+    data_in<-data.frame(cbind(doses,Response))
+    plot_gg<-plot_gg +
+          geom_point(aes(x=doses,y=Response))
   }
   
-  if (ncol(fit$data) == 4){
-       points(doses,mean,...)
-       arrows(x0=doses, y0=lerror, x1=doses, 
-              y1=uerror, code=3, angle=90, length=0.1)
-  }else{
-       points(doses,Response,...)
-  }
+  return(plot_gg + coord_cartesian(xlim=c(min(test_doses),max(test_doses)),expand=F))
+  
   
 }
 
 # Base plot- MCMC or BMD?
 .plot.BMDcontinuous_MA <- function(A,qprob=0.05,...){
+  
+  # Should be matched with BMD_MA plots
+  # SL 06/02 Updated 
+  # Later, we'll have it 
      density_col="blueviolet"
      credint_col="azure2"
      class_list <- names(A)
-     
      fit_idx    <- grep("Individual_Model",class_list)
      
      #plot the model average curve
      if ("BMDcontinuous_MA_mcmc" %in% class(A)){ # mcmc run
-          n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples); 
+          n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples)
           data_d   <-  A[[fit_idx[1]]]$data
           max_dose <- max(data_d[,1])
           min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
+          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500) 
           ma_samps <- sample(fit_idx,n_samps, replace=TRUE,prob = A$posterior_probs)
           temp_f   <- matrix(0,n_samps,length(test_doses))
           temp_bmd <- rep(0,length(test_doses))
+          width= (max_dose-min_dose)/20
+          
+          # 06/07/21 SL Update
+          IS_SUFFICIENT=FALSE
+          
           
           if (ncol(data_d) == 4 ){ #sufficient statistics
-               mean <- data_d[,2,drop=F]
-               se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-               doses = data_d[,1,drop=F]
-               uerror <- mean+se
-               lerror <- mean-se
-               
-               dose = c(doses,doses)
-               Response = c(uerror,lerror)
-               plot(dose,Response,type='n')#,...)
-               
+            IS_SUFFICIENT = TRUE
+            mean <- data_d[,2,drop=F]
+            se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
+            doses = data_d[,1,drop=F]
+            uerror <- mean+2*se
+            lerror <- mean-2*se
+            dose = c(doses,doses)
+            Response = c(uerror,lerror)
+            lm_fit = lm(mean ~ doses,weights = 1/se*se)
           }else{
-               Response <- data_d[,2,drop=F]
-               doses = data_d[,1,drop=F]
-               plot(jitter(doses),Response,type='n',...)
+            Response <- data_d[,2,drop=F]
+            doses = data_d[,1,drop=F]
+            lm_fit = lm(Response~doses)
+          }
+          
+          if (coefficients(lm_fit)[2] < 0){
+            decrease = TRUE
+          }else{
+            decrease = FALSE
           }
           
           for (ii in 1:n_samps){
@@ -245,9 +358,8 @@ cont_power_f <-function(parms,d){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
                if (fit$model=="exp-3"){
-                    
-                 
-                    temp_f[ii,] <- cont_exp_3_f(fit$mcmc_result$PARM_samples[ii,],test_doses)
+
+                    temp_f[ii,] <- cont_exp_3_f(fit$mcmc_result$PARM_samples[ii,],test_doses,decrease)
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
                if (fit$model=="exp-5"){
@@ -259,49 +371,86 @@ cont_power_f <-function(parms,d){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
           }
+          
           temp_f[is.infinite(temp_f)] = NA
-        
-          me <- colMeans(temp_f,na.rm = TRUE)
+          temp_f[abs(temp_f) > 1e10] = NA
           
-          lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE)
-          uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE)
-          col1 = alphablend(credint_col,1)
+          # If temp_bmd== Inf then delete;
+          # Updated 06/02/21 SL
+          temp_bmd[is.infinite(temp_bmd)] = NA
           
-          # Data structure for polygon - this part should be re-implmeneted as ggplot object
-          polygon(c(test_doses,test_doses[length(test_doses):1]),
-                  c(uq,lq[length(test_doses):1]),col = col1,border=col1)
-         #test_dose = test_doses[is.finite(me)==TRUE]
-         #me = me[is.finite(me) == TRUE]
-          lines(test_doses,me,lwd=2)
-          temp_fit <- splinefun(test_doses,me)
-          bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-        
-          lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-          lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-          lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
+          me <- apply(temp_f,2,quantile, probs = 0.5,na.rm = TRUE) # BMD
+          lq <- apply(temp_f,2,quantile, probs = qprob,na.rm = TRUE) # BMDL
+          uq <- apply(temp_f,2,quantile, probs = 1-qprob,na.rm = TRUE) # BMDU
+
           
-          if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-               
-               lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])),lwd=2,lty=2)
-               lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])),lwd=3,)
-               lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])),lwd=2,lty=2)
+          # 06/02/21 SL update
+          if (IS_SUFFICIENT){
+            print("Boom")
+              plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+                  geom_point(aes(x=data_d[,1],y=data_d[,2]))+
+                  geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
+                  xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
+                  labs(x="Dose", y="Response",title="Continous MA fitting")+
+                  theme_minimal()
+            print("Doom")
+          }else{
+            plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+              geom_point(aes(x=doses,y=Response))+
+              xlim(c(min(doses),max(doses)*1.03))+
+              labs(x="Dose", y="Response",title="Continous MA fitting")+
+              theme_minimal()
           }
           
           
-          temp = temp_bmd[!is.nan(temp_bmd)]
-          temp = temp[!is.infinite(temp)]
-          temp = temp[temp < 20 * max_dose]
-          #return(temp)
-          #print(c(max(temp),median(temp),min(temp)))
-          Dens =  density(temp,cut=c(quantile(temp,0.995,na.rm = TRUE)),bw=10)
-          Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
-          temp = which(Dens$x < max(test_doses))
-          D1_y = Dens$y[temp]
-          D1_x = Dens$x[temp]
-          qm = min(Response)
-          polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
+          plot_gg<-plot_gg+
+                   geom_ribbon(aes(x=test_doses,ymin=lq,ymax=uq),fill="blue",alpha=0.1)
+          
+          plot_gg<-plot_gg+
+                   geom_line(aes(x=test_doses,y=me),col="blue",size=2)
          
+          bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
+  
+          
+          
+          if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
+            temp = temp_bmd[temp_bmd < 10*max(test_doses)]
+            temp = temp[!is.infinite(temp_bmd)]
+            temp = temp[!is.na(temp)]
+       
+            # Density only creates few data points SL
+            
+            # Fixed part 06/04/21
+            Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses))
+          
+            Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.6
+            temp = which(Dens$x < max(test_doses))
+            D1_y = Dens$y[temp]
+            D1_x = Dens$x[temp]
+            qm = min(Response)
+            scale = (max(Response)-min(Response))/max(D1_y) *.40
+            
+          
+             plot_gg<-plot_gg+
+                    geom_polygon(aes(x=c(max(0,min(D1_x)),D1_x,max(D1_x)),
+                                     y=c(min(Response),min(Response)+D1_y*scale,min(Response))),
+                                     fill = "blueviolet", alpha=0.6)
+
+          }
+          
+          ## 
+          # Add lines to the BMD
+          ma_mean <- splinefun(test_doses,me)
+          ma_BMD = A$bmd
+       
+          df<-NULL
+           
+          # Problem of the loop using this case- the ggplot is not added automatically, 
+          # It replaces the last one;
+          
           for (ii in 1:length(fit_idx)){
+            
+            if (A$posterior_probs[ii]>0.05){
                fit <- A[[fit_idx[ii]]]
                if (fit$model=="FUNL"){
                     f <- cont_FUNL_f(fit$fitted_model$parameters,test_doses)
@@ -310,9 +459,8 @@ cont_power_f <-function(parms,d){
                     f <- cont_hill_f(fit$fitted_model$parameters,test_doses)
                }
                if (fit$model=="exp-3"){
-                   temp = fit$fitted_model$parameters 
-                   temp = c(temp[1:2],0,temp[3],temp[4])
-                    f <- cont_exp_3_f(temp,test_doses)
+                   temp = fit$fitted_model$parameters
+                    f <- cont_exp_3_f(temp,test_doses,decrease)
                }
                if (fit$model=="exp-5"){
                     f <- cont_exp_5_f(fit$fitted_model$parameters,test_doses)
@@ -320,111 +468,189 @@ cont_power_f <-function(parms,d){
                if (fit$model=="power"){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
-               col = alphablend(col='coral3',min(1,A$posterior_probs[ii]*2))
-               lines(test_doses,f,col=col,lwd = 2)
-          }
-          
-     }else{
-         
-          data_d   <-  A[[fit_idx[1]]]$data
-          max_dose <- max(data_d[,1])
-          min_dose <- min(data_d[,1])
-          test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/500); 
-          temp_f   <- matrix(0,length(fit_idx),length(test_doses))
-          
-          if (ncol(data_d) == 4 ){ #sufficient statistics
-               mean <- data_d[,2,drop=F]
-               se   <- data_d[,4,drop=F]/sqrt(fit$data[,3,drop=F])
-               doses = data_d[,1,drop=F]
-               uerror <- mean+se
-               lerror <- mean-se
+               col = alphablend(col='coral3',A$posterior_probs[ii])
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                
-               dose = c(doses,doses)
-               Response = c(uerror,lerror)
-               plot(dose,Response,type='n',...)
+               # # 06/19/21 SL update 
+               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+               df<-rbind(df,temp_df)
                
-          }else{
-               Response <- data_d[,2,drop=F]
-               doses = data_d[,1,drop=F]
-               plot(doses,Response,type='n',...)
-          }
+               #SL Updated 06/18/21 -- Transparency update based on posterior probability and Y scale for dichotomous case
+               temp_data<-df %>% 
+                 filter(model_no==ii)
+               
+               plot_gg<- plot_gg+
+                 geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
+                 theme_minimal()
+               
+               plot_gg <- plot_gg +
+                         geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=min(max(doses),A$bmd[3]),
+                                          yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+                         annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
+                                   label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+                         annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
+                                  label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+                         annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
+                                  size = 5, color="darkslategrey",shape=17, alpha=0.9)
+            }
+            
           
-          for (ii in 1:length(fit_idx)){
-               fit <- A[[fit_idx[ii]]]
-               if (fit$model=="FUNL"){
-                    temp_f[ii,] <- cont_FUNL_f(fit$parameters,test_doses)*A$posterior_probs[ii]
-               }  
-               if (fit$model=="hill"){
-                    temp_f[ii,] <- cont_hill_f(fit$parameters,test_doses)*A$posterior_probs[ii]
-               }
-               if (fit$model=="exp-3"){
-                    temp_f[ii,] <- cont_exp_3_f(fit$parameters,test_doses)*A$posterior_probs[ii]
-               }
-               if (fit$model=="exp-5"){
-                    temp_f[ii,] <- cont_exp_5_f(fit$parameters,test_doses)*A$posterior_probs[ii]
-               }
-               if (fit$model=="power"){
-                    temp_f[ii,] <- cont_power_f(fit$parameters,test_doses)*A$posterior_probs[ii]
-               }
-          }
-          
-          me <- colSums(temp_f)
-          
-          lines(test_doses,me,lwd=2)
-         
-          temp_fit <- splinefun(test_doses,me)
-          bmds <- splinefun(A$ma_bmd[,2],A$ma_bmd[,1])
-          temp_bmd <- bmds(runif(3000,0,max(A$ma_bmd[,2])))
-          
-          bmd <- quantile(temp_bmd,c(qprob,0.5,1-qprob),na.rm = TRUE)
-          if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-               lines( c(bmd[1],bmd[1]),c(0,temp_fit(bmd[1])))
-               lines( c(bmd[2],bmd[2]),c(0,temp_fit(bmd[2])))
-               lines( c(bmd[3],bmd[3]),c(0,temp_fit(bmd[3])))
           }
           
           
-          temp = temp_bmd[!is.nan(temp_bmd)]
-          temp = temp[!is.infinite(temp)]
-          Dens =  density(temp,cut=c(max(test_doses)),adjust =1.5)
-          Dens$y = Dens$y/max(Dens$y) * (max(Response)-min(Response))*0.4
-          temp = which(Dens$x < max(test_doses))
-          D1_y = Dens$y[temp]
-          D1_x = Dens$x[temp]
-          qm = min(Response)
-          polygon(c(0,D1_x,max(doses)),c(qm,qm+D1_y,qm),col = alphablend(col=density_col,0.2),border =alphablend(col=density_col,0.2))
-          #plot the individual models proportional to their weight
-          for (ii in 1:length(fit_idx)){
-               fit <- A[[fit_idx[ii]]]
-               if (fit$model=="FUNL"){
-                    f <- cont_FUNL_f(fit$parameters,test_doses)
-               }  
-               if (fit$model=="hill"){
-                    f <- cont_hill_f(fit$parameters,test_doses)
-               }
-               if (fit$model=="exp-3"){
-                    f <- cont_exp_3_f(fit$parameters,test_doses)
-               }
-               if (fit$model=="exp-5"){
-                    f <- cont_exp_5_f(fit$parameters,test_doses)
-               }
-               if (fit$model=="power"){
-                    f <- cont_power_f(fit$parameters,test_doses)
-               }
-               col = alphablend(col='coral2',A$posterior_probs[ii])
-               lines(test_doses,f,col=col,lwd = 2)
-          }
-          
-          
+
      }
      
-      
-     if (ncol(fit$data) ==4){
-          points(doses,mean)
-          arrows(x0=doses, y0=lerror, x1=doses, 
-                 y1=uerror, code=3, angle=90, length=0.1)
-     }else{
-          points(jitter(doses),Response,pch=16)
-     }
 
+     else{ #laplace run
+       
+       data_d   <-  A[[fit_idx[1]]]$data
+       max_dose <- max(data_d[,1])
+       min_dose <- min(data_d[,1])
+       width= (max_dose-min_dose)/20
+       test_doses <- seq(min_dose,max_dose,(max_dose-min_dose)/200); 
+       temp_bmd <- rep(0,length(test_doses))
+       IS_SUFFICIENT = F
+       if (ncol(data_d) == 4 ){ #sufficient statistics
+         mean <- data_d[,2,drop=F]
+         se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
+         doses = data_d[,1,drop=F]
+         uerror <- mean+se
+         lerror <- mean-se
+         dose = c(doses,doses)
+         Response = c(uerror,lerror)
+         print(se)
+         lm_fit = lm(mean ~ doses,weights = 1/se*se)
+         IS_SUFFICIENT = T
+       }else{
+         Response <- data_d[,2,drop=F]
+         doses = data_d[,1,drop=F]
+         lm_fit = lm(Response~doses)
+       }
+       
+       
+       if (coefficients(lm_fit)[2] < 0){
+         decrease = TRUE
+       }else{
+         decrease = FALSE
+       }
+       me = test_doses*0   
+       for (ii in 1:length(fit_idx)){
+         fit <- A[[fit_idx[ii]]]
+         if (fit$model=="FUNL"){
+           t <- cont_FUNL_f(fit$parameters,test_doses)
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
+           }
+          
+         }  
+         if (fit$model=="hill"){
+            
+           t <- cont_hill_f(fit$parameters,test_doses)
+           
+           # SL comment - why the name of object is BB? At the beginning it was declared as A-  05/28/21
+           # I guess this part should be A as well 
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
+           }
+         }
+         if (fit$model=="exp-3"){
+           t <- cont_exp_3_f(fit$parameters,test_doses,decrease)
+   
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
+           }
+         }
+         if (fit$model=="exp-5"){
+           t <- cont_exp_5_f(fit$parameters,test_doses)
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
+           }
+         }
+         if (fit$model=="power"){
+           t <- cont_power_f(fit$parameters,test_doses)
+           if(A$posterior_probs[ii] > 0){
+             me = t*A$posterior_probs[ii] + me
+           }
+         }
+       }
+
+       if (IS_SUFFICIENT){
+
+         plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+           geom_point(aes(x=data_d[,1],y=data_d[,2]))+
+           geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
+           xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
+           labs(x="Dose", y="Response",title="Continous MA fitting")+
+           theme_minimal()
+           y_min = min(lerror)
+           y_max = max(uerror)
+       }else{
+         plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
+           geom_point(aes(x=doses,y=Response))+
+           xlim(c(min(doses),max(doses)*1.03))+
+           labs(x="Dose", y="Response",title="Continous MA fitting")+
+           theme_minimal()
+           y_min = min(Response)
+           y_max = max(Response)
+       }
+       
+        
+       plot_gg<-plot_gg+
+         geom_line(aes(x=test_doses,y=me),col="blue",size=2)
+ 
+       ## 
+       # Add lines to the BMD
+       ma_mean <- splinefun(test_doses,me)
+       ma_BMD = A$bmd
+
+       # Not sure about this part - SL 05/28/21
+       #Plot only level >2
+       
+       df<-NULL
+       for (ii in 1:length(fit_idx)){
+
+         if (A$posterior_probs[ii]>0.05){
+           fit <- A[[fit_idx[ii]]]
+           if (fit$model=="FUNL"){
+             f <- cont_FUNL_f(fit$parameters,test_doses)
+           }
+           if (fit$model=="hill"){
+             f <- cont_hill_f(fit$parameters,test_doses)
+           }
+           if (fit$model=="exp-3"){
+             temp = fit$parameters
+             f <- cont_exp_3_f(temp,test_doses,decrease)
+           }
+           if (fit$model=="exp-5"){
+             f <- cont_exp_5_f(fit$parameters,test_doses)
+           }
+           if (fit$model=="power"){
+             f <- cont_power_f(fit$parameters,test_doses)
+           }
+
+           col = alphablend(col='coral3',A$posterior_probs[ii])
+           # Not using loop, but save data in the external data and load it later
+           temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
+           df<-rbind(df,temp_df)
+         }
+       }
+
+       plot_gg<- plot_gg+
+               geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
+               theme_minimal()
+       
+       plot_gg <- plot_gg +
+                   geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=min(max(doses),abs(A$bmd[3])),
+                                    yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
+                   annotate( geom = "text", x = A$bmd[2], y = ma_mean(A$bmd[1]),
+                             label = "[", size = 10,color="darkslategrey", alpha=0.9)+
+                   annotate(geom = "text", x = A$bmd[3], y = ma_mean(A$bmd[1]),
+                            label = "]", size = 10,color="darkslategrey", alpha=0.9) +
+                   annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
+                            size = 5, color="darkslategrey",shape=17, alpha=0.9)
+           }
+     return(plot_gg + coord_cartesian(
+                                      xlim=c(min(test_doses)-width,max(test_doses)+width),expand=F))
 }
+ 
