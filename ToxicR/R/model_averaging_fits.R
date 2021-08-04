@@ -43,10 +43,10 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       if (class(temp_prior) != "BMD_Bayes_continuous_model"){
         stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
       }
-      result <- .parse_prior(temp_prior)
+      result <- parse_prior(temp_prior)
       distribution <- result$distribution
-      model_type   <- result$mean
-      
+      model_type   <- result$model
+     
       if (model_type == "polynomial"){
         stop("Polynomial models are not allowed in model averaging.")
       }

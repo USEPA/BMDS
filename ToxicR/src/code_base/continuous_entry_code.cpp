@@ -1172,7 +1172,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
                                    CA->alpha, 0.025,init_opt,false);
-
           
         }
       
@@ -1193,7 +1192,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                 CA->tail_prob,  
                                 CA->alpha, 0.025,init_opt,false);
 
-          
         }
         
       }
@@ -1219,7 +1217,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   double norm_sum = 0.0; 
 
   for (int i = 0; i < MA->nmodels; i++){
-    cerr << MA->modelPriors[i] << endl; 
     post_probs[i] = post_probs[i] - max_prob + log(MA->modelPriors[i]);
     norm_sum     += exp(post_probs[i]);
     post_probs[i] = exp(post_probs[i]);
@@ -1491,25 +1488,28 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
   rV.MAP_ESTIMATE = s.map_estimate; 
   rV.COV          = s.map_cov; 
   rV.MAP_BMD      = 0; 
- 
+  int total = 0; 
+  int bad   = 0; 
  
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
-    
-    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 5*max_d){ // always look at 5x max dose tested
+    total ++;
+    if ( isfinite(s.BMD(0,i)) && s.BMD(0,i) < 10*max_d){ // always look at 5x max dose tested
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
+    }else{
+      bad++; 
     }
   }
   
   double sum = std::accumulate(v.begin(), v.end(), 0.0); 
-  rV.MAP_BMD = sum/v.size(); 
+//= sum/v.size(); //average of the non-infinite bmds
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
-  double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
+  double inf_prob =  double(bad)/double(total); // bad observations 
   if (v.size() > 0){
     std::sort(v.begin(), v.end());
    for (double k = 0.004; k <= 0.9999; k += 0.005){
-    	    prob.push_back(k*inf_prob); 
+    	    prob.push_back(k*(1.0-inf_prob)); 
           int idx = int(k*double(v.size()));
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
@@ -1525,12 +1525,13 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
  
     }
   
-    if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e10 
+    if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e8 
                          && bmd_q[0] > 0 ){  
         rV.BMD_CDF = bmd_cdf(prob,bmd_q);
     }
+    rV.MAP_BMD = rV.BMD_CDF.inv(0.5/(1.0-inf_prob));
   }
- 
+   // approximate median; 
   return rV; 
 }
 
@@ -1787,8 +1788,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   for (int  i = 0; i < MA->nmodels; i++){
       rescale_mcmc(&a[i], (cont_model)MA->models[i],
                    max_dose, MA->disttype[i] , 2);
-    
-      
   }
   
   

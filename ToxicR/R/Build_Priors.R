@@ -17,7 +17,7 @@
 #CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-.parse_prior<-function(prior){
+parse_prior<-function(prior){
   rV <-list()
   rV$prior <- prior$prior
   
@@ -240,7 +240,7 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   
   if (distribution == "lognormal"){
     temp = prior[[1]]
-    if (nrow(temp) != 5){
+    if (nrow(temp) != 4){
       stop("Lognormal Exponential-3  model prior requires 4 parameters.")
     }
     if (sum(temp[,4]>temp[,5])> 0){
@@ -251,12 +251,11 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   }
   prior$mean = .continuous_models[2]
   temp <- prior$priors
-  print(temp[1:3,])
   prior$priors = matrix(NA,nrow=nrow(temp)+1,5)
   prior$priors[1:3,] = temp[1:3,]
   prior$priors[4,]   = c(1,0,1,-100,100)
   prior$priors[5:nrow(prior$priors), ] = temp[4:nrow(temp),]
-  cat("NOTE: Parameter 'c' added to prior list. It is not used in the analysis.")
+  cat("NOTE: Parameter 'c' added to prior list. It is not used in the analysis.\n")
   return(prior)
 }
 

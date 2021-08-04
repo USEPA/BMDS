@@ -22,6 +22,7 @@ dose_e_4 <- rep(c(0,25,50,75,100),each=10)
 
 library(splines2)
 X_g_5 <- iSpline(dose_g_5,knots=seq(30,90,20))
+
 X_e_5 <- iSpline(dose_e_5,knots=seq(30,90,20))
 X_g_4 <- iSpline(dose_g_4,knots=seq(30,90,20))
 X_e_4 <- iSpline(dose_e_4,knots=seq(30,90,20))
