@@ -508,7 +508,11 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     Eigen::Map<MatrixXd> transfer_mat(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
     Eigen::MatrixXd cov = transfer_mat;
     temp  = 	res->models[i]->nparms/2 * log(2 * M_PI) - res->models[i]->max + 0.5*log(max(0.0,cov.determinant()));
+    if (isfinite(temp)){
     max_prob = temp > max_prob? temp:max_prob; 
+    }else{
+      temp =  -1.0*std::numeric_limits<double>::infinity(); 
+    }
     post_probs[i] = temp; 
   }
   double max_dose = -std::numeric_limits<double>::infinity();
@@ -517,6 +521,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
       max_dose = DA->doses[i]; 
     }
   }
+  
   // now that the Bayes Factor's have been approximated, we can rescale
   for (int i = 0; i < MA->nmodels; i++){
     Eigen::Map<MatrixXd> trans_cov(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
@@ -644,7 +649,13 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     Eigen::Map<MatrixXd> transfer_mat(res->models[i]->cov,res->models[i]->nparms,res->models[i]->nparms); 
     Eigen::MatrixXd cov = transfer_mat;
     temp  = 	res->models[i]->nparms/2 * log(2 * M_PI) - res->models[i]->max + 0.5*log(max(0.0,cov.determinant()));
-    max_prob = temp > max_prob? temp:max_prob; 
+    cerr << temp << endl; 
+    if (isfinite(temp)){
+      max_prob = temp > max_prob? temp:max_prob;
+    }else{
+      temp = -1.0*std::numeric_limits<double>::infinity(); 
+    }
+  
     post_probs[i] = temp; 
   }
 
@@ -686,7 +697,6 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
 
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
-    // cout << post_probs[j] << endl; 
     for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
       if ( isnan(res->models[j]->bmd_dist[i])){
         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
