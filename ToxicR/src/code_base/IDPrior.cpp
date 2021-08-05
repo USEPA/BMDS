@@ -26,7 +26,7 @@
 double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
 	double returnV = double(theta.rows())*log(0.5*M_2_SQRTPI * M_SQRT1_2);
 	double mean = 0;
-	double sd = 0;
+	double sd   = 0;
 	// loop over the prior specification in prior_spec
 	// when  it is 1 - Normal Prior
 	// when  it is 2 - Log normal prior.

@@ -1,14 +1,14 @@
 library(ToxicR)
 library(tidyverse)
-model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+model_listA  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
                          distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv","lognormal"),2),
                                                 "normal", "normal-ncv"))
-model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
+model_listB = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
                          distribution_list =  c(rep(c("normal"),4)))
 
 file_list = dir()
 file_list = file_list[!(file_list %in% "results")]
-file_list = file_list[grep("_normal_",file_list)]
+#file_list = file_list[c (grep("_lognormal_",file_list), grep("_invGaussian_",file_list)) ]
 options(warn=-1)
 
 for (ii in 1:length(file_list)){
@@ -29,15 +29,46 @@ for (ii in 1:length(file_list)){
       print(sprintf("File:%d Iter:%d.",ii,jj))
       ###############################################################################
       y = sim_data[jj,]
-   
+
+      model_list = list()
+      for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_listA[i],model_listA$distribution_list[i])
+      }
+      
+      model_list2 = list()
+      for (i in 1:nrow(model_listB)){
+        t_prior = bayesian_prior_continuous_default(model_listB$model_list[i],model_listB$distribution_list[i])
+        
+        if(model_list$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+        }
+        
+        model_list2[[i]] = create_continuous_prior(t_prior,model_listB$model_list[i],model_listB$distribution_list[i])
+      }
+      
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                               fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
                               fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+
       BMD_result_SD_ML1_mcmc[jj,] = AA$bmd
       BMD_result_SD_ML1_lapl[jj,] = AA_l$bmd
       BMD_result_SD_ML2_mcmc[jj,] = BB$bmd
@@ -45,16 +76,18 @@ for (ii in 1:length(file_list)){
       
       pprobs_ML1[jj,] = AA$posterior_probs
       pprobs_ML2[jj,] = BB$posterior_probs
+
       ###############################################################################
       AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 50000)
       BB <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 75000)
+                              fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025,samples = 50000)
 
       AA_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                               fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
       BB_l <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
                               fit_type = "laplace",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
+ 
       BMD_result_HB_ML1_mcmc[jj,] = AA$bmd
       BMD_result_HB_ML1_lapl[jj,] = AA_l$bmd
       BMD_result_HB_ML2_mcmc[jj,] = BB$bmd

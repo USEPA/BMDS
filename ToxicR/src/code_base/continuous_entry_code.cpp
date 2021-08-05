@@ -267,7 +267,7 @@ Eigen::MatrixXd init_exp_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::
 
 Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX, 
                           Eigen::MatrixXd prior, int deg = 2){
-
+  
   Eigen::MatrixXd X = Eigen::MatrixXd::Ones(tX.rows(),deg+1);
   Eigen::MatrixXd W = Eigen::MatrixXd::Identity(tX.rows(),tX.rows());
  
@@ -285,6 +285,7 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
   for(int i = 0; i < B.rows(); i++){
     prior(i,1) = B(i,0); 
   } 
+  
   return prior; 
 }
 
@@ -1156,24 +1157,26 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
         
       }
      
-      // now you fit it based upon the origional data
+      // now you fit it based upon the original data
       if (MA->disttype[i] == distribution::log_normal){
+        
         
         if (CA->suff_stat ){
           b[i] = laplace_logNormal(orig_Y_LN, X,
                                    tprior, CA->BMD_type, (cont_model)MA->models[i],
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
-                                   CA->alpha, 0.01,init_opt,false);
+                                   CA->alpha, 0.025,init_opt,false);
+
         }else{
           b[i] = laplace_logNormal(orig_Y_LN, X,
                                    tprior, CA->BMD_type, (cont_model)MA->models[i],
                                    CA->isIncreasing, CA->BMR, 
                                    CA->tail_prob,  
-                                   CA->alpha, 0.01,init_opt,false);
+                                   CA->alpha, 0.025,init_opt,false);
           
         }
-        
+      
       }else{
         
         bool isNCV = MA->disttype[i] == distribution::normal_ncv? false:true; 
@@ -1182,18 +1185,18 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
-                                CA->alpha, 0.01,init_opt,false);
+                                CA->alpha, 0.025,init_opt,false);
+
         }else{
           b[i] = laplace_Normal(orig_Y, X,
                                 tprior, CA->BMD_type, (cont_model)MA->models[i],
                                 CA->isIncreasing,isNCV, CA->BMR, 
                                 CA->tail_prob,  
-                                CA->alpha, 0.01,init_opt,false);
-          
+                                CA->alpha, 0.025,init_opt,false);
+
         }
         
       }
-      
       
   }
 } 
@@ -1204,8 +1207,13 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
-    max_prob = temp > max_prob? temp:max_prob; 
-    post_probs[i] = temp; 
+
+    if (std::isfinite(temp)){
+      max_prob = temp > max_prob? temp:max_prob; 
+      post_probs[i] = temp; 
+    }else{
+      post_probs[i] = -1*std::numeric_limits<double>::infinity();
+    }
   }
   
   double norm_sum = 0.0; 
@@ -1218,10 +1226,22 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   
   
   for (int j = 0; j < MA->nmodels; j++){
+    
+    b[j].COV =  rescale_cov_matrix(b[j].COV, 
+                                   b[j].MAP_ESTIMATE, (cont_model) MA->models[j],
+                                                                             max_dose, 1.0, false);
+    b[j].MAP_ESTIMATE = rescale_parms(b[j].MAP_ESTIMATE,  (cont_model)MA->models[j],
+                                      max_dose,1.0, false);
+    b[j].MAP_BMD *= max_dose; 
+    b[j].BMD_CDF.set_multiple(max_dose);
+  
+  }
+  
+  for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
     
     for (double  i = 0.0; i <= 0.50; i += 0.01 ){
-      if (!isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
+      if (!isfinite(b[j].BMD_CDF.inv(i))){
         post_probs[j] = 0;    // if the cdf is infinite before the median
                               // it is removed 
       }  
@@ -1240,17 +1260,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   // also get compute the MA BMD list
   // this MUST occur after the poster probabilities ABOVE are computed
 
-  for (int j = 0; j < MA->nmodels; j++){
 
-    b[j].COV =  rescale_cov_matrix(b[j].COV, 
-                                   b[j].MAP_ESTIMATE, (cont_model) MA->models[j],
-                                   max_dose, 1.0, false);
- 
-    b[j].MAP_ESTIMATE = rescale_parms(b[j].MAP_ESTIMATE,  (cont_model)MA->models[j],
-                                      max_dose,1.0, false);
-    b[j].MAP_BMD *= max_dose; 
-    b[j].BMD_CDF.set_multiple(max_dose);
-  }
 
   for (int i =0; i < MA->nmodels; i++){
     post_probs[i] = post_probs[i]/norm_sum; 
@@ -1480,25 +1490,28 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
   rV.MAP_ESTIMATE = s.map_estimate; 
   rV.COV          = s.map_cov; 
   rV.MAP_BMD      = 0; 
- 
+  int total = 0; 
+  int bad   = 0; 
  
   std::vector<double> v; 
   for (int i = burnin; i < s.BMD.cols(); i++){
-    
-    if (!isnan(s.BMD(0,i)) && !isinf(s.BMD(0,i)) && s.BMD(0,i) < 5*max_d){ // always look at 5x max dose tested
+    total ++;
+    if ( isfinite(s.BMD(0,i)) && s.BMD(0,i) < 10*max_d){ // always look at 5x max dose tested
 	        v.push_back(s.BMD(0,i));   // get rid of the burn in samples
+    }else{
+      bad++; 
     }
   }
   
   double sum = std::accumulate(v.begin(), v.end(), 0.0); 
-  rV.MAP_BMD = sum/v.size(); 
+//= sum/v.size(); //average of the non-infinite bmds
   std::vector<double>  prob;
   std::vector<double> bmd_q; 
-  double inf_prob =  double(v.size())/double(s.BMD.cols()-burnin); 
+  double inf_prob =  double(bad)/double(total); // bad observations 
   if (v.size() > 0){
     std::sort(v.begin(), v.end());
    for (double k = 0.004; k <= 0.9999; k += 0.005){
-    	    prob.push_back(k*inf_prob); 
+    	    prob.push_back(k*(1.0-inf_prob)); 
           int idx = int(k*double(v.size()));
           idx = idx == 0? 0: idx-1; 
     	    bmd_q.push_back(v[idx]);
@@ -1514,12 +1527,13 @@ bmd_analysis create_bmd_analysis_from_mcmc(unsigned int burnin, mcmcSamples s,do
  
     }
   
-    if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e10 
+    if (prob.size() > 10 && *min_element(bmd_q.begin(), bmd_q.end())  < 1e8 
                          && bmd_q[0] > 0 ){  
         rV.BMD_CDF = bmd_cdf(prob,bmd_q);
     }
+    rV.MAP_BMD = rV.BMD_CDF.inv(0.5/(1.0-inf_prob));
   }
- 
+   // approximate median; 
   return rV; 
 }
 
@@ -1739,7 +1753,12 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
     temp  = 	b[i].MAP_ESTIMATE.rows()/2 * log(2 * M_PI) - b[i].MAP + 0.5*log(max(0.0,b[i].COV.determinant()));
-    max_prob = temp > max_prob? temp:max_prob; 
+    if (std::isfinite(temp)){
+      max_prob = temp > max_prob? temp:max_prob; 
+      post_probs[i] = temp; 
+    }else{
+      post_probs[i] = -1*std::numeric_limits<double>::infinity();
+    } 
     post_probs[i] = temp; 
   }
   
@@ -1774,8 +1793,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   for (int  i = 0; i < MA->nmodels; i++){
       rescale_mcmc(&a[i], (cont_model)MA->models[i],
                    max_dose, MA->disttype[i] , 2);
-    
-      
   }
   
   
@@ -1972,7 +1989,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     break; 
   case cont_model::exp_3:
   case cont_model::exp_5:
-  //  cerr << temp_init << endl << "-----" << endl; 
+  
     init_opt = CA->disttype == distribution::log_normal ?
     bmd_continuous_optimization<lognormalEXPONENTIAL_BMD_NC,IDPrior> (Y_LN, X, tprior, fixedB, fixedV,
                                                                       CA->disttype != distribution::normal_ncv, CA->isIncreasing,temp_init):
@@ -2003,11 +2020,12 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
-//    cerr << "THere 3.0" << endl << tprior << endl;  
+     
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     1.0, divisor, 
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
+    
   default:
     break; 
     
@@ -2018,9 +2036,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   // now you fit it based upon the origional data
   
   if (CA->disttype == distribution::log_normal){
-    
-    if (CA->suff_stat ){
-      
+     if (CA->suff_stat ){
       
       b = laplace_logNormal(orig_Y_LN, X,
                             tprior, CA->BMD_type, (cont_model)CA->model,
@@ -2036,7 +2052,8 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                             CA->alpha, 0.025,init_opt,isFast);
       
     }
-    DOF =  compute_lognormal_dof(orig_Y_LN,X, b.MAP_ESTIMATE, 
+
+     DOF =  compute_lognormal_dof(orig_Y_LN,X, b.MAP_ESTIMATE, 
                                  CA->isIncreasing, CA->suff_stat, tprior, 
                                  CA->model); 
     
@@ -2060,7 +2077,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
         
     }
     
-   DOF =  compute_normal_dof(orig_Y,orig_X, b.MAP_ESTIMATE, 
+   DOF =  compute_normal_dof(orig_Y,X, b.MAP_ESTIMATE, 
                              CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
                              CA->model,CA->degree); 
     
@@ -2069,8 +2086,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
 
 
 
-  
-  ///////////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////
   // NOTE: need to rescale the covariance first
 
   b.COV =  rescale_cov_matrix(b.COV, 
