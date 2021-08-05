@@ -715,9 +715,15 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
 
   PR   	  model_prior(*prior);
   divisor = max(1.0,divisor); 
-
-  Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal); 
   
+  int degree = 2; 
+  if (CM == cont_model::polynomial){
+    degree = prior->rows() -2; 
+    if (!is_const_var){
+      degree--; 
+    }
+  }
+  Eigen::MatrixXd  temp =  rescale_parms(*betas, CM, max_dose, divisor, is_logNormal,degree); 
   //fixme: in the future we might need to change a few things
   // if there are more complicated priors
   int adverseR = 0; 
@@ -726,7 +732,7 @@ void  RescaleContinuousModel(cont_model CM, Eigen::MatrixXd *prior, Eigen::Matri
 
   switch(CM){ 
     case cont_model::polynomial:
-      // TODO: RESCALE POLYNOMIAL BETAS?
+      
       if (!is_const_var){
         tot_e = 2; 
       }

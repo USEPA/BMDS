@@ -267,7 +267,7 @@ Eigen::MatrixXd init_exp_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::
 
 Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX, 
                           Eigen::MatrixXd prior, int deg = 2){
-
+  
   Eigen::MatrixXd X = Eigen::MatrixXd::Ones(tX.rows(),deg+1);
   Eigen::MatrixXd W = Eigen::MatrixXd::Identity(tX.rows(),tX.rows());
  
@@ -285,6 +285,7 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
   for(int i = 0; i < B.rows(); i++){
     prior(i,1) = B(i,0); 
   } 
+  
   return prior; 
 }
 
@@ -2015,11 +2016,12 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
-
+     
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     1.0, divisor, 
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
+    
   default:
     break; 
     

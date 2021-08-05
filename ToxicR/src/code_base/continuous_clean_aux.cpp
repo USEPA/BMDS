@@ -222,13 +222,9 @@ Eigen::MatrixXd rescale_parms(Eigen::MatrixXd parms, cont_model model, double ma
         parms(i,0) *= pow(1/max_dose,i); 
       }
       if (!is_logNormal){
-        if (parms.rows()== degree +2){
-          parms(degree+1,0) += 2*log(bkground); 
-        }else{
-          parms(degree+2,0) += 2*log(bkground); 
-        }
+        parms(parms.rows()-1,0) += 2*log(bkground); 
       }
-    
+     
       break; 
     case cont_model::funl:
       parms(0,0) *= bkground; parms(1,0) *= bkground; 

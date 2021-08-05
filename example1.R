@@ -32,7 +32,7 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "polynomial", fit_type = "laplace",isFast = T)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "polynomial",degree = 1 ,fit_type = "laplace",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
