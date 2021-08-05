@@ -32,21 +32,19 @@ doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
            5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
 
 
-
-
-
-B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", fit_type = "mle",isFast = T)
-#BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "polynomial", fit_type = "laplace",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
 library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR =1.5,model_list = model_list,samples = 35000 )
+kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+
+,model_list = model_list,samples = 35000 )
 plot(kk)+scale_x_continuous(trans="pseudo_log")
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = FALSE)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = TR)
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
 plot(R) + scale_x_continuous(trans="pseudo_log")
 
@@ -70,15 +68,9 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 
 
-
-
 BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
 
 plot(BB)
-
-
-
-
 
 # Update based on prior probability for continous case 
 .cleveland_plot.BMDcontinous_MA(BB)

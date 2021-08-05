@@ -25,4 +25,5 @@
 
 #dichotomous global information
 
-
+.dichotomous_models       <- c("hill","gamma","logistic","log-logistic","log-probit","multistage","probit",
+                               "qlinear","weibull")

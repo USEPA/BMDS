@@ -26,8 +26,8 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#include "cmodeldefs.h"
 
-enum prior_iidtype {iid_normal = 1, iid_lognormal = 2, iid_mle = 0}; 
 
 // IDPrior
 // Creates a class where each parameter specified is given an independent

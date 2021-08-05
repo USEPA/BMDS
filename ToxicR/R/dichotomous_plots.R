@@ -64,7 +64,7 @@
   .dich_qlinear_f <- function(parms,d){
     g <- 1/(1+exp(-parms[1])); 
     a <- parms[2];
-    return (g + (1-g)*1-exp(-a*d))
+    return (g + (1-g)*(1-exp(-a*d)))
   }
   
   .dich_multistage_f <- function(parms,d){
@@ -73,7 +73,7 @@
     for (ii  in 2:length(parms)){
       rval = rval - parms[ii]*d^(ii-1)
     }
-    return (g + (1-g)*1-exp(rval))
+    return (g + (1-g)*(1-exp(rval)))
   }
   
   

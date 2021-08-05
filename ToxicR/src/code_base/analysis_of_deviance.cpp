@@ -95,7 +95,7 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
   double tempV = 0.0; 
-  for (unsigned int i = 0; i < InitA.rows(); i++){
+  for (unsigned int i = 0; i < InitA.rows() - 1; i++){
     startV1(i,0) = exp(InitA(i,0));
   }
  
@@ -104,7 +104,7 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   IDcontinuousPrior a1Init(a1Priors);
   statModel<lognormalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                           isfix1, fix1);
-  optimizationResult a1Result = findMAP<lognormalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
+  optimizationResult a1Result = findMAP<lognormalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1,0);
   
   CD->A1 = a1Result.functionV;
   CD->N1 = a1Result.max_parms.rows();
@@ -123,15 +123,16 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   }
   IDcontinuousPrior a2Init(a2Priors);
   Eigen::MatrixXd startV2(nParms,1);
-  for (unsigned int i = 0; i < nParms/2; i++ ){
-    startV2(i,0) = exp(InitA(i,0)); 
-  } 
-  for (unsigned int i = nParms/2; i < nParms; i++ ){
-    startV2(i,0) = InitA(i,1); 
+  for (unsigned int i = 0; i < nParms; i++) {
+    a2Priors.row(i) << 0, 0, 1, -1e8, 1e8;
   }
+  for (unsigned int i = 0; i < nParms / 2; i++) {
+    a2Priors.row(i) << 0, a1Result.max_parms(i), 1, -1e8, 1e8;
+  }
+  
   statModel<lognormalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                           isfix2, fix2);
-  optimizationResult a2Result = findMAP<lognormalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
+  optimizationResult a2Result = findMAP<lognormalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2,0);
   CD->A2 = a2Result.functionV;
   CD->N2 = a2Result.max_parms.rows();
   /////////////////////////////////////////////////////////////////////////////////////
@@ -152,7 +153,7 @@ void log_normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   IDcontinuousPrior rInit(rPriors);
   statModel<lognormalLLTESTR, IDcontinuousPrior> rModel(rTest, rInit,
                                                         isfix4, fix4);
-  optimizationResult rResult = findMAP<lognormalLLTESTR, IDcontinuousPrior>(&rModel,startR);
+  optimizationResult rResult = findMAP<lognormalLLTESTR, IDcontinuousPrior>(&rModel,startR,0);
   
   CD->R = rResult.functionV;
   CD->NR = rResult.max_parms.rows();
@@ -216,7 +217,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
  
-  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
+  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1,0);
   
   CD->A1 = a1Result.functionV;
   CD->N1 = a1Result.max_parms.rows(); 
@@ -246,7 +247,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   statModel<normalLLTESTA2, IDcontinuousPrior> a2Model(a2Test, a2Init,
                                                        isfix2, fix2);
 
-  optimizationResult a2Result = findMAP<normalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2);
+  optimizationResult a2Result = findMAP<normalLLTESTA2, IDcontinuousPrior>(&a2Model,startV2,0);
   CD->A2 = a2Result.functionV;
   CD->N2 = a2Result.max_parms.rows(); 
   //////////////////////////////////////////////////////////////////////
@@ -285,7 +286,7 @@ void normal_AOD_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X,
   
   statModel<normalLLTESTA3, IDcontinuousPrior> a3Model(a3Test, a3Init,
                                                        isfix3, fix3);
-  optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model,startV3);
+  optimizationResult a3Result = findMAP<normalLLTESTA3, IDcontinuousPrior>(&a3Model,startV3,0);
   CD->A3 = a3Result.functionV;
   CD->N3 = a3Result.max_parms.rows(); 
   
@@ -319,6 +320,7 @@ void variance_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat,
   std::vector<double> fix1(nParms); for (unsigned int i = 0; i < nParms; i++) { fix1[i] = 0.0; }
   std::vector<bool> isfix1(nParms); for (unsigned int i = 0; i < nParms; i++) { isfix1[i] = false; }
   Eigen::MatrixXd a1Priors(nParms, NUM_PRIOR_COLS);
+ 
   for (unsigned int i = 0; i < nParms; i++) {
     a1Priors.row(i) << 0, 0, 1, -1e8, 1e8;
   }
@@ -333,9 +335,11 @@ void variance_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat,
   Eigen::MatrixXd meanX = Eigen::MatrixXd::Zero(Y.rows(), udoses.size()); 
   Eigen::MatrixXd meanX2 = Eigen::MatrixXd::Ones(Y.rows(),1);
   Eigen::MatrixXd W     = Eigen::MatrixXd::Zero(Y.rows(), Y.rows()); 
+
   for (int i = 0; i < Y.rows(); i++){
     W(i,i) = Y(i,2); 
   }
+
   for (int i = 0; i < meanX.rows(); i++)
   {
     for (int j = 0; j < udoses.size(); j++) {
@@ -350,16 +354,16 @@ void variance_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat,
   Eigen::MatrixXd startV1(a1Test.nParms(),1); 
   
   double tempV = 0.0; 
-  
-  for (unsigned int i = 0; i < a1Test.nParms(); i++){
+ 
+  for (unsigned int i = 0; i < a1Test.nParms() - 1; i++){
     startV1(i,0) = InitA(i,0);
   }
   startV1(a1Test.nParms() - 1,0) = InitB(0,1)*InitB(0,1); 
-  
+
   statModel<normalLLTESTA1, IDcontinuousPrior> a1Model(a1Test, a1Init,
                                                        isfix1, fix1);
   
-  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1);
+  optimizationResult a1Result = findMAP<normalLLTESTA1, IDcontinuousPrior>(&a1Model,startV1,0);
   
   *v_c = a1Result.max_parms(a1Result.max_parms.rows()-1,0); 
   //////////////////////////////////////////////////////////////////////////////////////////////
@@ -387,7 +391,7 @@ void variance_fits(Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat,
   for (unsigned int i = 0; i < nParms-2; i++ ){
     startV3(i,0) = InitA(i,0); 
   } 
-  
+
   Eigen::MatrixXd InitC = (meanX3.transpose()*meanX3); 
   InitC = InitC.inverse()*meanX3.transpose()*InitA.col(1); 
   startV3(nParms-2) = InitC(1,0);

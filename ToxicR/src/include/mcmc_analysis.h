@@ -50,6 +50,7 @@
 #include "dBMDstatmod.h"
 #include "cBMDstatmod.h"
 #include "bmd_calculate.h"
+#include "mcmc_struct.h"
 #include <sys/time.h>
 #include "bmdStruct.h"
 
@@ -60,20 +61,7 @@ using namespace std;
 
 
 
-struct mcmcSamples{
-  /*******************
-  *for model averaging
-  *********************/
-    double map; 
-    Eigen::MatrixXd map_estimate; 
-    Eigen::MatrixXd map_cov; 
-    /**********************/
-    Eigen::MatrixXd BMD;
-    Eigen::MatrixXd samples;
-    Eigen::MatrixXd log_posterior;
-  	double BMR;
-  	bool isExtra;
-};
+
 
 /**********************************************************************
  *  function: MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::MatrixXd prior,
@@ -174,6 +162,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
 	rVal.log_posterior = penLike;
   rVal.BMR = BMR;
     //////////////////////////////////////////////////////////////////
+  
 	return rVal;
 }
 
@@ -197,8 +186,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   }else{
     oR = findMAP<LL, PR>(model,init_vals);
   } 
- // cout << "iv:" << init_vals << endl << endl;  
- // cout <<"bubba" << oR.max_parms << endl << endl; 
+
   mcmcSamples rVal;
   
   rVal.map = 	oR.functionV;
@@ -239,6 +227,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   nSamples.col(0) = mu; // starting value of the MCMC
   
   penLike(0,0) =  -model->negPenLike(nSamples.col(0));
+ 
   for (int i = 1; i < samples ; i++){//nSamples.col(i-1); 
     //Metropolis-Hasings proposal
     // make sure the proposal isn't imposible

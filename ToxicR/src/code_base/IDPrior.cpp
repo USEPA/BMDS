@@ -32,11 +32,17 @@ double IDPrior::neg_log_prior(Eigen::MatrixXd theta) {
 	// when  it is 2 - Log normal prior.
 	for (int i = 0; i < theta.rows(); i++) {
 		int t = int(prior_spec(i, 0));
+	  if (theta(i,0) < prior_spec(i,3) ||
+       theta(i,0) > prior_spec(i,4)){
+//  returnV = std::numeric_limits<double>::infinity();
+	     break; 
+	  }
 		switch (t) {
 		case 1:
 			mean = (theta(i, 0) - prior_spec(i, 1));
 			sd = prior_spec(i, 2);
 			returnV += -log(sd) - 0.5*mean*mean / (sd*sd);
+		
 			break;
 		case 2:
 			mean = (log(theta(i, 0)) - prior_spec(i, 1));

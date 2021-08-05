@@ -23,15 +23,15 @@ using namespace std;
 Eigen::MatrixXd convertresult_to_probs(Eigen::MatrixXd data) {
 	Eigen::MatrixXd result = data;
 	bool is_afterMax = false;
-	//Transform the profile likelihood into a list of probabilities
 	for (int i = 0; i < result.rows(); i++) {
 		if (result(i, 2) == 666) {
 			is_afterMax = true;
 		}
+		result(i,0 ) = result(i, 0) < 0 ?  1e4: result(i, 0); // numerical zero for calculations
 		result(i, 0) = is_afterMax ? .5 + gsl_cdf_chisq_P(2.0*result(i, 0), 1.0) / 2.0 : .5 - gsl_cdf_chisq_P(2.0*result(i, 0), 1.0) / 2.0;
 
 		if (i > 0)
-			result(i, 2) = result(i, 0) - result(i - 1);
+			result(i, 2) = result(i, 0) - result(i - 1,0);
 
 	}
 	// make sure the difference has some small probability of change. 

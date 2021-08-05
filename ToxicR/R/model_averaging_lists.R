@@ -20,7 +20,7 @@ ma_continuous_list<-function(ml,dl){
   
   for (ii in 1:length(ml)){
     a = list(model = ml[ii], dist = dl[ii],
-                prior = bayesian_prior_continuous(ml[ii],dl[ii]))
+                prior = bayesian_prior_continuous_default(ml[ii],dl[ii]))
     class(a) <- "BMDcontinuous_bayesian_model"
     ma_list[[ii]] <- a 
   }
