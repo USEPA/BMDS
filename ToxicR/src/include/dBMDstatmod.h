@@ -831,7 +831,8 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	Eigen::MatrixXd ret1(3,1), ret2, fParms; 
 	std::list<Eigen::MatrixXd> CL,temp1,temp2; 
 
-	double CLIKE = MAP_LIKE; 	int max_iters = 0; 
+	double CLIKE = MAP_LIKE; 	
+	int max_iters = 0; 
 	double CBMD = BMD * (1.0-BMDchange);
 	double PLIKE = CLIKE;
 	
@@ -941,11 +942,14 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 	
 
 	CLIKE = MAP_LIKE;  	CBMD = BMD * (1.0 + BMDchange);
-	max_iters = 0;   	parms = M->getEST();
-	
+	int max_iters2 = 0;   	parms = M->getEST();
+        error = false; 
 	
 	// Now increase the BMD sequentially going up
-	while (fabs(MAP_LIKE - CLIKE) < totalChange && max_iters < 200 && CBMD < 2.5*max_dose) // stop when we are 2.5 times greater than the maximum dose
+ // stop when we are 2.5 times greater than the maximum dose
+	while ( max_iters2 < 200
+	  	 && CBMD < 2.5*max_dose
+	  	 && fabs(MAP_LIKE - CLIKE) < totalChange )
 	{   
 		// fit the first profile likelihood option			
 		temp1 = fit_profileLogic<LL, PR>(M,
@@ -1040,9 +1044,8 @@ Eigen::MatrixXd profile_BMDNC(  dBMDModel<LL, PR>  *M,
 		}
 		
 	
-		max_iters++;
-		
-	}
+		max_iters2++;
+	}	
 	
 	// Take the lists and put them in one big
 	// matrix to return. 

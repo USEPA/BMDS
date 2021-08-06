@@ -9,11 +9,11 @@
 #include "bmdStruct.h"
 
 void del_continuous_analysis(continuous_analysis a){
-  if (a.Y)  delete a.Y; 
-  if (a.n_group) delete a.n_group; 
-  if (a.sd) delete a.sd; 
-  if (a.doses) delete a.doses; 
-  if (a.prior) delete a.prior; 
+  if (a.Y)  delete[] a.Y; 
+  if (a.n_group) delete[] a.n_group; 
+  if (a.sd) delete[] a.sd; 
+  if (a.doses) delete[] a.doses; 
+  if (a.prior) delete[] a.prior; 
   a.Y = NULL;  
   a.n_group = NULL; 
   a.sd = NULL; 
@@ -24,7 +24,7 @@ void del_continuous_analysis(continuous_analysis a){
 
 dichotomous_model_result * new_dichotomous_model_result(int model,
                                                         int parms,
-                                                          int dist_numE){
+                                                        int dist_numE){
   
   dichotomous_model_result *dmodel = new dichotomous_model_result; 
   dmodel->model = model; 
@@ -41,9 +41,9 @@ dichotomous_model_result * new_dichotomous_model_result(int model,
 void delete_dichotomous_model_result(dichotomous_model_result * dmodel)
                                                            {
   if (dmodel){
-    delete(dmodel->parms); delete(dmodel->cov);   
-    delete(dmodel->bmd_dist); 
-    delete(dmodel);
+    delete[] dmodel->parms; delete[] dmodel->cov;   
+    delete[] dmodel->bmd_dist; 
+    delete dmodel;
   }
   return ;  
 }
@@ -68,8 +68,8 @@ void delete_dichotomousMA_result(dichotomousMA_result *res){
           delete_dichotomous_model_result(res->models[i]);
        }
     }
-    delete(res->post_probs);
-    delete(res->bmd_dist);
+    delete[] res->post_probs;
+    delete[] res->bmd_dist;
   }
   return; 
 }
@@ -92,8 +92,8 @@ bmd_analysis_MCMC * new_mcmc_analysis(int model,
 
 void del_mcmc_analysis(bmd_analysis_MCMC *an){
   if (an){
-    delete an->BMDS; 
-    delete an->parms; 
+    delete[] an->BMDS; 
+    delete[] an->parms; 
     delete an; 
   }
 }
@@ -114,13 +114,13 @@ void del_continuous_model_result(continuous_model_result * cm){
 	
 	if(cm){	
 		if (cm->cov){
-			delete cm->cov; 
+			delete[] cm->cov; 
 		}
 		if (cm->parms){
-			delete cm->parms; 
+			delete[] cm->parms; 
 		}
 		if (cm->bmd_dist){
-			delete cm->bmd_dist; 
+			delete[] cm->bmd_dist; 
 		}
 		delete cm; 
 	}
@@ -132,12 +132,12 @@ void del_continuousMA_analysis(continuousMA_analysis CMA){
     for (int i = 0; i < CMA.nmodels; i++){
       delete CMA.priors[i]; 
     }
-    delete CMA.modelPriors; 
-    delete CMA.priors; 
-    delete CMA.actual_parms; 
-    delete CMA.models; 
-    delete CMA.disttype; 
-    delete CMA.prior_cols; 
+    delete[] CMA.modelPriors; 
+    delete[] CMA.priors; 
+    delete[] CMA.actual_parms; 
+    delete[] CMA.models; 
+    delete[] CMA.disttype; 
+    delete[] CMA.prior_cols; 
   }
 }
 

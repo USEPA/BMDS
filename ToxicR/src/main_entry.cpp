@@ -142,20 +142,20 @@ List run_single_dichotomous(NumericVector model,
   //deviance_dichotomous(&Anal,&AOD);
  // cout << AOD.A1 << " : " << AOD.A2 << endl; 
   
-  delete (GOFres.expected);
-  delete (GOFres.residual); 
+  delete[] GOFres.expected;
+  delete[] GOFres.residual; 
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
  
   List rV = convert_dichotomous_fit_to_list(&res); 
   
-  delete(Anal.Y); 
-  delete(Anal.n_group); 
-  delete(Anal.doses); 
-  delete(Anal.prior); 
-  delete(res.parms);   
-  delete(res.cov);    
-  delete(res.bmd_dist);  
+  delete[] Anal.Y; 
+  delete[] Anal.n_group; 
+  delete[] Anal.doses; 
+  delete[] Anal.prior; 
+  delete[] res.parms;   
+  delete[] res.cov;    
+  delete[] res.bmd_dist;  
   return rV;
 }
 
@@ -265,8 +265,8 @@ List run_continuous_single(IntegerVector model,
     List rV = convert_continuous_fit_to_list(result); 
 
     rV.push_back(AOD,"Deviance");
-    delete(exp_r.expected); 
-    delete(exp_r.sd); 
+    delete[] exp_r.expected; 
+    delete[] exp_r.sd; 
     del_continuous_model_result(result); 
     del_continuous_analysis(anal);
     ////////////////////////////////////
