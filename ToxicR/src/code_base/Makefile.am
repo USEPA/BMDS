@@ -12,7 +12,7 @@ libBMDS_la_SOURCES=  bmds_helper.cpp analysis_of_deviance.cpp DichLogProbitBMD_N
 			continuous_clean_aux.cpp   normal_HILL_NC.cpp normal_FUNL_NC.cpp\
 			continuous_entry_code.cpp gradient.cpp  normalModels.cpp \
 			continuous_model_functions.cpp  helperfunctions.cpp normal_POLYNOMIAL_NC.cpp \
-			DichGammaBMD_NC.cpp IDPrior.cpp  normal_POWER_NC.cpp \
+			DichGammaBMD_NC.cpp IDPrior.cpp IDPriorMCMC.cpp normal_POWER_NC.cpp \
 			DichLogisticBMD_NC.cpp lognormal_EXP_NC.cpp  normal_likelihoods.cpp stdafx.cpp
 
 
