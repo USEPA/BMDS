@@ -1,5 +1,5 @@
 library(ToxicR)
-library(ggplot2)
+
 
 
 bob = create_continuous_prior(prior,"exp-5","lognormal")
@@ -37,17 +37,19 @@ model_list2 = list()
 for (i in 1:nrow(model_listB)){
         t_prior = bayesian_prior_continuous_default(model_listB$model_list[i],model_listB$distribution_list[i])
         
-        if(model_list$distribution_list[i] == "lognormal"){
-          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        if(model_listB$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(v1)))
         }else{
-          t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          t_prior$priors[nrow(t_prior$priors),2]   = log(var(v1))
         }
         
         model_list2[[i]] = create_continuous_prior(t_prior,model_listB$model_list[i],model_listB$distribution_list[i])
 }            
            
-AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
-                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_list=model_list2,
+                              fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1,samples = 500,burnin=2)
+
+
 
 system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal", 
 						model_type = "hill",degree = 1 ,fit_type = "mcmc",samples = 500,burnin =2 )})

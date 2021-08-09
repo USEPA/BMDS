@@ -1072,7 +1072,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   } 
   
   bmd_analysis b[MA->nmodels];
-cerr << " I am here" << endl; 
+
 #pragma omp parallel
 {
   #pragma omp for  
@@ -1219,7 +1219,7 @@ cerr << " I am here" << endl;
       
   }
 } 
-cerr << " I am there" << endl; 
+
  
   double post_probs[MA->nmodels]; 
   double temp =0.0; 

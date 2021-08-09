@@ -347,9 +347,9 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
    for (unsigned int i = 0; i < ma_result->nmodels; i++){
 	   del_continuous_model_result(ma_result->models[i]); 
    }
-   
-   delete ma_result->post_probs; 
-   delete ma_result->bmd_dist; 
+   delete[] ma_result->models; 
+   delete[] ma_result->post_probs; 
+   delete[] ma_result->bmd_dist; 
    delete ma_result; 
    del_continuous_analysis(anal);
    del_continuousMA_analysis(ma_anal); 
@@ -483,9 +483,10 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
     del_continuous_model_result(ma_result->models[i]); 
     del_mcmc_analysis(model_mcmc_info.analyses[i]);
   }
-  
-  delete ma_result->post_probs; 
-  delete ma_result->bmd_dist; 
+  delete[] ma_result->models; 
+  delete[] model_mcmc_info.analyses; 
+  delete[] ma_result->post_probs; 
+  delete[] ma_result->bmd_dist; 
   delete ma_result; 
   
   del_continuous_analysis(anal);

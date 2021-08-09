@@ -131,7 +131,8 @@ void del_continuousMA_analysis(continuousMA_analysis CMA){
   if (CMA.priors){
     for (int i = 0; i < CMA.nmodels; i++){
       delete[] CMA.priors[i]; 
-    }
+    } 
+    delete[] CMA.nparms;
     delete[] CMA.modelPriors; 
     delete[] CMA.priors; 
     delete[] CMA.actual_parms; 
