@@ -1,12 +1,6 @@
 library(ToxicR)
 library(ggplot2)
 
-prior <- create_prior_list(normprior(0,1,-100,100),
-                           normprior(0,10,-1e4,1e4),
-                           lnormprior(0,1,0,100),
-                           lnormprior(log(2),0.4215,0,18),
-                           #lnormprior(0, 0.75,0,100),
-                           normprior(0, 10,-100,100));
 
 bob = create_continuous_prior(prior,"exp-5","lognormal")
 
@@ -27,12 +21,36 @@ PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt",
                           col_names = FALSE)
 
 
-doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
-           0.625,	0.625,	0.625,	1.25,	1.25,	1.25,	2.5,	2.5,	2.5,	5,5,
-           5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
+doses	<- c(0,0,0,0,0.156,0.156,0.156,0.3125,0.3125,0.3125,
+           0.625,0.625,0.625,1.25,1.25,1.25,2.5,2.5,2.5,5,5,
+           5,5,10,10,10,10,20,20,20,20) 
 
+#BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR = 1)
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "polynomial",degree = 1 ,fit_type = "laplace",isFast = T)})
+model_listA  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                         distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv","lognormal"),2),
+                                                "normal", "normal-ncv"))
+model_listB = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
+                         distribution_list =  c(rep(c("normal"),4)))
+                         
+model_list2 = list()
+for (i in 1:nrow(model_listB)){
+        t_prior = bayesian_prior_continuous_default(model_listB$model_list[i],model_listB$distribution_list[i])
+        
+        if(model_list$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+        }
+        
+        model_list2[[i]] = create_continuous_prior(t_prior,model_listB$model_list[i],model_listB$distribution_list[i])
+}            
+           
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
+                              fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1,samples = 50000)
+
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal", 
+						model_type = "hill",degree = 1 ,fit_type = "mcmc",samples = 500,burnin =2 )})
 
 library(dplyr)
 library(ggplot2)

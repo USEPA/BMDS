@@ -424,37 +424,44 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
   Eigen::MatrixXd temp_block(1,1); 
-  int offset = CV? 2:3; 
+  int offset = CV? 1:2; 
   switch(CM){
   case cont_model::polynomial:
+    
     Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree);
     temp_block = Xd.block(0,0,Xd.rows()-1,estimate.rows() - offset); 
     Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
+    
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
+   
     temp_block = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
     pr = temp_block; 
+    cerr << pr; 
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = pr.diagonal().size(); 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
-      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
+      temp_block = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      Xd = temp_block; 
       DOF =  Xd.diagonal().array().sum(); 
     }
     break; 
   case cont_model::hill:
     Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
-    temp_block  = Xd.block(0,0,Xd.rows()-1,3); 
+    temp_block  = Xd.block(0,0,Xd.rows(),4); 
     Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    temp_block  =    pr.block(0,0,3,3); 
+    temp_block  =    pr.block(0,0,4,4); 
     pr = temp_block; 
     
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = 4.0; 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
@@ -495,7 +502,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
       cv_t = X_cov_cont_norm< normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_DOWN);
     }
     
-    temp_block = Xd.block(0,0,Xd.rows()-1,3); 
+    temp_block = Xd.block(0,0,Xd.rows(),3); 
     Xd = temp_block; 
     
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
@@ -504,7 +511,8 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF =4.0; 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
@@ -513,15 +521,18 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   case cont_model::power: 
     Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
-    Xd = Xd.block(0,0,Xd.rows()-1,3); 
+    
+    temp_block = Xd.block(0,0,Xd.rows(),3); 
+    Xd = temp_block; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    temp_block = pr.block(0,0,2,2); 
+    temp_block = pr.block(0,0,3,3); 
     pr = temp_block; 
     
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF =3.0; 
     }else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block;  
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
@@ -1061,7 +1072,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   } 
   
   bmd_analysis b[MA->nmodels];
-
+cerr << " I am here" << endl; 
 #pragma omp parallel
 {
   #pragma omp for  
@@ -1208,7 +1219,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
       
   }
 } 
-
+cerr << " I am there" << endl; 
  
   double post_probs[MA->nmodels]; 
   double temp =0.0; 

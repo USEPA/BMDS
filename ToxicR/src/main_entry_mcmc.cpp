@@ -332,8 +332,14 @@ List run_continuous_single_mcmc(NumericVector model,
 
   del_mcmc_analysis(output);
   del_continuous_model_result(res); 
-  del_continuous_analysis(*mcmcAnal);
-
+  //del_continuous_analysis(*mcmcAnal);
+  delete[] mcmcAnal->Y; mcmcAnal->Y = NULL;//            
+  delete[] mcmcAnal->n_group ; mcmcAnal->n_group = NULL;   
+  delete[] mcmcAnal->sd;    mcmcAnal->sd = NULL;      
+  delete[] mcmcAnal->doses;   mcmcAnal->doses = NULL;     
+  delete[] mcmcAnal->prior;    mcmcAnal->prior = NULL;     
+  delete mcmcAnal; 
+  
   return wrap(data_out);
 }
 
