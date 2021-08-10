@@ -429,7 +429,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   case cont_model::polynomial:
     
     Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree);
-    temp_block = Xd.block(0,0,Xd.rows()-1,estimate.rows() - offset); 
+    temp_block = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
     Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
     
