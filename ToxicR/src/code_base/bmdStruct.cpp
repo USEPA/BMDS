@@ -61,6 +61,8 @@ dichotomousMA_result * new_dichotomousMA_result(int nmodels,
   return dres; 
 }
   
+  
+  
 void delete_dichotomousMA_result(dichotomousMA_result *res){
   if (res){
     for (int i = 0; i < res->nmodels; i++){
@@ -68,9 +70,13 @@ void delete_dichotomousMA_result(dichotomousMA_result *res){
           delete_dichotomous_model_result(res->models[i]);
        }
     }
+    
+    delete[] res->models; 
     delete[] res->post_probs;
     delete[] res->bmd_dist;
+    delete res; 
   }
+  
   return; 
 }
   

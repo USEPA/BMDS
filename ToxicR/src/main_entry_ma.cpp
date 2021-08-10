@@ -590,19 +590,19 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   ///////////////////
   //to do add degree to the individual model
   for(int i = 0; i < priors.size(); i++){
-    delete ma_info.priors[i]; 
+    delete[] ma_info.priors[i]; 
     del_mcmc_analysis(model_mcmc_info.analyses[i]); 
   }
 
-  delete model_mcmc_info.analyses; 
-  delete ma_info.priors; 
-  delete Anal.Y;        
-  delete Anal.n_group;  
-  delete Anal.doses; 
-  delete ma_info.actual_parms;//actual number of parameters in the model
-  delete ma_info.prior_cols;  
-  delete ma_info.models;  
-  delete ma_info.modelPriors; 
+  delete[] model_mcmc_info.analyses; 
+  delete[] ma_info.priors; 
+  delete[] Anal.Y;        
+  delete[] Anal.n_group;  
+  delete[] Anal.doses; 
+  delete[] ma_info.actual_parms;//actual number of parameters in the model
+  delete[] ma_info.prior_cols;  
+  delete[] ma_info.models;  
+  delete[] ma_info.modelPriors; 
   delete_dichotomousMA_result(ma_res); 
 
   return returnV; 

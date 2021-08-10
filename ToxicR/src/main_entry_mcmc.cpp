@@ -207,15 +207,15 @@ List run_dichotomous_single_mcmc(NumericVector model,
   List data_out  = List::create(Named("mcmc_result")=t2,
                                 Named("fitted_model")=rV); 
   
-  delete(output.BMDS); 
-  delete(output.parms); 
-  delete(mcmcAnal.Y); 
-  delete(mcmcAnal.n_group); 
-  delete(mcmcAnal.doses); 
-  delete(mcmcAnal.prior); 
-  delete(res.parms);   
-  delete(res.cov);    
-  delete(res.bmd_dist);  
+  delete[] output.BMDS; 
+  delete[] output.parms; 
+  delete[] mcmcAnal.Y; 
+  delete[] mcmcAnal.n_group; 
+  delete[] mcmcAnal.doses; 
+  delete[] mcmcAnal.prior; 
+  delete[] res.parms;   
+  delete[] res.cov;    
+  delete[] res.bmd_dist;  
   return data_out;
 }
 
