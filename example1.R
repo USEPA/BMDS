@@ -57,14 +57,18 @@ system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribu
 library(dplyr)
 library(ggplot2)
 library(ToxicR)
-temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
+temp <- PFOA_Liver %>% filter(X1 == "HMGCS2_8812")
 v1 <- as.numeric(temp[2:length(temp)])
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+#kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
 
-,model_list = model_list,samples = 35000 )
-plot(kk)+scale_x_continuous(trans="pseudo_log")
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = TR)
+
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3)
+plot(R)+scale_x_continuous(trans="pseudo_log")
+
+S  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mle",BMR = 3)
+plot(S)+scale_x_continuous(trans="pseudo_log")
+
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
 plot(R) + scale_x_continuous(trans="pseudo_log")
 

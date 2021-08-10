@@ -863,7 +863,7 @@ double normalPOLYNOMIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double B
 	if (isfinite(mid)){
 	  return mid; 
 	}else{
-	  std::cerr << "Non-finite BMD returned: Hill-Normal."<< std::endl;
+	  //std::cerr << "Non-finite BMD returned: Hill-Normal."<< std::endl;
 	  return std::numeric_limits<double>::infinity();
 	}
 }

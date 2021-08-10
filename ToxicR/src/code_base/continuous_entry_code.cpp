@@ -437,7 +437,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
    
     temp_block = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
     pr = temp_block; 
-    cerr << pr; 
+    
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = pr.diagonal().size(); 
     } else{

@@ -866,7 +866,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double 
 	if (isfinite(mid)){
 	  return mid; 
 	}else{
-	  std::cerr << "Non-finite BMD returned: Exp-Normal." << std::endl;
+	  //std::cerr << "Non-finite BMD returned: Exp-Normal." << std::endl;
 	  return std::numeric_limits<double>::infinity();
 	}
 }

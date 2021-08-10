@@ -44,14 +44,14 @@ for (ii in 1:length(file_list)){
           }
         }
         
-        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_listA[i],model_listA$distribution_list[i])
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
       }
       
       model_list2 = list()
       for (i in 1:nrow(model_listB)){
         t_prior = bayesian_prior_continuous_default(model_listB$model_list[i],model_listB$distribution_list[i])
         
-        if(model_list$distribution_list[i] == "lognormal"){
+        if(model_listB$distribution_list[i] == "lognormal"){
           t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
         }else{
           t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
