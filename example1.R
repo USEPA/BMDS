@@ -57,13 +57,13 @@ system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribu
 library(dplyr)
 library(ggplot2)
 library(ToxicR)
-temp <- PFOA_Liver %>% filter(X1 == "HMGCS2_8812")
+temp <- PFOA_Liver %>% filter(X1 == "SPINK3_9928")
 v1 <- as.numeric(temp[2:length(temp)])
 #kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+y = v1
 
 
-
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",degree=3,fit_type = "laplace",BMR = 3)
 plot(R)+scale_x_continuous(trans="pseudo_log")
 
 S  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mle",BMR = 3)
