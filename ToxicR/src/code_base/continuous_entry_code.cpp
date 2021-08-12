@@ -344,6 +344,8 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
   Eigen::MatrixXd pr; 
   Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
+  Eigen::MatrixXd temp_estimate(estimate.rows() + 1,1); 
+  
   switch(CM){
   case cont_model::hill:
     Xd = X_gradient_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat);
@@ -362,31 +364,31 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     
     break; 
   case cont_model::exp_3:
+    
+    temp_estimate << estimate(0,0) , estimate(1,0) , 1.0 , estimate.block(2,0,estimate.rows()-2,1); 
     if (is_increasing){
-      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
-      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
     }else{
-      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
-      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
-    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3);  
     Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
     
-    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
-    
-    if( fabs(subBlock.diagonal().array().sum()) == 0){
-      DOF = 3.0; 
-    }else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+    if( fabs(subBlock.diagonal().array().sum()) ==0){
+      DOF = 3; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + subBlock; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
-    }  
-
-    break; 
+    }
+    break;
   case cont_model::exp_5: 
     if (is_increasing){
       Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP5_UP);
@@ -431,7 +433,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   case cont_model::polynomial:
     
     Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree);
-    temp_block = Xd.block(0,0,Xd.rows()-1,estimate.rows() - offset); 
+    temp_block = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
     Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
     
