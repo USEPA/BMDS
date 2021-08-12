@@ -7,7 +7,7 @@ importFrom(forcats,fct_reorder)
 # Necessary Packages
 ###############################
 import(tidyverse)
-importFrom(doBy, summaryBy)
+#importFrom(doBy, summaryBy)
 import(doBy)
 import(multcomp)
 import(shiny)
