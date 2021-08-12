@@ -27,12 +27,16 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   
   
   if (is.na(model_list[[1]][1])){
-    model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2))#,rep("FUNL",2))
-    distribution_list = c(rep(c("normal","normal-ncv","lognormal"),3),"normal","normal-ncv")#,"normal","normal-ncv")
-    model_list = data.frame(model_list = model_list, distribution_list = distribution_list)
-    prior_list = ma_continuous_list(model_list$model_list,model_list$distribution_list)
-    for(ii in 1:length(prior_list)){
-      prior_list[[ii]]$prior = prior_list[[ii]]$prior[[1]]
+    model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))#,rep("FUNL",2))
+    distribution_list = c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),
+                          "normal","normal-ncv")
+    
+    prior_list <- list()
+    for(ii in 1:length(model_list)){
+      PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)
+      t_prior_result = create_continuous_prior(PR,model_list[ii],distribution_list[ii],2)
+      PR = t_prior_result$prior
+      prior_list[[ii]] = list(prior = PR, model_tye = model_list[ii], dist = distribution_list[ii])
     }
   }else{
     prior_list <- list()
@@ -66,7 +70,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       priors[[ii]] <- prior_list[[ii]]$prior
       dlists[ii]   <- which(prior_list[[ii]]$dist == current_dists)
   }
-
+  
   
   ###################  
   DATA <- cbind(D,Y);

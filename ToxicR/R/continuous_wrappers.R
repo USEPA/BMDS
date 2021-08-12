@@ -54,10 +54,10 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
 
       PR    = bayesian_prior_continuous_default(model_type,distribution,degree)
       t_prior_result = create_continuous_prior(PR,model_type,distribution,degree)
-      PR = PR$prior
+      PR = t_prior_result$prior
     }
     dmodel = which(model_type==.continuous_models)
-    
+
     type_of_fit = which(fit_type == c('laplace','mle','mcmc'))
     if (identical(type_of_fit,integer(0))){
       stop("Please choose one of the following fit types: 'laplace','mle','mcmc.' ")

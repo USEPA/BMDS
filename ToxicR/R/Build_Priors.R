@@ -211,6 +211,7 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
 .check_exp3 <- function(prior,distribution){
   #check if the normal distribution is correctly specified
   temp = prior[[1]]
+  
   if (distribution == "normal"){
     
     if (nrow(temp) != 4){
@@ -249,12 +250,14 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
     prior$model = "Exponential-3 Model [lognormal]"
     prior$parameters <- c("a","b","c","d","log(sigma^2)")
   }
+  
   prior$mean = .continuous_models[2]
-  temp <- prior$priors
-  prior$priors = matrix(NA,nrow=nrow(temp)+1,5)
-  prior$priors[1:3,] = temp[1:3,]
-  prior$priors[4,]   = c(1,0,1,-100,100)
-  prior$priors[5:nrow(prior$priors), ] = temp[4:nrow(temp),]
+  temp <- prior$prior
+  prior$prior = matrix(NA,nrow=nrow(temp)+1,5)
+  prior$prior[1:2,] = temp[1:2,]
+  prior$prior[3,]   = c(1,0,1,-100,100)
+  prior$prior[4:nrow(prior$prior), ] = temp[3:nrow(temp),]
+ 
   cat("NOTE: Parameter 'c' added to prior list. It is not used in the analysis.\n")
   return(prior)
 }
