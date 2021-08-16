@@ -758,7 +758,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doub
   }catch(...){
     
     std::exception_ptr p = std::current_exception();
-    std::cerr <<(p ? p.__cxa_exception_type()->name() : "null") << std::endl;
+ //   std::cerr <<(p ? p.__cxa_exception_type()->name() : "null") << std::endl;
   }
 
 	test_prob = isIncreasing ? 1.0 - gsl_cdf_lognormal_P(ct_off, temp_mean(1, 0), sqrt(temp_var(1, 0)))
@@ -794,7 +794,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, doub
 	if (isfinite(mid)){
 	  return mid; 
 	}else{
-	  std::cerr << "Non-finite BMD returned: Exp-Log-Normal."<< std::endl; 
+	 // std::cerr << "Non-finite BMD returned: Exp-Log-Normal."<< std::endl; 
 	  return std::numeric_limits<double>::infinity();
 	}
 }

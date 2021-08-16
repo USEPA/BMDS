@@ -249,10 +249,11 @@ cont_power_f <-function(parms,d,decrease=F){
   }
   if (fit$model=="polynomial"){
     if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
-      degree = length(BB$parameters) - 2
+      degree = length(fit$parameters) - 2
     }else{
-      degree = length(BB$parameters) - 1
+      degree = length(fit$parameters) - 1
     }
+   
     me <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
   }
 

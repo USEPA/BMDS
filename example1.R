@@ -9,6 +9,9 @@ prior <- create_prior_list(normprior(0,1,-100,100),
                            normprior(0, 10,-100,100));
 
 bob = create_continuous_prior(prior,"exp-5","lognormal")
+library(ToxicR)
+doses <- c(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.948669,0.948669,0.948669,2.999955,2.999955,2.999955,9.48669,9.48669,9.48669,29.999548,29.999548,29.999548,94.8669,94.8669,94.8669,299.99548,299.99548,299.99548,948.669,948.669,948.669,2999.9548,2999.9548,2999.9548,9486.69,9486.69,9486.69)
+v2 <- c(6.957,7.838,7.157,7.589,7.808,7.305,7.143,7.778,7.449,7.761,7.485,8.03,6.863,7.062,7.611,7.135,7.484,7.161,7.272,7.603,7.428,7.291,7.048,7.562,7.324,7.17,7.072,7.252,7.249,7.397,6.983,7.175,7.13,8.341,8.289,8.201,8.838,8.865,8.971)
 
 v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,
         13.249991,	12.992931,	13.022338,	13.614057,	13.287018,	13.449239,	13.950747,
@@ -27,24 +30,28 @@ PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt",
                           col_names = FALSE)
 
 
-doses	<- c(0,	0,	0,	0,	0.156,	0.156,	0.156,	0.3125,	0.3125,	0.3125,
-           0.625,	0.625,	0.625,	1.25,	1.25,	1.25,	2.5,	2.5,	2.5,	5,5,
-           5,	5,	10,	10,	10,	10,	20,	20,	20,	20) 
+doses<- c(0,0,0,0,0.156,0.156,0.156,0.3125,0.3125,0.3125,
+           0.625,0.625,0.625,1.25,1.25,1.25,2.5,2.5,2.5,5,5,
+           5,5,10,10,10,10,20,20,20,20) 
 
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "polynomial",degree = 1 ,fit_type = "laplace",isFast = T)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v2),distribution = "normal",model_type = "exp-3", fit_type = "mle",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
 library(ToxicR)
-temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
+temp <- PFOA_Liver %>% filter(X1 == "SPINK3_9928")
 v1 <- as.numeric(temp[2:length(temp)])
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+#kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR =1.5)
+y = v1
 
-,model_list = model_list,samples = 35000 )
-plot(kk)+scale_x_continuous(trans="pseudo_log")
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "laplace",BMR = 2,isFast = TR)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",degree=3,fit_type = "laplace",BMR = 3)
+plot(R)+scale_x_continuous(trans="pseudo_log")
+
+S  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mle",BMR = 3)
+plot(S)+scale_x_continuous(trans="pseudo_log")
+
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
 plot(R) + scale_x_continuous(trans="pseudo_log")
 

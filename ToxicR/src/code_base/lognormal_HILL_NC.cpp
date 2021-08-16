@@ -713,7 +713,7 @@ double lognormalHILL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF
 	if (isfinite(mid)){
 	  return mid; 
 	}else{
-	  std::cerr << "Non-finite BMD returned: Exp-Log-Hill."<< std::endl;
+	 // std::cerr << "Non-finite BMD returned: Exp-Log-Hill."<< std::endl;
 	  return std::numeric_limits<double>::infinity();
 	}
 }

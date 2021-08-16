@@ -105,7 +105,7 @@ Eigen::MatrixXd X_gradient_cont_norm(Eigen::MatrixXd theta, Eigen::MatrixXd Y, E
       rValue(i,j) =  grad[j]; 
     }
   }
-  delete grad; 
+  delete[] grad; 
   return rValue; 
   
 }

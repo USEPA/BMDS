@@ -1,8 +1,6 @@
 library(ToxicR)
 
 
-
-
 mData <- matrix(c(0,    0,100,
                   50,   5,100,
                   100, 30,100,
@@ -40,17 +38,7 @@ mData <- matrix(c(0,	8,	50,
                   209.8,	17,	50,
                   444.6,	26,	50,
                   978.1,	42,	50),nrow=4,ncol=3,byrow=T)
-Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc",samples=500,burnin=2)
+#Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_list = vi, fit_type = "mcmc")
 #Q1 = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")
 #plot(Q) + scale_x_continuous(trans="sqrt")
-
-
-system.time({R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-logistic",degree = 3, fit_type = "mcmc")})
-S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull",degree = 3, fit_type = "laplace")
-
-R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],prior = q,degree = 2,fit_type = "laplace")
-S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma",degree = 2,fit_type = "mcmc")
-
-plot(R)
-
-R = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill",degree = 2,fit_type = "mcmc")
+S = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma",degree = 2,fit_type = "laplace")

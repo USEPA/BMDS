@@ -347,9 +347,9 @@ List run_continuous_ma_laplace(List model_priors, NumericVector model_type,
    for (unsigned int i = 0; i < ma_result->nmodels; i++){
 	   del_continuous_model_result(ma_result->models[i]); 
    }
-   
-   delete ma_result->post_probs; 
-   delete ma_result->bmd_dist; 
+   delete[] ma_result->models; 
+   delete[] ma_result->post_probs; 
+   delete[] ma_result->bmd_dist; 
    delete ma_result; 
    del_continuous_analysis(anal);
    del_continuousMA_analysis(ma_anal); 
@@ -483,9 +483,10 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
     del_continuous_model_result(ma_result->models[i]); 
     del_mcmc_analysis(model_mcmc_info.analyses[i]);
   }
-  
-  delete ma_result->post_probs; 
-  delete ma_result->bmd_dist; 
+  delete[] ma_result->models; 
+  delete[] model_mcmc_info.analyses; 
+  delete[] ma_result->post_probs; 
+  delete[] ma_result->bmd_dist; 
   delete ma_result; 
   
   del_continuous_analysis(anal);
@@ -589,19 +590,19 @@ List run_ma_dichotomous(Eigen::MatrixXd data, List priors, NumericVector models,
   ///////////////////
   //to do add degree to the individual model
   for(int i = 0; i < priors.size(); i++){
-    delete ma_info.priors[i]; 
+    delete[] ma_info.priors[i]; 
     del_mcmc_analysis(model_mcmc_info.analyses[i]); 
   }
 
-  delete model_mcmc_info.analyses; 
-  delete ma_info.priors; 
-  delete Anal.Y;        
-  delete Anal.n_group;  
-  delete Anal.doses; 
-  delete ma_info.actual_parms;//actual number of parameters in the model
-  delete ma_info.prior_cols;  
-  delete ma_info.models;  
-  delete ma_info.modelPriors; 
+  delete[] model_mcmc_info.analyses; 
+  delete[] ma_info.priors; 
+  delete[] Anal.Y;        
+  delete[] Anal.n_group;  
+  delete[] Anal.doses; 
+  delete[] ma_info.actual_parms;//actual number of parameters in the model
+  delete[] ma_info.prior_cols;  
+  delete[] ma_info.models;  
+  delete[] ma_info.modelPriors; 
   delete_dichotomousMA_result(ma_res); 
 
   return returnV; 

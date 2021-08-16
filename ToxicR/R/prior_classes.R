@@ -437,7 +437,7 @@ choose normal or normal non-constant variance.\n");
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior(0,2,-1e6,1e6),
                                lnormprior(0,1,0,18),
-                               lnormprior(log(1.2),1,1,18),
+                               lnormprior(log(1.2),1,0,18),
                                lnormprior(-2, 1,0,100),
                                normprior(0, 2,-18,18));
   }
@@ -478,7 +478,7 @@ choose normal or normal non-constant variance.\n");
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior(0,2,-1e6,1e6),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,18),
-                               lnormprior(1,0.2,1,18),
+                               lnormprior(1,0.2,0,18),
                                normprior(0,1,-18,18)); 
   }
   
@@ -504,7 +504,7 @@ choose normal or normal non-constant variance.\n");
     prior <- create_prior_list(normprior(0,0.1, -100,100), # a
                                lnormprior(0,1, 0,100),     # b
                                normprior(0,1, -10,10),    # log(c)
-                               lnormprior(1,0.2,1,18), #d 
+                               lnormprior(1,0.2,0,18), #d 
                                normprior(0,1,-18,18))
   }
   
@@ -531,7 +531,7 @@ choose normal or normal non-constant variance.\n");
     prior <- create_prior_list(normprior(0,1,-100,100),
                                normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,18),
-                               lnormprior(1,0.2,1,18),
+                               lnormprior(1,0.2,0,18),
                                normprior(0,1,-18,18)); 
   }
   prior <- unclass(prior)

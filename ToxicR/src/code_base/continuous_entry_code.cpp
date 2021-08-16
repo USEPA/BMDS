@@ -267,7 +267,7 @@ Eigen::MatrixXd init_exp_lognor(Eigen::MatrixXd Y_LN, Eigen::MatrixXd X, Eigen::
 
 Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX, 
                           Eigen::MatrixXd prior, int deg = 2){
-  
+
   Eigen::MatrixXd X = Eigen::MatrixXd::Ones(tX.rows(),deg+1);
   Eigen::MatrixXd W = Eigen::MatrixXd::Identity(tX.rows(),tX.rows());
  
@@ -285,7 +285,6 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
   for(int i = 0; i < B.rows(); i++){
     prior(i,1) = B(i,0); 
   } 
-  
   return prior; 
 }
 
@@ -345,6 +344,8 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
   Eigen::MatrixXd pr; 
   Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
+  Eigen::MatrixXd temp_estimate(estimate.rows() + 1,1); 
+  
   switch(CM){
   case cont_model::hill:
     Xd = X_gradient_cont<lognormalHILL_BMD_NC>(estimate,Y,X,suff_stat);
@@ -363,31 +364,31 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     
     break; 
   case cont_model::exp_3:
+    
+    temp_estimate << estimate(0,0) , estimate(1,0) , 1.0 , estimate.block(2,0,estimate.rows()-2,1); 
     if (is_increasing){
-      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
-      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
     }else{
-      Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
-      cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
-    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3);  
     Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
                 pr(1,0), pr(1,1), pr(1,3),
                 pr(3,0), pr(3,1), pr(3,3);
     
-    pr   = Xd.transpose()*cv_t*Xd + subBlock; 
-    
-    if( fabs(subBlock.diagonal().array().sum()) == 0){
-      DOF = 3.0; 
-    }else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+    if( fabs(subBlock.diagonal().array().sum()) ==0){
+      DOF = 3; 
+    } else{
+      pr   = Xd.transpose()*cv_t*Xd + subBlock; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
-    }  
-
-    break; 
+    }
+    break;
   case cont_model::exp_5: 
     if (is_increasing){
       Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP5_UP);
@@ -423,49 +424,65 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
   Eigen::MatrixXd pr; 
   Eigen::MatrixXd temp(X.rows(),3);
   Eigen::MatrixXd subBlock(3,3); 
+ 
   int offset = CV? 1:2; 
+  Eigen::MatrixXd temp_estimate(estimate.rows() + 1,1); 
+  Eigen::MatrixXd temp_block(1,1); 
+
   switch(CM){
   case cont_model::polynomial:
+    
     Xd = X_gradient_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree);
-    Xd = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
+    temp_block = Xd.block(0,0,Xd.rows(),estimate.rows() - offset); 
+    Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalPOLYNOMIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,degree); 
+    
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
+    
+    temp_block = pr.block(0,0,estimate.rows() - offset,estimate.rows() - offset); 
+    pr = temp_block; 
+    
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = pr.diagonal().size(); 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
-      Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
+      temp_block = Xd*pr.inverse()*Xd.transpose()*cv_t; 
+      Xd = temp_block; 
       DOF =  Xd.diagonal().array().sum(); 
     }
     break; 
   case cont_model::hill:
     Xd = X_gradient_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV);
-    Xd = Xd.block(0,0,Xd.rows(),4); 
+    temp_block  = Xd.block(0,0,Xd.rows(),4); 
+    Xd = temp_block; 
     cv_t = X_cov_cont_norm<normalHILL_BMD_NC>(estimate,Y,X,suff_stat,CV); 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr =    pr.block(0,0,4,4); 
+    temp_block  =    pr.block(0,0,4,4); 
+    pr = temp_block; 
     
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF = 4.0; 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
     
     break; 
   case cont_model::exp_3:
+    
+    temp_estimate << estimate(0,0) , estimate(1,0) , 1.0 , estimate.block(2,0,estimate.rows()-2,1); 
     if (is_increasing){
-      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
-      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_UP);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_UP);
     }else{
-      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
-      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
+      Xd = X_gradient_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat,NORMAL_EXP3_DOWN);
+      cv_t = X_cov_cont_norm<normalEXPONENTIAL_BMD_NC>(temp_estimate,Y,X,suff_stat, NORMAL_EXP3_DOWN);
     }
 
-   
-    temp << Xd.col(0) , Xd.col(1), Xd.col(3); 
+    temp << Xd.col(0) , Xd.col(1), Xd.col(3);  
     Xd = temp; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
     subBlock << pr(0,0), pr(0,1), pr(0,3),
@@ -489,40 +506,49 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
       cv_t = X_cov_cont_norm< normalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,CV,NORMAL_EXP5_DOWN);
     }
     
-    Xd = Xd.block(0,0,Xd.rows(),4); 
+    temp_block = Xd.block(0,0,Xd.rows(),3); 
+    Xd = temp_block; 
     
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr = pr.block(0,0,4,4); 
+    temp_block = pr.block(0,0,3,3); 
+    pr = temp_block; 
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF =4.0; 
     } else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block; 
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
-  
+    
     break; 
   case cont_model::power: 
     Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
-    Xd = Xd.block(0,0,Xd.rows(),3); 
+    
+    temp_block = Xd.block(0,0,Xd.rows(),3); 
+    Xd = temp_block; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr = pr.block(0,0,3,3); 
+    temp_block = pr.block(0,0,3,3); 
+    pr = temp_block; 
     
     if( fabs(pr.diagonal().array().sum()) ==0){
       DOF =3.0; 
     }else{
-      pr   = Xd.transpose()*cv_t*Xd + pr; 
+      temp_block   = Xd.transpose()*cv_t*Xd + pr; 
+      pr = temp_block;  
       Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
       DOF =  Xd.diagonal().array().sum(); 
     }
-   
+    
     break;
   }   
   
   return DOF + offset; 
   
 }
+  
+
 
 bool convertSStat(Eigen::MatrixXd Y, Eigen::MatrixXd X,
                   Eigen::MatrixXd *SSTAT, Eigen::MatrixXd *SSTAT_LN,
@@ -2020,12 +2046,11 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                                                                          CA->disttype != distribution::normal_ncv,
                                                                          CA->isIncreasing,
                                                                          CA->parms - 2 - (CA->disttype == distribution::normal_ncv ));
-     
+
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt, 
                                     1.0, divisor, 
                                     CA->isIncreasing,CA->disttype == distribution::log_normal,
                                     CA->disttype != distribution::normal_ncv); 
-    
   default:
     break; 
     
