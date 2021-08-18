@@ -343,7 +343,7 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   return(prior)
 }
 
-create_dichotomous_prior <- function( prior,model){
+create_dichotomous_prior <- function(prior,model){
   
   if (class(prior) != "BMDmodelprior"){
     stop("Prior is not of a 'BMDmodelprior' class. A probable solution is to 
