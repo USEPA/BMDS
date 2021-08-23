@@ -40,9 +40,9 @@ mData <- matrix(c(0, 5, 50,
                   475.1, 27,47,
                   992.4,40,	47),nrow=3,ncol=3,byrow=T)
 
-mData <- matrix(c(),nrow=4,ncol=3,byrow=T)
 
-Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc",samples=500,burnin=2)
+
+Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mle",samples=500,burnin=2)
 #Q1 = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")
 #plot(Q) + scale_x_continuous(trans="sqrt")
 

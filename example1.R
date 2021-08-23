@@ -46,7 +46,7 @@ kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR 
 y = v1
 
 
-R  <- single_continuous_fit(as.matrix((doses)),as.matrix(v1),model_type = "hill", distribution="normal-ncv",degree=3,fit_type = "laplace",BMR = 3)
+R  <- single_continuous_fit(as.matrix((doses)),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "laplace",BMR = 3)
 plot(R)+scale_x_continuous(trans="pseudo_log")
 
 S  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mle",BMR = 3)
