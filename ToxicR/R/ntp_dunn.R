@@ -17,7 +17,7 @@
 #CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-dunn_ntp <- function(formula,dose_name = "dose", data)
+dunn_ntp <- function(formula,data, dose_name = "dose")
 {
   
   #first do Jonckheere's Test and subset all the 'DUNN' tests
@@ -38,7 +38,6 @@ dunn_ntp <- function(formula,dose_name = "dose", data)
 		  
 		  temp_names <- rep(NA,ncol(dunn))
 		  for (j in 1:length(temp_names)){
-		    
 		    temp_names[j] <- unlist(dunn[d,j])
 		  }
 		  
