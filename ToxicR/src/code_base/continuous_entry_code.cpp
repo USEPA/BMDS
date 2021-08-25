@@ -1408,7 +1408,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   }
   
   mcmcSamples a;
-  int adverseR; 
+  int adverseR = 0; 
   switch (CM)
   {
   case cont_model::funl:
@@ -2124,7 +2124,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   b.BMD_CDF.set_multiple(max_dose); 
   ///////////////////////////////////////////////////////
   std::vector<double> v(orig_X.rows()); 
-  for (int i ; i < orig_X.rows(); i++){
+  for (int i=0 ; i < orig_X.rows(); i++){
     v[i] = orig_X(i,0); 
   } 
   transfer_continuous_model(b,res);
