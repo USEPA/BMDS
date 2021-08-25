@@ -19,6 +19,18 @@
 
 dunn_ntp <- function(formula,data, dose_name = "dose")
 {
+  data[,c(dose_name)] = as.numeric(data[,c(dose_name)])
+  temp_str = strsplit(as.character(formula)[3], " ")[[1]]
+  temp_str = temp_str[temp_str != "+"]
+  data = data[order(data[,c(dose_name)]),]
+  
+  for (ii in 1:length(temp_str)){
+    data = data[order(data[,temp_str[ii]]),]
+  }
+  
+  if (!(dose_name %in% colnames(data))){
+    stop(sprintf("Dose name %s does not appear in the data frame.",dose_name))
+  }
   
   #first do Jonckheere's Test and subset all the 'DUNN' tests
   jonck_data =  jonckeere_ntp( formula,dose_name = dose_name,
@@ -209,7 +221,7 @@ dunn_ntp <- function(formula,data, dose_name = "dose")
 		idx = which(colnames(dunn_results) == dose_name)
 		## cut out controls
 		dunn_results <- dunn_results[as.numeric(dunn_results[,idx]) != 0,]
-	}
+
   
   names_to_drop <- colnames(dunn_results)
   temp <- sprintf("%sCount",dose_name)
@@ -218,8 +230,10 @@ dunn_ntp <- function(formula,data, dose_name = "dose")
   test_idx    = which(colnames(dunn_results) == "TEST")
   remain_idx  = which(!(1:ncol(dunn_results) %in% c(dose_idx,p_value_idx,test_idx)))
   dunn_results = dunn_results[,c(dose_idx,remain_idx,test_idx,p_value_idx)]
+	dunn_results = dunn_results[,-which(names_to_drop %in% c("rank.mean",temp,"DUNSIGN","num"))]
+	}
   
-  return(dunn_results[,-which(names_to_drop %in% c("rank.mean",temp,"DUNSIGN","num"))])
+  return(dunn_results)
 
 }
 

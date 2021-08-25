@@ -23,20 +23,36 @@
 
 shirley_ntp <- function(formula, data, dose_name = "dose")
 {
+  data[,c(dose_name)] = as.numeric(data[,c(dose_name)])
+  temp_str = strsplit(as.character(formula)[3], " ")[[1]]
+  temp_str = temp_str[temp_str != "+"]
+  data = data[order(data[,c(dose_name)]),]
 
+  for (ii in 1:length(temp_str)){
+    data = data[order(data[,temp_str[ii]]),]
+  }
+  
+  if (!(dose_name %in% colnames(data))){
+    stop(sprintf("Dose name %s does not appear in the data frame.",dose_name))
+  }
+  
+ 
 	## loop through all groups flagged as SHIRLEY in jonck
   jonck_data =  jonckeere_ntp( formula,dose_name = dose_name,
                                data = data,pair="Shirley")
 	shirley_results <- NULL
 	shirley <- subset(jonck_data, mult_comp_test=='SHIRLEY')
+	
+	
+	
 	temp_colnames <- unlist(c(unlist(colnames(shirley)),dose_name,as.character(unlist(formula[[2]]))))
 	temp <-   colnames(data) %in% temp_colnames
 	temp_d <- as.data.frame(data[,temp==TRUE])
 	
 	if(nrow(shirley) > 0)
-		{
+	{
 		for(s in 1:nrow(shirley))
-			{
+		{
 		  testStats <- NULL
 		  doseCount <- NULL
 		  dose      <- NULL
@@ -180,7 +196,7 @@ shirley_ntp <- function(formula, data, dose_name = "dose")
 					exLoop <- exLoop[exLoop[,td]!= unique(exLoop[,td])[length(unique(exLoop[,td]))],]
 					## remove latest dosage before returning to top of loop
 				}
-				tshirl <- shirley[,-which(colnames(shirley)%in% c("tau","pvalue","mult_comp_test"))][s,]
+				tshirl <- shirley[,-which(colnames(shirley)%in% c("tau","pvalue","mult_comp_test")),drop=F][s,]
 				results <- as.data.frame(cbind(dose,  num, doseCount, testStats))		
 
 				real_temp <- as.data.frame(matrix(NA,nrow=nrow(results),ncol=ncol(tshirl)))
@@ -238,9 +254,9 @@ shirley_ntp <- function(formula, data, dose_name = "dose")
 				}
 			}
 		}
+	}
 		## check for existence
-		if(!is.null(shirley_results))
-			{
+	if(!is.null(shirley_results)){
 
 		  
 			## coerce into same format as SHIRLEY results
@@ -254,9 +270,9 @@ shirley_ntp <- function(formula, data, dose_name = "dose")
 		  shirley_results <- shirley_results[,-which(colnames(shirley_results)%in% c("num","doseCount"))]
 			## remove NA's
 			shirley_results[is.na(shirley_results)] <- ''
-			}
+	}
 
-		}
+
 
 	return(shirley_results)
 }

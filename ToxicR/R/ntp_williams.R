@@ -19,6 +19,7 @@
 
 .compute_crit_williams <- function(william_test_data,dose_name,formulaV){
   
+  
   t_idx = which(colnames(william_test_data) == dose_name)
   william_test_data[,t_idx] = as.numeric(william_test_data[,t_idx])
   william_test_data$crit05 = NA
@@ -93,17 +94,31 @@
 ## 	WILLIAM'S TEST
 ## ----------------------
 williams_ntp <- function(formula, data,dose_name = "dose"){
-	
-  if (!(dose_name %in% colnames(data))){
-     stop(sprintf("Dose name %s does not appear in the data frame.",dose_name))
+  
+  data[,c(dose_name)] = as.numeric(data[,c(dose_name)])
+  temp_str = strsplit(as.character(formula)[3], " ")[[1]]
+  temp_str = temp_str[temp_str != "+"]
+  data = data[order(data[,c(dose_name)]),]
+  
+  for (ii in 1:length(temp_str)){
+    data = data[order(data[,temp_str[ii]]),]
   }
   
+  if (!(dose_name %in% colnames(data))){
+    stop(sprintf("Dose name %s does not appear in the data frame.",dose_name))
+  }
+
   jonck_data =  jonckeere_ntp( formula,dose_name = dose_name,
                                data = data, pair = "Williams")
   
 	## loop through all groups flagged as WILLIAM in jonck
-	william      <- subset(jonck_data, mult_comp_test=='WILLIAMS')
-	will_results <- NULL
+	william       <- subset(jonck_data, mult_comp_test=='WILLIAMS')
+	will_results  <- NULL
+	will_results2 <- NULL
+	
+	temp_colnames <- unlist(c(unlist(colnames(william)),dose_name,as.character(unlist(formula[[2]]))))
+	temp <-   colnames(data) %in% temp_colnames
+	temp_d <- as.data.frame(data[,temp==TRUE])
 	
 	if(nrow(william) > 0){
 	  
@@ -355,9 +370,8 @@ williams_ntp <- function(formula, data,dose_name = "dose"){
 		ta1 = sprintf("%s.mean",as.character(formula[[2]]))
 		ta2 = sprintf("%s.length",as.character(formula[[2]]))
 		t_idx = which(!(colnames(will_results2) %in% c(ta1,ta2,"crit05","crit01","smeans","dof")))
-		will_results2[,t_idx]
-		
-	
+		will_results2 = will_results2[,t_idx]
+
 		}
 	
 	return(will_results2)

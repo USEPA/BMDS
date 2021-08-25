@@ -23,6 +23,15 @@
 
 dunnett_ntp <- function(formula, data,dose_name = "dose"){
   
+  data[,c(dose_name)] = as.numeric(data[,c(dose_name)])
+  temp_str = strsplit(as.character(formula)[3], " ")[[1]]
+  temp_str = temp_str[temp_str != "+"]
+  data = data[order(data[,c(dose_name)]),]
+  
+  for (ii in 1:length(temp_str)){
+    data = data[order(data[,temp_str[ii]]),]
+  }
+  
   if (!(dose_name %in% colnames(data))){
     stop(sprintf("Dose name %s does not appear in the data frame.",dose_name))
   }

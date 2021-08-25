@@ -108,6 +108,7 @@ jonckeere_ntp<- function(formula, data, dose_name="dose", pair = 'Williams' )
     
     if(pair=='Williams') { jonck$mult_comp_test <- ifelse(jonck$pvalue <= .01, 'WILLIAMS', 'DUNNETT')	}
     if(pair=='Shirley')  { jonck$mult_comp_test  <- ifelse(jonck$pvalue <= .01, 'SHIRLEY', 'DUNN')	}
+  
   }
   return(jonck)
 }
