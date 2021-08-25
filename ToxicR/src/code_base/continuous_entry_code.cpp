@@ -283,8 +283,15 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
   B = X.transpose()*W*X;
   B = B.inverse()*X.transpose()*W*Y.col(0); 
   for(int i = 0; i < B.rows(); i++){
-    prior(i,1) = B(i,0); 
+    if ( B(i,0) < prior(i,3) ){
+      prior(i,1) = prior(i,3); 
+    } else if (B(i,0) > prior(i,4)){
+      prior(i,1) = prior(i,4); 
+    }else{
+      prior(i,1) = B(i,0);
+    }
   } 
+  
   return prior; 
 }
 
