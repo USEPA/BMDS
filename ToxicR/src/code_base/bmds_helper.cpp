@@ -178,9 +178,9 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   struct dichotomous_PGOF_result gofRes;
   double* gofExpected = (double*)malloc(anal->n * sizeof(double));
   double* gofResidual = (double*)malloc(anal->n * sizeof(double));
-  double gofTestStat;
-  double gofPVal;
-  double gofDF;
+  double gofTestStat = BMDS_MISSING;
+  double gofPVal = BMDS_MISSING;
+  double gofDF = BMDS_MISSING;
   double* ebUpper = (double*)malloc(anal->n * sizeof(double));
   double* ebLower = (double*)malloc(anal->n * sizeof(double));
   gofRes.n = anal->n;
@@ -401,16 +401,16 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   double* means = (double*)malloc(anal->n * sizeof(double));
   double* n_group = (double*)malloc(anal->n * sizeof(double));
   double* sd = (double*)malloc(anal->n * sizeof(double));
-  bool isIncreasing;
-  double BMR;
-  double tail_prob;
-  int disttype;
-  double alpha;
-  int samples;
-  int degree;
-  int burnin;
-  int parms;
-  int prior_cols;
+  bool isIncreasing = true;
+  double BMR = BMDS_MISSING;
+  double tail_prob = BMDS_MISSING;
+  int disttype = BMDS_MISSING;
+  double alpha = BMDS_MISSING;
+  int samples = BMDS_MISSING;
+  int degree = BMDS_MISSING;
+  int burnin = BMDS_MISSING;
+  int parms = BMDS_MISSING;
+  int prior_cols = BMDS_MISSING;
 
   if (anal->suff_stat){
     GOFanal = *anal;
@@ -561,15 +561,21 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
 
   bmdsAOD->devFit = dev = 2*(bmdsAOD->fullLL - bmdsAOD->fittedLL);
   bmdsAOD->dfFit = df = DA->n - bmdsAOD->nFit;
-  bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(dev, df);
+  if (dev < 0 || df < 0) {
+    bmdsAOD->pvFit = BMDS_MISSING;
+  } else {
+    bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(dev, df);
+  }
 
 
   bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->redLL);
   bmdsAOD->dfRed = df = DA->n-1;
-  bmdsAOD->pvRed = 1.0 - gsl_cdf_chisq_P(dev, df);
+  if (dev < 0 || df < 0) {
+    bmdsAOD->pvRed = BMDS_MISSING;
+  } else {
+    bmdsAOD->pvRed = 1.0 - gsl_cdf_chisq_P(dev, df);
+  }
   
-  
- 
 }
 
 void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){

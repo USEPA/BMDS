@@ -29,6 +29,10 @@
 #define M_PI (3.14159265358979323845)
 #endif
 
+#ifdef __cplusplus
+#include <Eigen/Dense>
+#endif
+
 #include "cmodeldefs.h"
 
 #ifdef _WIN64
