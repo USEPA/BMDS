@@ -396,7 +396,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
       prior <- create_prior_list(normprior(0,5,-1000,1000))
       
       for (ii in 1:degree){
-        prior <- combine_prior_lists(prior, normprior(0,5,-1000,1000))
+        prior <- combine_prior_lists(prior, normprior(0,5,0,18))
       }
       
       prior <- combine_prior_lists(prior, create_prior_list(normprior (0,1,-18,18)))
@@ -405,7 +405,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
     }
     
     if (dvariance == 2){
-      prior <- create_prior_list(normprior(0,5,-1000,1000))
+      prior <- create_prior_list(normprior(0,5,0,1000))
       
       for (ii in 1:degree){
         prior <- combine_prior_lists(prior,normprior(0,5,-10000,10000))
@@ -433,9 +433,9 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
   #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,2,-1e6,1e6),
-                               lnormprior(0,1,0,18),
-                               lnormprior(log(1.2),1,0,18),
+                               normprior(0,2,0,1e6),
+                               normprior(0,1,0,18),#lnormprior(0,1,0,18),
+                               lnormprior(log(1.2),1,1,18),
                                lnormprior(-2, 1,0,100),
                                normprior(0, 2,-18,18));
   }
@@ -474,9 +474,9 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
   #Hill model
   if (dmodel == 1 &&  dvariance == 1){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,2,-1e6,1e6),#normprior(1,2,-18,18),
+                               normprior(0,2,0,1e6),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,18),
-                               lnormprior(1,0.2,0,18),
+                               lnormprior(1,1.2,1,18),
                                normprior(0,1,-18,18)); 
   }
   

@@ -286,11 +286,11 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   if (distribution == "normal-ncv"){
     temp = prior[[1]]
     if (nrow(temp) < 4){
-      stop("Normal Polynomial models require 4 or more parameters.")
+      stop("Normal-ncv polynomial models require 4 or more parameters.")
     }
 
-    if (temp[nrow(temp)-2,4] < 0){
-      stop("The prior on \rho (parameter 5) can not have a lower bound less than zero.")
+    if (temp[nrow(temp)-1,4] < 0){
+      stop("The prior on \\rho (parameter 5) can not have a lower bound less than zero.")
     }
     prior$model = "Polynomial Model [normal-ncv]"
     temp_p[length(temp_p)] = "rho"

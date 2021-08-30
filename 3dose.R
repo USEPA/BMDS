@@ -1,74 +1,29 @@
 library(ToxicR)
 library(ggplot2)
-
-prior <- create_prior_list(normprior(0,1,-100,100),
-                           normprior(0,10,-1e4,1e4),
-                           lnormprior(0,1,0,100),
-                           lnormprior(log(2),0.4215,0,18),
-                           #lnormprior(0, 0.75,0,100),
-                           normprior(0, 10,-100,100));
-
-bob = create_continuous_prior(prior,"exp-5","lognormal")
-library(ToxicR)
-doses <- c(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.948669,0.948669,0.948669,2.999955,2.999955,2.999955,9.48669,9.48669,9.48669,29.999548,29.999548,29.999548,94.8669,94.8669,94.8669,299.99548,299.99548,299.99548,948.669,948.669,948.669,2999.9548,2999.9548,2999.9548,9486.69,9486.69,9486.69)
-v2 <- c(6.957,7.838,7.157,7.589,7.808,7.305,7.143,7.778,7.449,7.761,7.485,8.03,6.863,7.062,7.611,7.135,7.484,7.161,7.272,7.603,7.428,7.291,7.048,7.562,7.324,7.17,7.072,7.252,7.249,7.397,6.983,7.175,7.13,8.341,8.289,8.201,8.838,8.865,8.971)
-
-v1 <- c(13.184152,12.8906975,12.359554,13.073001,12.861814,12.967434,12.88052,
-        13.249991,	12.992931,	13.022338,	13.614057,	13.287018,	13.449239,	13.950747,
-        13.239134,	13.82321,	15.080262,	14.85966,	14.7805395,	15.238369,	14.749196,
-        14.913585,	15.181719,	15.051697,	15.065641,	15.16396,	15.484345,	16.493923,
-        15.633442,	15.96033,	15.388061)
-v2 <- v1/mean(v1[doses==0])
-prior <- create_prior_list(lnormprior(0,1,-100,100),
-                           normprior( 0, 1,-100,100),#normprior(1,2,-18,18),
-                           lnormprior(0 ,1,0,100),
-                           lnormprior(0,1,0,18),
-                           normprior(0,2,-18,18)); 
-
 library(readr)
-PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
+library(dplyr)
+PFOA_Liver <- read_table2("~/Downloads/PFOA_Liver_3doselevels.txt", 
                           col_names = FALSE)
 
 
-doses<- c(0,0,0,0,0.156,0.156,0.156,0.3125,0.3125,0.3125,
-           0.625,0.625,0.625,1.25,1.25,1.25,2.5,2.5,2.5,5,5,
-           5,5,10,10,10,10,20,20,20,20) 
 
+doses	<- c(0,0,0,0,0.156,0.156,0.156,1.25,1.25,1.25,10,10,10,10) 
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v2),distribution = "normal",model_type = "exp-3", fit_type = "mle",isFast = T)})
+temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
+v1 <- as.numeric(temp[,-1])
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill",distribution = "normal", fit_type = "laplace")
+#BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F,)
 
 library(dplyr)
-library(ggplot2)
 library(ToxicR)
-"ABCG2_32656"
-"ACOT2_7969"
+temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
+v1 <- as.numeric(temp[2:length(temp)])
 
-
-pvalue<-matrix(NA,ncol=2,nrow=nrow(PFOA_Liver))
-
-
-for (i in 1:nrow(pvalue)){
-  temp <- PFOA_Liver[i,] 
-  v1 <- as.numeric(temp[2:length(temp)])
-  fit2 <- sm.spline(doses,v1)
-  R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "mle",BMR = 1,isFast=T)
-  pvalue[i,1] = var(v1- cont_hill_f(R$parameters,doses))/var(v1-predict(fit2,doses))
-  pvalue[i,2] = 1 - pchisq(-2*(R$Deviance[1,1]-R$Deviance[5,1]),R$Deviance[1,2]-R$Deviance[5,2] )
-}  
-plot(R) + scale_x_continuous(trans="pseudo_log") + geom_line(mapping = aes(x = predict(fit2)$x,y=predict(fit2)$y))
-
-kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR =1.5)
-y = v1
-
-
-R  <- single_continuous_fit(as.matrix((doses)),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "laplace",BMR = 3)
-plot(R)+scale_x_continuous(trans="pseudo_log")
-
-S  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "power", distribution="normal",fit_type = "mle",BMR = 3)
-plot(S)+scale_x_continuous(trans="pseudo_log")
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 1,isFast = FALSE)
+R2  <- single_continuous_fit(as.matrix(doses),as.matrix(v1)/sd(v1[doses==0]),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast = FALSE)
 
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)
-plot(R) + scale_x_continuous(trans="pseudo_log")
+
 
 # I guess based on my understanding we do not need Density plot for laplace fitting case - SL 
 # Aesthetically, why it doesn't show the other bmd line? 
@@ -90,13 +45,30 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 
 
-BB <- ma_continuous_fit(as.matrix(doses)/20,as.matrix(v2),fit_type = "laplace",BMR = 1)
+
+# 05/28 SL Try to focus on the issue here
+# 1. CI Band seems odd
+# 2. BMD Density plot looks odd 
+# 3. Color Theme update for giving user more option
+
+# I think it is useful that which model is dominant in terms of the line- color
+# Range max-min part should be updated... 
+# BMDU is out of bound
+
+
+# How about the log scale?
+Bob <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "mcmc",BMR = 2,model_list = model_list )
+
+# X - axis is bit odd for log10() case 
+# For model average why it shows only one model?
 
 plot(BB)
 
-# Update based on prior probability for continous case 
-.cleveland_plot.BMDcontinous_MA(BB)
-.plot.density.BMDcontinous_MA_MCMC(BB)
+# Question not sure why BMD is superimposed? 
+.plot.BMDcontinuous_MA(BB, qprob=0.05)
+
+# X - axis is bit odd for log10() case 
+.plot.BMDcontinuous_MA(BB, qprob=0.05)+scale_x_log10()
 
 
 
@@ -109,8 +81,8 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",BMR = 3,isFast=FALSE)})
-plot(B) + scale_x_continuous(trans = "pseudo_log")
+system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 3,sstat = F,isFast=FALSE)})
+plot(B)
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))
 
@@ -125,7 +97,7 @@ BB <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR=
 temp <- PFOA_Liver %>% filter(X1 == "CYP3A1_32809")
 v1 <- as.numeric(temp[2:length(temp)])
 system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal-ncv",fit_type = "mle",BMR=3,isFast = T)})
-plot(BB)+ scale_x_continuous(trans = "pseudo_log")
+plot(BB)
 
 g <- matrix(c(0,-0.747871,0.560669,0.703165, 0.832507), nrow = 1)
 g%*%BB$covariance%*%t(g)
@@ -150,7 +122,6 @@ plot(BB)
 temp <- PFOA_Liver %>% filter(X1 == "ACADL_32776")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mle")
-plot(BB) + scale_x_continuous(trans = "pseudo_log")
 
 exp = cont_exp_5_f(BB$parameters,doses)
 sum(dnorm(v1,exp,exp(BB$parameters[5]*0.5),log=T))
@@ -170,8 +141,7 @@ plot(BB)
 
 temp <- PFOA_Liver %>% filter(X1 == "LOC100912409_9106")
 v1 <- as.numeric(temp[2:length(temp)])
-BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mcmc",BMR = 2)
-plot(BB) + scale_x_continuous(trans = "pseudo_log")
+BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "exp-5", distribution="normal",fit_type = "mcmc")
 d <- seq(0,20,0.01)
 y <- cont_hill_f(BB$parameters,d)
 plot(log10(doses+0.01),v1,pch=16)

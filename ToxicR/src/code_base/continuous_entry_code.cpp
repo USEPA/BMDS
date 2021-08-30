@@ -179,15 +179,15 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   init *= init/double(nmin); 
   
   prior(1,1)   =  (init - prior(0,1))/(maxDose-minDose); 
-  prior(2,1)   = 0.0001*maxDose; 
-  prior(3,1)   = 1.3;
+  prior(2,1)   = 0;//0.0001*maxDose; 
+  prior(3,1)   = 10;
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
-
+  //cerr << prior << endl; 
   return prior; 
 }
 
