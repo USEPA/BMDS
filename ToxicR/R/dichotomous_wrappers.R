@@ -6,10 +6,8 @@
 #' @examples
 #' add(1, 1)
 #' add(10, 1)
-single_dichotomous_fit_dr <- function(D,Y,N,model_type, fit_type = "laplace",
+single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
-                                    alpha = 0.05, degree=2,samples = 21000,
-                                    alpha = 0.05, degree=2,samples = 21000,
                                     alpha = 0.05, degree=2,samples = 21000,
                                     burnin = 1000){
   
