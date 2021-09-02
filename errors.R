@@ -1,10 +1,6 @@
-
-
-
 #06/07/21 SL update 
 library(ToxicR)
 M2           <- matrix(0,nrow=6,ncol=4)
-
 
 # double D[] = {0,50, 100, 150, 200};
 # double Y[] = {10, 0 , -10, -20 ,-30};
@@ -22,7 +18,7 @@ M2[, 4]      <- c(2.371708245,	2.814427118,	1.77087549,	2.593067681,	2.118726032
 library(ToxicR)
 system.time({
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, 
-                          distribution = "normal",fit_type="mle",model_type = "polynomial",degree = 5,isFast=T)
+                          distribution = "normal",fit_type="laplace",model_type = "polynomial",degree = 5,isFast=T)
 })
 
 # Adjust size of the interval bar;

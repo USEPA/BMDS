@@ -51,7 +51,7 @@ for (i in 1:nrow(pvalue)){
   temp <- PFOA_Liver[i,] 
   v1 <- as.numeric(temp[2:length(temp)])
   fit2 <- sm.spline(doses,v1)
-  R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "mle",BMR = 1,isFast=T)
+  R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "laplace",BMR = 1,isFast=T)
   pvalue[i,1] = var(v1- cont_hill_f(R$parameters,doses))/var(v1-predict(fit2,doses))
   pvalue[i,2] = 1 - pchisq(-2*(R$Deviance[1,1]-R$Deviance[5,1]),R$Deviance[1,2]-R$Deviance[5,2] )
 }  
@@ -107,7 +107,7 @@ AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_list=model_list,
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
                          distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
                                                 "normal", "normal-ncv"))
-temp <- PFOA_Liver %>% filter(X1 == "CPT1B_8373")
+temp <- PFOA_Liver %>% filter(X1 == "ACOT2_7969")
 v1 <- as.numeric(temp[2:length(temp)])
 system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",BMR = 3,isFast=FALSE)})
 plot(B) + scale_x_continuous(trans = "pseudo_log")
