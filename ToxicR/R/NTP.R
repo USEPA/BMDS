@@ -191,6 +191,19 @@ jonckeere <- function(formula, data, dose_name="dose", pair = 'Williams' )
 ## ----------------------
 ## 	WILLIAM'S TEST
 ## ----------------------
+#' Williams Trend test for 
+#' 
+#' @param formula An 'R' of the form \code{Y ~ X.} Here the variable
+#' \{Y} is the response of interest, and \{X} represents discrete experimental 
+#' conditions. For example, if weight is the dependent variable, and you are
+#' interested in looking at the trend across sex one would have 'weight ~ sex'.
+#' @param data A data frame with column names in the formula.
+#' @param dose_name The name of the variable containing the doses in the data frame \code{data}.
+#' It is expected multiple doses for each of the experimental conditions \{X}.
+#' @return The results of a Williams trend test for each level in \code{dose_name}.
+#' @examples
+#' add(1, 1)
+#' add(10, 1)
 williams <- function(formula, data,dose_name = "dose")
 {
   
