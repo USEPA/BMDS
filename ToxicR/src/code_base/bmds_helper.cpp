@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
@@ -8,7 +9,7 @@ int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_r
    int bounded = 0;
    for (int i=0; i<nparms; i++){
       //5*i+4 is location of min in prior array
-      //5*i+5 is location of max in prior array
+      //5*i+5 is location of max in prior array 
       if (fabs(parms[i]-prior[3*nparms+i]) < BMDS_EPS || fabs(parms[i]-prior[4*nparms+i]) < BMDS_EPS){
          bounded++;
          BMDSres->bounded[i] = true;
@@ -248,14 +249,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
-    if ( bmdsRes->bounded[i]) {
-      bmdsRes->stdErr[i] = -9999.0;
-    } else {
-      bmdsRes->stdErr[i] = sqrt(res->cov[i*(anal->parms+1)]);
-    }
-    bmdsRes->lowerConf[i] = -9999.0;
-    bmdsRes->upperConf[i] = -9999.0;
+    bmdsRes->stdErr[i] = BMDS_MISSING;
+    bmdsRes->lowerConf[i] = BMDS_MISSING;
+    bmdsRes->upperConf[i] = BMDS_MISSING;
   } 
+
+  calcParmCIs_dicho (res, bmdsRes);
 
   bmdsRes->validResult = true;
 
@@ -320,25 +319,96 @@ void rescale_dichoParms(int model, struct dichotomous_model_result *res){
 }
 
 
+void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_results *bmdsRes) {
+
+  double *adj = new double[res->nparms];  //adjustments for transformed parameters
+  int diagInd = 0;  //1d index of 2d diagonal location
+  double tmp = 0;  //used for tmp calculations
+
+  
+
+  for (int i=0; i<res->nparms; i++){
+    diagInd = i*(1+res->nparms); //gives index of diagonal for 1d flattened array
+    adj[i] = 1.0;
+    if (!bmdsRes->bounded[i]){
+      bmdsRes->stdErr[i] = sqrt(res->cov[diagInd]); 
+    }
+    //adj[i] = sqrt(res->cov[diagInd])*BMDS_QNORM;  //meth1
+    //adj[i] = res->cov[diagInd];  //meth2
+  }      
+
+  //now check if parameters were transformed and modify adj values accordingly
+  //if transformed, then multiply adj * derivative of transform (at parm value)
+  switch(res->model){
+    //transform parameters which were computed using a logistic dist.
+    //void rescale_dichoParms(int model, struct dichotomous_model_result *res){
+    case dich_model::d_multistage:
+    case dich_model::d_weibull:
+    case dich_model::d_gamma:
+    case dich_model::d_loglogistic:
+    case dich_model::d_qlinear:
+    case dich_model::d_logprobit:
+      //background parameter
+      tmp = exp(-1*res->parms[0]);
+      tmp = tmp/((1.0+tmp)*(1.0+tmp));
+      adj[0] = tmp*tmp;
+      break;
+    case dich_model::d_hill:
+      //background and v parameter
+      tmp = exp(-1*res->parms[0]);     
+      tmp = tmp/((1.0+tmp)*(1.0+tmp));
+      adj[0] = tmp*tmp;
+      tmp = exp(-1*res->parms[1]);
+      tmp = tmp/((1.0+tmp)*(1.0+tmp));
+      adj[1] = tmp*tmp;
+      break;
+    default:
+      break;
+  }
+
+  
+  //meth2 
+  //for (int i=0; i<res->nparms; i++){
+  //  adj[i] = sqrt(adj[i])*BMDS_QNORM;
+  //}
+
+  //now calculate upper and lower confidence intervals
+   
+  for (int i=0; i<res->nparms; i++){
+    if (bmdsRes->bounded[i]){
+      bmdsRes->lowerConf[i] = BMDS_MISSING;
+      bmdsRes->upperConf[i] = BMDS_MISSING;
+    } else {
+      bmdsRes->stdErr[i] = bmdsRes->stdErr[i] * adj[i];  
+      bmdsRes->lowerConf[i] = res->parms[i] - bmdsRes->stdErr[i]*BMDS_QNORM;
+      bmdsRes->upperConf[i] = res->parms[i] + bmdsRes->stdErr[i]*BMDS_QNORM;
+    }
+  } 
+ 
+}
+
+
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir){
 
   bmdsRes->validResult = false;
 
-  if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
-    std::cout << "lognormal distribution not compatible with polynomial model\n";
+  //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
+  if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
+    std::cout << "lognormal distribution is only compatible with exponential models\n";
     return; 
   }
 
   if (*detectAdvDir){
     determineAdvDir(anal);
 
-    if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
-      if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
-        //only exp_3 and exp_5 models are supported for lognormal decreasing data
-        std::cout << "lognormal dist and  adverse direction down not compatible with selected model\n";
-        return;
-      }
-    }
+    // This logic is no longer needed since only allowing exp models to run with lognormal distribution
+    //if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
+    //  if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
+    //    //only exp_3 and exp_5 models are supported for lognormal decreasing data
+    //    std::cout << "lognormal dist and  adverse direction down not compatible with selected model\n";
+    //    return;
+    //  }
+    //}
 
     int ind;
     switch(anal->model){
@@ -480,22 +550,19 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
 
-  calc_contAOD(anal, res, bmdsRes, aod);
-  
   collect_cont_bmd_values(anal, res, bmdsRes);
+  
+  calc_contAOD(anal, res, bmdsRes, aod);
 
   rescale_contParms(anal, res); 
 
   for (int i=0; i< anal->parms; i++){
-    //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
-    if ( bmdsRes->bounded[i]) {
-      bmdsRes->stdErr[i] = -9999.0;
-    } else {
-      bmdsRes->stdErr[i] = sqrt(res->cov[i*(anal->parms+1)]);
-    }
+    bmdsRes->stdErr[i] = -9999.0;
     bmdsRes->lowerConf[i] = -9999.0;
     bmdsRes->upperConf[i] = -9999.0;
   }
+
+  calcParmCIs_cont(res, bmdsRes);
 
   bmdsRes->validResult = true;
 
@@ -526,6 +593,57 @@ void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_r
  // if (!CA->model == cont_model::exp_3 && !CA->model == cont_model::exp_5){
  //   res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
  // }
+}
+
+
+void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes){
+
+  double *adj = new double[res->nparms];  //adjustments for transformed parameters
+  int diagInd = 0;  //1d index of 2d diagonal location
+  double tmp = 0;  //used for tmp calculations
+
+  for (int i=0; i<res->nparms; i++){
+    diagInd = i*(1+res->nparms); //gives index of diagonal for 1d flattened array
+    adj[i] = 1.0;
+    if (!bmdsRes->bounded[i]){
+      bmdsRes->stdErr[i] = sqrt(res->cov[diagInd]);
+    }
+  }
+
+  //now check if parameters were transformed and modify adj values accordingly
+  //if transformed, then multiply adj * derivative of transform (at parm value)
+  switch(res->model){  
+    case cont_model::hill:
+    case cont_model::power:
+    case cont_model::funl:
+    case cont_model::polynomial:
+      //rescale alpha  //at this point alpha has already been rescaled, so no need to use exp(parm)
+      //since actual parm is ln(alpha), then gprime(theta) = exp(theta) = exp(ln(alpha)) = alpha
+      //tmp = exp(res->parms[res->nparms-1]);
+      tmp = res->parms[res->nparms-1];
+      adj[res->nparms-1] = adj[res->nparms-1]*tmp*tmp;
+      break;
+    case cont_model::exp_5:
+      //rescale c
+      //tmp = exp(res->parms[2]); 
+      //adj[2] = adj[2]*tmp*tmp;
+      break;
+    default:
+      break;  
+  }
+
+  //now calculate upper and lower confidence intervals
+  for (int i=0; i<res->nparms; i++){
+    if (bmdsRes->bounded[i]){
+      bmdsRes->lowerConf[i] = BMDS_MISSING;
+      bmdsRes->upperConf[i] = BMDS_MISSING;
+    } else {
+      bmdsRes->stdErr[i] = bmdsRes->stdErr[i] * adj[i];
+      bmdsRes->lowerConf[i] = res->parms[i] - bmdsRes->stdErr[i]*BMDS_QNORM;
+      bmdsRes->upperConf[i] = res->parms[i] + bmdsRes->stdErr[i]*BMDS_QNORM;
+    }
+  }
+
 }
 
 
@@ -947,9 +1065,6 @@ void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_resu
 
 //replace any double values containing NaN or infinity with BMDS_MISSING
 void cleanDouble(double *val){
-  //std::cout << "incoming val: " << val << "\n";  
-  //*val = BMDS_MISSING;
-  //std::cout << "outgoing val: " << val << "\n";  
   if(!isfinite(*val)) {
      *val = BMDS_MISSING;
   }

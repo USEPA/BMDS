@@ -26,6 +26,8 @@
 
 const double BMDS_EPS = 1.0e-6;
 const double BMDS_MISSING = -9999.0;
+const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
+
 
 // BMDS helper structures
 #ifdef _WIN64
@@ -143,6 +145,10 @@ void cleanDouble(double *val);
 void rescale_dichoParms(int model, struct dichotomous_model_result *res);
 
 void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
+
+void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results *bmdsRes);
+
+void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes);
 
 void bmdsConvertSStat(struct continuous_analysis *ca, struct continuous_analysis *newCA);
 
