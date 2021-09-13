@@ -139,8 +139,8 @@ List run_single_dichotomous(NumericVector model,
   
   dichotomous_aod AOD;
   
-  //deviance_dichotomous(&Anal,&AOD);
- // cout << AOD.A1 << " : " << AOD.A2 << endl; 
+  deviance_dichotomous(&Anal,&AOD);
+  cout << AOD.A1 << " : " << AOD.A2 << endl; 
   
   delete[] GOFres.expected;
   delete[] GOFres.residual; 

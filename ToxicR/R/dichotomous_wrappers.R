@@ -1,9 +1,11 @@
-##########################################################
-#
-#
-#
-#
-##########################################################
+#' Fit a single dichotomous dose-response model to data.
+#' 
+#' @param D A numeric vector of doses. Here doses are $\geq 0.$
+#' @param y A number.
+#' @return The sum of \code{x} and \code{y}.
+#' @examples
+#' add(1, 1)
+#' add(10, 1)
 single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
                                     alpha = 0.05, degree=2,samples = 21000,

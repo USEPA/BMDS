@@ -179,15 +179,15 @@ Eigen::MatrixXd init_hill_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Mat
   init *= init/double(nmin); 
   
   prior(1,1)   =  (init - prior(0,1))/(maxDose-minDose); 
-  prior(2,1)   = 0.001*maxDose; 
-  prior(3,1)   = 1.3;
+  prior(2,1)   = 0;//0.0001*maxDose; 
+  prior(3,1)   = 10;
   
   if (prior(0,1) < prior(0,3)) prior(0,1) = prior(0,3); 
   if (prior(0,1) > prior(0,4)) prior(0,1) = prior(0,4);
   
   if (prior(1,1) < prior(1,3)) prior(1,1) = prior(1,3); 
   if (prior(1,1) > prior(1,4)) prior(1,1) = prior(1,4);
-
+  //cerr << prior << endl; 
   return prior; 
 }
 
@@ -238,7 +238,7 @@ Eigen::MatrixXd init_exp_nor(Eigen::MatrixXd Y_N, Eigen::MatrixXd X, Eigen::Matr
   prior(0,1) = betas(0,0); 
   double max_d = vec[vec.size()-1]; 
   double max_r = (betas(0,0)+betas(1,0)*max_d + betas(2,0)*max_d*max_d);
-  prior(2,1)   = log(0.01);  
+  prior(2,1)   = log(0.001);  
   double temp = max_r/prior(0,1);
   
   temp =  -(temp-exp(prior(2,1)))/(exp(prior(2,1))-1.0);
@@ -283,8 +283,15 @@ Eigen::MatrixXd init_poly(Eigen::MatrixXd Y, Eigen::MatrixXd tX,
   B = X.transpose()*W*X;
   B = B.inverse()*X.transpose()*W*Y.col(0); 
   for(int i = 0; i < B.rows(); i++){
-    prior(i,1) = B(i,0); 
+    if ( B(i,0) < prior(i,3) ){
+      prior(i,1) = prior(i,3); 
+    } else if (B(i,0) > prior(i,4)){
+      prior(i,1) = prior(i,4); 
+    }else{
+      prior(i,1) = B(i,0);
+    }
   } 
+  
   return prior; 
 }
 

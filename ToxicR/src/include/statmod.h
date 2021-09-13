@@ -652,14 +652,13 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
  
  
   for (int i = 0; i < M->nParms(); i++){
-     
     if (!isnormal(x[i])){
       x[i] = 0;
-      
     }
-
   }
-
+ 
+ 
+  
   double minf;
   nlopt::result result = nlopt::FAILURE;
   
@@ -669,8 +668,8 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // the first one is mainly to get a better idea of a starting value
   // though it often converges to the optimum.
   nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt2(nlopt::LD_LBFGS,M->nParms());
-  nlopt::opt opt3(nlopt::LN_BOBYQA, M->nParms());
+  nlopt::opt opt3(nlopt::LD_LBFGS,M->nParms());
+  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
   
   nlopt::opt opt4(nlopt::LN_COBYLA,M->nParms());
   nlopt::opt opt5(nlopt::LD_SLSQP,M->nParms());
@@ -681,7 +680,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
   // look at 5 optimization algorithms :-)
   int start_iter = 0; //(OPTIM_USE_SUBPLX & flags)?0:1; 
 
-  for (opt_iter = start_iter; opt_iter < 4; opt_iter++){
+  for (opt_iter = start_iter; opt_iter <= 4; opt_iter++){
     
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
@@ -694,30 +693,30 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     switch(opt_iter){
     case  0:
       opt_ptr = &opt1;
-      opt_ptr->set_maxeval(100);
+      opt_ptr->set_maxeval(1200);
       break;
     case  1:
       opt_ptr = &opt2 ;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(5000);
       break;
     case 2:
       opt_ptr = &opt3;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(5000);
       break;
     case 3:
       opt_ptr = &opt4;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(5000);
     default :
       opt_ptr = &opt5;
-      opt_ptr->set_maxeval(1000);
+      opt_ptr->set_maxeval(5000);
     break;
     }
     
     
     opt_ptr->set_lower_bounds(lb);
     opt_ptr->set_upper_bounds(ub);
-    opt_ptr->set_ftol_rel(1e-8);
-   // opt_ptr->set_ftol_abs(1e-8);
+   // opt_ptr->set_ftol_rel(1e-8);
+    opt_ptr->set_ftol_abs(1e-8);
    // opt_ptr->set_initial_step(1e-5); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
@@ -735,6 +734,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
       // Exit the loop if good result and not first try.
       // lco: should change to a break statement since "10"
       // could be legitimate iteration in the future
+    
       if (opt_iter >= 1
             && result > 0
             && result < 5) {

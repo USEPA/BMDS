@@ -270,6 +270,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     model_i = rep(0,length(model_list))
     for (ii in 1:length(model_list)){
       temp_prior_l[[ii]] = bayesian_prior_dich(model_list[ii])
+      
       priors[[ii]] = temp_prior_l[[ii]]$priors
       model_i[ii]  = .dichotomous_model_type(model_list[ii])
     }

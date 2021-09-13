@@ -3,7 +3,6 @@
 *.o
 *.tar.gz
 *.a
-*.RData
 *.la
 *.so
 *.Rproj.user
