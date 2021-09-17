@@ -281,13 +281,13 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
   double ebDenom;
   double gofAlpha = 0.05;  //Alpha value for 95% confidence limit
   z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2); //Z score
-  for (int i=0; i<DA->n; i++){
-  pHat = DA->Y[i]/DA->n_group[i];  //observed probability
-  eb1 = (2 * DA->Y[i] + z*z);
-  eb2 = z*sqrt(z*z - (2 + 1/DA->n_group[i]) + 4*pHat*((DA->n_group[i] - DA->Y[i]) + 1));
-  ebDenom = 2.0 * (DA->n_group[i] + z * z);
-  bmdsRes->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom;
-  bmdsRes->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
+    for (int i=0; i<DA->n; i++){
+    pHat = DA->Y[i]/DA->n_group[i];  //observed probability
+    eb1 = (2 * DA->Y[i] + z*z);
+    eb2 = z*sqrt(z*z - (2 + 1/DA->n_group[i]) + 4*pHat*((DA->n_group[i] - DA->Y[i]) + 1));
+    ebDenom = 2.0 * (DA->n_group[i] + z * z);
+    bmdsRes->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom;
+    bmdsRes->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
   }
 
   clean_dicho_MA_results(res, bmdsRes);
@@ -394,8 +394,10 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
-    std::cout << "lognormal distribution is only compatible with exponential models\n";
-    return; 
+    if(anal->disttype == distribution::log_normal){
+      std::cout << "lognormal distribution is only compatible with exponential models\n";
+      return; 
+    }
   }
 
   if (*detectAdvDir){
@@ -460,7 +462,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
       break;
     }  //end switch
   }
-
 
   estimate_sm_laplace_cont(anal, res);
 
