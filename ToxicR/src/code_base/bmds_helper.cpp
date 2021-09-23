@@ -7,10 +7,33 @@
 int checkForBoundedParms(int nparms, double *parms, double *prior, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
    int bounded = 0;
+//   std::cout << "checkForBoundedParms with tol:"<<BMDS_EPS<<"\n";
    for (int i=0; i<nparms; i++){
       //5*i+4 is location of min in prior array
       //5*i+5 is location of max in prior array 
+//      std::cout<<"i:"<<i<<", parms[i]: "<<parms[i]<<"\n";
+//      std::cout<<"lower bound check: "<<fabs(parms[i]-prior[3*nparms+i])<<"\n";
+//      std::cout<<"upper bound check: "<<fabs(parms[i]-prior[4*nparms+i])<<"\n";
       if (fabs(parms[i]-prior[3*nparms+i]) < BMDS_EPS || fabs(parms[i]-prior[4*nparms+i]) < BMDS_EPS){
+         bounded++;
+         BMDSres->bounded[i] = true;
+      }
+   }
+   return bounded;
+}
+
+
+int checkForBoundedParmsNew(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
+   // First find number of bounded parms
+   int bounded = 0;
+//   std::cout << "checkForBoundedParms with tol:"<<BMDS_EPS<<"\n";
+   for (int i=0; i<nparms; i++){
+      //5*i+4 is location of min in prior array
+      //5*i+5 is location of max in prior array 
+//      std::cout<<"i:"<<i<<", parms[i]: "<<parms[i]<<"\n";
+//      std::cout<<"lower bound check: "<<fabs(parms[i]-lowerBound[i])<<"\n";
+//      std::cout<<"upper bound check: "<<fabs(parms[i]-upperBound[i])<<"\n";
+      if (fabs(parms[i]-lowerBound[i]) < BMDS_EPS || fabs(parms[i]-upperBound[i]) < BMDS_EPS){
          bounded++;
          BMDSres->bounded[i] = true;
       }
@@ -24,9 +47,24 @@ void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_re
   bool freqModel = anal->prior[0] == 0;
 
 //  // First find number of bounded parms
-//  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
-//
-//  double estParmCount = res->model_df - bounded;
+  //int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
+
+  double* lowerBound = (double*)malloc(anal->parms * sizeof(double));
+  double* upperBound = (double*)malloc(anal->parms * sizeof(double));
+
+  //copy prior values
+  for (int i=0; i<anal->parms; i++){
+    lowerBound[i] = anal->prior[3*anal->parms+i];
+    upperBound[i] = anal->prior[4*anal->parms+i];
+  }
+
+  //scale priors as needed
+  rescale_dichoParmsNew(anal->model, lowerBound);
+  rescale_dichoParmsNew(anal->model, upperBound);
+
+  int bounded = checkForBoundedParmsNew(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
+
+  estParmCount = res->model_df - bounded;
 
   //if freq then model_df should be rounded to nearest whole number
   if (freqModel)
@@ -39,7 +77,18 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
   bool freqModel = anal->prior[0] == 0;
 
   // First find number of bounded parms
-  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, BMDSres);
+  double* lowerBound = (double*)malloc(anal->parms * sizeof(double));
+  double* upperBound = (double*)malloc(anal->parms * sizeof(double));
+
+  //copy prior values
+  for (int i=0; i<anal->parms; i++){
+     lowerBound[i] = anal->prior[3*anal->parms+i];
+     upperBound[i] = anal->prior[4*anal->parms+i];
+  }
+  //scale priors as needed
+  rescale_contParmsNew(anal, lowerBound);
+  rescale_contParmsNew(anal, upperBound); 
+  int bounded = checkForBoundedParmsNew(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
   
   
   double estParmCount = res->model_df - bounded;
@@ -155,15 +204,15 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   estimate_sm_laplace_dicho(anal, res, true);
 
-  // First find number of bounded parms
-  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, bmdsRes);
-  double estParmCount = res->model_df - bounded;
-
-
-  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
+//  // First find number of bounded parms
+//  int bounded = checkForBoundedParms(anal->parms, res->parms, anal->prior, bmdsRes);
+//  double estParmCount = res->model_df - bounded;
+//  double estParmCount = 0;
+//
+//  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
 
   //overwrite model_df with BMDS method for calculating DF
-  res->model_df = estParmCount;
+  //res->model_df = estParmCount;
 
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
@@ -245,7 +294,14 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //calculate dichtomous analysis of deviance
   calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
 
-  rescale_dichoParms(anal->model, res);
+  //rescale_dichoParms(anal->model, res);
+  rescale_dichoParmsNew(anal->model, res->parms);
+
+  double estParmCount = 0;
+  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
+
+  //overwrite model_df with BMDS method for calculating DF
+  res->model_df = estParmCount;
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
@@ -270,7 +326,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
 
   for(int i=0; i<MA->nmodels; i++){
-    rescale_dichoParms(MA->models[i], res->models[i]);
+    //rescale_dichoParms(MA->models[i], res->models[i]);
+    rescale_dichoParmsNew(MA->models[i], res->models[i]->parms);
   }
 
   //calc error bars for graphs
@@ -294,8 +351,32 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
 
 }
 
-//transform parameters which were computed using a logistic dist.
-void rescale_dichoParms(int model, struct dichotomous_model_result *res){
+////transform parameters which were computed using a logistic dist.
+//void rescale_dichoParms(int model, struct dichotomous_model_result *res){
+//  //rescale background parameters for all models and v parameter for DHill model
+//  switch(model){
+//    case dich_model::d_multistage:
+//    case dich_model::d_weibull:
+//    case dich_model::d_gamma:
+//    case dich_model::d_loglogistic:
+//    case dich_model::d_qlinear:
+//    case dich_model::d_logprobit:
+//      //rescale background parameter
+//      res->parms[0] = 1.0/(1.0+exp(-1.0*res->parms[0]));
+//      break;
+//    case dich_model::d_hill:
+//      //rescale background and v parameter
+//      res->parms[0] = 1.0/(1.0+exp(-1.0*res->parms[0]));
+//      res->parms[1] = 1.0/(1.0+exp(-1.0*res->parms[1]));
+//      break;
+//    default:
+//      break;
+//  }
+//
+//}
+
+//transform parameters or priors which were computed using a logistic dist.
+void rescale_dichoParmsNew(int model, double *parms){
   //rescale background parameters for all models and v parameter for DHill model
   switch(model){
     case dich_model::d_multistage:
@@ -305,19 +386,18 @@ void rescale_dichoParms(int model, struct dichotomous_model_result *res){
     case dich_model::d_qlinear:
     case dich_model::d_logprobit:
       //rescale background parameter
-      res->parms[0] = 1.0/(1.0+exp(-1.0*res->parms[0]));
+      parms[0] = 1.0/(1.0+exp(-1.0*parms[0]));
       break;
     case dich_model::d_hill:
       //rescale background and v parameter
-      res->parms[0] = 1.0/(1.0+exp(-1.0*res->parms[0]));
-      res->parms[1] = 1.0/(1.0+exp(-1.0*res->parms[1]));
+      parms[0] = 1.0/(1.0+exp(-1.0*parms[0]));
+      parms[1] = 1.0/(1.0+exp(-1.0*parms[1]));
       break;
     default:
       break;
   }
 
 }
-
 
 void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_results *bmdsRes) {
 
@@ -330,8 +410,11 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
   for (int i=0; i<res->nparms; i++){
     diagInd = i*(1+res->nparms); //gives index of diagonal for 1d flattened array
     adj[i] = 1.0;
+    std::cout << "bmdsRes->bounded["<<i<<"]="<<bmdsRes->bounded[i]<<"\n";
     if (!bmdsRes->bounded[i]){
       bmdsRes->stdErr[i] = sqrt(res->cov[diagInd]); 
+      std::cout << "cov[i][i] = "<<res->cov[diagInd]<<"\n";
+      std::cout << "calc stdErr for i="<<i<<": "<<bmdsRes->stdErr[i]<<"\n";
     }
     //adj[i] = sqrt(res->cov[diagInd])*BMDS_QNORM;  //meth1
     //adj[i] = res->cov[diagInd];  //meth2
@@ -376,9 +459,11 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
    
   for (int i=0; i<res->nparms; i++){
     if (bmdsRes->bounded[i]){
+      std::cout <<"lower/upper BMDS_MISSING i="<<i<<"\n";
       bmdsRes->lowerConf[i] = BMDS_MISSING;
       bmdsRes->upperConf[i] = BMDS_MISSING;
     } else {
+      std::cout <<"lower/upper calc i="<<i<<"\n";
       bmdsRes->stdErr[i] = bmdsRes->stdErr[i] * adj[i];  
       bmdsRes->lowerConf[i] = res->parms[i] - bmdsRes->stdErr[i]*BMDS_QNORM;
       bmdsRes->upperConf[i] = res->parms[i] + bmdsRes->stdErr[i]*BMDS_QNORM;
@@ -464,6 +549,11 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
 
   estimate_sm_laplace_cont(anal, res);
+
+  std::cout << "parms:\n";
+  for (int i=0; i<anal->parms; i++){
+     std::cout<<i<<", value:"<< res->parms[i]<<"\n";
+  }
 
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
@@ -555,7 +645,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   
   calc_contAOD(anal, res, bmdsRes, aod);
 
-  rescale_contParms(anal, res); 
+  //rescale_contParms(anal, res); 
+  rescale_contParmsNew(anal, res->parms); 
 
   for (int i=0; i< anal->parms; i++){
     bmdsRes->stdErr[i] = -9999.0;
@@ -571,31 +662,51 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
 }
 
-void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res){
+//void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res){
+//  //rescale alpha parameter for all continuous models
+//  //assumes alpha parameter is always last
+//  //res->parms[CA->parms-1] = 1.0/(exp(-1.0*res->parms[CA->parms-1])); 
+//  switch (CA->model){
+//    case cont_model::hill:
+//    case cont_model::power:
+//    case cont_model::funl:
+//    case cont_model::polynomial:
+//      //rescale alpha
+//      res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
+//      break;
+//    //case cont_model::exp_3:
+//      //no rescaling needed
+//      //break;
+//    case cont_model::exp_5:
+//      //rescale c
+//      res->parms[2] = exp(res->parms[2]);
+//      break;
+//  }
+// // if (!CA->model == cont_model::exp_3 && !CA->model == cont_model::exp_5){
+// //   res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
+// // }
+//}
+
+void rescale_contParmsNew(struct continuous_analysis *CA, double *parms){
   //rescale alpha parameter for all continuous models
   //assumes alpha parameter is always last
-  //res->parms[CA->parms-1] = 1.0/(exp(-1.0*res->parms[CA->parms-1])); 
   switch (CA->model){
     case cont_model::hill:
     case cont_model::power:
     case cont_model::funl:
     case cont_model::polynomial:
       //rescale alpha
-      res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
+      parms[CA->parms-1] = exp(parms[CA->parms-1]); 
       break;
     //case cont_model::exp_3:
       //no rescaling needed
       //break;
     case cont_model::exp_5:
       //rescale c
-      res->parms[2] = exp(res->parms[2]);
+      parms[2] = exp(parms[2]);
       break;
   }
- // if (!CA->model == cont_model::exp_3 && !CA->model == cont_model::exp_5){
- //   res->parms[CA->parms-1] = exp(res->parms[CA->parms-1]); 
- // }
 }
-
 
 void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes){
 

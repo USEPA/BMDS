@@ -142,9 +142,11 @@ extern "C" {
 
 void cleanDouble(double *val);
 
-void rescale_dichoParms(int model, struct dichotomous_model_result *res);
+//void rescale_dichoParms(int model, struct dichotomous_model_result *res);
+void rescale_dichoParmsNew(int model, double *parms);
 
-void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
+//void rescale_contParms(struct continuous_analysis *CA, struct continuous_model_result *res);
+void rescale_contParmsNew(struct continuous_analysis *CA, double *parms);
 
 void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results *bmdsRes);
 
