@@ -5,7 +5,7 @@ temp_prior = create_prior_list(normprior(0,1,-18,18),
                                lnormprior(0,1,0,20))
 
 weibl  = create_dichotomous_prior(temp_prior,"weibull")
-weibl
+
 
 temp_prior = create_prior_list(normprior(0,1,-18,18),
                                lnormprior(0,1,0,20))
@@ -31,5 +31,5 @@ mData <- matrix(c(0,    0,100,
                   150, 65,100,
                   200, 90,100),nrow=5,ncol=3,byrow=T)
 
-fit <- ma_dichotomous_fit(as.matrix(mData[,1]),as.matrix(mData[,2]),as.matrix(mData[,3]),fit_type = "mcmc",
+fit <- ma_dichotomous_fit(as.matrix(mData[,1]),as.matrix(mData[,2]),as.matrix(mData[,3]),fit_type = "mcmc")
                           model_list = models)
