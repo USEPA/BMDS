@@ -109,7 +109,7 @@ model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5"
                                                 "normal", "normal-ncv"))
 temp <- PFOA_Liver %>% filter(X1 == "ACOT2_7969")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mcmc",BMR = 3,isFast=FALSE)})
+system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 3,isFast=T)})
 plot(B) + scale_x_continuous(trans = "pseudo_log")
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))
