@@ -473,7 +473,8 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 }
 
 
-void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir){
+void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+
 
   bmdsRes->validResult = false;
 
@@ -487,7 +488,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   if (*detectAdvDir){
     determineAdvDir(anal);
-
     // This logic is no longer needed since only allowing exp models to run with lognormal distribution
     //if (!anal->isIncreasing && anal->disttype == distribution::log_normal){
     //  if(anal->model !=cont_model::exp_3 && anal->model != cont_model::exp_5){
@@ -498,55 +498,49 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     //}
 
     int ind;
-    switch(anal->model){
-      case cont_model::exp_3:
-      case cont_model::exp_5:
-    //if ((anal->model == cont_model::exp_5 || anal->model==cont_model::exp_3) && anal->prior[0] == 0){
-      if (anal->prior[0] == 0){
-        if(anal->isIncreasing){
-          if (anal->disttype == distribution::normal_ncv){
-            anal->prior[20] = 0.0;  //c min
-          } else {
-            anal->prior[17] = 0.0;  //c min
+    if (*restricted) {
+      switch(anal->model){
+        case cont_model::exp_3:
+        case cont_model::exp_5:
+          if (anal->prior[0] == 0){   //checks if frequentist model
+            if(anal->isIncreasing){
+              if (anal->disttype == distribution::normal_ncv){
+                anal->prior[20] = 0.0;  //c min
+              } else {
+                anal->prior[17] = 0.0;  //c min
+              }
+            } else {
+              if (anal->disttype == distribution::normal_ncv){
+                anal->prior[26] = 0.0;  //c max
+              } else {
+                anal->prior[22] = 0.0;  //c max
+              }
+            }
           }
-        } else {
-          if (anal->disttype == distribution::normal_ncv){
-            anal->prior[26] = 0.0;  //c max
-          } else {
-            anal->prior[22] = 0.0;  //c max
+          break;
+        case cont_model::polynomial:
+          if(anal->prior[0] == 0){  //checks if frequentist model
+            int numRows = 2+anal->degree;
+            int ind; //index in prior array
+            if (anal->disttype == distribution::normal_ncv){
+              numRows++;
+            }
+            //set ind to target min or max for 1st beta parameter then adjust as needed
+            //min for increasing, max for decreasing
+            if(anal->isIncreasing){
+              ind = 3*numRows+1;          
+            } else { 
+              ind = 4*numRows+1;
+            }  
+            //beta terms
+            for (int i=ind; i<ind+anal->degree; i++){
+              anal->prior[i] = 0.0;  // beta min or max 
+            }
           }
-        }
-      }
-      break;
-      case cont_model::polynomial:
-     // } else if (anal->model == cont_model::polynomial && anal->prior[0] == 0){
-      if(anal->prior[0] == 0){
-        int numRows = 2+anal->degree;
-        int ind; //index in prior array
-        if (anal->disttype == distribution::normal_ncv){
-          numRows++;
-        }
-        //set ind to target min or max for parameters
-        //min for increasing, max for decreasing
-        if(anal->isIncreasing){
-          ind = 3*numRows+1;          
-        } else { 
-          ind = 4*numRows+1;
-        }  
-        //beta terms
-        for (int i=ind; i<ind+anal->degree; i++){
-          anal->prior[i] = 0.0;  // beta min or max 
-        }
-        //alpha
-        if(anal->disttype == distribution::normal_ncv){ 
-           anal->prior[ind+anal->degree+1] = 0.0;  //alpha min or max
-        } else {
-           anal->prior[ind+anal->degree] = 0.0;  //alpha min or max
-        }
-      }
-      break;
-    }  //end switch
-  }
+          break;
+      }  //end switch
+    } //end if restricted
+  } //end if detectAdvDir
 
   estimate_sm_laplace_cont(anal, res);
 
