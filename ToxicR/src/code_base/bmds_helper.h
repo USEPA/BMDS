@@ -27,7 +27,7 @@
 const double BMDS_EPS = 1.0e-6;
 const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
-
+const char BMDS_VERSION[32] = "2021.09"; 
 
 // BMDS helper structures
 #ifdef _WIN64
@@ -177,9 +177,11 @@ void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_resu
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
-void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir);
+void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
+
+void BMDS_ENTRY_API __stdcall version(char * versionStr);
 
 
 #ifdef __cplusplus

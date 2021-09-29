@@ -1175,3 +1175,9 @@ void cleanDouble(double *val){
      *val = BMDS_MISSING;
   }
 }
+
+
+void BMDS_ENTRY_API __stdcall version(char * versionStr){
+  strcpy(versionStr, BMDS_VERSION);   
+}
+
