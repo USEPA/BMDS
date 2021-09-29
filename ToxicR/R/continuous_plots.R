@@ -190,7 +190,7 @@ cont_power_f <-function(parms,d,decrease=F){
 # This part matches with single_continous_fit part- SL 06/02/21 
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
-  
+  IS_tranformed = A$transformed
   fit <-A
   density_col="blueviolet"
   credint_col="azure2"
@@ -230,7 +230,10 @@ cont_power_f <-function(parms,d,decrease=F){
   # I fixed some logic of inputs in if/else statement- they used to be fit$data
   # SL : Should Plot's x axis be based on test_dose? 
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)-min(doses))/500)
-  
+  if (IS_tranformed)
+  {
+    test_doses <- asinh(test_doses)
+  }
   #Pre defined function- lm_fit can be used for fitting parameters?
   if (fit$model=="FUNL"){
      me <- cont_FUNL_f(fit$parameters,test_doses)
@@ -256,7 +259,12 @@ cont_power_f <-function(parms,d,decrease=F){
    
     me <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
   }
-
+  
+  if (IS_tranformed)
+  {
+    test_doses <- sinh(test_doses)
+  }
+  
   temp_fit <- splinefun(test_doses,me)
   ma_mean  <- temp_fit
   plot_gg<-ggplot()+

@@ -178,8 +178,13 @@ List run_continuous_single(IntegerVector model,
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
     bool isFast = (bool) options[6]; 
+    int transform =  options[7];
      
-   
+    if (is_increasing){
+      cerr << "Scooby Doob" << endl; 
+    }else{
+      cerr << "Scrappy Sucks" << endl; 
+    }
     ////////////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////
@@ -201,6 +206,7 @@ List run_continuous_single(IntegerVector model,
     anal.parms        = prior.rows();
     anal.prior_cols   = prior.cols(); 
     anal.degree       = 0;
+    anal.transform_dose = transform; 
     anal.prior   = new double[prior.rows()*prior.cols()]; 
     cp_prior(prior,anal.prior);
     //

@@ -156,6 +156,7 @@ struct continuous_analysis{
   int burnin;  // burn in 
   int parms; // number of parameters 
   int prior_cols; 
+  int transform_dose; // Use the arc-sin-hyperbolic inverse to transform dose. 
 };
 
 struct continuousMA_analysis{

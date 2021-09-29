@@ -666,7 +666,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       
       a =  bmd_fast_BMD_cont <lognormalHILL_BMD_NC, IDcontinuousPrior>
                                 (likelihood_lnhill,  model_prior, fixedB, fixedV,
-                                 riskType, bmrf, bk_prob,
+                                 riskType, bmrf, is_increasing,
                                  step_size,init);
     }else{
       a = bmd_analysis_CNC<lognormalHILL_BMD_NC, IDcontinuousPrior>
@@ -683,7 +683,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       if (isFast){
         a =  bmd_fast_BMD_cont <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                 (likelihood_lnexp3U,  model_prior, fixedB, fixedV,
-                                 riskType, bmrf, bk_prob,
+                                 riskType, bmrf, is_increasing,
                                  step_size,init);
       }else{
       a =  bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -696,7 +696,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       if (isFast){
         a =  bmd_fast_BMD_cont <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                           (likelihood_lnexp3D,  model_prior, fixedB, fixedV,
-                                          riskType, bmrf, bk_prob,
+                                          riskType, bmrf, is_increasing,
                                           step_size,init);
       }else{
         a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -718,7 +718,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       if (isFast){
         a =  bmd_fast_BMD_cont <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                   (likelihood_lnexp5U,  model_prior, fixedB, fixedV,
-                                   riskType, bmrf, bk_prob,
+                                   riskType, bmrf, is_increasing,
                                    step_size,init);
       }else{
         a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -731,7 +731,7 @@ bmd_analysis laplace_logNormal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
         
         a =  bmd_fast_BMD_cont <lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                                      (likelihood_lnexp5D,  model_prior, fixedB, fixedV,
-                                     riskType, bmrf, bk_prob,
+                                     riskType, bmrf, is_increasing,
                                      step_size,init);
       }else{
         a = bmd_analysis_CNC<lognormalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
@@ -795,7 +795,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
       a =  bmd_fast_BMD_cont <normalFUNL_BMD_NC, IDcontinuousPrior>
                             (likelihood_funl,  model_prior, fixedB, fixedV,
                              riskType, bmrf, bk_prob,
-                             step_size,init);
+                             is_increasing,init);
     }else{
       a = bmd_analysis_CNC<normalFUNL_BMD_NC, IDcontinuousPrior>
                             (likelihood_funl,  model_prior, fixedB, fixedV,
@@ -816,7 +816,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
      a =  bmd_fast_BMD_cont <normalPOWER_BMD_NC, IDcontinuousPrior>
                            (likelihood_power,  model_prior, fixedB, fixedV,
                             riskType, bmrf, bk_prob,
-                            step_size,init);
+                            is_increasing,init);
     }else{
       a = bmd_analysis_CNC<normalPOWER_BMD_NC, IDcontinuousPrior>
                           (likelihood_power,  model_prior, fixedB, fixedV,
@@ -972,6 +972,16 @@ void transfer_continuous_model(bmd_analysis a, continuous_model_result *model){
 				}
 		}
 	}
+}
+
+void inverse_transform_dose(continuous_model_result *model){
+  if (model){
+    model->bmd = sinh(model->bmd); 
+    for (int i = 0; i< model->dist_numE; i ++){
+      double temp = double(i)/double(model->dist_numE); 
+      model->bmd_dist[i] = sinh(model->bmd_dist[i]);     // BMD @ probability
+    }
+  }
 }
 
 
@@ -1874,6 +1884,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
 void estimate_sm_laplace(continuous_analysis *CA ,
                          continuous_model_result *res, bool isFast){
   // standardize the data
+  
   int n_rows = CA->n; int n_cols = CA->suff_stat?3:1; 
   bool tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
@@ -1881,7 +1892,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
 
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
-    X(i,0) = CA->doses[i]; 
+    X(i,0) = CA->transform_dose?asinh(CA->doses[i]):CA->doses[i]; 
     if(CA->suff_stat){
       
       Y(i,2) = CA->sd[i]; 
@@ -1936,8 +1947,6 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     Y_LN = SSTAT_LN; 
   }
   
-
- 
   if (CA->suff_stat){
     X = UX; 
     
@@ -2109,10 +2118,9 @@ void estimate_sm_laplace(continuous_analysis *CA ,
                              CA->isIncreasing, CA->suff_stat, isNCV,tprior, 
                              CA->model,CA->degree); 
     
+    
   }
   
-
-
 
    ///////////////////////////////////////////////////////
   // NOTE: need to rescale the covariance first
@@ -2131,6 +2139,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
     v[i] = orig_X(i,0); 
   } 
   transfer_continuous_model(b,res);
+  // transform back to the origional scale
+  if (CA->transform_dose){
+    inverse_transform_dose(res); 
+  }
 
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 

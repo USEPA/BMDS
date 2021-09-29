@@ -260,9 +260,9 @@ std::vector<double> normalFUNL_BMD_NC::bmd_start_stddev_clean(std::vector<double
 
 
 	Eigen::MatrixXd  theta_2(x.size(), 1);
-	//cout << BMD << " "; 
+
 	for (int i = 0; i < x.size(); i++)  theta_2(i, 0) = x[i];
-	//for (double b : x) cout << b << " "; 
+
 	Eigen::MatrixXd d(2, 1); d << 0.0, BMD;
 	Eigen::MatrixXd mu = mean(theta_2, d);
 
@@ -643,15 +643,16 @@ double normalFUNL_BMD_NC::bmd_hybrid_extra_bound(Eigen::MatrixXd theta, double B
 // 
 double normalFUNL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 	
-	if (!isIncreasing)
-		BMRF *= -1.0; 
 
+	if (!isIncreasing){
+		BMRF *= -1.0; 
+  }
 	
-	double optim = findOptim(theta); // BMD between (0,optim)
+	double optim = findOptim(theta,isIncreasing); // BMD between (0,optim)
 	
 	
 	if (fabs(FUNL_mean(optim,theta) - FUNL_mean(0.0,theta)) < fabs(BMRF))
-	{
+	{ 
 	  return nan("");; 
 	}
 	
@@ -661,11 +662,11 @@ double normalFUNL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool 
 	
 	
 	double COFF = BMRF + FUNL_mean(0.0,theta) ;
-	double temp =  20;
-	double mid = 0; 
-	int i = 0; 
-	for ( i = 0; (i < 50) && abs(temp) > 1e-8; i++){
-	  mid = (max + min)/2;
+	double temp =   FUNL_mean(max,theta) - COFF;
+	double mid = 0.0; 
+ // std::cerr<< "Here:" << BMRF << endl; 
+	for ( int i = 0; (i < 50) && fabs(temp) > 1e-8; i++){
+	  mid = (max + min)/2.0;
 	  temp = FUNL_mean(mid,theta) - COFF;
 	  if ( temp < 0){
 	    if(isIncreasing){
@@ -689,7 +690,7 @@ double normalFUNL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool isI
 	Eigen::MatrixXd d(1,1); d(0,0) = 0.0; 
 	Eigen::MatrixXd temp = variance(theta,d); 
 	double t = temp(0,0); 
-	
+ // std::cerr << "Boob" << BMRF << std::endl; 
 	return bmd_absolute(theta,BMRF*pow(t,0.5),isIncreasing); 	
 	
 }	 
@@ -711,7 +712,7 @@ double normalFUNL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool is
 
 double normalFUNL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing){
 	
-	double optim = findOptim(theta); // BMD between (0,optim)
+	double optim = findOptim(theta,isIncreasing); // BMD between (0,optim)
   
   if ( BMRF > FUNL_mean(0,theta)) 
   { if (BMRF > FUNL_mean(optim,theta)){ 
@@ -724,7 +725,7 @@ double normalFUNL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isI
   }
   
   double max = optim; 
-  double min = 0; 
+  double min = 0.0; 
   
   double COFF = BMRF; 
   double temp =  20;
@@ -779,14 +780,13 @@ double normalFUNL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, b
     
     ////////////////////////////////////////////////////////////////////
     //Get the mean and variance at dose zero as well as a very high dose
-	double min_d = 0.0; double max_d = findOptim(theta);; double mid = 0.5*(min_d+max_d); 
+	double min_d = 0.0; double max_d = findOptim(theta,isIncreasing);; double mid = 0.5*(min_d+max_d); 
 	Eigen::MatrixXd d(3,1); d << min_d, mid, max_d; 	
 	Eigen::MatrixXd temp_mean =     mean(theta,d); 
 	Eigen::MatrixXd temp_var  = variance(theta,d); 
-	
+
 	double mu_zero   = temp_mean(0,0); double std_zero = pow(temp_var(0,0),0.5); 
  	double inv_bprob = gsl_cdf_ugaussian_Pinv(NOT_ADVERSE_P);
- 	
 	double bmr_mult = gsl_cdf_ugaussian_Pinv(NOT_ADVERSE_P - BMRF * (NOT_ADVERSE_P));
 									
 		

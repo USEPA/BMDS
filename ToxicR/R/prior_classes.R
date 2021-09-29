@@ -177,6 +177,8 @@ choose normal or normal non-constant variance. \n");
                                     lnormprior(0,0.5,0,100),
                                   normprior(0,10,-200,200),
                                   normprior (0,1,-18,18))
+      return(prior)
+        
 
   }
   
@@ -433,7 +435,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
   #Hill Prior NonConstant Normal Prior
   if (dmodel == 1 && dvariance == 2){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,2,0,1e6),
+                               normprior(0,2,-100,0),
                                normprior(0,1,0,18),#lnormprior(0,1,0,18),
                                lnormprior(log(1.2),1,1,18),
                                lnormprior(-2, 1,0,100),
@@ -474,7 +476,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2){
   #Hill model
   if (dmodel == 1 &&  dvariance == 1){
     prior <- create_prior_list(normprior(0,1,-100,100),
-                               normprior(0,2,0,1e6),#normprior(1,2,-18,18),
+                               normprior(0,2,-100,0),#normprior(1,2,-18,18),
                                lnormprior(0 ,1,0,18),
                                lnormprior(1,1.2,1,18),
                                normprior(0,1,-18,18)); 

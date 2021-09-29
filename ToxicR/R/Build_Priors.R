@@ -34,6 +34,7 @@ parse_prior<-function(prior){
 }
 
 create_continuous_prior <- function( prior_list,model,distribution,deg=2){
+
   if (class(prior_list) != "BMDmodelprior"){
     stop("Prior is not of a 'BMDmodelprior' class. A probable solution is to 
           define the prior using function `create_prior_list`.")
@@ -60,7 +61,7 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   }
   
   if ("FUNL" == model){
-    p = .check_FUNLhill(prior_list,distribution) 
+    p = .check_FUNL(prior_list,distribution) 
   }
  
   if ("exp-5" == model){
@@ -78,6 +79,8 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   if ("power" == model){
     p = .check_power(prior_list,distribution) 
   }
+  print(model)
+
   class(p)<- "BMD_Bayes_continuous_model"
  
   return(p)
@@ -207,6 +210,38 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   prior$mean = .continuous_models[4]
   return(prior)
 }
+
+.check_FUNL <- function(prior,distribution){
+  #check if the normal distribution is correctly specified
+  if (distribution == "normal"){
+    temp = prior[[1]]
+    if (nrow(temp) != 7){
+      stop("Normal Power model prior requires 7 parameters.")
+    }
+    if (sum(temp[,4]>temp[,5])> 0){
+      stop("One of the parameter's lower bounds is greater than the upper bound.")
+    }
+    prior$model = "FUNL Model [normal]"
+    prior$parameters <- c("a","b","lm","ls","nm","ns","log(sigma^2)")
+  }
+  
+  if (distribution == "normal-ncv"){
+    temp = prior[[1]]
+    if (nrow(temp) != 8){
+      stop("Normal-NCV FUNL model prior requires 8 parameters.")
+    }
+  
+    prior$model = "FUNL Model [normal-ncv]"
+    prior$parameters <- c("a","b","lm","ls","nm","ns","rho","log(sigma^2)")
+  }
+  
+  if (distribution == "lognormal"){
+    stop("Log-Normal/FUNL specification is not presently available.")
+  }
+  prior$mean = .continuous_models[5] #give label in global varaible .continuous_models
+  return(prior)
+}
+
 
 .check_exp3 <- function(prior,distribution){
   #check if the normal distribution is correctly specified
