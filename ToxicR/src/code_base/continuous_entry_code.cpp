@@ -1595,7 +1595,15 @@ void transfer_mcmc_output(mcmcSamples a, bmd_analysis_MCMC *b){
 
 }
 
-
+void inverse_transform_dose(bmd_analysis_MCMC *b){
+  
+  if (b){
+    for(unsigned int i= 0; i < b->samples;  i++){
+      b->BMDS[i] = sinh(b->BMDS[i]); 
+    }
+  }
+  
+}
 
 void estimate_ma_MCMC(continuousMA_analysis *MA,
                       continuous_analysis   *CA,
@@ -2167,7 +2175,7 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
-    X(i,0) = CA->doses[i]; 
+    X(i,0) = CA->transform_dose?asinh(CA->doses[i]):CA->doses[i];  
     if(CA->suff_stat){
       Y(i,2) = CA->sd[i]; 
       Y(i,1) = CA->n_group[i]; 
@@ -2350,8 +2358,17 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   bmd_analysis b; 
   CA->suff_stat = tempsa;
   b = create_bmd_analysis_from_mcmc(burnin,a,max_dose);
+  
   transfer_continuous_model(b,res);
+  if (CA->transform_dose){
+    inverse_transform_dose(res); 
+  }
+  
   transfer_mcmc_output(a,mcmc); 
+  if (CA->transform_dose){
+    inverse_transform_dose(res); 
+    inverse_transform_dose(mcmc);
+  }
   res->model = CA->model; 
   res->dist  = CA->disttype;
  

@@ -178,14 +178,9 @@ List run_continuous_single(IntegerVector model,
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
     bool isFast = (bool) options[6]; 
-    int transform =  options[7];
-     
-    if (is_increasing){
-      cerr << "Scooby Doob" << endl; 
-    }else{
-      cerr << "Scrappy Sucks" << endl; 
-    }
-    ////////////////////////////////////////////////
+    int transform =  options[8];
+    
+    //////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////
     continuous_analysis anal; 

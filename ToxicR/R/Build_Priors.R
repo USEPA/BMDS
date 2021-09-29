@@ -79,8 +79,6 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   if ("power" == model){
     p = .check_power(prior_list,distribution) 
   }
-  print(model)
-
   class(p)<- "BMD_Bayes_continuous_model"
  
   return(p)

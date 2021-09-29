@@ -40,7 +40,8 @@ library(dplyr)
 library(ggplot2)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)]) 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "laplace",BMR=3,ewald = T,transform = T)})
+system.time({AA <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "laplace",BMR=1,ewald = F,transform = T)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR=1,ewald = F,transform = T)})
 
 
 system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v2),distribution = "normal",model_type = "exp-3", fit_type = "mle",isFast = T)})

@@ -58,6 +58,7 @@ cont_power_f <-function(parms,d,decrease=F){
 
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
+  IS_tranformed = fit$transformed
   density_col="blueviolet"
   credint_col="azure2"
   BMD_DENSITY = T
@@ -94,6 +95,10 @@ cont_power_f <-function(parms,d,decrease=F){
   
   # Single Model 
   test_doses <- seq(min(doses),max(doses)*1.03,(max(doses)*1.03-min(doses))/500)
+  if( IS_tranformed)
+  {
+    test_doses = asinh(test_doses)
+  }
   
   if (fit$model=="FUNL"){
      Q <- apply(fit$mcmc_result$PARM_samples,1,cont_FUNL_f, d=test_doses,decrease=decrease)   
@@ -120,7 +125,10 @@ cont_power_f <-function(parms,d,decrease=F){
                d=test_doses,decrease=decrease)
     
   }
-  
+  if( IS_tranformed)
+  {
+    test_doses = sinh(test_doses)
+  }
   
   Q <- t(Q)
   me <- apply(Q,2,quantile, probs = 0.5)
