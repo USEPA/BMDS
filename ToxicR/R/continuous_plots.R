@@ -340,8 +340,7 @@ cont_power_f <-function(parms,d,decrease=F){
           
           # 06/07/21 SL Update
           IS_SUFFICIENT=FALSE
-          
-          
+   
           if (ncol(data_d) == 4 ){ #sufficient statistics
             IS_SUFFICIENT = TRUE
             mean <- data_d[,2,drop=F]
@@ -403,7 +402,7 @@ cont_power_f <-function(parms,d,decrease=F){
           
           # 06/02/21 SL update
           if (IS_SUFFICIENT){
-            print("Boom")
+         
               plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
                   geom_point(aes(x=data_d[,1],y=data_d[,2]))+
                   geom_errorbar(aes(x=data_d[,1], ymin=lerror, ymax=uerror),color="grey",size=0.8,width=width)+
@@ -487,14 +486,13 @@ cont_power_f <-function(parms,d,decrease=F){
                }
                col = 'coral3'
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               
                # # 06/19/21 SL update 
-               temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-               df<-rbind(df,temp_df)
+               df     <-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                
+               df <-rbind(df,temp_df)
+        
                #SL Updated 06/18/21 -- Transparency update based on posterior probability and Y scale for dichotomous case
-               temp_data<-df %>% 
-                 filter(model_no==ii)
+               temp_data<- df %>% filter(model_no==ii)
                
                plot_gg<- plot_gg+
                  geom_line(data=temp_data, aes(x=x_axis,y=y_axis,color=cols),alpha=unique(temp_data$alpha_lev),show.legend=F)+
@@ -516,10 +514,7 @@ cont_power_f <-function(parms,d,decrease=F){
           
           
 
-     }
-     
-
-     else{ #laplace run
+     }else{ #laplace run
        
        data_d   <-  A[[fit_idx[1]]]$data
        max_dose <- max(data_d[,1])
@@ -666,8 +661,9 @@ cont_power_f <-function(parms,d,decrease=F){
                             label = "]", size = 10,color="darkslategrey", alpha=0.9) +
                    annotate(geom = "point", x = A$bmd[1], y = ma_mean(A$bmd[1]),
                             size = 5, color="darkslategrey",shape=17, alpha=0.9)
-           }
-     return(plot_gg + coord_cartesian(
-                                      xlim=c(min(test_doses)-width,max(test_doses)+width),expand=F))
+     }
+     
+     return(plot_gg + 
+              coord_cartesian(xlim=c(min(test_doses)-width,max(test_doses)+width),expand=F))
 }
  

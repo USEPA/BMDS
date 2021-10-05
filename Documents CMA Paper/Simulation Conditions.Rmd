@@ -122,7 +122,8 @@ for (i in 1:nrow(model_listA)){
         
         model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
 }
-
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
 AA$bmd
@@ -135,7 +136,7 @@ plot(AA)
 mean <- cont_hill_f(as.numeric(hill[6,]),doses)
 y <- rinvgauss(length(mean),mean,227.8176)
 
- model_list = list()
+model_list = list()
 for (i in 1:nrow(model_listA)){
         t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
         if(model_listA$distribution_list[i] == "lognormal"){
@@ -152,7 +153,7 @@ for (i in 1:nrow(model_listA)){
 }
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
-                        fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 plot(AA)
 ```
 
