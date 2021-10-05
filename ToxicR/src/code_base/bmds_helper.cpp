@@ -464,6 +464,15 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     } //end if restricted
   } //end if detectAdvDir
 
+
+  //need to handle issue with decreasing response datasets for relative deviation
+  //easiest workaround is to modify BMRF before sending to estimate_sm_laplace
+  if (anal->BMD_type == 3) {  //rel dev
+    if(!anal->isIncreasing){
+      anal->BMR = 1.0 - anal->BMR;
+    }
+  }
+
   estimate_sm_laplace_cont(anal, res);
 
   std::cout << "parms:\n";
