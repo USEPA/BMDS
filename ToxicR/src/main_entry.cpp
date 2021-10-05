@@ -180,6 +180,7 @@ List run_continuous_single(IntegerVector model,
     bool isFast = (bool) options[6]; 
     int transform =  options[8];
     
+    
     //////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////

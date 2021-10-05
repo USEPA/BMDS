@@ -513,6 +513,8 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
   bmd_analysis rVal;  // Return Value
   optimizationResult oR; // Optimization result
   cBMDModel<LL, PR>  model(likelihood, prior, fixedB, fixedV, is_increasing);	//Model specification					  
+ 
+ 
   /************************************************
    * Lambda Function 
    * for BMD Gradient computation
@@ -530,6 +532,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
     oR = findMAP<LL, PR>(&model,init,OPTIM_NO_FLAGS);
   
   Eigen::MatrixXd parms = oR.max_parms; 
+
   
   /*
    * Start Computing the BMD CI

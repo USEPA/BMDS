@@ -172,10 +172,10 @@ choose normal or normal non-constant variance. \n");
 
          prior <- create_prior_list(normprior(0,10,-100,100),
                                     normprior(0,10,-1e4,1e4),
-                                    lnormprior(0,0.5,0,100),
+                                    lnormprior(log(0.05),1.0,0,100),
                                     normprior(0.5,1,0,100),
-                                    lnormprior(0,0.5,0,100),
-                                  normprior(0,10,-200,200),
+                                    lnormprior(log(0.05),1.0,0,100),
+                                  normprior(0.5,1,0,200),
                                   normprior (0,1,-18,18))
       return(prior)
         
@@ -188,9 +188,9 @@ choose normal or normal non-constant variance. \n");
        prior <- create_prior_list(normprior(0,10,-100,100),
                                   normprior(0,10,-1e4,1e4),
                                   lnormprior(0,0.5,0,100),
-                                  normprior(0.5,1,0,100),
+                                  normprior(0.5,0.25,0,100),
                                   lnormprior(0,0.5,0,100),
-                                  normprior(0,10,-200,200),
+                                  normprior(0.5,0.25,0,200),
                                   lnormprior(0,0.5,0,18), 
                                   normprior(0,2,-18,18))
        return(prior)

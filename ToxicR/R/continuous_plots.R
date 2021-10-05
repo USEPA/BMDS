@@ -485,7 +485,7 @@ cont_power_f <-function(parms,d,decrease=F){
                if (fit$model=="power"){
                     f <- cont_power_f(fit$fitted_model$parameters,test_doses)
                }
-               col = alphablend(col='coral3',A$posterior_probs[ii])
+               col = 'coral3'
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
                
                # # 06/19/21 SL update 
@@ -646,7 +646,7 @@ cont_power_f <-function(parms,d,decrease=F){
              f <- cont_power_f(fit$parameters,test_doses)
            }
 
-           col = alphablend(col='coral3',A$posterior_probs[ii])
+           col = 'coral3'
            # Not using loop, but save data in the external data and load it later
            temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
            df<-rbind(df,temp_df)

@@ -47,7 +47,7 @@ library(ToxicR)
 temp <- PFOA_Liver %>% filter(X1 == "ABCG2_32656")
 v1 <- as.numeric(temp[2:length(temp)])
 
-R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 1,isFast = FALSE)
+R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 1,ewald = FALSE)
 R2  <- single_continuous_fit(as.matrix(doses),as.matrix(v1)/sd(v1[doses==0]),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast = FALSE)
 
 B  <- single_continuous_fit(as.matrix(log(doses+0.001)-log(0.001)),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "mcmc",BMR = 1,isFast = FALSE,samples = 200000)

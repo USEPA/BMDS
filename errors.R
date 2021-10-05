@@ -23,7 +23,7 @@ M2[,4]<-  c(1.2,1.1,0.81,0.74,0.66)
 library(ToxicR)
 system.time({
 c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, 
-                          distribution = "normal",fit_type="laplace",model_type = "polynomial",degree = 4,isFast=F)
+                          distribution = "normal",fit_type="laplace",model_type = "hill",degree = 4,ewald=F)
 })
 
 # Adjust size of the interval bar;

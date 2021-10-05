@@ -862,6 +862,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
                                                                        riskType, bmrf, bk_prob,
                                                                        is_increasing,init);
         
+        
       }else{
           a =  bmd_analysis_CNC<normalEXPONENTIAL_BMD_NC, IDcontinuousPrior>
                               (likelihood_nexp3U,  model_prior, fixedB, fixedV,
