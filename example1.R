@@ -286,7 +286,6 @@ system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit", fit_type = "laplace")})
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit", fit_type = "laplace")})
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "laplace")})
-
 system.time({B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")})
 
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
