@@ -775,7 +775,7 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           Y(i,0) = data->Y[i]; Y(i,1) = data->n_group[i]; 
           D(i,0) = data->doses[i]; 
      }
-
+     int degree = 1; 
      switch (data->model){
      case dich_model::d_hill:
           mean_d =  X_compute_mean<dich_hillModelNC> (Y,D,parms);
@@ -793,7 +793,8 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
           mean_d =  X_compute_mean<dich_logProbitModelNC> (Y,D,parms);
           break; 
      case dich_model::d_multistage:
-          mean_d =  X_compute_mean<dich_multistageNC> (Y,D,parms);
+          degree = parms.rows() - 1; 
+          mean_d =  X_compute_mean<dich_multistageNC> (Y,D,parms,degree);
           break;
      case dich_model::d_probit: 
           mean_d =  X_compute_mean<dich_probitModelNC> (Y,D,parms);
