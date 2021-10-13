@@ -64,6 +64,7 @@ template <class LL>
 Eigen::MatrixXd X_compute_mean( Eigen::MatrixXd Y, Eigen::MatrixXd D,  
                                 Eigen::MatrixXd parms, int degree = 1){
      
+     
      LL data_likelihood(Y,D,degree);
      Eigen::MatrixXd  md = data_likelihood.convertDataMatrix(D);
      Eigen::MatrixXd rValue = data_likelihood.mean(parms,md); 

@@ -140,7 +140,11 @@ List run_single_dichotomous(NumericVector model,
   dichotomous_aod AOD;
   
   deviance_dichotomous(&Anal,&AOD);
-  cout << AOD.A1 << " : " << AOD.A2 << endl; 
+  //cout << AOD.A1 << " : " << AOD.A2 << endl; 
+  
+  for (int i = 0; i < Anal.n; i++){
+    cout << GOFres.expected[i] << " : " << GOFres.residual[i] << endl;   
+  }
   
   delete[] GOFres.expected;
   delete[] GOFres.residual; 
@@ -178,9 +182,10 @@ List run_continuous_single(IntegerVector model,
     int    riskType = (int)options[0];   
     unsigned int samples = (unsigned int) options[5];
     bool isFast = (bool) options[6]; 
-     
-   
-    ////////////////////////////////////////////////
+    int transform =  options[8];
+    
+    
+    //////////////////////////////////////////
     /// Set up the analysis
     ////////////////////////////////////////////////
     continuous_analysis anal; 
@@ -201,6 +206,7 @@ List run_continuous_single(IntegerVector model,
     anal.parms        = prior.rows();
     anal.prior_cols   = prior.cols(); 
     anal.degree       = 0;
+    anal.transform_dose = transform; 
     anal.prior   = new double[prior.rows()*prior.cols()]; 
     cp_prior(prior,anal.prior);
     //

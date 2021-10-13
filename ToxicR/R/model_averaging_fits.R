@@ -25,24 +25,27 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   
   if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
   
-  
+  #If there is no specified list then we use defaults
+  #TODO - Add sampled variance. 
   if (is.na(model_list[[1]][1])){
     model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))#,rep("FUNL",2))
     distribution_list = c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),
                           "normal","normal-ncv")
     
     prior_list <- list()
+    tmodel_list <- list()
     for(ii in 1:length(model_list)){
       PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)
       t_prior_result = create_continuous_prior(PR,model_list[ii],distribution_list[ii],2)
+      tmodel_list[[ii]] = t_prior_result
       PR = t_prior_result$prior
       prior_list[[ii]] = list(prior = PR, model_tye = model_list[ii], dist = distribution_list[ii])
     }
+    model_list = tmodel_list
   }else{
     prior_list <- list()
     for (ii in 1:length(model_list)){
       temp_prior = model_list[[ii]]
-      
       
       if (class(temp_prior) != "BMD_Bayes_continuous_model"){
         stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
@@ -58,9 +61,8 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                prior = result$prior)
       prior_list[[ii]] = a
     }  
-    
   }
-  
+
   models <- rep(0,length(prior_list))
   dlists  <- rep(0,length(prior_list))
   priors <- list()
@@ -119,7 +121,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
          #remove the unecessary 'c' column from the exponential fit
-         if ("exp-3" %in% model_list$model_list[jj]){
+         if ("exp-3" %in% model_list[[jj]]$mean){
            temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
          }
          

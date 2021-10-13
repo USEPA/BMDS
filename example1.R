@@ -29,19 +29,64 @@ library(readr)
 PFOA_Liver <- read_table2("~/Documents/PFOA_Liver.txt", 
                           col_names = FALSE)
 
+PFOA_Liver <- read_table2("~/Downloads/compound16-2d-run1-plate1.txt", 
+                          col_names = TRUE)
+
 
 doses<- c(0,0,0,0,0.156,0.156,0.156,0.3125,0.3125,0.3125,
            0.625,0.625,0.625,1.25,1.25,1.25,2.5,2.5,2.5,5,5,
            5,5,10,10,10,10,20,20,20,20) 
 
+doses<-c(0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,
+            4.742541,	4.742541,	4.742541,	14.997233,	14.997233,
+            14.997233,	47.425413999999996,	47.425413999999996,
+            47.425413999999996,	149.97232699999998,	149.97232699999998,
+            149.97232699999998,	474.254138,	474.254138,	474.254138,
+            1499.723265,	1499.723265,	1499.723265,	4742.541378,
+            4742.541378, 4742.541378,	14997.232650000002,
+            14997.232650000002,	14997.232650000002,	47425.41378,	47425.41378,
+            47425.41378,	149972.3265,	149972.3265,	149972.3265)
+doses2 <- asinh(doses)
 
-system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v2),distribution = "normal",model_type = "exp-3", fit_type = "mle",isFast = T)})
+library(ToxicR)
+library(dplyr)
+library(ggplot2)
+temp <- PFOA_Liver %>% filter(X1 =="LOC100912409_9106")
+temp <- PFOA_Liver %>% filter(V1 =="AEN_18198")
+
+v1 <- as.numeric(temp[2:length(temp)]) 
+
+A <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 2,ewald = F,transform = T)
+B <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",fit_type = "laplace", degree = 2, BMR = 2,ewald = F,transform = T)
+C <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",fit_type = "laplace", degree = 3, BMR = 2 ,ewald = F,transform = T)
+D <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",fit_type = "laplace", degree = 4, BMR = 2,ewald = F,transform = T)
+E <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "FUNL", distribution="normal",fit_type = "laplace",BMR=2,ewald = F,transform = T)
+
+ty <- v1[doses < 50000 ]
+td <- doses[doses < 50000]
+D <- single_continuous_fit(as.matrix(td),as.matrix(asinh(ty)),model_type = "polynomial", distribution="normal",fit_type = "laplace", degree = 2, BMR = 1,ewald = F,transform = F)
+E <- single_continuous_fit(as.matrix(td),as.matrix(asinh(ty)),model_type = "FUNL", distribution="normal",fit_type = "laplace",BMR=1,ewald = F,transform = F)
+plot(E)+scale_x_continuous(trans="pseudo_log")
+
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR=1,ewald = T,transform = T)})
+system.time({BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),distribution = "normal",model_type = "exp-3", fit_type = "mle",isFast = T)})
 
 library(dplyr)
 library(ggplot2)
 library(ToxicR)
+"CYP3A1_32809"
 "ABCG2_32656"
 "ACOT2_7969"
+"SQLE_9935"
+"TDO2_9997"
+"EDM1_8524"
+"SULT1C2_33309"
+"CD3D_33153"
+"ADRB2_7997"
+
+#Downturn
+
+IGFBP1_32306
 
 
 pvalue<-matrix(NA,ncol=2,nrow=nrow(PFOA_Liver))
@@ -52,9 +97,11 @@ for (i in 1:nrow(pvalue)){
   v1 <- as.numeric(temp[2:length(temp)])
   fit2 <- sm.spline(doses,v1)
   R  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",degree=3,fit_type = "laplace",BMR = 1,isFast=T)
-  pvalue[i,1] = var(v1- cont_hill_f(R$parameters,doses))/var(v1-predict(fit2,doses))
+ D <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "polynomial", distribution="normal",fit_type = "laplace", degree = 2, BMR = 1.5,ewald = F,transform = T)
+ pvalue[i,1] = var(v1- cont_hill_f(R$parameters,doses))/var(v1-predict(fit2,doses))
   pvalue[i,2] = 1 - pchisq(-2*(R$Deviance[1,1]-R$Deviance[5,1]),R$Deviance[1,2]-R$Deviance[5,2] )
 }  
+
 plot(R) + scale_x_continuous(trans="pseudo_log") + geom_line(mapping = aes(x = predict(fit2)$x,y=predict(fit2)$y))
 
 kk <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),fit_type = "laplace",BMR =1.5)
@@ -107,9 +154,10 @@ AA <- ma_continuous_fit(as.matrix(doses),as.matrix(v1),model_list=model_list,
 model_list  = data.frame(model_list = c(rep("hill",2),rep("exp-3",2),rep("exp-5",2),rep("power",2)),
                          distribution_list =  c(c("normal","normal-ncv"),rep(c("normal","normal-ncv"),2),
                                                 "normal", "normal-ncv"))
-temp <- PFOA_Liver %>% filter(X1 == "ACOT2_7969")
+
+temp <- PFOA_Liver %>% filter(X1 == "TDO2_9997")
 v1 <- as.numeric(temp[2:length(temp)])
-system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "laplace",BMR = 3,isFast=T)})
+system.time({B  <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",BMR = 1,isFast=T)})
 plot(B) + scale_x_continuous(trans = "pseudo_log")
 g <- matrix(c( 0.272012, 0.453829, -0.125416, 0.357458,0.79383,-0.563791),nrow = 1)
 sqrt(g%*%B$covariance%*%t(g))
@@ -199,7 +247,7 @@ plot(BB)
 G = single_continuous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
 
 
-temp <- PFOA_Liver %>% filter(X1 == "SQLE_9935")
+temp <- PFOA_Liver %>% filter(X1 == "f")
 v1 <- as.numeric(temp[2:length(temp)])
 BB <- single_continuous_fit(as.matrix(doses),as.matrix(v1),model_type = "hill", distribution="normal",fit_type = "mle",sstat = F)
 
@@ -238,7 +286,6 @@ system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "probit", fit_type = "laplace")})
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit", fit_type = "laplace")})
 system.time({C = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "laplace")})
-
 system.time({B = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")})
 
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
@@ -246,7 +293,7 @@ G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fi
 
 
 G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "laplace")
-G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "gamma", fit_type = "mle")
+G = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mle")
 
 
 A = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
@@ -274,7 +321,7 @@ J = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "multistag
 
 
 
-B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "laplace")
+B = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3],fit_type = "mcmc")
 plot(G)
 
 plot(K[1,],ylim=c(0,1))

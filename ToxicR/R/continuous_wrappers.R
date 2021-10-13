@@ -28,7 +28,9 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    prior=NA, BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
                                    alpha = 0.05, samples = 25000,degree=2,
-                                   burnin = 1000,isFast = FALSE){
+                                   burnin = 1000,ewald = FALSE,
+                                   transform = FALSE){
+
     myD = Y; 
     sstat = F # set sufficient statistics to false if there is only one column
     if (ncol(Y) > 1){
@@ -143,7 +145,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     }
     tmodel <- permuteMat[dmodel,2] 
     
-    options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,burnin,samples)
+    options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,burnin,samples,transform)
     
     ## pick a distribution type 
     if (is_log_normal){
@@ -166,13 +168,9 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
         rvals$PARMS = rvals$PARMS[,-3]
         rvals$mcmc_result$PARM_samples = rvals$mcmc_result$PARM_samples[,-3]
       }
-     # print("1.0")
-      ##compute the p-value
-     # rvals$pvalue <- .pvalue_cont_mcmc(rvals,model_type,Y,D,distribution,is_increasing)
-      #print("2.0")
-      ##
+   
       rvals$bmd      <- c(rvals$fitted_model$bmd,NA,NA) 
-      print(rvals$fitted_model$bmd)
+      
       rvals$prior    <- t_prior_result
       rvals$bmd_dist <- rvals$fitted_model$bmd_dist
       if (!identical(rvals$bmd_dist, numeric(0))){
@@ -194,12 +192,14 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$options <- options
       rvals$data <- DATA
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
+  
       rvals$prior <- PR
+      rvals$transformed <- transform
       class(rvals) <- "BMDcont_fit_MCMC"
       return(rvals)
     }else{
       
-      options[7] <- (isFast == TRUE)*1
+      options[7] <- (ewald == TRUE)*1
       rvals   <- run_continuous_single(fitmodel,model_data$SSTAT,model_data$X,
   						                          PR,options, dist_type)
      
@@ -228,7 +228,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$options <- options
       rvals$data    <- DATA
       class(rvals)  <- "BMDcont_fit_maximized"
-      
+      rvals$transformed <- transform
       return (rvals)
     }
 }

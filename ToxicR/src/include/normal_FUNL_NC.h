@@ -98,17 +98,19 @@ class normalFUNL_BMD_NC : public normalLLModel {
     return rV; 
   }
 	
-	double findOptim(Eigen::MatrixXd A){
+	double findOptim(Eigen::MatrixXd A,bool isIncreasing){
 	  double cv = 0.5; 
-	  double nv = cv - dFUNL_mean(cv,A)/d2FUNL_mean(cv,A); 
+	  double nv = (cv - dFUNL_mean(cv,A)/d2FUNL_mean(cv,A))*.7; 
 	  double test = nv - cv; 
 	  int i = 0; 
-	  while (i < 50 && fabs(test) > 1e-8){
+	  
+	  while (i < 250 && fabs(test) > 1e-8){
 	    nv = cv - dFUNL_mean(cv,A)/d2FUNL_mean(cv,A); 
 	    test = nv - cv; 
 	    cv = nv; 
 	    i++; 
 	  }
+	  
 	  return cv; 
 	}
 	

@@ -1,7 +1,7 @@
 ---
 title: "Simulation Conditions for CMA"
 author: "Matt Wheeler"
-date: "2/02/2021"
+date: "10/01/2021"
 output:
   html_document:
     toc: yes
@@ -98,29 +98,59 @@ kable(hill,digits=3)
 Here are two generated datasets from Hill condition $2$ and $8$: 
 
 ```{r hill, echo=FALSE}
-model_list  = data.frame(model_list = c(rep("hill",3),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
-                        distribution_list =  c(rep(c("normal","normal-ncv","lognormal"),3),"normal",
+model_listA  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                        distribution_list =  c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),"normal",
                                                "normal-ncv"))
-model_list2 = data.frame(model_list = c(rep("hill",1),rep("exp-3",1),rep("exp-5",1),rep("power",1)),
-                        distribution_list =  c(rep(c("normal"),4)))
 doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
 dosesq <- rep(c(0,6.25,12.5,25,50,100),each=30)
 
 mean <- cont_hill_f(as.numeric(hill[2,]),doses)
 y <- rinvgauss(length(mean),mean,18528.14)
 
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),
+                        fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
 AA$bmd
 plot(AA)
-AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list2,
+AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 AA$bmd
-#plot(AA)
+plot(AA)
 
 mean <- cont_hill_f(as.numeric(hill[6,]),doses)
 y <- rinvgauss(length(mean),mean,227.8176)
 
+model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
@@ -184,6 +214,21 @@ plot(AA)
 mean <- cont_exp_5_f(as.numeric(Exp5[7,]),doses)
 y <- rinvgauss(length(mean),mean, 227.8176)
 
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
@@ -191,6 +236,22 @@ plot(AA)
 
 mean <- cont_exp_5_f(as.numeric(Exp5[2,]),doses)
 y <- rnorm(length(mean),mean,77.5)
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
+
 mydoses <- seq(0,100,1)
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
@@ -201,6 +262,22 @@ Pl1
 
 mean <- cont_exp_5_f(as.numeric(Exp5[2,]),dosesq)
 y <- rnorm(length(mean),mean,77.5)
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
+
 mydoses <- seq(0,100,1)
 AA <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
                         fit_type = "laplace",BMD_TYPE = 'sd',BMR = 1)
@@ -245,6 +322,21 @@ tmean <- X3%*%t(iS[2,,drop=F]) + 10.58
 
 mean <- X%*%t(iS[2,,drop=F]) + 10.58
 y <- rinvgauss(length(mean),mean,227.8176)
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
@@ -253,6 +345,21 @@ AA$bmd
 X2 <- iSpline(dosesq,knots=seq(30,90,20))
 mean <- X2%*%t(iS[2,,drop=F]) + 10.58
 y <- rinvgauss(length(mean),mean,227.8176)
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
 
 BB <- ma_continuous_fit(as.matrix(dosesq),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'hybrid',BMR = 0.05,point_p = 0.025)
@@ -266,6 +373,21 @@ X <- iSpline(doses,knots=seq(30,90,20))
 mean <- X%*%t(iS[3,,drop=F]) + 481
 y <- rinvgauss(length(mean),mean, 18528.14) 
 
+ model_list = list()
+for (i in 1:nrow(model_listA)){
+        t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+        if(model_listA$distribution_list[i] == "lognormal"){
+          t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+        }else{
+          if (model_listA$distribution_list[i] == "normal"){
+            t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+          }else{
+            t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+          }
+        }
+        
+        model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+}
 
 AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)

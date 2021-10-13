@@ -234,7 +234,7 @@ List run_continuous_single_mcmc(NumericVector model,
                                 bool is_logNormal,bool suff_stat){
   
   unsigned int samples = (unsigned int) options[7]; 
-  unsigned int burnin  = (unsigned int) options[8];
+  unsigned int burnin  = (unsigned int) options[6];
   double tail_p = (double) options[2]; 
   bool bConstVar = (bool)options[5]; // check if it is constant variance
   bool is_increasing = (bool)options[4];
@@ -242,6 +242,7 @@ List run_continuous_single_mcmc(NumericVector model,
   double bk_prob = (double)options[2];
   double bmrf  = (double)options[1];
   int riskType = (int)options[0];
+  int transform =  options[8];
   
   continuous_analysis *mcmcAnal = new continuous_analysis; 
   distribution dtype; 
@@ -272,6 +273,7 @@ List run_continuous_single_mcmc(NumericVector model,
   mcmcAnal->samples      = samples; 
   mcmcAnal->burnin       = burnin; 
   mcmcAnal->tail_prob    = tail_p; 
+  mcmcAnal->transform_dose = transform;
   mcmcAnal->suff_stat    = suff_stat; 
   mcmcAnal->degree       = 0; 
   

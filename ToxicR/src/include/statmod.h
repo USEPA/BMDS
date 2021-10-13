@@ -468,7 +468,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
       ntourny = 30; 
       tourny_size = 40; 
   }else{
-      ngenerations = 350; 
+      ngenerations = 450; 
       ntourny = 20; 
       tourny_size = 20; 
   }
@@ -716,7 +716,7 @@ optimizationResult findMAP(statModel<LL, PR>  *M,
     opt_ptr->set_lower_bounds(lb);
     opt_ptr->set_upper_bounds(ub);
    // opt_ptr->set_ftol_rel(1e-8);
-    opt_ptr->set_ftol_abs(1e-8);
+    opt_ptr->set_xtol_rel(1e-9);
    // opt_ptr->set_initial_step(1e-5); 
     opt_ptr->set_min_objective(neg_pen_likelihood<LL,PR>, M);
     
