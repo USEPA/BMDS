@@ -8,9 +8,10 @@ PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -
 
 PKG_LIBS     = -lgsl -lnlopt 
 
+POLYK        = $(wildcard polyK/*.cpp)
 MAIN         = $(wildcard *.cpp)
 MAIN_CODE    = $(wildcard code_base/*.cpp)
-OBJECTS      = $(MAIN:.cpp=.o) $(MAIN_CODE:.cpp=.o)
+OBJECTS      = $(MAIN:.cpp=.o) $(MAIN_CODE:.cpp=.o) $(POLYK:.cpp=.o)
 
 
 
