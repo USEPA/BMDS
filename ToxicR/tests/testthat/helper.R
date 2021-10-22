@@ -10,10 +10,23 @@ build_single_continuous_dataset <- function(){
      M2
 }
 
+build_single_dichotomous_dataset <- function(){
+     mData <- matrix(c(0, 2,50,
+                       1, 2,50,
+                       3, 10, 50,
+                       16, 18,50,
+                       32, 18,50,
+                       33, 17,50),nrow=6,ncol=3,byrow=T)
+     mData
+}
+
 validate_model <- function(model, name, parameters, bmd_estimates){
      expect_equal(name, model$full_model)
      expect_equal(parameters, model$parameters, tolerance=10e-2)
      expect_equal(setNames(bmd_estimates, c("BMD", "BMDL", "BMDU")), model$bmd, tolerance=10e-2)
+     #show(model$full_model)
+     #show(model$parameters)
+     #show(model$bmd)
 }
 
 generate_validation_code <- function(AA){

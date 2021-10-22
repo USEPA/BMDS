@@ -333,6 +333,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
      
          te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
          temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         names(temp[[ii]]$bmd) <- c("BMD","BMDL","BMDU")
          names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
     }
     
