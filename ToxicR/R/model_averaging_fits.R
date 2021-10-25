@@ -374,7 +374,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp$post_prob
     class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_mcmc")  
   }
-  
+  names(temp$bmd) <- c("BMD","BMDL","BMDU")
   return(temp)
 }
   

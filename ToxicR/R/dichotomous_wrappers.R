@@ -74,8 +74,6 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$model   = model_type; 
     temp$data    = DATA
     class(temp) <- "BMDdich_fit_maximized"
-    names(temp$bmd) <- c("BMD","BMDL","BMDU")
-    return(temp)
   }
  
   if (fitter == 2){ #laplace fit
@@ -84,13 +82,10 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(temp$bmd,te(alpha),te(1-alpha))
-    
     temp$prior = prior; 
     temp$model =  model_type; 
     temp$data = DATA
     class(temp) <- "BMDdich_fit_maximized"
-    names(temp$bmd) <- c("BMD","BMDL","BMDU")
-    return(temp)
   }
   if (fitter ==3){
     
@@ -103,10 +98,9 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$data    = DATA
     temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE)))
     class(temp) <- "BMDdich_fit_MCMC"
-    names(temp$bmd) <- c("BMD","BMDL","BMDU")
-    return(temp)
   }
- 
+  names(temp$bmd) <- c("BMD","BMDL","BMDU")
+  return(temp)
 }
 
 .print.BMD_CDF<-function(p){
