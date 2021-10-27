@@ -475,11 +475,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   estimate_sm_laplace_cont(anal, res);
 
-  std::cout << "parms:\n";
-  for (int i=0; i<anal->parms; i++){
-     std::cout<<i<<", value:"<< res->parms[i]<<"\n";
-  }
-
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
   //arrays are needed for conversion to suff_stat
@@ -771,22 +766,46 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   int df;
 
   //Test #1 - A2 vs Reduced - does mean and/or variance differ across dose groups
-  TOI->llRatio[0] = dev = 2 * (aod->LL[1] - aod->LL[4]);
+  //TOI->llRatio[0] = dev = 2 * (aod->LL[1] - aod->LL[4]);
+  dev = (aod->LL[1] - aod->LL[4]);
+  //handle underflow/negative zero
+  if (dev < BMDS_EPS){
+     dev = 0.0;
+  }
+  TOI->llRatio[0] = dev = 2*dev;
   TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
   TOI->pVal[0] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
-  TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
+  dev = (aod->LL[1] - aod->LL[0]);
+  //handle underflow/negative zero
+  if (dev < BMDS_EPS){
+     dev = 0.0;
+  }
+  TOI->llRatio[1] = dev = 2*dev;
+  //TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
   TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
   TOI->pVal[1] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #3 - A2 vs A3 - Does the model describe variances adequately
-  TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
+  dev = (aod->LL[1] - aod->LL[2]);
+  //handle underflow/negative zero
+  if (dev < BMDS_EPS){
+     dev = 0.0;
+  }
+  //TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
+  TOI->llRatio[2] = dev = 2*dev;
   TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
   TOI->pVal[2] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
-  TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
+  dev = (aod->LL[2] - aod->LL[3]);
+  //handle underflow/negative zero
+  if (dev < BMDS_EPS){
+     dev = 0.0;
+  }
+  //TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
+  TOI->llRatio[3] = dev = 2*dev;
   TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
   TOI->pVal[3] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
