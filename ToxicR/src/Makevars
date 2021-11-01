@@ -4,9 +4,9 @@
  #-fopenmp
 
 PKG_CPPFLAGS =  -I"./include" -I"./code_base"  -O3 -funroll-loops -std=c++11  -mavx2 -ftree-vectorize  #-DNDEBUG
-PKG_CPPFLAGS +=   -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto -fopenmp #-DEIGEN_NO_DEBUG 
+PKG_CPPFLAGS +=  $(shell pkg-config --cflags nlopt gsl) -DR_COMPILATION=TRUE -Wno-ignored-attributes  -mtune=native  -flto -fopenmp #-DEIGEN_NO_DEBUG 
 
-PKG_LIBS     = -lgsl -lnlopt 
+PKG_LIBS     = $(shell pkg-config --libs nlopt gsl)
 
 POLYK        = $(wildcard polyK/*.cpp)
 MAIN         = $(wildcard *.cpp)
