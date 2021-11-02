@@ -1,5 +1,8 @@
 
 
+//necessary things to run in R    
+  #include <RcppEigen.h>
+
 #include <vector>
 #include <array>
 #include <list>

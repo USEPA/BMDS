@@ -3,6 +3,8 @@
 #include <list>
 #include <algorithm>
 #include <RcppEigen.h>
+#include <RcppGSL.h>
+
 #include "polyK_animal.h"
 
 #ifndef __POLYK_SETUP_H
@@ -61,7 +63,7 @@ private:
   double dosediffmax;
   double tmax;
   double dmax; // Max dose value
-  
+  public:
   
   /**
    * Create a new instance of PolyKPrepareClass
@@ -89,7 +91,7 @@ private:
   
     
   }
-public:
+
 
   /**
    * Get the weighting value (scaled dose value) for the treatment group index

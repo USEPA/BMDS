@@ -7,6 +7,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // run_single_dichotomous
 List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data, Eigen::MatrixXd pr, NumericVector options1, IntegerVector options2);
 RcppExport SEXP _ToxicR_run_single_dichotomous(SEXP modelSEXP, SEXP dataSEXP, SEXP prSEXP, SEXP options1SEXP, SEXP options2SEXP) {
@@ -119,6 +124,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// polyk
+NumericVector polyk(NumericVector dose, NumericVector tumor, NumericVector daysOnStudy);
+RcppExport SEXP _ToxicR_polyk(SEXP doseSEXP, SEXP tumorSEXP, SEXP daysOnStudySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type dose(doseSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type tumor(tumorSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type daysOnStudy(daysOnStudySEXP);
+    rcpp_result_gen = Rcpp::wrap(polyk(dose, tumor, daysOnStudy));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_single_dichotomous", (DL_FUNC) &_ToxicR_run_single_dichotomous, 5},
@@ -128,6 +146,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 7},
     {"_ToxicR_run_dichotomous_single_mcmc", (DL_FUNC) &_ToxicR_run_dichotomous_single_mcmc, 5},
     {"_ToxicR_run_continuous_single_mcmc", (DL_FUNC) &_ToxicR_run_continuous_single_mcmc, 7},
+    {"_ToxicR_polyk", (DL_FUNC) &_ToxicR_polyk, 3},
     {NULL, NULL, 0}
 };
 

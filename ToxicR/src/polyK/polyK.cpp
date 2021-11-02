@@ -113,7 +113,7 @@ double TDMSE_PolyK::polyk_mod(PolyKPrepareClass subsetVars,
   dBar = 0;
   dBartop = 0;
   dBarbot = 0;
-  
+  Rcpp::Rcerr << "I am here A" << std::endl;
   try
   {
     for(int ib = 1; ib <= ntrt; ib++)
@@ -168,7 +168,7 @@ double TDMSE_PolyK::polyk_mod(PolyKPrepareClass subsetVars,
       dBarbot += ai[xyz];
     } // label 5
     dBar = dBartop / dBarbot;
-    
+    Rcpp::Rcerr << "I am here B" << std::endl;
     // Calculate CF value
     if(ntrt == 2) // Note this is mathematically the same as the trend correction if we assume getScale(2) - getScale(1) = 1
     {
@@ -227,6 +227,7 @@ double TDMSE_PolyK::polyk_mod(PolyKPrepareClass subsetVars,
         }
       } // label 6
     }
+    Rcpp::Rcerr << "I am here C" << std::endl;
     cf /= 2;
     
     sum_adpi = 0;

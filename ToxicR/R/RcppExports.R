@@ -29,3 +29,7 @@ run_continuous_single_mcmc <- function(model, Y, D, priors, options, is_logNorma
     .Call(`_ToxicR_run_continuous_single_mcmc`, model, Y, D, priors, options, is_logNormal, suff_stat)
 }
 
+polyk <- function(dose, tumor, daysOnStudy) {
+    .Call(`_ToxicR_polyk`, dose, tumor, daysOnStudy)
+}
+

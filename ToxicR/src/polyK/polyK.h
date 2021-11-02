@@ -30,6 +30,8 @@
 #include <limits>
 #include "polyK_setup.h"
 
+#ifndef _POLYK_H_DEF
+#define _POLYK_H_DEF
 namespace PolyK
 {
 
@@ -98,3 +100,4 @@ private:
 };
 
 }
+#endif
