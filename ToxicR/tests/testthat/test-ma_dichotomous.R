@@ -20,3 +20,18 @@ test_that("Defaults", {
      validate_model( AA$Fitted_Model_8 ,  "Model:  Quantal-Linear" ,  c(-2.45423133972787, 0.0132202483334582) ,  c(7.9696321128232, 5.93259065501385, 11.5959106855121) )
      validate_model( AA$Fitted_Model_9 ,  "Model: Weibull" ,  c(-2.86014800998383, 0.661116573139896, 0.0434668812243724) ,  c(3.81611266939088, 1.26068620197916, 9.68226547559964) )
 })
+
+test_that("Plots", {
+        set.seed(5981)
+        mData <- build_single_dichotomous_dataset()
+        AA = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3])
+        
+        dichotomous_plot <- plot(AA)
+        expect_identical(dichotomous_plot$labels$x, "Dose")
+        expect_identical(dichotomous_plot$labels$y, "Proportion")
+        expect_identical(dichotomous_plot$labels$title, "Model : Dichotomous MA, Fit type : Laplace")
+        
+        dichotomous_cleveland <- cleveland_plot(AA)
+        expect_identical(dichotomous_cleveland$labels$x, "Dose Level")
+        expect_identical(dichotomous_cleveland$labels$title, "BMD Estimates by Each Model (Sorted by Posterior Probability)")
+})

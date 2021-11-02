@@ -43,3 +43,54 @@ test_that("Laplace", {
      validate_model( AA$Individual_Model_10 ,  "Model: Power Distribution: Normal-NCV" ,  c(450.8323439329, -3.43254002670521, 0.822051300900347, 1.75784546770694, -2.56320443025547) ,  c(BMD = 32.2840716585567, BMDL = 17.0206144965613, BMDU = 53.1114395962907) )
      
 })
+
+test_that("Plots", {
+        set.seed(5981)
+        data <- build_ma_dataset()
+        y = data[["y"]]
+        doses = data[["doses"]]
+        model_listA  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                                  distribution_list =  c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),"normal",
+                                                         "normal-ncv"))
+        model_list = list()
+        for (i in 1:nrow(model_listA)){
+                t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+                if(model_listA$distribution_list[i] == "lognormal"){
+                        t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+                }else{
+                        if (model_listA$distribution_list[i] == "normal"){
+                                t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+                        }else{
+                                t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+                        }
+                }
+                
+                model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+        }
+        
+        AA <- ma_continuous_fit(as.matrix(doses), as.matrix(y), model_list=model_list,
+                                fit_type = "laplace", BMD_TYPE = 'sd', BMR = 1)
+        laplace_plot <- plot(AA)
+        expect_identical(laplace_plot$labels$x, "Dose")
+        expect_identical(laplace_plot$labels$y, "Response")
+        expect_identical(laplace_plot$labels$title, "Continous MA fitting")
+        
+        laplace_cleveland <- cleveland_plot(AA)
+        expect_identical(laplace_cleveland$labels$x, "Dose Level")
+        expect_identical(laplace_cleveland$labels$title, "BMD Estimates by Each Model (Sorted by Posterior Probability)")
+        
+        AA <- ma_continuous_fit(as.matrix(doses),as.matrix(y),model_list=model_list,
+                                fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+        mcmc_plot <- plot(AA)
+        expect_identical(mcmc_plot$labels$x, "Dose")
+        expect_identical(mcmc_plot$labels$y, "Response")
+        expect_identical(mcmc_plot$labels$title, "Continous MA fitting")
+        
+        mcmc_cleveland <- cleveland_plot(AA)
+        expect_identical(mcmc_cleveland$labels$x, "Dose Level")
+        expect_identical(mcmc_cleveland$labels$title, "BMD Estimates by Each Model (Sorted by Posterior Probability)")
+        
+        mcmc_density <- MAdensity_plot(AA)
+        expect_identical(mcmc_density$labels$x, "Dose Level (Dotted Line : MA BMD)")
+        expect_identical(mcmc_density$labels$title, "Density plots for each fitted model (Fit type: MCMC)")
+})

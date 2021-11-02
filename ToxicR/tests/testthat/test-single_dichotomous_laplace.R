@@ -14,16 +14,32 @@ test_that("Probit", {
      validate_model(c, "Model:  Probit", c(-1.22, 0.028), c(13.32, 10.99, 17.459))
 })
 
-test_that("Probit", {
+test_that("Log Probit", {
      set.seed(5981)
      mData <- build_single_dichotomous_dataset()
      c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "log-probit", fit_type = "laplace")
      validate_model(c, "Model:  Log-Probit", c(-2.76, -2.03, 0.487), c(4.659, 1.88, 12.00))
 })
 
-test_that("Probit", {
+test_that("Weibull", {
      set.seed(5981)
      mData <- build_single_dichotomous_dataset()
      c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "laplace")
      validate_model(c, "Model: Weibull", c(-2.86, 0.66, 0.04), c(3.81, 1.26, 9.68))
+})
+
+test_that("Plots", {
+        set.seed(5981)
+        mData <- build_single_dichotomous_dataset()
+        c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "laplace")
+        laplace_plot <- plot(c)
+        expect_identical(laplace_plot$labels$x, "Dose")
+        expect_identical(laplace_plot$labels$y, "Proportion")
+        expect_identical(laplace_plot$labels$title, "Model:  Hill,  Fit Type: Maximized")
+        
+        c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "laplace")
+        laplace_plot <- plot(c)
+        expect_identical(laplace_plot$labels$x, "Dose")
+        expect_identical(laplace_plot$labels$y, "Proportion")
+        expect_identical(laplace_plot$labels$title, "Model: Weibull,  Fit Type: Maximized")
 })

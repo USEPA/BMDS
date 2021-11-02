@@ -174,7 +174,7 @@ bayesian_prior_continuous_default <- function(model,variance,degree=2){
     }
   }
   else if (dmodel == 3){ #Exp-5
-    if (dvariance == 1){
+    if (dvariance == 1 || dvariance == 3){
       prior <- create_prior_list(lnormprior(0,1,0,100),
                                  normprior(0,1, -100,100),
                                  normprior(0,1, -100,100),
@@ -187,12 +187,6 @@ bayesian_prior_continuous_default <- function(model,variance,degree=2){
                                  lnormprior(log(1.6),0.4214036,0,18),
                                  lnormprior(0,0.5,0,18), 
                                  normprior(0,1,-30,30));
-    } else if (dvariance == 3){
-      prior <- create_prior_list(lnormprior(0,1,0,100),
-                                 normprior(0,1, -100,100),
-                                 normprior(0,1, -100,100),
-                                 lnormprior(log(1.6),0.4214036,0,18),
-                                 normprior(0,1,-18,18))
     }
   }
   else if (dmodel == 4){ # Power
@@ -207,6 +201,8 @@ bayesian_prior_continuous_default <- function(model,variance,degree=2){
                                  lnormprior(log(1.6),0.4214036, 0,40),  #k
                                  lnormprior(0,0.5,0,18),
                                  normprior(0,1,-18,18))
+    } else if (dvariance == 3){
+      stop("Power-Log-normal models are not allowed. Please choose normal or normal non-constant variance. \n");
     }
   }
   else if (dmodel == 5){ #Polynomial
