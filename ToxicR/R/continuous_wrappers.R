@@ -171,6 +171,11 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
    
       rvals$bmd      <- c(rvals$fitted_model$bmd,NA,NA) 
       
+      rvals$full_model <- rvals$fitted_model$full_model
+      rvals$parameters <- rvals$fitted_model$parameters
+      rvals$covariance <- rvals$fitted_model$covariance
+      rvals$maximum <- rvals$fitted_model$maximum
+      
       rvals$prior    <- t_prior_result
       rvals$bmd_dist <- rvals$fitted_model$bmd_dist
       if (!identical(rvals$bmd_dist, numeric(0))){
@@ -196,6 +201,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$prior <- PR
       rvals$transformed <- transform
       class(rvals) <- "BMDcont_fit_MCMC"
+      rvals$fitted_model <- NULL
       return(rvals)
     }else{
       

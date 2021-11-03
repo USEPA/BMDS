@@ -442,7 +442,7 @@ MAdensity_plot <- function (A, ...){
     
     
     temp_density<-data.frame(matrix(0,length(temp),3))
-    temp_density[,2]=substr(fit$fitted_model$full_model,8,999)
+    temp_density[,2]=substr(fit$full_model,8,999)
     temp_density[,1]=temp
     temp_density[,3]=A$posterior_probs[i]
     

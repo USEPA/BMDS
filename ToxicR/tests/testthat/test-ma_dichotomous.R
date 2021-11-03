@@ -34,4 +34,19 @@ test_that("Plots", {
         dichotomous_cleveland <- cleveland_plot(AA)
         expect_identical(dichotomous_cleveland$labels$x, "Dose Level")
         expect_identical(dichotomous_cleveland$labels$title, "BMD Estimates by Each Model (Sorted by Posterior Probability)")
+        
+        AA = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")
+        dichotomous_plot <- plot(AA)
+        expect_identical(dichotomous_plot$labels$x, "Dose")
+        expect_identical(dichotomous_plot$labels$y, "Proportion")
+        #TODO should fit type MCMC be in the title?
+        expect_identical(dichotomous_plot$labels$title, "Model : Dichotomous MA")
+        
+        dichotomous_cleveland <- cleveland_plot(AA)
+        expect_identical(dichotomous_cleveland$labels$x, "Dose Level")
+        expect_identical(dichotomous_cleveland$labels$title, "BMD Estimates by Each Model (Sorted by Posterior Probability)")
+        
+        density_plot <- MAdensity_plot(AA)
+        expect_identical(density_plot$labels$x, "Dose Level (Dotted Line : MA BMD)")
+        expect_identical(density_plot$labels$title, "Density plots for each fitted model (Fit type: MCMC)")
 })

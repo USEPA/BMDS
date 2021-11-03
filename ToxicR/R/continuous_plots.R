@@ -141,7 +141,7 @@ cont_power_f <-function(parms,d,decrease=F){
   # Geom_polygon ? etc..
   plot_gg <- ggplot() +xlim(-max(test_doses)*5,max(test_doses)*5)+
     geom_line(aes(x=test_doses,y=me),color="blue",size=2)+
-    labs(x="Dose", y="Response",title=paste(fit$fitted_model$full_model, "MCMC",sep=",  Fit Type: " ))+
+    labs(x="Dose", y="Response",title=paste(fit$full_model, "MCMC",sep=",  Fit Type: " ))+
     theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
@@ -469,20 +469,20 @@ cont_power_f <-function(parms,d,decrease=F){
             if (A$posterior_probs[ii]>0.05){
                fit <- A[[fit_idx[ii]]]
                if (fit$model=="FUNL"){
-                    f <- cont_FUNL_f(fit$fitted_model$parameters,test_doses)
+                    f <- cont_FUNL_f(fit$parameters,test_doses)
                }  
                if (fit$model=="hill"){
-                    f <- cont_hill_f(fit$fitted_model$parameters,test_doses)
+                    f <- cont_hill_f(fit$parameters,test_doses)
                }
                if (fit$model=="exp-3"){
-                   temp = fit$fitted_model$parameters
+                   temp = fit$parameters
                     f <- cont_exp_3_f(temp,test_doses,decrease)
                }
                if (fit$model=="exp-5"){
-                    f <- cont_exp_5_f(fit$fitted_model$parameters,test_doses)
+                    f <- cont_exp_5_f(fit$parameters,test_doses)
                }
                if (fit$model=="power"){
-                    f <- cont_power_f(fit$fitted_model$parameters,test_doses)
+                    f <- cont_power_f(fit$parameters,test_doses)
                }
                col = 'coral3'
                temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])

@@ -110,7 +110,7 @@
     # Change this to ggplot object
     
     
-    #plot(dose,Response,type='n',main=fit$fitted_model$full_model)
+    #plot(dose,Response,type='n',main=fit$full_model)
     # We need to adjust the range here too
     # S3 object not fitted here for the title part
  
@@ -168,7 +168,7 @@
     
     plot_gg <-ggplot()+
               geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-              labs(x="Dose", y="Proportion",title=paste(fit$fitted_model$full_model, fit_type,sep=",  Fit Type: " ))+
+              labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+
               theme_minimal()+
               xlim(0-5*max(test_doses),5*max(test_doses))
     
@@ -453,31 +453,31 @@
         if(A$posterior_probs[ii]>0.05){
           fit <- A[[fit_idx[ii]]]
           if (fit$model=="hill"){
-            f <- .dich_hill_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_hill_f(fit$parameters,test_doses)
           }
           if (fit$model=="gamma"){
-            f <- .dich_gamma_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_gamma_f(fit$parameters,test_doses)
           }
           if (fit$model == "logistic"){
-            f <- .dich_logist_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_logist_f(fit$parameters,test_doses)
           }
           if (fit$model=="log-logistic"){
-            f <- .dich_llogist_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_llogist_f(fit$parameters,test_doses)
           }
           if (fit$model=="probit"){
-            f <- .dich_probit_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_probit_f(fit$parameters,test_doses)
           }
           if (fit$model=="log-probit"){
-            f<- .dich_lprobit_f(fit$fitted_model$parameters,test_doses)
+            f<- .dich_lprobit_f(fit$parameters,test_doses)
           }
           if (fit$model=="multistage"){
-            f <- .dich_multistage_f(fit$fitted_model$parameters,test_doses)
+            f <- .dich_multistage_f(fit$parameters,test_doses)
           }
           if (fit$model=="qlinear"){
-            f<- .dich_qlinear_f(fit$fitted_model$parameters,test_doses)
+            f<- .dich_qlinear_f(fit$parameters,test_doses)
           }
           if (fit$model=="weibull"){
-            f<- .dich_weibull_f(fit$fitted_model$parameters,test_doses)
+            f<- .dich_weibull_f(fit$parameters,test_doses)
           }
           
           col = 'coral3'

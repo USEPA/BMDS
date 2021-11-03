@@ -124,12 +124,17 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
            temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
          }
          
-         temp[[jj]]$fitted_model <- tempn[[ii]]
+         temp[[jj]]$full_model <- tempn[[ii]]$full_model
+         temp[[jj]]$parameters <- tempn[[ii]]$parameters
+         temp[[jj]]$covariance <- tempn[[ii]]$covariance
+         temp[[jj]]$maximum <- tempn[[ii]]$maximum
+         temp[[jj]]$bmd_dist <- tempn[[ii]]$bmd_dist
+         
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)
          temp[[jj]]$model <- prior_list[[jj]]$model# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
 
-         data_temp = temp[[jj]]$fitted_model$bmd_dist
+         data_temp = temp[[jj]]$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
          temp[[jj]]$bmd     <- c(NA,NA,NA)     
          
@@ -137,7 +142,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          if (length(data_temp) > 0){
            ii = nrow(data_temp)
 
-             temp[[jj]]$fitted_model$bmd_dist = data_temp
+             temp[[jj]]$bmd_dist = data_temp
              if (length(data_temp)>10 ){
              
                   te <- splinefun(data_temp[,2,drop=F],data_temp[,1,drop=F],method="hyman")
@@ -352,7 +357,12 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
-         temp[[jj]]$fitted_model <- tempn[[ii]]
+         temp[[jj]]$full_model <- tempn[[ii]]$full_model
+         temp[[jj]]$parameters <- tempn[[ii]]$parameters
+         temp[[jj]]$covariance <- tempn[[ii]]$covariance
+         temp[[jj]]$maximum <- tempn[[ii]]$maximum
+         temp[[jj]]$bmd_dist <- tempn[[ii]]$bmd_dist
+         
          #temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- data
          temp[[jj]]$model <- tolower(trimws(gsub("Model: ","",tempn[[ii]]$full_model)))
@@ -360,7 +370,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          if (temp[[jj]]$model =="quantal-linear" ){
                 temp[[jj]]$model ="qlinear"
          }
-         te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
+         te <- splinefun(temp[[jj]]$bmd_dist[!is.infinite(temp[[jj]]$bmd_dist[,1]),2],temp[[jj]]$bmd_dist[!is.infinite(temp[[jj]]$bmd_dist[,1]),1],method="hyman")
          temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDdich_fit_MCMC"
          jj <- jj + 1

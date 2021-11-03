@@ -27,3 +27,20 @@ test_that("Weibull", {
      c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "mcmc")
      validate_model(c,  "Model: Weibull" ,  c(-2.86014800998383, 0.661116573139896, 0.438604630748536) ,  c(BMD = 5.1170096470376, BMDL = 1.46662721211377, BMDU = 11.8009898041251) )
 })
+
+test_that("Plots", {
+        set.seed(5981)
+        mData <- build_single_dichotomous_dataset()
+        c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "weibull", fit_type = "mcmc")
+        mcmc_plot <- plot(c)
+        expect_identical(mcmc_plot$labels$x, "Dose")
+        expect_identical(mcmc_plot$labels$y, "Proportion")
+        #TODO should the title have the distribution name?
+        expect_identical(mcmc_plot$labels$title, "Model: Weibull,  Fit Type: MCMC")
+        c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],model_type = "hill", fit_type = "mcmc")
+        mcmc_plot <- plot(c)
+        expect_identical(mcmc_plot$labels$x, "Dose")
+        expect_identical(mcmc_plot$labels$y, "Proportion")
+        #TODO should the title have the distribution name?
+        expect_identical(mcmc_plot$labels$title, "Model:  Hill,  Fit Type: MCMC")
+})

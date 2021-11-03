@@ -96,7 +96,12 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 
     temp$data    = DATA
+    temp$full_model <- temp$fitted_model$full_model
+    temp$parameters <- temp$fitted_model$parameters
+    temp$covariance <- temp$fitted_model$covariance
+    temp$maximum <- temp$fitted_model$maximum
     temp$bmd     = as.numeric(c(mean(temp$mcmc_result$BMD_samples),quantile(temp$mcmc_result$BMD_samples,c(alpha,1-alpha),na.rm=TRUE)))
+    temp$fitted_model <- NULL
     class(temp) <- "BMDdich_fit_MCMC"
   }
   names(temp$bmd) <- c("BMD","BMDL","BMDU")

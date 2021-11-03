@@ -132,12 +132,7 @@ cleveland_plot <- function (A, ...){
     # BMD -95%
     bmd_ind[i,3]<-A[[i]]$bmd[3]
     # Model name 
-    #if(exists("A[[i]]$fitted_model")){ #FIXME remove this check when MCMC class structure is regularized
-    if('fitted_model' %in% names(A[[i]])){
-      bmd_ind[i,4]<-substr(A[[i]]$fitted_model$full_model, 8,999)
-    } else {
-      bmd_ind[i,4]<-substr(A[[i]]$full_model, 8,999)      
-    }
+    bmd_ind[i,4]<-substr(A[[i]]$full_model, 8,999)      
     bmd_ind[i,5]<-A$posterior_probs[i]
   }
   

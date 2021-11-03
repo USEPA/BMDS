@@ -21,21 +21,12 @@ build_single_dichotomous_dataset <- function(){
 }
 
 validate_model <- function(model, name, parameters, bmd_estimates){
-     if('fitted_model' %in% names(model)){
-        expect_equal(name, model$fitted_model$full_model)
-        expect_equal(parameters, model$fitted_model$parameters, tolerance=10e-2)
-        expect_equal(setNames(bmd_estimates, c("BMD", "BMDL", "BMDU")), model$bmd, tolerance=10e-2)
-        show(model$fitted_model$full_model)
-        show(model$fitted_model$parameters)
-        show(model$bmd)
-     } else {
         expect_equal(name, model$full_model)
         expect_equal(parameters, model$parameters, tolerance=10e-2)
         expect_equal(setNames(bmd_estimates, c("BMD", "BMDL", "BMDU")), model$bmd, tolerance=10e-2)
         #show(model$full_model)
         #show(model$parameters)
         #show(model$bmd)
-     }
 }
 
 generate_validation_code_single <- function(c){
