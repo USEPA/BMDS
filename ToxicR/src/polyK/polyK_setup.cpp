@@ -22,11 +22,12 @@
 //
 namespace PolyK{
 
+
 bool PolyKPrepareClass::SetupStudy(std::vector<double> dose, std::vector<int> tumor, 
                                    std::vector<int> daysOnStudy) {
-                     
-    Animal an; 
-                     
+  Animal an;
+
+               
    try{
      if (dose.size() != tumor.size() ||
          dose.size() != daysOnStudy.size()){
@@ -109,9 +110,9 @@ void PolyKPrepareClass::prepare() {
   for (int i = 1; i <= m_NumDoseLevels; i++) {
     // Scale the dose values to a 0-1 range
     m_Scale[i] = m_Scale[i] / maxDose;
-    /*      if (m_DebugFlag)  System.out.println("Poly-3 Denom #" + i + " = " + m_Poly3Denom[i]);
-     if (m_DebugFlag)  System.out.println("TumorSum #" + i + " = " + tumorSum[i]);
-     if (m_DebugFlag)  System.out.println("Scale #" + i + " = " + m_Scale[i]);*/
+  //  Rcpp::Rcout << "Poly-3 Denom # " <<  i << " = " << m_Poly3Denom[i] <<std::endl;
+  //  Rcpp::Rcout << "TumorSum #" << i << " = " << tumorSum[i] << std::endl;
+   // Rcpp::Rcout << "Scale #" << i << " = " << m_Scale[i] << std::endl;
   }
   
   // Sort animals by age
@@ -123,7 +124,7 @@ void PolyKPrepareClass::prepare() {
   int ageIdx = 0;
  
   for (auto &an : m_AnimalList){ 
-    
+   
     if (an.getDaysOnStudy() > prevAge) {
       ageIdx++;
       m_TimeArray[ageIdx] = an.getDaysOnStudy() / (double)m_MaxTime;
@@ -137,7 +138,7 @@ void PolyKPrepareClass::prepare() {
     }
   }
   m_NAge = ageIdx;
-  //if (m_DebugFlag)  System.out.println("N Age = " + m_NAge);
+
 
 }
 }

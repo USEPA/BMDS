@@ -22,7 +22,7 @@ using namespace Rcpp;
 //   http://gallery.rcpp.org/
 //
 
-// [[Rcpp::export]]
+// [[Rcpp::export(.polykCPP)]]
 NumericVector polyk(NumericVector dose, NumericVector tumor,
                     NumericVector daysOnStudy) {
   std::vector<double> t_dose(dose.size()); 
@@ -44,9 +44,9 @@ NumericVector polyk(NumericVector dose, NumericVector tumor,
   PolyK::PolyKPrepareClass pkData; 
   PolyK::TDMSE_PolyK       pkTest; 
   pkData.SetupStudy(t_dose,t_tumor,t_daysOnStudy);
-    Rcout << "Here 0" << std::endl; 
+   
   pkData.prepare();
-  Rcout << "Here 1" << std::endl; 
+
   std::sort(t_dose.begin(), t_dose.end());
   auto last = std::unique(t_dose.begin(), t_dose.end());
   t_dose.erase(last, t_dose.end());
@@ -54,14 +54,23 @@ NumericVector polyk(NumericVector dose, NumericVector tumor,
   // POLY_3_TEST
   // POLY_1PT5_TEST
   // POLY_6_TEST
-    
-  double t2 = pkTest.polyk_mod(pkData,
+  
+  auto t1 = pkTest.polyk_mod(pkData,
                                pkData.getNumDoseLevels(),
                                PolyK::POLY_1PT5_TEST,
-                               1.0);
-  Rcout << "Here 2" << std::endl; 
-   Rcpp::Rcout << t2 << std::endl; 
-  return dose * 2;
+                               -1.0);
+  auto t2 = pkTest.polyk_mod(pkData,
+                               pkData.getNumDoseLevels(),
+                               PolyK::POLY_3_TEST,
+                               -1.0);
+  auto t3 = pkTest.polyk_mod(pkData,
+                               pkData.getNumDoseLevels(),
+                               PolyK::POLY_6_TEST,
+                               -1.0);
+  NumericVector rval(3); 
+  rval[0] = t1; rval[1] = t2; rval[2] = t3; 
+  
+  return rval; 
 }
 
 

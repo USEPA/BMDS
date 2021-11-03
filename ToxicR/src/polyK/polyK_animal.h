@@ -59,7 +59,7 @@ public:
     return this->daysOnStudy >= b.daysOnStudy; 
   };
   bool  operator<(const Animal& b){
-    return this->daysOnStudy >= b.daysOnStudy; 
+    return this->daysOnStudy < b.daysOnStudy; 
   };
   bool  operator<=(const Animal& b){
     return this->daysOnStudy <= b.daysOnStudy; 

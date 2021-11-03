@@ -21,8 +21,8 @@ namespace PolyK{
  *          2011) $
  * @since 1.0
  */
-static  int MAX_DOSE_LEVELS = 10;
-static  int MAX_AGES = 1000;
+static  int MAX_DOSE_LEVELS = 20;
+static  int MAX_AGES = 4000;
 
 class PolyKPrepareClass {
   /**
@@ -68,21 +68,22 @@ private:
   /**
    * Create a new instance of PolyKPrepareClass
    */
-  PolyKPrepareClass() {
-    
-    // Initialize arrays
-    m_Poly15Denom (MAX_DOSE_LEVELS+1);//= new double[MAX_DOSE_LEVELS + 1];
-    m_Poly3Denom(MAX_DOSE_LEVELS +1);// = new double[MAX_DOSE_LEVELS + 1];
-    m_Poly6Denom(MAX_DOSE_LEVELS +1);// = new double[MAX_DOSE_LEVELS + 1];
-    
-    m_Scale(MAX_DOSE_LEVELS +1);// = new double[MAX_DOSE_LEVELS + 1];
-    
-    m_NumAnimals(MAX_DOSE_LEVELS +1);// = new int[MAX_DOSE_LEVELS + 1];
-    
-    m_TumorAnimals(MAX_AGES + 1, MAX_DOSE_LEVELS +1);// = new int[MAX_AGES + 1][MAX_DOSE_LEVELS + 1];
-    m_NonTumorAnimals(MAX_AGES + 1, MAX_DOSE_LEVELS +1);// = new int[MAX_AGES + 1][MAX_DOSE_LEVELS + 1];
-    m_TimeArray(MAX_AGES+ 1);// = new double[MAX_AGES + 1];
-  
+  PolyKPrepareClass()
+  {
+	  Eigen::VectorXi temp_im(MAX_DOSE_LEVELS + 1);
+	  Eigen::VectorXd temp_ti(MAX_AGES+1); 
+	  Eigen::VectorXd temp_m(MAX_DOSE_LEVELS+ 1);   
+	  Eigen::MatrixXi temp_i(MAX_AGES+1,MAX_DOSE_LEVELS+ 1);        
+
+	  m_Scale = temp_m*0;
+	  m_NumAnimals = temp_im*0; 
+	  m_TimeArray  = temp_ti*0;
+	  m_Poly15Denom = temp_m*0;
+	  m_Poly3Denom = temp_m*0;  
+	  m_Poly6Denom = temp_m*0; 
+	  m_TumorAnimals = temp_i*0;
+	  m_NonTumorAnimals = temp_i*0; 
+ 
   }
   
   ~PolyKPrepareClass() {

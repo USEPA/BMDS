@@ -18,7 +18,26 @@
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 NTP <- modules::module({
 
-export("jonckeere","williams","dunn","dunnett","shirley")
+export("jonckeere","williams","dunn","dunnett","shirley","polyk")
+polyk <- function(dose,tumor,daysOnStudy){
+     if ( sum(tumor>1) > 0){
+          stop("Tumors need to be a 0 or 1")
+     }
+     if ( sum(tumor<0) > 0){
+          stop("Tumors need to be a 0 or 1")
+     }
+     if ( sum(daysOnStudy < 0) > 0){
+          stop("Can not have negative days on study.")
+     }
+     result <- .polykCPP(dose,tumor,daysOnStudy)
+     message("The results of the Poly-K test for trend.\n")
+     cat(sprintf("Poly-1.5 P-value = %1.4f\n",result[1]))
+     cat(sprintf("Poly-3   P-value = %1.4f\n",result[1]))
+     cat(sprintf("Poly-6   P-value = %1.4f\n",result[3]))
+     result <- as.matrix(result)
+     row.names(result)<-c("Poly 1.5","Poly-3", "Poly-6")
+     return(result)
+}
 ## -----------------------------------------------------------
 ## JONCKHEERE'S TEST 
 ## ----------------Changelog----------------------------------
