@@ -29,10 +29,18 @@ polyk <- function(dose,tumor,daysOnStudy){
      if ( sum(daysOnStudy < 0) > 0){
           stop("Can not have negative days on study.")
      }
+  
+     if ( (length(dose) != length(tumor)) || 
+          (length(tumor) != length(daysOnStudy))){
+          stop("All arrays are not of the same length.")
+     }
+     if ( ( sum(is.na(dose)) + sum(is.na(tumor)) + sum(is.na(daysOnStudy))) > 0){ 
+        stop("There is an NA in the data.")
+     }
      result <- .polykCPP(dose,tumor,daysOnStudy)
      message("The results of the Poly-K test for trend.\n")
      cat(sprintf("Poly-1.5 P-value = %1.4f\n",result[1]))
-     cat(sprintf("Poly-3   P-value = %1.4f\n",result[1]))
+     cat(sprintf("Poly-3   P-value = %1.4f\n",result[2]))
      cat(sprintf("Poly-6   P-value = %1.4f\n",result[3]))
      result <- as.matrix(result)
      row.names(result)<-c("Poly 1.5","Poly-3", "Poly-6")
