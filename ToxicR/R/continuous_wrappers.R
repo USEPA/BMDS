@@ -98,10 +98,26 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (fitmodel == 666 && dis_type == 3){
          stop("Polynomial models are currently not defined for the Log-Normal distribution.")
     }
+    
+    #Fit to determine direction. 
+    #This is done for the BMD estimate. 
+    model_data = list(); 
+    model_data$X = D; model_data$SSTAT = Y
+    if (sstat == T){
+      temp.fit <- lm(model_data$SSTAT[,1] ~ model_data$X,
+                     weights=(1/model_data$SSTAT[,3]^2)*model_data$SSTAT[,2])
+    }else{
+      temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
+    }
+    
+    is_increasing = F
+    if (coefficients(temp.fit)[2] > 0){
+      is_increasing = T
+    }
 
     #For MLE 
     if (type_of_fit == 2){
-      PR = MLE_bounds_continuous(model_type,distribution,degree)
+      PR = MLE_bounds_continuous(model_type,distribution,degree, is_increasing)
       PR = PR$priors
     }
 
@@ -127,22 +143,6 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     
     if (rt == 4) {rt = 6;} #internally in Rcpp hybrid is coded as 6	
     
-    
-    #Fit to determine direction. 
-    #This is done for the BMD estimate. 
-    model_data = list(); 
-    model_data$X = D; model_data$SSTAT = Y
-    if (sstat == T){
-      temp.fit <- lm(model_data$SSTAT[,1] ~ model_data$X,
-  		                weights=(1/model_data$SSTAT[,3]^2)*model_data$SSTAT[,2])
-    }else{
-      temp.fit <- lm(model_data$SSTAT[,1]~model_data$X)
-    }
-    
-    is_increasing = F
-    if (coefficients(temp.fit)[2] > 0){
-	     is_increasing = T
-    }
     tmodel <- permuteMat[dmodel,2] 
     
     options <- c(rt,BMR,point_p,alpha, is_increasing,constVar,burnin,samples,transform)
