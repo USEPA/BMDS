@@ -28,6 +28,19 @@ test_that("Weibull", {
      validate_model(c, "Model: Weibull", c(-2.86, 0.66, 0.04), c(3.81, 1.26, 9.68))
 })
 
+test_that("Vector Input", {
+        set.seed(5981)
+        mData <- build_single_dichotomous_dataset()
+        D <- as.double(mData[,1])
+        dim(D) <- c(nrow(mData),1)
+        Y <- as.double(mData[,2])
+        dim(Y) <- c(nrow(mData),1)
+        N <- as.double(mData[,3])
+        dim(N) <- c(nrow(mData),1)
+        c = single_dichotomous_fit(D, Y, N, model_type = "hill", fit_type = "laplace")
+        validate_model(c, "Model:  Hill", c(-3.15, -0.54, -2.215, 1.38), c(2.43, 1.19, 5.66))
+})
+
 test_that("Plots", {
         set.seed(5981)
         mData <- build_single_dichotomous_dataset()

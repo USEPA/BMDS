@@ -8,6 +8,9 @@ PKG_CPPFLAGS +=  $(shell pkg-config --cflags nlopt gsl) -DR_COMPILATION=TRUE -Wn
 
 PKG_LIBS     = $(shell pkg-config --libs nlopt gsl)
 
+MAKEFLAGS = -j4
+
+
 POLYK        = $(wildcard polyK/*.cpp)
 MAIN         = $(wildcard *.cpp)
 MAIN_CODE    = $(wildcard code_base/*.cpp)

@@ -132,6 +132,8 @@ List run_single_dichotomous(NumericVector model,
 
  
   compute_dichotomous_pearson_GOF(&GOFdata,&GOFres); 
+  res.gof_p_value = GOFres.p_value;
+  res.gof_chi_sqr_statistic = GOFres.test_statistic;
 
   
   Eigen::VectorXd resid(Anal.n); 

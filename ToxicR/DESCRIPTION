@@ -14,7 +14,7 @@ License: MIT
 LazyData: true
 Imports: Rcpp (>= 1.0.0), ggplot2 (>= 3.3.2), shiny (>= 1.5.0), plotly (>= 4.9.2.1),
          scales (>= 1.1.1), tidyverse (>= 1.3.0), forcats, ggridges (>= 0.5.3), doBy (>= 4.6.11),
-         modules , multcomp (>= 1.4), VIM, gridExtra, splines2, knitr, dplyr
+         modules , multcomp (>= 1.4), VIM, gridExtra, knitr, dplyr
 Include: RcppEigen, RcppGSL 
 LinkingTo: Rcpp, RcppEigen, RcppGSL
 RoxygenNote: 7.1.1

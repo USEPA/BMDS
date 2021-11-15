@@ -124,12 +124,14 @@ List convert_dichotomous_fit_to_list(dichotomous_model_result *result){
     bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
   } 
   
-  List rV = List::create(Named("full_model") = str,
-                         Named("parameters") = parms, 
-                         Named("covariance") = covM, 
-                         Named("bmd_dist")   = bmd_distribution,
-                         Named("bmd")        = result->bmd,
-                         Named("maximum")    = maximum);  
+  List rV = List::create(Named("full_model")                = str,
+                         Named("parameters")                = parms, 
+                         Named("covariance")                = covM, 
+                         Named("bmd_dist")                  = bmd_distribution,
+                         Named("bmd")                       = result->bmd,
+                         Named("maximum")                   = maximum,
+                         Named("gof_p_value")               = result->gof_p_value,
+                         Named("gof_chi_sqr_statistic")     = result->gof_chi_sqr_statistic);  
  
  
   rV.attr("class") = "BMDdich_fit_maximized"; 

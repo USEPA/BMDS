@@ -10,6 +10,9 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
                                     prior="default", BMR = 0.1,
                                     alpha = 0.05, degree=2,samples = 21000,
                                     burnin = 1000){
+  Y <- as.matrix(Y) 
+  D <- as.matrix(D) 
+  N <- as.matrix(N) 
   
   if (class(prior) == "character"){
     prior =  bayesian_prior_dich(model_type,degree);

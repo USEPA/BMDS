@@ -66,3 +66,25 @@ build_ma_dataset <- function(){
      y <- rinvgauss(length(mean),mean,18528.14)
      return(list(doses=doses, y=y))
 }
+
+build_model_list <- function(y){
+        model_listA  = data.frame(model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2)),
+                                  distribution_list =  c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),"normal",
+                                                         "normal-ncv"))
+        model_list = list()
+        for (i in 1:nrow(model_listA)){
+                t_prior = bayesian_prior_continuous_default(model_listA$model_list[i],model_listA$distribution_list[i])
+                if(model_listA$distribution_list[i] == "lognormal"){
+                        t_prior$priors[nrow(t_prior$priors),2] = log(var(log(y)))
+                }else{
+                        if (model_listA$distribution_list[i] == "normal"){
+                                t_prior$priors[nrow(t_prior$priors),2]   = log(var(y))
+                        }else{
+                                t_prior$priors[nrow(t_prior$priors),2]   = log(mean(y)/var(y))
+                        }
+                }
+                
+                model_list[[i]] = create_continuous_prior(t_prior,model_listA$model_list[i],model_listA$distribution_list[i])
+        }
+        model_list
+}

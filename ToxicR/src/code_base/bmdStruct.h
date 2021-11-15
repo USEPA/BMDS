@@ -91,16 +91,18 @@ struct continuous_expected_result{
 // information for a single model fit. 
 //
 struct dichotomous_model_result{
-  int      model;           // dichotomous model specification
-  int      nparms; 		      //number of parameters in the model
-  double  *parms;           // Parameter Estimate 
-  double  *cov;             // Covariance Estimate
-  double   max;             // Value of the Likelihood/Posterior at the maximum
-  int      dist_numE;       // number of entries in rows for the bmd_dist
-  double      model_df;        // Used model degrees of freedom
-  double      total_df;        // Total degrees of freedom
-  double  *bmd_dist;        // bmd distribution (dist_numE x 2) matrix
-  double  bmd;              // the central estimate of the BMD
+  int      model;               // dichotomous model specification
+  int      nparms; 		          //number of parameters in the model
+  double  *parms;               // Parameter Estimate 
+  double  *cov;                 // Covariance Estimate
+  double   max;                 // Value of the Likelihood/Posterior at the maximum
+  int      dist_numE;           // number of entries in rows for the bmd_dist
+  double      model_df;         // Used model degrees of freedom
+  double      total_df;         // Total degrees of freedom
+  double  *bmd_dist;            // bmd distribution (dist_numE x 2) matrix
+  double  bmd;                  // the central estimate of the BMD
+  double gof_p_value;           // P-value from Chi Square goodness of fit
+  double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
 };
 
 //

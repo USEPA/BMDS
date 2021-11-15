@@ -30,6 +30,8 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    alpha = 0.05, samples = 25000,degree=2,
                                    burnin = 1000,ewald = FALSE,
                                    transform = FALSE){
+    Y <- as.matrix(Y) 
+    D <- as.matrix(D) 
 
     myD = Y; 
     sstat = F # set sufficient statistics to false if there is only one column

@@ -5,7 +5,6 @@ test_that("Normal Ewald Hill", {
      M2 <- build_single_continuous_dataset()
      c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, ewald = T,
                                distribution = "normal",fit_type="mcmc",model_type = "hill",degree = 4)
-     #generate_validation_code_single(c)
      validate_model(c,  "Model: Hill Distribution: Normal" ,  c(6.0730964791569, -5.32930641539168, 39.8852409296944, 3.11573367222951, -0.188967044405645) ,  c(BMD = 24.527770998594, BMDL = 20.2417034249427, BMDU = 29.2708718586858) )
 })
 
@@ -40,6 +39,18 @@ test_that("Normal Ewald polynomial", {
         c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, ewald = T,
                                   distribution = "normal",fit_type="mcmc",model_type = "polynomial",degree = 4)
         validate_model(c,  "Model: Polynomial Distribution: Normal" ,  c(6.22823399110153, -0.0676790046609912, -8.53912855307723e-05, 3.30743840069754e-06, -9.36239323304629e-09, -0.0134111696312258) ,  c(BMD = 14.9544341564178, BMDL = 11.5303337335587, BMDU = 20.5506707191467) )
+})
+
+test_that("Vector Inputs", {
+        set.seed(5981)
+        M2 <- build_single_continuous_dataset()
+        D <- as.double(M2[,1,drop=F])
+        dim(D) <- c(nrow(M2),1)
+        Y <- as.double(M2[,2:4])
+        dim(Y) <- c(nrow(M2),3)
+        c = single_continuous_fit(D,Y,BMD_TYPE="sd",BMR=1, ewald = T,
+                                  distribution = "normal",fit_type="mcmc",model_type = "hill",degree = 4)
+        validate_model(c,  "Model: Hill Distribution: Normal" ,  c(6.0730964791569, -5.32930641539168, 39.8852409296944, 3.11573367222951, -0.188967044405645) ,  c(BMD = 24.527770998594, BMDL = 20.2417034249427, BMDU = 29.2708718586858) )
 })
 
 test_that("Plots", {

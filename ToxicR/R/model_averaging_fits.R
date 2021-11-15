@@ -267,6 +267,10 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
                               BMR = 0.1, point_p = 0.01, distribution_list = NA,
                               alpha = 0.05,samples = 21000,
                               burnin = 1000){
+  D <- as.matrix(D)
+  Y <- as.matrix(Y)
+  N <- as.matrix(N)
+  
   priors <- list()
   temp_prior_l <- list()
   tmodel_list  <- list()
