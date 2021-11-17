@@ -108,22 +108,24 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     
     temp_r <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
                                     options) 
-   
     tempn <- temp_r$ma_results
+  
     tempm <- temp_r$mcmc_runs
     #clean up the run
-    idx     <- grep("Fitted_Model",names(tempn))
+
     temp <- list()
+    idx     <- grep("Fitted_Model",names(tempn))
+
+
     jj <- 1
     for ( ii in idx){
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
          #remove the unecessary 'c' column from the exponential fit
-         if ("exp-3" %in% model_list$model_list[jj]){
+         if ("exp-3" %in% model_list[jj]){
            temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
          }
-         
          temp[[jj]]$full_model <- tempn[[ii]]$full_model
          temp[[jj]]$parameters <- tempn[[ii]]$parameters
          temp[[jj]]$covariance <- tempn[[ii]]$covariance
@@ -138,7 +140,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
          data_temp = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
          temp[[jj]]$bmd     <- c(NA,NA,NA)     
          
-     
+
          if (length(data_temp) > 0){
            ii = nrow(data_temp)
 
@@ -149,13 +151,13 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                   temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
              }
          }
+
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
     }
     # for (ii in idx_mcmc)
-
-    names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
+    names(temp) <- sprintf("Individual_Model_%s",1:length(idx))
    # print(tempn)
     temp$ma_bmd <- tempn$ma_bmd
    

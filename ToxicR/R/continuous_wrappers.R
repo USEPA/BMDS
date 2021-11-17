@@ -44,10 +44,11 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       if (class(prior) != "BMD_Bayes_continuous_model"){
         stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
       }
-      t_prior_result <- .parse_prior(prior)
+      t_prior_result <- parse_prior(prior)
       distribution <- t_prior_result$distribution
       model_type   <- t_prior_result$model
       prior = t_prior_result$prior
+      PR = t_prior_result$prior
     }else{
       dmodel = which(model_type==.continuous_models)
       
