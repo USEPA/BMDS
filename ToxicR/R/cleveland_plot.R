@@ -1,4 +1,16 @@
 #Set the default clevland_plot method generic for all of the classes. 
+
+#' Create a Cleveland plot from a model averaged model.
+#'
+#' @title cleveland_plot - Create a Cleveland plot from a model averaged model.
+#' @param A the model object
+#' @examples 
+#' 
+#' ...
+#' model = ma_dichotomous_fit(D,Y,N)
+#' cleveland_plot(model)
+#' 
+#' @export
 cleveland_plot <- function (A, ...){
   UseMethod("cleveland_plot")
 }

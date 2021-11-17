@@ -24,6 +24,33 @@
 # bmd_single_continous - Run a single BMD model
 #
 ##################################################
+
+#' Fit a single continuous BMD model.
+#'
+#' @title single_continuous_fit - Fit a single continuous BMD model.
+#' @param D doses
+#' @param Y response
+#' @param fit_type the method used to fit (laplace, mle, or mcmc)
+#' @param BMD_TYPE
+#' @param BRM
+#' @param point_p
+#' @param alpha
+#' @param samples
+#' @param degree the number of degrees of a polynomial model
+#' @param burnin
+#' @param ewald perform Wald's test if TRUE
+#' @param transform
+#' @examples 
+#' M2           <- matrix(0,nrow=5,ncol=4)
+#' colnames(M2) <- c("Dose","Resp","N","StDev")
+#' M2[,1] <- c(0,25,50,100,200)
+#' M2[,2] <- c(6,5.2,2.4,1.1,0.75)
+#' M2[,3] <- c(20,20,19,20,20)
+#' M2[,4] <- c(1.2,1.1,0.81,0.74,0.66)
+#' model = single_continuous_fit(M2[,1,drop=F], M2[,2:4], BMD_TYPE="sd", BMR=1, ewald = T,
+#'                              distribution = "normal",fit_type="laplace",model_type = "hill")
+#' 
+#' @export
 single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    prior=NA, BMD_TYPE = "sd", 
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
