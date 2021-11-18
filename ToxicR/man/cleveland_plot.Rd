@@ -7,7 +7,7 @@
 cleveland_plot(A, ...)
 }
 \arguments{
-\item{A}{the model object}
+\item{A}{the model averaged model to plot}
 }
 \description{
 Create a Cleveland plot from a model averaged model.

@@ -28,18 +28,24 @@
 #' Fit a single continuous BMD model.
 #'
 #' @title single_continuous_fit - Fit a single continuous BMD model.
-#' @param D doses
-#' @param Y response
+#' @param D doses matrix
+#' @param Y response matrix
 #' @param fit_type the method used to fit (laplace, mle, or mcmc)
-#' @param BMD_TYPE
-#' @param BRM
-#' @param point_p
-#' @param alpha
-#' @param samples
-#' @param degree the number of degrees of a polynomial model
-#' @param burnin
-#' @param ewald perform Wald's test if TRUE
-#' @param transform
+#' @param BMD_TYPE BMD_TYPE specifies the type of benchmark dose analysis to be performed. For continuous models, there are four types of BMD definitions that are commonly used. \cr
+#' -	Standard deviation is the default option, but it can be explicitly specified with 'BMR_TYPE = "sd"' This definition defines the BMD as the dose associated with the mean/median changing a specified number of standard deviations from the mean at the control dose., i.e., it is the dose, BMD, that solves \eqn{\mid f(dose)-f(0) \mid = BMR \times \sigma} \cr
+#' -	Relative deviation can be specified with 'BMR_TYPE = "rel"'. This defines the BMD as the dose that changes the control mean/median a certain percentage from the background dose, i.e. it is the dose, BMD that solves \eqn{\mid f(dose) - f(0) \mid = (1 \pm BMR) f(0)} \cr
+#' -	Hybrid deviation can be specified with 'BMR_TYPE = "hybrid"'.  This defines the BMD that changes the probability of an adverse event by a stated amount relitive to no exposure (i.e 0).  That is, it is the dose, BMD, that solves \eqn{\frac{Pr(X > x| dose) - Pr(X >x|0)}{Pr(X < x|0)} = BMR}. For this definition, \eqn{Pr(X < x|0) = 1 - Pr(X > X|0) = \pi_0}, where \eqn{0 \leq \pi_0 < 1} is defined by the user as "point_p," and it defaults to 0.01.  Note: this discussion assumed increasing data.  The fitter determines the direction of the data and inverts the probability statements for decreasing data. \cr
+#' -	Absolute deviation can be specified with 'BMR_TYPE="abs"'. This defines the BMD as an absolute change from the control dose of zero by a specified amount. That is the BMD is the dose that solves the equation \eqn{\mid f(dose) - f(0) \mid = BMR}  
+#' @param BRM This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."
+#' @param point_p This option is only used for hybrid BMD calculations. It defines a probability that is the cutpoint for observations.  It is the probability that observations have this probability, or less, of being observed at the background dose.
+#' @param alpha Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)% confidence interval}.  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)% confidence interval}.  By default, it is set to 0.05.
+#' @param samples the number of samples to take (MCMC only)
+#' @param degree the number of degrees of a polynomial model. Only used for polynomial models. 
+#' @param burnin the number of burnin samples to take (MCMC only)
+#' @param ewald perform Wald CI computation instead of the default profile likelihood computation. This is the the 'FAST BMD' method of Ewald et al (2021)
+#' @param transform Transforms doses using \eqn{\log(dose+\sqrt{dose^2+1})}. Note: this is a log transform that has a derivative defined when dose =0.
+#' @return a model object
+#' 
 #' @examples 
 #' M2           <- matrix(0,nrow=5,ncol=4)
 #' colnames(M2) <- c("Dose","Resp","N","StDev")

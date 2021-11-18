@@ -1,4 +1,16 @@
-#Set the default clevland_plot method generic for all of the classes. 
+
+#' Create a density plot from a model averaged model fit with MCMC.
+#'
+#' @title MAdensity_plot - Create a density plot from a model averaged model.
+#' @param A the model averaged model to plot
+#' @examples 
+#' 
+#' ...
+#' model <- ma_continuous_fit(doses,y,model_list=model_list,
+#'                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
+#' MAdensity_plot(model)
+#' 
+#' @export
 MAdensity_plot <- function (A, ...){
   #source("dicho_functions.R")
   UseMethod("MAdensity_plot")

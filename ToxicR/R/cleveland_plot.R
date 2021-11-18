@@ -3,7 +3,7 @@
 #' Create a Cleveland plot from a model averaged model.
 #'
 #' @title cleveland_plot - Create a Cleveland plot from a model averaged model.
-#' @param A the model object
+#' @param A the model averaged model to plot
 #' @examples 
 #' 
 #' ...

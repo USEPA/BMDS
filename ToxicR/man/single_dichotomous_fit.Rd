@@ -19,17 +19,38 @@ single_dichotomous_fit(
 )
 }
 \arguments{
-\item{D}{A numeric vector of doses. Here doses are $\geq 0.$}
+\item{D}{A numeric vector or matrix of doses.}
 
-\item{y}{A number.}
+\item{Y}{A numeric vector or matrix of responses.}
+
+\item{N}{A numeric vector or matrix of the number of replicates at a dose.}
+
+\item{fit_type}{the method used to fit (laplace, mle, or mcmc)}
+
+\item{degree}{the number of degrees of a polynomial model. Only used for polynomial models.}
+
+\item{samples}{the number of samples to take (MCMC only)}
+
+\item{burnin}{the number of burnin samples to take (MCMC only)}
+
+\item{BRM}{This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."}
 }
 \value{
-The sum of \code{x} and \code{y}.
+a model object
 }
 \description{
 Fit a single dichotomous dose-response model to data.
 }
 \examples{
-add(1, 1)
-add(10, 1)
+mData <- matrix(c(0, 2,50,
+                  1, 2,50,
+                  3, 10, 50,
+                  16, 18,50,
+                  32, 18,50,
+                  33, 17,50),nrow=6,ncol=3,byrow=T)
+D <- mData[,1]
+Y <- mData[,2]
+N <- mData[,3]
+model = single_dichotomous_fit(D, Y, N, model_type = "hill", fit_type = "laplace")
+
 }
