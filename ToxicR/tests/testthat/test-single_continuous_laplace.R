@@ -37,5 +37,5 @@ test_that("Normal Ewald polynomial", {
      M2 <- build_single_continuous_dataset()
      c = single_continuous_fit(M2[,1,drop=F],M2[,2:4],BMD_TYPE="sd",BMR=1, ewald = T,
                                distribution = "normal",fit_type="laplace",model_type = "polynomial",degree = 4)
-     validate_model(c, "Model: Polynomial Distribution: Normal", c(6.23, -0.062, -0.000085, 0.0000033, -0.00000000936, -0.013), c(14.6, 9.4, 22.5))
+     validate_model(c, "Model: Polynomial Distribution: Normal", c(6.23, -0.062, -0.000085, 0.0000033, -0.00000000936, -0.013), c(14.6, 11.5, 18.5))
 })
