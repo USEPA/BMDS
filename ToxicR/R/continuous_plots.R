@@ -58,7 +58,7 @@ cont_power_f <-function(parms,d,decrease=F){
 
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
-  isLogNormal = (grep("Log-Normal",fit$full_model) == 1)
+  isLogNormal = (grepl("Log-Normal",fit$full_model) == 1)
      
   IS_tranformed = fit$transformed
   density_col="blueviolet"
@@ -111,8 +111,8 @@ cont_power_f <-function(parms,d,decrease=F){
   if (fit$model=="exp-3"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses,decrease=decrease)
     if (isLogNormal){
-                    Q <- exp(log(Q)+
-                                  exp(fit$mcmc_result$PARM_samples[,ncol(fit$mcmc_result$PARM_samples)])/2)
+       Q <- exp(log(Q)+
+        exp(fit$mcmc_result$PARM_samples[,ncol(fit$mcmc_result$PARM_samples)])/2)
     }
   }
   if (fit$model=="exp-5"){
@@ -208,7 +208,7 @@ cont_power_f <-function(parms,d,decrease=F){
 # This part matches with single_continous_fit part- SL 06/02/21 
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
-  isLogNormal = (grep("Log-Normal",A$full_model) == 1)
+  isLogNormal = (grepl("Log-Normal",A$full_model) == 1)
   IS_tranformed = A$transformed
   fit <-A
   density_col="blueviolet"
