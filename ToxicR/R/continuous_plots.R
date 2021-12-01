@@ -58,6 +58,8 @@ cont_power_f <-function(parms,d,decrease=F){
 
 .plot.BMDcont_fit_MCMC<-function(fit,qprob=0.05,...){
   
+  isLogNormal = (grep("Log-Normal",fit$full_model) == 1)
+     
   IS_tranformed = fit$transformed
   density_col="blueviolet"
   credint_col="azure2"
@@ -108,9 +110,17 @@ cont_power_f <-function(parms,d,decrease=F){
   }
   if (fit$model=="exp-3"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_3_f, d=test_doses,decrease=decrease)
+    if (isLogNormal){
+                    Q <- exp(log(Q)+
+                                  exp(fit$mcmc_result$PARM_samples[,ncol(fit$mcmc_result$PARM_samples)])/2)
+    }
   }
   if (fit$model=="exp-5"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_exp_5_f, d=test_doses,decrease=decrease)
+    if (isLogNormal){
+         Q <- exp(log(Q)+
+                       exp(fit$mcmc_result$PARM_samples[,ncol(fit$mcmc_result$PARM_samples)])/2)
+    }
   }
   if (fit$model=="power"){
     Q <- apply(fit$mcmc_result$PARM_samples,1,cont_power_f, d=test_doses,decrease=decrease)
@@ -145,7 +155,7 @@ cont_power_f <-function(parms,d,decrease=F){
     theme_minimal()
 
   if(sum(!is.nan(test_doses) + !is.infinite(test_doses)) == 0){ 
-    print(fit$bmd,4)
+   
     plot_gg <- plot_gg +
       geom_segment(aes(x=fit$bmd[2], y=ma_mean(fit$bmd[1]), xend=fit$bmd[3],
                        yend=ma_mean(fit$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
@@ -198,6 +208,7 @@ cont_power_f <-function(parms,d,decrease=F){
 # This part matches with single_continous_fit part- SL 06/02/21 
 .plot.BMDcont_fit_maximized<-function(A,qprob=0.05,...){
   
+  isLogNormal = (grep("Log-Normal",A$full_model) == 1)
   IS_tranformed = A$transformed
   fit <-A
   density_col="blueviolet"
@@ -209,9 +220,6 @@ cont_power_f <-function(parms,d,decrease=F){
      
   data_d = A$data
   IS_SUFFICIENT = FALSE
-  
-  # Can you do this for checking number of row? because this case only has two column 
-  # What example would be for 4 column? SL
   
   if (ncol(data_d) == 4 ){ #sufficient statistics
     IS_SUFFICIENT = TRUE
@@ -266,6 +274,10 @@ cont_power_f <-function(parms,d,decrease=F){
     }
    
     me <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
+  }
+  if (isLogNormal){
+       var = exp(fit$parameters[length(fit$parameters)])
+       me = exp(log(me)+var/2)
   }
   
   if (IS_tranformed)
@@ -325,7 +337,7 @@ cont_power_f <-function(parms,d,decrease=F){
      credint_col="azure2"
      class_list <- names(A)
      fit_idx    <- grep("Individual_Model",class_list)
-     
+  
      #plot the model average curve
      if ("BMDcontinuous_MA_mcmc" %in% class(A)){ # mcmc run
           n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples)
@@ -374,7 +386,6 @@ cont_power_f <-function(parms,d,decrease=F){
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
                if (fit$model=="exp-3"){
-
                     temp_f[ii,] <- cont_exp_3_f(fit$mcmc_result$PARM_samples[ii,],test_doses,decrease)
                     temp_bmd[ii] <- fit$mcmc_result$BMD_samples[ii]
                }
@@ -409,7 +420,7 @@ cont_power_f <-function(parms,d,decrease=F){
                   xlim(c(min(data_d[,1])-width,max(data_d[,1])*1.03))+
                   labs(x="Dose", y="Response",title="Continous MA fitting")+
                   theme_minimal()
-            print("Doom")
+          
           }else{
             plot_gg<-ggplot()+xlim(-max(test_doses)*5,min(test_doses)*5)+
               geom_point(aes(x=doses,y=Response))+
@@ -531,7 +542,7 @@ cont_power_f <-function(parms,d,decrease=F){
          lerror <- mean-se
          dose = c(doses,doses)
          Response = c(uerror,lerror)
-         print(se)
+       
          lm_fit = lm(mean ~ doses,weights = 1/se*se)
          IS_SUFFICIENT = T
        }else{

@@ -317,7 +317,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
   case cont_model::exp_3:
   case cont_model::exp_5:
     retVal = distribution::log_normal==data_dist ? init_exp_lognor(Y_LN, X, prior):
-                                                    init_exp_nor(Y_N, X, prior); 
+                                                   init_exp_nor(Y_N, X, prior); 
     break; 
   case cont_model::power: 
 
@@ -1988,9 +1988,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
       tprior(m,n) = CA->prior[m + n*CA->parms]; 
     }
   }
-   
+  
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
+ 
   
   temp_init = temp_init.array(); 
   
@@ -2152,13 +2153,14 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   if (CA->transform_dose){
     inverse_transform_dose(res); 
   }
-
+  
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
 
   res->model = CA->model; 
   res->dist  = CA->disttype; 
   CA->suff_stat = tempsa;
+
   return;  
 }
 
@@ -2401,7 +2403,6 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
-  
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
   Eigen::MatrixXd orig_X = X; 
   
@@ -2416,10 +2417,7 @@ void estimate_log_normal_aod(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_LN = SSTAT_LN; 
-  Eigen::MatrixXd temp = Y_LN.col(2);
-  Y_LN.col(2) = Y_LN.col(1);
-  Y_LN.col(1) = temp; 
+ 
   if(!can_be_suff){
      aod->R  =  std::numeric_limits<double>::infinity();
      aod->A1 =  std::numeric_limits<double>::infinity();
@@ -2427,6 +2425,10 @@ void estimate_log_normal_aod(continuous_analysis *CA,
      aod->A3 =  std::numeric_limits<double>::infinity();
      return;   
   }else{
+     Y_LN = SSTAT_LN; 
+     Eigen::MatrixXd temp = Y_LN.col(2);
+     Y_LN.col(2) = Y_LN.col(1);
+     Y_LN.col(1) = temp; 
     log_normal_AOD_fits(Y_LN, UX, 
                         can_be_suff, aod);
     return; 
@@ -2473,10 +2475,7 @@ void estimate_normal_aod(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_N = SSTAT; 
-  Eigen::MatrixXd temp = Y_N.col(2);
-  Y_N.col(2) = Y_N.col(1);
-  Y_N.col(1) = temp; 
+ 
   
   if(!can_be_suff){
     
@@ -2488,7 +2487,10 @@ void estimate_normal_aod(continuous_analysis *CA,
   
     return;   
   }else{
-
+    Y_N = SSTAT; 
+    Eigen::MatrixXd temp = Y_N.col(2);
+    Y_N.col(2) = Y_N.col(1);
+    Y_N.col(1) = temp; 
     normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 
@@ -2531,23 +2533,19 @@ void estimate_normal_variance(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_N = SSTAT; 
-  Eigen::MatrixXd temp = Y_N.col(2);
-  Y_N.col(2) = Y_N.col(1);
-  Y_N.col(1) = temp; 
+
   
   if(!can_be_suff){
-    
-    
     *v_c   =  std::numeric_limits<double>::infinity();
     *v_nc  =  std::numeric_limits<double>::infinity();
     *v_pow =  std::numeric_limits<double>::infinity();
-    
-    
     return;   
   }else{
-  
-    variance_fits(Y_N, UX, 
+     Y_N = SSTAT; 
+     Eigen::MatrixXd temp = Y_N.col(2);
+     Y_N.col(2) = Y_N.col(1);
+     Y_N.col(1) = temp; 
+     variance_fits(Y_N, UX, 
                     can_be_suff, 
                     v_c, v_nc, v_pow);
     

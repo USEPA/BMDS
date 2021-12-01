@@ -201,7 +201,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       rvals$data <- DATA
       names(rvals$bmd) <- c("BMD","BMDL","BMDU")
   
-      rvals$prior <- PR
+      rvals$prior <- t_prior_result
       rvals$transformed <- transform
       class(rvals) <- "BMDcont_fit_MCMC"
       rvals$fitted_model <- NULL

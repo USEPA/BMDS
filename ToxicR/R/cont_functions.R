@@ -1,4 +1,4 @@
-# Dichotomous functions are defined here
+# Continuous functions are defined here
 
 # FUNL
 cont_FUNL_f <- function(parms,doses){
@@ -15,6 +15,7 @@ cont_hill_f <- function(parms,d){
   rval <- g + nu*d^n/(k^n+d^n)
   return (rval)
 }
+
 #dichotomous log-logistic
 cont_exp_5_f <- function(parms,d){
   g <- parms[1]

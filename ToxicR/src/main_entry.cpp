@@ -249,9 +249,10 @@ List run_continuous_single(IntegerVector model,
     continuous_deviance aod1; 
    
     if (anal.disttype == distribution::log_normal){
-    
+     
       estimate_log_normal_aod(&anal,
                               &aod1);
+     
     }else{
       estimate_normal_aod(&anal,
                              &aod1);
