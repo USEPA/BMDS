@@ -93,13 +93,25 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
       PR    = bayesian_prior_continuous_default(model_type,distribution,degree)
       #specify variance of last parameter to variance of response
       if(distribution == "lognormal"){
-        PR$priors[nrow(PR$priors),3] = log(var(log(Y[,1])))
+           if (ncol(Y)>1){
+               PR$priors[nrow(PR$priors),2]= log(log(mean(Y[,3])^2))
+           }else{
+               PR$priors[nrow(PR$priors),2] = log(var(log(Y[,1])))
+           }
       }else{
-        if (distribution == "normal"){
-          PR$priors[nrow(PR$priors),3]   = log(var(Y[,1]))
-        }else{
-          PR$priors[nrow(PR$priors),3]   = log(mean(Y[,1])/var(Y[,1]))
-        }
+           if (ncol(Y)>1){
+                if (distribution == "normal"){
+                     PR$priors[nrow(PR$priors),2]   = log(mean(Y[,3])^2)
+                }else{
+                     PR$priors[nrow(PR$priors),2]   = log(mean(Y[1,])/mean(Y[,3])^2)
+                }
+           }else{ 
+                  if (distribution == "normal"){
+                    PR$priors[nrow(PR$priors),2]   = log(var(Y[,1]))
+                  }else{
+                    PR$priors[nrow(PR$priors),2]   = log(mean(Y[,1])/var(Y[,1]))
+                  }
+           }
       }
       t_prior_result = create_continuous_prior(PR,model_type,distribution,degree)
       PR = t_prior_result$prior

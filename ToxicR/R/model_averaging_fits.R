@@ -70,13 +70,26 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)
       #specify variance of last parameter to variance of response
       if(distribution_list[ii] == "lognormal"){
-        PR$priors[nrow(PR$priors),2] = log(var(log(Y)))
-      }else{
-        if (distribution_list[ii] == "normal"){
-          PR$priors[nrow(PR$priors),2]   = log(var(Y))
+        if (ncol(Y)>1){
+             PR$priors[nrow(PR$priors),2] = log(log(mean(Y[,3])^2))
         }else{
-          PR$priors[nrow(PR$priors),2]   = log(mean(Y)/var(Y))
+             PR$priors[nrow(PR$priors),2] = log(var(log(Y)))
         }
+      }else{
+           if (ncol(Y)>1){
+                  if (distribution_list[ii] == "normal"){
+                       PR$priors[nrow(PR$priors),2]   = log(mean(Y[,3])^2)
+                  }else{
+                       PR$priors[nrow(PR$priors),2]   = log(mean(Y[1,])/mean(Y[,3])^2)
+                  }
+                 
+           }else{
+                  if (distribution_list[ii] == "normal"){
+                    PR$priors[nrow(PR$priors),2]   = log(var(Y))
+                  }else{
+                    PR$priors[nrow(PR$priors),2]   = log(mean(Y)/var(Y))
+                  }
+           }
       }
       t_prior_result = create_continuous_prior(PR,model_list[ii],distribution_list[ii],2)
       PR = t_prior_result$prior
