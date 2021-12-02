@@ -208,14 +208,19 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   gofRes.expected = gofExpected;
   gofRes.residual = gofResidual;
   gofRes.test_statistic = gofTestStat;
+
   gofRes.p_value = gofPVal;
-  gofRes.df = gofDF; 
+  gofRes.df = gofDF;
 
   compute_dichotomous_pearson_GOF(&gofData, &gofRes);
 
   gof->test_statistic = gofRes.test_statistic;
+
+  //these will be updated later with bounded parm info
   gof->p_value = gofRes.p_value;
   gof->df = gofRes.df;
+
+
   gof->n = gofRes.n;
   for (int i=0; i<gofRes.n; i++){
     gof->expected[i] = gofRes.expected[i];
@@ -261,15 +266,53 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 
   //calculate dichtomous analysis of deviance
-  calc_dichoAOD(anal, res, bmdsRes, bmdsAOD);
+  struct dichotomous_aod aod;
+  double A1 = BMDS_MISSING;
+  int N1 = BMDS_MISSING;
+  double A2 = BMDS_MISSING;
+  int N2 = BMDS_MISSING;
+  aod.A1 = A1;
+  aod.N1 = N1;
+  aod.A2 = A2;
+  aod.N2 = N2;
+  
+  calc_dichoAOD(anal, res, bmdsRes, bmdsAOD, &aod);
 
   rescale_dichoParms(anal->model, res->parms);
 
   double estParmCount = 0;
   collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
+  std::cout<<"estParmCount: "<<estParmCount<<std::endl;
 
-  //overwrite model_df with BMDS method for calculating DF
-  res->model_df = estParmCount;
+  //incorporate affect of bounded parameters
+  int bounded = 0;
+  for (int i=0; i<anal->parms; i++){
+    if (bmdsRes->bounded[i]){
+      bounded++;
+    }
+  }
+
+  gofRes.df += bounded;
+  gof->df = gofRes.df;
+
+  if ( gof->df > 0.0){
+    gofRes.p_value        =   1.0 - gsl_cdf_chisq_P(bmdsRes->chisq, gof->df);
+  }else{
+    gofRes.p_value       = 1.0;
+  }
+
+  gofRes.p_value = 
+  gof->p_value = gofRes.p_value;
+
+  bmdsAOD->nFit = anal->parms - bounded;  //number of estimated parameter
+  bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  //nObs - nEstParms 
+
+  if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
+    bmdsAOD->pvFit = BMDS_MISSING;
+  } else {
+    bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(bmdsAOD->devFit, bmdsAOD->dfFit);
+  }
+
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
@@ -522,10 +565,13 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   continuous_expectation(&GOFanal, res, &GOFres);
 
+ 
+
   for (int i=0; i<GOFanal.n; i++){
 	gof->dose[i] = GOFanal.doses[i];
     gof->size[i] = GOFanal.n_group[i];
     gof->estMean[i] = GOFres.expected[i];
+    std::cout << "i:"<<i<<", GOFres.expected[i] = " << GOFres.expected[i] << std::endl;
     gof->obsMean[i] = GOFanal.Y[i];
     gof->estSD[i] = GOFres.sd[i];
     gof->obsSD[i] = GOFanal.sd[i];
@@ -654,24 +700,24 @@ void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *
 }
 
 
-void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
+void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod){
   
-  struct dichotomous_aod aod;
-  double A1 = BMDS_MISSING;
-  int N1 = BMDS_MISSING;
-  double A2 = BMDS_MISSING;
-  int N2 = BMDS_MISSING;
-  aod.A1 = A1;
-  aod.N1 = N1;
-  aod.A2 = A2;
-  aod.N2 = N2;
+//  struct dichotomous_aod aod;
+//  double A1 = BMDS_MISSING;
+//  int N1 = BMDS_MISSING;
+//  double A2 = BMDS_MISSING;
+//  int N2 = BMDS_MISSING;
+//  aod.A1 = A1;
+//  aod.N1 = N1;
+//  aod.A2 = A2;
+//  aod.N2 = N2;
 
-  deviance_dichotomous(DA, &aod);
+  deviance_dichotomous(DA, aod);
 
-  bmdsAOD->fullLL = -1*aod.A1;
-  bmdsAOD->nFull = aod.N1;
-  bmdsAOD->redLL = -1*aod.A2;
-  bmdsAOD->nRed = aod.N2;
+  bmdsAOD->fullLL = -1*aod->A1;
+  bmdsAOD->nFull = aod->N1;
+  bmdsAOD->redLL = -1*aod->A2;
+  bmdsAOD->nRed = aod->N2;
   bmdsAOD->fittedLL = -1*res->max;
   int bounded = 0;
   for(int i=0; i<DA->parms;i++){
@@ -679,19 +725,17 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
       bounded++;
     }
   }
-  bmdsAOD->nFit = DA->parms - bounded;
+
+
+  bmdsAOD->devFit = 2*(bmdsAOD->fullLL - bmdsAOD->fittedLL);
+
+  //these fitted model values will be calculated later after bounded parms have been determined
+  bmdsAOD->nFit = BMDS_MISSING;
+  bmdsAOD->dfFit = BMDS_MISSING;
+  bmdsAOD->pvFit = BMDS_MISSING;
 
   double dev;
   double df;
-
-  bmdsAOD->devFit = dev = 2*(bmdsAOD->fullLL - bmdsAOD->fittedLL);
-  bmdsAOD->dfFit = df = DA->n - bmdsAOD->nFit;
-  if (dev < 0 || df < 0) {
-    bmdsAOD->pvFit = BMDS_MISSING;
-  } else {
-    bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(dev, df);
-  }
-
 
   bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->redLL);
   bmdsAOD->dfRed = df = DA->n-1;
