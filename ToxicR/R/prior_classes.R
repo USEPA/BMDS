@@ -370,6 +370,7 @@ MLE_bounds_continuous  <- function(model,variance,degree=2, is_increasing){
       prior <- combine_prior_lists(prior,normprior(0,1,0,18))
       prior <- combine_prior_lists(prior,lnormprior(log(1.2),1,1,18))
       prior <- combine_prior_lists(prior,normprior(0,2,-18,18))
+      prior <- combine_prior_lists(prior,normprior(0,2,-18,18))
     } else if (dvariance == 3){ #log normal
       prior <- create_prior_list(normprior(0,1,-100,100))
       if(is_increasing){

@@ -244,10 +244,11 @@ List run_continuous_single(IntegerVector model,
                                                                   anal.parms,
                                                                   200); //have 200 equally spaced values
     ////////////////////////////////////
+    
     estimate_sm_laplace(&anal,result,isFast);
     
     continuous_deviance aod1; 
-   
+ 
     if (anal.disttype == distribution::log_normal){
      
       estimate_log_normal_aod(&anal,
@@ -257,7 +258,7 @@ List run_continuous_single(IntegerVector model,
       estimate_normal_aod(&anal,
                              &aod1);
     }
-    
+
    continuous_expected_result exp_r; 
    exp_r.expected = new double[anal.n]; exp_r.n = anal.n; 
    exp_r.sd       = new double[anal.n];
