@@ -1020,6 +1020,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   bool  tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
+
   // copy the origional data
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
@@ -1073,7 +1074,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  
   
   
   if (CA->suff_stat){
@@ -1314,7 +1314,24 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 
   bmd_range_find(res,range);
-
+  
+  double prob = 0; 
+  int stop = 0; 
+  do{
+       double cbmd = (range[1] - range[0])/2; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+            }
+       } 
+       if (prob > 0.99){
+            range[1] = cbmd; 
+       }
+       stop ++; 
+       
+  } while( (prob > 0.99) && (stop < 16)); 
+  
   double range_bmd = range[1] - range[0]; 
 
   for (int i = 0; i < res->dist_numE; i ++){
@@ -1326,6 +1343,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
       }
     }
+    
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
