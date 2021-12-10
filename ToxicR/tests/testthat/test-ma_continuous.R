@@ -10,7 +10,7 @@ test_that("No Model List", {
         expect_equal(13, length(AA))
         expect_equal(setNames(c(26.1, 13.1, 46.4), c("BMD", "BMDL", "BMDU")), AA$bmd, tolerance=10e-2)
         expect_equal(c(0.020170794, 0.088721617, 0.007274817, 0.010060694, 0.429308134, 0.032407617, 0.068653807, 0.330598226, 0.010474859, 0.002329435), AA$posterior_probs, tolerance=10e-2)
-        generate_validation_code(AA)
+        #generate_validation_code(AA)
         validate_model( AA$Individual_Model_1 ,  "Model: Hill Distribution: Normal" ,  c(459.967845943872, -161.008754551028, 27.5188401639968, 1.65424081942613, 7.98247151057799) ,  c(BMD = 18.2375333442782, BMDL = 10.8444280330944, BMDU = 31.4585711838948) )
         validate_model( AA$Individual_Model_2 ,  "Model: Hill Distribution: Normal-NCV" ,  c(460.91986362233, -170.900638901152, 29.993036710078, 1.62508594445158, 1.77773636675909, -2.7526204573563) ,  c(BMD = 20.1864076616609, BMDL = 12.2303671904536, BMDU = 32.7000214684699) )
         validate_model( AA$Individual_Model_3 ,  "Model: Exponential-3 Distribution: Normal" ,  c(452.251132237139, 0.00360797504540128, 0.88089759918846, 8.01713036177101) ,  c(BMD = 27.3068406619132, BMDL = 13.8392818225457, BMDU = 48.1885256719032) )

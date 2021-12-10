@@ -4,12 +4,11 @@
 #' @title MAdensity_plot - Create a density plot from a model averaged model.
 #' @param A the model averaged model to plot
 #' @examples 
-#' 
-#' ...
+#' \dontrun{
 #' model <- ma_continuous_fit(doses,y,model_list=model_list,
 #'                         fit_type = "mcmc",BMD_TYPE = 'sd',BMR = 1)
 #' MAdensity_plot(model)
-#' 
+#' }
 #' @export
 MAdensity_plot <- function (A, ...){
   #source("dicho_functions.R")

@@ -19,12 +19,6 @@
 #  * 
 #  */
 
-
-#################################################
-# bmd_single_continous - Run a single BMD model
-#
-##################################################
-
 #' Fit a single continuous BMD model.
 #'
 #' @title single_continuous_fit - Fit a single continuous BMD model.
