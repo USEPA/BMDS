@@ -356,7 +356,7 @@ cont_power_f <-function(parms,d,decrease=F){
           if (ncol(data_d) == 4 ){ #sufficient statistics
             IS_SUFFICIENT = TRUE
             mean <- data_d[,2,drop=F]
-            se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
+            se   <- data_d[,4,drop=F]/sqrt(data_d[,3,drop=F])
             doses = data_d[,1,drop=F]
             uerror <- mean+2*se
             lerror <- mean-2*se
@@ -536,7 +536,7 @@ cont_power_f <-function(parms,d,decrease=F){
        IS_SUFFICIENT = F
        if (ncol(data_d) == 4 ){ #sufficient statistics
          mean <- data_d[,2,drop=F]
-         se   <- data_d[,4,drop=F]/data_d[,3,drop=F]
+         se   <- data_d[,4,drop=F]/sqrt(data_d[,3,drop=F])
          doses = data_d[,1,drop=F]
          uerror <- mean+se
          lerror <- mean-se
@@ -657,12 +657,12 @@ cont_power_f <-function(parms,d,decrease=F){
            temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
            df<-rbind(df,temp_df)
          }
-       }
-
-       plot_gg<- plot_gg+
-               geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)+
-               theme_minimal()
        
+
+          plot_gg<- plot_gg+
+                   geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)
+                    
+       }
        plot_gg <- plot_gg +
                    geom_segment(aes(x=A$bmd[2], y=ma_mean(A$bmd[1]), xend=min(max(doses),abs(A$bmd[3])),
                                     yend=ma_mean(A$bmd[1])),color="darkslategrey",size=1.2, alpha=0.9) +
