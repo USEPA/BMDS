@@ -362,7 +362,7 @@ cont_power_f <-function(parms,d,decrease=F){
             lerror <- mean-2*se
             dose = c(doses,doses)
             Response = c(uerror,lerror)
-            lm_fit = lm(mean ~ doses,weights = 1/se*se)
+            lm_fit = lm(mean ~ doses,weights = 1/(se*se))
           }else{
             Response <- data_d[,2,drop=F]
             doses = data_d[,1,drop=F]
@@ -538,12 +538,12 @@ cont_power_f <-function(parms,d,decrease=F){
          mean <- data_d[,2,drop=F]
          se   <- data_d[,4,drop=F]/sqrt(data_d[,3,drop=F])
          doses = data_d[,1,drop=F]
-         uerror <- mean+se
-         lerror <- mean-se
+         uerror <- mean+2*se
+         lerror <- mean-2*se
          dose = c(doses,doses)
          Response = c(uerror,lerror)
        
-         lm_fit = lm(mean ~ doses,weights = 1/se*se)
+         lm_fit = lm(mean ~ doses,weights = 1/(se*se))
          IS_SUFFICIENT = T
        }else{
          Response <- data_d[,2,drop=F]
@@ -630,9 +630,9 @@ cont_power_f <-function(parms,d,decrease=F){
        # Not sure about this part - SL 05/28/21
        #Plot only level >2
        
-       df<-NULL
+       
        for (ii in 1:length(fit_idx)){
-
+       df<-NULL
          if (A$posterior_probs[ii]>0.05){
            fit <- A[[fit_idx[ii]]]
            if (fit$model=="FUNL"){
@@ -655,12 +655,13 @@ cont_power_f <-function(parms,d,decrease=F){
            col = 'coral3'
            # Not using loop, but save data in the external data and load it later
            temp_df<-data.frame(x_axis=test_doses,y_axis=f,cols=col,model_no=ii, alpha_lev=A$posterior_probs[ii])
-           df<-rbind(df,temp_df)
+           df<-temp_df #rbind(df,temp_df)
+           plot_gg<- plot_gg+
+                geom_line(data=df, aes(x=x_axis,y=y_axis,color=col),alpha=0.5,show.legend=F)
          }
        
 
-          plot_gg<- plot_gg+
-                   geom_line(data=df, aes(x=x_axis,y=y_axis,color=cols),alpha=0.5,show.legend=F)
+         
                     
        }
        plot_gg <- plot_gg +

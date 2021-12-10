@@ -172,6 +172,12 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (coefficients(temp.fit)[2] > 0){
       is_increasing = T
     }
+    
+    if (!is_increasing){
+         if (BMD_TYPE == "rel"){
+              BMR = 1-BMR
+         }
+    }
 
     #For MLE 
     if (type_of_fit == 2){

@@ -1,4 +1,3 @@
-
 #' Fit a model averaged continuous BMD model.
 #'
 #' @title ma_continuous_fit - Fit a model averaged continuous BMD model.
@@ -157,7 +156,11 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   if (coefficients(temp.fit)[2] > 0){
     is_increasing = T
   }
-  
+  if (!is_increasing){
+       if (BMD_TYPE == "rel"){
+            BMR = 1-BMR
+       }
+  }
   options <- c(rt,BMR,point_p,alpha, is_increasing,samples,burnin)
   
   if (fit_type == "mcmc"){
