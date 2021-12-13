@@ -331,3 +331,7 @@ plot(ma_sd_mcmc_2)
 
 
 ## References
+
+Wout Slob, Dose-Response Modeling of Continuous Endpoints, Toxicological Sciences, Volume 66, Issue 2, April 2002, Pages 298–312
+
+Crump, Kenny S., Calculation of benchmark doses from continuous data, Risk Analysis, Volume 15, Issue 1, February 1995, Pages 79-89
