@@ -1317,25 +1317,73 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   
   double prob = 0; 
   int stop = 0; 
+  double cbmd = 0.0; 
   do{
-       double cbmd = (range[1] - range[0])/2; 
+       cbmd = (range[1] - range[0])/2; 
        prob = 0; 
        for (int j = 0; j < MA->nmodels; j++){
             if (post_probs[j] > 0){ 
                  prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
             }
        } 
-       if (prob > 0.99){
+       
+       if (prob > 0.99999){
             range[1] = cbmd; 
-       }
+       }else{
+            range[0] = cbmd; 
+       } 
        stop ++; 
        
-  } while( (prob > 0.99) && (stop < 16)); 
+  } while( (prob > 0.99999)  && (stop < 16)); 
   
-  double range_bmd = range[1] - range[0]; 
-
-  for (int i = 0; i < res->dist_numE; i ++){
-    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
+  range[1] = 2*cbmd; range[0] = 0; 
+  
+  double trange[2]; 
+  trange[0] = 0.0; trange[1] = range[1];
+   stop = 0;
+  double mid = 0.0; 
+  do{
+       mid = (trange[1] + trange[0])/2.0; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+            }
+       } 
+       
+       if (prob < 0.50){
+            trange[0] = mid; 
+       }else{
+            trange[1] = mid;
+       }
+     
+       stop ++; 
+       
+  } while( (fabs(prob-0.50) > 0.01) && (stop < 16)); 
+   
+  double lower_range = mid;
+  
+  int i = 0; 
+  for (; i < res->dist_numE/2; i ++){
+       cbmd =  double(i)/double(res->dist_numE/2)*lower_range; 
+       double prob = 0.0; 
+       
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+            }
+       }
+       
+       res->bmd_dist[i] = cbmd; 
+       res->bmd_dist[i+res->dist_numE]  = prob;
+  }
+  double range_bmd = range[1] - cbmd;  
+ 
+  
+  mid = cbmd;
+  
+  for (; i < res->dist_numE; i ++){
+    double cbmd = mid + (double((i -res->dist_numE/2) + 1)/double(res->dist_numE/2))*(range_bmd); 
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
@@ -1890,38 +1938,88 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   // also get compute the MA BMD list
   bmd_range_find(res,range);
  
-  double prob = 0; 
-  int stop = 0; 
-  do{
-       double cbmd = (range[1] - range[0])/2; 
-       prob = 0; 
-       for (int j = 0; j < MA->nmodels; j++){
-            if (post_probs[j] > 0){ 
-                 prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
-            }
-       } 
-       if (prob > 0.99){
-            range[1] = cbmd; 
-       }
-       stop ++; 
-       
-  } while( (prob > 0.99) && (stop < 16)); 
-  double range_bmd = range[1] - range[0]; 
-  
-  
-  for (int i = 0; i < res->dist_numE; i ++){
-    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
-    double prob = 0.0; 
-    
-    for (int j = 0; j < MA->nmodels; j++){
-        if (post_probs[j] > 0){
-          prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
-        }
-    }
-    res->bmd_dist[i] = cbmd; 
-    res->bmd_dist[i+res->dist_numE]  = prob;
-  }
-  CA->suff_stat = tempsa;
+ double prob = 0; 
+ int stop = 0; 
+ double cbmd = 0.0; 
+ do{
+      cbmd = (range[1] - range[0])/2; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob > 0.99999){
+           range[1] = cbmd; 
+      }else{
+           range[0] = cbmd; 
+      } 
+      stop ++; 
+      
+ } while( (prob > 0.99999)  && (stop < 16)); 
+ 
+ range[1] = 2*cbmd; range[0] = 0; 
+ 
+ double trange[2]; 
+ trange[0] = 0.0; trange[1] = range[1];
+ stop = 0;
+ double mid = 0.0; 
+ do{
+      mid = (trange[1] + trange[0])/2.0; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob < 0.50){
+           trange[0] = mid; 
+      }else{
+           trange[1] = mid;
+      }
+      
+      stop ++; 
+      
+ } while( (fabs(prob-0.50) > 0.01) && (stop < 16)); 
+ 
+ double lower_range = mid;
+ 
+ int i = 0; 
+ for (; i < res->dist_numE/2; i ++){
+      cbmd =  double(i)/double(res->dist_numE/2)*lower_range; 
+      double prob = 0.0; 
+      
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      }
+      
+      res->bmd_dist[i] = cbmd; 
+      res->bmd_dist[i+res->dist_numE]  = prob;
+ }
+ double range_bmd = range[1] - cbmd;  
+ 
+ 
+ mid = cbmd;
+ 
+ for (; i < res->dist_numE; i ++){
+      double cbmd = mid + (double((i -res->dist_numE/2) + 1)/double(res->dist_numE/2))*(range_bmd); 
+      double prob = 0.0; 
+      
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      }
+      
+      res->bmd_dist[i] = cbmd; 
+      res->bmd_dist[i+res->dist_numE]  = prob;
+ }
+ 
+ CA->suff_stat = tempsa;
   return; 
 }
 
