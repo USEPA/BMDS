@@ -1,6 +1,7 @@
 
 #ifndef __POLYK_ANIMAL_H
 #define __POLYK_ANIMAL_H
+
 class Animal{
 private: 
   double dose;
@@ -51,22 +52,29 @@ public:
     tumor= tumort; 
     daysOnStudy= daysOnStudyt;
   };
-  
+
+     
   bool  operator>(const Animal& b){
     return this->daysOnStudy > b.daysOnStudy; 
   };
   bool  operator>=(const Animal& b){
     return this->daysOnStudy >= b.daysOnStudy; 
   };
-  bool  operator<(const Animal& b){
+  bool  operator<(const Animal& b) const{
     return this->daysOnStudy < b.daysOnStudy; 
   };
+  bool operator()(const Animal& A, const Animal& B) const
+  {
+       return A.daysOnStudy < B.daysOnStudy; 
+       //Compare the 2 locations, return true if loc1 is less than loc2
+  }
   bool  operator<=(const Animal& b){
     return this->daysOnStudy <= b.daysOnStudy; 
-  };
+ };
   bool  operator==(const Animal& b){
     return this->daysOnStudy == b.daysOnStudy; 
   };
+  
   void operator = (const Animal &A ) { 
     this->dose        = A.dose;
     this->daysOnStudy = A.daysOnStudy;
