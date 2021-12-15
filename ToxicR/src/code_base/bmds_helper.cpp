@@ -563,15 +563,51 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
 
-  continuous_expectation(&GOFanal, res, &GOFres);
+  //tmp fix for exp_3 parameter shift
+  if (anal->model == cont_model::exp_3){
+    struct continuous_model_result tmpRes;
+    double* tmpParms = (double*)malloc(res->nparms * sizeof(double));
+    double* tmpCov = (double*)malloc(res->nparms*res->nparms * sizeof(double));
+    double* tmpBmd_dist = (double*)malloc(res->dist_numE*2 * sizeof(double));
 
+    tmpRes.model = res->model;
+    tmpRes.dist = res->dist;
+    tmpRes.nparms = res->nparms;
+    tmpRes.max = res->max;
+    tmpRes.dist_numE = res->dist_numE;
+    tmpRes.model_df = res->model_df;
+    tmpRes.total_df = res->total_df;
+    tmpRes.bmd = res->bmd;
+
+    tmpRes.parms = tmpParms;
+    for(int i=0; i<res->nparms; i++){
+      tmpRes.parms[i] = res->parms[i]; 
+    }
+    //shift all parms after b to higher pos
+    for(int i=res->nparms-1; i>1; i--){
+      tmpRes.parms[i] = tmpRes.parms[i-1];
+    }
+
+    tmpRes.cov = tmpCov;
+    for(int i=0; i<res->nparms*res->nparms; i++){
+       tmpRes.cov[i] = res->cov[i];
+    }
+    tmpRes.bmd_dist = tmpBmd_dist;
+    for(int i=0; i<res->dist_numE*2; i++){
+      tmpRes.bmd_dist[i] = res->bmd_dist[i];
+    }
+
+
+    continuous_expectation(&GOFanal, &tmpRes, &GOFres);
+  } else {
+    continuous_expectation(&GOFanal, res, &GOFres);
+  }
  
 
   for (int i=0; i<GOFanal.n; i++){
 	gof->dose[i] = GOFanal.doses[i];
     gof->size[i] = GOFanal.n_group[i];
     gof->estMean[i] = GOFres.expected[i];
-    std::cout << "i:"<<i<<", GOFres.expected[i] = " << GOFres.expected[i] << std::endl;
     gof->obsMean[i] = GOFanal.Y[i];
     gof->estSD[i] = GOFres.sd[i];
     gof->obsSD[i] = GOFanal.sd[i];
