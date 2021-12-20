@@ -12,6 +12,8 @@ int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *
       //5*i+4 is location of min in prior array
       //5*i+5 is location of max in prior array 
 //      std::cout<<"i:"<<i<<", parms[i]: "<<parms[i]<<"\n";
+//      std::cout<<"lowerBound: " << lowerBound[i] << std::endl;
+//      std::cout<<"upperBound: " << upperBound[i] << std::endl;
 //      std::cout<<"lower bound check: "<<fabs(parms[i]-lowerBound[i])<<"\n";
 //      std::cout<<"upper bound check: "<<fabs(parms[i]-upperBound[i])<<"\n";
       if (fabs(parms[i]-lowerBound[i]) < BMDS_EPS || fabs(parms[i]-upperBound[i]) < BMDS_EPS){
@@ -69,8 +71,15 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
   //scale priors as needed
   rescale_contParms(anal, lowerBound);
   rescale_contParms(anal, upperBound); 
-  int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
   
+  if (anal->model = cont_model::exp_3){
+    for (int i=2; i<anal->parms-1; i++){
+      lowerBound[i] = lowerBound[i+1];
+      upperBound[i] = upperBound[i+1];
+    } 
+  }
+  int bounded = checkForBoundedParms(res->nparms, res->parms, lowerBound, upperBound, BMDSres);
+  //int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
   
   double estParmCount = res->model_df - bounded;
   //if freq then model_df should be rounded to nearest whole number
@@ -282,7 +291,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   double estParmCount = 0;
   collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
-  std::cout<<"estParmCount: "<<estParmCount<<std::endl;
 
   //incorporate affect of bounded parameters
   int bounded = 0;
@@ -516,6 +524,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     }
   }
 
+  
   estimate_sm_laplace_cont(anal, res);
 
   //if not suff_stat, then convert
@@ -660,7 +669,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   bmdsRes->validResult = true;
 
   clean_cont_results(res, bmdsRes, aod, gof);
-
+  
 }
 
 
@@ -813,7 +822,8 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result
       bounded++;
     }
   }
-  aod->nParms[3] = CA->parms - bounded;
+  //aod->nParms[3] = CA->parms - bounded;
+  aod->nParms[3] = res->nparms - bounded;
   aod->LL[4] = -1*CD.R;
   aod->nParms[4] = CD.NR;
 
