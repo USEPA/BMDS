@@ -72,7 +72,7 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
   rescale_contParms(anal, lowerBound);
   rescale_contParms(anal, upperBound); 
   
-  if (anal->model = cont_model::exp_3){
+  if (anal->model == cont_model::exp_3){
     for (int i=2; i<anal->parms-1; i++){
       lowerBound[i] = lowerBound[i+1];
       upperBound[i] = upperBound[i+1];
