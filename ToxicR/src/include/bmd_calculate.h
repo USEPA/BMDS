@@ -559,9 +559,10 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
 
   rVal.COV = model.varMatrix(parms);
   
-  
   Eigen::MatrixXd var = grad.transpose()*rVal.COV*grad; // Delta Method Variance
-
+  
+  if (var(0) > 1e4){var(0) = 1e4;} // If it is too large there are problems numerically
+                                   // make sure it isn't that large, but still large
   /*
    * Compute CI using the Gaussian distribution. Here the Delta method is used again
    * as the log(BMD) CI is computed.  This gaurantees the BMDL > 0.  It is then exponentiated. 
