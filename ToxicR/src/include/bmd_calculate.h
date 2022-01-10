@@ -569,7 +569,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
    */  
   std::vector<double> x(500);
   std::vector<double> y(500);
-  if ( isnormal(var(0,0)) && (var(0.0) > 0.0) && isnormal(log(BMD)) ){
+  if ( isnormal(var(0,0)) && (var(0.0) > 1e-7) && isnormal(log(BMD)) ){
  
     for (int i = 0; i < x.size(); i++){
       x[i] = double(i)/double(x.size()); 
@@ -598,7 +598,15 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
 
   if (isnormal(BMD) && BMD > 0.0 &&  // flag numerical thins so it doesn't blow up. 
        x.size() > 6 ){
-
+       
+       // fix dumb GSL numerical issues
+       for (int i = 1; i < x.size(); i++){
+            if (x[i] <= x[i-1]){
+                 for (int kk = i; kk <  x.size(); kk++){
+                      x[kk] = x[kk-1] + 1e-6; 
+                 }
+            } 
+       }
     bmd_cdf cdf(x, y);
     rVal.BMD_CDF = cdf;
   }
@@ -637,12 +645,12 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	PR   	  model_prior(prior);
 
 	
-	dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
+  dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
   signed int  flags = OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX; 
 	optimizationResult oR = findMAP<LL, PR>(&model,flags);
 
-	bmd_analysis rVal;
-	double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
+  bmd_analysis rVal;
+  double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
 
 
 	Eigen::MatrixXd result; 
