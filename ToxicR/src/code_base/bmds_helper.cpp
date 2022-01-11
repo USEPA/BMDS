@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+//#include <cmath>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
@@ -94,7 +95,7 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
 
 double findQuantileVals(double *quant, double *val, int arrSize, double target){
 
-   double retVal = -9999.0;
+   double retVal = BMDS_MISSING;
 
    for (int i=0; i < arrSize; i++){
       if (fabs(quant[i] - target) < BMDS_EPS && std::isfinite(val[i]) ){
@@ -331,8 +332,9 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   calcParmCIs_dicho (res, bmdsRes);
 
-  bmdsRes->validResult = true;
-
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) {
+    bmdsRes->validResult = true;
+  }
 
   clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
@@ -509,6 +511,13 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
             for (int i=ind; i<ind+anal->degree; i++){
               anal->prior[i] = 0.0;  // beta min or max 
             }
+            //set ind for alpha parm
+            if(anal->isIncreasing){
+              ind = 4*numRows-1;  
+            } else {
+              ind = 5*numRows-1;
+            }
+            anal->prior[ind] = 0.0;  //alpha min or max
           }
           break;
       }  //end switch
@@ -659,14 +668,18 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   rescale_contParms(anal, res->parms); 
 
   for (int i=0; i< anal->parms; i++){
-    bmdsRes->stdErr[i] = -9999.0;
-    bmdsRes->lowerConf[i] = -9999.0;
-    bmdsRes->upperConf[i] = -9999.0;
+    bmdsRes->stdErr[i] = BMDS_MISSING;
+    bmdsRes->lowerConf[i] = BMDS_MISSING;
+    bmdsRes->upperConf[i] = BMDS_MISSING;
   }
 
   calcParmCIs_cont(res, bmdsRes);
 
-  bmdsRes->validResult = true;
+  std::cout << "bmdsRes->BMD: " << bmdsRes->BMD << std::endl;
+
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) { 
+    bmdsRes->validResult = true;
+  }
 
   clean_cont_results(res, bmdsRes, aod, gof);
   
