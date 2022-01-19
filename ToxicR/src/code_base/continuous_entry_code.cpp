@@ -1359,7 +1359,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
      
        stop ++; 
        
-  } while( (fabs(prob-0.50) > 0.01) && (stop < 16)); 
+  } while( (fabs(prob-0.50) > 0.001) && (stop < 30)); 
    
   double lower_range = mid;
   
@@ -1982,7 +1982,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       
       stop ++; 
       
- } while( (fabs(prob-0.50) > 0.01) && (stop < 16)); 
+ } while( (fabs(prob-0.50) > 0.001) && (stop < 30)); 
  
  double lower_range = mid;
  

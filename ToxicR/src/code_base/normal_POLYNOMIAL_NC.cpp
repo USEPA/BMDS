@@ -682,7 +682,8 @@ double normalPOLYNOMIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF,
 						 // search for the BMD return INFINITY. 
 	}
 	double test = fabs(t_mean(1, 0) - mu_zero) - BMRF; 
-	while (fabs(test) > 1e-7) { // zero in on the BMD
+	niter = 0; 
+	while (fabs(test) > 1e-7 && niter < 100) { // zero in on the BMD
 		if (test > 0) {
 			max = mid; 
 		}else {
@@ -692,6 +693,11 @@ double normalPOLYNOMIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF,
 		d << min, mid, max;
 		t_mean = mean(theta, d);
 		test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+		niter++; 
+	}
+	if (niter > 100){
+	     // failed and could not find a BMD
+	     return std::nan("-1");
 	}
 	return mid; 
 }
@@ -744,7 +750,8 @@ double normalPOLYNOMIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bo
 						 // search for the BMD return INFINITY. 
 	}
 	double test = t_mean(1, 0) - BMRF;
-	while (fabs(test) > 1e-7) { // zero in on the BMD
+	niter = 0; 
+	while (fabs(test) > 1e-7 && niter < 100) { // zero in on the BMD
 		if ( isIncreasing?test > 0:test < 0) {
 			max = mid;
 		}
@@ -755,6 +762,11 @@ double normalPOLYNOMIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bo
 		d << min, mid, max;
 		t_mean = mean(theta, d);
 		test = t_mean(1, 0) - BMRF;
+		niter++; 
+	}
+	if (niter > 100){
+          // failed and could not find a BMD
+          return std::nan("-1");
 	}
 	return mid;
 }
