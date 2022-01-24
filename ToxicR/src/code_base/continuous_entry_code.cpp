@@ -1334,7 +1334,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
        } 
        stop ++; 
        
-  } while( (prob > 0.99999)  && (stop < 16)); 
+  } while( (prob > 0.99999)  && (stop < 50)); 
   
   range[1] = 2*cbmd; range[0] = 0; 
   
@@ -1359,13 +1359,37 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
      
        stop ++; 
        
-  } while( (fabs(prob-0.50) > 0.001) && (stop < 30)); 
+  } while( (fabs(prob-0.50) > 0.0001) && (stop < 50)); 
    
   double lower_range = mid;
   
+  // now find a good starting point for the integration
+  mid = 0.0;
+  trange[0] = 0.0; trange[1] = range[1];
+  do{
+       mid = (trange[1] + trange[0])/2.0; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+            }
+       } 
+       
+       if (prob < 1e-4){
+            trange[0] = mid; 
+       }else{
+            trange[1] = mid;
+       }
+       
+       stop ++; 
+       
+  } while( (log(fabs(prob-1e-4)) > log(1e-8)) && (stop < 50)); 
+  double lower_end = mid; 
+  
+  
   int i = 0; 
   for (; i < res->dist_numE/2; i ++){
-       cbmd =  double(i)/double(res->dist_numE/2)*lower_range; 
+       cbmd =  double(i+1)/double(res->dist_numE/2)*(lower_range-lower_end) + lower_end; 
        double prob = 0.0; 
        
        for (int j = 0; j < MA->nmodels; j++){
@@ -1982,13 +2006,35 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       
       stop ++; 
       
- } while( (fabs(prob-0.50) > 0.001) && (stop < 30)); 
+ } while( (fabs(prob-0.50) > 0.0001) && (stop < 50)); 
  
  double lower_range = mid;
+ // now find a good starting point for the integration
+ mid = 0.0;
+ trange[0] = 0.0; trange[1] = range[1];
+ do{
+      mid = (trange[1] + trange[0])/2.0; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob < 1e-4){
+           trange[0] = mid; 
+      }else{
+           trange[1] = mid;
+      }
+      
+      stop ++; 
+      
+ } while( (log(fabs(prob-1e-4)) > log(1e-8)) && (stop < 50)); 
+ double lower_end = mid; 
  
  int i = 0; 
  for (; i < res->dist_numE/2; i ++){
-      cbmd =  double(i)/double(res->dist_numE/2)*lower_range; 
+      cbmd =  double(i+1)/double(res->dist_numE/2)*(lower_range-lower_end)+lower_end; 
       double prob = 0.0; 
       
       for (int j = 0; j < MA->nmodels; j++){
