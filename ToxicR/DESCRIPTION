@@ -2,7 +2,7 @@ Package: ToxicR
 Type: Package
 Title: This package for analyzing toxicology dose-response data. 
 Version: 22.01
-Date: 2021-10-31
+Date: 2022-1-31
 Author: NIEHS-BCBB 
 Maintainer: Matt Wheeler <matt.wheeler@nih.gov>
 Description: This package provides standard toxicology routines for analyzing
