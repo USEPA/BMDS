@@ -70,7 +70,7 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
       #specify variance of last parameter to variance of response
       if(distribution_list[ii] == "lognormal"){
         if (ncol(Y)>1){
-             PR$priors[nrow(PR$priors),2] = log(log(mean(Y[,3])^2))
+             PR$priors[nrow(PR$priors),2] = log(mean(Y[,3])^2)
         }else{
              PR$priors[nrow(PR$priors),2] = log(var(log(Y)))
         }

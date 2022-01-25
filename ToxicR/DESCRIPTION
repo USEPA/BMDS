@@ -1,6 +1,6 @@
 Package: ToxicR
 Type: Package
-Title: This package for analyzing toxicology dose-response data. 
+Title: This package is for analyzing toxicology dose-response data. 
 Version: 22.01
 Date: 2022-1-31
 Author: NIEHS-BCBB 
