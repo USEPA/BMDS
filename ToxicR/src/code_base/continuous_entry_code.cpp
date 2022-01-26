@@ -317,7 +317,7 @@ Eigen::MatrixXd initialize_model(Eigen::MatrixXd Y_N, Eigen::MatrixXd Y_LN, Eige
   case cont_model::exp_3:
   case cont_model::exp_5:
     retVal = distribution::log_normal==data_dist ? init_exp_lognor(Y_LN, X, prior):
-                                                    init_exp_nor(Y_N, X, prior); 
+                                                   init_exp_nor(Y_N, X, prior); 
     break; 
   case cont_model::power: 
 
@@ -1020,6 +1020,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   bool  tempsa = CA->suff_stat;
   Eigen::MatrixXd Y(n_rows,n_cols); 
   Eigen::MatrixXd X(n_rows,1); 
+
   // copy the origional data
   for (int i = 0; i < n_rows; i++){
     Y(i,0) = CA->Y[i]; 
@@ -1073,7 +1074,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = UX; 
     Y_LN = SSTAT_LN; 
   }
-  
   
   
   if (CA->suff_stat){
@@ -1315,11 +1315,100 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 
   bmd_range_find(res,range);
-
-  double range_bmd = range[1] - range[0]; 
-
-  for (int i = 0; i < res->dist_numE; i ++){
-    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
+  
+  double prob = 0; 
+  int stop = 0; 
+  double cbmd = 0.0; 
+  do{
+       cbmd = (range[1] - range[0])/2; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+            }
+       } 
+       
+       if (prob > 0.99999){
+            range[1] = cbmd; 
+       }else{
+            range[0] = cbmd; 
+       } 
+       stop ++; 
+       
+  } while( (prob > 0.99999)  && (stop < 50)); 
+  
+  range[1] = 2*cbmd; range[0] = 0; 
+  
+  double trange[2]; 
+  trange[0] = 0.0; trange[1] = range[1];
+   stop = 0;
+  double mid = 0.0; 
+  do{
+       mid = (trange[1] + trange[0])/2.0; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+            }
+       } 
+       
+       if (prob < 0.50){
+            trange[0] = mid; 
+       }else{
+            trange[1] = mid;
+       }
+     
+       stop ++; 
+       
+  } while( (fabs(prob-0.50) > 0.0001) && (stop < 50)); 
+   
+  double lower_range = mid;
+  
+  // now find a good starting point for the integration
+  mid = 0.0;
+  trange[0] = 0.0; trange[1] = range[1];
+  do{
+       mid = (trange[1] + trange[0])/2.0; 
+       prob = 0; 
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+            }
+       } 
+       
+       if (prob < 1e-4){
+            trange[0] = mid; 
+       }else{
+            trange[1] = mid;
+       }
+       
+       stop ++; 
+       
+  } while( (log(fabs(prob-1e-4)) > log(1e-8)) && (stop < 50)); 
+  double lower_end = mid; 
+  
+  
+  int i = 0; 
+  for (; i < res->dist_numE/2; i ++){
+       cbmd =  double(i+1)/double(res->dist_numE/2)*(lower_range-lower_end) + lower_end; 
+       double prob = 0.0; 
+       
+       for (int j = 0; j < MA->nmodels; j++){
+            if (post_probs[j] > 0){ 
+                 prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+            }
+       }
+       
+       res->bmd_dist[i] = cbmd; 
+       res->bmd_dist[i+res->dist_numE]  = prob;
+  }
+  double range_bmd = range[1] - cbmd;  
+ 
+  
+  mid = cbmd;
+  
+  for (; i < res->dist_numE; i ++){
+    double cbmd = mid + (double((i -res->dist_numE/2) + 1)/double(res->dist_numE/2))*(range_bmd); 
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
@@ -1327,6 +1416,7 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
           prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
       }
     }
+    
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
@@ -1875,21 +1965,111 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   // define the BMD distribution ranges
   // also get compute the MA BMD list
   bmd_range_find(res,range);
-  double range_bmd = range[1] - range[0]; 
-  
-  for (int i = 0; i < res->dist_numE; i ++){
-    double cbmd = double(i)/double(res->dist_numE)*range_bmd; 
-    double prob = 0.0; 
-    
-    for (int j = 0; j < MA->nmodels; j++){
-        if (post_probs[j] > 0){
-          prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
-        }
-    }
-    res->bmd_dist[i] = cbmd; 
-    res->bmd_dist[i+res->dist_numE]  = prob;
-  }
-  CA->suff_stat = tempsa;
+ 
+ double prob = 0; 
+ int stop = 0; 
+ double cbmd = 0.0; 
+ do{
+      cbmd = (range[1] - range[0])/2; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob > 0.99999){
+           range[1] = cbmd; 
+      }else{
+           range[0] = cbmd; 
+      } 
+      stop ++; 
+      
+ } while( (prob > 0.99999)  && (stop < 16)); 
+ 
+ range[1] = 2*cbmd; range[0] = 0; 
+ 
+ double trange[2]; 
+ trange[0] = 0.0; trange[1] = range[1];
+ stop = 0;
+ double mid = 0.0; 
+ do{
+      mid = (trange[1] + trange[0])/2.0; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob < 0.50){
+           trange[0] = mid; 
+      }else{
+           trange[1] = mid;
+      }
+      
+      stop ++; 
+      
+ } while( (fabs(prob-0.50) > 0.0001) && (stop < 50)); 
+ 
+ double lower_range = mid;
+ // now find a good starting point for the integration
+ mid = 0.0;
+ trange[0] = 0.0; trange[1] = range[1];
+ do{
+      mid = (trange[1] + trange[0])/2.0; 
+      prob = 0; 
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(mid)*post_probs[j]; 
+           }
+      } 
+      
+      if (prob < 1e-4){
+           trange[0] = mid; 
+      }else{
+           trange[1] = mid;
+      }
+      
+      stop ++; 
+      
+ } while( (log(fabs(prob-1e-4)) > log(1e-8)) && (stop < 50)); 
+ double lower_end = mid; 
+ 
+ int i = 0; 
+ for (; i < res->dist_numE/2; i ++){
+      cbmd =  double(i+1)/double(res->dist_numE/2)*(lower_range-lower_end)+lower_end; 
+      double prob = 0.0; 
+      
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      }
+      
+      res->bmd_dist[i] = cbmd; 
+      res->bmd_dist[i+res->dist_numE]  = prob;
+ }
+ double range_bmd = range[1] - cbmd;  
+ 
+ 
+ mid = cbmd;
+ 
+ for (; i < res->dist_numE; i ++){
+      double cbmd = mid + (double((i -res->dist_numE/2) + 1)/double(res->dist_numE/2))*(range_bmd); 
+      double prob = 0.0; 
+      
+      for (int j = 0; j < MA->nmodels; j++){
+           if (post_probs[j] > 0){ 
+                prob += b[j].BMD_CDF.P(cbmd)*post_probs[j]; 
+           }
+      }
+      
+      res->bmd_dist[i] = cbmd; 
+      res->bmd_dist[i+res->dist_numE]  = prob;
+ }
+ 
+ CA->suff_stat = tempsa;
   return; 
 }
 
@@ -1992,9 +2172,10 @@ void estimate_sm_laplace(continuous_analysis *CA ,
       tprior(m,n) = CA->prior[m + n*CA->parms]; 
     }
   }
-   
+  
   Eigen::MatrixXd temp_init =   initialize_model( Y_N, Y_LN, X, 
                                                   tprior,(distribution)CA->disttype,CA->model) ;
+ 
   
   temp_init = temp_init.array(); 
   
@@ -2156,13 +2337,14 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   if (CA->transform_dose){
     inverse_transform_dose(res); 
   }
-
+  
   res->model_df = DOF; 
   res->total_df = std::set<double>( v.begin(), v.end() ).size() - DOF; 
 
   res->model = CA->model; 
   res->dist  = CA->disttype; 
   CA->suff_stat = tempsa;
+
   return;  
 }
 
@@ -2411,7 +2593,6 @@ void estimate_log_normal_aod(continuous_analysis *CA,
   
   double divisor = get_divisor( Y,  X); 
   double  max_dose = X.maxCoeff(); 
-  
   Eigen::MatrixXd orig_Y = Y, orig_Y_LN = Y; 
   Eigen::MatrixXd orig_X = X; 
   
@@ -2426,10 +2607,7 @@ void estimate_log_normal_aod(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_LN = SSTAT_LN; 
-  Eigen::MatrixXd temp = Y_LN.col(2);
-  Y_LN.col(2) = Y_LN.col(1);
-  Y_LN.col(1) = temp; 
+ 
   if(!can_be_suff){
      aod->R  =  std::numeric_limits<double>::infinity();
      aod->A1 =  std::numeric_limits<double>::infinity();
@@ -2437,6 +2615,10 @@ void estimate_log_normal_aod(continuous_analysis *CA,
      aod->A3 =  std::numeric_limits<double>::infinity();
      return;   
   }else{
+     Y_LN = SSTAT_LN; 
+     Eigen::MatrixXd temp = Y_LN.col(2);
+     Y_LN.col(2) = Y_LN.col(1);
+     Y_LN.col(1) = temp; 
     log_normal_AOD_fits(Y_LN, UX, 
                         can_be_suff, aod);
     return; 
@@ -2483,10 +2665,7 @@ void estimate_normal_aod(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_N = SSTAT; 
-  Eigen::MatrixXd temp = Y_N.col(2);
-  Y_N.col(2) = Y_N.col(1);
-  Y_N.col(1) = temp; 
+ 
   
   if(!can_be_suff){
     
@@ -2498,7 +2677,10 @@ void estimate_normal_aod(continuous_analysis *CA,
   
     return;   
   }else{
-
+    Y_N = SSTAT; 
+    Eigen::MatrixXd temp = Y_N.col(2);
+    Y_N.col(2) = Y_N.col(1);
+    Y_N.col(1) = temp; 
     normal_AOD_fits(Y_N, UX, 
                     can_be_suff, aod);
     return; 
@@ -2541,23 +2723,19 @@ void estimate_normal_variance(continuous_analysis *CA,
     SSTAT_LN  = cleanSuffStat(Y,X,true,false);
     UX = X; 
   }
-  Y_N = SSTAT; 
-  Eigen::MatrixXd temp = Y_N.col(2);
-  Y_N.col(2) = Y_N.col(1);
-  Y_N.col(1) = temp; 
+
   
   if(!can_be_suff){
-    
-    
     *v_c   =  std::numeric_limits<double>::infinity();
     *v_nc  =  std::numeric_limits<double>::infinity();
     *v_pow =  std::numeric_limits<double>::infinity();
-    
-    
     return;   
   }else{
-  
-    variance_fits(Y_N, UX, 
+     Y_N = SSTAT; 
+     Eigen::MatrixXd temp = Y_N.col(2);
+     Y_N.col(2) = Y_N.col(1);
+     Y_N.col(1) = temp; 
+     variance_fits(Y_N, UX, 
                     can_be_suff, 
                     v_c, v_nc, v_pow);
     

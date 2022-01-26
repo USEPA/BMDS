@@ -1,0 +1,14 @@
+MAdensity_plot          MAdensity_plot - Create a density plot from a
+                        model averaged model.
+NTP                     Williams Trend test for
+cleveland_plot          cleveland_plot - Create a Cleveland plot from a
+                        model averaged model.
+ma_continuous_fit       ma_continuous_fit - Fit a model averaged
+                        continuous BMD model.
+ma_dichotomous_fit      ma_dichotomous_fit - Fit a model averaged
+                        dichotomous BMD model.
+single_continuous_fit   single_continuous_fit - Fit a single continuous
+                        BMD model.
+single_dichotomous_fit
+                        Fit a single dichotomous dose-response model to
+                        data.

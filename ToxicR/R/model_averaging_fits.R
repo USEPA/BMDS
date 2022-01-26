@@ -1,7 +1,39 @@
-#################################################
-# bmd_single_continuous - Run a single BMD model
-#
-##################################################
+#' Fit a model averaged continuous BMD model.
+#'
+#' @title ma_continuous_fit - Fit a model averaged continuous BMD model.
+#' @param D doses matrix
+#' @param Y response matrix
+#' @param model_list a list of configurations for the single models (priors, model type)
+#' @param fit_type the method used to fit (laplace, mle, or mcmc)
+#' @param BMD_TYPE BMD_TYPE specifies the type of benchmark dose analysis to be performed. For continuous models, there are four types of BMD definitions that are commonly used. \cr
+#' -	Standard deviation is the default option, but it can be explicitly specified with 'BMR_TYPE = "sd"' This definition defines the BMD as the dose associated with the mean/median changing a specified number of standard deviations from the mean at the control dose., i.e., it is the dose, BMD, that solves \eqn{\mid f(dose)-f(0) \mid = BMR \times \sigma} \cr
+#' -	Relative deviation can be specified with 'BMR_TYPE = "rel"'. This defines the BMD as the dose that changes the control mean/median a certain percentage from the background dose, i.e. it is the dose, BMD that solves \eqn{\mid f(dose) - f(0) \mid = (1 \pm BMR) f(0)} \cr
+#' -	Hybrid deviation can be specified with 'BMR_TYPE = "hybrid"'.  This defines the BMD that changes the probability of an adverse event by a stated amount relitive to no exposure (i.e 0).  That is, it is the dose, BMD, that solves \eqn{\frac{Pr(X > x| dose) - Pr(X >x|0)}{Pr(X < x|0)} = BMR}. For this definition, \eqn{Pr(X < x|0) = 1 - Pr(X > X|0) = \pi_0}, where \eqn{0 \leq \pi_0 < 1} is defined by the user as "point_p," and it defaults to 0.01.  Note: this discussion assumed increasing data.  The fitter determines the direction of the data and inverts the probability statements for decreasing data. \cr
+#' -	Absolute deviation can be specified with 'BMR_TYPE="abs"'. This defines the BMD as an absolute change from the control dose of zero by a specified amount. That is the BMD is the dose that solves the equation \eqn{\mid f(dose) - f(0) \mid = BMR}  
+#' @param BRM This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."
+#' @param point_p This option is only used for hybrid BMD calculations. It defines a probability that is the cutpoint for observations.  It is the probability that observations have this probability, or less, of being observed at the background dose.
+#' @param alpha Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)% confidence interval}.  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)% confidence interval}.  By default, it is set to 0.05.
+#' @param samples the number of samples to take (MCMC only)
+#' @param burnin the number of burnin samples to take (MCMC only)
+#' @return a model object containing a list of single models
+#' 
+#' @examples 
+#' Hill.p <- rbind(c(481,-250.3,70,3.3),
+#'                 c(481,-250.3,40,1.3),
+#'                 c(481,-250.2,15,1.1),
+#'                 c(481,-250.3,50,4) ,
+#'                 c(10.58,9.7,70,3.5),
+#'                 c(10.58,9.7,25,3),
+#'                 c(10.58,9.7,15,2),
+#'                 c(10.58,9.7,50,4))
+#' hill <- data.frame(a=Hill.p[,1],b=Hill.p[,2],c=Hill.p[,3],d=Hill.p[,4])
+#' doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
+#' dosesq <- rep(c(0,6.25,12.5,25,50,100),each=30)
+#' mean <- cont_hill_f(as.numeric(hill[2,]),doses)
+#' y <- rinvgauss(length(mean),mean,18528.14)
+#' model <- ma_continuous_fit(doses, y, fit_type = "laplace", BMD_TYPE = 'sd', BMR = 1)
+#' 
+#' @export
 ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                                   BMD_TYPE = "sd", BMR = 0.1, point_p = 0.01, 
                                   alpha = 0.05,samples = 21000,
@@ -25,27 +57,48 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   
   if (rt == 4) {rt = 6;} #internally hybrid is coded as 6	
   
-  #If there is no specified list then we use defaults
-  #TODO - Add sampled variance. 
+  
   if (is.na(model_list[[1]][1])){
-    model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))#,rep("FUNL",2))
+    #no prior distribution specified as a parameter
+    model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))
     distribution_list = c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),
                           "normal","normal-ncv")
     
     prior_list <- list()
-    tmodel_list <- list()
     for(ii in 1:length(model_list)){
       PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)
+      #specify variance of last parameter to variance of response
+      if(distribution_list[ii] == "lognormal"){
+        if (ncol(Y)>1){
+             PR$priors[nrow(PR$priors),2] = log(mean(Y[,3])^2)
+        }else{
+             PR$priors[nrow(PR$priors),2] = log(var(log(Y)))
+        }
+      }else{
+           if (ncol(Y)>1){
+                  if (distribution_list[ii] == "normal"){
+                       PR$priors[nrow(PR$priors),2]   = log(mean(Y[,3])^2)
+                  }else{
+                       PR$priors[nrow(PR$priors),2]   = log(mean(Y[1,])/mean(Y[,3])^2)
+                  }
+                 
+           }else{
+                  if (distribution_list[ii] == "normal"){
+                    PR$priors[nrow(PR$priors),2]   = log(var(Y))
+                  }else{
+                    PR$priors[nrow(PR$priors),2]   = log(mean(Y)/var(Y))
+                  }
+           }
+      }
       t_prior_result = create_continuous_prior(PR,model_list[ii],distribution_list[ii],2)
-      tmodel_list[[ii]] = t_prior_result
       PR = t_prior_result$prior
       prior_list[[ii]] = list(prior = PR, model_tye = model_list[ii], dist = distribution_list[ii])
     }
-    model_list = tmodel_list
   }else{
     prior_list <- list()
     for (ii in 1:length(model_list)){
       temp_prior = model_list[[ii]]
+      
       
       if (class(temp_prior) != "BMD_Bayes_continuous_model"){
         stop("Prior is not the correct form. Please use a Bayesian Continuous Prior Model.")
@@ -61,8 +114,9 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
                prior = result$prior)
       prior_list[[ii]] = a
     }  
+    
   }
-
+  
   models <- rep(0,length(prior_list))
   dlists  <- rep(0,length(prior_list))
   priors <- list()
@@ -102,56 +156,67 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   if (coefficients(temp.fit)[2] > 0){
     is_increasing = T
   }
-  
+  if (!is_increasing){
+       if (BMD_TYPE == "rel"){
+            BMR = 1-BMR
+       }
+  }
   options <- c(rt,BMR,point_p,alpha, is_increasing,samples,burnin)
   
   if (fit_type == "mcmc"){
     
     temp_r <- run_continuous_ma_mcmc(priors, models, dlists,Y,D,
                                     options) 
-   
     tempn <- temp_r$ma_results
+  
     tempm <- temp_r$mcmc_runs
     #clean up the run
-    idx     <- grep("Fitted_Model",names(tempn))
+
     temp <- list()
+    idx     <- grep("Fitted_Model",names(tempn))
+
+
     jj <- 1
     for ( ii in idx){
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
          #remove the unecessary 'c' column from the exponential fit
-         if ("exp-3" %in% model_list[[jj]]$mean){
+         if ("exp-3" %in% model_list[jj]){
            temp[[jj]]$mcmc_result$PARM_samples = temp[[jj]]$mcmc_result$PARM_samples[,-3]
          }
+         temp[[jj]]$full_model <- tempn[[ii]]$full_model
+         temp[[jj]]$parameters <- tempn[[ii]]$parameters
+         temp[[jj]]$covariance <- tempn[[ii]]$covariance
+         temp[[jj]]$maximum <- tempn[[ii]]$maximum
+         temp[[jj]]$bmd_dist <- tempn[[ii]]$bmd_dist
          
-         temp[[jj]]$fitted_model <- tempn[[ii]]
          temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- cbind(D,Y)
          temp[[jj]]$model <- prior_list[[jj]]$model# tolower(trimws(gsub("Model: ","",temp[[ii]]$full_model)))
 
-         data_temp = temp[[jj]]$fitted_model$bmd_dist
+         data_temp = temp[[jj]]$bmd_dist
          data_temp = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
          temp[[jj]]$bmd     <- c(NA,NA,NA)     
          
-     
+
          if (length(data_temp) > 0){
            ii = nrow(data_temp)
 
-             temp[[jj]]$fitted_model$bmd_dist = data_temp
+             temp[[jj]]$bmd_dist = data_temp
              if (length(data_temp)>10 ){
              
                   te <- splinefun(data_temp[,2,drop=F],data_temp[,1,drop=F],method="hyman")
                   temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
              }
          }
+
          names( temp[[jj]]$bmd ) <- c("BMD","BMDL","BMDU")
          class(temp[[jj]]) = "BMDcont_fit_MCMC"
          jj <- jj + 1
     }
     # for (ii in idx_mcmc)
-
-    names(temp) <- sprintf("Individual_Model_%s",1:length(priors))
+    names(temp) <- sprintf("Individual_Model_%s",1:length(idx))
    # print(tempn)
     temp$ma_bmd <- tempn$ma_bmd
    
@@ -254,15 +319,48 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   return(result)
 }
 
-#################################################
-# bmd_single_continous - Run a single BMD model
-#
-##################################################
+#' Fit a model averaged dichotomous BMD model.
+#'
+#' @title ma_dichotomous_fit - Fit a model averaged dichotomous BMD model.
+#' @param D doses matrix
+#' @param Y response matrix
+#' @param N number of replicates matrix
+#' @param model_list a list of configurations for the single models (priors, model type)
+#' @param fit_type the method used to fit (laplace, mle, or mcmc)
+#' @param BMD_TYPE BMD_TYPE specifies the type of benchmark dose analysis to be performed. For continuous models, there are four types of BMD definitions that are commonly used. \cr
+#' -	Standard deviation is the default option, but it can be explicitly specified with 'BMR_TYPE = "sd"' This definition defines the BMD as the dose associated with the mean/median changing a specified number of standard deviations from the mean at the control dose., i.e., it is the dose, BMD, that solves \eqn{\mid f(dose)-f(0) \mid = BMR \times \sigma} \cr
+#' -	Relative deviation can be specified with 'BMR_TYPE = "rel"'. This defines the BMD as the dose that changes the control mean/median a certain percentage from the background dose, i.e. it is the dose, BMD that solves \eqn{\mid f(dose) - f(0) \mid = (1 \pm BMR) f(0)} \cr
+#' -	Hybrid deviation can be specified with 'BMR_TYPE = "hybrid"'.  This defines the BMD that changes the probability of an adverse event by a stated amount relitive to no exposure (i.e 0).  That is, it is the dose, BMD, that solves \eqn{\frac{Pr(X > x| dose) - Pr(X >x|0)}{Pr(X < x|0)} = BMR}. For this definition, \eqn{Pr(X < x|0) = 1 - Pr(X > X|0) = \pi_0}, where \eqn{0 \leq \pi_0 < 1} is defined by the user as "point_p," and it defaults to 0.01.  Note: this discussion assumed increasing data.  The fitter determines the direction of the data and inverts the probability statements for decreasing data. \cr
+#' -	Absolute deviation can be specified with 'BMR_TYPE="abs"'. This defines the BMD as an absolute change from the control dose of zero by a specified amount. That is the BMD is the dose that solves the equation \eqn{\mid f(dose) - f(0) \mid = BMR}  
+#' @param BRM This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."
+#' @param point_p This option is only used for hybrid BMD calculations. It defines a probability that is the cutpoint for observations.  It is the probability that observations have this probability, or less, of being observed at the background dose.
+#' @param alpha Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)% confidence interval}.  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)% confidence interval}.  By default, it is set to 0.05.
+#' @param samples the number of samples to take (MCMC only)
+#' @param burnin the number of burnin samples to take (MCMC only)
+#' @return a model object containing a list of single models
+#' 
+#' @examples 
+#' 
+#' mData <- matrix(c(0, 2,50,
+#'                   1, 2,50,
+#'                   3, 10, 50,
+#'                   16, 18,50,
+#'                   32, 18,50,
+#'                   33, 17,50),nrow=6,ncol=3,byrow=T)
+#' D <- mData[,1]
+#' Y <- mData[,2]
+#' N <- mData[,3]
+#' model = ma_dichotomous_fit(D,Y,N)
+#' 
+#' @export
 ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace",
                               BMD_TYPE = "extra",
-                              BMR = 0.1, point_p = 0.01, distribution_list = NA,
-                              alpha = 0.05,samples = 21000,
+                              BMR = 0.1, point_p = 0.01, alpha = 0.05, samples = 21000,
                               burnin = 1000){
+  D <- as.matrix(D)
+  Y <- as.matrix(Y)
+  N <- as.matrix(N)
+  
   priors <- list()
   temp_prior_l <- list()
   tmodel_list  <- list()
@@ -334,6 +432,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
      
          te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
          temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
+         names(temp[[ii]]$bmd) <- c("BMD","BMDL","BMDU")
          names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
     }
     
@@ -352,7 +451,12 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          
          temp[[jj]] <- list()
          temp[[jj]]$mcmc_result <- tempm[[ii]]
-         temp[[jj]]$fitted_model <- tempn[[ii]]
+         temp[[jj]]$full_model <- tempn[[ii]]$full_model
+         temp[[jj]]$parameters <- tempn[[ii]]$parameters
+         temp[[jj]]$covariance <- tempn[[ii]]$covariance
+         temp[[jj]]$maximum <- tempn[[ii]]$maximum
+         temp[[jj]]$bmd_dist <- tempn[[ii]]$bmd_dist
+         
          #temp[[jj]]$prior <- priors[[which(ii == idx)]]
          temp[[jj]]$data  <- data
          temp[[jj]]$model <- tolower(trimws(gsub("Model: ","",tempn[[ii]]$full_model)))
@@ -360,7 +464,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          if (temp[[jj]]$model =="quantal-linear" ){
                 temp[[jj]]$model ="qlinear"
          }
-         te <- splinefun(temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),2],temp[[jj]]$fitted_model$bmd_dist[!is.infinite(temp[[jj]]$fitted_model$bmd_dist[,1]),1],method="hyman")
+         te <- splinefun(temp[[jj]]$bmd_dist[!is.infinite(temp[[jj]]$bmd_dist[,1]),2],temp[[jj]]$bmd_dist[!is.infinite(temp[[jj]]$bmd_dist[,1]),1],method="hyman")
          temp[[jj]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          class(temp[[jj]]) = "BMDdich_fit_MCMC"
          jj <- jj + 1
@@ -374,7 +478,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp$post_prob
     class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_mcmc")  
   }
-  
+  names(temp$bmd) <- c("BMD","BMDL","BMDU")
   return(temp)
 }
   

@@ -1,0 +1,434 @@
+* using log directory ‘/home/wheelermw/Documents/work/r_software/RBMDS/ToxicR.Rcheck’
+* using R version 4.1.2 (2021-11-01)
+* using platform: x86_64-pc-linux-gnu (64-bit)
+* using session charset: UTF-8
+* using options ‘--no-manual --as-cran’
+* checking for file ‘ToxicR/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘ToxicR’ version ‘21.10’
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘ToxicR’ can be installed ... WARNING
+Found the following significant warnings:
+  Warning: replacing previous import ‘doBy::order_by’ by ‘dplyr::order_by’ when loading ‘ToxicR’
+See ‘/home/wheelermw/Documents/work/r_software/RBMDS/ToxicR.Rcheck/00install.out’ for details.
+* checking installed package size ... NOTE
+  installed size is 97.7Mb
+  sub-directories of 1Mb or more:
+    libs  97.4Mb
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Malformed Title field: should not end in a period.
+License components which are templates and need '+ file LICENSE':
+  MIT
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... WARNING
+MAdensity_plot:
+  function(A, ...)
+MAdensity_plot.BMDdichotomous_MA_mcmc:
+  function(A)
+
+MAdensity_plot:
+  function(A, ...)
+MAdensity_plot.BMDcontinuous_MA_mcmc:
+  function(A)
+
+cleveland_plot:
+  function(A, ...)
+cleveland_plot.BMDdichotomous_MA:
+  function(A)
+
+cleveland_plot:
+  function(A, ...)
+cleveland_plot.BMDcontinuous_MA:
+  function(A)
+
+plot:
+  function(x, ...)
+plot.BMDdich_fit_MCMC:
+  function(fit, fit_type, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDdich_fit_maximized:
+  function(fit, fit_type, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcont_fit_MCMC:
+  function(fit, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcont_fit_maximized:
+  function(A, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDcontinuous_MA:
+  function(A, qprob, ...)
+
+plot:
+  function(x, ...)
+plot.BMDdichotomous_MA:
+  function(A, qprob, ...)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_MCMC:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_laplace:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcont_fit_mle:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDcontinuous_bayesian_model:
+  function(data_model)
+
+print:
+  function(x, ...)
+print.BMDdich_fit_MCMC:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDprior:
+  function(prior)
+
+print:
+  function(x, ...)
+print.BMD_Bayes_dichotomous_model:
+  function(priors)
+
+print:
+  function(x, ...)
+print.BMD_Bayes_continuous_model:
+  function(priors)
+
+print:
+  function(x, ...)
+print.BMD_CDF:
+  function(p)
+
+print:
+  function(x, ...)
+print.BMDdich_fit:
+  function(p)
+
+See section ‘Generic functions and methods’ in the ‘Writing R
+Extensions’ manual.
+
+Found the following apparent S3 methods exported but not registered:
+  print.BMDcont_fit_MCMC print.BMDcont_fit_laplace
+  print.BMDcont_fit_mle print.BMDcontinuous_bayesian_model
+  print.BMDdich_fit_MCMC print.BMDprior
+See section ‘Registering S3 methods’ in the ‘Writing R Extensions’
+manual.
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X5’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X1’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X4’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X2’
+.cleveland_plot.BMDcontinous_MA: no visible binding for global variable
+  ‘X3’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X5’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X1’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X4’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X2’
+.cleveland_plot.BMDdichotomous_MA: no visible binding for global
+  variable ‘X3’
+.dich_gamma_f: no visible global function definition for ‘pgamma’
+.dich_probit_f: no visible global function definition for ‘pnorm’
+.plot.BMDcont_fit_MCMC: no visible global function definition for ‘lm’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘coefficients’
+.plot.BMDcont_fit_MCMC: no visible binding for global variable
+  ‘quantile’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcont_fit_MCMC: no visible global function definition for
+  ‘density’
+.plot.BMDcont_fit_MCMC: no visible binding for global variable ‘Dose’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘lm’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘coefficients’
+.plot.BMDcont_fit_maximized: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcontinuous_MA: no visible global function definition for ‘lm’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘coefficients’
+.plot.BMDcontinuous_MA: no visible binding for global variable
+  ‘quantile’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘quantile’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘density’
+.plot.BMDcontinuous_MA: no visible global function definition for
+  ‘splinefun’
+.plot.BMDcontinuous_MA: no visible binding for global variable
+  ‘model_no’
+.plot.BMDcontinuous_MA: no visible binding for global variable ‘x_axis’
+.plot.BMDcontinuous_MA: no visible binding for global variable ‘y_axis’
+.plot.BMDcontinuous_MA: no visible binding for global variable ‘cols’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘density’
+.plot.BMDdich_fit_MCMC: no visible binding for global variable
+  ‘quantile’
+.plot.BMDdich_fit_MCMC: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdich_fit_maximized: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdichotomous_MA: no visible binding for global variable
+  ‘quantile’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘splinefun’
+.plot.BMDdichotomous_MA: no visible global function definition for
+  ‘density’
+.plot.BMDdichotomous_MA: no visible binding for global variable
+  ‘model_no’
+.plot.BMDdichotomous_MA: no visible binding for global variable
+  ‘x_axis’
+.plot.BMDdichotomous_MA: no visible binding for global variable
+  ‘y_axis’
+.plot.BMDdichotomous_MA: no visible binding for global variable ‘cols’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘density’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X1’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X2’
+.plot.density.BMDcontinous_MA_MCMC: no visible binding for global
+  variable ‘X3’
+.plot.density.BMDcontinous_MA_MCMC: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘density’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X1’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X2’
+.plot.density.BMDdichotomous_MA_MCMC: no visible binding for global
+  variable ‘X3’
+.plot.density.BMDdichotomous_MA_MCMC: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_1’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_2’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_3’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_4’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_5’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_6’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_7’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_8’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘t_9’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘c3’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X1’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X2’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘X3’
+.plot.density.BMDdichotomous_MA_maximized: no visible global function
+  definition for ‘quantile’
+.plot.density.BMDdichotomous_MA_maximized: no visible binding for
+  global variable ‘quantile’
+.print.BMD_CDF: no visible global function definition for ‘splinefun’
+.print.BMDdich_fit: no visible global function definition for
+  ‘splinefun’
+.pvalue_cont_mcmc: no visible global function definition for ‘pchisq’
+.pvalue_cont_mcmc: no visible global function definition for ‘quantile’
+clean_continuous_analysis: no visible binding for global variable ‘EST’
+ma_continuous_fit: no visible global function definition for ‘var’
+ma_continuous_fit: no visible global function definition for ‘lm’
+ma_continuous_fit: no visible global function definition for
+  ‘coefficients’
+ma_continuous_fit: no visible global function definition for
+  ‘splinefun’
+ma_dichotomous_fit: no visible global function definition for
+  ‘splinefun’
+print.BMDcont_fit_MCMC: no visible global function definition for
+  ‘quantile’
+print.BMDdich_fit_MCMC: no visible global function definition for
+  ‘quantile’
+single_continuous_fit: no visible global function definition for ‘var’
+single_continuous_fit: no visible global function definition for ‘lm’
+single_continuous_fit: no visible global function definition for
+  ‘coefficients’
+single_continuous_fit: no visible global function definition for
+  ‘splinefun’
+single_dichotomous_fit: no visible global function definition for
+  ‘splinefun’
+single_dichotomous_fit: no visible global function definition for
+  ‘quantile’
+Undefined global functions or variables:
+  Dose EST X1 X2 X3 X4 X5 c3 coefficients cols density lm model_no
+  pchisq pgamma pnorm quantile splinefun t_1 t_2 t_3 t_4 t_5 t_6 t_7
+  t_8 t_9 var x_axis y_axis
+Consider adding
+  importFrom("stats", "coefficients", "density", "lm", "pchisq",
+             "pgamma", "pnorm", "quantile", "splinefun", "var")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... WARNING
+Undocumented code objects:
+  ‘MLE_bounds_continuous’ ‘bayesian_prior_continuous_default’
+  ‘bayesian_prior_dich’ ‘bmd_default_bayesian_prior’
+  ‘bmd_default_frequentist_settings’ ‘clean_continuous_analysis’
+  ‘clean_parameters’ ‘combine_prior_lists’ ‘cont_FUNL_f’ ‘cont_exp_3_f’
+  ‘cont_exp_5_f’ ‘cont_hill_f’ ‘cont_polynomial_f’ ‘cont_power_f’
+  ‘create_continuous_prior’ ‘create_dichotomous_prior’
+  ‘create_prior_list’ ‘crutial_stat_constant’ ‘lnormprior’
+  ‘ma_continuous_list’ ‘normprior’ ‘parse_prior’
+  ‘print.BMDcont_fit_MCMC’ ‘print.BMDcont_fit_laplace’
+  ‘print.BMDcont_fit_mle’ ‘print.BMDcontinuous_bayesian_model’
+  ‘print.BMDdich_fit_MCMC’ ‘print.BMDprior’ ‘run_continuous_ma_laplace’
+  ‘run_continuous_ma_mcmc’ ‘run_continuous_single’
+  ‘run_continuous_single_mcmc’ ‘run_dichotomous_single_mcmc’
+  ‘run_ma_dichotomous’ ‘run_single_dichotomous’ ‘will005’ ‘will025’
+Undocumented data sets:
+  ‘will005’ ‘will025’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in documentation object 'MAdensity_plot'
+  ‘...’
+
+Documented arguments not in \usage in documentation object 'NTP':
+  ‘data’
+
+Undocumented arguments in documentation object 'cleveland_plot'
+  ‘...’
+
+Undocumented arguments in documentation object 'ma_continuous_fit'
+  ‘BMR’ ‘alpha’
+Documented arguments not in \usage in documentation object 'ma_continuous_fit':
+  ‘BRM’
+
+Undocumented arguments in documentation object 'ma_dichotomous_fit'
+  ‘BMR’ ‘alpha’
+Documented arguments not in \usage in documentation object 'ma_dichotomous_fit':
+  ‘BRM’
+
+Undocumented arguments in documentation object 'single_continuous_fit'
+  ‘model_type’ ‘prior’ ‘BMR’ ‘distribution’ ‘alpha’
+Documented arguments not in \usage in documentation object 'single_continuous_fit':
+  ‘BRM’
+
+Undocumented arguments in documentation object 'single_dichotomous_fit'
+  ‘model_type’ ‘prior’ ‘BMR’ ‘alpha’
+Documented arguments not in \usage in documentation object 'single_dichotomous_fit':
+  ‘BRM’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... OK
+* checking LazyData ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking line endings in C/C++/Fortran sources/headers ... OK
+* checking line endings in Makefiles ... OK
+* checking compilation flags in Makevars ... WARNING
+Non-portable flags in variable 'PKG_CPPFLAGS':
+  -ftree-vectorize -Os -Wno-ignored-attributes -flto -fopenmp
+* checking for GNU extensions in Makefiles ... WARNING
+Found the following file(s) containing GNU extensions:
+  src/Makevars
+Portable Makefiles do not use GNU extensions such as +=, :=, $(shell),
+$(wildcard), ifeq ... endif, .NOTPARALLEL See section ‘Writing portable
+packages’ in the ‘Writing R Extensions’ manual.
+* checking for portable use of $(BLAS_LIBS) and $(LAPACK_LIBS) ... OK
+* checking use of PKG_*FLAGS in Makefiles ... OK
+* checking use of SHLIB_OPENMP_*FLAGS in Makefiles ... OK
+* checking pragmas in C/C++ headers and code ... OK
+* checking compilation flags used ... WARNING
+Compilation used the following non-portable flag(s):
+  ‘-Wno-ignored-attributes’
+including flag(s) suppressing warnings
+* checking compiled code ... OK
+* checking examples ... ERROR
+Running examples in ‘ToxicR-Ex.R’ failed
+The error most likely occurred in:
+
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: MAdensity_plot
+> ### Title: MAdensity_plot - Create a density plot from a model averaged
+> ###   model.
+> ### Aliases: MAdensity_plot
+> 
+> ### ** Examples
+> 
+> 
+> ...
+Error: '...' used in an incorrect context
+Execution halted
+* checking for unstated dependencies in ‘tests’ ... WARNING
+'library' or 'require' calls not declared from:
+  ‘actuar’ ‘testthat’
+* checking tests ... ERROR
+  Running ‘testthat.R’
+Running the tests in ‘tests/testthat.R’ failed.
+Complete output:
+  > library(testthat)
+  Error in library(testthat) : there is no package called 'testthat'
+  Execution halted
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+Status: 2 ERRORs, 8 WARNINGs, 3 NOTEs

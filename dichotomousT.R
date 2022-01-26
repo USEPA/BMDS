@@ -42,7 +42,7 @@ mData <- matrix(c(0, 5, 50,
 
 
 
-Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mle",samples=500,burnin=2)
+Q  = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "laplace",samples=50000,burnin=2)
 #Q1 = ma_dichotomous_fit(mData[,1],mData[,2],mData[,3], fit_type = "mcmc")
 #plot(Q) + scale_x_continuous(trans="sqrt")
 

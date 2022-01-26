@@ -1,4 +1,15 @@
 #Set the default clevland_plot method generic for all of the classes. 
+
+#' Create a Cleveland plot from a model averaged model.
+#'
+#' @title cleveland_plot - Create a Cleveland plot from a model averaged model.
+#' @param A the model averaged model to plot
+#' @examples 
+#' \dontrun{
+#' model = ma_dichotomous_fit(D,Y,N)
+#' cleveland_plot(model)
+#' } 
+#' @export
 cleveland_plot <- function (A, ...){
   UseMethod("cleveland_plot")
 }
@@ -121,9 +132,6 @@ cleveland_plot <- function (A, ...){
   # Grap function extract # of indices from the text with same pattern
   fit_idx    <- grep("Individual_Model",class_list)
   
-  
-  
-  
   # Create an empty matrix to contain BMD information from each model
   bmd_ind<-matrix(0,length(fit_idx)+1,5)
   
@@ -135,16 +143,13 @@ cleveland_plot <- function (A, ...){
     # BMD -95%
     bmd_ind[i,3]<-A[[i]]$bmd[3]
     # Model name 
-    bmd_ind[i,4]<-substr(A[[i]]$fitted_model$full_model, 8,999)
+    bmd_ind[i,4]<-substr(A[[i]]$full_model, 8,999)      
     bmd_ind[i,5]<-A$posterior_probs[i]
   }
-  
-  
   
   bmd_ind[length(fit_idx)+1,1]<-A$bmd[1]
   bmd_ind[length(fit_idx)+1,2]<-A$bmd[2]
   bmd_ind[length(fit_idx)+1,3]<-A$bmd[3]
-  
   
   # Add model average case 
   bmd_ind[length(fit_idx)+1,4]<-"Model Average"
