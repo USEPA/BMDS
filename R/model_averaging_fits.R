@@ -414,10 +414,10 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp <- run_ma_dichotomous(data, priors, model_i,
                                model_p, FALSE, o1, o2)
     #clean up the run
-    temp$bmd_dist <- temp$BMD_CDF
+    temp$ma_bmd <- temp$BMD_CDF
     #TO DO : DELETE temp$BMD_CDF
-    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],
-                    temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
+    te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],
+                    temp$ma_bbd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     t_names <- names(temp)
     
@@ -433,10 +433,12 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
          temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          names(temp[[ii]]$bmd) <- c("BMD","BMDL","BMDU")
-         names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
+         names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
+         tmp_id = which(names(temp) == "BMD_CDF")
+       #  temp = temp[-tmp_id] 
     }
     
-    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_maximized")  
+    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_laplace")  
   }else{
     #MCMC run
     temp_r <- run_ma_dichotomous(data, priors, model_i,

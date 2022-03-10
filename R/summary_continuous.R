@@ -112,3 +112,66 @@
               s_fit$geweke_z,2*pnorm(abs(s_fit$geweke_z),lower.tail=F)))
   
 }
+
+.summary_ma_max<-function(model,alpha=0.05){
+  warn = getOption("warn")
+  options(warn=-1)
+  returnV <- list()
+  if (alpha < 0 || alpha > 0.5){
+    warning("Specified BMD alpha-level is outside of [0,0.5] defauflting to 0.05")
+  }
+  returnV$fit_method <- "Bayesian:MCMC"
+  returnV$fit_table  <- data.frame(post_p = round(model$posterior_probs,3))
+  tmp_idx <- grep("Individual",names(model))
+  
+  temp_mfit <- rep(" ",length(tmp_idx)) #model name
+  temp_BMD <- rep(" ",length(tmp_idx))  #bmd
+  temp_BMDL <- rep(" ",length(tmp_idx)) #bmdl
+  temp_BMDU <- rep(" ",length(tmp_idx)) #bmdu
+  
+  for (ii in tmp_idx){
+    tmp_fit <- model[[ii]]
+    temp_function <- splinefun(tmp_fit$bmd_dist[,2],tmp_fit$bmd_dist[,1],method="monoH.FC")
+    temp_bmds <- temp_function(1-c(1-alpha,0.5,alpha))
+    temp_mfit[ii] <- sub("Model: ","",tmp_fit$full_model)
+    temp_BMD[ii]  <- round(temp_bmds[2],3)
+    temp_BMDL[ii]  <- round(temp_bmds[1],3)
+    temp_BMDU[ii]  <- round(temp_bmds[3],3)
+  }
+  
+  returnV$fit_table$model_names = temp_mfit
+  returnV$fit_table$BMD         = temp_BMD
+  returnV$fit_table$BMDL        = temp_BMDL
+  returnV$fit_table$BMDU        = temp_BMDU
+  
+  tmp_idx = order(returnV$fit_table$post_p,decreasing=T)
+  returnV$fit_table = returnV$fit_table[tmp_idx,c(2,3,4,5,1)]
+
+  
+  temp_function <- splinefun(model$ma_bmd[,2],model$ma_bmd[,1],method="monoH.FC")
+  returnV$BMD <- temp_function(1-c(1-alpha,0.5,alpha))
+  names(returnV$BMD) <- c("BMDL","BMD","BMDU")
+  returnV$alpha <- alpha
+  options(warn=warn)
+  class(returnV) <- "ma_summary_max"
+  return(returnV)
+}
+
+.print_summary_ma_max<-function(s_fit){
+  
+  cat("Summary of single MA BMD\n\n")
+  cat("Individual Model BMDS\n")
+  cat(paste("Model",strrep(' ',34),sep=''),"\t\t BMD (BMDL, BMDU)\tPr(M|Data)\n")
+  cat("___________________________________________________________________________________________\n")
+  for (ii in 1:nrow(s_fit$fit_table)){
+    tmp_length = nchar(s_fit$fit_table[ii,1])
+    pad <- paste(substr(s_fit$fit_table[ii,1],1,38),strrep(" ",39-tmp_length),sep="")
+    cat(sprintf("%s\t\t\t%1.2f (%1.2f ,%1.2f) \t %1.3f\n",pad,as.numeric(s_fit$fit_table[ii,2]),
+                as.numeric(s_fit$fit_table[ii,3]),as.numeric(s_fit$fit_table[ii,4]),as.numeric(s_fit$fit_table[ii,5])))
+  }
+  cat("___________________________________________________________________________________________\n")
+  
+  cat("Model Average BMD: ")
+  cat(sprintf("%1.2f (%1.2f, %1.2f) %1.1f%% CI\n",s_fit$BMD[2],s_fit$BMD[1],s_fit$BMD[3],
+              100*(1-2*s_fit$alpha)))
+}
