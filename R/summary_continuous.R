@@ -157,7 +157,7 @@
   return(returnV)
 }
 
-.print_summary_ma_max<-function(s_fit){
+.print_summary_ma_max<-function(s_fit){ # nolint
   
   cat("Summary of single MA BMD\n\n")
   cat("Individual Model BMDS\n")

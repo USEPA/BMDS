@@ -360,21 +360,18 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
   D <- as.matrix(D)
   Y <- as.matrix(Y)
   N <- as.matrix(N)
-  
+
   priors <- list()
   temp_prior_l <- list()
   tmodel_list  <- list()
   if (length(model_list) < 1){
-    
     model_list =  .dichotomous_models 
     model_i = rep(0,length(model_list))
     for (ii in 1:length(model_list)){
       temp_prior_l[[ii]] = bayesian_prior_dich(model_list[ii])
-      
       priors[[ii]] = temp_prior_l[[ii]]$priors
       model_i[ii]  = .dichotomous_model_type(model_list[ii])
     }
-    
   }else{
     if(class(model_list) != "list"){
       stop("Please pass a list of priors.")
@@ -417,7 +414,7 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp$ma_bmd <- temp$BMD_CDF
     #TO DO : DELETE temp$BMD_CDF
     te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],
-                    temp$ma_bbd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
+                    temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     t_names <- names(temp)
     
