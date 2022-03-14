@@ -41,6 +41,10 @@ S3method(summary,BMDcontinuous_MA_laplace , .summary_ma_max)
 S3method(summary,BMDdichotomous_MA_laplace , .summary_ma_max)
 S3method(print,ma_summary_max,.print_summary_ma_max )
 
+#Predict Methods
+
+S3method(predict,BMDdich_fit_maximized, .dichotomous_predict_model)
+S3method(predict,BMDcont_fit_maximized, .continuous_predict_model)
 
 
 # Base plot for single case
