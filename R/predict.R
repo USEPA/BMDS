@@ -57,6 +57,47 @@
         return(returnV)
 }
 
+
+.dichotomous_predict_model_mcmc <- function(fit,new_doses = NULL){
+
+    if (is.null(new_doses)){
+        test_doses = fit$data[,1]
+    }else{
+        test_doses = new_doses
+    }
+
+    if (fit$model=="hill"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_hill_f,d=test_doses)
+    }
+    if (fit$model=="gamma"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_gamma_f,d=test_doses)
+    }
+    if (fit$model == "logistic"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_logist_f,d=test_doses)
+    }
+    if (fit$model=="log-logistic"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_llogist_f,d=test_doses)
+    }
+    if (fit$model=="probit"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_probit_f,d=test_doses)
+    }
+    if (fit$model=="log-probit"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_lprobit_f,d=test_doses)
+    }
+    if (fit$model=="multistage"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_multistage_f,d=test_doses)
+    }
+    if (fit$model=="qlinear"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_qlinear_f,d=test_doses)
+    }
+    if (fit$model=="weibull"){
+            f <- apply(fit$mcmc_result$PARM_samples,1,.dich_weibull_f,d=test_doses)
+    }
+
+    returnV <- list(X = test_doses, Y = f)
+    return(returnV)
+}
+
 .continuous_predict_model <- function(fit, new_doses = NULL){
 
         data_d = fit$data
