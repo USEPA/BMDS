@@ -511,13 +511,13 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
             for (int i=ind; i<ind+anal->degree; i++){
               anal->prior[i] = 0.0;  // beta min or max 
             }
-            //set ind for alpha parm
-            if(anal->isIncreasing){
-              ind = 4*numRows-1;  
-            } else {
-              ind = 5*numRows-1;
-            }
-            anal->prior[ind] = 0.0;  //alpha min or max
+//            //set ind for alpha parm
+//            if(anal->isIncreasing){
+//              ind = 4*numRows-1;  
+//            } else {
+//              ind = 5*numRows-1;
+//            }
+//            anal->prior[ind] = 0.0;  //alpha min or max
           }
           break;
       }  //end switch
