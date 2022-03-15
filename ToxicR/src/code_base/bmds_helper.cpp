@@ -460,6 +460,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
 
   bmdsRes->validResult = false;
+  anal->transform_dose = false;
 
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
