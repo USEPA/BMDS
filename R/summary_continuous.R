@@ -131,12 +131,22 @@
   
   for (ii in tmp_idx){
     tmp_fit <- model[[ii]]
-    temp_function <- splinefun(tmp_fit$bmd_dist[,2],tmp_fit$bmd_dist[,1],method="monoH.FC")
-    temp_bmds <- temp_function(1-c(1-alpha,0.5,alpha))
-    temp_mfit[ii] <- sub("Model: ","",tmp_fit$full_model)
-    temp_BMD[ii]  <- round(temp_bmds[2],3)
-    temp_BMDL[ii]  <- round(temp_bmds[1],3)
-    temp_BMDU[ii]  <- round(temp_bmds[3],3)
+    data_temp = tmp_fit$bmd_dist
+    dist = data_temp[!is.infinite(data_temp[,1]) & !is.na(data_temp[,1]),]
+    dist = data_temp[!is.nan(data_temp[,1])]
+    if (length(dist)>10 & !identical(dist, numeric(0))){
+      temp_function <- splinefun(data_temp[,2],data_temp[,1],method="monoH.FC")
+      temp_bmds <- temp_function(1-c(1-alpha,0.5,alpha))
+      temp_mfit[ii] <- sub("Model: ","",tmp_fit$full_model)
+      temp_BMD[ii]  <- round(temp_bmds[2],3)
+      temp_BMDL[ii]  <- round(temp_bmds[1],3)
+      temp_BMDU[ii]  <- round(temp_bmds[3],3)
+    }else{
+      temp_mfit[ii] <- sub("Model: ","",tmp_fit$full_model)
+      temp_BMD[ii]  <- NA
+      temp_BMDL[ii]  <- NA
+      temp_BMDU[ii]  <- NA
+    }
   }
   
   returnV$fit_table$model_names = temp_mfit

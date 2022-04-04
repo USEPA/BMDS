@@ -23,11 +23,9 @@ cleveland_plot <- function (A, ...){
   class_list <- names(A) 
   
   # This part should be consistent
-  if (class(A)[2]=="BMDdichotomous_MA_maximized") {
-    fit_idx<- grep("Fitted_Model",class_list)
-  }else {
-    fit_idx<- grep("Individual_Model",class_list)
-  }
+ 
+  fit_idx<- grep("Individual_Model",class_list)
+  
   
   # Create an empty matrix to contain BMD information from each model
   bmd_ind<-matrix(0,length(fit_idx)+1,5)
@@ -47,7 +45,7 @@ cleveland_plot <- function (A, ...){
   
   # Ask Matt- For the case of Laplace- bmd object is missing
   # This part should be consistent
-  if (class(A)[2]=="BMDdichotomous_MA_mcmc") {
+
     
   bmd_ind[length(fit_idx)+1,1]<-A$bmd[1]
   bmd_ind[length(fit_idx)+1,2]<-A$bmd[2]
@@ -59,17 +57,6 @@ cleveland_plot <- function (A, ...){
   bmd_ind_df<-data.frame(bmd_ind)
   bmd_ind_df$X1
   
-  }else if (class(A)[2]=="BMDdichotomous_MA_maximized"){  # Need to differentiate the cases- Nearest value index 
-    bmd_ind[length(fit_idx)+1,1]<-A$BMD_CDF[which.min(abs(0.5-A$BMD_CDF[,2])),1]
-    bmd_ind[length(fit_idx)+1,2]<-A$BMD_CDF[which.min(abs(0.05-A$BMD_CDF[,2])),1]
-    bmd_ind[length(fit_idx)+1,3]<-A$BMD_CDF[which.min(abs(0.95-A$BMD_CDF[,2])),1]
-    
-    bmd_ind[length(fit_idx)+1,4]<-"Model Average"
-    bmd_ind[length(fit_idx)+1,5]<-1
-    
-    bmd_ind_df<-data.frame(bmd_ind)
-    bmd_ind_df$X1
-  }
 
   #Temporarily it choose from CDF case, but this should be updated
   # 
