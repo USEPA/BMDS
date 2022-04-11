@@ -42,6 +42,14 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   Y = as.matrix(Y)
   D = as.matrix(D)
   
+  is_neg = .check_negative_response(Y)
+
+  DATA <- cbind(D,Y);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  DATA <- cbind(D,Y);
+
   current_models = c("hill","exp-3","exp-5","power","FUNL")
   current_dists  = c("normal","normal-ncv","lognormal")
   type_of_fit = which(fit_type == c('laplace','mcmc'))
@@ -63,7 +71,18 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))
     distribution_list = c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),
                           "normal","normal-ncv")
-    
+    if (is_neg){
+      tmpIdx = which(distribution_list == "lognormal")
+      model_list = model_list[-tmpIdx]
+      distribution_list = distribution_list[-tmpIdx]
+      if (length(distribution_list) > 1) # need at least 2 models for model averaging
+      {
+        warning("Negative response values were found in the data.  All lognormal
+        models were removed from the analysis.")
+      }else{
+        stop("Negative response values were found in the data.  All lognormal models were removed from the analysis, but there were not enough models available for the MA.")
+      }
+    }
     prior_list <- list()
     for(ii in 1:length(model_list)){
       PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)

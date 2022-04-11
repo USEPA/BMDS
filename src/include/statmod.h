@@ -305,7 +305,6 @@ Eigen::MatrixXd statModel<LL,PR>::varMatrix(Eigen::MatrixXd theta) {
   // matrix is less than full rank
   // so we add an epsolon error to fix it
   if (rank < m.rows()){
-     std::cout << "I am here!" << std::endl; 
       m = m + 1e-4*Eigen::MatrixXd::Identity(m.rows(),m.cols());
   }
 

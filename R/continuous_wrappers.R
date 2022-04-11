@@ -59,7 +59,23 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    transform = FALSE){
     Y <- as.matrix(Y) 
     D <- as.matrix(D) 
-
+    
+    dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
+    
+    if (dis_type == 3){
+       is_neg = .check_negative_response(Y)
+       if (is_neg){
+         stop("Can't fit a negative response to the log-normal distribution.")
+       }
+    }
+    
+    DATA <- cbind(D,Y);
+    test <-  .check_for_na(DATA)
+    Y = Y[test==TRUE,,drop=F]
+    D = D[test==TRUE,,drop=F]
+    DATA <- cbind(D,Y);
+   
+    
     myD = Y; 
     sstat = F # set sufficient statistics to false if there is only one column
     if (ncol(Y) > 1){
@@ -122,16 +138,14 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
     if (rt == 4){
       rt = 6; 
     }
-    dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
-    
 
     
     if(identical(dis_type,integer(0))){
       stop('Please specify the distribution as one of the following:\n
             "normal","normal-ncv","lognormal"')
     }
-    
-    DATA <- cbind(D,Y); 
+
+
     if (ncol(DATA)==4){
       colnames(DATA) =  c("Dose","Resp","N","StDev")
     }else if (ncol(DATA) == 2){
