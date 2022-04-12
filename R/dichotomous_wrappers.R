@@ -32,6 +32,12 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   D <- as.matrix(D) 
   N <- as.matrix(N) 
   
+  DATA <- cbind(D,Y,N);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  N = N[test==TRUE,,drop=F]
+
   if (class(prior) == "character"){
     prior =  bayesian_prior_dich(model_type,degree);
     

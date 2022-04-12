@@ -380,6 +380,12 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
   Y <- as.matrix(Y)
   N <- as.matrix(N)
 
+  DATA <- cbind(D,Y,N);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  N = N[test==TRUE,,drop=F]
+
   priors <- list()
   temp_prior_l <- list()
   tmodel_list  <- list()
