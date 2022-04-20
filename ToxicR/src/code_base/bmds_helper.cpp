@@ -48,7 +48,7 @@ void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_re
 
   int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
 
-  estParmCount = res->model_df - bounded;
+  estParmCount = anal->parms - bounded;
 
   //if freq then model_df should be rounded to nearest whole number
   if (freqModel)
@@ -301,7 +301,21 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     }
   }
 
-  gofRes.df += bounded;
+  bmdsAOD->nFit = anal->parms - bounded;  //number of estimated parameter
+  bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  //nObs - nEstParms 
+
+  if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
+    bmdsAOD->pvFit = BMDS_MISSING;
+  } else {
+    bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(bmdsAOD->devFit, bmdsAOD->dfFit);
+  }
+
+
+  //update df for frequentist models only
+  if(anal->prior[1] == 0){
+    //frequentist
+    gofRes.df = bmdsAOD->dfFit;
+  } 
   gof->df = gofRes.df;
 
   if ( gof->df > 0.0){
@@ -313,14 +327,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   gofRes.p_value = 
   gof->p_value = gofRes.p_value;
 
-  bmdsAOD->nFit = anal->parms - bounded;  //number of estimated parameter
-  bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  //nObs - nEstParms 
-
-  if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
-    bmdsAOD->pvFit = BMDS_MISSING;
-  } else {
-    bmdsAOD->pvFit = 1.0 -gsl_cdf_chisq_P(bmdsAOD->devFit, bmdsAOD->dfFit);
-  }
 
 
   for (int i=0; i< anal->parms; i++){
