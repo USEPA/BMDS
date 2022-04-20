@@ -10,6 +10,26 @@ build_single_continuous_dataset <- function(){
      M2
 }
 
+build_single_dichotomous_dataset_2 <- function(){
+  mData <- matrix(c(0, 39,297,
+                    0.00098, 24,90,
+                    0.0098, 32, 87,
+                    0.098 , 136, 148),
+                    nrow=4,ncol=3,byrow=T)
+  return(mData)
+}
+
+
+validate_model2 <- function(model, name, parameters, bmd_estimates,
+                            gof){
+  expect_equal(name, model$full_model)
+  expect_equal(parameters, model$parameters, tolerance=10e-3)
+  expect_equal(setNames(bmd_estimates, c("BMD", "BMDL", "BMDU")), model$bmd, tolerance=10e-3)
+  A = summary(c)
+  expect_equal(as.numeric(A$GOF),gof,tolerance = 10e-3)
+
+}
+
 build_single_dichotomous_dataset <- function(){
      mData <- matrix(c(0, 2,50,
                        1, 2,50,
