@@ -498,10 +498,10 @@
       
       return(plot_gg + coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
       
-    }else if ("BMDdichotomous_MA_maximized" %in% class(A)){ # mcmc run
+    }else if ("BMDdichotomous_MA_laplace" %in% class(A)){ # mcmc run
    
       class_list <- names(A)
-      fit_idx <- grep("Fitted_Model_",class_list)
+      fit_idx <- grep("Individual_Model",class_list)
       num_model<-length(A$posterior_probs)
       
       data_d   <-  A[[1]]$data

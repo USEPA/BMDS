@@ -32,6 +32,12 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   D <- as.matrix(D) 
   N <- as.matrix(N) 
   
+  DATA <- cbind(D,Y,N);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  N = N[test==TRUE,,drop=F]
+
   if (class(prior) == "character"){
     prior =  bayesian_prior_dich(model_type,degree);
     
@@ -113,6 +119,8 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
     temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
                                        c(BMR, alpha,samples,burnin))
     #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
+    temp$bmd_dist <- cbind(quantile(temp$mcmc_result$BMD_samples,seq(0.005,0.995,0.005)),seq(0.005,0.995,0.005))
+   
     temp$options = options = c(BMR, alpha,samples,burnin) ; 
     temp$prior   = prior = list(prior = prior); 
     temp$model   = model_type; 

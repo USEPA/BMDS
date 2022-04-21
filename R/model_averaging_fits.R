@@ -42,6 +42,14 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
   Y = as.matrix(Y)
   D = as.matrix(D)
   
+  is_neg = .check_negative_response(Y)
+
+  DATA <- cbind(D,Y);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  DATA <- cbind(D,Y);
+
   current_models = c("hill","exp-3","exp-5","power","FUNL")
   current_dists  = c("normal","normal-ncv","lognormal")
   type_of_fit = which(fit_type == c('laplace','mcmc'))
@@ -63,7 +71,18 @@ ma_continuous_fit <- function(D,Y,model_list=NA, fit_type = "laplace",
     model_list = c(rep("hill",2),rep("exp-3",3),rep("exp-5",3),rep("power",2))
     distribution_list = c("normal","normal-ncv",rep(c("normal","normal-ncv","lognormal"),2),
                           "normal","normal-ncv")
-    
+    if (is_neg){
+      tmpIdx = which(distribution_list == "lognormal")
+      model_list = model_list[-tmpIdx]
+      distribution_list = distribution_list[-tmpIdx]
+      if (length(distribution_list) > 1) # need at least 2 models for model averaging
+      {
+        warning("Negative response values were found in the data.  All lognormal
+        models were removed from the analysis.")
+      }else{
+        stop("Negative response values were found in the data.  All lognormal models were removed from the analysis, but there were not enough models available for the MA.")
+      }
+    }
     prior_list <- list()
     for(ii in 1:length(model_list)){
       PR    = bayesian_prior_continuous_default(model_list[ii],distribution_list[ii],2)
@@ -360,21 +379,24 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
   D <- as.matrix(D)
   Y <- as.matrix(Y)
   N <- as.matrix(N)
-  
+
+  DATA <- cbind(D,Y,N);
+  test <-  .check_for_na(DATA)
+  Y = Y[test==TRUE,,drop=F]
+  D = D[test==TRUE,,drop=F]
+  N = N[test==TRUE,,drop=F]
+
   priors <- list()
   temp_prior_l <- list()
   tmodel_list  <- list()
   if (length(model_list) < 1){
-    
     model_list =  .dichotomous_models 
     model_i = rep(0,length(model_list))
     for (ii in 1:length(model_list)){
       temp_prior_l[[ii]] = bayesian_prior_dich(model_list[ii])
-      
       priors[[ii]] = temp_prior_l[[ii]]$priors
       model_i[ii]  = .dichotomous_model_type(model_list[ii])
     }
-    
   }else{
     if(class(model_list) != "list"){
       stop("Please pass a list of priors.")
@@ -414,10 +436,10 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
     temp <- run_ma_dichotomous(data, priors, model_i,
                                model_p, FALSE, o1, o2)
     #clean up the run
-    temp$bmd_dist <- temp$BMD_CDF
+    temp$ma_bmd <- temp$BMD_CDF
     #TO DO : DELETE temp$BMD_CDF
-    te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],
-                    temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
+    te <- splinefun(temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),2],
+                    temp$ma_bmd[!is.infinite(temp$ma_bmd[,1]),1],method="hyman")
     temp$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
     t_names <- names(temp)
     
@@ -433,10 +455,12 @@ ma_dichotomous_fit <- function(D,Y,N,model_list=integer(0), fit_type = "laplace"
          te <- splinefun(temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),2],temp[[ii]]$bmd_dist[!is.infinite(temp[[ii]]$bmd_dist[,1]),1],method="hyman")
          temp[[ii]]$bmd     <- c(te(0.5),te(alpha),te(1-alpha))
          names(temp[[ii]]$bmd) <- c("BMD","BMDL","BMDU")
-         names(temp[ii])[1] <- sprintf("Individual_Model_%s",ii)
+         names(temp)[ii] <- sprintf("Individual_Model_%s",ii)
+         tmp_id = which(names(temp) == "BMD_CDF")
+       #  temp = temp[-tmp_id] 
     }
     
-    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_maximized")  
+    class(temp) <- c("BMDdichotomous_MA","BMDdichotomous_MA_laplace")  
   }else{
     #MCMC run
     temp_r <- run_ma_dichotomous(data, priors, model_i,

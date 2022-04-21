@@ -33,6 +33,22 @@ S3method(print,summary_continuous_max  ,.print_summary_continuous_max)
 S3method(summary, BMDdich_fit_maximized ,.summary_dichotomous_max)
 S3method(print,summary_dichotomous_max  ,.print_summary_dichotomous_max)
 
+S3method(summary,BMDcont_fit_MCMC , .summary_continuous_mcmc)
+S3method(summary,BMDdich_fit_MCMC , .summary_continuous_mcmc)
+S3method(print,summary_mcmc  , .print_summary_continuous_mcmc)
+
+S3method(summary,BMDcontinuous_MA_laplace , .summary_ma_max)
+S3method(summary,BMDdichotomous_MA_laplace , .summary_ma_max)
+S3method(print,ma_summary_max,.print_summary_ma_max )
+
+#Predict Methods
+
+S3method(predict,BMDdich_fit_maximized, .dichotomous_predict_model)
+S3method(predict,BMDcont_fit_maximized, .continuous_predict_model)
+S3method(predict,BMDcont_fit_MCMC, .continuous_predict_model_mcmc)
+S3method(predict,BMDdich_fit_MCMC, .dichotomous_predict_model_mcmc)
+
+
 # Base plot for single case
 
 S3method(plot,  BMDdich_fit_MCMC, .plot.BMDdich_fit_MCMC)

@@ -300,6 +300,13 @@ Eigen::MatrixXd statModel<LL,PR>::varMatrix(Eigen::MatrixXd theta) {
 
 	}
 	// m = m.inverse();
+  Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(m);
+  auto rank = lu_decomp.rank();
+  // matrix is less than full rank
+  // so we add an epsolon error to fix it
+  if (rank < m.rows()){
+      m = m + 1e-4*Eigen::MatrixXd::Identity(m.rows(),m.cols());
+  }
 
 	return m.inverse();
 }

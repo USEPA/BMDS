@@ -16,7 +16,6 @@ MAdensity_plot <- function (A, ...){
 }
 
 # Sample Dichotomous Data set
-
 .plot.density.BMDdichotomous_MA_MCMC<-function(A){
 # Construct bmd sample plots for mcmc
   class_list <- names(A)

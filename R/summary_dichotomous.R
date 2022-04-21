@@ -43,6 +43,7 @@
   return(returnV)
 }
 
+
 .print_summary_dichotomous_max<-function(s_fit){
   
   
