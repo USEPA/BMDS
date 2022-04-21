@@ -5,7 +5,7 @@
 ####################################################
 #ALWAYS NEEDS A PATH TO THE EIGEN DIRECTORY
 #BY DEFAULT IT ASSUMES IT IS IN /usr/local/include/eigen3
-SCRIPT_EIGEN_INCLUDE=/usr/local/include/eigen3
+SCRIPT_EIGEN_INCLUDE=/home/csimmo02/BMDS/RBMDS/libs/eigen-3.4.0
 
 
 ##################################################
@@ -23,14 +23,13 @@ echo -e "\e[1;32m BMD_DLL_COMPILE  \e[0m"
 echo -e "\e[1;31m ------------------------------------------------\e[0m"
 echo -e "\e[1;31m ------------------------------------------------\e[0m"
 
-rm -R ../BMD_DLL_COMPILE/*
-rmdir ../BMD_DLL_COMPILE
+rm -rf ../BMD_DLL_COMPILE
 ##############################################################
 mkdir ../BMD_DLL_COMPILE
 mkdir ../BMD_DLL_COMPILE/include
 mkdir ../BMD_DLL_COMPILE/code_base
-cp -a ./ToxicR/src/include/* ../BMD_DLL_COMPILE/include 
-cp -a ./ToxicR/src/code_base/* ../BMD_DLL_COMPILE/code_base
+cp -a ./src/include/* ../BMD_DLL_COMPILE/include 
+cp -a ./src/code_base/* ../BMD_DLL_COMPILE/code_base
 cp ./configure.ac ../BMD_DLL_COMPILE
 cp ./Makefile.am  ../BMD_DLL_COMPILE
 cp ./version.c    ../BMD_DLL_COMPILE
@@ -40,4 +39,4 @@ libtoolize
 aclocal
 autoconf
 automake --add-missing
-./configure EIGEN_INCLUDE=$SCRIPT_EIGEN_INCLUDE
+./configure --disable-openmp EIGEN_INCLUDE=$SCRIPT_EIGEN_INCLUDE LDFLAGS=-L/home/csimmo02/BMDS/RBMDS/libs/nlopt-2.6.2/lib64 --prefix=/home/csimmo02/BMDS/RBMDS/install

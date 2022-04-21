@@ -25,7 +25,21 @@
 #ifndef BMD_ANALYSIS_h
 #define BMD_ANALYSIS_h
 
+#ifndef M_PI
+#define M_PI (3.14159265358979323845)
+#endif
+
+#ifdef __cplusplus
+#include <Eigen/Dense>
+#endif
+
 #include "cmodeldefs.h"
+
+#ifdef _WIN64
+#pragma pack(8)
+#elif _WIN32
+#pragma pack(4)
+#endif
 
 // Dichotomous Structures
 //
@@ -223,6 +237,9 @@ struct continuous_deviance{
   int NR; 
 };
 
+#ifdef _WIN32
+#pragma pack()
+#endif
 
 // odds and ends
 struct bmd_analysis_MCMC * new_mcmc_analysis(int model,

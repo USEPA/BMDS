@@ -15,8 +15,8 @@
 #endif
 
 #include <gsl/gsl_randist.h>
-#include <log_likelihoods.h>
-#include <lognormal_likelihoods.h>
+#include "log_likelihoods.h"
+#include "lognormal_likelihoods.h"
 
 /*implements the basic model model Y = X*/
 class lognormalLLTESTA1 : public lognormalLL {

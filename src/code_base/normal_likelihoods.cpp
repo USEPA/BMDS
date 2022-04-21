@@ -1,4 +1,4 @@
-#include <normal_likelihoods.h>
+#include "normal_likelihoods.h"
 
 
 double normalLL::negLogLikelihood(Eigen::MatrixXd theta) {

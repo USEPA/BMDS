@@ -57,15 +57,15 @@ using Eigen::MatrixXd;
 
 //const Map<MatrixXd> A(as<Map<MatrixXd>>(AA));
 
-#include  <statmod.h>
+#include  "statmod.h"
 
-#include <log_likelihoods.h>
-#include <normal_likelihoods.h>
-#include <normalModels.h>
-#include <binomModels.h>
-#include <IDPrior.h>
+#include "log_likelihoods.h"
+#include "normal_likelihoods.h"
+#include "normalModels.h"
+#include "binomModels.h"
+#include "IDPrior.h"
 
-#include <bmd_calculate.h>
+#include "bmd_calculate.h"
 
 #include "normal_FUNL_NC.h"
 #include "normal_HILL_NC.h"

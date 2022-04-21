@@ -22,5 +22,5 @@
 e = 2.71828 18284 59045 23536 02874 71352 66249 77572 47093 69995 95749 66967 62772 40766 30353 54759 45713 82178 52516 64274 27466 39193 20030 
 */
 
-const char * bmds_version = '2.71'; //because e doesn't get enough love
+const char * bmds_version = '3.3'; //because e doesn't get enough love
 

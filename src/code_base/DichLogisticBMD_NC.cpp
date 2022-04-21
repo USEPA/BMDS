@@ -1,4 +1,4 @@
-#include <DichLogisticBMD_NC.h>
+#include "DichLogisticBMD_NC.h"
 
 #ifdef R_COMPILATION
         //necessary things to run in R

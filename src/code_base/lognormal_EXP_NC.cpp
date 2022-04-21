@@ -1,5 +1,5 @@
 #include "stdafx.h" // Precompiled header - does nothing if building R version
-#include <lognormal_EXP_NC.h>
+#include "lognormal_EXP_NC.h"
 
 #ifdef R_COMPILATION
     //necessary things to run in R    

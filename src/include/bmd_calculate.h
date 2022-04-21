@@ -569,7 +569,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
    */  
   std::vector<double> x(500);
   std::vector<double> y(500);
-  if ( isnormal(var(0,0)) && (var(0.0) > 1e-7) && isnormal(log(BMD)) ){
+  if ( isnormal(var(0,0)) && (var(0,0) > 1e-7) && isnormal(log(BMD)) ){
  
     for (int i = 0; i < x.size(); i++){
       x[i] = double(i)/double(x.size()); 

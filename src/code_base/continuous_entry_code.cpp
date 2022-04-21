@@ -1095,7 +1095,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = X/max_dose;
   } 
   
-  bmd_analysis b[MA->nmodels];
+  //bmd_analysis b[MA->nmodels];
+  bmd_analysis *b = new bmd_analysis[MA->nmodels];
 
 #pragma omp parallel
 {
@@ -1244,8 +1245,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 } 
 
- 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels];
+  double * post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -1515,7 +1516,7 @@ mcmcSamples mcmc_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
   }
   
   mcmcSamples a;
-  int adverseR; 
+  int adverseR = 0; 
   switch (CM)
   {
   case cont_model::funl:
@@ -1782,7 +1783,8 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
  }
  
   
-  mcmcSamples a[MA->nmodels];
+  //mcmcSamples a[MA->nmodels];
+  mcmcSamples * a = new mcmcSamples[MA->nmodels];
 
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
@@ -1880,13 +1882,15 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   }
 }  
 
-  bmd_analysis b[MA->nmodels]; 
+  //bmd_analysis b[MA->nmodels]; 
+  bmd_analysis * b = new bmd_analysis[MA->nmodels];
   double temp_m_dose = orig_X.maxCoeff();
   for (int i = 0; i < MA->nmodels; i++){
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i],temp_m_dose);
   }
 
-  double post_probs[MA->nmodels]; 
+  //double post_probs[MA->nmodels]; 
+  double * post_probs = new double[MA->nmodels];
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -2325,7 +2329,7 @@ void estimate_sm_laplace(continuous_analysis *CA ,
   b.BMD_CDF.set_multiple(max_dose); 
   ///////////////////////////////////////////////////////
   std::vector<double> v(orig_X.rows()); 
-  for (int i ; i < orig_X.rows(); i++){
+  for (int i=0 ; i < orig_X.rows(); i++){
     v[i] = orig_X(i,0); 
   } 
   transfer_continuous_model(b,res);
@@ -2558,6 +2562,12 @@ void estimate_sm_mcmc(continuous_analysis *CA,
   return; 
 }
 
+void estimate_sm_laplace_cont(continuous_analysis *CA ,
+                         continuous_model_result *res){
+
+   estimate_sm_laplace(CA, res, false);
+
+}
 
 /*
  * 

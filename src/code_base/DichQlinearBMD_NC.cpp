@@ -1,4 +1,4 @@
-#include <DichQlinearBMD_NC.h>
+#include "DichQlinearBMD_NC.h"
 
 #ifdef R_COMPILATION
         //necessary things to run in R

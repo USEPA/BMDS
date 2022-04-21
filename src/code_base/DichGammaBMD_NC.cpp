@@ -1,4 +1,4 @@
-#include <DichGammaBMD_NC.h>
+#include "DichGammaBMD_NC.h"
 
 #ifdef R_COMPILATION
         //necessary things to run in R

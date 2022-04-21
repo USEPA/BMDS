@@ -83,7 +83,6 @@ Eigen::MatrixXd X_cov( Eigen::MatrixXd theta,Eigen::MatrixXd Y,
         
 }
 
-void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data,dichotomous_PGOF_result *res);
 
 /* Function: estimate_ma_mcmc 
  * Purpose:  This function performs a dichotomous Model Average (MA) for dichotomous
@@ -210,6 +209,13 @@ extern "C" {
   void estimate_sm_laplace_dicho(struct dichotomous_analysis *DA,
                                  struct dichotomous_model_result *res,
                                  bool do_a_rescale);
+
+  void estimate_ma_laplace_dicho(struct dichotomousMA_analysis *MA,
+                         struct dichotomous_analysis *DA ,
+                         struct dichotomousMA_result *res);
+
+  void compute_dichotomous_pearson_GOF(struct dichotomous_PGOF_data *data, struct dichotomous_PGOF_result *res);
+
 #ifdef __cplusplus
 }
 #endif
