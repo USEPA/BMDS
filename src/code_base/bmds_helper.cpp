@@ -682,8 +682,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   calcParmCIs_cont(res, bmdsRes);
 
-  std::cout << "bmdsRes->BMD: " << bmdsRes->BMD << std::endl;
-
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) { 
     bmdsRes->validResult = true;
   }
