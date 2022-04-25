@@ -1,0 +1,53 @@
+FROM python:3.9-slim AS builder
+
+ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update -y && \
+    apt-get install -y automake build-essential libtool wget make cmake libgslcblas0 libgsl-dev
+
+RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz && \
+    wget https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz && \
+    \
+    tar -xvf eigen-3.3.7.tar.gz && \
+    cd eigen-3.3.7 && mkdir build && cd build && cmake .. && make install && cd / && \
+    \
+    tar -xvf \v2.6.2.tar.gz && \
+    cd nlopt-2.6.2/ && mkdir build && cd build && cmake .. && make install && \
+    \
+    rm -rf /eigen-3.3.7 /eigen-3.3.7.tar.gz /nlopt-2.6.2/ /v2.6.2.tar.gz
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+COPY . /app/
+
+RUN cd /app && \
+    mkdir -p ../BMD_DLL_COMPILE && \
+    ./create_dll_compile.bash && \
+    cd /BMD_DLL_COMPILE && \
+    make -j4 && \
+    make install && \
+    python /app/dll/python/dll_test.py
+
+# -------------------------------------------------------------------------------------------------
+# copy outputs into clean docker build
+FROM python:3.9-slim
+
+RUN apt-get update -y && \
+    apt-get install -y libgslcblas0 libgsl-dev
+
+COPY --from=builder /usr/local/lib/libDRBMD.* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libnlopt* /usr/local/lib/
+COPY --from=builder /app/dll/python/dll_test.py /app/dll/python/dll_test.py
+
+RUN groupadd -g 555 -r app && \
+    useradd -u 555 -r -g app app && \
+    chown -R app:app /app
+
+# demo using non-root user
+
+USER app
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+RUN ldd /usr/local/lib/libDRBMD.so && \
+    python /app/dll/python/dll_test.py
