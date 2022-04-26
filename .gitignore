@@ -13,3 +13,4 @@
 *.so
 .Rhistory
 build/
+create_dll_compile.bash
