@@ -338,9 +338,19 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   calcParmCIs_dicho (res, bmdsRes);
 
+
+  //compare Matt's BMD to BMD from CDF
+  if (abs(bmdsRes->BMD - res->bmd) > BMDS_EPS){
+    std::cout<<"Warning: CDF BMD differs from model BMD" << std::endl;
+  }
+  //Use Matt's BMD by default
+  bmdsRes->BMD = res->bmd;
+
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) {
     bmdsRes->validResult = true;
   }
+ 
+  
 
   clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
@@ -681,6 +691,14 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
 
   calcParmCIs_cont(res, bmdsRes);
+
+  //compare Matt's BMD to BMD from CDF
+  if (abs(bmdsRes->BMD - res->bmd) > BMDS_EPS){
+      std::cout<<"Warning: CDF BMD differs from model BMD" << std::endl;
+  }
+  //Use Matt's BMD by default
+  bmdsRes->BMD = res->bmd;
+
 
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) { 
     bmdsRes->validResult = true;
