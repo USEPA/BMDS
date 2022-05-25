@@ -1,0 +1,28 @@
+image: python:3.9-slim
+
+stages:
+  - compile
+
+package:
+  stage: compile
+  tags:
+    - devsecops-instance
+  script: |
+    pwd
+    ls -laht
+    apt-get update -y
+    apt-get install -y automake build-essential libtool wget make cmake libgslcblas0 libgsl-dev
+    # tar -xvf eigen-3.4.0.tar.gz
+    # cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd /
+    # tar -xvf \v2.7.1.tar.gz
+    # cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install
+    # rm -rf /eigen-3.4.0 /eigen-3.4.0.tar.gz /nlopt-2.7.1/ /v2.7.1.tar.gz
+    # export "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH"
+    # mkdir -p ../BMD_DLL_COMPILE
+    # ./create_dll_compile.bash
+    # cd ../BMD_DLL_COMPILE
+    # make
+    # make install
+  # artifacts:
+  #   paths:
+  #     - dist/*.whl
