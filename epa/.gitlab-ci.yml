@@ -29,6 +29,7 @@ package:
     # build bmds
     export "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH"
     mkdir -p ../BMD_DLL_COMPILE
+    cp ./epa/create_dll_compile.bash.template ./create_dll_compile.bash
     ./create_dll_compile.bash
     cd ../BMD_DLL_COMPILE
     make
