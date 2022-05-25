@@ -33,10 +33,20 @@ package:
     chmod 700 ./create_dll_compile.bash
     ./create_dll_compile.bash
     cd ../BMD_DLL_COMPILE
-    make
-    make install
+    make -j4
+
+    # copy
+    mkdir -p /builds/ord-heead/bmds/bmds-core/dist
+    cp ./libs/* ../bmds-core/dist
     ls -laht
 
-  # artifacts:
-  #   paths:
-  #     - dist/*.whl
+    cd /builds/ord-heead/bmds/bmds-core
+    ls -laht
+
+    cd /builds/ord-heead/bmds/bmds-core/dist
+    ls -laht
+
+  artifacts:
+    paths:
+      - dist/
+
