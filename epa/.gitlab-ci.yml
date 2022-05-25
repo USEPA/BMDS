@@ -38,9 +38,8 @@ package:
     # copy
     mkdir -p /builds/ord-heead/bmds/bmds-core/libs
     cp /builds/ord-heead/bmds/BMD_DLL_COMPILE/.libs/* ../bmds-core/libs
-    ls -laht
 
   artifacts:
     paths:
-      - libs/
+      - libs/*.so
 
