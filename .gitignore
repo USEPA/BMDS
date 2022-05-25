@@ -1,7 +1,7 @@
 *.html
 *.docx
 *.o
-*.tar.gz
+# *.tar.gz
 *.a
 *.la
 *.so
