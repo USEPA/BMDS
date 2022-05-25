@@ -15,13 +15,13 @@ package:
     # build eigen
     cd /builds/ord-heead/bmds/bmds-core
     cp vendor/eigen-3.4.0.tar.gz ./eigen-3.4.0.tar.gz
-    tar -xvf eigen-3.4.0.tar.gz
+    tar -xvf ./eigen-3.4.0.tar.gz
     cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd /
 
     # build nlopt
     cd /builds/ord-heead/bmds/bmds-core
-    cp vendor/v2.7.1.tar.gz ./v2.7.1.tar.gz
-    tar -xvf \v2.7.1.tar.gz
+    cp vendor/nlopt-v2.7.1.tar.gz ./nlopt-v2.7.1.tar.gz
+    tar -xvf ./nlopt-v2.7.1.tar.gz
     cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install
 
     # remove these builds
