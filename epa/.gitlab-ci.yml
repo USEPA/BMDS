@@ -14,19 +14,17 @@ package:
 
     # build eigen
     cd /builds/ord-heead/bmds/bmds-core
-    cp vendor/eigen-3.4.0.tar.gz ./eigen-3.4.0.tar.gz
-    tar -xvf ./eigen-3.4.0.tar.gz
+    tar -xf ./vendor/eigen-3.4.0.tar.gz --directory .
     cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd /
 
     # build nlopt
     cd /builds/ord-heead/bmds/bmds-core
-    cp vendor/nlopt-v2.7.1.tar.gz ./nlopt-v2.7.1.tar.gz
-    tar -xvf ./nlopt-v2.7.1.tar.gz
+    tar -xf ./vendor/nlopt-2.7.1.tar.gz --directory .
     cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install
 
     # remove these builds
     cd /builds/ord-heead/bmds/bmds-core
-    rm -rf ./eigen-3.4.0 ./eigen-3.4.0.tar.gz ./nlopt-2.7.1/ ./v2.7.1.tar.gz
+    rm -rf ./eigen-3.4.0 ./nlopt-2.7.1/
 
     # build bmds
     export "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH"
