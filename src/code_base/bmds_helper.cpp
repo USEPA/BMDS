@@ -654,8 +654,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
       gof->calcSD[i] = exp(sqrt(log(1.0 + pow(GOFanal.sd[i]/GOFanal.Y[i], 2.0))));
     }
     for (int i=0; i<GOFanal.n; i++){
-      gof->estMean[i] = exp(gof->estMean[i]+pow(res->parms[res->nparms-1],2)/2);
-      gof->estMean[i] = gof->estMean[i]*exp(exp(res->parms[res->nparms-1])/2);
+      gof->estMean[i] = exp(gof->estMean[i]+pow(exp(res->parms[res->nparms-1]),2)/2);
+      gof->res[i] = sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i];
     }
   } else {
 	for (int i=0; i<GOFanal.n; i++){
@@ -727,13 +727,13 @@ void rescale_contParms(struct continuous_analysis *CA, double *parms){
     case cont_model::exp_3:
       //rescale g for log_normal
       if (CA->disttype == distribution::log_normal){
-        parms[0] = parms[0]*exp(exp(parms[CA->parms-1])/2);
+        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
       }
       break;
     case cont_model::exp_5:
       //rescale g for log_normal
       if (CA->disttype == distribution::log_normal){
-        parms[0] = parms[0]*exp(exp(parms[CA->parms-1])/2);
+        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
       }
       //rescale c
       parms[2] = exp(parms[2]);
