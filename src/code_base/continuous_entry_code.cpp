@@ -397,6 +397,7 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
     }
     break;
   case cont_model::exp_5: 
+  default:
     if (is_increasing){
       Xd = X_gradient_cont<lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat,NORMAL_EXP5_UP);
       cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP5_UP);
@@ -405,10 +406,11 @@ double compute_lognormal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixX
       cv_t = X_cov_cont< lognormalEXPONENTIAL_BMD_NC>(estimate,Y,X,suff_stat, NORMAL_EXP5_DOWN);
     }
   
-    Xd = Xd.block(0,0,Xd.rows(),4); 
-   
+    Eigen::MatrixXd temp_Xd = Xd.block(0,0,Xd.rows(),4); 
+    Xd = temp_Xd; 
     pr   =  X_logPrior<IDPrior>(estimate,prior); 
-    pr = pr.block(0,0,4,4); 
+    temp_Xd  = pr.block(0,0,4,4); 
+    pr = temp_Xd; 
     if( fabs(pr.diagonal().array().sum()) == 0){
       DOF = 4.0; 
     }else{
@@ -530,6 +532,7 @@ double compute_normal_dof(Eigen::MatrixXd Y,Eigen::MatrixXd X, Eigen::MatrixXd e
     
     break; 
   case cont_model::power: 
+  default:
     Xd = X_gradient_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     cv_t = X_cov_cont_norm<normalPOWER_BMD_NC>(estimate,Y,X,CV,suff_stat);
     
@@ -929,6 +932,7 @@ bmd_analysis laplace_Normal(Eigen::MatrixXd Y,Eigen::MatrixXd X,
     }
     break; 
   case cont_model::polynomial:
+  default:
 #ifdef R_COMPILATION 
     if (bConstVar){
       //cout << "Running Polynomial Model Normality Assumption using Laplace." << endl;
@@ -1095,7 +1099,6 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     X = X/max_dose;
   } 
   
-  //bmd_analysis b[MA->nmodels];
   bmd_analysis *b = new bmd_analysis[MA->nmodels];
 
 #pragma omp parallel
@@ -1245,8 +1248,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
   }
 } 
 
-  //double post_probs[MA->nmodels];
-  double * post_probs = new double[MA->nmodels]; 
+ 
+  double *post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -1421,7 +1424,8 @@ void estimate_ma_laplace(continuousMA_analysis *MA,
     res->bmd_dist[i+res->dist_numE]  = prob;
   }
   CA->suff_stat = tempsa;
- 
+  delete []b;
+  delete []post_probs; 
   return;  
 }
 
@@ -1783,8 +1787,7 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
  }
  
   
-  //mcmcSamples a[MA->nmodels];
-  mcmcSamples * a = new mcmcSamples[MA->nmodels];
+mcmcSamples *a = new mcmcSamples[MA->nmodels];
 
   unsigned int samples = CA->samples; 
   unsigned int burnin  = CA->burnin;  
@@ -1882,15 +1885,13 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
   }
 }  
 
-  //bmd_analysis b[MA->nmodels]; 
-  bmd_analysis * b = new bmd_analysis[MA->nmodels];
+  bmd_analysis *b = new bmd_analysis[MA->nmodels]; 
   double temp_m_dose = orig_X.maxCoeff();
   for (int i = 0; i < MA->nmodels; i++){
     b[i] = create_bmd_analysis_from_mcmc(burnin,a[i],temp_m_dose);
   }
 
-  //double post_probs[MA->nmodels]; 
-  double * post_probs = new double[MA->nmodels];
+  double  *post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -2069,8 +2070,14 @@ void estimate_ma_MCMC(continuousMA_analysis *MA,
       res->bmd_dist[i+res->dist_numE]  = prob;
  }
  
- CA->suff_stat = tempsa;
-  return; 
+
+
+CA->suff_stat = tempsa;
+delete []b; 
+delete []a; 
+delete []post_probs;
+return; 
+
 }
 
 /*estimate a single model using laplace/profile likelihood*/
@@ -2789,10 +2796,10 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
       Y_LN = cleanSuffStat(SSTAT_LN,UX,true); 
       orig_X = UX;  
       orig_Y = SSTAT; 
-      orig_Y_LN = SSTAT_LN;
+      orig_Y_LN = SSTAT;
       
     }else{
-      Y = Y; // scale the data with the divisor term.
+      //Y = Y; // scale the data with the divisor term.
       Y_N = Y; 
       Y_LN = Y; 
     }
@@ -2882,7 +2889,6 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
           neg_like = likelihood_lnhill.negLogLikelihood(theta); 
           break; 
       case cont_model::exp_3:
-      
 
         if (CA->isIncreasing){
           mean = likelihood_lnexp3U.mean(theta,myX); 
@@ -2895,7 +2901,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
         }
         break; 
       case cont_model::exp_5:
-     
+      default:
         if (CA->isIncreasing){
           mean = likelihood_lnexp5U.mean(theta,myX); 
           var  = likelihood_lnexp5U.variance(theta,myX);
@@ -2943,6 +2949,7 @@ void continuous_expectation( const continuous_analysis *CA, const continuous_mod
         }
         break; 
       case cont_model::exp_5:
+      default:
         if (CA->isIncreasing){
           mean = likelihood_nexp5U.mean(theta,myX); 
           var  = likelihood_nexp5U.variance(theta,myX);

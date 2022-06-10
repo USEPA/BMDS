@@ -22,4 +22,6 @@
 
 	- Added summary/print functions for Single Continuous and Single Dichotomous Models.
 	- Added summary/print function for Model Averaging.
+	- ntp tests (Williams/Shirley/PolyK/Dunn/Dunnett) e.g. ?ntp_williams
+	- Data set from Wheeler, Bailer, Piegorsh (2019) added. 
 

@@ -17,7 +17,7 @@
 #CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-parse_prior<-function(prior){
+.parse_prior<-function(prior){
   rV <-list()
   rV$prior <- prior$prior
   
@@ -33,9 +33,28 @@ parse_prior<-function(prior){
   
 }
 
+#' @title create_continuous_prior  Given priorlist, a model, 
+#'        and a distribution. Create a prior for a given analysis. 
+#' @param prior_list First Prior
+#' @param model Model to be used
+#' one of \code{"hill","exp-3","exp-5","power","polynomial"}
+#' @param distribution - Normal "normal", Normal non-constant variance "normal-ncv", or
+#'                       log-normal "lognormal"
+#' @param deg - For polynomial models only, the degree of the polynomial. 
+#' @return new BMDprior list. This object is essentially a prior list constructed by 
+#' \code{create_prior_lists} with a model type and variance type. 
+#' 
+#' @examples 
+#' plist<- create_prior_list(normprior(0,0.1,-100,100), # a
+#'                           normprior(0,1,  -1e2,1e2),     # b
+#'                           lnormprior(1,0.2,0,18),  #k
+#'                           normprior(0,1,-18,18))
+#'  
+#'  power_normal <- create_continuous_prior(plist,"power","normal") 
+#'
 create_continuous_prior <- function( prior_list,model,distribution,deg=2){
 
-  if (class(prior_list) != "BMDmodelprior"){
+  if (!("BMDmodelprior" %in% class(prior_list))){
     stop("Prior is not of a 'BMDmodelprior' class. A probable solution is to 
           define the prior using function `create_prior_list`.")
   }
@@ -376,9 +395,22 @@ create_continuous_prior <- function( prior_list,model,distribution,deg=2){
   return(prior)
 }
 
+
+#' @title create_dichotomous_prior  Given priorlist, a model, 
+#'        and a distribution. Create a prior for a given analysis. 
+#' @param prior First Prior
+#' @param model Model to be used should be one of"hill","gamma","logistic","log-logistic","log-probit","multistage", "probit", "qlinear", or "weibull" 
+#' @return new BMDprior list that can be used in a dichotomous fit. 
+#' 
+#' @examples 
+#' plist<- create_prior_list(normprior(0,0.1,-100,100), # a
+#'                           lnormprior(1,0.2,0,18))
+#'  
+#'  power_normal <- create_dichotomous_prior(plist,"logistic") 
+#'
 create_dichotomous_prior <- function(prior,model){
   
-  if (class(prior) != "BMDmodelprior"){
+  if (!("BMDmodelprior" %in% class(prior))){
     stop("Prior is not of a 'BMDmodelprior' class. A probable solution is to 
           define the prior using function `create_prior_list`.")
   }

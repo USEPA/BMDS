@@ -1,24 +1,80 @@
 Package: ToxicR
 Type: Package
-Title: This package is for analyzing toxicology dose-response data. 
-Version: 22.04
-Date: 2022-4-31
-Author: NIEHS-BCBB 
+Title: Analyzing Toxicology Dose-Response Data
+Version: 22.5.1
+Date: 2022-06-05
+Authors@R:
+    c(
+    person(given = "Matt",
+           family = "Wheeler",
+           role = c("aut", "cre"),
+           email = "matt.wheeler@nih.gov",
+           comment = c(ORCID = "0000-0002-8242-2391")),
+    person(given = "Sooyeong",
+           family = "Lim",
+           role = "aut"),
+    person(given ="Eric",
+           family="Wimberly",
+           role = "ctb"),
+    person(given = "Keith",
+           family = "Shockley",
+           role = "com"),
+    person(given = "Jennifer",
+           family = "Fostel",
+           role = "com"),
+    person(given="Lonlong",
+           family="Yang",
+           role="ctb",
+           comment="Modfied Cochran-Armitage test."),
+    person(given = "Dawan",
+           family = "Taley",
+           role = "com"),
+    person(given = "Cari",
+           family = "Martini",
+           role   = "com"),
+    person(given = "Ashwin",
+           family = "Raghuraman",
+           role   = "ctb",
+           comment = "Modified code for (Jonckheere, Williams etc.) to make them  standalone functions."),
+    person(given = "Steven",
+           family = "Johnson",
+           role = "ctb",
+           comment ="Author of NLOPT."),
+    person(given = "Aymeric",
+           family = "Stamm",
+           role = "ctb",
+           comment ="Maintainer of nloptr Packag 2.0.1 from which all compile scripts were taken."),
+    person(given = "Dirk",
+           family = "Eddelbuettel",
+           role = "ctb",
+           comment ="Contributed script to download GSL, as in RcppGSL."),
+    person("U.S. Deptartment of Health and Human Services",
+           role="cph",
+           comment ="Owns Copyright for all ToxicR code outside NLOPT and nloptr scripts.")
+           )
 Maintainer: Matt Wheeler <matt.wheeler@nih.gov>
-Description: This package provides standard toxicology routines for analyzing
-    dose-response data, which include: dose-response analysis, trend tests, 
-    and Bayesian sensitivity analyses. 
+Copyright: file inst/COPYRIGHTS 
+Description:  Toxicology routines for analyzing dose-response data include dose-response analysis 
+    and trend tests. Dose-Response methods are based upon the US EPA's benchmark dose software 3.  Methods have
+    been extended to include additional functionality based on World Health Organization 
+    guidelines.  It further supports the European Food Safety Authority's 
+    draft guidance on model averaging. The dose-response methods and datasets used in this package are 
+    described in Wheeler et al. (2019) <doi:10.1111/risa.13218>, Wheeler et al. (2020) <doi:10.1111/risa.13537>,
+    and Wheeler et al. (2022) <doi:10.1002/env.2728>.  NTP routines are described in 
+    Bailer and Portier (1988) <doi:10.2307/2531856>, Bieler and Williams (1993) <doi:10.2307/2532200>, 
+    Williams (1971) <doi:10.2307/2528930>, and Shirley (1977) <doi:10.2307/2529789>.
 Depends:
     R (>= 4.1.0)
-License: MIT 
+License: LGPL (>= 3)
+URL:  https://github.com/NIEHS/ToxicR
 LazyData: true
-Imports: Rcpp (>= 1.0.0), ggplot2 (>= 3.3.2), shiny (>= 1.5.0), plotly (>= 4.9.2.1), coda (>= 0.19-4),
+Imports: Rcpp (>= 1.0.0), ggplot2 (>= 3.3.2), shiny (>= 1.5.0),  coda (>= 0.19-4),
          scales (>= 1.1.1), tidyverse (>= 1.3.0), forcats, ggridges (>= 0.5.3), doBy (>= 4.6.11),
-         modules , multcomp (>= 1.4), VIM (>= 6.1.1), gridExtra (>= 2.3), knitr (>= 1.36), 
-         dplyr (>= 1.0.7), ggpubr (>= 0.4.0), bibtex (>= 0.4.2.3), testthat (>= 3.1.0), actuar (>= 3.2-0)
-Include: RcppEigen, RcppGSL 
+         multcomp (>= 1.4), dplyr (>= 1.0.7) 
 LinkingTo: Rcpp, RcppEigen, RcppGSL
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr
 Suggests: 
-    rmarkdown
+    rmarkdown, actuar (>= 3.2-0),ggpubr (>= 0.4.0), testthat (>= 3.1.0),gridExtra (>= 2.3),
+    VIM (>= 6.1.1), knitr (>= 1.36), modules, plotly (>= 4.9.2.1)
+

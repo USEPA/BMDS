@@ -17,11 +17,30 @@
 #CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-.summary_continuous_max<-function(model,alpha=0.05){
-  returnV <- list()
-  if (alpha < 0 || alpha > 0.5){
-    warning("Specified BMD alpha-level is outside of [0,0.5] defaulting to 0.05")
+
+.evaluate_alpha <- function(...){
+  args <- list(...)
+
+  cl <- match.call()
+  ev <- match("alpha",names(cl))
+  if (is.na(ev)){
+    alpha = 0.05
+  }else{
+    alpha = args$alpha
+    if ( (alpha <= 0) || alpha > 0.5){
+      stop("alpha must be in (0,0.5]")      
+    }
   }
+  
+  return(alpha)
+}
+
+
+.summary_continuous_max<-function(object,...){
+  model = object
+  returnV <- list()
+  alpha = .evaluate_alpha(...)
+  
   if (is.null(model$prior)){
     returnV$fit_method <- "MLE"
     returnV$prior <- NA
@@ -49,8 +68,8 @@
   return(returnV)
 }
 
-.print_summary_continuous_max<-function(s_fit){
- 
+.print_summary_continuous_max<-function(x, ...){ # nolint
+  s_fit <- x 
 
   if (grepl("MLE",s_fit$fit_method)){
     cat(sprintf("Summary of single model fit (%s) using ToxicR\n","MLE"))
@@ -58,7 +77,6 @@
   }else{
     cat(sprintf("Summary of single model fit (%s) using ToxicR\n\n","Bayesian-MAP"))
     s_fit$GOF[,2] = round(s_fit$GOF[,2],2)
-    print(s_fit$prior)
   }
   cat("\n")
 
@@ -75,12 +93,12 @@
 }
 
 
-.summary_continuous_mcmc<-function(model,alpha=0.05){
+.summary_continuous_mcmc<-function(object,...){
+  model = object
   returnV <- list()
-  if (alpha < 0 || alpha > 0.5){
-    warning("Specified BMD alpha-level is outside of [0,0.5] defaulting to 0.05")
-  }
-
+  
+  alpha = .evaluate_alpha(...)
+  
   returnV$fit_method <- "Bayesian:MCMC"
   returnV$prior <- model$prior
   returnV$fit <- model$full_model
@@ -95,7 +113,8 @@
   return(returnV)
 }
 
-.print_summary_continuous_mcmc<-function(s_fit){
+.print_summary_continuous_mcmc<-function(x, ...){
+  s_fit = x
   
   cat(sprintf("Summary of single model fit (%s) using ToxicR\n","MCMC"))
   cat(s_fit$fit,"\n")
@@ -113,13 +132,12 @@
   
 }
 
-.summary_ma_max<-function(model,alpha=0.05){
-  warn = getOption("warn")
-  options(warn=-1)
+.summary_ma_max<-function(object, ...){
+  model = object
+  alpha = .evaluate_alpha(...)
+
   returnV <- list()
-  if (alpha < 0 || alpha > 0.5){
-    warning("Specified BMD alpha-level is outside of [0,0.5] defauflting to 0.05")
-  }
+ 
   returnV$fit_method <- "Bayesian:MCMC"
   returnV$fit_table  <- data.frame(post_p = round(model$posterior_probs,3))
   tmp_idx <- grep("Individual",names(model))
@@ -157,18 +175,22 @@
   tmp_idx = order(returnV$fit_table$post_p,decreasing=T)
   returnV$fit_table = returnV$fit_table[tmp_idx,c(2,3,4,5,1)]
 
-  
-  temp_function <- splinefun(model$ma_bmd[,2],model$ma_bmd[,1],method="monoH.FC")
+  warnFunc <- function(w){
+    return()
+  }
+  tryCatch({temp_function <- splinefun(model$ma_bmd[,2],model$ma_bmd[,1],method="monoH.FC")},
+            warning = warnFunc)
+
   returnV$BMD <- temp_function(1-c(1-alpha,0.5,alpha))
   names(returnV$BMD) <- c("BMDL","BMD","BMDU")
   returnV$alpha <- alpha
-  options(warn=warn)
+
   class(returnV) <- "ma_summary_max"
   return(returnV)
 }
 
-.print_summary_ma_max<-function(s_fit){ # nolint
-  
+.print_summary_ma_max<-function(x, ...){ # nolint
+  s_fit <- x 
   cat("Summary of single MA BMD\n\n")
   cat("Individual Model BMDS\n")
   cat(paste("Model",strrep(' ',34),sep=''),"\t\t BMD (BMDL, BMDU)\tPr(M|Data)\n")

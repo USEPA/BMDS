@@ -22,9 +22,10 @@ ma_continuous_fit(
 
 \item{Y}{response matrix}
 
-\item{model_list}{a list of configurations for the single models (priors, model type)}
+\item{model_list}{a list of configurations for the single models (priors, model type).  To create a model list, one creates a list of 
+continuous model priors using \code{create_continuous_prior}.}
 
-\item{fit_type}{the method used to fit (laplace, mle, or mcmc)}
+\item{fit_type}{the method used to fit ("laplace", "mle", or "mcmc")}
 
 \item{BMD_TYPE}{BMD_TYPE specifies the type of benchmark dose analysis to be performed. For continuous models, there are four types of BMD definitions that are commonly used. \cr
 -    Standard deviation is the default option, but it can be explicitly specified with 'BMR_TYPE = "sd"' This definition defines the BMD as the dose associated with the mean/median changing a specified number of standard deviations from the mean at the control dose., i.e., it is the dose, BMD, that solves \eqn{\mid f(dose)-f(0) \mid = BMR \times \sigma} \cr
@@ -32,34 +33,39 @@ ma_continuous_fit(
 -    Hybrid deviation can be specified with 'BMR_TYPE = "hybrid"'.  This defines the BMD that changes the probability of an adverse event by a stated amount relitive to no exposure (i.e 0).  That is, it is the dose, BMD, that solves \eqn{\frac{Pr(X > x| dose) - Pr(X >x|0)}{Pr(X < x|0)} = BMR}. For this definition, \eqn{Pr(X < x|0) = 1 - Pr(X > X|0) = \pi_0}, where \eqn{0 \leq \pi_0 < 1} is defined by the user as "point_p," and it defaults to 0.01.  Note: this discussion assumed increasing data.  The fitter determines the direction of the data and inverts the probability statements for decreasing data. \cr
 -    Absolute deviation can be specified with 'BMR_TYPE="abs"'. This defines the BMD as an absolute change from the control dose of zero by a specified amount. That is the BMD is the dose that solves the equation \eqn{\mid f(dose) - f(0) \mid = BMR}}
 
+\item{BMR}{This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."}
+
 \item{point_p}{This option is only used for hybrid BMD calculations. It defines a probability that is the cutpoint for observations.  It is the probability that observations have this probability, or less, of being observed at the background dose.}
+
+\item{alpha}{Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)\%} confidence interval.  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)\% }.  By default, it is set to 0.05.}
 
 \item{samples}{the number of samples to take (MCMC only)}
 
 \item{burnin}{the number of burnin samples to take (MCMC only)}
-
-\item{BRM}{This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."}
 }
 \value{
-a model object containing a list of single models
+This function model object containing a list of individual fits and model averaging fits
+\itemize{
+ \item \code{Individual_Model_X}: Here \code{X} is a number \eqn{1\leq X \leq n,} where \eqn{n}
+        is the number of models in the model average.  For each \code{X}, this is an individual model
+        fit identical to what is returned in `\code{single_continuous_fit}.'
+ \item \code{ma_bmd}: The CDF of the model averaged BMD distribution. 
+ \item \code{posterior_probs}: The posterior model probabilities used in the MA. 
+ \item \code{bmd}: The BMD and the \eqn{100\times(1-2\alpha)\%} confidence intervals. 
+}
 }
 \description{
 Fit a model averaged continuous BMD model.
 }
 \examples{
-Hill.p <- rbind(c(481,-250.3,70,3.3),
-                c(481,-250.3,40,1.3),
-                c(481,-250.2,15,1.1),
-                c(481,-250.3,50,4) ,
-                c(10.58,9.7,70,3.5),
-                c(10.58,9.7,25,3),
-                c(10.58,9.7,15,2),
-                c(10.58,9.7,50,4))
-hill <- data.frame(a=Hill.p[,1],b=Hill.p[,2],c=Hill.p[,3],d=Hill.p[,4])
-doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
-dosesq <- rep(c(0,6.25,12.5,25,50,100),each=30)
-mean <- cont_hill_f(as.numeric(hill[2,]),doses)
-y <- rinvgauss(length(mean),mean,18528.14)
-model <- ma_continuous_fit(doses, y, fit_type = "laplace", BMD_TYPE = 'sd', BMR = 1)
 
+hill_m <- function(doses){
+       returnV <-  481  -250.3*doses^1.3/(40^1.3 + doses^1.3)
+       return(returnV)
+}
+doses <- rep(c(0,6.25,12.5,25,50,100),each=10)
+mean <- hill_m(doses)
+y <- rnorm(length(mean),mean,20.14)
+model <- ma_continuous_fit(doses, y, fit_type = "laplace", BMD_TYPE = 'sd', BMR = 1)
+summary(model)
 }

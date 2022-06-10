@@ -10,7 +10,7 @@ single_dichotomous_fit(
   N,
   model_type,
   fit_type = "laplace",
-  prior = "default",
+  prior = NULL,
   BMR = 0.1,
   alpha = 0.05,
   degree = 2,
@@ -25,18 +25,45 @@ single_dichotomous_fit(
 
 \item{N}{A numeric vector or matrix of the number of replicates at a dose.}
 
+\item{model_type}{The mean model for the dichotomous model fit.  It can be one of the following: \cr
+"hill","gamma","logistic", "log-logistic", "log-probit"  ,"multistage"  ,"probit","qlinear","weibull"}
+
 \item{fit_type}{the method used to fit (laplace, mle, or mcmc)}
+
+\item{prior}{Used if you want to specify a prior for the data.}
+
+\item{BMR}{This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."}
+
+\item{alpha}{Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)\%} .  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)\% } confidence interval.  By default, it is set to 0.05.}
 
 \item{degree}{the number of degrees of a polynomial model. Only used for polynomial models.}
 
 \item{samples}{the number of samples to take (MCMC only)}
 
 \item{burnin}{the number of burnin samples to take (MCMC only)}
-
-\item{BRM}{This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."}
 }
 \value{
-a model object
+Returns a model object class with the following structure:
+\itemize{
+   \item \code{full_model}:  The model along with the likelihood distribution. 
+   \item \code{parameters}: The parameter estimates produced by the procedure, which are relative to the model '
+                            given in \code{full_model}.  The last parameter is always the estimate for \eqn{\log(\sigma^2)}.
+   \item \code{covariance}: The variance-covariance matrix for the parameters.  
+   \item \code{bmd_dist}:  Quantiles for the BMD distribution. 
+   \item \code{bmd}:  A vector containing the benchmark dose (BMD) and \eqn{100\times(1-2\alpha)} confidence intervals. 
+   \item \code{maximum}:  The maximum value of the likelihod/posterior. 
+   \item \code{gof_p_value}:  GOF p-value for the Pearson \eqn{\chi^2} GOF test. 
+   \item \code{gof_chi_sqr_statistic}: The GOF statistic. 
+   \item \code{prior}:     This value gives the prior for the Bayesian analysis. 
+   \item \code{model}:     Parameter specifies t mean model used. 
+   \item \code{data}:      The data used in the fit. 
+   \itemize{
+       When MCMC is specified, an additional variable \code{mcmc_result} 
+       has the following two variables:
+       \item \code{PARM_samples}:  matrix of parameter samples. 
+       \item \code{BMD_samples}: vector of BMD sampled values. 
+   }
+}
 }
 \description{
 Fit a single dichotomous dose-response model to data.
@@ -47,10 +74,11 @@ mData <- matrix(c(0, 2,50,
                   3, 10, 50,
                   16, 18,50,
                   32, 18,50,
-                  33, 17,50),nrow=6,ncol=3,byrow=T)
+                  33, 17,50),nrow=6,ncol=3,byrow=TRUE)
 D <- mData[,1]
 Y <- mData[,2]
 N <- mData[,3]
 model = single_dichotomous_fit(D, Y, N, model_type = "hill", fit_type = "laplace")
+summary(model)
 
 }

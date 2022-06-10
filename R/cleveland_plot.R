@@ -4,13 +4,23 @@
 #'
 #' @title cleveland_plot - Create a Cleveland plot from a model averaged model.
 #' @param A the model averaged model to plot
+#' @return Returns a \code{ggplot2} graphics object. 
 #' @examples 
-#' \dontrun{
+#' mData <- matrix(c(0, 2,50,
+#'                   1, 2,50,
+#'                   3, 10, 50,
+#'                   16, 18,50,
+#'                   32, 18,50,
+#'                   33, 17,50),nrow=6,ncol=3,byrow=TRUE)
+#' D <- mData[,1]
+#' Y <- mData[,2]
+#' N <- mData[,3]
+#' 
 #' model = ma_dichotomous_fit(D,Y,N)
 #' cleveland_plot(model)
-#' } 
+#' 
 #' @export
-cleveland_plot <- function (A, ...){
+cleveland_plot <- function (A){
   UseMethod("cleveland_plot")
 }
 
@@ -22,6 +32,8 @@ cleveland_plot <- function (A, ...){
   # Construct bmd sample plots for mcmc 
   class_list <- names(A) 
   
+  # Remove "No Visible Bindings Note"
+  X1 <- X2 <- X3 <-X4 <- X5 <- NULL
   # This part should be consistent
  
   fit_idx<- grep("Individual_Model",class_list)
@@ -115,7 +127,8 @@ cleveland_plot <- function (A, ...){
 .cleveland_plot.BMDcontinous_MA<-function(A){
   # Construct bmd sample plots for mcmc 
   class_list <- names(A)
-  
+  # Remove "No Visible Bindings Note"
+  X1 <- X2 <- X3 <-X4 <- X5 <- NULL
   # Grap function extract # of indices from the text with same pattern
   fit_idx    <- grep("Individual_Model",class_list)
   

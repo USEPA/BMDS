@@ -1,15 +1,5 @@
 context("Single Dichotomous Models MLE")
 
-test_that("Hill", {
-     set.seed(5981)
-     mData <- build_single_dichotomous_dataset_2()
-     mData <- build_single_dichotomous_dataset_2()
-     c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],
-                                model_type = "hill", fit_type = "mle")
-     validate_model2(c, "Model:  Hill", c(-1.696261,17.999991, 5.253571,1.332502), 
-                     c(0.004217370,0.001890691,0.007291542 ),c(6.154569,1))
-})
-
 test_that("Hill Laplace", {
      set.seed(5981)
      mData <- build_single_dichotomous_dataset_2()
@@ -52,8 +42,8 @@ test_that("Gamma MLE", {
      set.seed(5981)
      mData <- build_single_dichotomous_dataset_2()
      c = single_dichotomous_fit(mData[,1],mData[,2],mData[,3],
-                              model_type = "gamma", fit_type = "mle")
-     validate_model2(c, "Model: Gamma",c( -1.7531361,0.7512065,18.8926902), 
+                              model_type = "gamma", fit_type = "laplace")
+     validate_model2(c, "Model:  Gamma",c( -1.7531361,0.7512065,18.8926902), 
                     c(0.004242885,0.003526430,0.006277881 ),c(3.125,0.085))
 })
 

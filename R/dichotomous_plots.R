@@ -80,8 +80,15 @@
 }
 
 {
-  .plot.BMDdich_fit_MCMC <-function(fit,fit_type="MCMC",qprob=0.05,...){
-    
+  .plot.BMDdich_fit_MCMC <-function(x,...){
+    fit = x
+    temp_args = list(...)
+   
+    if (!exists("qprob",temp_args)){
+      qprob = 0.05
+    }else{
+      qprob = temp_args$qprob
+    }
     density_col="red"
     credint_col="azure2"
     BMD_DENSITY = T
@@ -97,8 +104,8 @@
     
     
     doses = fit$data[,1,drop=T]
-    uerror <- apply(cbind(probs*0+1,probs+se),1,min)
-    lerror <- apply(cbind(probs*0,probs-se),1,max)
+    uerror <- apply(cbind(probs*0+1,probs+se),1,min,na.rm=TRUE)
+    lerror <- apply(cbind(probs*0,probs-se),1,max,na.rm=TRUE)
     
     dose = c(doses,doses)
     Response = c(uerror,lerror)
@@ -162,13 +169,13 @@
     
     Q <- t(Q)
     
-    me <- colMeans(Q)
-    lq <- apply(Q,2,quantile, probs = qprob)
-    uq <- apply(Q,2,quantile, probs = 1-qprob)
+    me <- colMeans(Q,,na.rm=TRUE)
+    lq <- apply(Q,2,quantile, probs = qprob,na.rm=TRUE)
+    uq <- apply(Q,2,quantile, probs = 1-qprob,na.rm=TRUE)
     
     plot_gg <-ggplot()+
               geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
-              labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+
+              labs(x="Dose", y="Proportion",title=paste(fit$full_model,sep=",  Fit Type: " ))+
               theme_minimal()+
               xlim(0-5*max(test_doses),5*max(test_doses))
     
@@ -205,7 +212,7 @@
     # Object 3 - Density object - In Shiny we can on / off this 
     # Density - Polygon/Other option?
     if (BMD_DENSITY ==TRUE){
-      Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses))
+      Dens =  density(temp,cut=c(5*max(test_doses)), n=1000, from=0, to=max(test_doses),na.rm = TRUE)
       
       Dens$y = Dens$y/max(Dens$y) * (max(uerror)-min(lerror))*0.6
       temp = which(Dens$x < max(test_doses))
@@ -226,8 +233,16 @@
    
   }
   
-.plot.BMDdich_fit_maximized <- function(fit,fit_type="Maximized",...){
-    
+.plot.BMDdich_fit_maximized <- function(x, ...){
+  fit = x
+  temp_args = list(...)
+  if (!exists("qprob",temp_args)){
+    qprob = 0.05
+  }else{
+    qprob = temp_args$qprob
+  }
+  
+  
     density_col="red"
     credint_col="azure2"
 
@@ -284,7 +299,7 @@
     plot_gg<-ggplot()+
       geom_errorbar(aes(x=doses, ymin=lerror, ymax=uerror),color="grey")+
       xlim(c(min(dose)-5*max(dose),max(dose)*5)) +
-      labs(x="Dose", y="Proportion",title=paste(fit$full_model, fit_type,sep=",  Fit Type: " ))+theme_minimal()
+      labs(x="Dose", y="Proportion",title=paste(fit$full_model,sep=",  Fit Type: " ))+theme_minimal()
     
     
     
@@ -309,7 +324,17 @@
     
 }
   
-.plot.BMDdichotomous_MA <- function(A,qprob=0.05,...){
+.plot.BMDdichotomous_MA <- function(x,...){
+  A = x
+  model_no <- x_axis <- y_axis <-cols <- NULL
+  temp_args = list(...)
+ 
+  if (!exists("qprob",temp_args)){
+    qprob = 0.05
+  }else{
+    qprob = temp_args$qprob
+  }
+  
     density_col="blueviolet"
     credint_col="azure2"
     fit_origin<-A #Updated SL
@@ -635,11 +660,9 @@
         
       }
       
-      
+    
       return(plot_gg+ coord_cartesian(xlim=c(min(doses),max(doses)),expand=F))
-      
-
-
+    
     }
 
   }  

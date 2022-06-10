@@ -357,10 +357,10 @@ optimizationResult cfindMAX_W_EQUALITY( cBMDModel<LL, PR>  *M,
 		try {
 			result = opt.optimize(x, minf);
 			good_opt = true;
-		}catch (nlopt::roundoff_limited) {
+		}catch (nlopt::roundoff_limited &exc) {
 			good_opt = false;
 			//cout << "Error Round off" << endl;
-		}catch (nlopt::forced_stop) {
+		}catch (nlopt::forced_stop &exc) {
 			good_opt = false;
 			//cout << "Error Forced stop" << endl;
 		}
@@ -560,12 +560,12 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR>  *M,
           good_opt = true;
           //opt_iter++;
 		}
-		catch (nlopt::roundoff_limited) {
+		catch (nlopt::roundoff_limited &exc) {
           good_opt = false;
           DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
 		//	cout << "Error Round off" << endl;
 		}
-		catch (nlopt::forced_stop) {
+		catch (nlopt::forced_stop &exc) {
           good_opt = false;
           DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
 		//	cout << "Error Forced stop" << endl;

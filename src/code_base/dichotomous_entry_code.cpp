@@ -501,8 +501,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
                      false); 
   }
 } 
-  //double post_probs[MA->nmodels];
-  double * post_probs = new double[MA->nmodels]; 
+  double *post_probs = new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -616,6 +615,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     res->bmd_dist[i + res->dist_numE]  = prob;
   }
 
+  delete []post_probs; 
   return; 
 }
 
@@ -643,8 +643,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   }
 } 
 
-  //double post_probs[MA->nmodels];
-  double * post_probs = new double[MA->nmodels]; 
+  double *post_probs =  new double[MA->nmodels]; 
   double temp =0.0; 
   double max_prob = -1.0*std::numeric_limits<double>::infinity(); 
   for (int i = 0; i < MA->nmodels; i++){
@@ -757,7 +756,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i + res->dist_numE]  = prob;
   }
-  
+  delete []post_probs; 
   return; 
   
 }
@@ -823,8 +822,9 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
      }
      res->n = data->n;        // total number of observations obs 
      res->test_statistic =   sqresid.array().sum();
+     
      if ( data->n-data->model_df > 0.0){
-      res->p_value        =   1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df); 
+       res->p_value        =   1.0 - gsl_cdf_chisq_P(sqresid.array().sum(),data->n-data->model_df); 
      }else{
        res->p_value       = 1.0; 
      }

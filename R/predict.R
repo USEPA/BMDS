@@ -17,8 +17,14 @@
 #CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-.dichotomous_predict_model <- function(fit,new_doses = NULL){
-
+.dichotomous_predict_model <- function(object,...){
+    fit <- object
+    tmp_args = list(...)
+    if (!exists("new_doses",where=tmp_args)){
+        new_doses = NULL
+    }else{
+        new_doses = tmp_args$new_doses
+    }
     if (is.null(new_doses)){
         test_doses = fit$data[,1]
     }else{
@@ -58,8 +64,16 @@
 }
 
 
-.dichotomous_predict_model_mcmc <- function(fit,new_doses = NULL){
-
+.dichotomous_predict_model_mcmc <- function(object,...){
+    fit <- object
+    tmp_args = list(...)
+    
+    if (!exists("new_doses",where=tmp_args)){
+        new_doses = NULL
+    }else{
+        new_doses = tmp_args$new_doses
+    }
+    
     if (is.null(new_doses)){
         test_doses = fit$data[,1]
     }else{
@@ -98,8 +112,16 @@
     return(returnV)
 }
 
-.continuous_predict_model <- function(fit, new_doses = NULL){
-
+.continuous_predict_model <- function(object,...){
+    fit <- object
+    tmp_args = list(...)
+    if (!exists("new_doses",where=tmp_args)){
+        new_doses = NULL
+    }else{
+        new_doses = tmp_args$new_doses
+    }
+    
+    
         data_d = fit$data
 
         if (ncol(data_d) == 4 ){ #sufficient statistics
@@ -126,19 +148,19 @@
        }
 
         if (fit$model=="FUNL"){
-             f <- cont_FUNL_f(fit$parameters,test_doses)
+             f <- .cont_FUNL_f(fit$parameters,test_doses)
         }
         if (fit$model=="hill"){
-             f <- cont_hill_f(fit$parameters,test_doses)
+             f <- .cont_hill_f(fit$parameters,test_doses)
         }
         if (fit$model=="exp-3"){
-             f <- cont_exp_3_f(fit$parameters,test_doses,decrease)
+             f <- .cont_exp_3_f(fit$parameters,test_doses,decrease)
         }
         if (fit$model=="exp-5"){
-             f <- cont_exp_5_f(fit$parameters,test_doses)
+             f <- .cont_exp_5_f(fit$parameters,test_doses)
         }
         if (fit$model=="power"){
-             f <- cont_power_f(fit$parameters,test_doses)
+             f <- .cont_power_f(fit$parameters,test_doses)
         }
         if (fit$model=="polynomial"){
              if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
@@ -147,7 +169,7 @@
                 degree = length(fit$parameters) - 1
             }
 
-            f <- cont_polynomial_f(fit$parameters[1:degree],test_doses)
+            f <- .cont_polynomial_f(fit$parameters[1:degree],test_doses)
         }
 
         if (grepl("Log-Normal",fit$full_model)){
@@ -159,8 +181,14 @@
 }
 
 
-.continuous_predict_model_mcmc <- function(fit, new_doses = NULL){
-
+.continuous_predict_model_mcmc <- function(object,...){
+        fit <- object
+        tmp_args = list(...)
+        if (!exists("new_doses",where=tmp_args)){
+            new_doses = NULL
+        }else{
+            new_doses = tmp_args$new_doses
+        }
         data_d = fit$data
 
         if (ncol(data_d) == 4 ){ #sufficient statistics
@@ -187,19 +215,19 @@
        }
 
         if (fit$model=="FUNL"){
-             f <- apply(fit$mcmc_result$PARM_samples, 1, cont_FUNL_f,test_doses)
+             f <- apply(fit$mcmc_result$PARM_samples, 1, .cont_FUNL_f,test_doses)
         }
         if (fit$model=="hill"){
-              f <- apply(fit$mcmc_result$PARM_samples, 1,cont_hill_f,test_doses)
+              f <- apply(fit$mcmc_result$PARM_samples, 1,.cont_hill_f,test_doses)
         }
         if (fit$model=="exp-3"){
-              f <- apply(fit$mcmc_result$PARM_samples, 1,cont_exp_3_f,test_doses)
+              f <- apply(fit$mcmc_result$PARM_samples, 1,.cont_exp_3_f,test_doses)
           }
         if (fit$model=="exp-5"){
-             f <- apply(fit$mcmc_result$PARM_samples, 1,cont_exp_5_f,test_doses)
+             f <- apply(fit$mcmc_result$PARM_samples, 1,.cont_exp_5_f,test_doses)
         }
         if (fit$model=="power"){
-              f <- apply(fit$mcmc_result$PARM_samples, 1,cont_power_f,test_doses)
+              f <- apply(fit$mcmc_result$PARM_samples, 1,.cont_power_f,test_doses)
         }
         if (fit$model=="polynomial"){
              if (length(grep(": normal-ncv", tolower(fit$full_model)))>0){
@@ -208,7 +236,7 @@
                 degree = ncol(fit$mcmc_result$PARM_samples) - 1
             }
 
-            f <- apply(fit$mcmc_result$PARM_samples[,1:degree], 1, cont_polynomial_f,test_doses)
+            f <- apply(fit$mcmc_result$PARM_samples[,1:degree], 1, .cont_polynomial_f,test_doses)
         }
 
         if (grepl("Log-Normal",fit$full_model)){

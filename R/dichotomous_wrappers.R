@@ -4,28 +4,53 @@
 #' @param D A numeric vector or matrix of doses.
 #' @param Y A numeric vector or matrix of responses.
 #' @param N A numeric vector or matrix of the number of replicates at a dose.
+#' @param model_type The mean model for the dichotomous model fit.  It can be one of the following: \cr
+#'    "hill","gamma","logistic", "log-logistic", "log-probit"  ,"multistage"  ,"probit","qlinear","weibull"
 #' @param fit_type the method used to fit (laplace, mle, or mcmc)
-#' @param prior
-#' @param BRM This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."
-#' @param alpha Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)% confidence interval}.  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)% confidence interval}.  By default, it is set to 0.05.
+#' @param prior Used if you want to specify a prior for the data.
+#' @param BMR This option specifies the benchmark response BMR. The BMR is defined in relation to the BMD calculation requested (see BMD).  By default, the "BMR = 0.1."
+#' @param alpha Alpha is the specified nominal coverage rate for computation of the lower bound on the BMDL and BMDU, i.e., one computes a \eqn{100\times(1-\alpha)\%} .  For the interval (BMDL,BMDU) this is a \eqn{100\times(1-2\alpha)\% } confidence interval.  By default, it is set to 0.05.
 #' @param degree the number of degrees of a polynomial model. Only used for polynomial models. 
 #' @param samples the number of samples to take (MCMC only)
 #' @param burnin the number of burnin samples to take (MCMC only)
-#' @return a model object
+#'
+#' @return Returns a model object class with the following structure:
+#' \itemize{
+#'    \item \code{full_model}:  The model along with the likelihood distribution. 
+#'    \item \code{parameters}: The parameter estimates produced by the procedure, which are relative to the model '
+#'                             given in \code{full_model}.  The last parameter is always the estimate for \eqn{\log(\sigma^2)}.
+#'    \item \code{covariance}: The variance-covariance matrix for the parameters.  
+#'    \item \code{bmd_dist}:  Quantiles for the BMD distribution. 
+#'    \item \code{bmd}:  A vector containing the benchmark dose (BMD) and \eqn{100\times(1-2\alpha)} confidence intervals. 
+#'    \item \code{maximum}:  The maximum value of the likelihod/posterior. 
+#'    \item \code{gof_p_value}:  GOF p-value for the Pearson \eqn{\chi^2} GOF test. 
+#'    \item \code{gof_chi_sqr_statistic}: The GOF statistic. 
+#'    \item \code{prior}:     This value gives the prior for the Bayesian analysis. 
+#'    \item \code{model}:     Parameter specifies t mean model used. 
+#'    \item \code{data}:      The data used in the fit. 
+#'    \itemize{
+#'        When MCMC is specified, an additional variable \code{mcmc_result} 
+#'        has the following two variables:
+#'        \item \code{PARM_samples}:  matrix of parameter samples. 
+#'        \item \code{BMD_samples}: vector of BMD sampled values. 
+#'    }
+#' }
+#'                
 #' @examples
 #' mData <- matrix(c(0, 2,50,
 #'                   1, 2,50,
 #'                   3, 10, 50,
 #'                   16, 18,50,
 #'                   32, 18,50,
-#'                   33, 17,50),nrow=6,ncol=3,byrow=T)
+#'                   33, 17,50),nrow=6,ncol=3,byrow=TRUE)
 #' D <- mData[,1]
 #' Y <- mData[,2]
 #' N <- mData[,3]
 #' model = single_dichotomous_fit(D, Y, N, model_type = "hill", fit_type = "laplace")
+#' summary(model)
 #' 
 single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
-                                    prior="default", BMR = 0.1,
+                                    prior=NULL, BMR = 0.1,
                                     alpha = 0.05, degree=2,samples = 21000,
                                     burnin = 1000){
   Y <- as.matrix(Y) 
@@ -38,11 +63,11 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   D = D[test==TRUE,,drop=F]
   N = N[test==TRUE,,drop=F]
 
-  if (class(prior) == "character"){
-    prior =  bayesian_prior_dich(model_type,degree);
+  if (is.null(prior)){
+    prior =  .bayesian_prior_dich(model_type,degree);
     
   }else{
-    if (class(prior) !="BMD_Bayes_dichotomous_model"){
+    if (!("BMD_Bayes_dichotomous_model" %in% class(prior) )){
       stop("Prior is not correctly specified.")
     }
     model_type = prior$mean
@@ -83,8 +108,8 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
 
  
   if (fitter == 1){ #MLE fit
-    bounds = bmd_default_frequentist_settings(model_type,degree)
-    temp = run_single_dichotomous(dmodel,DATA,bounds,o1,o2); 
+    bounds = .bmd_default_frequentist_settings(model_type,degree)
+    temp = .run_single_dichotomous(dmodel,DATA,bounds,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     temp_me = temp$bmd_dist
    
@@ -105,7 +130,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
  
   if (fitter == 2){ #laplace fit
     
-    temp = run_single_dichotomous(dmodel,DATA,prior$priors,o1,o2); 
+    temp = .run_single_dichotomous(dmodel,DATA,prior$priors,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(temp$bmd,te(alpha),te(1-alpha))
@@ -116,7 +141,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   }
   if (fitter ==3){
     
-    temp = run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
+    temp = .run_dichotomous_single_mcmc(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
                                        c(BMR, alpha,samples,burnin))
     #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
     temp$bmd_dist <- cbind(quantile(temp$mcmc_result$BMD_samples,seq(0.005,0.995,0.005)),seq(0.005,0.995,0.005))
@@ -137,41 +162,10 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   return(temp)
 }
 
-.print.BMD_CDF<-function(p){
-  x <- splinefun(p[!is.infinite(p[,1]),2],p[!is.infinite(p[,1]),1],method="hyman")
-  cat("Approximate Quantiles for the BMD\n")
-  cat("--------------------------------------------------------------\n")
-  cat("1% \t 5% \t 10% \t 25% \t 50% \t 75% \t 90% \t 95% \t 99%\n")
-  cat("--------------------------------------------------------------\n")
 
-  cat(sprintf("%1.2f \t %1.2f \t %1.2f \t %1.2f \t %1.2f \t %1.2f \t %1.2f \t %1.2f \t %1.2f \t\n",
-              x(0.01),x(0.05),x(0.10),x(0.25),x(.5),x(0.75),x(0.90),x(0.95),x(0.99)))
-}
 
-print.BMDdich_fit_MCMC<-function(p){
-  cat ("Benchmark Dose Estimates using MCMC. \n")
-  cat (sprintf("Extra Risk: BMR:%1.2f\n",p$options[1]))
-  cat (sprintf("Model Type: %s\n",p$model[1]))
-  cat ("BMD  (BMDL,BMDU) \n")
-  cat ("---------------------\n")
-  m <- mean(p$BMD)
-  x <- quantile(p$BMD,c(p$options[2],1-p$options[2]))
-  cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",m,x[1],x[2],100*(1-2*p$options[2]),"% 2-sided Confidence Interval"))
-}
 
-.print.BMDdich_fit<-function(p){
-  cat ("Benchmark Dose Estimates\n")
-  cat ("Approximation to the Posterior\n")
-  cat (sprintf("Model Type: %s\n",p$full_model))
-  cat ("BMD  (BMDL,BMDU) \n")
-  cat ("---------------------\n")
-  temp = p$bmd_dist
-  temp = temp[!is.infinite(temp[,1]),]
-  spfun = splinefun(temp[,2],temp[,1],method = "hyman")
-  cat (sprintf("%1.2f (%1.2f,%1.2f)\n%1.2f%s\n",spfun(0.5),spfun(0.05),spfun(0.95),90,"% 2-sided Confidence Interval"))
-}
-
-bmd_default_frequentist_settings <- function(model,degree=2){
+.bmd_default_frequentist_settings <- function(model,degree=2){
   dmodel = which(model==c("hill","gamma","logistic", "log-logistic",
                           "log-probit"  ,"multistage"  ,"probit",
                           "qlinear","weibull"))
@@ -220,61 +214,6 @@ bmd_default_frequentist_settings <- function(model,degree=2){
     prior <- matrix(c(0,	0,	2,	-18,	18,
                       0,	1,	1,	0,	50,
                       0,	1,	0.424264068711929, 1.00E-06,1000),nrow=3,ncol=5,byrow=T)
-  }  
-  
-  return(prior)
-}
-# fix me - remove 
-
-bmd_default_bayesian_prior <- function(model,degree=2){
-  dmodel = which(model==c("hill","gamma","logistic", "log-logistic",
-                          "log-probit"  ,"multistage"  ,"probit",
-                          "qlinear","weibull"))
-  if (dmodel==1){ #HILL
-    prior <- matrix(c(1,	-1,	2,	-40,	40,
-                      1,	 0,	3,	-40,	40,
-                      1,	-3,	3.3,	-40,	40,
-                      2,	0.693147,	0.5,	0,	40),nrow=4,ncol=5,byrow=T)
-  }
-  if (dmodel==2){ #GAMMA
-    prior <- matrix(c(1,	0,	2,	-18,	18,
-                      2,	0.693147180559945,	0.424264068711929,	0.2,	20,
-                      2,	0,	1,	0,	1e4),nrow=3,ncol=5,byrow=T)
-  }
-  if (dmodel == 3){ #LOGISTIC
-    prior <- matrix(c(1,	0,	2,	-20,	20,
-                      2,	0.1,	1,	0,	40     ),nrow=2,ncol=5,byrow=T)
-  }
-  if (dmodel == 4){ #LOG-LOGISTIC
-    prior <- matrix(c(1,	0,	2,	-20,	20,
-                      1,	0,	1,	-40,	40,
-                      2,	0.693147180559945,	0.5,	1.00E-04,	20),nrow=3,ncol=5,byrow=T)
-  }
-  if (dmodel == 5){ #LOG-PROBIT
-    prior <- matrix(c(1,	0,	2,	-20,	20,
-                      1,	0,	1,	-40,	40,
-                      2,	0.693147180559945,	0.5,	1.00E-04,	40),nrow=3,ncol=5,byrow=T)
-  }
-  
-  if (dmodel == 6){ #MULTISTAGE
-    temp <- matrix(c(1,	0,	2,	-20,	20,
-                     2,	0,	0.5,	1.00E-04,	100,
-                     2,	0,	1,	  1.00E-04,	1.00E+06),nrow=3,ncol=5,byrow=T)
-    prior <- matrix(c(2,	0,	1,	  1.00E-04,	1.00E+06),nrow=1+degree,ncol=5,byrow=T)
-    prior[1:3,] <- temp; 
-  }
-  if (dmodel == 7){ #PROBIT
-    prior <- matrix(c(1,	-2,	2,	-8,	8,
-                      2,	0.1,	1,	1.00E-12,	40 ),nrow=2,ncol=5,byrow=T)
-  }
-  if (dmodel == 8){ #QLINEAR
-    prior <- matrix(c(1,	0,  	2,-18,	18,
-                      2,	0.15,  1,	0,	18),nrow=2,ncol=5,byrow=T)
-  }
-  if (dmodel == 9){ #WEIBULL
-    prior <- matrix(c(1,	0,	2,	-20,	20,
-                      2,	0.424264068711929,	0.5,	0,	40,
-                      2,	0,	1.5,	0,	1e4),nrow=3,ncol=5,byrow=T)
   }  
   
   return(prior)
