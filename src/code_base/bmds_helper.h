@@ -150,13 +150,13 @@ void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results
 
 void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes);
 
-void bmdsConvertSStat(struct continuous_analysis *ca, struct continuous_analysis *newCA);
+void bmdsConvertSStat(struct continuous_analysis *ca, struct continuous_analysis *newCA, bool clean);
 
 void calcTestsOfInterest(struct continuous_AOD *aod);
 
 void determineAdvDir(struct continuous_analysis *anal);
 
-void calc_contAOD(struct continuous_analysis *CA, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod);
+void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GOFanal,  struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod);
 
 void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod);
 
