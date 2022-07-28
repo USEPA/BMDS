@@ -749,17 +749,17 @@ void rescale_contParms(struct continuous_analysis *CA, double *parms){
       //rescale alpha
       parms[CA->parms-1] = exp(parms[CA->parms-1]); 
       break;
-    case cont_model::exp_3:
-      //rescale g for log_normal
-      if (CA->disttype == distribution::log_normal){
-        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
-      }
-      break;
+//    case cont_model::exp_3:
+//      //rescale g for log_normal
+//      if (CA->disttype == distribution::log_normal){
+//        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
+//      }
+//      break;
     case cont_model::exp_5:
-      //rescale g for log_normal
-      if (CA->disttype == distribution::log_normal){
-        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
-      }
+//      //rescale g for log_normal
+//      if (CA->disttype == distribution::log_normal){
+//        parms[0] = parms[0]*exp(pow(exp(parms[CA->parms-2]),2)/2);
+//      }
       //rescale c
       parms[2] = exp(parms[2]);
       break;
