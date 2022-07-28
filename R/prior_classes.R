@@ -292,8 +292,8 @@ create_prior_list <- function(x1,x2,...){
     prior <- create_dichotomous_prior(prior,"gamma")
   }
   if (dmodel == 3){ #LOGISTIC
-    prior <- create_prior_list(normprior(	0,	2,	-20,	20),
-                               lnormprior(0.1,	1,	0,	40))
+    prior <- create_prior_list(normprior(	0,	1,	-20,	20),
+                               lnormprior(0,	2,	0,	40))
     prior <- create_dichotomous_prior(prior,"logistic")
   }
   if (dmodel == 4){ #LOG-LOGISTIC
@@ -321,13 +321,13 @@ create_prior_list <- function(x1,x2,...){
     prior <- create_dichotomous_prior(prior,"multistage")
   }
   if (dmodel == 7){ #PROBIT
-    prior <- create_prior_list(normprior(	0,	2,	-20,	20),
-                               lnormprior(0.1,	1,	0,	40))
+    prior <- create_prior_list(normprior(	0,	1,	-20,	20),
+                               lnormprior(0,	2,	0,	40))
     prior <- create_dichotomous_prior(prior,"probit")
   }
   if (dmodel == 8){ #QLINEAR
     prior <- create_prior_list(normprior(	0,	2,	-20,	20),
-                               lnormprior(0.15,  1,	0,	18))
+                               lnormprior(0,  1,	0,	18))
     prior <- create_dichotomous_prior(prior,"qlinear")
   }
   if (dmodel == 9){ #WEIBULL
@@ -352,13 +352,13 @@ create_prior_list <- function(x1,x2,...){
   if (dmodel == 5){
 
     if (dvariance == 1){
-      prior <- create_prior_list(normprior(0,5,-1000,1000))
+      prior <- create_prior_list(normprior(0,5,-100000,100000))
       
       for (ii in 1:degree){
         if(is_increasing){
-          prior <- .combine_prior_lists(prior, normprior(0,5,0,18))
+          prior <- .combine_prior_lists(prior, normprior(0,5,0,1e6))
         } else{
-          prior <- .combine_prior_lists(prior, normprior(0,5,-18,0))
+          prior <- .combine_prior_lists(prior, normprior(0,5,-1e6,0))
         }
       }
       
@@ -371,11 +371,15 @@ create_prior_list <- function(x1,x2,...){
       prior <- create_prior_list(normprior(0,5,0,1000))
       
       for (ii in 1:degree){
-        prior <- .combine_prior_lists(prior,normprior(0,5,-10000,10000))
+        if(is_increasing){
+          prior <- .combine_prior_lists(prior, normprior(0,5,0,1e6))
+        } else{
+          prior <- .combine_prior_lists(prior, normprior(0,5,-1e6,0))
+        }
       }
       prior <- .combine_prior_lists(prior, 
-                                   create_prior_list(lnormprior(0,1,0,100),
-                                                     normprior (0,1,-18,18)))
+                                    create_prior_list(normprior(0,1,0,18),
+                                                      normprior (0,1,-18,18)))
       prior[[1]][,1] = 0
       return(prior)
       
@@ -439,7 +443,7 @@ create_prior_list <- function(x1,x2,...){
                                  lnormprior(1,0.2,1,18), #d 
                                  normprior(0,1,-18,18))
     } else if (dvariance == 3){
-      prior <- create_prior_list(normprior(0,0.1, -100,100), # a
+      prior <- create_prior_list(normprior(0,0.1, -1000,1000), # a
                                  lnormprior(0,1, 0,100),     # b
                                  normprior(0,1, -20,20),    # log(c)
                                  lnormprior(1,0.2,1,18), #d 
