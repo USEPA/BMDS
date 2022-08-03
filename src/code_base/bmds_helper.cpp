@@ -608,9 +608,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     GOFanal.parms = parms;
     GOFanal.prior_cols = prior_cols;
     GOFanal.disttype = distribution::normal;  //needed for all distrubutions to avoid error in ln conversion to suff_stats
-    std::cout<<"calling bmdsConvertSStat"<<std::endl;
     bmdsConvertSStat(anal, &GOFanal, true);    
-    std::cout<<"after bmdsConvertSStat"<<std::endl;
   }
  
 
@@ -656,9 +654,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 //
 //    continuous_expectation(&GOFanal, &tmpRes, &GOFres);
 //  } else {
-    std::cout<<"calling continuous_expectation"<<std::endl;
     continuous_expectation(&GOFanal, res, &GOFres);
-    std::cout<<"after continuous_expectation"<<std::endl;
 //  }
  
 
@@ -707,9 +703,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   collect_cont_bmd_values(anal, res, bmdsRes);
   
-  std::cout<<"entering calc_contAOD"<<std::endl;
   calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
-  std::cout<<"after calc_contAOD"<<std::endl;
 
   rescale_contParms(anal, res->parms); 
 
@@ -899,7 +893,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
   aod->LL[4] = -1*CD.R;
   aod->nParms[4] = CD.NR;
 
-  std::cout<<"!!!!suff_stat:"<<CA->suff_stat<<std::endl;
   //add tests of interest
   //TODO:  need to check for bounded parms in A1,A2,A3,R
   double sumN = 0;
@@ -930,7 +923,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
     } else {
       //TODO
       GOFanal->disttype = distribution::log_normal;  //previous GOFanal is always normal distribution
-      std::cout<<"calling bmdsConvertSStat from calc_contAOD"<<std::endl;
       bmdsConvertSStat(CA, GOFanal, false);  //recalculate using with lognormal transformation
       double divisorTerm = GOFanal->Y[0];
       //rescale to match BMDS 3.x
@@ -959,14 +951,8 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
         tmp += GOFanal->Y[i] * GOFanal->n_group[i];
       }
 
-      std::cout<<"tmp:"<<tmp<<std::endl;
       //aod->addConst -= tmp;
 
-            
-
-      for (int i=0; i<GOFanal->n; i++){
-         std::cout<<"i:"<<i<<", dose:"<< GOFanal->doses[i]<<", Y:"<<GOFanal->Y[i]<<", SD:"<<GOFanal->sd[i]<<std::endl;
-      }
     }
     aod->addConst -= tmp;
   }
@@ -1039,7 +1025,6 @@ void determineAdvDir(struct continuous_analysis *CA){
   double* means = (double*)malloc(CA->n * sizeof(double));
   double* n_group = (double*)malloc(CA->n * sizeof(double));
   double* sd = (double*)malloc(CA->n * sizeof(double));
-  std::cout << "inside determineAdvDir"<<std::endl;
  
   CAnew.doses = doses;
   CAnew.Y = means;
@@ -1088,7 +1073,6 @@ void determineAdvDir(struct continuous_analysis *CA){
     CA->isIncreasing = false;
   }
 
-  std::cout << "leaving determineAdvDir"<<std::endl;
 }
 
 
@@ -1143,7 +1127,6 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
     for (int i=0; i<n_rows; i++){
       CAss->doses[i] = CA->doses[i];
       CAss->Y[i] = CA->Y[i];
-      std::cout<<"bmdsConvert Y:"<<CAss->Y[i]<<std::endl;
       CAss->n_group[i] = CA->n_group[i];
       CAss->sd[i] = CA->sd[i];
       CAss->n = CA->n;
