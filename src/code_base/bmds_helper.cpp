@@ -346,13 +346,18 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
 
-  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) {
+  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
+
+  bool goodCDF = false;
+  for (int i=0; i<res->dist_numE;i++){
+    if (res->bmd_dist[i] != BMDS_MISSING){
+      goodCDF = true;
+    }
+  }
+
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) {
     bmdsRes->validResult = true;
   }
- 
-  
-
-  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
 }
 
@@ -537,21 +542,21 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 //            anal->prior[ind] = 0.0;  //alpha min or max
           }
           break;
-        case cont_model::hill:
-          if (anal->isIncreasing){
-             if (anal->disttype == distribution::normal_ncv){
-                anal->prior[20] = 0.0;
-             } else {
-                anal->prior[17] = 0.0;
-             }
-          } else {
-             if (anal->disttype == distribution::normal_ncv){
-                anal->prior[26] = 0.0;
-             } else {
-                anal->prior[22] = 0.0;
-             }
-          }
-          break; 
+//        case cont_model::hill:
+//          if (anal->isIncreasing){
+//             if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[20] = 0.0;
+//             } else {
+//                anal->prior[17] = 0.0;
+//             }
+//          } else {
+//             if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[26] = 0.0;
+//             } else {
+//                anal->prior[22] = 0.0;
+//             }
+//          }
+//          break; 
       }  //end switch
     } //end if restricted
   } //end if detectAdvDir
@@ -723,11 +728,19 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   bmdsRes->BMD = res->bmd;
 
 
-  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) { 
+  clean_cont_results(res, bmdsRes, aod, gof);
+
+  bool goodCDF = false;
+  for (int i=0; i<res->dist_numE;i++){
+    if (res->bmd_dist[i] != BMDS_MISSING){
+      goodCDF = true;
+    }
+  }   
+
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) { 
     bmdsRes->validResult = true;
   }
 
-  clean_cont_results(res, bmdsRes, aod, gof);
   
 }
 
