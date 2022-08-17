@@ -3,10 +3,14 @@ FROM python:3.9-slim AS builder
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update -y && \
-    apt-get install -y automake build-essential libtool wget make cmake libgslcblas0 libgsl-dev
+    apt-get install -y automake build-essential libtool wget make cmake
 
-RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
+RUN wget https://mirror.ibcp.fr/pub/gnu/gsl/gsl-2.7.tar.gz && \
+    wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
     wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
+    \
+    tar -xvf \gsl-2.7.tar.gz && \
+    cd gsl-2.7 && ./configure && make && make check && make install && cd / && \
     \
     tar -xvf eigen-3.4.0.tar.gz && \
     cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd / && \
@@ -31,9 +35,6 @@ RUN cd /app && \
 # -------------------------------------------------------------------------------------------------
 # copy outputs into clean docker build
 FROM python:3.9-slim
-
-RUN apt-get update -y && \
-    apt-get install -y libgslcblas0 libgsl-dev
 
 COPY --from=builder /usr/local/lib/libDRBMD.* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libnlopt* /usr/local/lib/
