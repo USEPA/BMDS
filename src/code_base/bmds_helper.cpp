@@ -479,9 +479,35 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
 
-
   bmdsRes->validResult = false;
   anal->transform_dose = false;
+
+  //debug output
+  std::cout.precision(17); 
+  std::cout<<"continuous_analysis struct:" << std::endl;
+  std::cout<<"---------------------------"<<std::endl;
+  std::cout<<"cont_model:"<<anal->model<<std::endl;
+  std::cout<<"n:"<<anal->n<<std::endl;
+  std::cout<<"suff_stat:" << (anal->suff_stat ? "true":"false")<<std::endl;
+  std::cout<<"BMD_type:" << anal->BMD_type<<std::endl;
+  std::cout<<"isIncreasing:"<<(anal->isIncreasing ? "true":"false")<<std::endl;
+  std::cout<<"BMR:"<<anal->BMR<<std::endl;
+  std::cout<<"disttype:"<<anal->disttype<<std::endl;
+  std::cout<<"alpha:"<<anal->alpha<<std::endl;
+  std::cout<<"degree:"<<anal->degree<<std::endl;
+  std::cout<<"parms:"<<anal->parms<<std::endl;
+  std::cout<<"prior_cols:"<<anal->prior_cols<<std::endl;
+  std::cout<<"transform_dose:"<<anal->transform_dose<<std::endl;
+  std::cout<<"Data:"<<std::endl;
+  std::cout<<"Dose, N, Mean, Std. Dev"<<std::endl;
+  for (int i=0; i<anal->n; i++){
+    std::cout<< anal->doses[i]<<", "<<anal->n_group[i]<<", "<<anal->Y[i]<<",  "<<anal->sd[i]<<std::endl;
+  }
+  std::cout<<"Parameter settings/Priors"<<std::endl;
+  for (int i=0; i<anal->prior_cols*anal->parms; i++){
+    std::cout<<anal->prior[i]<<std::endl;
+  }
+
 
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
@@ -497,24 +523,24 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     int ind;
     if (*restricted) {
       switch(anal->model){
-        case cont_model::exp_3:
-        case cont_model::exp_5:
-          if (anal->prior[0] == 0){   //checks if frequentist model
-            if(anal->isIncreasing){
-              if (anal->disttype == distribution::normal_ncv){
-                anal->prior[20] = 0.0;  //c min
-              } else {
-                anal->prior[17] = 0.0;  //c min
-              }
-            } else {
-              if (anal->disttype == distribution::normal_ncv){
-                anal->prior[26] = 0.0;  //c max
-              } else {
-                anal->prior[22] = 0.0;  //c max
-              }
-            }
-          }
-          break;
+//        case cont_model::exp_3:
+//        case cont_model::exp_5:
+//          if (anal->prior[0] == 0){   //checks if frequentist model
+//            if(anal->isIncreasing){
+//              if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[20] = 0.0;  //c min
+//              } else {
+//                anal->prior[17] = 0.0;  //c min
+//              }
+//            } else {
+//              if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[26] = 0.0;  //c max
+//              } else {
+//                anal->prior[22] = 0.0;  //c max
+//              }
+//            }
+//          }
+//          break;
         case cont_model::polynomial:
           if(anal->prior[0] == 0){  //checks if frequentist model
             int numRows = 2+anal->degree;
