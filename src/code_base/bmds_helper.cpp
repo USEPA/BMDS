@@ -483,7 +483,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   anal->transform_dose = false;
 
   //debug output
-  std::cout.precision(17); 
+  std::cout.precision(17);
+  std::cout<<"detectAdvDir:" << (*detectAdvDir ? "true":"false")<<std::endl;
+  std::cout<<"restricted:" << (*restricted ? "true":"false")<<std::endl;
   std::cout<<"continuous_analysis struct:" << std::endl;
   std::cout<<"---------------------------"<<std::endl;
   std::cout<<"cont_model:"<<anal->model<<std::endl;
@@ -518,10 +520,12 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
 
   if (*detectAdvDir){
+    std::cout << "IN detectAdvDir\n";
     determineAdvDir(anal);
 
     int ind;
     if (*restricted) {
+      std::cout << "IN restricted\n";
       switch(anal->model){
 //        case cont_model::exp_3:
 //        case cont_model::exp_5:
@@ -587,6 +591,11 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     } //end if restricted
   } //end if detectAdvDir
 
+
+  std::cout<<"Parameter settings/Priors POST changes"<<std::endl;
+  for (int i=0; i<anal->prior_cols*anal->parms; i++){
+    std::cout<<anal->prior[i]<<std::endl;
+  }
 
   //need to handle issue with decreasing response datasets for relative deviation
   //easiest workaround is to modify BMRF before sending to estimate_sm_laplace
