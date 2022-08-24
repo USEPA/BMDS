@@ -497,24 +497,24 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     int ind;
     if (*restricted) {
       switch(anal->model){
-        case cont_model::exp_3:
-        case cont_model::exp_5:
-          if (anal->prior[0] == 0){   //checks if frequentist model
-            if(anal->isIncreasing){
-              if (anal->disttype == distribution::normal_ncv){
-                anal->prior[20] = 0.0;  //c min
-              } else {
-                anal->prior[17] = 0.0;  //c min
-              }
-            } else {
-              if (anal->disttype == distribution::normal_ncv){
-                anal->prior[26] = 0.0;  //c max
-              } else {
-                anal->prior[22] = 0.0;  //c max
-              }
-            }
-          }
-          break;
+//        case cont_model::exp_3:
+//        case cont_model::exp_5:
+//          if (anal->prior[0] == 0){   //checks if frequentist model
+//            if(anal->isIncreasing){
+//              if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[20] = 0.0;  //c min
+//              } else {
+//                anal->prior[17] = 0.0;  //c min
+//              }
+//            } else {
+//              if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[26] = 0.0;  //c max
+//              } else {
+//                anal->prior[22] = 0.0;  //c max
+//              }
+//            }
+//          }
+//          break;
         case cont_model::polynomial:
           if(anal->prior[0] == 0){  //checks if frequentist model
             int numRows = 2+anal->degree;
