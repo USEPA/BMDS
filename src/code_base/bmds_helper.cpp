@@ -489,7 +489,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
     if(anal->disttype == distribution::log_normal){
-      std::cout << "lognormal distribution is only compatible with exponential models\n";
       return; 
     }
   }
@@ -927,10 +926,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
   if (CA->disttype == distribution::log_normal) {
     double tmp = 0;
-      std::cout<<"lognormal addConst calcs"<<std::endl;
-      for (int i=0; i<CA->n;i++){
-         std::cout<<"i:"<<i<<", Y:"<<CA->Y[i]<<std::endl;
-      }
     if (CA->suff_stat){
        for (int i=0; i<CA->n;i++){
           tmp += (log(CA->Y[i])-log(1+pow((CA->sd[i]/CA->Y[i]),2))/2)*CA->n_group[i];
