@@ -324,8 +324,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     gofRes.p_value       = 1.0;
   }
 
-  gofRes.p_value = 
-  gof->p_value = gofRes.p_value;
+  //gofRes.p_value = 
+  if (gof->df <= 0.0){
+    gof->p_value = BMDS_MISSING;
+  } else {
+    gof->p_value = gofRes.p_value;
+  }
 
 
 
@@ -479,7 +483,6 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
 
-
   bmdsRes->validResult = false;
   anal->transform_dose = false;
 
@@ -497,24 +500,24 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     int ind;
     if (*restricted) {
       switch(anal->model){
-//        case cont_model::exp_3:
-//        case cont_model::exp_5:
-//          if (anal->prior[0] == 0){   //checks if frequentist model
-//            if(anal->isIncreasing){
-//              if (anal->disttype == distribution::normal_ncv){
-//                anal->prior[20] = 0.0;  //c min
-//              } else {
-//                anal->prior[17] = 0.0;  //c min
-//              }
-//            } else {
-//              if (anal->disttype == distribution::normal_ncv){
-//                anal->prior[26] = 0.0;  //c max
-//              } else {
-//                anal->prior[22] = 0.0;  //c max
-//              }
-//            }
-//          }
-//          break;
+        case cont_model::exp_3:
+        case cont_model::exp_5:
+          if (anal->prior[0] == 0){   //checks if frequentist model
+            if(anal->isIncreasing){
+              if (anal->disttype == distribution::normal_ncv){
+                anal->prior[20] = 0.0;  //c min
+              } else {
+                anal->prior[17] = 0.0;  //c min
+              }
+            } else {
+              if (anal->disttype == distribution::normal_ncv){
+                anal->prior[26] = 0.0;  //c max
+              } else {
+                anal->prior[22] = 0.0;  //c max
+              }
+            }
+          }
+          break;
         case cont_model::polynomial:
           if(anal->prior[0] == 0){  //checks if frequentist model
             int numRows = 2+anal->degree;
@@ -1026,6 +1029,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
   TOI->pVal[3] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
+  //DOF check for test 4
+  if (TOI->DF[3] <= 0) {
+     TOI->pVal[3] = BMDS_MISSING;
+  }
 }
 
 void determineAdvDir(struct continuous_analysis *CA){
