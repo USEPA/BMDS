@@ -29,6 +29,7 @@ RUN cd /app && \
     ./create_dll_compile.bash && \
     cd /BMD_DLL_COMPILE && \
     make -j4 && \
+    strip --strip-all ./.libs/libDRBMD.so.0.0.0 && \
     make install && \
     python /app/dll/python/dll_test.py
 
