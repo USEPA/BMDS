@@ -9,7 +9,7 @@ RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz &&
     wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
     \
     tar -xvf v2.7.1.tar.gz && \
-    cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install && \
+    cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install && cd / \
     \
     tar -xvf eigen-3.4.0.tar.gz && \
     cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd / && \
