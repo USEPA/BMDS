@@ -5,16 +5,16 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update -y && \
     apt-get install -y automake build-essential libtool wget make cmake libgslcblas0 libgsl-dev
 
-RUN wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
-    wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
+RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
+    wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
     \
     tar -xvf v2.7.1.tar.gz && \
-    cd nlopt-2.7.1/ && mkdir build && cd build && cmake .. && make install && cd / \
-    \
     tar -xvf eigen-3.4.0.tar.gz && \
-    cd eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && cd / && \
     \
-    rm -rf /v2.7.1.tar.gz /nlopt-2.7.1 /eigen-3.4.0.tar.gz /eigen-3.4.0
+    cd /nlopt-2.7.1 && mkdir build && cd build && cmake .. && make install && \
+    cd /eigen-3.4.0 && mkdir build && cd build && cmake .. && make install && \
+    \
+    cd / && rm -rf /v2.7.1.tar.gz /eigen-3.4.0.tar.gz /nlopt-2.7.1 /eigen-3.4.0
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
