@@ -324,8 +324,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     gofRes.p_value       = 1.0;
   }
 
-  gofRes.p_value = 
-  gof->p_value = gofRes.p_value;
+  //gofRes.p_value = 
+  if (gof->df <= 0.0){
+    gof->p_value = BMDS_MISSING;
+  } else {
+    gof->p_value = gofRes.p_value;
+  }
 
 
 
@@ -346,13 +350,18 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
 
-  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) {
+  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
+
+  bool goodCDF = false;
+  for (int i=0; i<res->dist_numE;i++){
+    if (res->bmd_dist[i] != BMDS_MISSING){
+      goodCDF = true;
+    }
+  }
+
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) {
     bmdsRes->validResult = true;
   }
- 
-  
-
-  clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
 }
 
@@ -474,7 +483,6 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
 
-
   bmdsRes->validResult = false;
   anal->transform_dose = false;
 
@@ -537,21 +545,21 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 //            anal->prior[ind] = 0.0;  //alpha min or max
           }
           break;
-        case cont_model::hill:
-          if (anal->isIncreasing){
-             if (anal->disttype == distribution::normal_ncv){
-                anal->prior[20] = 0.0;
-             } else {
-                anal->prior[17] = 0.0;
-             }
-          } else {
-             if (anal->disttype == distribution::normal_ncv){
-                anal->prior[26] = 0.0;
-             } else {
-                anal->prior[22] = 0.0;
-             }
-          }
-          break; 
+//        case cont_model::hill:
+//          if (anal->isIncreasing){
+//             if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[20] = 0.0;
+//             } else {
+//                anal->prior[17] = 0.0;
+//             }
+//          } else {
+//             if (anal->disttype == distribution::normal_ncv){
+//                anal->prior[26] = 0.0;
+//             } else {
+//                anal->prior[22] = 0.0;
+//             }
+//          }
+//          break; 
       }  //end switch
     } //end if restricted
   } //end if detectAdvDir
@@ -723,11 +731,19 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   bmdsRes->BMD = res->bmd;
 
 
-  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD)) { 
+  clean_cont_results(res, bmdsRes, aod, gof);
+
+  bool goodCDF = false;
+  for (int i=0; i<res->dist_numE;i++){
+    if (res->bmd_dist[i] != BMDS_MISSING){
+      goodCDF = true;
+    }
+  }   
+
+  if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) { 
     bmdsRes->validResult = true;
   }
 
-  clean_cont_results(res, bmdsRes, aod, gof);
   
 }
 
@@ -1013,6 +1029,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
   TOI->pVal[3] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
+  //DOF check for test 4
+  if (TOI->DF[3] <= 0) {
+     TOI->pVal[3] = BMDS_MISSING;
+  }
 }
 
 void determineAdvDir(struct continuous_analysis *CA){
