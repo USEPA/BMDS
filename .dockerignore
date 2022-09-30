@@ -1,0 +1,10 @@
+.git/
+.github/
+build/
+data/
+inst/
+man/
+R/
+tests/
+tools/
+vignettes/
