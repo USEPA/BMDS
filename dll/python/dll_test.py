@@ -46,10 +46,7 @@ class DichotomousAnalysis(NamedTuple):
             ("Y", ctypes.POINTER(ctypes.c_double)),  # observed +
             ("doses", ctypes.POINTER(ctypes.c_double)),
             ("n_group", ctypes.POINTER(ctypes.c_double)),  # size of the group
-            (
-                "prior",
-                ctypes.POINTER(ctypes.c_double),
-            ),  # a column order matrix parms X prior_cols
+            ("prior", ctypes.POINTER(ctypes.c_double)),  # a column order matrix parms X prior_cols
             ("BMD_type", ctypes.c_int),  # 1 = extra ; added otherwise
             ("BMR", ctypes.c_double),
             ("alpha", ctypes.c_double),  # alpha of the analysis
@@ -114,17 +111,11 @@ class DichotomousModelResult(NamedTuple):
             ("nparms", ctypes.c_int),  # number of parameters in the model
             ("parms", ctypes.POINTER(ctypes.c_double)),  # parameter estimate
             ("cov", ctypes.POINTER(ctypes.c_double)),  # covariance estimate
-            (
-                "max",
-                ctypes.c_double,
-            ),  # value of the likelihood/posterior at the maximum
+            ("max", ctypes.c_double),  # value of the likelihood/posterior at the maximum
             ("dist_numE", ctypes.c_int),  # number of entries in rows for the bmd_dist
             ("model_df", ctypes.c_double),  # Used model degrees of freedom
             ("total_df", ctypes.c_double),  # Total degrees of freedom
-            (
-                "bmd_dist",
-                ctypes.POINTER(ctypes.c_double),
-            ),  # bmd distribution (dist_numE x 2) matrix
+            ("bmd_dist", ctypes.POINTER(ctypes.c_double)),  # bmd distribution (dist_numE x 2)
             ("bmd", ctypes.c_double),  # the central estimate of the BMD
         ]
 

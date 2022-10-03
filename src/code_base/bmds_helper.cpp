@@ -54,6 +54,9 @@ void calcDichoAIC(struct dichotomous_analysis *anal, struct dichotomous_model_re
   if (freqModel)
      estParmCount = round(estParmCount);
   BMDSres->AIC = 2*(res->max + estParmCount);
+
+  free(lowerBound);
+  free(upperBound);
 }
 
 void calcContAIC(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDSres){
@@ -90,6 +93,8 @@ void calcContAIC(struct continuous_analysis *anal, struct continuous_model_resul
     BMDSres->AIC = 2*(res->max + estParmCount);
   
   //               //    BMDSres->AIC = -9998.0;
+  free(lowerBound);
+  free(upperBound);
   
 }
 
@@ -130,6 +135,9 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
   BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
 
+  free(quant);
+  free(val);
+
 }
 
 
@@ -137,55 +145,60 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
 
   int distSize = res->dist_numE*2;
 
-  double* quant = (double*)malloc(distSize / 2 * sizeof(double));
-  double* val = (double*)malloc(distSize / 2 * sizeof(double));
+  double* quantMA = (double*)malloc(distSize / 2 * sizeof(double));
+  double* valMA = (double*)malloc(distSize / 2 * sizeof(double));
 
   for (int i = 0; i < distSize/2; i++){
-    val[i] = res->bmd_dist[i];
+    valMA[i] = res->bmd_dist[i];
   }
   for (int i = distSize/2; i < distSize; i++){
-    quant[i-distSize/2] = res->bmd_dist[i];
+    quantMA[i-distSize/2] = res->bmd_dist[i];
   }
 
 //  calculate MA quantiles
-  BMDSres->BMD_MA = findQuantileVals(quant, val, distSize/2, 0.50);
-  BMDSres->BMDL_MA = findQuantileVals(quant, val, distSize/2, 0.05);
-  BMDSres->BMDU_MA = findQuantileVals(quant, val, distSize/2, 0.95);
+  BMDSres->BMD_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
+  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
+  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
 
 // calculate individual model quantiles
   for (int j=0; j<anal->nmodels; j++){
       for (int i = 0; i < distSize/2; i++){
-        val[i] = res->models[j]->bmd_dist[i];
+        valMA[i] = res->models[j]->bmd_dist[i];
       }
       for (int i = distSize/2; i < distSize; i++){
-        quant[i-distSize/2] = res->models[j]->bmd_dist[i];
+        quantMA[i-distSize/2] = res->models[j]->bmd_dist[i];
       }
-      BMDSres->BMD[j] = findQuantileVals(quant, val, distSize/2, 0.50);
-      BMDSres->BMDL[j] = findQuantileVals(quant, val, distSize/2, 0.05);
-      BMDSres->BMDU[j] = findQuantileVals(quant, val, distSize/2, 0.95);
+      BMDSres->BMD[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
+      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
+      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
   }
+  free(quantMA);
+  free(valMA);
 }
 
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDSres){
 
   int distSize = res->dist_numE*2;
 
-  double* quant = (double*)malloc(distSize / 2 * sizeof(double));
-  double* val = (double*)malloc(distSize / 2 * sizeof(double));
+  double* contVal = (double*)malloc(distSize / 2 * sizeof(double));
+  double* contQuant = (double*)malloc(distSize / 2 * sizeof(double));
 
   for (int i = 0; i < distSize/2; i++){
-    val[i] = res->bmd_dist[i];
+    contVal[i] = res->bmd_dist[i];
   }
+
   for (int i = distSize/2; i < distSize; i++){
-    quant[i-distSize/2] = res->bmd_dist[i];
+    contQuant[i-distSize/2] = res->bmd_dist[i];
   }
 
   calcContAIC(anal, res, BMDSres);
-  BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
+  BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
+  BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
+  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, 0.05);
+  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 0.95);
 
-  
+  free(contVal);
+  free(contQuant);
 }
 
 
@@ -489,7 +502,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
     if(anal->disttype == distribution::log_normal){
-      std::cout << "lognormal distribution is only compatible with exponential models\n";
       return; 
     }
   }
@@ -574,6 +586,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
 
   estimate_sm_laplace_cont(anal, res);
+
   //if not suff_stat, then convert
   struct continuous_analysis GOFanal;
   //arrays are needed for conversion to suff_stat
@@ -625,46 +638,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
 
-  //tmp fix for exp_3 parameter shift
-//  if (anal->model == cont_model::exp_3){
-//    struct continuous_model_result tmpRes;
-//    double* tmpParms = (double*)malloc(res->nparms * sizeof(double));
-//    double* tmpCov = (double*)malloc(res->nparms*res->nparms * sizeof(double));
-//    double* tmpBmd_dist = (double*)malloc(res->dist_numE*2 * sizeof(double));
-//
-//    tmpRes.model = res->model;
-//    tmpRes.dist = res->dist;
-//    tmpRes.nparms = res->nparms;
-//    tmpRes.max = res->max;
-//    tmpRes.dist_numE = res->dist_numE;
-//    tmpRes.model_df = res->model_df;
-//    tmpRes.total_df = res->total_df;
-//    tmpRes.bmd = res->bmd;
-//
-//    tmpRes.parms = tmpParms;
-//    for(int i=0; i<res->nparms; i++){
-//      tmpRes.parms[i] = res->parms[i]; 
-//    }
-//    //shift all parms after b to higher pos
-//    for(int i=res->nparms-1; i>1; i--){
-//      tmpRes.parms[i] = tmpRes.parms[i-1];
-//    }
-//
-//    tmpRes.cov = tmpCov;
-//    for(int i=0; i<res->nparms*res->nparms; i++){
-//       tmpRes.cov[i] = res->cov[i];
-//    }
-//    tmpRes.bmd_dist = tmpBmd_dist;
-//    for(int i=0; i<res->dist_numE*2; i++){
-//      tmpRes.bmd_dist[i] = res->bmd_dist[i];
-//    }
-//
-//
-//    continuous_expectation(&GOFanal, &tmpRes, &GOFres);
-//  } else {
     continuous_expectation(&GOFanal, res, &GOFres);
-//  }
- 
 
   for (int i=0; i<GOFanal.n; i++){
 	gof->dose[i] = GOFanal.doses[i];
@@ -710,7 +684,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
 
   collect_cont_bmd_values(anal, res, bmdsRes);
-  
+ 
   calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
 
   rescale_contParms(anal, res->parms); 
@@ -743,6 +717,16 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) { 
     bmdsRes->validResult = true;
   }
+ // //compute confidence number
+ // std::cout<<"cov: " << cov << std::endl;
+ // Eigen::VectorXcd eivals = cov.eigenvalues();
+ // std::cout << "Eigenvalues are: " << std::endl << eivals << std::endl;
+ // Eigen::VectorXd eVals = eivals.real();
+ // double min = *std::min_element(std::begin(eVals.array()), std::end(eVals.array()));
+ // double max = *std::max_element(std::begin(eVals.array()), std::end(eVals.array()));
+ // std::cout << "Min: " << min << std::endl;
+ // std::cout << "Max: " << max << std::endl;
+ // std::cout << "Condition number: " << max/min << std::endl;
 
   
 }
@@ -927,10 +911,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
   if (CA->disttype == distribution::log_normal) {
     double tmp = 0;
-      std::cout<<"lognormal addConst calcs"<<std::endl;
-      for (int i=0; i<CA->n;i++){
-         std::cout<<"i:"<<i<<", Y:"<<CA->Y[i]<<std::endl;
-      }
     if (CA->suff_stat){
        for (int i=0; i<CA->n;i++){
           tmp += (log(CA->Y[i])-log(1+pow((CA->sd[i]/CA->Y[i]),2))/2)*CA->n_group[i];
@@ -1041,15 +1021,15 @@ void determineAdvDir(struct continuous_analysis *CA){
 
   struct continuous_analysis CAnew;
   //allocate memory for individual size.  Will not use entire array for summary data.
-  double* doses = (double*)malloc(CA->n * sizeof(double));
-  double* means = (double*)malloc(CA->n * sizeof(double));
-  double* n_group = (double*)malloc(CA->n * sizeof(double));
-  double* sd = (double*)malloc(CA->n * sizeof(double));
+  double* tmpD = (double*)malloc(CA->n * sizeof(double));
+  double* tmpY = (double*)malloc(CA->n * sizeof(double));
+  double* tmpN = (double*)malloc(CA->n * sizeof(double));
+  double* tmpSD = (double*)malloc(CA->n * sizeof(double));
  
-  CAnew.doses = doses;
-  CAnew.Y = means;
-  CAnew.n_group = n_group;
-  CAnew.sd = sd;
+  CAnew.doses = tmpD;
+  CAnew.Y = tmpY;
+  CAnew.n_group = tmpN;
+  CAnew.sd = tmpSD;
 
   if(!CA->suff_stat){
     bmdsConvertSStat(CA, &CAnew,true);
@@ -1092,7 +1072,11 @@ void determineAdvDir(struct continuous_analysis *CA){
   } else {
     CA->isIncreasing = false;
   }
-
+  
+  free(tmpD);
+  free(tmpY);
+  free(tmpN);
+  free(tmpSD);
 }
 
 
