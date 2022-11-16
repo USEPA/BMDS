@@ -1,0 +1,40 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ["3.10"]
+        os: ["ubuntu-22.04"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -U pip wheel
+          pip install -r requirements_dev.txt
+      - name: Check linting
+        run: |
+          make lint
+      - name: Test with pytest
+        run: |
+          make test
+      - name: Build a wheel
+        run: |
+          make build
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheel
+          path: dist/*.whl

@@ -1,0 +1,38 @@
+# BMDS
+
+TODO - add general notes on BMDS
+
+Disclaimer: The United States Government project code is provided on an "as is" basis and the user assumes responsibility for its use. The United States Government has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the United States Government. The NIH or EPA seal and logo shall not be used in any manner to imply endorsement of any commercial product or activity by NIH or EPA or the United States Government.
+
+## ToxicR
+
+## pybmds
+
+### Developer setup
+
+Make sure you have python 3.10 or higher available on your path.
+
+```bash
+# clone project
+git clone git@github.com:USEPA/bmds.git
+cd bmds
+
+# create virtual environment and activate
+python -m venv venv --prompt pybmds
+source venv/bin/activate  # or venv\Scripts\activate on windows.
+
+# install packages
+python -m pip install -U pip
+python -m pip install -r requirements_dev.txt
+
+# test local install
+pybmds hello
+
+# these should work on mac/linux/windows
+make test   # run tests
+make lint   # identify formatting errors
+make format  # fix formatting errors when possible
+make build  # build a python wheel
+```
+
+Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.

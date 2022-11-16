@@ -1,0 +1,39 @@
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.tox
+  | _build
+  | bin
+  | data
+  | dll
+  | docs
+  | epa
+  | notebooks
+  | venv
+)/
+'''
+
+[tool.coverage.run]
+omit = [
+  "./build/",
+  "./scripts/private/*",
+  "./tests/*",
+  "./venv/*"
+]
+
+[tool.isort]
+atomic = true
+include_trailing_comma = true
+known_first_party = ["pybmds"]
+line_length = 100
+multi_line_output = 3
+skip = ["build/", "scripts/private/", "venv/"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests/pybmds"
+]
