@@ -1,4 +1,4 @@
-.PHONY: clean lint format test build
+.PHONY: clean lint format test coverage build
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -20,14 +20,19 @@ clean: ## remove build artifacts
 	@rm -rf dist/
 
 lint:  ## Check for python formatting issues via black & flake8
-	@black . --check && flake8 .
+	@black src/pybmds tests --check && flake8 src/pybmds tests
 
 format:  ## Modify python code using black & show flake8 issues
-	@black . && isort . && flake8 .
+	@black src/pybmds tests && isort src/pybmds tests && flake8 src/pybmds tests
 
-test:
+test: ## Run unit tests
 	@py.test
 
-build: clean ## build wheel package
+coverage: ## Generate coverage report
+	@coverage run -m pytest
+	@coverage html
+	@open htmlcov/index.html
+
+build: clean ## Build wheel package
 	@python setup.py bdist_wheel
 	@ls -l dist

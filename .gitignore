@@ -23,7 +23,9 @@ create_dll_compile.bash
 .pytest_cache/
 .vscode/
 dist/
+htmlcov/
 venv/
 *.log
 *.py[cod]
+.coverage
 .env

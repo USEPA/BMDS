@@ -28,11 +28,16 @@ python -m pip install -r requirements_dev.txt
 # test local install
 pybmds hello
 
-# these should work on mac/linux/windows
-make test   # run tests
-make lint   # identify formatting errors
-make format  # fix formatting errors when possible
-make build  # build a python wheel
+# code formatting
+make lint      # identify formatting errors
+make format    # fix formatting errors when possible
+
+# testing
+make test      # run tests
+make coverage  # show test coverage
+
+# build
+make build     # build a python wheel
 ```
 
 Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.
