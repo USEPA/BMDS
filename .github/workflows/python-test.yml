@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+      - release
+    tags:
+      - 202*.*
 
 jobs:
   test:
@@ -37,11 +40,3 @@ jobs:
       - name: Test with pytest
         run: |
           make test
-      - name: Build a wheel
-        run: |
-          make build
-      - name: Upload wheel
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheel
-          path: dist/*.whl

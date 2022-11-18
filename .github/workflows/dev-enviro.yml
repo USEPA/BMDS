@@ -39,4 +39,4 @@ jobs:
           make format
           make test
           make coverage
-          make build
+          # make build  # skip this one
