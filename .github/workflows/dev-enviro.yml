@@ -1,11 +1,10 @@
-# test makefile commands on linux and windows
-name: dev-enviro
+name: development environment checks
 
 on:
-  pull_request:
+  # pull_request:
   push:
     branches:
-      - main
+      - manual-only
 
 jobs:
   test:
