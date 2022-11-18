@@ -1,10 +1,7 @@
 name: development environment checks
 
 on:
-  # pull_request:
-  push:
-    branches:
-      - manual-only
+  workflow_dispatch:
 
 jobs:
   test:
@@ -38,4 +35,4 @@ jobs:
           make format
           make test
           make coverage
-          # make build  # skip this one
+          make build

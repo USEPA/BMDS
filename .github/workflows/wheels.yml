@@ -2,6 +2,7 @@ name: Build wheels
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -14,6 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
+        # os: [ubuntu-22.04, windows-2022, macos-12]
     steps:
       - uses: actions/checkout@v3
       - name: Build wheels
