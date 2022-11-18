@@ -1,3 +1,10 @@
+[build-system]
+requires = [
+    "setuptools>=65.5.1",
+    "pybind11>=2.10.1",
+]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 100
 target-version = ['py310']
@@ -19,6 +26,10 @@ include = '\.pyi?$'
 )/
 '''
 
+[tool.cibuildwheel]
+test-requires = "pytest"
+test-command = "pytest {project}/tests"
+
 [tool.coverage.run]
 include = [
   "src/pybmds/*"
@@ -38,7 +49,5 @@ skip = [
 skip_gitignore = true
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "src"
-]
+pythonpath = ["src"]
 testpaths = "tests"

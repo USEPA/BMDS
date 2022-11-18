@@ -1,6 +1,12 @@
 import pytest
 
-from pybmds.work import super_add
+from pybmds.work import bottles, super_add
+
+
+def test_bottles(capsys):
+    bottles(num=2, beverage="coke")
+    captured = capsys.readouterr()
+    assert "2 bottles of coke on the wall" in captured.out
 
 
 def test_super_add():
