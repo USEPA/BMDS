@@ -33,7 +33,6 @@ goto :eof
 :coverage
 coverage run -m pytest
 coverage html
-echo "report in htmlcov/index.html"
 goto :eof
 
 :build

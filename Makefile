@@ -31,7 +31,6 @@ test: ## Run unit tests
 coverage: ## Generate coverage report
 	@coverage run -m pytest
 	@coverage html
-	@open htmlcov/index.html
 
 build: clean ## Build wheel package
 	@python setup.py bdist_wheel
