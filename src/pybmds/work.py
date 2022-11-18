@@ -3,6 +3,8 @@ from random import random
 
 import typer
 
+from .bleep import add
+
 
 def bottles(num: int, beverage: str):
     for i in range(num, 0, -1):
@@ -17,3 +19,7 @@ def bottles(num: int, beverage: str):
 def super_add(a: int, b: int) -> int:
     # a silly function for an example unit-test
     return a + b
+
+
+def double_add(a: int, b: int) -> int:
+    return add(a, b) * 2

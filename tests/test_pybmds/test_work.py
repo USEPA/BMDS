@@ -1,6 +1,6 @@
 import pytest
 
-from pybmds.work import bottles, super_add
+from pybmds.work import bottles, double_add, super_add
 
 
 def test_bottles(capsys):
@@ -16,3 +16,7 @@ def test_super_add():
     # test unexpected
     with pytest.raises(TypeError):
         super_add(2, "skunk")
+
+
+def test_double_add():
+    assert double_add(2, 2) == 8
