@@ -28,7 +28,7 @@ include = '\.pyi?$'
 
 [tool.cibuildwheel]
 test-requires = "pytest"
-test-command = "pytest {project}/tests"
+test-command = "ls -laht /project/src/pybmds/ && pytest {project}/tests/test_pybmds"
 
 [tool.coverage.run]
 include = [
