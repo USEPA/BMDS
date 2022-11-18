@@ -1,11 +1,11 @@
 name: Build python packages
 
 on:
-  pull_request:
   workflow_dispatch:
   push:
     branches:
       - main
+    tags:
 
 jobs:
 

@@ -2,6 +2,9 @@ name: Developer environment
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   test:
