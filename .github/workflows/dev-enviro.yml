@@ -1,4 +1,4 @@
-name: development environment checks
+name: Developer environment
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: ["3.10"]
-        os: ["ubuntu-22.04", "windows-2022"]
+        os: [ubuntu-22.04, windows-2022]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
