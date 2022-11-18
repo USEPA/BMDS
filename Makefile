@@ -20,10 +20,10 @@ clean: ## remove build artifacts
 	@rm -rf dist/
 
 lint:  ## Check for python formatting issues via black & flake8
-	@black src/pybmds tests --check && flake8 src/pybmds tests
+	@black src/pybmds tests --check && flake8 ./src/pybmds ./tests
 
 format:  ## Modify python code using black & show flake8 issues
-	@black src/pybmds tests && isort src/pybmds tests && flake8 src/pybmds tests
+	@black src/pybmds tests && isort src/pybmds tests && flake8 ./src/pybmds ./tests
 
 test: ## Run unit tests
 	@py.test
