@@ -49,5 +49,4 @@ skip = [
 skip_gitignore = true
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = "tests/test_pybmds"
