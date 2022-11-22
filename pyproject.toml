@@ -1,0 +1,52 @@
+[build-system]
+requires = [
+    "setuptools>=65.5.1",
+    "pybind11>=2.10.1",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+--extend-exclude= '''
+/(
+  | data
+  | dll
+  | epa
+  | inst
+  | man
+  | R
+  | src/code_base
+  | src/include
+  | src/polyK
+  | tools
+  | vendor
+  | vignettes
+)/
+'''
+
+[tool.cibuildwheel]
+test-requires = "pytest"
+test-command = "pytest {project}/tests"
+
+[tool.coverage.run]
+include = [
+  "src/pybmds/*"
+]
+
+[tool.isort]
+atomic = true
+include_trailing_comma = true
+known_first_party = ["pybmds"]
+line_length = 100
+multi_line_output = 3
+skip = [
+  "R/",
+  "tests/testthat/",
+  "venv/"
+]
+skip_gitignore = true
+
+[tool.pytest.ini_options]
+testpaths = "tests/test_pybmds"

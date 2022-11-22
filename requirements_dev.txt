@@ -1,0 +1,19 @@
+# build
+wheel==0.38.4
+build==0.9.0
+cibuildwheel==2.11.2
+pybind11==2.10.1
+setuptools==65.5.1
+
+# tests
+coverage==6.5.0
+pytest==7.2.0
+
+# lint and formatting tools
+black==22.10.0
+flake8==4.0.1
+flake8-isort==4.1.1
+isort==5.10.1
+
+# install package in editable mode
+-e .
