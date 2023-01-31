@@ -849,7 +849,7 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
   double dev;
   double df;
 
-  bmdsAOD->devRed = dev = 2* (bmdsAOD->fittedLL - bmdsAOD->redLL);
+  bmdsAOD->devRed = dev = 2* (bmdsAOD->fullLL - bmdsAOD->redLL);
   bmdsAOD->dfRed = df = DA->n-1;
   if (dev < 0 || df < 0) {
     bmdsAOD->pvRed = BMDS_MISSING;
