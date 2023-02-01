@@ -39,7 +39,7 @@ package:
 
     # copy
     mkdir -p $CI_PROJECT_DIR/libs
-    cp $CI_PROJECT_DIR/BMD_DLL_COMPILE/.libs/* ../bmds-core/libs
+    cp ./.libs/* $CI_PROJECT_DIR/libs
 
   artifacts:
     paths:
