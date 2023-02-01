@@ -1,4 +1,4 @@
-image: python:3.9-slim
+image: python:3.11-slim
 
 stages:
   - compile
@@ -13,8 +13,8 @@ package:
     apt-get install -y automake build-essential libtool make cmake libgslcblas0 libgsl-dev
 
     # build 3rd party
-    cp /builds/ord-heead/bmds/bmds-core/vendor/nlopt-2.7.1.tar.gz ~/nlopt-2.7.1.tar.gz
-    cp /builds/ord-heead/bmds/bmds-core/vendor/eigen-3.4.0.tar.gz ~/eigen-3.4.0.tar.gz
+    cp $CI_PROJECT_DIR/vendor/nlopt-2.7.1.tar.gz ~/nlopt-2.7.1.tar.gz
+    cp CI_PROJECT_DIR/vendor/eigen-3.4.0.tar.gz ~/eigen-3.4.0.tar.gz
     # untar
     cd ~
     tar -xvf ~/nlopt-2.7.1.tar.gz
@@ -27,7 +27,7 @@ package:
     rm -rf nlopt-2.7.1.tar.gz eigen-3.4.0.tar.gz nlopt-2.7.1 eigen-3.4.0
 
     # build bmds
-    cd /builds/ord-heead/bmds/bmds-core
+    cd $CI_PROJECT_DIR
     export "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH"
     mkdir -p ../BMD_DLL_COMPILE
     cp ./.gitlab/create_dll_compile.bash.template ./create_dll_compile.bash
@@ -38,8 +38,8 @@ package:
     strip --strip-all ./.libs/libDRBMD.so.0.0.0
 
     # copy
-    mkdir -p /builds/ord-heead/bmds/bmds-core/libs
-    cp /builds/ord-heead/bmds/BMD_DLL_COMPILE/.libs/* ../bmds-core/libs
+    mkdir -p $CI_PROJECT_DIR/libs
+    cp $CI_PROJECT_DIR/BMD_DLL_COMPILE/.libs/* ../bmds-core/libs
 
   artifacts:
     paths:

@@ -1,4 +1,4 @@
-FROM python:3.9-slim AS builder
+FROM python:3.11-slim AS builder
 
 ENV PYTHONUNBUFFERED 1
 
@@ -31,9 +31,9 @@ RUN cd /app && \
     make install && \
     python /app/dll/python/dll_test.py
 
-# -------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # copy outputs into clean docker build
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 COPY --from=builder /usr/local/lib/libDRBMD.* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libnlopt* /usr/local/lib/
