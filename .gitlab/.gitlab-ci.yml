@@ -14,7 +14,7 @@ package:
 
     # build 3rd party
     cp $CI_PROJECT_DIR/vendor/nlopt-2.7.1.tar.gz ~/nlopt-2.7.1.tar.gz
-    cp CI_PROJECT_DIR/vendor/eigen-3.4.0.tar.gz ~/eigen-3.4.0.tar.gz
+    cp $CI_PROJECT_DIR/vendor/eigen-3.4.0.tar.gz ~/eigen-3.4.0.tar.gz
     # untar
     cd ~
     tar -xvf ~/nlopt-2.7.1.tar.gz
