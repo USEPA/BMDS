@@ -14,3 +14,18 @@
 .Rhistory
 build/
 create_dll_compile.bash
+
+# python
+*.egg-info/
+.cache/
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+dist/
+htmlcov/
+venv/
+*.log
+*.py[cod]
+.coverage
+.env
