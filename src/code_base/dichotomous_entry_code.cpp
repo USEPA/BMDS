@@ -812,7 +812,8 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
      Eigen::MatrixXd expected = Y.col(1).array()*mean_d.array(); 
  
      Eigen::MatrixXd residual = Y.col(0) - expected; 
-     residual = residual.array()/sqrt(expected.array()); 
+     //residual = residual.array()/sqrt(expected.array()); 
+     residual = residual.array()/sqrt(expected.array()*(1.0-mean_d.array())); //modified to match BMDS 3.2 calculation
      Eigen::MatrixXd sqresid  = residual.array()*residual.array();
      Eigen::MatrixXd resultsTable(Y.rows(),5); 
      resultsTable << Y.col(0) , Y.col(1) , expected , residual, sqresid;
