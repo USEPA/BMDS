@@ -4,10 +4,10 @@ import ctypes
 import json
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, NamedTuple
 
 
-def _list_to_c(list: List[Any], ctype):
+def _list_to_c(list: list[Any], ctype):
     return (ctype * len(list))(*list)
 
 
@@ -26,10 +26,10 @@ class DichModel(IntEnum):
 class DichotomousAnalysis(NamedTuple):
     model: int
     n: int
-    Y: List[float]
-    doses: List[float]
-    n_group: List[float]
-    prior: List[float]
+    Y: list[float]
+    doses: list[float]
+    n_group: list[float]
+    prior: list[float]
     BMD_type: int
     BMR: float
     alpha: float
@@ -57,7 +57,7 @@ class DichotomousAnalysis(NamedTuple):
             ("prior_cols", ctypes.c_int),  # columns in the prior
         ]
 
-        def dict(self) -> Dict:
+        def dict(self) -> dict:
             return dict(
                 model=self.model,
                 n=self.n,
@@ -119,12 +119,12 @@ class DichotomousModelResult(NamedTuple):
             ("bmd", ctypes.c_double),  # the central estimate of the BMD
         ]
 
-        def dict(self) -> Dict:
+        def dict(self) -> dict:
             return dict(
                 model=self.model,
                 nparms=self.nparms,
                 parms=self.parms[: self.nparms],
-                cov=self.cov[: self.nparms ** 2],
+                cov=self.cov[: self.nparms**2],
                 max=self.max,
                 dist_numE=self.dist_numE,
                 model_df=self.model_df,
@@ -137,7 +137,7 @@ class DichotomousModelResult(NamedTuple):
             model=ctypes.c_int(self.model),
             nparms=ctypes.c_int(self.nparms),
             parms=_list_to_c([0] * self.nparms, ctypes.c_double),
-            cov=_list_to_c([0] * (self.nparms ** 2), ctypes.c_double),
+            cov=_list_to_c([0] * (self.nparms**2), ctypes.c_double),
             dist_numE=ctypes.c_int(self.dist_numE),
             bmd_dist=_list_to_c([0] * (self.dist_numE * 2), ctypes.c_double),
         )
@@ -170,21 +170,13 @@ def main():
         parms=parms,
         prior_cols=prior_cols,
     )
-    da_res = DichotomousModelResult(
-        model=DichModel.d_logistic.value, nparms=parms, dist_numE=200
-    )
+    da_res = DichotomousModelResult(model=DichModel.d_logistic.value, nparms=parms, dist_numE=200)
 
     da_struct = da.to_c()
     da_res_struct = da_res.to_c()
-    dll.estimate_sm_laplace_dicho(
-        ctypes.pointer(da_struct), ctypes.pointer(da_res_struct), True
-    )
+    dll.estimate_sm_laplace_dicho(ctypes.pointer(da_struct), ctypes.pointer(da_res_struct), True)
 
-    print(
-        json.dumps(
-            dict(inputs=da_struct.dict(), outputs=da_res_struct.dict()), indent=2
-        )
-    )
+    print(json.dumps(dict(inputs=da_struct.dict(), outputs=da_res_struct.dict()), indent=2))
 
 
 if __name__ == "__main__":
