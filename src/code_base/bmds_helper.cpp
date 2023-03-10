@@ -502,7 +502,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
     if(anal->disttype == distribution::log_normal){
-      std::cout << "lognormal distribution is only compatible with exponential models\n";
       return; 
     }
   }
