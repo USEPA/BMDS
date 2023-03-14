@@ -27,7 +27,7 @@
 const double BMDS_EPS = 1.0e-6;
 const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
-const char BMDS_VERSION[32] = "2023.03"; 
+const char BMDS_VERSION[32] = "2023.03.1"; 
 
 // BMDS helper structures
 #ifdef _WIN64
