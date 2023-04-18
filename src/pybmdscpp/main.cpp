@@ -1,3 +1,4 @@
+
 #include <pybind11/pybind11.h>
 
 #define STRINGIFY(x) #x
@@ -5,36 +6,46 @@
 
 namespace py = pybind11;
 
-void init_ex1(py::module_ &);
-void init_ex2(py::module_ &);
+//void init_ex1(py::module &);
+//void init_ex2(py::module &);
+void init_ex3(py::module &);
 
 
-// test_binary_operators
-enum Flags {
-    Read = 4,
-    Write = 2,
-    Execute = 1
-};
+//// test_binary_operators
+//enum Flags {
+//    Read = 4,
+//    Write = 2,
+//    Execute = 1
+//};
 
 
-PYBIND11_MODULE(bleep, m) {
-    m.doc() = "Simple c++ interface examples";
+//PYBIND11_MODULE(bleep, m) {
+//    m.doc() = "Simple c++ interface examples";
+//
+//    // functions
+//    init_ex1(m);
+//    init_ex2(m);
+//    init_ex3(m);
+//
+//    // enums
+//    py::enum_<Flags>(m, "Flags")
+//        .value("Read", Flags::Read)
+//        .value("Write", Flags::Write)
+//        .value("Execute", Flags::Execute)
+//        .export_values();
+//
+//    // pass data from python at build-time
+//    #ifdef VERSION_INFO
+//        m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+//    #else
+//        m.attr("__version__") = "dev";
+//    #endif
+//}
+
+PYBIND11_MODULE(RBMDS, m) {
+    m.doc() = "RBMDS c++ interface";
 
     // functions
-    init_ex1(m);
-    init_ex2(m);
+    init_ex3(m);
 
-    // enums
-    py::enum_<Flags>(m, "Flags")
-        .value("Read", Flags::Read)
-        .value("Write", Flags::Write)
-        .value("Execute", Flags::Execute)
-        .export_values();
-
-    // pass data from python at build-time
-    #ifdef VERSION_INFO
-        m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-    #else
-        m.attr("__version__") = "dev";
-    #endif
 }

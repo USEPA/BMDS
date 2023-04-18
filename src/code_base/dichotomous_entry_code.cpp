@@ -48,8 +48,8 @@ void bmd_range_find(dichotomousMA_result *res,
       
       // make sure we are not dealing with an infinite value
       // or not a number
-      if (!isnan(res->models[i]->bmd_dist[temp_idx]) && 
-          !isinf(res->models[i]->bmd_dist[temp_idx])){
+      if (!std::isnan(res->models[i]->bmd_dist[temp_idx]) && 
+          !std::isinf(res->models[i]->bmd_dist[temp_idx])){
           if ( res->models[i]->bmd_dist[temp_idx] > current_max){
             current_max = res->models[i]->bmd_dist[temp_idx]; 
           }
@@ -302,7 +302,6 @@ void estimate_sm_mcmc(dichotomous_analysis *DA,
 void estimate_sm_laplace(dichotomous_analysis *DA, 
                          dichotomous_model_result *res, 
                          bool do_a_rescale){
-  
   ///////////////////////////////////
   Eigen::MatrixXd Y(DA->n,2); 
   Eigen::MatrixXd D(DA->n,1); 
@@ -311,10 +310,8 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     Y(i,0) = DA->Y[i]; Y(i,1) = DA->n_group[i]; 
     D(i,0) = DA->doses[i]; 
   }
-  
   double  max_dose = D.maxCoeff(); 
   D = (1/max_dose) * D; 
-  
   for (int i = 0; i < DA->parms; i++){
     for (int j = 0; j < DA->prior_cols; j++){
       prior(i,j) = DA->prior[i + j*DA->parms]; 
@@ -328,11 +325,9 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
     fixedB.push_back(false);
     fixedV.push_back(0.0); 
   }
-  
   Eigen::MatrixXd Xd ;
   Eigen::MatrixXd cv_t; 
   Eigen::MatrixXd pr; 
-  
   
   switch ((dich_model)DA->model){
   case dich_model::d_hill:
@@ -440,7 +435,6 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
        res->model_df   = Xd.diagonal().array().sum();
     break; 
   case dich_model::d_weibull:
-    
     a =   bmd_analysis_DNC<dich_weibullModelNC,IDPrior> (Y,D,prior,
                                                          fixedB, fixedV, DA->degree,
                                                          DA->BMR, DA->BMD_type, 0.5*DA->alpha, 
@@ -448,13 +442,12 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
        Xd = X_gradient<dich_weibullModelNC>(a.MAP_ESTIMATE,Y,D); 
        cv_t = X_cov<dich_weibullModelNC>(a.MAP_ESTIMATE,Y,D); 
        pr   =  X_logPrior<IDPrior>(a.MAP_ESTIMATE,prior); 
-       pr   = Xd.transpose()*cv_t*Xd + pr; 
+       pr   = Xd.transpose()*cv_t*Xd + pr;
        Xd = Xd*pr.inverse()*Xd.transpose()*cv_t; 
        res->model_df   = Xd.diagonal().array().sum();
   default: 
     break; 
   }
-
   if (do_a_rescale){
       rescale_var_matrix(&a.COV,a.MAP_ESTIMATE,
                          (dich_model)DA->model,
@@ -464,7 +457,6 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
               max_dose);
      
   }
-
   transfer_dichotomous_model(a,res);
   res->bmd *= max_dose; 
   // rescale the BMD 
@@ -558,7 +550,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
   
     for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
       
-      if ( isnan(res->models[j]->bmd_dist[i])){
+      if ( std::isnan(res->models[j]->bmd_dist[i])){
         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
     } 
@@ -582,8 +574,8 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     std::vector<double> bmd;; 
     std::vector<double> prc;
     for (int m = 0; m < res->models[i]->dist_numE ; m++){
-      if (!isinf(res->models[i]->bmd_dist[m]) && 
-          !isnan(res->models[i]->bmd_dist[m]) ){
+      if (!std::isinf(res->models[i]->bmd_dist[m]) && 
+          !std::isnan(res->models[i]->bmd_dist[m]) ){
           // deal with numerical problems in the tails of the distribution
           if ( m > 0 ){
             if (res->models[i]->bmd_dist[m] <= res->models[i]->bmd_dist[m-1]){
@@ -608,7 +600,7 @@ void estimate_ma_MCMC(dichotomousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
+      prob += std::isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
     }
    // cout << prob << endl; 
     res->bmd_dist[i] = cbmd; 
@@ -699,7 +691,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
   for (int j = 0; j < MA->nmodels; j++){
     post_probs[j] = post_probs[j]/ norm_sum; 
     for (int  i = 0; i < res->models[j]->dist_numE; i ++ ){
-      if ( isnan(res->models[j]->bmd_dist[i])){
+      if ( std::isnan(res->models[j]->bmd_dist[i])){
         post_probs[j] = 0;    // if the cdf has nan in it then it needs a 0 posterior
       }  
     } 
@@ -723,8 +715,8 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     std::vector<double> bmd;; 
     std::vector<double> prc;
     for (int m = 0; m < res->models[i]->dist_numE ; m++){
-      if (!isinf(res->models[i]->bmd_dist[m]) && 
-          !isnan(res->models[i]->bmd_dist[m]) ){
+      if (!std::isinf(res->models[i]->bmd_dist[m]) && 
+          !std::isnan(res->models[i]->bmd_dist[m]) ){
           // deal with numerical problems in the tails
           if ( m > 0 ){
             if (res->models[i]->bmd_dist[m] <= res->models[i]->bmd_dist[m-1]){
@@ -751,7 +743,7 @@ void estimate_ma_laplace(dichotomousMA_analysis *MA,
     double prob = 0.0; 
     
     for (int j = 0; j < MA->nmodels; j++){
-      prob += isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
+      prob += std::isnan(model_cdfs[j].P(cbmd))?0.0:model_cdfs[j].P(cbmd)*post_probs[j]; 
     }
     res->bmd_dist[i] = cbmd; 
     res->bmd_dist[i + res->dist_numE]  = prob;
@@ -814,7 +806,6 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
      Eigen::MatrixXd residual = Y.col(0) - expected; 
      //residual = residual.array()/sqrt(expected.array());
      Eigen::MatrixXd SD = sqrt(expected.array()*(1.0-mean_d.array()));
-     std::cout<<"SD array: " << SD << std::endl;
      residual = (SD.array() > 0.0).select(residual.array()/SD.array(), 0.0); //modified to match BMDS 3.2 calculation
  
      Eigen::MatrixXd sqresid  = residual.array()*residual.array();
@@ -839,7 +830,6 @@ void compute_dichotomous_pearson_GOF(dichotomous_PGOF_data *data, dichotomous_PG
 void estimate_sm_laplace_dicho(dichotomous_analysis *DA ,
                          dichotomous_model_result *res,
                          bool do_a_rescale){
-
    estimate_sm_laplace(DA, res, do_a_rescale);
 
 }
@@ -875,7 +865,7 @@ Eigen::MatrixXd A1_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
   temp = log(temp.array()/(1-temp.array()));
   // check for P = 0 or P =1 i.e. Infinity
   for (int i = 0; i < temp.rows(); i++){
-    if ( isinf(temp(i,0))){
+    if ( std::isinf(temp(i,0))){
       if (temp(i,0) < 0){
         temp(i,0) = -17; 
       }else{
@@ -901,7 +891,7 @@ Eigen::MatrixXd A2_startingValues(Eigen::MatrixXd X, Eigen::MatrixXd Y){
   temp = log(temp.array()/(1-temp.array()));
   // check for P = 0 or P =1 i.e. Infinity
   for (int i = 0; i < temp.rows(); i++){
-    if ( isinf(temp(i,0))){
+    if ( std::isinf(temp(i,0))){
       if (temp(i,0) < 0){
         temp(i,0) = -17; 
       }else{

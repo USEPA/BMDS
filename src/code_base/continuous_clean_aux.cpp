@@ -23,7 +23,11 @@
  */
 // [[Rcpp::depends(RcppGSL)]]
 // [[Rcpp::depends(RcppEigen)]]
-
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #ifdef R_COMPILATION
 //necessary things to run in R    
   #include <RcppEigen.h>

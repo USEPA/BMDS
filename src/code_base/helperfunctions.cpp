@@ -1,4 +1,8 @@
-#include "stdafx.h"
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include <iostream>
 #include <cmath>
 #include <cfloat>
@@ -49,7 +53,7 @@ Eigen::MatrixXd convertresult_to_probs(Eigen::MatrixXd data) {
 	int numBad = 0;
 
 	for (int i = 0; i < result.rows(); i++) {
-		if (isnan(result(i, 0)) || isinf(result(i, 0))) {
+		if (std::isnan(result(i, 0)) || std::isinf(result(i, 0))) {
 			result(i, 2) = 77;
 			numBad++;
 		}

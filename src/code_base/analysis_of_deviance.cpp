@@ -19,6 +19,11 @@
  * 
  * 
  */
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include "bmd_calculate.h"
 #include "bmdStruct.h"
 

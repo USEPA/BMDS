@@ -8,7 +8,11 @@
 //
 //
 
-#include "stdafx.h" // Precompiled header - does nothing if building R version
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif // Precompiled header - does nothing if building R version
 #include "lognormalModels.h"
 
 #ifdef R_COMPILATION

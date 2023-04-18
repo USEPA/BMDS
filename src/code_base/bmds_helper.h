@@ -27,7 +27,8 @@
 const double BMDS_EPS = 1.0e-6;
 const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
-const char BMDS_VERSION[32] = "2023.03.1"; 
+//const char BMDS_VERSION[32] = "2023.03.1"; 
+extern std::string BMDS_VERSION;  // = "2023.03.1";
 
 // BMDS helper structures
 #ifdef _WIN64
@@ -179,8 +180,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
-void BMDS_ENTRY_API __stdcall version(char * versionStr);
+string BMDS_ENTRY_API __stdcall version();
 
+int BMDS_ENTRY_API __stdcall add2(int i, int j);
 
 #ifdef __cplusplus
 }

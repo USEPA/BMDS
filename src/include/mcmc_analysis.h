@@ -51,7 +51,13 @@
 #include "cBMDstatmod.h"
 #include "bmd_calculate.h"
 #include "mcmc_struct.h"
-#include <sys/time.h>
+
+#ifdef WIN32
+	#include <ctime>
+#else
+	#include <sys/time.h>
+#endif
+
 #include "bmdStruct.h"
 
 using namespace std;  
@@ -128,8 +134,8 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
  
         double t = model.prior_model.neg_log_prior(value);
  
-     if ( !isnan(t) &&
-		    	!isinf(t) ){
+     if ( !std::isnan(t) &&
+		    	!std::isinf(t) ){
         Eigen::MatrixXd a = MCMC_PROPOSAL(value,nSamples.col(i-1),cov);
         Eigen::MatrixXd b = MCMC_PROPOSAL(nSamples.col(i-1),value,cov);
         double numer = - model.negPenLike(value) + a(0,0);
@@ -138,7 +144,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   			double test = exp(numer - denom);
   			double rr = gsl_rng_uniform(r);
   		
-  			if (isnan(test)){
+  			if (std::isnan(test)){
   				test = 0.0; // no probability of making this jump
   			}
   
@@ -201,8 +207,15 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
   rVal.map_cov = model->varMatrix(oR.max_parms); 
   
   struct timeval tv; // Seed generation based on time
+  
+ 
+#ifdef WIN32
+  srand(time(0));
+  unsigned long mySeed = rand();
+#else
   gettimeofday(&tv,0);
   unsigned long mySeed = tv.tv_sec + tv.tv_usec;
+#endif
 
  
   int n = oR.max_parms.rows();
@@ -241,8 +254,8 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
     Eigen::MatrixXd value = nSamples.col(i) + nSamples.col(i-1);
     double t = model->prior_model.neg_log_prior(value);
 
-    if ( !isnan(t) &&
-         !isinf(t) ){
+    if ( !std::isnan(t) &&
+         !std::isinf(t) ){
       Eigen::MatrixXd a = MCMC_PROPOSAL(value,nSamples.col(i-1),cov);
       Eigen::MatrixXd b = MCMC_PROPOSAL(nSamples.col(i-1),value,cov);
       double numer = -model->negPenLike(value) +a(0,0);
@@ -250,7 +263,7 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR>  *model, int samples,
       double test = exp(numer - denom);
       double rr = gsl_rng_uniform(r);
       
-      if (isnan(test)){
+      if (std::isnan(test)){
         test = 0.0; // no probability of making this jump
                     // cout << i << endl; 
       }

@@ -10,7 +10,11 @@
 //
 #pragma once
 #include "log_likelihoods.h"
-#include "stdafx.h"
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 
 #ifndef binomialBMDH
 #define binomialBMDH

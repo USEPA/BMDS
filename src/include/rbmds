@@ -1,0 +1,7 @@
+#ifndef RBMDS_LIBRARY_H
+#define RBMDS_LIBRARY_H
+
+#include "../code_base/bmds_helper.h"
+#include "C:/Users/csimmo02/ExternalLibs/eigen-3.3.9"
+
+#endif

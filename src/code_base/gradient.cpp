@@ -1,4 +1,8 @@
-#include "stdafx.h"
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include <iostream>
 #include <cmath>
 #include <cfloat>

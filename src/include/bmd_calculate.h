@@ -381,7 +381,7 @@ bmd_analysis bmd_analysis_CNC(LL likelihood, PR prior,
 	}	
 
 	// compute the CDF for the BMD posterior approximation
-  if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
+  if (!std::isinf(BMD) && !std::isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 		&& result.rows() > 5 ) {
 		for (int i = 0; i < x.size(); i++) { x[i] = result(i, 0); y[i] = result(i, 1); }
 		bmd_cdf cdf(x, y);
@@ -579,7 +579,7 @@ bmd_analysis bmd_fast_BMD_cont(LL likelihood, PR prior,
     }
   
     for (int i = y.size() - 1; i >= 1; i--){
-      if (y[i] == y[i-1] || isinf(y[i]) ){
+      if (y[i] == y[i-1] || std::isinf(y[i]) ){
           auto p1 = std::next(x.begin(),i);
           auto p2 = std::next(y.begin(),i); 
           y.erase(p2); x.erase(p1); 
@@ -646,14 +646,11 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	LL      dichotimousM(Y, D, degree);
 	PR   	  model_prior(prior);
 
-	
   dBMDModel<LL, PR> model(dichotimousM, model_prior, fixedB, fixedV);
   signed int  flags = OPTIM_USE_GENETIC | OPTIM_USE_SUBPLX; 
 	optimizationResult oR = findMAP<LL, PR>(&model,flags);
-
   bmd_analysis rVal;
   double BMD = isExtra ? model.extra_riskBMDNC(BMR) : model.added_riskBMDNC(BMR);
-
 
 	Eigen::MatrixXd result; 
 	std::vector<double> x;
@@ -680,7 +677,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 		y.clear();
 		// fix the cdf so things don't implode
 		for (int i = 0; i < result.rows(); i++) { 
-		  if (!isnan(result(i, 0)) && !isinf(result(i, 0))){
+		  if (!std::isnan(result(i, 0)) && !std::isinf(result(i, 0))){
 		    y.push_back(result(i, 1)); 
 		    x.push_back(result(i, 0));
 		  } 
@@ -697,7 +694,7 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	  	
 	}	
 
-	if (!std::isinf(BMD) && !isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
+	if (!std::isinf(BMD) && !std::isnan(BMD) && BMD > 0  // flag numerical thins so it doesn't blow up. 
 	    && result.rows() > 5 ){
     
 		bmd_cdf cdf(x, y);
@@ -716,7 +713,6 @@ bmd_analysis bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::Matri
 	rVal.COV = model.varMatrix(oR.max_parms);
 	rVal.MAP_ESTIMATE = oR.max_parms; 
 	rVal.MAP = oR.functionV; 
-
 	return rVal; 
 }
 
