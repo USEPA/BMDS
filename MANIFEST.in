@@ -1,3 +1,2 @@
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
-graft /home/csimmo02/BMDS/RBMDS/libs/eigen-3.4.0

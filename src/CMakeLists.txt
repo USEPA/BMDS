@@ -4,36 +4,26 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_COMPILER "/usr/local/apps/gcc/9.1.0/bin/gcc")
-set(CMAKE_CXX_COMPILER "/usr/local/apps/gcc/9.1.0/bin/g++")
-set(PYTHON_LIBRARY_DIR "/home/csimmo02/BMDS/RBMDS/RBMDS_CMAKE/venv/Lib/site-packages")
+IF(DEFINED ENV{EIGEN_INCLUDE_DIR})
+  set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR})
+ENDIF()
+IF(DEFINED ENV{GSL_ROOT_DIR})
+  set(GSL_ROOT_DIR $ENV{GSL_ROOT_DIR})
+ENDIF()
+IF(DEFINED ENV{NLOPT_LIB_DIR})
+  set(NLOPT_LIB_DIR $ENV{NLOPT_LIB_DIR})
+ENDIF()
+IF(DEFINED ENV{CMAKE_C_COMPILER})
+  set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
+ENDIF()
+IF(DEFINED ENV{CMAKE_CXX_COMPILER})
+  set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+ENDIF()
 
 project(RBMDS VERSION 0.1.0)
 
-#Eigen include dir
-set(EXTERNAL_LIB_DIR "/home/csimmo02/BMDS/RBMDS/libs")
-set(EIGEN_INCLUDE_DIR ${EXTERNAL_LIB_DIR}/eigen-3.4.0)
-
-#GSL 
-#find_library(GSL_LIB gsl REQUIRED )
-#find_package(GSL REQUIRED HINTS /usr/local/apps/gsl-2.7)
-#set(GSL_INCLUDE_DIR ${EXTERNAL_LIB_DIR}/gsl-master/out/build/x64-Release)
-
-set(GSL_ROOT_DIR /usr/local/apps/gsl-2.7)
 find_package(GSL REQUIRED)
-
-#set(GSL_DIR /usr/local/apps/gsl-2.7)
-#set(GSL_INCLUDE_DIR ${GSL_DIR}/include)
-#set(GSL_LIB_DIR ${GSL_DIR}/lib)
-
-#NLOPT
-#find_library(NLOPT_LIB NLopt REQUIRED HINTS ${EXTERNAL_LIB_DIR}/nlopt-2.6.2)
-#set(NLOPT_INCLUDE_DIR ${EXTERNAL_LIB_DIR}/nlopt-2.6.2/out/build/x64-Debug ${EXTERNAL_LIB_DIR}/nlopt-2.6.2/src/api)
-#set(NLOPT_DIR ${EXTERNAL_LIB_DIR}/nlopt-2.6.2)
-#set(NLOPT_INCLUDE_DIR ${NLOPT_DIR}/include)
-#set(NLOPT_LIB_DIR ${NLOPT_DIR}/lib64)
-
-find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${EXTERNAL_LIB_DIR}/nlopt-2.6.2/lib64)
+find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_LIB_DIR})
 
 # Include dir
 #include_directories(${CMAKE_CURRENT_SOURCE_DIR}/build/Debug ${EIGEN_INCLUDE_DIR} ${GSL_INCLUDE_DIR} ${NLOPT_INCLUDE_DIR})
