@@ -3,7 +3,8 @@ from pybmds import bmdscore, __version__
 
 def test_version_consistency():
     # check that python and bmdscore versions are the expected value
-    assert __version__ == bmdscore.version() == "2023.10a1"
+    assert __version__ == "2023.10a1"
+    assert bmdscore.version() == "2023.10a1"
 
 
 def test_rbmds():
