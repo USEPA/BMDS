@@ -23,7 +23,7 @@ bool showResultsOverride = true;
 int main(void){
   test();
 
-//  runCompleteDichoAnalysis();
+  runCompleteDichoAnalysis();
 
 //  runDichoMA();
 
@@ -736,8 +736,9 @@ void runCompleteDichoAnalysis(){
 
 
   //parms array declared
-  // int numParms = sizeof(pr)/sizeof(pr[0])/prCols;
-  double parms[numParms];
+  //int numParms = sizeof(pr)/sizeof(pr[0])/prCols;
+  //double parms[numParms];
+  double* parms = new double[numParms];
 
   
   //declare analysis
@@ -769,18 +770,27 @@ void runCompleteDichoAnalysis(){
   res.dist_numE = 200;
   res.nparms = anal.parms;
 
-  double cov[numParms*numParms];
-  double bmd_dist[res.dist_numE*2];
+  //double cov[numParms*numParms];
+  //double bmd_dist[res.dist_numE*2];
+  double* cov = new double[numParms*numParms];
+  double* bmd_dist = new double[res.dist_numE*2];
+  
   res.cov   = cov;
   res.bmd_dist = bmd_dist;
 
   
   //struct dichotomous_PGOF_result gofRes;
   struct dichotomous_GOF gof;
-  double exp[anal.n];
-  double resid[anal.n];
-  double ebLower[anal.n];
-  double ebUpper[anal.n];
+  //double exp[anal.n];
+  //double resid[anal.n];
+  //double ebLower[anal.n];
+  //double ebUpper[anal.n];
+  
+  double* exp = new double[anal.n];
+  double* resid = new double[anal.n];
+  double* ebLower = new double[anal.n];
+  double* ebUpper = new double[anal.n];
+  
 
   gof.expected = exp;
   gof.residual = resid;
@@ -788,10 +798,18 @@ void runCompleteDichoAnalysis(){
   gof.ebUpper = ebUpper;
 
   struct BMDS_results bmdsRes;
-  bool bounded[anal.parms];
-  double stdErr[anal.parms];
-  double lowerConf[anal.parms];
-  double upperConf[anal.parms];
+  //bool bounded[anal.parms];
+  //double stdErr[anal.parms];
+  //double lowerConf[anal.parms];
+  //double upperConf[anal.parms];
+  
+  bool* bounded = new bool[anal.parms];
+  double* stdErr = new double[anal.parms];
+  double* lowerConf = new double[anal.parms];
+  double* upperConf = new double[anal.parms];
+  
+  
+  
   //set all parms as unbounded initially
   for (int i=0; i<anal.parms; i++){
      bounded[i] = false;
@@ -1246,9 +1264,11 @@ void runDichoMA(){
   ma_res.nmodels = numModels;
   ma_res.models = res;
   ma_res.dist_numE = dist_numE;
-  double post_probs[numModels];
+  //double post_probs[numModels];
+  double* post_probs = new double[numModels];
   ma_res.post_probs = post_probs;
-  double bmd_dist[dist_numE*2];
+  //double bmd_dist[dist_numE*2];
+  double* bmd_dist = new double[dist_numE*2];
    ma_res.bmd_dist = bmd_dist;
   
 
@@ -1262,11 +1282,17 @@ void runDichoMA(){
 
   struct BMDSMA_results bmdsRes;
 
-  double BMD[numModels];  
-  double BMDL[numModels];
-  double BMDU[numModels];
-  double ebLower[anal.n];
-  double ebUpper[anal.n];
+  //double BMD[numModels];  
+  //double BMDL[numModels];
+  //double BMDU[numModels];
+  //double ebLower[anal.n];
+  //double ebUpper[anal.n];
+  double* BMD = new double[numModels];  
+  double* BMDL = new double[numModels];
+  double* BMDU = new double[numModels];
+  double* ebLower = new double[anal.n];
+  double* ebUpper = new double[anal.n];
+  
   for (int i=0; i<numModels; i++){
     BMD[i] = -9999.0;
     BMDL[i] = -9999.0;
@@ -2847,7 +2873,8 @@ void runCompleteContAnalysis(){
                                                                                             
   //parms array declared
 //  int numParms = sizeof(pr)/sizeof(pr[0])/prCols;
-  double parms[numParms];
+  //double parms[numParms];
+  double* parms = new double[numParms];
 
   //declare analysis
   anal.Y = Y;
@@ -2877,17 +2904,23 @@ void runCompleteContAnalysis(){
   res.parms = parms;
   res.dist_numE = 100;
 
-  double cov[numParms*numParms];
-  double bmd_dist[res.dist_numE*2];
+  //double cov[numParms*numParms];
+  //double bmd_dist[res.dist_numE*2];
+  double* cov = new double[numParms*numParms];
+  double* bmd_dist = new double[res.dist_numE*2];
   res.cov   = cov;
   res.bmd_dist = bmd_dist;
  
 
   struct BMDS_results BMDSres;
-  bool bounded[anal.parms];
-  double stdErr[anal.parms];
-  double lowerConf[anal.parms];
-  double upperConf[anal.parms];
+  //bool bounded[anal.parms];
+  //double stdErr[anal.parms];
+  //double lowerConf[anal.parms];
+  //double upperConf[anal.parms];
+  bool* bounded = new bool[anal.parms];
+  double* stdErr = new double[anal.parms];
+  double* lowerConf = new double[anal.parms];
+  double* upperConf = new double[anal.parms];
   //set all parms as unbounded initially
   for (int i=0; i<anal.parms; i++){
      bounded[i] = false;
@@ -2922,17 +2955,29 @@ void runCompleteContAnalysis(){
   }
 
   printf("nGOF = %d\n",nGOF);
-  double doseGOF[nGOF];
-  double sizeGOF[nGOF];
-  double estMeanGOF[nGOF];
-  double calcMeanGOF[nGOF];
-  double obsMeanGOF[nGOF];
-  double estSDGOF[nGOF];
-  double calcSDGOF[nGOF];
-  double obsSDGOF[nGOF];
-  double resGOF[nGOF];
-  double ebLower[nGOF];
-  double ebUpper[nGOF];
+  //double doseGOF[nGOF];
+  //double sizeGOF[nGOF];
+  //double estMeanGOF[nGOF];
+  //double calcMeanGOF[nGOF];
+  //double obsMeanGOF[nGOF];
+  //double estSDGOF[nGOF];
+  //double calcSDGOF[nGOF];
+  //double obsSDGOF[nGOF];
+  //double resGOF[nGOF];
+  //double ebLower[nGOF];
+  //double ebUpper[nGOF];
+  
+  double* doseGOF = new double[nGOF];
+  double* sizeGOF = new double[nGOF];
+  double* estMeanGOF = new double[nGOF];
+  double* calcMeanGOF = new double[nGOF];
+  double* obsMeanGOF = new double[nGOF];
+  double* estSDGOF = new double[nGOF];
+  double* calcSDGOF = new double[nGOF];
+  double* obsSDGOF = new double[nGOF];
+  double* resGOF = new double[nGOF];
+  double* ebLower = new double[nGOF];
+  double* ebUpper = new double[nGOF];
   gof.dose = doseGOF;
   gof.size = sizeGOF;
   gof.estMean = estMeanGOF;

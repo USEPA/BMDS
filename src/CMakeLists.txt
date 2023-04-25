@@ -4,14 +4,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-IF(DEFINED ENV{EIGEN_INCLUDE_DIR})
-  set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR})
+IF(DEFINED ENV{EIGEN_DIR})
+  set(EIGEN_DIR $ENV{EIGEN_DIR})
 ENDIF()
-IF(DEFINED ENV{GSL_ROOT_DIR})
-  set(GSL_ROOT_DIR $ENV{GSL_ROOT_DIR})
+IF(DEFINED ENV{GSL_DIR})
+  set(GSL_DIR $ENV{GSL_DIR})
+  IF(NOT WIN32)
+    set(GSL_ROOT_DIR $ENV{GSL_DIR})
+  ENDIF()
 ENDIF()
-IF(DEFINED ENV{NLOPT_LIB_DIR})
-  set(NLOPT_LIB_DIR $ENV{NLOPT_LIB_DIR})
+IF(DEFINED ENV{NLOPT_DIR})
+  set(NLOPT_DIR $ENV{NLOPT_DIR})
 ENDIF()
 IF(DEFINED ENV{CMAKE_C_COMPILER})
   set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
@@ -20,14 +23,19 @@ IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
 ENDIF()
 
+
 project(RBMDS VERSION 0.1.0)
 
-find_package(GSL REQUIRED)
-find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_LIB_DIR})
+#Find libraries
+IF(WIN32)
+  find_library(GSL_LIB gsl REQUIRED HINTS ${GSL_DIR})
+ELSE()
+  find_package(GSL REQUIRED)
+ENDIF()
+find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 # Include dir
-#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/build/Debug ${EIGEN_INCLUDE_DIR} ${GSL_INCLUDE_DIR} ${NLOPT_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT}/include ${EIGEN_INCLUDE_DIR} ${GSL_INCLUDE_DIR} $NLOPT_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR})
 
 #lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
@@ -129,11 +137,15 @@ set(SOURCE_FILES
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 
 # Add library
-add_library(RBMDS STATIC ${SOURCE_FILES})
-
-# Libs
-#target_link_libraries(RBMDS PRIVATE ${GSL_LIB} ${NLOPT_LIB})
-target_link_libraries(RBMDS PRIVATE GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+IF(WIN32)
+	#Windows build
+	add_library(RBMDS SHARED ${SOURCE_FILES})
+	target_link_libraries(RBMDS PRIVATE ${GSL_LIB} ${NLOPT_LIB})
+ELSE()
+	#Linux or MacOS
+	add_library(RBMDS STATIC ${SOURCE_FILES})
+	target_link_libraries(RBMDS PRIVATE GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+ENDIF(WIN32)
 
 # Include directories
 target_include_directories(RBMDS PRIVATE include)

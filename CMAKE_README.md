@@ -23,13 +23,13 @@ Visual Studio 19 or greater
 
 | Variable Name | Desc | Ex |
 |:----------|:-------|:----|
-|PYTHON_LIBRARY_DIR|path to python site-packages directory| /home/username/venv/Lib/site-packages|
-|EIGEN_INCLUDE_DIR|path to eigen directory|/home/username/libs/eigen-3.4.0|
-|GSL_ROOT_DIR|path to GSL directory|/usr/local/apps/gsl-2.7|
-|NLOPT_LIB_DIR|path to nlopt lib directory|/home/username/libs/nlopt-2.6.2/lib64|
+|EIGEN_DIR|path to eigen directory|/home/username/libs/eigen-3.4.0|
+|GSL_DIR|path to GSL directory|/usr/local/apps/gsl-2.7|
+|NLOPT_DIR|path to nlopt lib directory|/home/username/libs/nlopt-2.6.2/lib64|
 |CMAKE_C_COMPILER|path to c compiler|/usr/local/apps/gcc/9.1.0/bin/gcc|
 |CMAKE_CXX_COMPILER|path to c++ compiler|/usr/local/apps/gcc/9.1.0/bin/g++|
 |PYTHON_EXECUTABLE|path to python executable |/home/username/mambaforge/bin/python|
+|PYTHON_LIBRARY_DIR|path to python site-packages directory| /home/username/venv/Lib/site-packages|
 
 ## Build process
 
@@ -47,7 +47,8 @@ cd src
 mkdir build
 cd build
 cmake ..
-make
+make   (for Linux/Mac)
+cmake --build . --config Release  (for Windows)
 ```
 
 ### build c++ test
@@ -57,7 +58,8 @@ cd src/tests
 mkdir build
 cd build
 cmake ..
-make
+make   (for Linux/Mac)
+cmake --build . --config Release  (for Windows)
 ```
 
 ### build python shared object
@@ -66,10 +68,11 @@ make
 mkdir build
 cd build
 cmake ..
-make
+make   (for Linux/Mac)
+cmake --build . --config Release  (for Windows)
 ```
 
 ### build pybmds
-follow instructions in README.md
+follow instructions in [README.md](README.md)
 
 

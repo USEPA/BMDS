@@ -20,18 +20,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-IF(DEFINED ENV{PYTHON_LIBRARY_DIR})
-  set(PYTHON_LIBRARY_DIR $ENV{PYTHON_LIBRARY_DIR})
-ENDIF()
 
-IF(DEFINED ENV{EIGEN_INCLUDE_DIR})
-  set(EIGEN_INCLUDE_DIR $ENV{EIGEN_INCLUDE_DIR})
+IF(DEFINED ENV{EIGEN_DIR})
+  set(EIGEN_DIR $ENV{EIGEN_DIR})
 ENDIF()
-#IF(DEFINED ENV{GSL_ROOT_DIR})
-#  set(GSL_ROOT_DIR $ENV{GSL_ROOT_DIR})
-#ENDIF()
-IF(DEFINED ENV{NLOPT_LIB_DIR})
-  set(NLOPT_LIB_DIR $ENV{NLOPT_LIB_DIR})
+IF(DEFINED ENV{GSL_DIR})
+  set(GSL_DIR $ENV{GSL_DIR})
+  IF(NOT WIN32)
+    set(GSL_ROOT_DIR $ENV{GSL_DIR})
+  ENDIF()
+ENDIF()
+IF(DEFINED ENV{NLOPT_DIR})
+  set(NLOPT_DIR $ENV{NLOPT_DIR})
 ENDIF()
 IF(DEFINED ENV{CMAKE_C_COMPILER})
   set(CMAKE_C_COMPILER $ENV{CMAKE_C_COMPILER})
@@ -39,20 +39,33 @@ ENDIF()
 IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
 ENDIF()
+IF(DEFINED ENV{PYTHON_LIBRARY_DIR})
+  set(PYTHON_LIBRARY_DIR $ENV{PYTHON_LIBRARY_DIR})
+ENDIF()
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
+#if(NOT CMAKE_BUILD_TYPE)
+#  set(CMAKE_BUILD_TYPE Release)
+#endif()
 
-set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+#set(CMAKE_CXX_FLAGS "-O3")
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+IF(WIN32)
+  find_library(GSL_LIB gsl REQUIRED HINTS ${GSL_DIR})
+ELSE()
+  find_package(GSL REQUIRED)
+ENDIF()
+find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
+
+
 
 project(RBMDS)
 
-include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_INCLUDE_DIR})
+include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR} ${GSL_DIR})
+link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
 file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/code_base/*.cpp")
-file (GLOB HEADER_FILES "src/include/*.h" "src/code_base/*.h" ${EIGEN_INCLUDE_DIR})
+file (GLOB HEADER_FILES "src/include/*.h" "src/code_base/*.h" ${EIGEN_DIR})
 file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 
 # Set up such that XCode organizes the files
@@ -65,7 +78,11 @@ pybind11_add_module(RBMDS
 	${PYTHON_FILES}
 )
 
-target_link_libraries(RBMDS PUBLIC)
+IF(WIN32)
+	target_link_libraries(RBMDS PUBLIC ${GSL_LIB} ${NLOPT_LIB})
+ELSE()
+	target_link_libraries(RBMDS PUBLIC GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+ENDIF(WIN32)
 
 install(TARGETS RBMDS
   COMPONENT python
