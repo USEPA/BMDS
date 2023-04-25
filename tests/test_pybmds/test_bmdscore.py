@@ -1,4 +1,4 @@
-from pybmds import bmdscore, __version__
+from pybmds import __version__, bmdscore
 
 
 def test_version_consistency():
