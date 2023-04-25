@@ -1,4 +1,8 @@
-#include "stdafx.h" // Precompiled header - does nothing if building R version
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif // Precompiled header - does nothing if building R version
 
 #ifdef R_COMPILATION
     //necessary things to run in R    

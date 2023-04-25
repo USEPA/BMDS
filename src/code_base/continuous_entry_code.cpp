@@ -28,7 +28,11 @@
 // a column order matrix px5 where p is 
 // the number of parametersd
 */
-
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include "continuous_entry_code.h"
 #include "analysis_of_deviance.h"
 #include "mcmc_analysis.h"
@@ -1002,7 +1006,7 @@ void bmd_range_find(continuousMA_result *res,
 		// make sure we are not dealing with an infinite value
 		// or not a number
 		if (isfinite(res->models[i]->bmd_dist[temp_idx]) && 
-			  !isnan(res->models[i]->bmd_dist[temp_idx])){
+			  !std::isnan(res->models[i]->bmd_dist[temp_idx])){
 			if ( res->models[i]->bmd_dist[temp_idx] > current_max){
 				current_max = res->models[i]->bmd_dist[temp_idx]; 
 			}
@@ -1917,7 +1921,7 @@ mcmcSamples *a = new mcmcSamples[MA->nmodels];
     post_probs[j] = post_probs[j]/ norm_sum; 
 
     for (double  i = 0.0; i <= 0.5; i += 0.01 ){
-      if ( !isfinite(b[j].BMD_CDF.inv(i)) || isnan(b[j].BMD_CDF.inv(i))){
+      if ( !isfinite(b[j].BMD_CDF.inv(i)) || std::isnan(b[j].BMD_CDF.inv(i))){
         
          post_probs[j] = 0;    // if the cdf has nan/inf before the median
                                // it is removed from the calculation and given a 0 posterior

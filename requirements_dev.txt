@@ -2,7 +2,7 @@
 wheel==0.38.4
 build==0.9.0
 cibuildwheel==2.11.2
-pybind11==2.10.1
+pybind11==2.10.4
 setuptools==65.5.1
 
 # tests
@@ -15,5 +15,3 @@ flake8==4.0.1
 flake8-isort==4.1.1
 isort==5.10.1
 
-# install package in editable mode
--e .

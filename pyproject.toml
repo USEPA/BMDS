@@ -1,3 +1,6 @@
+[project]
+name = "pybmds"
+
 [build-system]
 requires = [
     "setuptools>=65.5.1",

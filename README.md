@@ -6,13 +6,13 @@ Disclaimer: The United States Government project code is provided on an "as is" 
 
 ## ToxicR
 
-TODO 
+TODO
 
 ## pybmds
 
 ### Developer setup
 
-Make sure you have python 3.10 or higher available on your path.
+Make sure you have python 3.11 or higher available on your path.
 
 ```bash
 # clone project
@@ -27,6 +27,9 @@ source venv/bin/activate  # or venv\Scripts\activate on windows.
 python -m pip install -U pip
 python -m pip install -r requirements_dev.txt
 
+# build
+make build     # recompile source for development of pybmds package
+
 # test local install
 pybmds hello
 
@@ -38,8 +41,8 @@ make format    # fix formatting errors when possible
 make test      # run tests
 make coverage  # show test coverage
 
-# build
-make build     # build a python wheel
+# distribution
+make dist     # build a portable python wheel for distribution
 ```
 
 Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.

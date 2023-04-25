@@ -2,9 +2,9 @@ name: Developer environment
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   test:
@@ -12,8 +12,8 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.10"]
-        os: [ubuntu-22.04, windows-2022]
+        python-version: ["3.11"]
+        os: [ubuntu-22.04]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}

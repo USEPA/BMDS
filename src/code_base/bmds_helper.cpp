@@ -1,9 +1,16 @@
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include <stdio.h>
 #include <math.h>
 //#include <cmath>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
+// calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
+std::string BMDS_VERSION = "2023.10a1";
 
 int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
@@ -204,10 +211,9 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
 
+
   bmdsRes->validResult = false;
-
   estimate_sm_laplace_dicho(anal, res, true);
-
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
   gofData.Y = anal->Y;
@@ -217,7 +223,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   gofData.doses = anal->doses;
   gofData.n_group = anal->n_group;
   gofData.parms = anal->parms; 
-
 
   struct dichotomous_PGOF_result gofRes;
   double* gofExpected = (double*)malloc(anal->n * sizeof(double));
@@ -234,8 +239,10 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   gofRes.p_value = gofPVal;
   gofRes.df = gofDF;
+  
 
   compute_dichotomous_pearson_GOF(&gofData, &gofRes);
+  
 
   gof->test_statistic = gofRes.test_statistic;
 
@@ -249,6 +256,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     gof->expected[i] = gofRes.expected[i];
 	gof->residual[i] = gofRes.residual[i];
   }
+  
   
   //do error bar calcs
   double pHat;
@@ -285,7 +293,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
-
 
 
   //calculate dichtomous analysis of deviance
@@ -343,7 +350,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   } else {
     gof->p_value = gofRes.p_value;
   }
-
 
 
   for (int i=0; i< anal->parms; i++){
@@ -974,7 +980,7 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   }
   TOI->llRatio[0] = dev = 2*dev;
   TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
-  TOI->pVal[0] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[0] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
   dev = (aod->LL[1] - aod->LL[0]);
@@ -985,7 +991,7 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   TOI->llRatio[1] = dev = 2*dev;
   //TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
   TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
-  TOI->pVal[1] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[1] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #3 - A2 vs A3 - Does the model describe variances adequately
   dev = (aod->LL[1] - aod->LL[2]);
@@ -996,7 +1002,7 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   //TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
   TOI->llRatio[2] = dev = 2*dev;
   TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
-  TOI->pVal[2] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[2] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
   dev = (aod->LL[2] - aod->LL[3]);
@@ -1007,7 +1013,7 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   //TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
   TOI->llRatio[3] = dev = 2*dev;
   TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
-  TOI->pVal[3] = (isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  TOI->pVal[3] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //DOF check for test 4
   if (TOI->DF[3] <= 0) {
@@ -1315,7 +1321,11 @@ void cleanDouble(double *val){
 }
 
 
-void BMDS_ENTRY_API __stdcall version(char * versionStr){
-  strcpy(versionStr, BMDS_VERSION);   
+string BMDS_ENTRY_API __stdcall version(){
+  return BMDS_VERSION;   
 }
 
+
+int BMDS_ENTRY_API __stdcall add2(int i, int j) {
+    return i + j;
+}

@@ -12,7 +12,11 @@
 
 #ifndef log_likelihoodsH
 #define log_likelihoodsH
-#include "stdafx.h"
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif
 #include "gradient.h"
 
 #include <cmath>

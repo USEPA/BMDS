@@ -598,7 +598,7 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
    }	
    bool found_nans = false; 
    for (int i = 0; i < M->nParms(); i++){
-     if (isnan(test(i,0))){
+     if (std::isnan(test(i,0))){
        found_nans = true; 
      }
    }

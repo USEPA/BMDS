@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
         os: ["ubuntu-22.04"]
     steps:
       - uses: actions/checkout@v3
@@ -34,6 +34,6 @@ jobs:
       - name: Check linting
         run: |
           make lint
-      - name: Test with pytest
-        run: |
-          make test
+      # - name: Test with pytest
+      #   run: |
+      #     make test

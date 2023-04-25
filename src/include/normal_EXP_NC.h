@@ -3,7 +3,11 @@
 #ifndef normal_EXP_NCH
 #define normal_EXP_NCH
 
-#include "stdafx.h" // Precompiled header - does nothing if building R version
+#ifdef WIN32
+	#include "pch.h"
+#else
+	#include "stdafx.h"
+#endif // Precompiled header - does nothing if building R version
 #include "normalModels.h"
 
 #ifdef R_COMPILATION
