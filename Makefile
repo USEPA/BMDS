@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build
+.PHONY: clean lint format test coverage build develop
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -32,6 +32,10 @@ coverage: ## Generate coverage report
 	@coverage run -m pytest
 	@coverage html
 
-build: clean ## Build wheel package
+build: ## Rebuild in development environment
+	@python setup.py develop
+	@ls -lh src/pybmds
+
+dist: clean ## Build wheel package for distribution
 	@python setup.py bdist_wheel
 	@ls -l dist

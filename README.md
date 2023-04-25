@@ -6,7 +6,7 @@ Disclaimer: The United States Government project code is provided on an "as is" 
 
 ## ToxicR
 
-TODO 
+TODO
 
 ## pybmds
 
@@ -39,7 +39,10 @@ make test      # run tests
 make coverage  # show test coverage
 
 # build
-make build     # build a python wheel
+make build     # recompile source for development of pybmds package
+
+# distribution
+make dist     # build a portable python wheel for distribution
 ```
 
 Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.

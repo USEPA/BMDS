@@ -9,7 +9,8 @@
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
-std::string BMDS_VERSION = "2023.03.1";
+// calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
+std::string BMDS_VERSION = "2023.10a1";
 
 int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
