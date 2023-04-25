@@ -1,10 +1,39 @@
 [project]
 name = "pybmds"
+description = "A description of pybmds"
+requires-python = ">=3.11"
+readme = "README.md"
+authors = [
+    {name = "BMDS development team"},
+]
+dynamic = ["version"]
+dependencies = [
+    "typer >= 0.7.0",
+]
+
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.11",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pybmds"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pybmds.__version__"}
+
+[project.scripts]
+pybmds = "pybmds.cli:app"
 
 [build-system]
 requires = [
-    "setuptools>=65.5.1",
-    "pybind11>=2.10.1",
+    "setuptools>=67.7.2",
+    "pybind11>=2.10.4",
 ]
 build-backend = "setuptools.build_meta"
 
