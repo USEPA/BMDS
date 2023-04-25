@@ -12,7 +12,7 @@ TODO
 
 ### Developer setup
 
-Make sure you have python 3.10 or higher available on your path.
+Make sure you have python 3.11 or higher available on your path.
 
 ```bash
 # clone project

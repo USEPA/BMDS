@@ -6,7 +6,7 @@
 
 ## Developer setup
 ### Requirements
-Python 3.10 or higher
+Python 3.11 or higher
 GSL 2.7 or greater
 EIGEN 3.4.0 or greater
 NLOPT 2.6.2 or greater
