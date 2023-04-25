@@ -15,5 +15,3 @@ flake8==4.0.1
 flake8-isort==4.1.1
 isort==5.10.1
 
-# install package in editable mode
--e .

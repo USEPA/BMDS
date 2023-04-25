@@ -27,6 +27,9 @@ source venv/bin/activate  # or venv\Scripts\activate on windows.
 python -m pip install -U pip
 python -m pip install -r requirements_dev.txt
 
+# build
+make build     # recompile source for development of pybmds package
+
 # test local install
 pybmds hello
 
@@ -37,9 +40,6 @@ make format    # fix formatting errors when possible
 # testing
 make test      # run tests
 make coverage  # show test coverage
-
-# build
-make build     # recompile source for development of pybmds package
 
 # distribution
 make dist     # build a portable python wheel for distribution
