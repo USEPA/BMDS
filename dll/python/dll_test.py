@@ -105,7 +105,6 @@ class DichotomousModelResult(NamedTuple):
     dist_numE: int
 
     class Struct(ctypes.Structure):
-
         _fields_ = [
             ("model", ctypes.c_int),  # dichotomous model specification
             ("nparms", ctypes.c_int),  # number of parameters in the model
@@ -145,7 +144,7 @@ class DichotomousModelResult(NamedTuple):
 
 def main():
     path = Path("/usr/local/lib/libDRBMD.so")
-    assert path.exists()
+    assert path.exists()  # noqa: S101
     dll = ctypes.cdll.LoadLibrary(str(path))
 
     doses = [0, 50, 100, 150, 200]
@@ -176,7 +175,9 @@ def main():
     da_res_struct = da_res.to_c()
     dll.estimate_sm_laplace_dicho(ctypes.pointer(da_struct), ctypes.pointer(da_res_struct), True)
 
-    print(json.dumps(dict(inputs=da_struct.dict(), outputs=da_res_struct.dict()), indent=2))
+    print(  # noqa: T201
+        json.dumps(dict(inputs=da_struct.dict(), outputs=da_res_struct.dict()), indent=2)
+    )
 
 
 if __name__ == "__main__":

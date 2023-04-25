@@ -10,7 +10,7 @@ def bottles(num: int, beverage: str):
             f"{i} bottles of {beverage} on the wall, {i} bottles of {beverage}, take one down...",
             fg="green",
         )
-        time.sleep(random() / 3)
+        time.sleep(random() / 3)  # noqa: S311
     typer.secho(f"No more bottles of {beverage} on the wall!", fg="green")
 
 

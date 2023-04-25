@@ -21,11 +21,11 @@ echo.  dist         build wheel package for distribution
 goto :eof
 
 :lint
-black . --check && flake8 .
+black . --check && ruff .
 goto :eof
 
 :format
-black . && isort . && flake8 .
+black . && ruff . --fix --show-fixes
 goto :eof
 
 :test
