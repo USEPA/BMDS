@@ -1,6 +1,0 @@
-#ifndef AUTOMOBILE_LIBRARY_H
-#define AUTOMOBILE_LIBRARY_H
-
-#include "motorcycle.hpp"
-
-#endif

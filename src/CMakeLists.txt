@@ -24,7 +24,7 @@ IF(DEFINED ENV{CMAKE_CXX_COMPILER})
 ENDIF()
 
 
-project(RBMDS VERSION 0.1.0)
+project(bmdscore VERSION 0.1.0)
 
 #Find libraries
 IF(WIN32)
@@ -139,22 +139,22 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 # Add library
 IF(WIN32)
 	#Windows build
-	add_library(RBMDS SHARED ${SOURCE_FILES})
-	target_link_libraries(RBMDS PRIVATE ${GSL_LIB} ${NLOPT_LIB})
+	add_library(bmdscore SHARED ${SOURCE_FILES})
+	target_link_libraries(bmdscore PRIVATE ${GSL_LIB} ${NLOPT_LIB})
 ELSE()
 	#Linux or MacOS
-	add_library(RBMDS STATIC ${SOURCE_FILES})
-	target_link_libraries(RBMDS PRIVATE GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+	add_library(bmdscore STATIC ${SOURCE_FILES})
+	target_link_libraries(bmdscore PRIVATE GSL::gsl GSL::gslcblas ${NLOPT_LIB})
 ENDIF(WIN32)
 
 # Include directories
-target_include_directories(RBMDS PRIVATE include)
+target_include_directories(bmdscore PRIVATE include)
 
 # Install
-#install(TARGETS RBMDS DESTINATION )
+#install(TARGETS bmdscore DESTINATION )
 
 # Install the headers
-#install(FILES include/RBMDS DESTINATION include)
+#install(FILES include/bmdscore DESTINATION include)
 
 # Create base directory
 #install(DIRECTORY include DESTINATION include)

@@ -6,46 +6,13 @@
 
 namespace py = pybind11;
 
-//void init_ex1(py::module &);
-//void init_ex2(py::module &);
-void init_ex3(py::module &);
+void init_test1(py::module &);
 
 
-//// test_binary_operators
-//enum Flags {
-//    Read = 4,
-//    Write = 2,
-//    Execute = 1
-//};
-
-
-//PYBIND11_MODULE(bleep, m) {
-//    m.doc() = "Simple c++ interface examples";
-//
-//    // functions
-//    init_ex1(m);
-//    init_ex2(m);
-//    init_ex3(m);
-//
-//    // enums
-//    py::enum_<Flags>(m, "Flags")
-//        .value("Read", Flags::Read)
-//        .value("Write", Flags::Write)
-//        .value("Execute", Flags::Execute)
-//        .export_values();
-//
-//    // pass data from python at build-time
-//    #ifdef VERSION_INFO
-//        m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-//    #else
-//        m.attr("__version__") = "dev";
-//    #endif
-//}
-
-PYBIND11_MODULE(RBMDS, m) {
-    m.doc() = "RBMDS c++ interface";
+PYBIND11_MODULE(bmdscore, m) {
+    m.doc() = "bmdscore c++ interface";
 
     // functions
-    init_ex3(m);
+    init_test1(m);
 
 }

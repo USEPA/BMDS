@@ -59,7 +59,7 @@ find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 
 
-project(RBMDS)
+project(bmdscore)
 
 include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR} ${GSL_DIR})
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
@@ -72,19 +72,19 @@ file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES} )
 
 include(pybind11.cmake)
-pybind11_add_module(RBMDS 
+pybind11_add_module(bmdscore 
 	${SOURCE_FILES}
 	${HEADER_FILES}
 	${PYTHON_FILES}
 )
 
 IF(WIN32)
-	target_link_libraries(RBMDS PUBLIC ${GSL_LIB} ${NLOPT_LIB})
+	target_link_libraries(bmdscore PUBLIC ${GSL_LIB} ${NLOPT_LIB})
 ELSE()
-	target_link_libraries(RBMDS PUBLIC GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+	target_link_libraries(bmdscore PUBLIC GSL::gsl GSL::gslcblas ${NLOPT_LIB})
 ENDIF(WIN32)
 
-install(TARGETS RBMDS
+install(TARGETS bmdscore
   COMPONENT python
   LIBRARY DESTINATION "${PYTHON_LIBRARY_DIR}"
   )

@@ -43,25 +43,25 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/../bin)
 
 IF(WIN32)
-	find_library(RBMDS_LIB RBMDS HINTS ${CPP_BASE}/build/Release)
+	find_library(BMDS_LIB bmdscore HINTS ${CPP_BASE}/build/Release)
 ELSE()
-	find_library(RBMDS_LIB RBMDS HINTS ${CPP_BASE}/build)
+	find_library(BMDS_LIB bmdscore HINTS ${CPP_BASE}/build)
 ENDIF()
 
 add_executable(test_cpp src/test_cpp.cpp)
 
 IF(WIN32)
 	#Windows build
-	find_library(RBMDS_LIB RBMDS HINTS ${CPP_BASE}/build/Release)
-	target_link_libraries(test_cpp PRIVATE ${RBMDS_LIB} ${GSL_LIB} ${NLOPT_LIB})
+	find_library(BMDS_LIB bmdscore HINTS ${CPP_BASE}/build/Release)
+	target_link_libraries(test_cpp PRIVATE ${BMDS_LIB} ${GSL_LIB} ${NLOPT_LIB})
 ELSE()
 	#Linux or MacOS
-	find_library(RBMDS_LIB RBMDS HINTS ${CPP_BASE}/build)
-	target_link_libraries(test_cpp PRIVATE ${RBMDS_LIB} GSL::gsl GSL::gslcblas ${NLOPT_LIB})
+	find_library(BMDS_LIB bmdscore HINTS ${CPP_BASE}/build)
+	target_link_libraries(test_cpp PRIVATE ${BMDS_LIB} GSL::gsl GSL::gslcblas ${NLOPT_LIB})
 ENDIF(WIN32)
 
 IF(WIN32)
-	file(COPY ${CPP_BASE}/build/Release/RBMDS.dll DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE})
+	file(COPY ${CPP_BASE}/build/Release/bmdscore.dll DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE})
 ELSE()
-	file(COPY ${CPP_BASE}/build/libRBMDS.a DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
+	file(COPY ${CPP_BASE}/build/libbmdscore.a DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
 ENDIF(WIN32)
