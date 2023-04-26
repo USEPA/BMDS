@@ -23,6 +23,9 @@ IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
 ENDIF()
 
+IF(WIN32)
+  add_compile_definitions(RBMDS_EXPORTS)
+ENDIF()
 
 project(bmdscore VERSION 0.1.0)
 
