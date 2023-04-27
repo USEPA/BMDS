@@ -34,10 +34,10 @@ jobs:
       - name: Check linting
         run: |
           make lint
-      - name: Build package
+      - name: compile C++ and build python package
         run: |
-          ./tools/linux_ci.sh
-          make develop
+          source ./tools/linux_ci.sh
+          make build
       - name: Test with pytest
         run: |
           make test
