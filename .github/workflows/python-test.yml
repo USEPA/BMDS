@@ -1,6 +1,7 @@
 name: Python tests
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -34,6 +35,10 @@ jobs:
       - name: Check linting
         run: |
           make lint
-      # - name: Test with pytest
-      #   run: |
-      #     make test
+      - name: Compile bmdscore and build pybmds
+        run: |
+          source ./tools/linux_ci.sh
+          make build
+      - name: Test with pytest
+        run: |
+          make test
