@@ -34,7 +34,7 @@ jobs:
       - name: Check linting
         run: |
           make lint
-      - name: compile C++ and build python package
+      - name: Compile bmdscore and build pybmds
         run: |
           source ./tools/linux_ci.sh
           make build

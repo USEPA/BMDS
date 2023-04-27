@@ -9,7 +9,7 @@ export "NLOPT_DIR=/usr/include"
 export "CMAKE_C_COMPILER=/usr/bin/gcc-12"
 export "CMAKE_CXX_COMPILER=/usr/bin/g++-12"
 export "PYTHON_EXECUTABLE=/opt/hostedtoolcache/Python/3.11.3/x64/bin/python"
-export "PYTHON_LIBRARY_DIR=/opt/hostedtoolcache/Python/3.11.3/x64/lib/site-packages
+export "PYTHON_LIBRARY_DIR=/opt/hostedtoolcache/Python/3.11.3/x64/lib/site-packages"
 
 echo "here"
 python -m site
