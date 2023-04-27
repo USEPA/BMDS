@@ -12,7 +12,6 @@ ls -l /usr/include/eigen3
 ls -l /usr/include/eigen3/Eigen
 
 export "EIGEN_DIR=/usr/include/eigen3"
-export "GSL_DIR=/usr/include"
 export "NLOPT_DIR=/usr/include"
 export "CMAKE_C_COMPILER=/usr/bin/gcc-12"
 export "CMAKE_CXX_COMPILER=/usr/bin/g++-12"
