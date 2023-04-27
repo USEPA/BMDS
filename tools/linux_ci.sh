@@ -11,7 +11,7 @@ echo "c"
 /usr/bin/gsl-config --libs-without-cblas
 
 export "EIGEN_DIR=/usr/include/eigen3/Eigen/"
-export "GSL_DIR=/usr/include/gsl"
+export "GSL_DIR=/usr"
 export "NLOPT_DIR=/usr/include"
 export "CMAKE_C_COMPILER=/usr/bin/gcc-12"
 export "CMAKE_CXX_COMPILER=/usr/bin/g++-12"
