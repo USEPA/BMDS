@@ -3,15 +3,10 @@
 sudo apt-get update -y
 sudo apt-get install -y automake build-essential libtool make cmake libgslcblas0 libgsl-dev libeigen3-dev libnlopt-dev
 
-echo "a"
-/usr/bin/gsl-config --libs
-echo "b"
-/usr/bin/gsl-config --prefix
-echo "c"
-/usr/bin/gsl-config --libs-without-cblas
+dpkg -L libgsl-dev
 
 export "EIGEN_DIR=/usr/include/eigen3/Eigen/"
-export "GSL_DIR=/usr/lib/x86_64-linux-gnu"
+export "GSL_DIR=/usr/include"
 export "NLOPT_DIR=/usr/include"
 export "CMAKE_C_COMPILER=/usr/bin/gcc-12"
 export "CMAKE_CXX_COMPILER=/usr/bin/g++-12"
