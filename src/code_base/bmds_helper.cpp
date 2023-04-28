@@ -1329,3 +1329,17 @@ string BMDS_ENTRY_API __stdcall version(){
 int BMDS_ENTRY_API __stdcall add2(int i, int j) {
     return i + j;
 }
+
+void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t){
+    std::cout<<"Inside testFun"<<std::endl;
+
+    std::cout<<"t->BMD="<<t->BMD<<std::endl;
+    std::cout<<"t->n="<<t->n<<std::endl;
+    std::cout<<"t->validResult="<<t->validResult<<std::endl;
+    std::cout<<"dose array:"<<std::endl;
+    for(int i=0; i < ???; i++){
+       std::cout<<"i:"<<i<<", "<<t.doses[i]<<std::endl;
+    }
+    std::cout<<"Finish testFun"<<std::endl;
+
+}

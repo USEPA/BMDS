@@ -23,7 +23,7 @@ bool showResultsOverride = true;
 int main(void){
   test();
 
-  runCompleteDichoAnalysis();
+//  runCompleteDichoAnalysis();
 
 //  runDichoMA();
 
@@ -44,6 +44,11 @@ void test(){
 
   int res = add2(i,j);
   std::cout << "Add " << i << " + " << j << " = " << res << std::endl;
+  struct test_struct t;
+  t.BMD = 3.14;
+  t.n = 42;
+  t.validResult = false; 
+  testFun(&t);
 
 }
 

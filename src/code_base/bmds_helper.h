@@ -35,6 +35,13 @@ extern std::string BMDS_VERSION;
 #elif _WIN32
 #pragma pack(4)
 #endif
+
+struct test_struct{
+  double BMD;
+  int n;
+  bool validResult;
+  double *doses;
+};
 // BMD_results:
 //   Purpose - Contains various BMD values returned by BMDS.
 //   It is used to facilitate returning results needed for BMDS software. 
@@ -182,6 +189,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
 string BMDS_ENTRY_API __stdcall version();
 
 int BMDS_ENTRY_API __stdcall add2(int i, int j);
+
+void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 #ifdef __cplusplus
 }
