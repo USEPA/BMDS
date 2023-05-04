@@ -15,8 +15,10 @@ std::string BMDS_VERSION = "2023.10a1";
 int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
    int bounded = 0;
+   BMDSres->bounded.clear();
 //   std::cout << "checkForBoundedParms with tol:"<<BMDS_EPS<<"\n";
    for (int i=0; i<nparms; i++){
+      BMDSres->bounded.push_back(false);
       //5*i+4 is location of min in prior array
       //5*i+5 is location of max in prior array 
 //      std::cout<<"i:"<<i<<", parms[i]: "<<parms[i]<<"\n";
@@ -253,8 +255,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   gof->n = gofRes.n;
   for (int i=0; i<gofRes.n; i++){
-    gof->expected[i] = gofRes.expected[i];
-	gof->residual[i] = gofRes.residual[i];
+    gof->expected.push_back(gofRes.expected[i]);
+    gof->residual.push_back(gofRes.residual[i]);
   }
   
   
@@ -271,8 +273,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
     eb1 = (2 * anal->Y[i] + z*z);
     eb2 = z*sqrt(z*z - (2 + 1/anal->n_group[i]) + 4*pHat*((anal->n_group[i] - anal->Y[i]) + 1));
     ebDenom = 2.0 * (anal->n_group[i] + z * z);
-    gof->ebLower[i] = (eb1 - 1 - eb2)/ ebDenom; 
-    gof->ebUpper[i] = (eb1 + 1 + eb2)/ ebDenom;
+    gof->ebLower.push_back((eb1 - 1 - eb2)/ ebDenom); 
+    gof->ebUpper.push_back((eb1 + 1 + eb2)/ ebDenom);
   }
 
   //calculate model chi^2 value
@@ -354,9 +356,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
-    bmdsRes->stdErr[i] = BMDS_MISSING;
-    bmdsRes->lowerConf[i] = BMDS_MISSING;
-    bmdsRes->upperConf[i] = BMDS_MISSING;
+    //bmdsRes->stdErr[i] = BMDS_MISSING;
+    bmdsRes->stdErr.push_back(BMDS_MISSING);
+    bmdsRes->lowerConf.push_back(BMDS_MISSING);
+    bmdsRes->upperConf.push_back(BMDS_MISSING);
+    //bmdsRes->lowerConf[i] = BMDS_MISSING;
+    //bmdsRes->upperConf[i] = BMDS_MISSING;
   } 
 
   calcParmCIs_dicho (res, bmdsRes);
@@ -369,14 +374,26 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
 
+  std::cout<<"b4 clean"<<std::endl;  
+  for (int i=0; i<res->dist_numE;i++){
+    std::cout<<res->bmd_dist[i]<<std::endl;
+  }
+
   clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
   bool goodCDF = false;
   for (int i=0; i<res->dist_numE;i++){
+    std::cout<<res->bmd_dist[i]<<std::endl;
     if (res->bmd_dist[i] != BMDS_MISSING){
       goodCDF = true;
     }
   }
+
+  std::cout<<"DEBUG--------------------"<<std::endl;
+  std::cout<<"BMD:"<<bmdsRes->BMD<<std::endl;
+  std::cout<<"is inf:"<<std::isinf(bmdsRes->BMD)<<std::endl;
+  std::cout<<"is finite:"<<std::isfinite(bmdsRes->BMD)<<std::endl;
+  std::cout<<"goodCDF:"<<goodCDF<<std::endl;
 
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) {
     bmdsRes->validResult = true;
@@ -696,9 +713,12 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   rescale_contParms(anal, res->parms); 
 
   for (int i=0; i< anal->parms; i++){
-    bmdsRes->stdErr[i] = BMDS_MISSING;
-    bmdsRes->lowerConf[i] = BMDS_MISSING;
-    bmdsRes->upperConf[i] = BMDS_MISSING;
+    //bmdsRes->stdErr[i] = BMDS_MISSING;
+    bmdsRes->stdErr.push_back(BMDS_MISSING);
+    bmdsRes->lowerConf.push_back(BMDS_MISSING);
+    bmdsRes->upperConf.push_back(BMDS_MISSING);
+    //bmdsRes->lowerConf[i] = BMDS_MISSING;
+    //bmdsRes->upperConf[i] = BMDS_MISSING;
   }
 
   calcParmCIs_cont(res, bmdsRes);
@@ -1183,6 +1203,7 @@ void clean_dicho_results(struct dichotomous_model_result *res, struct dichotomou
   //dichotomous_GOF
   for (int i=0; i<gof->n; i++){
     cleanDouble(&gof->expected[i]);
+//    cleanDouble(&gof->residual[i]);
     cleanDouble(&gof->residual[i]);
     cleanDouble(&gof->ebLower[i]);
     cleanDouble(&gof->ebUpper[i]);
@@ -1335,11 +1356,115 @@ void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t){
 
     std::cout<<"t->BMD="<<t->BMD<<std::endl;
     std::cout<<"t->n="<<t->n<<std::endl;
-    std::cout<<"t->validResult="<<t->validResult<<std::endl;
-    std::cout<<"dose array:"<<std::endl;
-    for(int i=0; i < ???; i++){
-       std::cout<<"i:"<<i<<", "<<t.doses[i]<<std::endl;
-    }
+    std::cout<<"t->validResult="<<(t->validResult ? "true" : "false")<<std::endl;
+    std::cout<<"Doses:"<<std::endl;
+    for (double dose: t->doses) std::cout<< dose << std::endl;
     std::cout<<"Finish testFun"<<std::endl;
+
+}
+
+
+void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes){
+  
+  pyRes->model = res->model;
+  pyRes->nparms = res->nparms;
+  pyRes->parms.assign(res->parms, res->parms + res->nparms);
+  pyRes->cov.assign(res->cov, res->cov + res->nparms*res->nparms);
+  pyRes->max = res->max;
+  pyRes->dist_numE = res->dist_numE;
+  pyRes->model_df = res->model_df;
+  pyRes->total_df = res->total_df;
+  pyRes->bmd_dist.assign(res->bmd_dist, res->bmd_dist + res->dist_numE*2);
+  pyRes->bmd = res->bmd;
+  pyRes->gof_p_value = res->gof_p_value;
+  pyRes->gof_chi_sqr_statistic = res->gof_chi_sqr_statistic;
+  
+}
+
+void convertFromPythonDichoAnalysis(struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal){
+
+  anal->model = pyAnal->model;
+  anal->n = pyAnal->n;
+  anal->BMD_type = pyAnal->BMD_type;
+  anal->BMR = pyAnal->BMR;
+  anal->alpha = pyAnal->alpha;
+  anal->degree = pyAnal->degree;
+  anal->samples = pyAnal->samples;
+  anal->burnin = pyAnal->burnin;
+  anal->parms = pyAnal->parms;
+  anal->prior_cols = pyAnal->prior_cols;
+
+  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+    for (int i=0; i<pyAnal->n; i++){
+      anal->Y[i] = pyAnal->Y[i];
+      anal->doses[i] = pyAnal->doses[i];
+      anal->n_group[i] = pyAnal->n_group[i];
+    }
+  }
+  if(pyAnal->prior.size() > 0){
+    for (int i=0; i<pyAnal->prior.size(); i++){
+      anal->prior[i] = pyAnal->prior[i];
+    }
+  }
+}
+
+void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes){
+  res->model = pyRes->model;
+  res->nparms = pyRes->nparms;
+  res->max = pyRes->max;
+  res->dist_numE = pyRes->dist_numE;
+  res->model_df = pyRes->model_df;
+  res->total_df = pyRes->total_df;
+  res->bmd = pyRes->bmd;
+  res->gof_p_value = pyRes->gof_p_value;
+  res->gof_chi_sqr_statistic = pyRes->gof_chi_sqr_statistic;
+  //arrays & vectors
+  if(pyRes->parms.size() > 0){
+    for (int i=0; i<pyRes->parms.size(); i++){
+      res->parms[i] = pyRes->parms[i];
+    } 
+  }
+  if(pyRes->cov.size() > 0){
+    for (int i=0; i<pyRes->cov.size(); i++){
+      res->cov[i] =  pyRes->cov[i];
+    }
+  }
+  if(pyRes->bmd_dist.size() > 0){
+    for (int i=0; i<pyRes->bmd_dist.size(); i++){
+      res->bmd_dist[i] = pyRes->bmd_dist[i];
+    }
+  }
+}
+
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
+
+  std::cout<<"Inside pythonBMDSDicho" << std::endl;
+
+  //1st convert from python struct
+ 
+  std::cout<<"pyRes->nparms:"<<pyRes->nparms<<std::endl;
+  std::cout<<"pyAnal->n_group size:"<<pyAnal->n_group.size()<<std::endl;;
+  std::cout<<"pyAnal prior:"<<std::endl;
+  for(auto i=pyAnal->prior.begin(); i!=pyAnal->prior.end(); ++i) std::cout<< *i << ' ';
+  std::cout<<std::endl;
+
+  dichotomous_analysis anal;
+  anal.Y = new double[pyAnal->n];
+  anal.doses = new double[pyAnal->n];
+  anal.n_group = new double[pyAnal->n];
+  anal.prior = new double[pyAnal->parms*pyAnal->prior_cols];
+  convertFromPythonDichoAnalysis(&anal, pyAnal); 
+
+  dichotomous_model_result res;
+  res.parms = new double[pyRes->nparms];
+  res.cov = new double[pyRes->nparms*pyRes->nparms];
+  res.bmd_dist = new double[pyRes->dist_numE*2];
+  convertFromPythonDichoRes(&res, pyRes);
+
+  runBMDSDichoAnalysis(&anal, &res, gof, bmdsRes, aod);     
+
+  std::cout<<"valid result" << bmdsRes->validResult<<std::endl;
+
+  convertToPythonDichoRes(&res, pyRes);
 
 }

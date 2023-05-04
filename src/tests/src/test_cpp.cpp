@@ -13,9 +13,10 @@
 #include <string>
 #include <iostream>
 
-void runCompleteDichoAnalysis();
+void runOldDichoAnalysis();
 void runCompleteContAnalysis();
 void runDichoMA();
+void runPythonDichoAnalysis();
 void test();
 
 bool showResultsOverride = true;
@@ -23,12 +24,13 @@ bool showResultsOverride = true;
 int main(void){
   test();
 
-//  runCompleteDichoAnalysis();
+//  runOldDichoAnalysis();
 
 //  runDichoMA();
 
 //  runCompleteContAnalysis();
 //  runCompleteContAnalysis();
+   runPythonDichoAnalysis();
 
   return 0;
 
@@ -47,7 +49,8 @@ void test(){
   struct test_struct t;
   t.BMD = 3.14;
   t.n = 42;
-  t.validResult = false; 
+  t.validResult = false;
+  t.doses.assign({1,2,3,4,5}); 
   testFun(&t);
 
 }
@@ -331,7 +334,7 @@ void test(){
 //  double prRFreqPoly4NCVUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,-1e8,0,0,0,0,-1000,-1000,1e8,1e8,1e8,1e8,1e8,1000,1000}; //poly 4
 //  double prRFreqPoly5NCVUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,-1e8,0,0,0,0,0,-1000,-1000,1e8,1e8,1e8,1e8,1e8,1e8,1000,1000}; //poly 5
 
-void runCompleteDichoAnalysis(){
+void runOldDichoAnalysis(){
 
   printf("Running dichotomous analysis\n");
 
@@ -786,46 +789,31 @@ void runCompleteDichoAnalysis(){
   
   //struct dichotomous_PGOF_result gofRes;
   struct dichotomous_GOF gof;
-  //double exp[anal.n];
-  //double resid[anal.n];
-  //double ebLower[anal.n];
-  //double ebUpper[anal.n];
-  
-  double* exp = new double[anal.n];
-  double* resid = new double[anal.n];
-  double* ebLower = new double[anal.n];
-  double* ebUpper = new double[anal.n];
-  
-
-  gof.expected = exp;
-  gof.residual = resid;
-  gof.ebLower = ebLower;
-  gof.ebUpper = ebUpper;
 
   struct BMDS_results bmdsRes;
-  //bool bounded[anal.parms];
-  //double stdErr[anal.parms];
-  //double lowerConf[anal.parms];
-  //double upperConf[anal.parms];
   
-  bool* bounded = new bool[anal.parms];
-  double* stdErr = new double[anal.parms];
-  double* lowerConf = new double[anal.parms];
-  double* upperConf = new double[anal.parms];
+  //bool* bounded = new bool[anal.parms];
+//  double* stdErr = new double[anal.parms];
+  //double* lowerConf = new double[anal.parms];
+  //double* upperConf = new double[anal.parms];
   
   
   
   //set all parms as unbounded initially
   for (int i=0; i<anal.parms; i++){
-     bounded[i] = false;
-     stdErr[i] = -9999.0;
-     lowerConf[i] = -9999.0;
-     upperConf[i] = -9999.0;
+     //bounded[i] = false;
+     bmdsRes.bounded.push_back(false);
+     //stdErr[i] = -9999.0;
+     bmdsRes.stdErr.push_back(BMDS_MISSING);
+     bmdsRes.lowerConf.push_back(BMDS_MISSING);
+     bmdsRes.upperConf.push_back(BMDS_MISSING);
+     //lowerConf[i] = -9999.0;
+     //upperConf[i] = -9999.0;
   }
-  bmdsRes.bounded = bounded;
-  bmdsRes.stdErr = stdErr;
-  bmdsRes.lowerConf = lowerConf;
-  bmdsRes.upperConf = upperConf;
+  //bmdsRes.bounded = bounded;
+//  bmdsRes.stdErr = stdErr;
+  //bmdsRes.lowerConf = lowerConf;
+  //bmdsRes.upperConf = upperConf;
   bmdsRes.BMD = -9999.0;
   bmdsRes.BMDU = -9999.0;
   bmdsRes.BMDL = -9999.0;
@@ -904,10 +892,571 @@ void runCompleteDichoAnalysis(){
   printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", aod.fittedLL, aod.nFit, aod.devFit, aod.dfFit, aod.pvFit);
   printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", aod.redLL, aod.nRed, aod.devRed, aod.dfRed, aod.pvRed);
 
-//  printf("\nBMD Dist:\n");
-//  for (int i=0; i<res.dist_numE; i++){
-//    printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
-//  }
+  printf("\nBMD Dist:\n");
+  for (int i=0; i<res.dist_numE; i++){
+    printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
+  }
+  } else {
+     printf("\nModel was not run\n");
+  }
+
+}
+void runPythonDichoAnalysis(){
+
+  printf("Running dichotomous analysis\n");
+
+///////////////////////////////
+//USER INPUT
+///////////////////////////////
+
+  enum dich_model model = d_weibull;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+                                   //d_logprobit=5, d_multistage=6,d_probit=7,
+                                   //d_qlinear=8,d_weibull=9
+  int modelType = 1;       //1 = frequentist, 2 = bayesian
+  bool restricted = true;  //only used for frequentist models
+  int BMD_type = 1;        // 1 = extra ; added otherwise
+  int degree = 3;  //for multistage only
+  double BMR = 0.1;
+  double alpha = 0.05;
+///////////////////////////////
+//dicho data - dose, N, incidence
+///////////////////////////////
+//  //Dichotomous.dax Effect 1
+//  double D[] = {0,50, 100, 150, 200};
+//  double Y[] = {0, 5, 30, 65, 90};
+//  double N[] = {100, 100, 100, 100, 100};
+
+//  //Dichotomous.dax Effect 2 
+//  double D[] = {0,50, 100, 150, 200};
+//  double Y[] = {5, 10, 33, 67, 93};
+//  double N[] = {100, 100, 100, 100, 100};
+
+//  double D[] = {0,10, 20, 40};
+//  double Y[] = {0, 0, 2, 4};
+//  double N[] = {10, 10, 10, 10};
+
+//  double D[] = {12, 15, 18, 21};
+//  double Y[] = {1, 2, 3, 4};
+//  double N[] = {5, 6, 7, 8};
+
+//  double D[] = {0, 10, 50, 150, 400};
+//  double Y[] = {0, 0, 1, 4, 11};
+//  double N[] = {20, 20, 20, 20, 20};
+
+  //Allen test data
+//  double D[] = {0, 10, 50, 150, 400};
+//  double Y[] = {0, 0, 1, 4, 11};
+//  double N[] = {20, 20, 20, 20, 20};
+
+  //test data for extra/added risk  
+  //double D[] = {5,50, 100, 150, 200};
+  //double Y[] = {2, 5, 30, 65, 90};
+  //double N[] = {100, 100, 100, 100, 100};
+
+//  double D[] = {0, 0.078, 0.195};
+//  double Y[] = {0, 0, 28};
+//  double N[] = {126, 25, 119};
+
+//  double D[] = {0,2364.7,4973.5};
+//  double Y[] = {22,24,33};
+//  double N[] = {50,47,47};
+
+//  double D[] = {0, 475.1, 992.4};
+//  double Y[] = {5, 27, 40};
+//  double N[] = {50, 47, 47};
+
+//  //GSL Gamma crash
+//  double D[] = {0,10, 50, 150, 800};
+//  double Y[] = {0, 0, 1, 4, 11};
+//  double N[] = {20, 20, 20, 20, 20};
+
+  //D1
+//  double D[] = {0, 0.078, 0.195};
+//  double Y[] = {0, 0, 28};
+//  double N[] = {126, 25, 119};
+
+  //D2
+//  double D[] = {0, 18.4, 27.8};
+//  double Y[] = {2, 43, 40};
+//  double N[] = {50, 49, 45};
+
+  //D60
+//  double D[] = {0, 0.011, 0.057, 1.3, 5.6};
+//  double Y[] = {30, 26, 17, 27, 42};
+//  double N[] = {127, 63, 64, 64, 64};
+
+  //D80
+//  double D[] = {0, 4.79, 9.57};
+//  double Y[] = {0, 7, 8};
+//  double N[] = {10, 15, 24};
+
+//  //D103
+//  double D[] = {0, 786.8, 846, 925.7};
+//  double Y[] = {3, 8, 14, 23};
+//  double N[] = {50, 50, 50, 50};
+
+  //  user submitted
+//  double D[] = {0, 11, 30, 100, 356};
+//  double Y[] = {2, 10, 13, 15, 15};
+//  double N[] = {14, 15, 15, 15, 15};
+
+  //Bruce F Rat 2-yr C-cell Adenoma
+//  double D[] = {0, 18.2, 39.3, 74.3};
+//  double Y[] = {5, 13, 13, 8};
+//  double N[] = {50, 50, 49, 50};
+
+  //Nasal Lesions - 2-EHA
+  double D[] = {0, 10, 30, 100};
+  double Y[] = {0, 0, 8, 20};
+  double N[] = {20, 20, 20, 20};
+
+/////////////////////////////////////////////////
+////END USER INPUT
+////////////////////////////////////////////////////
+
+  //struct dichotomous_analysis anal;
+  struct python_dichotomous_analysis anal;
+
+  int numDataRows = sizeof(D)/sizeof(D[0]);
+
+  //check data array sizes for consistency
+  size_t numElementsY = sizeof(Y)/sizeof(Y[0]);
+  size_t numElementsN = sizeof(N)/sizeof(N[0]);
+  if (numDataRows != numElementsY || numElementsY != numElementsN) {
+    printf("Number of data elements are not consistent\nExiting Code\n");
+    exit(-1);
+  } 
+
+
+  //priors defined columnwise
+  int prCols = 5;
+
+  //define priors/parameter constraints
+  int numParms;
+  printf("model = %d\n",model);
+  switch(model) {
+    case d_hill:
+       numParms = 4;
+       break;
+    case d_gamma:
+       numParms = 3;
+       break;
+    case d_logistic:
+       numParms = 2;
+       break;
+    case d_loglogistic:
+       numParms = 3;
+       break;
+    case d_logprobit:
+       numParms = 3;  
+       break;
+    case d_multistage:
+       //numParms = 2 + degree;
+       numParms = 1 + degree;
+       break;
+    case d_probit:
+       numParms = 2;
+       break;
+    case d_qlinear:
+       numParms = 2;
+       break;
+    case d_weibull:
+       numParms = 3;
+       break;
+    default :
+      printf("error in numParms\n");
+      return;
+
+  }
+
+
+
+  double *prior;
+  if (modelType == 1) {
+    //frequentist
+    if (restricted) {
+      switch(model) {
+        case d_hill:
+          anal.model = d_hill;
+          //anal.prior = prRFreqDHill;
+          prior = prRFreqDHill;
+          break;
+        case d_gamma:
+          anal.model = d_gamma;
+          //anal.prior = prRFreqGamma;
+          prior = prRFreqGamma;
+          break;
+        case d_logistic:
+          printf("error with restricted logistic model\n");
+          return;
+          break;
+        case d_loglogistic:
+          anal.model = d_loglogistic;
+          //anal.prior = prRFreqLogLogistic;
+          prior = prRFreqLogLogistic;
+          break;
+        case d_logprobit:
+          anal.model = d_logprobit;
+          //anal.prior = prRFreqLogProbit;
+          prior = prRFreqLogProbit;
+          break;
+        case d_multistage:
+          anal.model = d_multistage;
+          if (degree == 1){
+            //anal.prior = prRFreqMulti1;
+            prior = prRFreqMulti1;
+          } else if (degree == 2){
+            //anal.prior = prRFreqMulti2;
+            prior = prRFreqMulti2;
+          } else if (degree == 3){
+            //anal.prior = prRFreqMulti3;
+            prior = prRFreqMulti3;
+          } else if (degree == 4){
+            //anal.prior = prRFreqMulti4;
+            prior = prRFreqMulti4;
+          } else if (degree == 5){
+            //anal.prior = prRFreqMulti5;
+            prior = prRFreqMulti5;
+          }
+          break;
+        case d_probit:
+          printf("error with restricted probit model\n");
+          return;
+          break;
+        case d_qlinear:
+          printf("error with restricted QLinear model\n");
+          return;
+          break;
+        case d_weibull:
+          std::cout<<"choosing restricted weibull"<<std::endl;
+          anal.model = d_weibull;
+          //anal.prior = prRFreqWeibull;
+          prior = prRFreqWeibull;
+          break;
+        default:
+          printf("error with restricted models\n");
+          return;
+      }
+    } else {
+      //unrestricted
+      switch(model) {
+        case d_hill:
+          anal.model = d_hill;
+          //anal.prior = prUFreqDHill;
+          prior = prUFreqDHill;
+          break;
+        case d_gamma:
+          anal.model = d_gamma;
+          //anal.prior = prUFreqGamma;
+          prior = prUFreqGamma;
+          break;
+        case d_logistic:
+          anal.model = d_logistic;
+          //anal.prior = prUFreqLogistic;
+          prior = prUFreqLogistic;
+          break;
+        case d_loglogistic:
+          anal.model = d_loglogistic;
+          //anal.prior = prUFreqLogLogistic;
+          prior = prUFreqLogLogistic;
+          break;
+        case d_logprobit:
+          anal.model = d_logprobit;
+          //anal.prior = prUFreqLogProbit;
+          prior = prUFreqLogProbit;
+          break;
+        case d_multistage:
+          anal.model = d_multistage;
+          if (degree == 1){
+            //anal.prior = prUFreqMulti1;
+            prior = prUFreqMulti1;
+          } else if (degree == 2){
+            //anal.prior = prUFreqMulti2;
+            prior = prUFreqMulti2;
+          } else if (degree == 3){
+            //anal.prior = prUFreqMulti3;
+            prior = prUFreqMulti3;
+          } else if (degree == 4){
+            //anal.prior = prUFreqMulti4;
+            prior = prUFreqMulti4;
+          } else if (degree == 5){
+            //anal.prior = prUFreqMulti5;
+            prior = prUFreqMulti5;
+          }
+          break;
+        case d_probit:
+          anal.model = d_probit;
+          //anal.prior = prUFreqProbit;
+          prior = prUFreqProbit;
+          break;
+        case d_qlinear:
+          anal.model = d_qlinear;
+          //anal.prior = prUFreqQLinear;
+          prior = prUFreqQLinear;
+          break;
+        case d_weibull:
+          anal.model = d_weibull;
+          //anal.prior = prUFreqWeibull;
+          prior = prUFreqWeibull;
+          break;
+        default:
+          printf("error with restricted models\n");
+          return;
+      }
+    }
+  } else {
+    //bayesian
+    switch(model) {
+        case d_hill:
+          anal.model = d_hill;
+          //anal.prior = prBayesianDHill;
+          prior = prBayesianDHill;
+          break;
+        case d_gamma:
+          anal.model = d_gamma;
+          //anal.prior = prBayesianGamma;
+          prior = prBayesianGamma;
+          break;
+        case d_logistic:
+          anal.model = d_logistic;
+          //anal.prior = prBayesianLogistic;
+          prior = prBayesianLogistic;
+          return;
+          break;
+        case d_loglogistic:
+          anal.model = d_loglogistic;
+          //anal.prior = prBayesianLogLogistic;
+          prior = prBayesianLogLogistic;
+          break;
+        case d_logprobit:
+          anal.model = d_logprobit;
+          //anal.prior = prBayesianLogProbit;
+          prior = prBayesianLogProbit;
+          break;
+        case d_multistage:
+          anal.model = d_multistage;
+          if (degree == 1){
+            //anal.prior = prBayesianMulti1;
+            prior = prBayesianMulti1;
+          } else if (degree == 2){
+            //anal.prior = prBayesianMulti2;
+            prior = prBayesianMulti2;
+          } else if (degree == 3){
+            //anal.prior = prBayesianMulti3;
+            prior = prBayesianMulti3;
+          } else if (degree == 4){
+            //anal.prior = prBayesianMulti4;
+            prior = prBayesianMulti4;
+          } else if (degree == 5){
+            //anal.prior = prBayesianMulti5;
+            prior = prBayesianMulti5;
+          }
+          break;
+        case d_probit:
+          anal.model = d_probit;
+          //anal.prior = prBayesianProbit;
+          prior = prBayesianProbit;
+         // printf("error with restricted probit model\n");
+         // return;
+          break;
+        case d_qlinear:
+          anal.model =d_qlinear;
+          //anal.prior = prBayesianQLinear;
+          prior = prBayesianQLinear;
+          //printf("error with restricted QLinear model\n");
+          //return;
+          break;
+        case d_weibull:
+          anal.model = d_weibull;
+          //anal.prior = prBayesianWeibull;
+          prior = prBayesianWeibull;
+          break;
+        default:
+          printf("error with restricted models\n");
+          return;
+        }
+  }
+
+
+
+
+//////////BAYESIAN////////////////
+//  anal.model = d_logistic;
+//  double pr[] = {1,2,0, 0.1, 2, 1, -20, 1e-12, 20, 100};
+//  anal.model = d_hill;
+//  double pr[] = {1,1,1,2,-1,0,-3,0.693147,2,3,3.3,0.5,-40,-40,-40,1e-8,40,40,40,40};
+//  anal.model = d_gamma;
+//  double pr[] = {1,2,2,0,0.693147,0,2,0.424264,1,-18,0.2,1e-4,18,20,100};
+//  anal.model = d_loglogistic;
+//  double pr[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,1e-4,20,40,20};
+//  anal.model = d_logprobit;
+//  double pr[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-8,1e-4,20,8,40};
+//  anal.model = d_multistage;
+//  double pr[] = {1,2,0,0,2,0.5,-20,1e-4,20,100}; //degree 1
+//  double pr[] = {1,2,2,0,0,0,2,0.5,1,-20,1e-4,1e-4,20,100,1e6}; //degree 2
+//  double pr[] = {1,2,2,2,0,0,0,0,2,0.5,1,1,-20,1e-4,1e-4,1e-4,20,100,1e6,1e6}; //degree 3
+//  double pr[] = {1,2,2,2,2,0,0,0,0,0,2,0.5,1,1,1,-20,1e-4,1e-4,1e-4,1e-4,20,100,1e6,1e6,1e6}; //degree 4
+//  anal.model = d_probit;
+//  double pr[] = {1,2,0,0.1,2,1,-8,0,8,40};
+//  anal.model = d_qlinear;
+//  double pr[] = {1,2,0,0.5,2,1,-20,0,20,100};
+//  anal.model = d_weibull;
+//  double pr[] = {1,2,2,0,0.693147,0,2,0.424264,1,-20,1e-4,1e-4,20,18,20};
+
+
+
+//////////UNRESTRICTED FREQ////////////////
+//  anal.model = d_logistic;
+//  double pr[] = {0,0,0,0,0,0,-18,0,18,100};
+//  anal.model = d_hill;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1e-8,18,18,18,18};
+//  anal.model = d_gamma;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,0.2,0,18,18,100};
+//  anal.model = d_loglogistic;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
+//  anal.model = d_logprobit;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
+//  anal.model = d_multistage;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4};
+//  double pr[] = {0,0,0,0,0,0,-18,-18,18,100}; //degree 1
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4}; //degree 2
+//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,18,100,1e4,1e4}; //degree 3
+//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,18,100,1e4,1e4,1e4}; //degree 4 NOTWORKING
+//  anal.model = d_probit;
+//  double pr[] = {0,0,0,0,0,0,-18,0,18,18};
+//  anal.model = d_qlinear;
+//  double pr[] = {0,0,0,0,0,0,-18,0,18,100};
+//  anal.model = d_weibull;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1e-6,1e-6,18,18,100};
+
+
+//////////RESTRICTED FREQ////////////////
+//  anal.model = d_hill;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1,18,18,18,18};
+//  anal.model = d_gamma;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1,0,18,18,100};
+//  anal.model = d_loglogistic;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
+//  anal.model = d_logprobit;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
+//  anal.model = d_multistage;
+//  double pr[] = {0,0,0,0,0,0,-18,0,18,100}; //degree 1
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,0,0,18,100,1e4}; //degree 2
+//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,18,100,1e4,1e4}; //degree 3
+//NOTWORKING  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,18,100,1e4,1e4,1e4}; //degree 4
+//  anal.model = d_weibull;
+//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1,1e-6,18,18,100};
+
+  //declare analysis
+  anal.BMD_type = BMD_type;
+  anal.BMR = BMR;
+  anal.alpha = alpha;
+  anal.parms = numParms;
+  anal.Y.assign(Y, Y + numDataRows);
+  anal.n_group.assign(N, N + numDataRows);
+  anal.doses.assign(D, D + numDataRows); 
+  anal.prior_cols = prCols;
+  anal.n = numDataRows;
+  anal.degree = degree;
+
+  struct python_dichotomous_model_result res;
+  res.model = anal.model;
+  res.dist_numE = 200;
+  res.nparms = anal.parms;
+
+  struct dichotomous_GOF gof;
+
+  struct BMDS_results bmdsRes;
+  
+  
+  //set all parms as unbounded initially
+  for (int i=0; i<anal.parms; i++){
+     bmdsRes.bounded.push_back(false);
+     bmdsRes.stdErr.push_back(BMDS_MISSING);
+     bmdsRes.lowerConf.push_back(BMDS_MISSING);
+     bmdsRes.upperConf.push_back(BMDS_MISSING);
+  }
+  bmdsRes.BMD = -9999.0;
+  bmdsRes.BMDU = -9999.0;
+  bmdsRes.BMDL = -9999.0;
+  bmdsRes.AIC = -9999.0;
+
+
+  struct dicho_AOD aod;
+  double A1;
+  int N1;
+  double A2;
+  int N2;
+  double fittedLL;
+  int NFit;
+  double devFit;
+  double devRed;
+  int dfFit;
+  int dfRed;
+  int pvFit;
+  int pvRed;
+  aod.fullLL = A1;
+  aod.nFull = N1;
+  aod.redLL = A2;
+  aod.nRed = N2;
+  aod.fittedLL = fittedLL;
+  aod.nFit = NFit;
+  aod.devFit = devFit;
+  aod.devRed = devRed;
+  aod.dfFit = dfFit;
+  aod.dfRed = dfRed;
+  aod.pvFit = pvFit;
+  aod.pvRed = pvRed;
+
+  pythonBMDSDicho(&anal, &res, &gof, &bmdsRes, &aod);
+
+
+  printf("tlink bmdsRes.validResult = %s\n", bmdsRes.validResult ? "valid" : "invalid");
+  if (bmdsRes.validResult || showResultsOverride){
+
+  printf("\nBenchmark Dose\n");
+  printf("max: %f\n",res.max);
+  printf("BMD: %f\n",bmdsRes.BMD);
+  printf("BMDL: %f\n",bmdsRes.BMDL);
+  printf("BMDU: %f\n",bmdsRes.BMDU);
+  printf("AIC: %f\n",bmdsRes.AIC);
+  printf("LPP: %f\n", bmdsRes.BIC_equiv);
+  printf("P-value: %f\n", gof.p_value);
+  printf("DOF: %f\n", gof.df);
+  printf("Chi^2: %f\n", bmdsRes.chisq);
+
+  printf("\nModel Parameters\n");
+  printf("# of parms: %d\n", anal.parms);
+  printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+  for (int i=0; i<anal.parms; i++){
+     printf("%d, %.10f, %s, %f, %f, %f\n", i, res.parms[i], bmdsRes.bounded[i] ? "true" : "false",bmdsRes.stdErr[i], bmdsRes.lowerConf[i], bmdsRes.upperConf[i] );
+  }
+ 
+  printf("\ncov matrix\n");
+  for (int i=0; i<anal.parms*anal.parms; i++){
+    printf("%d, %f\n", i, res.cov[i]);
+  }
+ 
+  printf("\nGoodness of Fit\n");
+  printf("Dose, EstProb, Expected, Observed, Size, ScaledRes\n");
+  for (int i=0; i<gof.n; i++){
+    printf("%f, %f, %f, %f, %f, %f\n", anal.doses[i], gof.expected[i]/anal.n_group[i], gof.expected[i], anal.Y[i], anal.n_group[i], gof.residual[i]);
+  }
+  printf("\nError bars\n");
+  for (int i=0; i<gof.n; i++){
+    printf("%f, %f\n", gof.ebLower[i], gof.ebUpper[i]);
+  }
+
+  printf("\nAnalysis of Deviance\n");
+  printf("  Model,   LL,    #parms,   deviance,   test DF,  pval\n");
+  printf("Full Model,  %f,  %d,  -,  -,  NA\n", aod.fullLL, aod.nFull);
+  printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", aod.fittedLL, aod.nFit, aod.devFit, aod.dfFit, aod.pvFit);
+  printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", aod.redLL, aod.nRed, aod.devRed, aod.dfRed, aod.pvRed);
+
+  printf("\nBMD Dist:\n");
+    for (int i=0; i<res.dist_numE; i++){
+      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
+    }
   } else {
      printf("\nModel was not run\n");
   }
@@ -2922,21 +3471,25 @@ void runCompleteContAnalysis(){
   //double stdErr[anal.parms];
   //double lowerConf[anal.parms];
   //double upperConf[anal.parms];
-  bool* bounded = new bool[anal.parms];
-  double* stdErr = new double[anal.parms];
-  double* lowerConf = new double[anal.parms];
-  double* upperConf = new double[anal.parms];
+  //bool* bounded = new bool[anal.parms];
+  //double* stdErr = new double[anal.parms];
+  //double* lowerConf = new double[anal.parms];
+  //double* upperConf = new double[anal.parms];
   //set all parms as unbounded initially
   for (int i=0; i<anal.parms; i++){
-     bounded[i] = false;
-     stdErr[i] = -9999.0;
-     lowerConf[i] = -9999.0;
-     upperConf[i] = -9999.0;
+     //bounded[i] = false
+     BMDSres.bounded.push_back(false);;
+     //stdErr[i] = -9999.0;
+     BMDSres.stdErr.push_back(BMDS_MISSING);
+     BMDSres.lowerConf.push_back(BMDS_MISSING);
+     BMDSres.upperConf.push_back(BMDS_MISSING);
+     //lowerConf[i] = -9999.0;
+     //upperConf[i] = -9999.0;
   }
-  BMDSres.bounded = bounded;
-  BMDSres.stdErr = stdErr;
-  BMDSres.lowerConf = lowerConf;
-  BMDSres.upperConf = upperConf;
+  //BMDSres.bounded = bounded;
+  //BMDSres.stdErr = stdErr;
+  //BMDSres.lowerConf = lowerConf;
+  //BMDSres.upperConf = upperConf;
   BMDSres.BMD = -9999.0;
   BMDSres.BMDU = -9999.0;
   BMDSres.BMDL = -9999.0;
