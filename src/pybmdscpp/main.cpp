@@ -40,6 +40,7 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("doses", &python_dichotomous_analysis::doses)
        .def_readwrite("n_group", &python_dichotomous_analysis::n_group)
        .def_readwrite("prior", &python_dichotomous_analysis::prior)
+       .def_readwrite("BMR", &python_dichotomous_analysis::BMR)
        .def_readwrite("BMD_type", &python_dichotomous_analysis::BMD_type)
        .def_readwrite("alpha", &python_dichotomous_analysis::alpha)
        .def_readwrite("degree", &python_dichotomous_analysis::degree)

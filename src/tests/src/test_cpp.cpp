@@ -901,6 +901,7 @@ void runOldDichoAnalysis(){
   }
 
 }
+
 void runPythonDichoAnalysis(){
 
   printf("Running dichotomous analysis\n");
@@ -1069,8 +1070,6 @@ void runPythonDichoAnalysis(){
 
   }
 
-
-
   double *prior;
   if (modelType == 1) {
     //frequentist
@@ -1078,12 +1077,10 @@ void runPythonDichoAnalysis(){
       switch(model) {
         case d_hill:
           anal.model = d_hill;
-          //anal.prior = prRFreqDHill;
           prior = prRFreqDHill;
           break;
         case d_gamma:
           anal.model = d_gamma;
-          //anal.prior = prRFreqGamma;
           prior = prRFreqGamma;
           break;
         case d_logistic:
@@ -1092,30 +1089,23 @@ void runPythonDichoAnalysis(){
           break;
         case d_loglogistic:
           anal.model = d_loglogistic;
-          //anal.prior = prRFreqLogLogistic;
           prior = prRFreqLogLogistic;
           break;
         case d_logprobit:
           anal.model = d_logprobit;
-          //anal.prior = prRFreqLogProbit;
           prior = prRFreqLogProbit;
           break;
         case d_multistage:
           anal.model = d_multistage;
           if (degree == 1){
-            //anal.prior = prRFreqMulti1;
             prior = prRFreqMulti1;
           } else if (degree == 2){
-            //anal.prior = prRFreqMulti2;
             prior = prRFreqMulti2;
           } else if (degree == 3){
-            //anal.prior = prRFreqMulti3;
             prior = prRFreqMulti3;
           } else if (degree == 4){
-            //anal.prior = prRFreqMulti4;
             prior = prRFreqMulti4;
           } else if (degree == 5){
-            //anal.prior = prRFreqMulti5;
             prior = prRFreqMulti5;
           }
           break;
@@ -1128,9 +1118,7 @@ void runPythonDichoAnalysis(){
           return;
           break;
         case d_weibull:
-          std::cout<<"choosing restricted weibull"<<std::endl;
           anal.model = d_weibull;
-          //anal.prior = prRFreqWeibull;
           prior = prRFreqWeibull;
           break;
         default:
@@ -1142,61 +1130,48 @@ void runPythonDichoAnalysis(){
       switch(model) {
         case d_hill:
           anal.model = d_hill;
-          //anal.prior = prUFreqDHill;
           prior = prUFreqDHill;
           break;
         case d_gamma:
           anal.model = d_gamma;
-          //anal.prior = prUFreqGamma;
           prior = prUFreqGamma;
           break;
         case d_logistic:
           anal.model = d_logistic;
-          //anal.prior = prUFreqLogistic;
           prior = prUFreqLogistic;
           break;
         case d_loglogistic:
           anal.model = d_loglogistic;
-          //anal.prior = prUFreqLogLogistic;
           prior = prUFreqLogLogistic;
           break;
         case d_logprobit:
           anal.model = d_logprobit;
-          //anal.prior = prUFreqLogProbit;
           prior = prUFreqLogProbit;
           break;
         case d_multistage:
           anal.model = d_multistage;
           if (degree == 1){
-            //anal.prior = prUFreqMulti1;
             prior = prUFreqMulti1;
           } else if (degree == 2){
-            //anal.prior = prUFreqMulti2;
             prior = prUFreqMulti2;
           } else if (degree == 3){
-            //anal.prior = prUFreqMulti3;
             prior = prUFreqMulti3;
           } else if (degree == 4){
-            //anal.prior = prUFreqMulti4;
             prior = prUFreqMulti4;
           } else if (degree == 5){
-            //anal.prior = prUFreqMulti5;
             prior = prUFreqMulti5;
           }
           break;
         case d_probit:
           anal.model = d_probit;
-          //anal.prior = prUFreqProbit;
           prior = prUFreqProbit;
           break;
         case d_qlinear:
           anal.model = d_qlinear;
-          //anal.prior = prUFreqQLinear;
           prior = prUFreqQLinear;
           break;
         case d_weibull:
           anal.model = d_weibull;
-          //anal.prior = prUFreqWeibull;
           prior = prUFreqWeibull;
           break;
         default:
@@ -1209,66 +1184,49 @@ void runPythonDichoAnalysis(){
     switch(model) {
         case d_hill:
           anal.model = d_hill;
-          //anal.prior = prBayesianDHill;
           prior = prBayesianDHill;
           break;
         case d_gamma:
           anal.model = d_gamma;
-          //anal.prior = prBayesianGamma;
           prior = prBayesianGamma;
           break;
         case d_logistic:
           anal.model = d_logistic;
-          //anal.prior = prBayesianLogistic;
           prior = prBayesianLogistic;
           return;
           break;
         case d_loglogistic:
           anal.model = d_loglogistic;
-          //anal.prior = prBayesianLogLogistic;
           prior = prBayesianLogLogistic;
           break;
         case d_logprobit:
           anal.model = d_logprobit;
-          //anal.prior = prBayesianLogProbit;
           prior = prBayesianLogProbit;
           break;
         case d_multistage:
           anal.model = d_multistage;
           if (degree == 1){
-            //anal.prior = prBayesianMulti1;
             prior = prBayesianMulti1;
           } else if (degree == 2){
-            //anal.prior = prBayesianMulti2;
             prior = prBayesianMulti2;
           } else if (degree == 3){
-            //anal.prior = prBayesianMulti3;
             prior = prBayesianMulti3;
           } else if (degree == 4){
-            //anal.prior = prBayesianMulti4;
             prior = prBayesianMulti4;
           } else if (degree == 5){
-            //anal.prior = prBayesianMulti5;
             prior = prBayesianMulti5;
           }
           break;
         case d_probit:
           anal.model = d_probit;
-          //anal.prior = prBayesianProbit;
           prior = prBayesianProbit;
-         // printf("error with restricted probit model\n");
-         // return;
           break;
         case d_qlinear:
           anal.model =d_qlinear;
-          //anal.prior = prBayesianQLinear;
           prior = prBayesianQLinear;
-          //printf("error with restricted QLinear model\n");
-          //return;
           break;
         case d_weibull:
           anal.model = d_weibull;
-          //anal.prior = prBayesianWeibull;
           prior = prBayesianWeibull;
           break;
         default:
@@ -1276,76 +1234,6 @@ void runPythonDichoAnalysis(){
           return;
         }
   }
-
-
-
-
-//////////BAYESIAN////////////////
-//  anal.model = d_logistic;
-//  double pr[] = {1,2,0, 0.1, 2, 1, -20, 1e-12, 20, 100};
-//  anal.model = d_hill;
-//  double pr[] = {1,1,1,2,-1,0,-3,0.693147,2,3,3.3,0.5,-40,-40,-40,1e-8,40,40,40,40};
-//  anal.model = d_gamma;
-//  double pr[] = {1,2,2,0,0.693147,0,2,0.424264,1,-18,0.2,1e-4,18,20,100};
-//  anal.model = d_loglogistic;
-//  double pr[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,1e-4,20,40,20};
-//  anal.model = d_logprobit;
-//  double pr[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-8,1e-4,20,8,40};
-//  anal.model = d_multistage;
-//  double pr[] = {1,2,0,0,2,0.5,-20,1e-4,20,100}; //degree 1
-//  double pr[] = {1,2,2,0,0,0,2,0.5,1,-20,1e-4,1e-4,20,100,1e6}; //degree 2
-//  double pr[] = {1,2,2,2,0,0,0,0,2,0.5,1,1,-20,1e-4,1e-4,1e-4,20,100,1e6,1e6}; //degree 3
-//  double pr[] = {1,2,2,2,2,0,0,0,0,0,2,0.5,1,1,1,-20,1e-4,1e-4,1e-4,1e-4,20,100,1e6,1e6,1e6}; //degree 4
-//  anal.model = d_probit;
-//  double pr[] = {1,2,0,0.1,2,1,-8,0,8,40};
-//  anal.model = d_qlinear;
-//  double pr[] = {1,2,0,0.5,2,1,-20,0,20,100};
-//  anal.model = d_weibull;
-//  double pr[] = {1,2,2,0,0.693147,0,2,0.424264,1,-20,1e-4,1e-4,20,18,20};
-
-
-
-//////////UNRESTRICTED FREQ////////////////
-//  anal.model = d_logistic;
-//  double pr[] = {0,0,0,0,0,0,-18,0,18,100};
-//  anal.model = d_hill;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1e-8,18,18,18,18};
-//  anal.model = d_gamma;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,0.2,0,18,18,100};
-//  anal.model = d_loglogistic;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
-//  anal.model = d_logprobit;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
-//  anal.model = d_multistage;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4};
-//  double pr[] = {0,0,0,0,0,0,-18,-18,18,100}; //degree 1
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4}; //degree 2
-//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,18,100,1e4,1e4}; //degree 3
-//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,18,100,1e4,1e4,1e4}; //degree 4 NOTWORKING
-//  anal.model = d_probit;
-//  double pr[] = {0,0,0,0,0,0,-18,0,18,18};
-//  anal.model = d_qlinear;
-//  double pr[] = {0,0,0,0,0,0,-18,0,18,100};
-//  anal.model = d_weibull;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1e-6,1e-6,18,18,100};
-
-
-//////////RESTRICTED FREQ////////////////
-//  anal.model = d_hill;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1,18,18,18,18};
-//  anal.model = d_gamma;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1,0,18,18,100};
-//  anal.model = d_loglogistic;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
-//  anal.model = d_logprobit;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
-//  anal.model = d_multistage;
-//  double pr[] = {0,0,0,0,0,0,-18,0,18,100}; //degree 1
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,0,0,18,100,1e4}; //degree 2
-//  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,18,100,1e4,1e4}; //degree 3
-//NOTWORKING  double pr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,18,100,1e4,1e4,1e4}; //degree 4
-//  anal.model = d_weibull;
-//  double pr[] = {0,0,0,0,0,0,0,0,0,-18,1,1e-6,18,18,100};
 
   //declare analysis
   anal.BMD_type = BMD_type;
@@ -1358,6 +1246,7 @@ void runPythonDichoAnalysis(){
   anal.prior_cols = prCols;
   anal.n = numDataRows;
   anal.degree = degree;
+  anal.prior.assign(prior, prior + anal.prior_cols*anal.parms);
 
   struct python_dichotomous_model_result res;
   res.model = anal.model;
@@ -1453,10 +1342,10 @@ void runPythonDichoAnalysis(){
   printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", aod.fittedLL, aod.nFit, aod.devFit, aod.dfFit, aod.pvFit);
   printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", aod.redLL, aod.nRed, aod.devRed, aod.dfRed, aod.pvRed);
 
-  printf("\nBMD Dist:\n");
-    for (int i=0; i<res.dist_numE; i++){
-      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
-    }
+//  printf("\nBMD Dist:\n");
+//    for (int i=0; i<res.dist_numE; i++){
+//      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
+//    }
   } else {
      printf("\nModel was not run\n");
   }

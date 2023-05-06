@@ -16,16 +16,10 @@ int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *
    // First find number of bounded parms
    int bounded = 0;
    BMDSres->bounded.clear();
-//   std::cout << "checkForBoundedParms with tol:"<<BMDS_EPS<<"\n";
    for (int i=0; i<nparms; i++){
       BMDSres->bounded.push_back(false);
       //5*i+4 is location of min in prior array
       //5*i+5 is location of max in prior array 
-//      std::cout<<"i:"<<i<<", parms[i]: "<<parms[i]<<"\n";
-//      std::cout<<"lowerBound: " << lowerBound[i] << std::endl;
-//      std::cout<<"upperBound: " << upperBound[i] << std::endl;
-//      std::cout<<"lower bound check: "<<fabs(parms[i]-lowerBound[i])<<"\n";
-//      std::cout<<"upper bound check: "<<fabs(parms[i]-upperBound[i])<<"\n";
       if (fabs(parms[i]-lowerBound[i]) < BMDS_EPS || fabs(parms[i]-upperBound[i]) < BMDS_EPS){
          bounded++;
          BMDSres->bounded[i] = true;
@@ -212,10 +206,12 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-
-
+  
   bmdsRes->validResult = false;
+  bmdsRes->bounded.resize(anal->parms);
+  fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
   estimate_sm_laplace_dicho(anal, res, true);
+
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
   gofData.Y = anal->Y;
@@ -242,10 +238,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   gofRes.p_value = gofPVal;
   gofRes.df = gofDF;
   
-
   compute_dichotomous_pearson_GOF(&gofData, &gofRes);
   
-
   gof->test_statistic = gofRes.test_statistic;
 
   //these will be updated later with bounded parm info
@@ -356,12 +350,9 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
   for (int i=0; i< anal->parms; i++){
     //std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
-    //bmdsRes->stdErr[i] = BMDS_MISSING;
     bmdsRes->stdErr.push_back(BMDS_MISSING);
     bmdsRes->lowerConf.push_back(BMDS_MISSING);
     bmdsRes->upperConf.push_back(BMDS_MISSING);
-    //bmdsRes->lowerConf[i] = BMDS_MISSING;
-    //bmdsRes->upperConf[i] = BMDS_MISSING;
   } 
 
   calcParmCIs_dicho (res, bmdsRes);
@@ -374,26 +365,14 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
 
-  std::cout<<"b4 clean"<<std::endl;  
-  for (int i=0; i<res->dist_numE;i++){
-    std::cout<<res->bmd_dist[i]<<std::endl;
-  }
-
   clean_dicho_results(res, gof, bmdsRes, bmdsAOD);
 
   bool goodCDF = false;
   for (int i=0; i<res->dist_numE;i++){
-    std::cout<<res->bmd_dist[i]<<std::endl;
     if (res->bmd_dist[i] != BMDS_MISSING){
       goodCDF = true;
     }
   }
-
-  std::cout<<"DEBUG--------------------"<<std::endl;
-  std::cout<<"BMD:"<<bmdsRes->BMD<<std::endl;
-  std::cout<<"is inf:"<<std::isinf(bmdsRes->BMD)<<std::endl;
-  std::cout<<"is finite:"<<std::isfinite(bmdsRes->BMD)<<std::endl;
-  std::cout<<"goodCDF:"<<goodCDF<<std::endl;
 
   if (bmdsRes->BMD != BMDS_MISSING && !std::isinf(bmdsRes->BMD) && std::isfinite(bmdsRes->BMD) && goodCDF) {
     bmdsRes->validResult = true;
@@ -839,16 +818,6 @@ void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *
 
 void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod){
   
-//  struct dichotomous_aod aod;
-//  double A1 = BMDS_MISSING;
-//  int N1 = BMDS_MISSING;
-//  double A2 = BMDS_MISSING;
-//  int N2 = BMDS_MISSING;
-//  aod.A1 = A1;
-//  aod.N1 = N1;
-//  aod.A2 = A2;
-//  aod.N2 = N2;
-
   deviance_dichotomous(DA, aod);
 
   bmdsAOD->fullLL = -1*aod->A1;
@@ -862,7 +831,6 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
       bounded++;
     }
   }
-
 
   bmdsAOD->devFit = 2*(bmdsAOD->fullLL - bmdsAOD->fittedLL);
 
@@ -881,7 +849,7 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
   } else {
     bmdsAOD->pvRed = 1.0 - gsl_cdf_chisq_P(dev, df);
   }
-  
+
 }
 
 void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GOFanal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
@@ -1438,16 +1406,7 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
 
-  std::cout<<"Inside pythonBMDSDicho" << std::endl;
-
   //1st convert from python struct
- 
-  std::cout<<"pyRes->nparms:"<<pyRes->nparms<<std::endl;
-  std::cout<<"pyAnal->n_group size:"<<pyAnal->n_group.size()<<std::endl;;
-  std::cout<<"pyAnal prior:"<<std::endl;
-  for(auto i=pyAnal->prior.begin(); i!=pyAnal->prior.end(); ++i) std::cout<< *i << ' ';
-  std::cout<<std::endl;
-
   dichotomous_analysis anal;
   anal.Y = new double[pyAnal->n];
   anal.doses = new double[pyAnal->n];
@@ -1462,8 +1421,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
   convertFromPythonDichoRes(&res, pyRes);
 
   runBMDSDichoAnalysis(&anal, &res, gof, bmdsRes, aod);     
-
-  std::cout<<"valid result" << bmdsRes->validResult<<std::endl;
 
   convertToPythonDichoRes(&res, pyRes);
 
