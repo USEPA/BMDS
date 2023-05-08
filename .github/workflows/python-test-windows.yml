@@ -19,30 +19,35 @@ jobs:
       - name: cmake tests
         shell: pwsh
         run: |
+          # setup EIGEN
           # TODO - pin a version
           git clone https://gitlab.com/libeigen/eigen.git
           ls ${{github.workspace}}\eigen
-          # set "EIGEN_DIR=${{github.workspace}}\eigen"
-
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: try to restore pip cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('setup.py', 'requirements_dev.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - name: Install dependencies
+          echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
+          # setup GSL
+          # setup
+      - name: check environment
+        shell: pwsh
         run: |
-          python -m pip install -U pip wheel
-          python -m pip install -r requirements_dev.txt
-      - name: Check linting
-        run: |
-          make lint
-      - name: Test with pytest
-        run: |
-          make test
+          gci env:* | sort-object name
+      # - name: Set up Python ${{ matrix.python-version }}
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
+      # - name: try to restore pip cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/.cache/pip
+      #     key: ${{ runner.os }}-pip-${{ hashFiles('setup.py', 'requirements_dev.txt') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-
+      # - name: Install dependencies
+      #   run: |
+      #     python -m pip install -U pip wheel
+      #     python -m pip install -r requirements_dev.txt
+      # - name: Check linting
+      #   run: |
+      #     make lint
+      # - name: Test with pytest
+      #   run: |
+      #     make test
