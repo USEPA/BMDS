@@ -23,22 +23,22 @@ jobs:
       - name: install nlopt
         shell: cmd
         run: |
-          git clone https://github.com/stevengj/nlopt.git
+          git clone --depth 1 https://github.com/stevengj/nlopt.git
           cd nlopt
           cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
           cmake --build . --config Release --target install
+          ls ${{github.workspace}}nlopt\install\include
+          echo "NLOPT_DIR=${{github.workspace}}nlopt\install\include\" >> $env:GITHUB_ENV
       - name: install eigen
         shell: pwsh
         run: |
-          git clone https://gitlab.com/libeigen/eigen.git
-          ls ${{github.workspace}}\eigen
+          git clone --depth 1 https://gitlab.com/libeigen/eigen.git
+          ls ${{github.workspace}}\Eigen\src
           echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
       - name: install gsl
         shell: pwsh
         run: |
           vcpkg install gsl gsl:x64-windows
-          ls C:/vcpkg/packages/gsl_x86-windows/share/gsl/
-          echo "GSL_DIR=C:/vcpkg/packages/gsl_x86-windows/share/gsl/" >> $env:GITHUB_ENV
       - name: cmake tests
         shell: pwsh
         run: |
