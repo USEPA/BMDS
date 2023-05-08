@@ -20,6 +20,13 @@ jobs:
         os: ["windows-2022"]
     steps:
       - uses: actions/checkout@v3
+      - name: cmake enviro
+        shell: pwsh
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release
       - name: cmake tests
         shell: pwsh
         run: |
