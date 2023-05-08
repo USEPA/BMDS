@@ -20,18 +20,25 @@ jobs:
         os: ["windows-2022"]
     steps:
       - uses: actions/checkout@v3
-      - name: cmake enviro
+      - name: install nlopt
+        shell: cmd
+        run: |
+          git clone https://github.com/stevengj/nlopt.git
+          cd nlopt
+          cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
+          cmake --build . --config Release --target install
+      - name: install eigen
         shell: pwsh
         run: |
-          # TODO - pin ALL versions
-          # install gsl
-          vcpkg install gsl gsl:x64-windows
-          ls C:/vcpkg/packages/gsl_x86-windows/share/gsl/
-          echo "GSL_DIR=C:/vcpkg/packages/gsl_x86-windows/share/gsl/" >> $env:GITHUB_ENV
-          # install Eigen
           git clone https://gitlab.com/libeigen/eigen.git
           ls ${{github.workspace}}\eigen
           echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
+      - name: install gsl
+        shell: pwsh
+        run: |
+          vcpkg install gsl gsl:x64-windows
+          ls C:/vcpkg/packages/gsl_x86-windows/share/gsl/
+          echo "GSL_DIR=C:/vcpkg/packages/gsl_x86-windows/share/gsl/" >> $env:GITHUB_ENV
       - name: cmake tests
         shell: pwsh
         run: |
@@ -41,15 +48,6 @@ jobs:
           cd build
           cmake ..
           cmake --build . --config Release
-          # install nlopt
-          git clone https://github.com/stevengj/nlopt.git
-          cd nlopt
-          cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
-          cmake --build . --config Release --target install
-      - name: check environment
-        shell: pwsh
-        run: |
-          gci env:* | sort-object name
       # - name: Set up Python ${{ matrix.python-version }}
       #   uses: actions/setup-python@v4
       #   with:
