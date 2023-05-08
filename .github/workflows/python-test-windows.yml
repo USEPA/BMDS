@@ -23,10 +23,15 @@ jobs:
       - name: cmake enviro
         shell: pwsh
         run: |
+          # TODO - pin ALL versions
           # install gsl
           vcpkg install gsl gsl:x64-windows
           ls C:/vcpkg/packages/gsl_x86-windows/share/gsl/
           echo "GSL_DIR=C:/vcpkg/packages/gsl_x86-windows/share/gsl/" >> $env:GITHUB_ENV
+          # install Eigen
+          git clone https://gitlab.com/libeigen/eigen.git
+          ls ${{github.workspace}}\eigen
+          echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
       - name: cmake tests
         shell: pwsh
         run: |
@@ -36,11 +41,6 @@ jobs:
           cd build
           cmake ..
           cmake --build . --config Release
-          # TODO - pin ALL versions
-          # install Eigen
-          git clone https://gitlab.com/libeigen/eigen.git
-          ls ${{github.workspace}}\eigen
-          echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
           # install nlopt
           git clone https://github.com/stevengj/nlopt.git
           cd nlopt
