@@ -23,14 +23,18 @@ jobs:
       - name: cmake tests
         shell: pwsh
         run: |
-          # setup EIGEN
-          # TODO - pin a version
+          # TODO - pin ALL versions
+          # install Eigen
           git clone https://gitlab.com/libeigen/eigen.git
           ls ${{github.workspace}}\eigen
           echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
-          # setup GSL
+          # install nlopt
+          git clone https://github.com/stevengj/nlopt.git
+          cd nlopt
+          cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
+          cmake --build . --config Release --target install
+          # install gsl
           vcpkg install gsl gsl:x64-windows
-          # setup
       - name: check environment
         shell: pwsh
         run: |
