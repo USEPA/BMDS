@@ -25,14 +25,17 @@ jobs:
         run: |
           # install gsl
           vcpkg install gsl gsl:x64-windows
+          ls C:/vcpkg/packages/gsl_x86-windows/share/gsl/
+          echo "GSL_DIR=C:/vcpkg/packages/gsl_x86-windows/share/gsl/" >> $env:GITHUB_ENV
+      - name: cmake tests
+        shell: pwsh
+        run: |
+          gci env:* | sort-object name
           # build bmdscore cmake
           mkdir build
           cd build
           cmake ..
           cmake --build . --config Release
-      - name: cmake tests
-        shell: pwsh
-        run: |
           # TODO - pin ALL versions
           # install Eigen
           git clone https://gitlab.com/libeigen/eigen.git
