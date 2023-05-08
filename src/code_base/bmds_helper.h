@@ -35,6 +35,13 @@ extern std::string BMDS_VERSION;
 #elif _WIN32
 #pragma pack(4)
 #endif
+
+struct test_struct{
+  double BMD;
+  int n;
+  bool validResult;
+  std::vector<double> doses;
+};
 // BMD_results:
 //   Purpose - Contains various BMD values returned by BMDS.
 //   It is used to facilitate returning results needed for BMDS software. 
@@ -45,10 +52,10 @@ struct BMDS_results{
   double AIC;   
   double BIC_equiv;
   double chisq;
-  bool *bounded;
-  double *stdErr;
-  double *lowerConf;
-  double *upperConf;
+  std::vector<bool> bounded;
+  std::vector<double> stdErr;
+  std::vector<double> lowerConf;
+  std::vector<double> upperConf;
   bool validResult;
 };
 
@@ -122,13 +129,52 @@ struct continuous_GOF {
 
 struct dichotomous_GOF {
   int     n;        // total number of observations obs/n 
-  double *expected; // 
-  double *residual; //size of the group
+  std::vector<double> expected; 
+  std::vector<double> residual;
   double  test_statistic; 
   double  p_value; 
   double  df;  
-  double *ebLower;
-  double *ebUpper;
+  std::vector<double> ebLower;
+  std::vector<double> ebUpper;
+};
+
+struct python_dichotomous_analysis{
+  int model; // Model Type as listed in dich_model
+  int n;     // total number of observations obs/n
+  //double *Y; // observed +
+  //double *doses; //
+  //double *n_group; //size of the group
+  //double *prior; // a column order matrix parms X prior_cols
+  std::vector<double> Y;  // observed +
+  std::vector<double> doses;  
+  std::vector<double> n_group; //size of the group
+  std::vector<double> prior;  //a column order matrix (parms x prior_cols)
+  int BMD_type; // 1 = extra ; added otherwise
+  double BMR;
+  double alpha; // alpha of the analysis
+  int degree;  // degree of polynomial used only  multistage
+  int samples; // number of MCMC samples.
+  int burnin;  // size of burin
+  int parms;   // number of parameters in the model
+  int prior_cols; // colunns in the prior
+};
+
+struct python_dichotomous_model_result{
+  int      model;               // dichotomous model specification
+  int      nparms;              //number of parameters in the model
+  //double  *parms;               // Parameter Estimate
+  //double  *cov;                 // Covariance Estimate
+  std::vector<double> parms;    // Parameter Estimate
+  std::vector<double> cov;      // Covariance Estimate
+  double   max;                 // Value of the Likelihood/Posterior at the maximum
+  int      dist_numE;           // number of entries in rows for the bmd_dist
+  double      model_df;         // Used model degrees of freedom
+  double      total_df;         // Total degrees of freedom
+  //double  *bmd_dist;            // bmd distribution (dist_numE x 2) matrix
+  std::vector<double> bmd_dist; // bmd distribution (dist_numE x 2) matrix
+  double  bmd;                  // the central estimate of the BMD
+  double gof_p_value;           // P-value from Chi Square goodness of fit
+  double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
 };
 
 #ifdef _WIN32
@@ -173,6 +219,13 @@ void clean_cont_results(struct continuous_model_result *res, struct BMDS_results
 
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
+
+void convertFromPythonDichoAnalysis(struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal);
+
+void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes);
+
+void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret);
+
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
@@ -182,6 +235,10 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
 string BMDS_ENTRY_API __stdcall version();
 
 int BMDS_ENTRY_API __stdcall add2(int i, int j);
+
+void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 #ifdef __cplusplus
 }
