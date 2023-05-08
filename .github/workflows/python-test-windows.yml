@@ -17,8 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: cmake tests
+        shell: pwsh
         run: |
-          echo "hello!"
+          # TODO - pin a version
+          git clone https://gitlab.com/libeigen/eigen.git
+          ls ${{github.workspace}}\eigen
+          # set "EIGEN_DIR=${{github.workspace}}\eigen"
+
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
