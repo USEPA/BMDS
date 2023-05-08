@@ -25,6 +25,12 @@ jobs:
           ls ${{github.workspace}}\eigen
           echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
           # setup GSL
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          ls .
+          .\bootstrap-vcpkg.bat
+          .\vcpkg integrate install
+          .\vcpkg install gsl gsl:x64-windows
           # setup
       - name: check environment
         shell: pwsh
