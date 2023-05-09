@@ -44,8 +44,8 @@ jobs:
           conda --version
           conda info
           conda install gsl --yes
-          ls Invoke-Expression "$Env:CONDA"
-          ls Invoke-Expression "$Env:CONDA\pkgs"
+          Invoke-Expression "ls $Env:CONDA"
+          Invoke-Expression "ls $Env:CONDA\pkgs"
       - name: build bmds with cmake
         shell: pwsh
         run: |
