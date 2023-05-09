@@ -40,8 +40,10 @@ jobs:
       - name: install gsl
         shell: pwsh
         run: |
+          echo "$Env:CONDA"
           ls "$Env:CONDA"
-          "$Env:CONDA\conda" install gsl --yes
+          Invoke-Expression "$Env:CONDA\conda --version"
+          Invoke-Expression "$Env:CONDA\conda install gsl --yes"
       - name: build bmds with cmake
         shell: pwsh
         run: |
