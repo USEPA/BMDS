@@ -42,8 +42,12 @@ jobs:
         run: |
           echo "$Env:CONDA"
           ls "$Env:CONDA"
-          Invoke-Expression "$Env:CONDA\conda --version"
-          Invoke-Expression "$Env:CONDA\conda install gsl --yes"
+          ls "$Env:CONDA\condabin"
+          ls "$Env:CONDA\shell"
+          ls "$Env:CONDA\shell\condabin"
+          Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
+          conda --version
+          conda install gsl --yes
       - name: build bmds with cmake
         shell: pwsh
         run: |
