@@ -28,7 +28,7 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
           cmake --build . --config Release --target install
           ls ${{github.workspace}}nlopt\install\include
-          echo "NLOPT_DIR=${{github.workspace}}nlopt\install\include\" >> $env:GITHUB_ENV
+          echo "NLOPT_DIR=${{github.workspace}}\nlopt\install\include\" >> $env:GITHUB_ENV
       - name: install eigen
         shell: pwsh
         run: |
