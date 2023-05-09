@@ -40,8 +40,8 @@ jobs:
       - name: install gsl
         shell: pwsh
         run: |
-          ls $Env:CONDA
-          $Env:CONDA/conda install gsl --yes
+          ls "$Env:CONDA"
+          "$Env:CONDA\conda" install gsl --yes
       - name: build bmds with cmake
         shell: pwsh
         run: |
