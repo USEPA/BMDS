@@ -45,7 +45,10 @@ jobs:
           conda info
           conda install gsl --yes
           Invoke-Expression "ls $Env:CONDA"
-          Invoke-Expression "ls $Env:CONDA\pkgs"
+          Invoke-Expression "ls $Env:CONDA\Library"
+          Invoke-Expression "ls $Env:CONDA\Library\include"
+          Invoke-Expression "ls $Env:CONDA\Library\include\gsl"
+          echo "GSL_LIB=$Env:CONDA\Library" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
