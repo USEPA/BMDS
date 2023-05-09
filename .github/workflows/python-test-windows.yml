@@ -43,8 +43,9 @@ jobs:
           Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
           conda --version
           conda info
-          conda install gsl --yes
-          echo "GSL_LIB=$Env:CONDA\Library\include" >> $env:GITHUB_ENV
+          conda install -c conda-forge --yes gsl==2.7 eigen==3.4.0 nlopt==2.7.1 cmake make ninja
+          Invoke-Expression "ls $Env:CONDA\Library"
+          echo "GSL_LIB=$Env:CONDA\Library" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
