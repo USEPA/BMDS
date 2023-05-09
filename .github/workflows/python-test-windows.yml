@@ -40,7 +40,7 @@ jobs:
       - name: install gsl
         shell: pwsh
         run: |
-          conda install gsl --yes
+          C:\Miniconda\conda install gsl --yes
       - name: build bmds with cmake
         shell: pwsh
         run: |
