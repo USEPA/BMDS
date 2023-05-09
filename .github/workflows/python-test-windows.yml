@@ -33,13 +33,13 @@ jobs:
         shell: pwsh
         run: |
           git clone --depth 1 https://gitlab.com/libeigen/eigen.git
-          ls ${{github.workspace}}\Eigen\src
-          echo "EIGEN_DIR=${{github.workspace}}\Eigen\src" >> $env:GITHUB_ENV
+          ls ${{github.workspace}}\eigen\Eigen\src
+          echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
       - name: install gsl
         shell: pwsh
         run: |
           vcpkg install gsl gsl:x64-windows
-      - name: cmake tests
+      - name: build bmds with cmake
         shell: pwsh
         run: |
           gci env:* | sort-object name
