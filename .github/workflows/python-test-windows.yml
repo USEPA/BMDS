@@ -20,25 +20,27 @@ jobs:
         os: ["windows-2022"]
     steps:
       - uses: actions/checkout@v3
-      - name: install nlopt
-        shell: cmd
-        run: |
-          git clone --depth 1 https://github.com/stevengj/nlopt.git
-          cd nlopt
-          cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
-          cmake --build . --config Release --target install
-          ls ${{github.workspace}}\nlopt\install\include
-          echo "NLOPT_DIR=${{github.workspace}}\nlopt\install\include\" >> $env:GITHUB_ENV
-      - name: install eigen
-        shell: pwsh
-        run: |
-          git clone --depth 1 https://gitlab.com/libeigen/eigen.git
-          ls ${{github.workspace}}\eigen\Eigen\src
-          echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
+      # - name: install nlopt
+      #   shell: cmd
+      #   run: |
+      #     :: https://github.com/stevengj/nlopt/tags
+      #     git clone --depth 1 --branch v2.7.1 https://github.com/stevengj/nlopt.git
+      #     cd nlopt
+      #     cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
+      #     cmake --build . --config Release --target install
+      #     ls ${{github.workspace}}\nlopt\install\include
+      #     echo "NLOPT_DIR=${{github.workspace}}\nlopt\install\include\" >> $env:GITHUB_ENV
+      # - name: install eigen
+      #   shell: pwsh
+      #   run: |
+      #     # https://gitlab.com/libeigen/eigen/-/tags
+      #     git clone --depth 1 --branch 3.4.0 https://gitlab.com/libeigen/eigen.git
+      #     ls ${{github.workspace}}\eigen\Eigen\src
+      #     echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
       - name: install gsl
         shell: pwsh
         run: |
-          vcpkg install gsl gsl:x64-windows
+          conda install gsl --yes
       - name: build bmds with cmake
         shell: pwsh
         run: |
