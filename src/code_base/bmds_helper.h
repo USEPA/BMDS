@@ -63,11 +63,16 @@ struct BMDSMA_results{
   double BMD_MA;
   double BMDL_MA;
   double BMDU_MA;
-  double *BMD;
-  double *BMDL;
-  double *BMDU;
-  double *ebLower;  //size is number of dose groups
-  double *ebUpper;  //size is number of dose groups
+  //double *BMD;
+  //double *BMDL;
+  //double *BMDU;
+  //double *ebLower;  //size is number of dose groups
+  //double *ebUpper;  //size is number of dose groups
+  std::vector<double> BMD;
+  std::vector<double> BMDL;
+  std::vector<double> BMDU;
+  std::vector<double> ebLower;  //size is number of dose groups
+  std::vector<double> ebUpper;  //size is number of dose groups
 };
 
 
@@ -175,7 +180,33 @@ struct python_dichotomous_model_result{
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
+
+//  python_dichotomous_model_result(int model) : model(model)
+//  {
+//  }
+
 };
+
+struct python_dichotomousMA_analysis{
+  int    nmodels;      		//number of models for the model average
+  std::vector<std::vector<double>> priors;     		// List of pointers to prior arrays
+                       		// priors[i] is the prior array for the ith model ect
+  std::vector<int> nparms;     //parameters in each model
+  std::vector<int> actual_parms;//actual number of parameters in the model
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                       		// presently there are only 5
+  std::vector<int> models;      // list of models this is defined by dich_model.
+  std::vector<double> modelPriors; // prior probability on the model
+};
+
+struct python_dichotomousMA_result{
+  int                       nmodels; //number of models for each
+  std::vector<python_dichotomous_model_result> models;  //Individual model fits for each model average
+  int dist_numE; // number of entries in rows for the bmd_dist
+  std::vector<double> post_probs; // posterior probabilities
+  std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+};
+
 
 #ifdef _WIN32
 #pragma pack()
@@ -239,6 +270,10 @@ int BMDS_ENTRY_API __stdcall add2(int i, int j);
 void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+
+//void BMDS_ENTRY_API __stdcall old_pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct python_BMDSMA_results *bmdsRes);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
 
 #ifdef __cplusplus
 }
