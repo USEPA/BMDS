@@ -54,6 +54,7 @@ void init_test1(py::module &);
 
 
 
+
 PYBIND11_MODULE(bmdscore, m) {
     m.doc() = "bmdscore c++ interface";
     py::enum_<dich_model>(m, "dich_model", py::arithmetic(), "Dichotomous model enumeration")

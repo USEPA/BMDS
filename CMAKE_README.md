@@ -1,8 +1,4 @@
-
-
-
-># CMAKE build instructions
-
+# CMAKE build instructions
 
 ## Developer setup
 ### Requirements
@@ -33,46 +29,47 @@ Visual Studio 19 or greater
 
 ## Build process
 
-
 ### clone project
+
 ```bash
 git clone git@github.com:USEPA/bmds.git
 cd bmds
 ```
 
 ### build c++ src
-*from base bmds directory*
+
 ```bash
 cd src
 mkdir build
 cd build
 cmake ..
-make   (for Linux/Mac)
-cmake --build . --config Release  (for Windows)
+make  # (for Linux/Mac)
+cmake --build . --config Release  # (for Windows)
 ```
 
 ### build c++ test
-*from base bmds directory*
+
 ```bash
 cd src/tests
 mkdir build
 cd build
 cmake ..
-make   (for Linux/Mac)
-cmake --build . --config Release  (for Windows)
+make  # (for Linux/Mac)
+cmake --build . --config Release  # (for Windows)
 ```
 
 ### build python shared object
-*from base bmds directory*
+
 ```bash
 mkdir build
 cd build
 cmake ..
-make   (for Linux/Mac)
-cmake --build . --config Release  (for Windows)
+make  # (for Linux/Mac)
+cmake --build . --config Release  # (for Windows)
 ```
 
 ### build pybmds
+
 follow instructions in [README.md](README.md)
 
 

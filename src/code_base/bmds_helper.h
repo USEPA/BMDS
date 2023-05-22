@@ -168,7 +168,6 @@ struct python_dichotomous_model_result{
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
-
 };
 
 struct python_dichotomousMA_analysis{
@@ -221,7 +220,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
 void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod);
 
-//void collect_dicho_bmd_values(double *bmd_dist, struct BMD_results *BMDres);
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres, double estParmCount);
 
 void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres);
