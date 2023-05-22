@@ -11,6 +11,48 @@ namespace py = pybind11;
 
 void init_test1(py::module &);
 
+////wrapper to expose vector of python_dichotomous_model_result structs to python
+//struct python_dichotomousMA_resultPy : python_dichotomousMA_result{
+//  py::list modelsPy;
+//
+//  public:
+//  void modelsPy_set(const py::list & modelsPy)
+//  //void my_setter(const py::list & models_vector_py)
+//  {
+//    std::cout<<"inside setter"<<std::endl;
+//    this->models.clear();
+//    for(auto& entry : modelsPy){
+//      python_dichotomous_model_result res = entry.cast<python_dichotomous_model_result>;
+//      this->models.push_back(res);
+//    }
+//    //for(int i = 0; i < py::len(modelsPy); ++i) {
+//    //    //this->models.emplace_back(modelsPy[i].model);
+//    //    //this->models.push_back(modelsPy[i].cast<python_dichotomous_model_result *>());
+//    //}
+//  }
+//
+//  py::list modelsPy_get()
+//  {
+//    py::list models_vector_py;
+//      for(const auto & x : this->models) {
+//          models_vector_py.append(x);
+//      }
+//    return models_vector_py;
+//  }
+//};
+
+
+//pybind11::list python_dichotomousMA_resultPy::models_vector_py_get()
+//{
+//  pybind11::list models_vector_py;
+//    for(const auto & x : this->models) {
+//        models_vector_py.append(x);
+//    }
+//  return models_vector_py;
+//}
+
+
+
 
 
 PYBIND11_MODULE(bmdscore, m) {
@@ -99,6 +141,39 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("dfRed", &dicho_AOD::dfRed)
        .def_readwrite("pvFit", &dicho_AOD::pvFit)
        .def_readwrite("pvRed", &dicho_AOD::pvRed);
+    py::class_<python_dichotomousMA_analysis>(m, "python_dichotomousMA_analysis")
+       .def(py::init<>())
+       .def_readwrite("nmodels", &python_dichotomousMA_analysis::nmodels)
+       .def_readwrite("priors", &python_dichotomousMA_analysis::priors)
+       .def_readwrite("nparms", &python_dichotomousMA_analysis::nparms)
+       .def_readwrite("actual_parms", &python_dichotomousMA_analysis::actual_parms)
+       .def_readwrite("prior_cols", &python_dichotomousMA_analysis::prior_cols)
+       .def_readwrite("models", &python_dichotomousMA_analysis::models)
+       .def_readwrite("modelPriors", &python_dichotomousMA_analysis::modelPriors);
+    py::class_<python_dichotomousMA_result>(m, "python_dichotomousMA_result")
+       .def(py::init<>())
+       .def_readwrite("nmodels", &python_dichotomousMA_result::nmodels)
+       .def_readwrite("models", &python_dichotomousMA_result::models)
+       .def_readwrite("dist_numE", &python_dichotomousMA_result::dist_numE)
+       .def_readwrite("post_probs", &python_dichotomousMA_result::post_probs)
+       .def_readwrite("bmd_dist", &python_dichotomousMA_result::bmd_dist);
+//    py::class_<python_dichotomousMA_resultPy>(m, "python_dichotomousMA_result")
+//       .def(py::init<>())
+//       .def_readwrite("nmodels", &python_dichotomousMA_result::nmodels)
+//       .def_property("models", &python_dichotomousMA_resultPy::modelsPy_get, &python_dichotomousMA_resultPy::modelsPy_set)
+//       .def_readwrite("dist_numE", &python_dichotomousMA_result::dist_numE)
+//       .def_readwrite("post_probs", &python_dichotomousMA_result::post_probs)
+//       .def_readwrite("bmd_dist", &python_dichotomousMA_result::bmd_dist);
+    py::class_<BMDSMA_results>(m, "BMDSMA_results")
+       .def(py::init<>())
+       .def_readwrite("BMD_MA", &BMDSMA_results::BMD_MA)
+       .def_readwrite("BMDL_MA", &BMDSMA_results::BMDL_MA)
+       .def_readwrite("BMDU_MA", &BMDSMA_results::BMDU_MA)
+       .def_readwrite("BMD", &BMDSMA_results::BMD)
+       .def_readwrite("BMDL", &BMDSMA_results::BMDL)
+       .def_readwrite("BMDU", &BMDSMA_results::BMDU)
+       .def_readwrite("ebLower", &BMDSMA_results::ebLower)
+       .def_readwrite("ebUpper", &BMDSMA_results::ebUpper);
     // functions
     init_test1(m);
 
