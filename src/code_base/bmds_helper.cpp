@@ -382,30 +382,10 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
-  std::cout<<"Inside runBMDSDichoMA" <<std::endl;
-  std::cout<<"MA:"<<std::endl;
-  std::cout<<"nmodels:"<<MA->nmodels<<std::endl;
-  for(int i=0; i<MA->nmodels; i++){
-    std::cout<<"model "<<i<<std::endl;
-//    std::cout<<"  nparms:"<<MA->nparms[i]<<std::endl;
-    std::cout<<"  actual_parms:"<<MA->actual_parms[i]<<std::endl;
-    std::cout<<"  prior_cols:"<<MA->prior_cols[i]<<std::endl;
-    std::cout<<"  models:"<<MA->models[i]<<std::endl;
-    std::cout<<"  modelPriors:"<<MA->modelPriors[i]<<std::endl;
-    std::cout<<"  prior:";
-    for (int j=0; j<MA->actual_parms[i]*MA->prior_cols[i]; j++){
-      std::cout<<MA->priors[i][j]<<' ';
-    }
-    std::cout<<std::endl;
-  }
-
-
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
-  std::cout<<"after estimate_ma_laplace_dicho"<<std::endl;
   collect_dichoMA_bmd_values(MA, res, bmdsRes);
-  std::cout<<"after collect_dichoMA_bmd_values"<<std::endl;
   for(int i=0; i<MA->nmodels; i++){
     rescale_dichoParms(MA->models[i], res->models[i]->parms);
   }
@@ -1486,23 +1466,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes){
 
-  std::cout<<"Inside pythonBMDSDichoMA"<<std::endl;
-  std::cout<<"pyMA:"<<std::endl;
-  std::cout<<"nmodels:"<<pyMA->nmodels<<std::endl;
-  for(int i=0; i<pyMA->nmodels; i++){
-    std::cout<<"model "<<i<<std::endl;
-//    std::cout<<"  nparms:"<<pyMA->nparms[i]<<std::endl;
-    std::cout<<"  actual_parms:"<<pyMA->actual_parms[i]<<std::endl;
-    std::cout<<"  prior_cols:"<<pyMA->prior_cols[i]<<std::endl;
-    std::cout<<"  models:"<<pyMA->models[i]<<std::endl;
-    std::cout<<"  modelPriors:"<<pyMA->modelPriors[i]<<std::endl;
-    std::cout<<"  prior:";
-    for (int j=0; j<pyMA->actual_parms[i]*pyMA->prior_cols[i]; j++){
-      std::cout<<pyMA->priors[i][j]<<' ';
-    }
-    std::cout<<std::endl;
-  }
-
 //convert python_dichtomousMA_analysis to dichotomousMA_analysis
   dichotomousMA_analysis MA;
   double *pr[pyMA->nmodels];
@@ -1518,44 +1481,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   MA.models = models;
   MA.modelPriors = modelPriors;
   convertFromPythonDichoMAAnalysis(&MA, pyMA);
-  std::cout<<"MA:"<<std::endl;
-  std::cout<<"nmodels:"<<MA.nmodels<<std::endl;
-  for(int i=0; i<MA.nmodels; i++){
-    std::cout<<"model "<<i<<std::endl;
- //   std::cout<<"  nparms:"<<MA.nparms[i]<<std::endl;
-    std::cout<<"  actual_parms:"<<MA.actual_parms[i]<<std::endl;
-    std::cout<<"  prior_cols:"<<MA.prior_cols[i]<<std::endl;
-    std::cout<<"  models:"<<MA.models[i]<<std::endl;
-    std::cout<<"  modelPriors:"<<MA.modelPriors[i]<<std::endl;
-    std::cout<<"  prior:"<<std::endl;;
-    for (int j=0; j<MA.actual_parms[i]*MA.prior_cols[i]; j++){
-      std::cout<<MA.priors[i][j]<<' ';
-    }
-    std::cout<<std::endl;
-  }
-
-
-  std::cout<<"pyDA"<<std::endl;
-  std::cout<<"  model:"<<pyDA->model<<std::endl;
-  std::cout<<"  n:"<<pyDA->n<<std::endl;
-  std::cout<<"  BMD_type:"<<pyDA->BMD_type<<std::endl;
-  std::cout<<"  BMR:"<<pyDA->BMR<<std::endl;
-  std::cout<<"  alpha:"<<pyDA->alpha<<std::endl;
-  std::cout<<"  Y:";
-  for (int i=0; i<pyDA->n; i++){
-    std::cout<<pyDA->Y[i]<<' ';
-  }
-  std::cout<<std::endl;
-  std::cout<<"  doses:";
-  for (int i=0; i<pyDA->n; i++){
-    std::cout<<pyDA->doses[i]<<' ';
-  }
-  std::cout<<std::endl;
-  std::cout<<"  n_group:";
-  for (int i=0; i<pyDA->n; i++){
-    std::cout<<pyDA->n_group[i]<<' ';
-  }
-  std::cout<<std::endl;
 
 //convert python_dichotomous_analysis to dichotomous_analysis
   double Y[pyDA->n];
@@ -1569,38 +1494,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   DA.prior = prior;
   convertFromPythonDichoAnalysis(&DA, pyDA);
 
-  std::cout<<"DA"<<std::endl;
-  std::cout<<"  model:"<<DA.model<<std::endl;
-  std::cout<<"  n:"<<DA.n<<std::endl;
-  std::cout<<"  BMD_type:"<<DA.BMD_type<<std::endl;
-  std::cout<<"  BMR:"<<DA.BMR<<std::endl;
-  std::cout<<"  alpha:"<<DA.alpha<<std::endl;
-  std::cout<<"  Y:";
-  for (int i=0; i<DA.n; i++){
-    std::cout<<DA.Y[i]<<' ';
-  }
-  std::cout<<std::endl;
-  std::cout<<"  doses:";
-  for (int i=0; i<DA.n; i++){
-    std::cout<<DA.doses[i]<<' ';
-  }
-  std::cout<<std::endl;
-  std::cout<<"  n_group:";
-  for (int i=0; i<DA.n; i++){
-    std::cout<<DA.n_group[i]<<' ';
-  }
-  std::cout<<std::endl;
-
-
-
-  std::cout<<"pyRes"<<std::endl;
-  std::cout<<"  nmodels:"<<pyRes->nmodels<<std::endl;;
-  std::cout<<"  dist_numE:"<<pyRes->dist_numE<<std::endl;
-  for (int i=0; i<pyRes->nmodels; i++){
-     std::cout<<"model:"<<pyRes->models[i].model<<std::endl;
-     std::cout<<"nparms:"<<pyRes->models[i].nparms;
-     std::cout<<"dist_numE"<<pyRes->models[i].dist_numE;
-  }
 //  convertFromPythonDichoMARes(&res, pyRes);
 
   struct dichotomous_model_result *res[pyRes->nmodels];
@@ -1623,9 +1516,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   double bmd_dist[pyRes->dist_numE*2];
   maRes.bmd_dist = bmd_dist;
 
-  std::cout<<"before runBMDSDichoMA"<<std::endl;
   runBMDSDichoMA(&MA, &DA, &maRes, bmdsRes);
-  std::cout<<"After runBMDSDichoMA"<<std::endl;
 //convert back to python objs
 //pyDA should not change
   pyRes->post_probs.resize(pyRes->nmodels);
@@ -1657,8 +1548,5 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
     pyRes->bmd_dist[i] = maRes.bmd_dist[i];
   }
  
-  std::cout<<"bmdsRes->BMD_MA = "<<bmdsRes->BMD_MA<<std::endl;
-  std::cout<<"bmdsRes->BMDL_MA = "<<bmdsRes->BMDL_MA<<std::endl;
-
 }
 

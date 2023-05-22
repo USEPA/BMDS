@@ -63,11 +63,6 @@ struct BMDSMA_results{
   double BMD_MA;
   double BMDL_MA;
   double BMDU_MA;
-  //double *BMD;
-  //double *BMDL;
-  //double *BMDU;
-  //double *ebLower;  //size is number of dose groups
-  //double *ebUpper;  //size is number of dose groups
   std::vector<double> BMD;
   std::vector<double> BMDL;
   std::vector<double> BMDU;
@@ -146,10 +141,6 @@ struct dichotomous_GOF {
 struct python_dichotomous_analysis{
   int model; // Model Type as listed in dich_model
   int n;     // total number of observations obs/n
-  //double *Y; // observed +
-  //double *doses; //
-  //double *n_group; //size of the group
-  //double *prior; // a column order matrix parms X prior_cols
   std::vector<double> Y;  // observed +
   std::vector<double> doses;  
   std::vector<double> n_group; //size of the group
@@ -167,23 +158,16 @@ struct python_dichotomous_analysis{
 struct python_dichotomous_model_result{
   int      model;               // dichotomous model specification
   int      nparms;              //number of parameters in the model
-  //double  *parms;               // Parameter Estimate
-  //double  *cov;                 // Covariance Estimate
   std::vector<double> parms;    // Parameter Estimate
   std::vector<double> cov;      // Covariance Estimate
   double   max;                 // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;           // number of entries in rows for the bmd_dist
   double      model_df;         // Used model degrees of freedom
   double      total_df;         // Total degrees of freedom
-  //double  *bmd_dist;            // bmd distribution (dist_numE x 2) matrix
   std::vector<double> bmd_dist; // bmd distribution (dist_numE x 2) matrix
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
-
-//  python_dichotomous_model_result(int model) : model(model)
-//  {
-//  }
 
 };
 
@@ -270,8 +254,6 @@ int BMDS_ENTRY_API __stdcall add2(int i, int j);
 void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
-
-//void BMDS_ENTRY_API __stdcall old_pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct python_BMDSMA_results *bmdsRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
 

@@ -1977,7 +1977,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_gamma]){ 
-    std::cout<<"include d_gamma"<<std::endl;
     models.push_back(d_gamma);
     prArray = prBayesianGamma;
     prSize = sizeof(prBayesianGamma)/sizeof(prBayesianGamma[0]);
@@ -1986,7 +1985,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_logistic]){
-    std::cout<<"include d_logistic"<<std::endl;
     models.push_back(d_logistic);
     prArray = prBayesianLogistic;
     prSize = sizeof(prBayesianLogistic)/sizeof(prBayesianLogistic[0]);
@@ -1995,7 +1993,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_loglogistic]){
-    std::cout<<"include d_loglogistic"<<std::endl;
     models.push_back(d_loglogistic);
     prArray = prBayesianLogLogistic;
     prSize = sizeof(prBayesianLogLogistic)/sizeof(prBayesianLogLogistic[0]);
@@ -2004,7 +2001,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_logprobit]){
-    std::cout<<"include d_logprobit"<<std::endl;
     models.push_back(d_logprobit);
     prArray = prBayesianLogProbit;
     prSize = sizeof(prBayesianLogProbit)/sizeof(prBayesianLogProbit[0]);
@@ -2013,7 +2009,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_multistage]){
-    std::cout<<"include d_multistage"<<std::endl;
     models.push_back(d_multistage);
     prArray = prBayesianMulti3;
     prSize = sizeof(prBayesianMulti3)/sizeof(prBayesianMulti3[0]);
@@ -2022,7 +2017,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_probit]){
-    std::cout<<"include d_probit"<<std::endl;
     models.push_back(d_probit);
     prArray = prBayesianProbit;
     prSize = sizeof(prBayesianProbit)/sizeof(prBayesianProbit[0]);
@@ -2031,7 +2025,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_qlinear]){
-    std::cout<<"include d_qlinear"<<std::endl;
     models.push_back(d_qlinear);
     prArray = prBayesianQLinear;
     prSize = sizeof(prBayesianQLinear)/sizeof(prBayesianQLinear[0]);
@@ -2040,7 +2033,6 @@ void runPythonDichoMA(){
     numParms.push_back(prSize/prCols);
   }
   if(include[d_weibull]){
-    std::cout<<"include d_weibull"<<std::endl;
     models.push_back(d_weibull);
     prArray = prBayesianWeibull;
     prSize = sizeof(prBayesianWeibull)/sizeof(prBayesianWeibull[0]);
@@ -2065,24 +2057,6 @@ void runPythonDichoMA(){
   ma_info.priors = pr;
   ma_info.modelPriors = modelPriors;
   ma_info.nmodels = numModels;
-
-  std::cout<<"TestCode"<<std::endl;
-  std::cout<<"ma_info:"<<std::endl;
-  std::cout<<"nmodels:"<<ma_info.nmodels<<std::endl;
-  for(int i=0; i<ma_info.nmodels; i++){
-    std::cout<<"model "<<i<<std::endl;
-//    std::cout<<"  nparms:"<<ma_info.nparms[i]<<std::endl;
-    std::cout<<"  actual_parms:"<<ma_info.actual_parms[i]<<std::endl;
-    std::cout<<"  prior_cols:"<<ma_info.prior_cols[i]<<std::endl;
-    std::cout<<"  models:"<<ma_info.models[i]<<std::endl;
-    std::cout<<"  modelPriors:"<<ma_info.modelPriors[i]<<std::endl;
-    std::cout<<"  prior:";
-    for (int j=0; j<ma_info.actual_parms[i]*ma_info.prior_cols[i]; j++){
-      std::cout<<ma_info.priors[i][j]<<' ';
-    }
-    std::cout<<std::endl;
-  }
-
 
   std::vector<python_dichotomous_model_result> res(numModels);
   int dist_numE = 200;
