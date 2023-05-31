@@ -502,17 +502,14 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 
   bmdsRes->validResult = false;
   anal->transform_dose = false;
-
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5){
     if(anal->disttype == distribution::log_normal){
       return; 
     }
   }
-
   if (*detectAdvDir){
     determineAdvDir(anal);
-
     int ind;
     if (*restricted) {
       switch(anal->model){
@@ -552,34 +549,11 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
             for (int i=ind; i<ind+anal->degree; i++){
               anal->prior[i] = 0.0;  // beta min or max 
             }
-//            //set ind for alpha parm
-//            if(anal->isIncreasing){
-//              ind = 4*numRows-1;  
-//            } else {
-//              ind = 5*numRows-1;
-//            }
-//            anal->prior[ind] = 0.0;  //alpha min or max
           }
           break;
-//        case cont_model::hill:
-//          if (anal->isIncreasing){
-//             if (anal->disttype == distribution::normal_ncv){
-//                anal->prior[20] = 0.0;
-//             } else {
-//                anal->prior[17] = 0.0;
-//             }
-//          } else {
-//             if (anal->disttype == distribution::normal_ncv){
-//                anal->prior[26] = 0.0;
-//             } else {
-//                anal->prior[22] = 0.0;
-//             }
-//          }
-//          break; 
       }  //end switch
     } //end if restricted
   } //end if detectAdvDir
-
 
   //need to handle issue with decreasing response datasets for relative deviation
   //easiest workaround is to modify BMRF before sending to estimate_sm_laplace
@@ -588,6 +562,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
       anal->BMR = 1.0 - anal->BMR;
     }
   }
+
 
   estimate_sm_laplace_cont(anal, res);
 
@@ -642,38 +617,41 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
 
-    continuous_expectation(&GOFanal, res, &GOFres);
+  continuous_expectation(&GOFanal, res, &GOFres);
 
   for (int i=0; i<GOFanal.n; i++){
-	gof->dose[i] = GOFanal.doses[i];
-    gof->size[i] = GOFanal.n_group[i];
-    gof->estMean[i] = GOFres.expected[i];
-    gof->obsMean[i] = GOFanal.Y[i];
-    gof->estSD[i] = GOFres.sd[i];
-    gof->obsSD[i] = GOFanal.sd[i];
-    gof->res[i] = sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i];
+    gof->dose.push_back(GOFanal.doses[i]);
+    gof->size.push_back(GOFanal.n_group[i]);
+    gof->estMean.push_back(GOFres.expected[i]);
+    gof->obsMean.push_back(GOFanal.Y[i]);
+    gof->estSD.push_back(GOFres.sd[i]);
+    gof->obsSD.push_back(GOFanal.sd[i]);
+    gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
+    gof->n = GOFanal.n;
   }
   if (anal->disttype == distribution::log_normal){
     for (int i=0; i<GOFanal.n; i++){
-      gof->calcMean[i] = exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2);
-      gof->calcSD[i] = exp(sqrt(log(1.0 + pow(GOFanal.sd[i]/GOFanal.Y[i], 2.0))));
+      gof->calcMean.push_back(exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2));
+      gof->calcSD.push_back(exp(sqrt(log(1.0 + pow(GOFanal.sd[i]/GOFanal.Y[i], 2.0)))));
     }
     for (int i=0; i<GOFanal.n; i++){
-      gof->estMean[i] = exp(gof->estMean[i]+pow(exp(res->parms[res->nparms-1]),2)/2);
-      gof->res[i] = sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i];
+      gof->estMean.push_back(exp(gof->estMean[i]+pow(exp(res->parms[res->nparms-1]),2)/2));
+      gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
     }
   } else {
 	for (int i=0; i<GOFanal.n; i++){
-	  gof->calcMean[i] = GOFanal.Y[i];
-          gof->calcSD[i] = GOFanal.sd[i];
+	  gof->calcMean.push_back(GOFanal.Y[i]);
+          gof->calcSD.push_back(GOFanal.sd[i]);
 	}
   }
 
+  double ebUpper, ebLower;
   for (int i=0; i<GOFanal.n; i++){
-    gof->ebLower[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
-    gof->ebUpper[i] = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
+    ebLower = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
+    ebUpper = gof->calcMean[i] + gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i]/sqrt(gof->size[i]));
+    gof->ebLower.push_back(ebLower);
+    gof->ebUpper.push_back(ebUpper);
   }
-
  //calculate bayesian BIC_equiv
   Eigen::MatrixXd cov(res->nparms,res->nparms);
   int row = 0;
@@ -694,12 +672,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   rescale_contParms(anal, res->parms); 
 
   for (int i=0; i< anal->parms; i++){
-    //bmdsRes->stdErr[i] = BMDS_MISSING;
     bmdsRes->stdErr.push_back(BMDS_MISSING);
     bmdsRes->lowerConf.push_back(BMDS_MISSING);
     bmdsRes->upperConf.push_back(BMDS_MISSING);
-    //bmdsRes->lowerConf[i] = BMDS_MISSING;
-    //bmdsRes->upperConf[i] = BMDS_MISSING;
   }
 
   calcParmCIs_cont(res, bmdsRes);
@@ -1013,7 +988,6 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
 }
 
 void determineAdvDir(struct continuous_analysis *CA){
-
   int n_rows;
 
   struct continuous_analysis CAnew;
@@ -1035,12 +1009,10 @@ void determineAdvDir(struct continuous_analysis *CA){
     //already suff stat
     n_rows = CA->n;
   }
-
   Eigen::MatrixXd X(n_rows,2);
   Eigen::MatrixXd W(n_rows,n_rows);
   Eigen::VectorXd Y(n_rows);
   Eigen::VectorXd beta(2);
-
 
   if(!CA->suff_stat){
     for (int i=0; i< n_rows; i++){
@@ -1079,7 +1051,6 @@ void determineAdvDir(struct continuous_analysis *CA){
 
 
 void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis *CAss, bool clean){
-
   //standardize the data
   int n_rows = CA->n; 
   int n_cols = CA->suff_stat?3:1;
@@ -1145,7 +1116,6 @@ void bmdsConvertSStat(struct continuous_analysis *CA, struct continuous_analysis
   CAss->burnin = CA->burnin;
   CAss->parms = CA->parms;
   CAss->prior_cols = CA->prior_cols;
-
 
 }
 
@@ -1435,6 +1405,82 @@ void convertFromPythonDichoMARes(struct dichotomousMA_result *res, struct python
 
 }
 
+void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct python_continuous_analysis *pyAnal){
+
+  anal->model = pyAnal->model;
+  anal->n = pyAnal->n;
+  anal->BMD_type = pyAnal->BMD_type;
+  anal->isIncreasing;
+  anal->BMR = pyAnal->BMR;
+  anal->tail_prob = pyAnal->tail_prob;
+  anal->disttype = pyAnal->disttype;
+  anal->alpha = pyAnal->alpha;
+  anal->degree = pyAnal->degree;
+  anal->samples = pyAnal->samples;
+  anal->burnin = pyAnal->burnin;
+  anal->parms = pyAnal->parms;
+  anal->prior_cols = pyAnal->prior_cols;
+  anal->transform_dose = pyAnal->transform_dose;
+  anal->suff_stat = pyAnal->suff_stat;
+
+  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+    for (int i=0; i<pyAnal->n; i++){
+      anal->Y[i] = pyAnal->Y[i];
+      anal->doses[i] = pyAnal->doses[i];
+      anal->n_group[i] = pyAnal->n_group[i];
+      anal->sd[i] = pyAnal->sd[i];
+    }
+  }
+  if(pyAnal->prior.size() > 0){
+    for (int i=0; i<pyAnal->prior.size(); i++){
+      anal->prior[i] = pyAnal->prior[i];
+    }
+  }
+}
+
+void convertFromPythonContRes(struct continuous_model_result *res, struct python_continuous_model_result *pyRes){
+  res->model = pyRes->model;
+  res->dist = pyRes->dist;
+  res->nparms = pyRes->nparms;
+  res->max = pyRes->max;
+  res->dist_numE = pyRes->dist_numE;
+  res->model_df = pyRes->model_df;
+  res->total_df = pyRes->total_df;
+  res->bmd = pyRes->bmd;
+  //arrays & vectors
+  if(pyRes->parms.size() > 0){
+    for (int i=0; i<pyRes->parms.size(); i++){
+      res->parms[i] = pyRes->parms[i];
+    } 
+  }
+  if(pyRes->cov.size() > 0){
+    for (int i=0; i<pyRes->cov.size(); i++){
+      res->cov[i] =  pyRes->cov[i];
+    }
+  }
+  if(pyRes->bmd_dist.size() > 0){
+    for (int i=0; i<pyRes->bmd_dist.size(); i++){
+      res->bmd_dist[i] = pyRes->bmd_dist[i];
+    }
+  }
+}
+
+void convertToPythonContRes(struct continuous_model_result *res, struct python_continuous_model_result *pyRes){
+  
+  pyRes->model = res->model;
+  pyRes->dist = res->dist;
+  pyRes->nparms = res->nparms;
+  pyRes->parms.assign(res->parms, res->parms + res->nparms);
+  pyRes->cov.assign(res->cov, res->cov + res->nparms*res->nparms);
+  pyRes->max = res->max;
+  pyRes->dist_numE = res->dist_numE;
+  pyRes->model_df = res->model_df;
+  pyRes->total_df = res->total_df;
+  pyRes->bmd_dist.assign(res->bmd_dist, res->bmd_dist + res->dist_numE*2);
+  pyRes->bmd = res->bmd;
+  
+}
+
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
 
   //1st convert from python struct
@@ -1531,3 +1577,26 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 }
 
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+  
+  //convert pyAnal to anal
+  continuous_analysis anal;
+  anal.Y = new double[pyAnal->n];
+  anal.doses = new double[pyAnal->n];
+  anal.sd = new double[pyAnal->n];
+  anal.n_group = new double[pyAnal->n];
+  anal.prior = new double[pyAnal->parms*pyAnal->prior_cols];
+  convertFromPythonContAnalysis(&anal, pyAnal);
+
+  //convert pyRes to res
+  continuous_model_result res;
+  res.parms = new double[pyRes->nparms];
+  res.cov = new double[pyRes->nparms*pyRes->nparms];
+  res.bmd_dist = new double[pyRes->dist_numE*2];
+  convertFromPythonContRes(&res, pyRes);
+
+  runBMDSContAnalysis(&anal, &res, bmdsRes, aod, gof, detectAdvDir, restricted);
+
+  convertToPythonContRes(&res, pyRes);
+
+}

@@ -88,9 +88,9 @@ struct testsOfInterest {
 //3 - fitted Model
 //4 - R Model
 struct continuous_AOD{
-  double *LL;
-  int *nParms;
-  double *AIC;
+  std::vector<double> LL;
+  std::vector<int> nParms;
+  std::vector<double> AIC;
   double addConst;
   struct testsOfInterest *TOI;
 };
@@ -113,18 +113,18 @@ struct dicho_AOD{
 
 //each array has number of dose groups in suff_stat data
 struct continuous_GOF {
-  double *dose;
-  double *size;
-  double *estMean;
-  double *calcMean;
-  double *obsMean;
-  double *estSD;
-  double *calcSD;
-  double *obsSD;
-  double *res;
+  std::vector<double> dose;
+  std::vector<double> size;
+  std::vector<double> estMean;
+  std::vector<double> calcMean;
+  std::vector<double> obsMean;
+  std::vector<double> estSD;
+  std::vector<double> calcSD;
+  std::vector<double> obsSD;
+  std::vector<double> res;
   int n; //total # of obs/doses  
-  double *ebLower;
-  double *ebUpper;
+  std::vector<double> ebLower;
+  std::vector<double> ebUpper;
 };
 
 struct dichotomous_GOF {
@@ -190,6 +190,44 @@ struct python_dichotomousMA_result{
   std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
 };
 
+struct python_continuous_analysis{
+  enum cont_model model;
+  int n;
+  bool suff_stat; //true if the data are in sufficient statistics format
+  std::vector<double> Y; // observed data means or actual data
+  std::vector<double> doses; //
+  std::vector<double> sd; // SD of the group if suff_stat = true, null otherwise.
+  std::vector<double> n_group; // N for each group if suff_stat = true, null otherwise
+  std::vector<double> prior; // a column order matrix px5 where p is the number of parametersd
+  int BMD_type; // type of BMD
+  bool isIncreasing; // if the BMD is defined increasing or decreasing
+  double BMR; // Benchmark response related to the BMD type
+  double tail_prob; // tail probability
+  int    disttype;  // Distribution type defined in the enum distribution
+  double alpha;     // specified alpha
+  int samples; // number of MCMC samples.
+  int degree; // if polynomial it is the degree
+  int burnin;  // burn in
+  int parms; // number of parameters
+  int prior_cols;
+  int transform_dose; // Use the arc-sin-hyperbolic inverse to transform dose.
+};
+
+struct python_continuous_model_result{
+  int      model;           // continuous model specification
+  int      dist;            // distribution_type
+  int      nparms;                    //number of parameters in the model
+  std::vector<double>  parms;           // Parameter Estimate
+  std::vector<double>  cov;             // Covariance Estimate
+  double   max;             // Value of the Likelihood/Posterior at the maximum
+  int      dist_numE;       // number of entries in rows for the bmd_dist
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
+  double    bmd;             // The bmd at the maximum
+  std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+};
+
+
 
 #ifdef _WIN32
 #pragma pack()
@@ -254,6 +292,8 @@ void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
 
 #ifdef __cplusplus
 }
