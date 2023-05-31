@@ -73,9 +73,9 @@ struct BMDSMA_results{
 
 //all arrays are length 4
 struct testsOfInterest {
-  double *llRatio;
-  double *DF;
-  double *pVal;
+  std::vector<double> llRatio;
+  std::vector<double> DF;
+  std::vector<double> pVal;
 };
 
 

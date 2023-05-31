@@ -3072,10 +3072,13 @@ void runOldContAnalysis(){
   aod.AIC = AIC;
   aod.addConst = addConst;
 
-  double llRatio[4];
-  double DF[4];
-  double pVal[4];
+  //double llRatio[4];
+  //double DF[4];
+  //double pVal[4];
 
+  std::vector<double> llRatio(4);
+  std::vector<double> DF(4);
+  std::vector<double> pVal(4);
   struct testsOfInterest TOI;
  
   TOI.llRatio = llRatio;
@@ -3997,10 +4000,12 @@ void runPythonContAnalysis(){
   aod.AIC = AIC;
   aod.addConst = addConst;
 
-  double llRatio[4];
-  double DF[4];
-  double pVal[4];
-
+  //double llRatio[4];
+  //double DF[4];
+  //double pVal[4];
+  std::vector<double> llRatio(4);
+  std::vector<double> DF(4);
+  std::vector<double> pVal(4);
   struct testsOfInterest TOI;
  
   TOI.llRatio = llRatio;

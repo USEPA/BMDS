@@ -563,7 +563,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     }
   }
 
-
   estimate_sm_laplace_cont(anal, res);
 
   //if not suff_stat, then convert
@@ -661,12 +660,17 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     row = i - col*res->nparms;
     cov(row,col) = res->cov[i];
   }
-
+  
   bmdsRes->BIC_equiv = res->nparms / 2.0 *log(2.0*M_PI) + res->max + 0.5*log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1*bmdsRes->BIC_equiv;
-
   collect_cont_bmd_values(anal, res, bmdsRes);
- 
+  
+  aod->LL.resize(5);
+  aod->nParms.resize(5);
+  aod->AIC.resize(5);  
+  aod->TOI->llRatio.resize(4);
+  aod->TOI->DF.resize(4);
+  aod->TOI->pVal.resize(4);
   calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
 
   rescale_contParms(anal, res->parms); 
@@ -711,7 +715,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
  // std::cout << "Condition number: " << max/min << std::endl;
  delete [] GOFres.expected;
  delete [] GOFres.sd;
-  
+ 
 }
 
 
@@ -831,7 +835,6 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
 }
 
 void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GOFanal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod){
-
   continuous_deviance CD;  
 
   if (CA->disttype == distribution::log_normal){
@@ -880,7 +883,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
     sumN = CA->n;
   }
   aod->addConst = -1*sumN*log(2*M_PI)/2;
-
   if (CA->disttype == distribution::log_normal) {
     double tmp = 0;
     if (CA->suff_stat){
@@ -1578,7 +1580,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
-  
+
   //convert pyAnal to anal
   continuous_analysis anal;
   anal.Y = new double[pyAnal->n];
