@@ -51,6 +51,7 @@ jobs:
         run: |
           gci env:* | sort-object name
           Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
+          conda env list
           # build bmdscore cmake
           mkdir build
           cd build
