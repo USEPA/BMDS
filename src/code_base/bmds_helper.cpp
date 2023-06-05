@@ -1515,7 +1515,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes){
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes){
 
 //convert python_dichtomousMA_analysis to dichotomousMA_analysis
   dichotomousMA_analysis MA;
@@ -1529,11 +1529,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 //convert python_dichotomous_analysis to dichotomous_analysis
   dichotomous_analysis DA;
-  DA.Y = new double[pyDA->n];
-  DA.doses = new double[pyDA->n];
-  DA.n_group = new double[pyDA->n];
-  DA.prior = new double[pyDA->parms*pyDA->prior_cols];
-  convertFromPythonDichoAnalysis(&DA, pyDA);
+  DA.Y = new double[pyMA->pyDA.n];
+  DA.doses = new double[pyMA->pyDA.n];
+  DA.n_group = new double[pyMA->pyDA.n];
+  DA.prior = new double[pyMA->pyDA.parms*pyMA->pyDA.prior_cols];
+  convertFromPythonDichoAnalysis(&DA, &pyMA->pyDA);
 
 //  convertFromPythonDichoMARes(&res, pyRes);
 
@@ -1555,7 +1555,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   maRes.post_probs = new double[pyRes->nmodels];
   maRes.bmd_dist = new double[pyRes->dist_numE*2];
 
-  runBMDSDichoMA(&MA, &DA, &maRes, bmdsRes);
+  runBMDSDichoMA(&MA, &DA, &maRes, &pyRes->bmdsRes);
 //convert back to python objs
 //pyDA should not change
   pyRes->post_probs.resize(pyRes->nmodels);

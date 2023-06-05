@@ -183,6 +183,7 @@ struct python_dichotomousMA_analysis{
                        		// presently there are only 5
   std::vector<int> models;      // list of models this is defined by dich_model.
   std::vector<double> modelPriors; // prior probability on the model
+  struct python_dichotomous_analysis pyDA;
 };
 
 struct python_dichotomousMA_result{
@@ -191,6 +192,7 @@ struct python_dichotomousMA_result{
   int dist_numE; // number of entries in rows for the bmd_dist
   std::vector<double> post_probs; // posterior probabilities
   std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  struct BMDSMA_results bmdsRes;
 };
 
 struct python_continuous_analysis{
@@ -338,7 +340,7 @@ void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
 

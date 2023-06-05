@@ -34,8 +34,8 @@ int main(void){
 
 //  runOldContAnalysis();
 //  runCompleteContAnalysis();
-  runPythonDichoAnalysis();
-//  runPythonDichoMA();
+//  runPythonDichoAnalysis();
+  runPythonDichoMA();
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
 
@@ -2081,6 +2081,7 @@ void runPythonDichoMA(){
   ma_info.priors = pr;
   ma_info.modelPriors = modelPriors;
   ma_info.nmodels = numModels;
+  ma_info.pyDA = anal;
 
   std::vector<python_dichotomous_model_result> res(numModels);
   int dist_numE = 200;
@@ -2106,7 +2107,9 @@ void runPythonDichoMA(){
    bmdsRes.BMDL_MA = BMDS_MISSING;
    bmdsRes.BMDU_MA = BMDS_MISSING;   
 
-  pythonBMDSDichoMA(&ma_info, &anal, &ma_res, &bmdsRes);
+   ma_res.bmdsRes = bmdsRes;
+
+  pythonBMDSDichoMA(&ma_info, &ma_res);
 
 //  printf("\nBMD Dist:\n");
 //  for (int i=0; i<ma_res.dist_numE; i++){
@@ -2125,17 +2128,17 @@ void runPythonDichoMA(){
 
 
   printf("\nBenchmark Dose\n");
-  printf("MA BMD: %f\n",bmdsRes.BMD_MA);
-  printf("MA BMDL: %f\n",bmdsRes.BMDL_MA);
-  printf("MA BMDU: %f\n",bmdsRes.BMDU_MA);
+  printf("MA BMD: %f\n",ma_res.bmdsRes.BMD_MA);
+  printf("MA BMDL: %f\n",ma_res.bmdsRes.BMDL_MA);
+  printf("MA BMDU: %f\n",ma_res.bmdsRes.BMDU_MA);
 
   printf("\nMA - Individual Models\n");
   for(int i=0; i<numModels; i++){
     printf("i:%d, model:%d\n", i, ma_res.models[i].model);
     printf("\tpost prob:%f\n", ma_res.post_probs[i]);
-    printf("\tBMD:%f\n",bmdsRes.BMD[i]);
-    printf("\tBMDL:%f\n",bmdsRes.BMDL[i]);
-    printf("\tBMDU:%f\n",bmdsRes.BMDU[i]);
+    printf("\tBMD:%f\n",ma_res.bmdsRes.BMD[i]);
+    printf("\tBMDL:%f\n",ma_res.bmdsRes.BMDL[i]);
+    printf("\tBMDU:%f\n",ma_res.bmdsRes.BMDU[i]);
     printf("\tParms:\n");
     for(int j=0; j<ma_res.models[i].nparms; j++){
       printf("\t\tj:%d, value:%f\n", j, ma_res.models[i].parms[j]);
@@ -2144,7 +2147,7 @@ void runPythonDichoMA(){
   }
   printf("Error bars\n");
   for(int i=0; i<anal.n; i++){
-    printf("%f\t%f\n", bmdsRes.ebLower[i], bmdsRes.ebUpper[i]);
+    printf("%f\t%f\n", ma_res.bmdsRes.ebLower[i], ma_res.bmdsRes.ebUpper[i]);
   }
 
 //  printf("\nMA - Individual Models\n");
