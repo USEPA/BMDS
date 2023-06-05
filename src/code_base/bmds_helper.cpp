@@ -206,11 +206,21 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-  
+ 
+  std::cout<<"inside runBMDSDichoAnalysis"<<std::endl;
+//  std::cout<<"degree = "<<anal->degree;
+//  std::cout<<"degree:"<<anal->degree<<std::endl;
+//        for (int k=0; k<anal->prior_cols*anal->parms; k++){
+//          std::cout<<anal->prior[k]<<", ";
+//        }
+//        std::cout<<std::endl;
+ 
   bmdsRes->validResult = false;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
+  std::cout<<"b4 estimate_sm_laplace_dicho"<<std::endl;
   estimate_sm_laplace_dicho(anal, res, true);
+  std::cout<<"after estimate_sm_laplace_dicho"<<std::endl;
 
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
@@ -1483,7 +1493,7 @@ void convertToPythonContRes(struct continuous_model_result *res, struct python_c
   
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes){
 
   //1st convert from python struct
   dichotomous_analysis anal;
@@ -1499,7 +1509,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonDichoRes(&res, pyRes);
 
-  runBMDSDichoAnalysis(&anal, &res, gof, bmdsRes, aod);     
+  runBMDSDichoAnalysis(&anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod);     
 
   convertToPythonDichoRes(&res, pyRes);
 
@@ -1602,3 +1612,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *
   convertToPythonContRes(&res, pyRes);
 
 }
+
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, struct BMDSmultitumor_results *bmdsRes){
+ 
+
+//   //run each individual multistage model
+//   for (int i=0;i<pyAnal->ndatasets;i++){
+//     std::cout<<"dataset:"<<i<<std::endl;
+//     for (int j=0; j<pyAnal->nmodels[i]; j++){
+//       pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j], &pyRes->gofs[i][j], &pyRes->bmdsRess[i][j], &pyRes->aods[i][j]);  
+//     } 
+//   }
+//
+
+}  

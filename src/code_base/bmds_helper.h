@@ -168,6 +168,9 @@ struct python_dichotomous_model_result{
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
+  struct dichotomous_GOF gof;
+  struct BMDS_results bmdsRes;
+  struct dicho_AOD aod;
 };
 
 struct python_dichotomousMA_analysis{
@@ -225,6 +228,50 @@ struct python_continuous_model_result{
   double    total_df;        // Total degrees of freedom
   double    bmd;             // The bmd at the maximum
   std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+};
+
+
+struct python_multitumor_analysis{
+//  int model; // Model Type as listed in dich_model
+  int ndatasets;
+
+  std::vector<std::vector<python_dichotomous_analysis>> models; //(size ndatasets * nmodels[i])
+
+  std::vector<int> n;     // total number of observations per dataset (size ndatasets)
+  std::vector<int> nmodels;  //# of models per dataset (size ndatasets)
+  //std::vector<std::vector<double>> Y;  //observed + (size ndatasets*n[i])
+  //std::vector<std::vector<double>> doses;  //size ndatasets*n[i]
+  //std::vector<std::vector<double>> n_group; //size of group (size ndatasets*n[i])
+  int BMD_type; // 1 = extra ; added otherwise
+  double BMR;
+  double alpha; // alpha of the analysis
+  int prior_cols; // colunns in the prior
+  std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
+  //std::vector<int> parms;   // number of parameters in the model
+  std::vector<std::vector<double>> prior;  //a column order matrix (parms x prior_cols)
+};
+
+struct python_multitumor_result{
+  int ndatasets; //number of models for each
+  std::vector<int> nmodels; //# of models per dataset (size ndatasets)
+  std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
+  std::vector<std::vector<dichotomous_GOF>> gofs;
+  std::vector<std::vector<BMDS_results>> bmdsRess;
+  std::vector<std::vector<dicho_AOD>> aods;  
+  int dist_numE; // number of entries in rows for the bmd_dist
+  std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+};
+
+struct BMDSmultitumor_results{
+  double BMD_MA;
+  double BMDL_MA;
+  double BMDU_MA;
+  int nFitted;  //# of fitted datasets (may be less than number of submitted datasets)
+  std::vector<double> BMD;  //size nFitted
+  std::vector<double> BMDL; //size nFitted
+  std::vector<double> BMDU; //size nFitted
+  double combined_LL;  //combined log-likelihood 
+  double combined_LL_const; //combined log-likelihood constant
 };
 
 
@@ -289,11 +336,13 @@ int BMDS_ENTRY_API __stdcall add2(int i, int j);
 
 void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, struct BMDSmultitumor_results *bmdsRes);
 
 #ifdef __cplusplus
 }
