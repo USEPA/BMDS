@@ -1,7 +1,8 @@
 #/usr/bin/env python
 
 import numpy as np
-from pybmds import bmdscore
+#from pybmds import bmdscore
+import bmdscore
 
 pyMA = bmdscore.python_dichotomousMA_analysis()
 pyMA.nmodels = 9
@@ -41,6 +42,7 @@ pyAnal.Y= np.array([2, 10, 13, 15, 15])
 pyAnal.n_group = np.array([14, 15, 15, 15, 15])
 pyAnal.doses = np.array([0, 11, 30, 100, 356])
 pyAnal.n = 5
+pyMA.pyDA = pyAnal
 
 pyMARes = bmdscore.python_dichotomousMA_result()
 pyMARes.nmodels = pyMA.nmodels
@@ -79,6 +81,9 @@ bmdsRes.BMDL = np.full(pyMA.nmodels, -9999)
 bmdsRes.BMDU = np.full(pyMA.nmodels, -9999)
 bmdsRes.ebUpper = np.full(pyAnal.n, -9999)
 bmdsRes.ebLower = np.full(pyAnal.n, -9999)
+
+pyMARes.bmdsRes = bmdsRes
+
 bmdscore.pythonBMDSDichoMA(pyMA, pyAnal, pyMARes, bmdsRes)
 
 

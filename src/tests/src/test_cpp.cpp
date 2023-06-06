@@ -3111,7 +3111,7 @@ void runOldContAnalysis(){
   TOI.llRatio = llRatio;
   TOI.DF = DF;
   TOI.pVal = pVal;
-  aod.TOI = &TOI;
+  aod.TOI = TOI;
 
   printf("\n\n-----------INPUT---------------\n");
   printf("priors sent to model code:\n");
@@ -3166,8 +3166,8 @@ void runOldContAnalysis(){
   printf("BMDU: %f\n",BMDSres.BMDU);
   printf("AIC:  %f\n",BMDSres.AIC);
   printf("LPP: %f\n", BMDSres.BIC_equiv);
-  printf("Test 4 P-value: %f\n", aod.TOI->pVal[3]);
-  printf("DOF: %f\n", aod.TOI->DF[3]);
+  printf("Test 4 P-value: %f\n", aod.TOI.pVal[3]);
+  printf("DOF: %f\n", aod.TOI.DF[3]);
   printf("ChiSq: %f\n", BMDSres.chisq);
 
   printf("\nModel Parameters\n");
@@ -3197,7 +3197,7 @@ void runOldContAnalysis(){
 
   printf("\nTests of Interest:\n");
   for (int i=0; i<4; i++){
-    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,aod.TOI->llRatio[i],aod.TOI->DF[i],aod.TOI->pVal[i]);
+    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,aod.TOI.llRatio[i],aod.TOI.DF[i],aod.TOI.pVal[i]);
   }
 
   printf("\nBMD Dist:\n");
@@ -4040,7 +4040,7 @@ void runPythonContAnalysis(){
   TOI.llRatio = llRatio;
   TOI.DF = DF;
   TOI.pVal = pVal;
-  aod.TOI = &TOI;
+  aod.TOI = TOI;
   res.aod = aod;
 
   printf("\n\n-----------INPUT---------------\n");
@@ -4096,8 +4096,8 @@ void runPythonContAnalysis(){
   printf("BMDU: %f\n",res.bmdsRes.BMDU);
   printf("AIC:  %f\n",res.bmdsRes.AIC);
   printf("LPP: %f\n", res.bmdsRes.BIC_equiv);
-  printf("Test 4 P-value: %f\n", aod.TOI->pVal[3]);
-  printf("DOF: %f\n", aod.TOI->DF[3]);
+  printf("Test 4 P-value: %f\n", aod.TOI.pVal[3]);
+  printf("DOF: %f\n", aod.TOI.DF[3]);
   printf("ChiSq: %f\n", res.bmdsRes.chisq);
 
   printf("\nModel Parameters\n");
@@ -4127,7 +4127,7 @@ void runPythonContAnalysis(){
 
   printf("\nTests of Interest:\n");
   for (int i=0; i<4; i++){
-    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,res.aod.TOI->llRatio[i],res.aod.TOI->DF[i],res.aod.TOI->pVal[i]);
+    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,res.aod.TOI.llRatio[i],res.aod.TOI.DF[i],res.aod.TOI.pVal[i]);
   }
 
   printf("\nBMD Dist:\n");
@@ -4221,9 +4221,9 @@ void runPythonMultitumorAnalysis(){
 //    std::vector<dicho_AOD> modAODGroup;
  
     //other ind model structs
-    struct dichotomous_GOF gof;
-    struct BMDS_results bmdsRes;
-    struct dicho_AOD aod;
+//    struct dichotomous_GOF gof;
+//    struct BMDS_results bmdsRes;
+//    struct dicho_AOD aod;
 
     if (degree[i] == 0){
       count = 0;
@@ -4284,10 +4284,11 @@ void runPythonMultitumorAnalysis(){
 
   
 
-  struct BMDSmultitumor_results bmdsTumorRes;
+  struct BMDSmultitumor_result bmdsTumorRes;
+  res.bmdsMtRes = bmdsTumorRes;
   
 
-  pythonBMDSMultitumor(&anal, &res, &bmdsTumorRes);
+  pythonBMDSMultitumor(&anal, &res);
 
   std::cout<<"after pythonBMDSMultitumor"<<std::endl;
   //output

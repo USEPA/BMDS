@@ -22,6 +22,8 @@ pyAnal.transform_dose = 0
 pyAnal.prior = np.array([0,0,0,0,0,0,0,0,0,0,0.1,1,0.5,0.2,1,0,0,-20,1,-18,100,100,20,18,18])
 pyAnal.disttype = bmdscore.distribution.normal
 pyAnal.alpha = 0.05
+pyAnal.detectAdvDir = True
+pyAnal.restricted = True
 
 pyRes = bmdscore.python_continuous_model_result()
 pyRes.model = pyAnal.model
@@ -32,8 +34,8 @@ gof = bmdscore.continuous_GOF()
 bmdsRes = bmdscore.BMDS_results()
 aod = bmdscore.continuous_AOD()
 aod.TOI = bmdscore.testsOfInterest()
+pyRes.gof = gof
+pyRes.bmdsRes = bmdsRes
+pyRes.aod = aod
 
-detectAdvDir = True
-restricted = True
-
-bmdscore.pythonBMDSCont(pyAnal, pyRes, bmdsRes, aod, gof, detectAdvDir, restricted)
+bmdscore.pythonBMDSCont(pyAnal, pyRes)

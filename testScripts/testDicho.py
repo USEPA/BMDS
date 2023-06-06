@@ -26,7 +26,9 @@ pyRes.nparms = pyAnal.parms
 
 gof = bmdscore.dichotomous_GOF()
 bmdsRes = bmdscore.BMDS_results()
-
 aod = bmdscore.dicho_AOD()
+pyRes.gof = gof
+pyRes.bmdsRes = bmdsRes
+pyRes.aod = aod
 
-bmdscore.pythonBMDSDicho(pyAnal, pyRes, gof, bmdsRes, aod)
+bmdscore.pythonBMDSDicho(pyAnal, pyRes)

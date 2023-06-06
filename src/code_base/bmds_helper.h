@@ -70,6 +70,17 @@ struct BMDSMA_results{
   std::vector<double> ebUpper;  //size is number of dose groups
 };
 
+struct BMDSmultitumor_result{
+  double BMD_MA;
+  double BMDL_MA;
+  double BMDU_MA;
+  int nFitted;  //# of fitted datasets (may be less than number of submitted datasets)
+  std::vector<double> BMD;  //size nFitted
+  std::vector<double> BMDL; //size nFitted
+  std::vector<double> BMDU; //size nFitted
+  double combined_LL;  //combined log-likelihood 
+  double combined_LL_const; //combined log-likelihood constant
+};
 
 //all arrays are length 4
 struct testsOfInterest {
@@ -92,7 +103,7 @@ struct continuous_AOD{
   std::vector<int> nParms;
   std::vector<double> AIC;
   double addConst;
-  struct testsOfInterest *TOI;
+  struct testsOfInterest TOI;
 };
 
 struct dicho_AOD{
@@ -262,24 +273,11 @@ struct python_multitumor_result{
   int ndatasets; //number of models for each
   std::vector<int> nmodels; //# of models per dataset (size ndatasets)
   std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
-  std::vector<std::vector<dichotomous_GOF>> gofs;
-  std::vector<std::vector<BMDS_results>> bmdsRess;
-  std::vector<std::vector<dicho_AOD>> aods;  
   int dist_numE; // number of entries in rows for the bmd_dist
   std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  struct BMDSmultitumor_result bmdsMtRes;
 };
 
-struct BMDSmultitumor_results{
-  double BMD_MA;
-  double BMDL_MA;
-  double BMDU_MA;
-  int nFitted;  //# of fitted datasets (may be less than number of submitted datasets)
-  std::vector<double> BMD;  //size nFitted
-  std::vector<double> BMDL; //size nFitted
-  std::vector<double> BMDU; //size nFitted
-  double combined_LL;  //combined log-likelihood 
-  double combined_LL_const; //combined log-likelihood constant
-};
 
 
 
@@ -349,7 +347,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, struct BMDSmultitumor_results *bmdsRes);
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
 #ifdef __cplusplus
 }
