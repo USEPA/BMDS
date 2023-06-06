@@ -216,6 +216,8 @@ struct python_continuous_analysis{
   int parms; // number of parameters
   int prior_cols;
   int transform_dose; // Use the arc-sin-hyperbolic inverse to transform dose.
+  bool restricted;
+  bool detectAdvDir;
 };
 
 struct python_continuous_model_result{
@@ -230,6 +232,9 @@ struct python_continuous_model_result{
   double    total_df;        // Total degrees of freedom
   double    bmd;             // The bmd at the maximum
   std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  struct continuous_GOF gof;
+  struct BMDS_results bmdsRes;
+  struct continuous_AOD aod;
 };
 
 
@@ -342,7 +347,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, struct BMDSmultitumor_results *bmdsRes);
 

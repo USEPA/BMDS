@@ -35,8 +35,8 @@ int main(void){
 //  runOldContAnalysis();
 //  runCompleteContAnalysis();
 //  runPythonDichoAnalysis();
-  runPythonDichoMA();
-//  runPythonContAnalysis();
+//  runPythonDichoMA();
+  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
 
   return 0;
@@ -3974,6 +3974,8 @@ void runPythonContAnalysis(){
   anal.prior_cols = prCols;
   anal.transform_dose = 0;
   anal.prior.assign(prior, prior + anal.prior_cols*anal.parms);
+  anal.restricted = restricted;
+  anal.detectAdvDir = detectAdvDir;
 
   printf("prior b4 adj:\n");
   for (int i=0; i<prCols*numParms; i++){
@@ -3998,7 +4000,7 @@ void runPythonContAnalysis(){
   BMDSres.BMDU = -9999.0;
   BMDSres.BMDL = -9999.0;
   BMDSres.AIC = -9999.0;
-
+  res.bmdsRes = BMDSres;
 
   struct continuous_GOF gof;
   int nGOF;
@@ -4015,7 +4017,7 @@ void runPythonContAnalysis(){
       if (i == j) nGOF++;
     }
   }
-
+  res.gof = gof;
 
   struct continuous_AOD aod;
   std::vector<double> LL(5);
@@ -4039,6 +4041,7 @@ void runPythonContAnalysis(){
   TOI.DF = DF;
   TOI.pVal = pVal;
   aod.TOI = &TOI;
+  res.aod = aod;
 
   printf("\n\n-----------INPUT---------------\n");
   printf("priors sent to model code:\n");
@@ -4069,7 +4072,7 @@ void runPythonContAnalysis(){
 
   printf("\n\n");
   printf("calling pythonBMDSCont\n");
-  pythonBMDSCont(&anal, &res, &BMDSres, &aod, &gof,  &detectAdvDir, &restricted);
+  pythonBMDSCont(&anal, &res);
 
   if(detectAdvDir){
     printf("auto adverse direction: %s\n", anal.isIncreasing ? "increasing" : "decreasing"); 
@@ -4082,49 +4085,49 @@ void runPythonContAnalysis(){
   }
 
   printf("\n\n----------OUTPUT-----------\n");
-  printf("tlink BMDSres.validResult = %s\n", BMDSres.validResult ? "valid" : "invalid");
+  printf("tlink BMDSres.validResult = %s\n", res.bmdsRes.validResult ? "valid" : "invalid");
   if (BMDSres.validResult || showResultsOverride){
 
   printf("\nBenchmark Dose\n");
   printf("max:  %f\n",res.max);
-  printf("BMD:  %f\n",BMDSres.BMD);
+  printf("BMD:  %f\n",res.bmdsRes.BMD);
   printf("Matt's BMD:  %f\n",res.bmd);
-  printf("BMDL: %f\n",BMDSres.BMDL);
-  printf("BMDU: %f\n",BMDSres.BMDU);
-  printf("AIC:  %f\n",BMDSres.AIC);
-  printf("LPP: %f\n", BMDSres.BIC_equiv);
+  printf("BMDL: %f\n",res.bmdsRes.BMDL);
+  printf("BMDU: %f\n",res.bmdsRes.BMDU);
+  printf("AIC:  %f\n",res.bmdsRes.AIC);
+  printf("LPP: %f\n", res.bmdsRes.BIC_equiv);
   printf("Test 4 P-value: %f\n", aod.TOI->pVal[3]);
   printf("DOF: %f\n", aod.TOI->DF[3]);
-  printf("ChiSq: %f\n", BMDSres.chisq);
+  printf("ChiSq: %f\n", res.bmdsRes.chisq);
 
   printf("\nModel Parameters\n");
   printf("# of parms: %d\n", anal.parms);
   printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
   for (int i=0; i<anal.parms; i++){
-     printf("%d, %.20f, %s, %f, %f, %f\n", i, res.parms[i], BMDSres.bounded[i]? "true" : "false", BMDSres.stdErr[i], BMDSres.lowerConf[i], BMDSres.upperConf[i]);
+     printf("%d, %.20f, %s, %f, %f, %f\n", i, res.parms[i], res.bmdsRes.bounded[i]? "true" : "false", res.bmdsRes.stdErr[i], res.bmdsRes.lowerConf[i], res.bmdsRes.upperConf[i]);
 //     printf("bounded %d = %s\n", i, BMDSres.bounded[i] ? "true" : "false");
   }
 
   printf("\nGoodness of Fit\n");
-  printf("gof.n = %d\n",gof.n);
+  printf("res.gof.n = %d\n",res.gof.n);
   printf("Dose, Size, EstMed, CalcMed, ObsMean, EstSD, CalcSD, ObsSD, SR\n");
-  for(int i=0; i<gof.n; i++){
-    printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n",gof.dose[i],gof.size[i],gof.estMean[i],gof.calcMean[i],gof.obsMean[i],gof.estSD[i],gof.calcSD[i],gof.obsSD[i],gof.res[i]);
+  for(int i=0; i<res.gof.n; i++){
+    printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n",res.gof.dose[i],res.gof.size[i],res.gof.estMean[i],res.gof.calcMean[i],res.gof.obsMean[i],res.gof.estSD[i],res.gof.calcSD[i],res.gof.obsSD[i],res.gof.res[i]);
   }
   printf("\nError Bars\n");
-  for(int i=0; i<gof.n; i++){
-    printf("%f, %f\n", gof.ebLower[i], gof.ebUpper[i]);
+  for(int i=0; i<res.gof.n; i++){
+    printf("%f, %f\n", res.gof.ebLower[i], res.gof.ebUpper[i]);
   }
 
   printf("\nLikelihoods of Interest\n");
   for (int i=0; i<5; i++){
-    printf("i:%d, LL:%f, nParms:%d, AIC:%f\n",i,aod.LL[i],aod.nParms[i],aod.AIC[i]);
+    printf("i:%d, LL:%f, nParms:%d, AIC:%f\n",i,res.aod.LL[i],res.aod.nParms[i],res.aod.AIC[i]);
   }
-  printf("additive constant:%f\n",aod.addConst);
+  printf("additive constant:%f\n",res.aod.addConst);
 
   printf("\nTests of Interest:\n");
   for (int i=0; i<4; i++){
-    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,aod.TOI->llRatio[i],aod.TOI->DF[i],aod.TOI->pVal[i]);
+    printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,res.aod.TOI->llRatio[i],res.aod.TOI->DF[i],res.aod.TOI->pVal[i]);
   }
 
   printf("\nBMD Dist:\n");

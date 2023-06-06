@@ -1589,7 +1589,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes){
 
   //convert pyAnal to anal
   continuous_analysis anal;
@@ -1607,7 +1607,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonContRes(&res, pyRes);
 
-  runBMDSContAnalysis(&anal, &res, bmdsRes, aod, gof, detectAdvDir, restricted);
+  runBMDSContAnalysis(&anal, &res, &pyRes->bmdsRes, &pyRes->aod, &pyRes->gof, &pyAnal->detectAdvDir, &pyAnal->restricted);
 
   convertToPythonContRes(&res, pyRes);
 
