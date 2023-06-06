@@ -5,9 +5,9 @@
 //Dichotomous Models
 //
 //////////BAYESIAN////////////////
-  double prBayesianLogistic[] = {1,2,0, 0, 2, 2, -20, 0, 20, 40};
   double prBayesianDHill[] = {1,1,1,2,-1,0,-3,0.693147,2,3,3.3,0.5,-40,-40,-40,0,40,40,40,40};
   double prBayesianGamma[] = {1,2,2,0,0.693147,0,2,0.424264,1,-18,0.2,0,18,20,10000};
+  double prBayesianLogistic[] = {1,2,0, 0, 2, 2, -20, 0, 20, 40};
   double prBayesianLogLogistic[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
   double prBayesianLogProbit[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
   double prBayesianMulti1[] = {1,2,0,0,2,1,-20,0,20,1e6}; //degree 1

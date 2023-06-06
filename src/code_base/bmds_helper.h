@@ -63,19 +63,19 @@ struct BMDSMA_results{
   double BMD_MA;
   double BMDL_MA;
   double BMDU_MA;
-  double *BMD;
-  double *BMDL;
-  double *BMDU;
-  double *ebLower;  //size is number of dose groups
-  double *ebUpper;  //size is number of dose groups
+  std::vector<double> BMD;
+  std::vector<double> BMDL;
+  std::vector<double> BMDU;
+  std::vector<double> ebLower;  //size is number of dose groups
+  std::vector<double> ebUpper;  //size is number of dose groups
 };
 
 
 //all arrays are length 4
 struct testsOfInterest {
-  double *llRatio;
-  double *DF;
-  double *pVal;
+  std::vector<double> llRatio;
+  std::vector<double> DF;
+  std::vector<double> pVal;
 };
 
 
@@ -88,9 +88,9 @@ struct testsOfInterest {
 //3 - fitted Model
 //4 - R Model
 struct continuous_AOD{
-  double *LL;
-  int *nParms;
-  double *AIC;
+  std::vector<double> LL;
+  std::vector<int> nParms;
+  std::vector<double> AIC;
   double addConst;
   struct testsOfInterest *TOI;
 };
@@ -113,18 +113,18 @@ struct dicho_AOD{
 
 //each array has number of dose groups in suff_stat data
 struct continuous_GOF {
-  double *dose;
-  double *size;
-  double *estMean;
-  double *calcMean;
-  double *obsMean;
-  double *estSD;
-  double *calcSD;
-  double *obsSD;
-  double *res;
+  std::vector<double> dose;
+  std::vector<double> size;
+  std::vector<double> estMean;
+  std::vector<double> calcMean;
+  std::vector<double> obsMean;
+  std::vector<double> estSD;
+  std::vector<double> calcSD;
+  std::vector<double> obsSD;
+  std::vector<double> res;
   int n; //total # of obs/doses  
-  double *ebLower;
-  double *ebUpper;
+  std::vector<double> ebLower;
+  std::vector<double> ebUpper;
 };
 
 struct dichotomous_GOF {
@@ -141,10 +141,6 @@ struct dichotomous_GOF {
 struct python_dichotomous_analysis{
   int model; // Model Type as listed in dich_model
   int n;     // total number of observations obs/n
-  //double *Y; // observed +
-  //double *doses; //
-  //double *n_group; //size of the group
-  //double *prior; // a column order matrix parms X prior_cols
   std::vector<double> Y;  // observed +
   std::vector<double> doses;  
   std::vector<double> n_group; //size of the group
@@ -162,20 +158,76 @@ struct python_dichotomous_analysis{
 struct python_dichotomous_model_result{
   int      model;               // dichotomous model specification
   int      nparms;              //number of parameters in the model
-  //double  *parms;               // Parameter Estimate
-  //double  *cov;                 // Covariance Estimate
   std::vector<double> parms;    // Parameter Estimate
   std::vector<double> cov;      // Covariance Estimate
   double   max;                 // Value of the Likelihood/Posterior at the maximum
   int      dist_numE;           // number of entries in rows for the bmd_dist
   double      model_df;         // Used model degrees of freedom
   double      total_df;         // Total degrees of freedom
-  //double  *bmd_dist;            // bmd distribution (dist_numE x 2) matrix
   std::vector<double> bmd_dist; // bmd distribution (dist_numE x 2) matrix
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
 };
+
+struct python_dichotomousMA_analysis{
+  int    nmodels;      		//number of models for the model average
+  std::vector<std::vector<double>> priors;     		// List of pointers to prior arrays
+                       		// priors[i] is the prior array for the ith model ect
+  std::vector<int> nparms;     //parameters in each model
+  std::vector<int> actual_parms;//actual number of parameters in the model
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                       		// presently there are only 5
+  std::vector<int> models;      // list of models this is defined by dich_model.
+  std::vector<double> modelPriors; // prior probability on the model
+};
+
+struct python_dichotomousMA_result{
+  int                       nmodels; //number of models for each
+  std::vector<python_dichotomous_model_result> models;  //Individual model fits for each model average
+  int dist_numE; // number of entries in rows for the bmd_dist
+  std::vector<double> post_probs; // posterior probabilities
+  std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+};
+
+struct python_continuous_analysis{
+  enum cont_model model;
+  int n;
+  bool suff_stat; //true if the data are in sufficient statistics format
+  std::vector<double> Y; // observed data means or actual data
+  std::vector<double> doses; //
+  std::vector<double> sd; // SD of the group if suff_stat = true, null otherwise.
+  std::vector<double> n_group; // N for each group if suff_stat = true, null otherwise
+  std::vector<double> prior; // a column order matrix px5 where p is the number of parametersd
+  int BMD_type; // type of BMD
+  bool isIncreasing; // if the BMD is defined increasing or decreasing
+  double BMR; // Benchmark response related to the BMD type
+  double tail_prob; // tail probability
+  int    disttype;  // Distribution type defined in the enum distribution
+  double alpha;     // specified alpha
+  int samples; // number of MCMC samples.
+  int degree; // if polynomial it is the degree
+  int burnin;  // burn in
+  int parms; // number of parameters
+  int prior_cols;
+  int transform_dose; // Use the arc-sin-hyperbolic inverse to transform dose.
+};
+
+struct python_continuous_model_result{
+  int      model;           // continuous model specification
+  int      dist;            // distribution_type
+  int      nparms;                    //number of parameters in the model
+  std::vector<double>  parms;           // Parameter Estimate
+  std::vector<double>  cov;             // Covariance Estimate
+  double   max;             // Value of the Likelihood/Posterior at the maximum
+  int      dist_numE;       // number of entries in rows for the bmd_dist
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
+  double    bmd;             // The bmd at the maximum
+  std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+};
+
+
 
 #ifdef _WIN32
 #pragma pack()
@@ -206,7 +258,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
 void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_result *res, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod);
 
-//void collect_dicho_bmd_values(double *bmd_dist, struct BMD_results *BMDres);
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres, double estParmCount);
 
 void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres);
@@ -239,6 +290,10 @@ int BMDS_ENTRY_API __stdcall add2(int i, int j);
 void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
 
 #ifdef __cplusplus
 }
