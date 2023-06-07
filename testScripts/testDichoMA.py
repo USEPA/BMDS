@@ -1,9 +1,8 @@
 # /usr/bin/env python
 
-import numpy as np
-
 # from pybmds import bmdscore
 import bmdscore
+import numpy as np
 
 pyMA = bmdscore.python_dichotomousMA_analysis()
 pyMA.nmodels = 9
@@ -86,4 +85,4 @@ bmdsRes.ebLower = np.full(pyAnal.n, -9999)
 pyMARes.bmdsRes = bmdsRes
 
 bmdscore.pythonBMDSDichoMA(pyMA, pyMARes)
-print(pyMARes.bmdsRes.BMD)
+print(pyMARes.bmdsRes.BMD)  # noqa: T201

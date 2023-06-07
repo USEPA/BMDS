@@ -1,9 +1,8 @@
 # /usr/bin/env python
 
-import numpy as np
-
 # from pybmds import bmdscore
 import bmdscore
+import numpy as np
 
 pyAnal = bmdscore.python_dichotomous_analysis()
 pyAnal.model = bmdscore.dich_model.d_weibull
@@ -34,4 +33,4 @@ pyRes.bmdsRes = bmdsRes
 pyRes.aod = aod
 
 bmdscore.pythonBMDSDicho(pyAnal, pyRes)
-print(pyRes.bmd)
+print(pyRes.bmd)  # noqa: T201

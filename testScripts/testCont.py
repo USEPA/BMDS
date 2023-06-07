@@ -1,7 +1,7 @@
 # /usr/bin/env python
 
-import numpy as np
 import bmdscore
+import numpy as np
 
 # from pybmds import bmdscore
 
@@ -42,4 +42,4 @@ pyRes.bmdsRes = bmdsRes
 pyRes.aod = aod
 
 bmdscore.pythonBMDSCont(pyAnal, pyRes)
-print(pyRes.bmd)
+print(pyRes.bmd)  # noqa: T201
