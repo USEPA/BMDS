@@ -206,7 +206,14 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-  
+ 
+//  std::cout<<"degree = "<<anal->degree;
+//  std::cout<<"degree:"<<anal->degree<<std::endl;
+//        for (int k=0; k<anal->prior_cols*anal->parms; k++){
+//          std::cout<<anal->prior[k]<<", ";
+//        }
+//        std::cout<<std::endl;
+ 
   bmdsRes->validResult = false;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
@@ -499,7 +506,6 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
-
   bmdsRes->validResult = false;
   anal->transform_dose = false;
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
@@ -668,9 +674,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   aod->LL.resize(5);
   aod->nParms.resize(5);
   aod->AIC.resize(5);  
-  aod->TOI->llRatio.resize(4);
-  aod->TOI->DF.resize(4);
-  aod->TOI->pVal.resize(4);
+  aod->TOI.llRatio.resize(4);
+  aod->TOI.DF.resize(4);
+  aod->TOI.pVal.resize(4);
   calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
 
   rescale_contParms(anal, res->parms); 
@@ -689,7 +695,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
-
 
   clean_cont_results(res, bmdsRes, aod, gof);
 
@@ -715,7 +720,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
  // std::cout << "Condition number: " << max/min << std::endl;
  delete [] GOFres.expected;
  delete [] GOFres.sd;
- 
 }
 
 
@@ -842,7 +846,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
   } else {
     estimate_normal_aod(CA, &CD);
   }
-
   //fill aod with results and calculate tests of interest
   aod->LL[0] = -1*CD.A1;
   aod->nParms[0] = CD.N1;
@@ -927,7 +930,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
     aod->addConst -= tmp;
   }
 
-
   calcTestsOfInterest(aod);
 }
 
@@ -935,7 +937,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
 void calcTestsOfInterest(struct continuous_AOD *aod){
 
-  struct testsOfInterest *TOI = aod->TOI;
   double dev;
   int df;
 
@@ -946,9 +947,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   if (dev < BMDS_EPS){
      dev = 0.0;
   }
-  TOI->llRatio[0] = dev = 2*dev;
-  TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
-  TOI->pVal[0] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[0] = dev = 2*dev;
+
+  aod->TOI.DF[0] = df = aod->nParms[1] - aod->nParms[4];
+  aod->TOI.pVal[0] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
   dev = (aod->LL[1] - aod->LL[0]);
@@ -956,10 +958,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   if (dev < BMDS_EPS){
      dev = 0.0;
   }
-  TOI->llRatio[1] = dev = 2*dev;
+  aod->TOI.llRatio[1] = dev = 2*dev;
   //TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
-  TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
-  TOI->pVal[1] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.DF[1] = df = aod->nParms[1] - aod->nParms[0];
+  aod->TOI.pVal[1] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #3 - A2 vs A3 - Does the model describe variances adequately
   dev = (aod->LL[1] - aod->LL[2]);
@@ -968,9 +970,9 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
      dev = 0.0;
   }
   //TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
-  TOI->llRatio[2] = dev = 2*dev;
-  TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
-  TOI->pVal[2] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[2] = dev = 2*dev;
+  aod->TOI.DF[2] = df = aod->nParms[1] - aod->nParms[2];
+  aod->TOI.pVal[2] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
   dev = (aod->LL[2] - aod->LL[3]);
@@ -979,13 +981,13 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
      dev = 0.0;
   }
   //TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
-  TOI->llRatio[3] = dev = 2*dev;
-  TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
-  TOI->pVal[3] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[3] = dev = 2*dev;
+  aod->TOI.DF[3] = df = aod->nParms[2] - aod->nParms[3];
+  aod->TOI.pVal[3] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //DOF check for test 4
-  if (TOI->DF[3] <= 0) {
-     TOI->pVal[3] = BMDS_MISSING;
+  if (aod->TOI.DF[3] <= 0) {
+     aod->TOI.pVal[3] = BMDS_MISSING;
   }
 }
 
@@ -1216,9 +1218,9 @@ void clean_cont_results(struct continuous_model_result *res, struct BMDS_results
     cleanDouble(&aod->LL[i]);
     cleanDouble(&aod->AIC[i]);
     for (int j=0; j<4; j++){
-      cleanDouble(&aod->TOI->llRatio[j]);
-      cleanDouble(&aod->TOI->DF[j]);
-      cleanDouble(&aod->TOI->pVal[j]);
+      cleanDouble(&aod->TOI.llRatio[j]);
+      cleanDouble(&aod->TOI.DF[j]);
+      cleanDouble(&aod->TOI.pVal[j]);
     }        
   }
   cleanDouble(&aod->addConst);
@@ -1483,7 +1485,7 @@ void convertToPythonContRes(struct continuous_model_result *res, struct python_c
   
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes){
 
   //1st convert from python struct
   dichotomous_analysis anal;
@@ -1499,13 +1501,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonDichoRes(&res, pyRes);
 
-  runBMDSDichoAnalysis(&anal, &res, gof, bmdsRes, aod);     
+  runBMDSDichoAnalysis(&anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod);     
 
   convertToPythonDichoRes(&res, pyRes);
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes){
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes){
 
 //convert python_dichtomousMA_analysis to dichotomousMA_analysis
   dichotomousMA_analysis MA;
@@ -1519,11 +1521,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 //convert python_dichotomous_analysis to dichotomous_analysis
   dichotomous_analysis DA;
-  DA.Y = new double[pyDA->n];
-  DA.doses = new double[pyDA->n];
-  DA.n_group = new double[pyDA->n];
-  DA.prior = new double[pyDA->parms*pyDA->prior_cols];
-  convertFromPythonDichoAnalysis(&DA, pyDA);
+  DA.Y = new double[pyMA->pyDA.n];
+  DA.doses = new double[pyMA->pyDA.n];
+  DA.n_group = new double[pyMA->pyDA.n];
+  DA.prior = new double[pyMA->pyDA.parms*pyMA->pyDA.prior_cols];
+  convertFromPythonDichoAnalysis(&DA, &pyMA->pyDA);
 
 //  convertFromPythonDichoMARes(&res, pyRes);
 
@@ -1545,7 +1547,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   maRes.post_probs = new double[pyRes->nmodels];
   maRes.bmd_dist = new double[pyRes->dist_numE*2];
 
-  runBMDSDichoMA(&MA, &DA, &maRes, bmdsRes);
+  runBMDSDichoMA(&MA, &DA, &maRes, &pyRes->bmdsRes);
 //convert back to python objs
 //pyDA should not change
   pyRes->post_probs.resize(pyRes->nmodels);
@@ -1579,7 +1581,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes){
 
   //convert pyAnal to anal
   continuous_analysis anal;
@@ -1597,8 +1599,22 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonContRes(&res, pyRes);
 
-  runBMDSContAnalysis(&anal, &res, bmdsRes, aod, gof, detectAdvDir, restricted);
+  runBMDSContAnalysis(&anal, &res, &pyRes->bmdsRes, &pyRes->aod, &pyRes->gof, &pyAnal->detectAdvDir, &pyAnal->restricted);
 
   convertToPythonContRes(&res, pyRes);
 
 }
+
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+ 
+
+   //run each individual multistage model
+   for (int i=0;i<pyAnal->ndatasets;i++){
+     std::cout<<"dataset:"<<i<<std::endl;
+     for (int j=0; j<pyAnal->nmodels[i]; j++){
+       pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
+     } 
+   }
+
+
+}  
