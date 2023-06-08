@@ -35,10 +35,10 @@ int main(void){
 
 //  runOldContAnalysis();
 //  runCompleteContAnalysis();
-//  runPythonDichoAnalysis();
+  runPythonDichoAnalysis();
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
-  runPythonMultitumorAnalysis();
+//  runPythonMultitumorAnalysis();
 
   return 0;
 
@@ -1261,122 +1261,11 @@ void runPythonDichoAnalysis(){
   res.dist_numE = 200;
   res.nparms = anal.parms;
 
-  struct dichotomous_GOF gof;
-
-  struct BMDS_results bmdsRes;
-  
-  
-  //set all parms as unbounded initially
-  for (int i=0; i<anal.parms; i++){
-     bmdsRes.bounded.push_back(false);
-     bmdsRes.stdErr.push_back(BMDS_MISSING);
-     bmdsRes.lowerConf.push_back(BMDS_MISSING);
-     bmdsRes.upperConf.push_back(BMDS_MISSING);
-  }
-  bmdsRes.BMD = -9999.0;
-  bmdsRes.BMDU = -9999.0;
-  bmdsRes.BMDL = -9999.0;
-  bmdsRes.AIC = -9999.0;
-
-
-  struct dicho_AOD aod;
-  double A1;
-  int N1;
-  double A2;
-  int N2;
-  double fittedLL;
-  int NFit;
-  double devFit;
-  double devRed;
-  int dfFit;
-  int dfRed;
-  int pvFit;
-  int pvRed;
-  aod.fullLL = A1;
-  aod.nFull = N1;
-  aod.redLL = A2;
-  aod.nRed = N2;
-  aod.fittedLL = fittedLL;
-  aod.nFit = NFit;
-  aod.devFit = devFit;
-  aod.devRed = devRed;
-  aod.dfFit = dfFit;
-  aod.dfRed = dfRed;
-  aod.pvFit = pvFit;
-  aod.pvRed = pvRed;
-
-  res.gof = gof;
-  res.bmdsRes = bmdsRes;
-  res.aod = aod;
 
   pythonBMDSDicho(&anal, &res);
 
 
-  printf("tlink bmdsRes.validResult = %s\n", bmdsRes.validResult ? "valid" : "invalid");
-  if (bmdsRes.validResult || showResultsOverride){
-
-  printf("\nBenchmark Dose\n");
-  printf("max: %f\n",res.max);
-  //printf("BMD: %f\n",bmdsRes.BMD);
-  //printf("BMDL: %f\n",bmdsRes.BMDL);
-  //printf("BMDU: %f\n",bmdsRes.BMDU);
-  //printf("AIC: %f\n",bmdsRes.AIC);
-  //printf("LPP: %f\n", bmdsRes.BIC_equiv);
-  //printf("P-value: %f\n", gof.p_value);
-  //printf("DOF: %f\n", gof.df);
-  //printf("Chi^2: %f\n", bmdsRes.chisq);
-  printf("BMD: %f\n",res.bmdsRes.BMD);
-  printf("BMDL: %f\n",res.bmdsRes.BMDL);
-  printf("BMDU: %f\n",res.bmdsRes.BMDU);
-  printf("AIC: %f\n",res.bmdsRes.AIC);
-  printf("LPP: %f\n", res.bmdsRes.BIC_equiv);
-  printf("P-value: %f\n", res.gof.p_value);
-  printf("DOF: %f\n", res.gof.df);
-  printf("Chi^2: %f\n", res.bmdsRes.chisq);
-
-  printf("\nModel Parameters\n");
-  printf("# of parms: %d\n", anal.parms);
-  printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
-  for (int i=0; i<anal.parms; i++){
-     //printf("%d, %.10f, %s, %f, %f, %f\n", i, res.parms[i], bmdsRes.bounded[i] ? "true" : "false",bmdsRes.stdErr[i], bmdsRes.lowerConf[i], bmdsRes.upperConf[i] );
-     printf("%d, %.10f, %s, %f, %f, %f\n", i, res.parms[i], res.bmdsRes.bounded[i] ? "true" : "false",res.bmdsRes.stdErr[i], res.bmdsRes.lowerConf[i], res.bmdsRes.upperConf[i] );
-  }
- 
-  printf("\ncov matrix\n");
-  for (int i=0; i<anal.parms*anal.parms; i++){
-    printf("%d, %f\n", i, res.cov[i]);
-  }
- 
-  printf("\nGoodness of Fit\n");
-  printf("Dose, EstProb, Expected, Observed, Size, ScaledRes\n");
-  //for (int i=0; i<gof.n; i++){
-  for (int i=0; i<res.gof.n; i++){
-    //printf("%f, %f, %f, %f, %f, %f\n", anal.doses[i], gof.expected[i]/anal.n_group[i], gof.expected[i], anal.Y[i], anal.n_group[i], gof.residual[i]);
-    printf("%f, %f, %f, %f, %f, %f\n", anal.doses[i], res.gof.expected[i]/anal.n_group[i], res.gof.expected[i], anal.Y[i], anal.n_group[i], res.gof.residual[i]);
-  }
-  printf("\nError bars\n");
-  //for (int i=0; i<gof.n; i++){
-  for (int i=0; i<res.gof.n; i++){
-    //printf("%f, %f\n", gof.ebLower[i], gof.ebUpper[i]);
-    printf("%f, %f\n", res.gof.ebLower[i], res.gof.ebUpper[i]);
-  }
-
-  printf("\nAnalysis of Deviance\n");
-  printf("  Model,   LL,    #parms,   deviance,   test DF,  pval\n");
-  //printf("Full Model,  %f,  %d,  -,  -,  NA\n", aod.fullLL, aod.nFull);
-  //printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", aod.fittedLL, aod.nFit, aod.devFit, aod.dfFit, aod.pvFit);
-  //printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", aod.redLL, aod.nRed, aod.devRed, aod.dfRed, aod.pvRed);
-  printf("Full Model,  %f,  %d,  -,  -,  NA\n", res.aod.fullLL, res.aod.nFull);
-  printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", res.aod.fittedLL, res.aod.nFit, res.aod.devFit, res.aod.dfFit, res.aod.pvFit);
-  printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", res.aod.redLL, res.aod.nRed, res.aod.devRed, res.aod.dfRed, res.aod.pvRed);
-
-  printf("\nBMD Dist:\n");
-  for (int i=0; i<res.dist_numE; i++){
-    printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i+res.dist_numE], res.bmd_dist[i]);
-  }
-  } else {
-     printf("\nModel was not run\n");
-  }
+  printDichoModResult(&anal, &res, showResultsOverride);
 
 }
 
@@ -4240,52 +4129,6 @@ void runPythonMultitumorAnalysis(){
     modAnal.doses = doses[dataset];
     modAnal.n = numDataRows;
 
-//    struct dichotomous_GOF gof;
-//    struct BMDS_results bmdsRes;
-//    
-//    //set all parms as unbounded initially
-//    for (int i=0; i<modAnal.parms; i++){
-//       bmdsRes.bounded.push_back(false);
-//       bmdsRes.stdErr.push_back(BMDS_MISSING);
-//       bmdsRes.lowerConf.push_back(BMDS_MISSING);
-//       bmdsRes.upperConf.push_back(BMDS_MISSING);
-//    }
-//    bmdsRes.BMD = -9999.0;
-//    bmdsRes.BMDU = -9999.0;
-//    bmdsRes.BMDL = -9999.0;
-//    bmdsRes.AIC = -9999.0;
-//  
-//    struct dicho_AOD aod;
-//    double A1;
-//    int N1;
-//    double A2;
-//    int N2;
-//    double fittedLL;
-//    int NFit;
-//    double devFit;
-//    double devRed;
-//    int dfFit;
-//    int dfRed;
-//    int pvFit;
-//    int pvRed;
-//    aod.fullLL = A1;
-//    aod.nFull = N1;
-//    aod.redLL = A2;
-//    aod.nRed = N2;
-//    aod.fittedLL = fittedLL;
-//    aod.nFit = NFit;
-//    aod.devFit = devFit;
-//    aod.devRed = devRed;
-//    aod.dfFit = dfFit;
-//    aod.dfRed = dfRed;
-//    aod.pvFit = pvFit;
-//    aod.pvRed = pvRed;
-//  
-//    modRes.gof = gof;
-//    modRes.bmdsRes = bmdsRes;
-//    modRes.aod = aod;
-
-
     //needs to be changed based on model degree
     if (degree[dataset] == 0){
       //handle autoselect degree
@@ -4296,10 +4139,6 @@ void runPythonMultitumorAnalysis(){
         modAnal.parms = modAnal.degree + 1;
         modRes.nparms = modAnal.parms;
         modGroup.push_back(modAnal);
-//        modRes.bmdsRes.bounded.resize(modAnal.parms);
-//        modRes.bmdsRes.stdErr.resize(modAnal.parms);
-//        modRes.bmdsRes.lowerConf.resize(modAnal.parms);
-//        modRes.bmdsRes.upperConf.resize(modAnal.parms);
         modResGroup.push_back(modRes);
         count++;
       }
@@ -4307,18 +4146,10 @@ void runPythonMultitumorAnalysis(){
       modAnal.degree = degree[dataset];
       modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols); 
       modRes.nparms = modAnal.parms;
-//      modRes.bmdsRes.bounded.resize(modAnal.parms);
-//      modRes.bmdsRes.stdErr.resize(modAnal.parms);
-//      modRes.bmdsRes.lowerConf.resize(modAnal.parms);
-//      modRes.bmdsRes.upperConf.resize(modAnal.parms);
       modGroup.push_back(modAnal);
       modResGroup.push_back(modRes);
       count = 1;
     }
-
-
-//    pythonBMDSDicho(&modAnal, &modRes);
-//    printDichoModResult(&modAnal, &modRes,true);
 
 
     anal.nmodels.push_back(count);
@@ -4334,65 +4165,8 @@ void runPythonMultitumorAnalysis(){
         std::cout<<" model:"<<mod<<std::endl;
         pythonBMDSDicho(&anal.models[dataset][mod], &res.models[dataset][mod]);
         printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
-//      pythonBMDSDicho(&anal.models[dataset][mod], &res.models[dataset][mod]);  
-//      printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod]);
     }
   }
-    //pythonBMDSDicho(&modAnal, &modRes);
-//    std::cout<<"modGroup size:"<<modGroup.size()<<std::endl;
-//    std::cout<<"modResGroup size:"<<modResGroup.size()<<std::endl;
-    
-
-
-//    printf("tlink bmdsRes.validResult = %s\n", bmdsRes.validResult ? "valid" : "invalid");
-//    if (bmdsRes.validResult || showResultsOverride){
-//    printf("tlink bmdsRes.validResult = %s\n", modResGroup[0].bmdsRes.validResult ? "valid" : "invalid");
-//    if (modResGroup[0].bmdsRes.validResult || showResultsOverride){
-//       std::cout<<"Valid Result"<<std::endl;
-//    printf("\nBenchmark Dose\n");
-//    printf("max: %f\n",modResGroup[0].max);
-//    printf("BMD: %f\n",modResGroup[0].bmdsRes.BMD);
-//    printf("BMDL: %f\n",modResGroup[0].bmdsRes.BMDL);
-//    printf("BMDU: %f\n",modResGroup[0].bmdsRes.BMDU);
-//    printf("AIC: %f\n",modResGroup[0].bmdsRes.AIC);
-//    printf("LPP: %f\n", modResGroup[0].bmdsRes.BIC_equiv);
-//    printf("P-value: %f\n", modResGroup[0].gof.p_value);
-//    printf("DOF: %f\n", modResGroup[0].gof.df);
-//    printf("Chi^2: %f\n", modResGroup[0].bmdsRes.chisq);
-//  
-//    printf("\nModel Parameters\n");
-//    printf("# of parms: %d\n", modGroup[0].parms);
-//    printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
-//    for (int i=0; i<modGroup[0].parms; i++){
-//       printf("%d, %.10f, %s, %f, %f, %f\n", i, modResGroup[0].parms[i], modResGroup[0].bmdsRes.bounded[i] ? "true" : "false", modResGroup[0].bmdsRes.stdErr[i], modResGroup[0].bmdsRes.lowerConf[i], modResGroup[0].bmdsRes.upperConf[i] );
-//    }
-//   
-//    printf("\ncov matrix\n");
-//    for (int i=0; i<modGroup[0].parms*modAnal.parms; i++){
-//      printf("%d, %f\n", i, modResGroup[0].cov[i]);
-//    }
-//   
-//    printf("\nGoodness of Fit\n");
-//    printf("Dose, EstProb, Expected, Observed, Size, ScaledRes\n");
-//    for (int i=0; i<modResGroup[0].gof.n; i++){
-//      printf("%f, %f, %f, %f, %f, %f\n", modGroup[0].doses[i], modResGroup[0].gof.expected[i]/modGroup[0].n_group[i], modResGroup[0].gof.expected[i], modGroup[0].Y[i], modGroup[0].n_group[i], modResGroup[0].gof.residual[i]);
-//    }
-//    printf("\nError bars\n");
-//    for (int i=0; i<modResGroup[0].gof.n; i++){
-//      printf("%f, %f\n", modResGroup[0].gof.ebLower[i], modResGroup[0].gof.ebUpper[i]);
-//    }
-//  
-//    printf("\nAnalysis of Deviance\n");
-//    printf("  Model,   LL,    #parms,   deviance,   test DF,  pval\n");
-//    printf("Full Model,  %f,  %d,  -,  -,  NA\n", modResGroup[0].aod.fullLL, modResGroup[0].aod.nFull);
-//    printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", modResGroup[0].aod.fittedLL, modResGroup[0].aod.nFit, modResGroup[0].aod.devFit, modResGroup[0].aod.dfFit, modResGroup[0].aod.pvFit);
-//    printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", modResGroup[0].aod.redLL, modResGroup[0].aod.nRed, modResGroup[0].aod.devRed, modResGroup[0].aod.dfRed, modResGroup[0].aod.pvRed);
-//  
-//    } else {
-//       printf("\nModel was not run\n");
-//    }
-//
-//  }
 }
 
 
@@ -4440,176 +4214,16 @@ void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct pyth
     printf("Full Model,  %f,  %d,  -,  -,  NA\n", pyRes->aod.fullLL, pyRes->aod.nFull);
     printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.fittedLL, pyRes->aod.nFit, pyRes->aod.devFit, pyRes->aod.dfFit, pyRes->aod.pvFit);
     printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.redLL, pyRes->aod.nRed, pyRes->aod.devRed, pyRes->aod.dfRed, pyRes->aod.pvRed);
+  
+    printf("\nBMD Dist:\n");
+    for (int i=0; i<pyRes->dist_numE; i++){
+      printf("i:%d, perc:%f, dist:%f\n", i, pyRes->bmd_dist[i+pyRes->dist_numE], pyRes->bmd_dist[i]);
+    }
+  } else {
+     printf("\nModel was not run\n");
   }
 }
 
-//void runPythonMultitumorAnalysis(){
-//
-//
-//  //input data
-//  int numDatasets = 3;
-//  double BMR = 1.0;
-//  int BMD_type = 1;
-//  double alpha = 0.05;
-//  int prior_cols = 5;
-// 
-//  //data
-//  std::vector<double> doses1 = {0,50,100,150,200};
-//  std::vector<double> Y1 = {0,5,30,65,90};
-//  std::vector<double> n_group1 = {100,100,100,100,100};
-//  std::vector<double> doses2 = {0,50,100,150,200};
-//  std::vector<double> Y2 = {5,10,33,67,93};
-//  std::vector<double> n_group2 = {100,100,100,100,100};
-//  std::vector<double> doses3 = {0,50,100,150,200};
-//  std::vector<double> Y3 = {1,68,78,88,98};
-//  std::vector<double> n_group3 = {100,100,100,100,100};
-//
-//  std::vector<std::vector<double>> doses; 
-//  std::vector<std::vector<double>> Y; 
-//  std::vector<std::vector<double>> n_group;
-//  doses.push_back(doses1);
-//  doses.push_back(doses2);
-//  doses.push_back(doses3);
-//  Y.push_back(Y1);
-//  Y.push_back(Y2);
-//  Y.push_back(Y3);
-//  n_group.push_back(n_group1);
-//  n_group.push_back(n_group2);
-//  n_group.push_back(n_group3); 
-//
-//
-//  
-//  std::vector<int> n = {5,5,5};
-//  //std::vector<int> degree = {0,0,0};
-//  std::vector<int> degree = {2,2,2};
-//  struct python_multitumor_analysis anal;
-//  anal.ndatasets = numDatasets;
-//  anal.n = n; 
-//  anal.degree = degree;
-//  anal.nmodels;
-//  anal.BMR = 1.0;
-//  anal.BMD_type = 1;
-//  anal.alpha = 0.05;
-//  anal.prior_cols = 5;
-//
-//  struct python_multitumor_result res;
-//  res.ndatasets = anal.ndatasets;
-//  res.dist_numE = 200;
-//
-//
-//  //create individual models analyses
-//  std::vector<std::vector<python_dichotomous_analysis>> models;
-//  int count = 0;
-////  for (int i=0; i<numDatasets; i++){
-//  int i=0;
-//    struct python_dichotomous_analysis model;
-//    struct python_dichotomous_model_result modelRes;
-////    struct dichotomous_GOF gof;
-////    struct BMDS_results bmdsRes;
-////    struct dicho_AOD aod;
-//
-//    model.model = d_multistage;
-//    model.BMR = BMR;
-//    model.BMD_type = BMD_type;
-//    model.alpha = alpha;
-//    model.prior_cols = prior_cols;
-//    model.n = anal.n[i];
-//    model.doses = doses[i];
-//    model.Y = Y[i];
-//    model.n_group = n_group[i];
-//
-////    modelRes.gof = gof;
-////    modelRes.bmdsRes = bmdsRes;
-////    modelRes.aod = aod;
-//
-//    std::vector<python_dichotomous_analysis> modGroup;
-////    std::vector<double> modPrior;
-//    std::vector<python_dichotomous_model_result> modResGroup;
-////
-////    std::vector<dichotomous_GOF> modGOFGroup;
-////    std::vector<BMDS_results> modBMDSResGroup;
-////    std::vector<dicho_AOD> modAODGroup;
-// 
-//    //other ind model structs
-////    struct dichotomous_GOF gof;
-////    struct BMDS_results bmdsRes;
-////    struct dicho_AOD aod;
-//
-////    if (degree[i] == 0){
-////      count = 0;
-////      for(int j=2; j<n[i]; j++){
-////        model.degree = j;
-////        model.prior = getMultitumorPrior(model.degree, model.prior_cols);
-////        model.parms = model.degree+1;
-////        modGroup.push_back(model);
-////
-////        std::cout<<"degree:"<<model.degree<<std::endl;
-////        for (int k=0; k<model.prior.size(); k++){
-////          std::cout<<model.prior[k]<<", ";
-////        }
-////        std::cout<<std::endl;
-////
-////
-////        //add other structs to modelRes here
-////        //modelRes.gof = gof;
-////        //modelRes.bmdsRes = bmdsRes;
-////        //modelRes.aod = aod;
-//////        modGOFGroup.push_back(gof);
-//////        modBMDSResGroup.push_back(bmdsRes);
-//////        modAODGroup.push_back(aod);
-//////
-////        modResGroup.push_back(modelRes);
-////        count++;
-////      }
-////    } else {
-//      model.degree = degree[i];
-//      model.prior = getMultitumorPrior(model.degree, model.prior_cols);
-//      model.parms = model.degree+1;
-//      modGroup.push_back(model);
-//
-//      //add other structs to modelRes here
-//      //modelRes.gof = gof;
-//      //modelRes.bmdsRes = bmdsRes;
-//      //modelRes.aod = aod;
-////      modGOFGroup.push_back(gof);
-////      modBMDSResGroup.push_back(bmdsRes);
-////      modAODGroup.push_back(aod);
-//      
-//      
-//
-//      modResGroup.push_back(modelRes);
-//      count = 1;
-////    }
-//    anal.nmodels.push_back(count);
-//    anal.models.push_back(modGroup);
-//    res.nmodels.push_back(count);
-//    res.models.push_back(modResGroup);
-//
-//    //
-////    res.gofs.push_back(modGOFGroup);
-////    res.bmdsRess.push_back(modBMDSResGroup);
-////    res.aods.push_back(modAODGroup);
-////  }
-//
-//
-//  
-//
-//  struct BMDSmultitumor_result bmdsTumorRes;
-//  res.bmdsMtRes = bmdsTumorRes;
-//  
-//  pythonBMDSDicho(&model, &modelRes);
-////  pythonBMDSMultitumor(&anal, &res);
-//
-//  std::cout<<"after pythonBMDSMultitumor"<<std::endl;
-//  //output
-//  for (int i=0;i<anal.ndatasets;i++){
-//    std::cout<<"dataset:"<<i<<std::endl;
-//    for (int j=0; j<anal.nmodels[i]; j++){
-//       std::cout<<"  degree:"<<anal.models[i][j].degree<<std::endl;
-//    }
-//  }
-//   
-//}
 
 std::vector<double> getMultitumorPrior(int degree, int prior_cols){
   
