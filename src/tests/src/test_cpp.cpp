@@ -26,7 +26,6 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols);
 void selectMultitumorModel();
 void runMultitumor(); 
 
-
 bool showResultsOverride = true;
 
 int main(void){
@@ -1265,7 +1264,6 @@ void runPythonDichoAnalysis(){
 
 
   pythonBMDSDicho(&anal, &res);
-
 
   printDichoModResult(&anal, &res, showResultsOverride);
 
@@ -4037,7 +4035,6 @@ void runPythonContAnalysis(){
 }
 
 void runPythonMultitumorAnalysis(){
-  
 
   enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                    //d_logprobit=5, d_multistage=6,d_probit=7,
@@ -4240,8 +4237,6 @@ void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct pyth
      printf("\nModel was not run\n");
   }
 }
-
-
 std::vector<double> getMultitumorPrior(int degree, int prior_cols){
   
   int numParms = 2;  //2 parameters for multistage cancer G & B

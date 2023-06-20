@@ -1487,7 +1487,6 @@ void convertToPythonContRes(struct continuous_model_result *res, struct python_c
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes){
 
-
   //1st convert from python struct
   dichotomous_analysis anal;
   anal.Y = new double[pyAnal->n];

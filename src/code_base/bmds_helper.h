@@ -70,14 +70,6 @@ struct BMDSMA_results{
   std::vector<double> ebUpper;  //size is number of dose groups
 };
 
-struct BMDSmultitumor_result{
-  double BMD_MT;
-  double BMDL_MT;
-  double BMDU_MT;
-  double combined_LL;  //combined log-likelihood 
-  double combined_LL_const; //combined log-likelihood constant
-};
-
 //all arrays are length 4
 struct testsOfInterest {
   std::vector<double> llRatio;
