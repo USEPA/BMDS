@@ -190,10 +190,10 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("bmd_dist", &python_dichotomous_model_result::bmd_dist)
        .def_readwrite("bmd", &python_dichotomous_model_result::bmd)
        .def_readwrite("gof_p_value", &python_dichotomous_model_result::gof_p_value)
-       .def_readwrite("gof_chi_sqr_statistic", &python_dichotomous_model_result::gof_chi_sqr_statistic)
        .def_readwrite("gof", &python_dichotomous_model_result::gof)
        .def_readwrite("bmdsRes", &python_dichotomous_model_result::bmdsRes)
-       .def_readwrite("aod", &python_dichotomous_model_result::aod);
+       .def_readwrite("aod", &python_dichotomous_model_result::aod)
+       .def_readwrite("gof_chi_sqr_statistic", &python_dichotomous_model_result::gof_chi_sqr_statistic);
     py::class_<python_dichotomousMA_analysis>(m, "python_dichotomousMA_analysis")
        .def(py::init<>())
        .def_readwrite("nmodels", &python_dichotomousMA_analysis::nmodels)
@@ -252,6 +252,30 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("gof", &python_continuous_model_result::gof)
        .def_readwrite("bmdsRes", &python_continuous_model_result::bmdsRes)
        .def_readwrite("aod", &python_continuous_model_result::aod);
+    py::class_<python_multitumor_analysis>(m, "python_multitumor_analysis")
+       .def(py::init<>())
+       .def_readwrite("ndatasets", &python_multitumor_analysis::ndatasets)
+       .def_readwrite("models", &python_multitumor_analysis::models)
+       .def_readwrite("n", &python_multitumor_analysis::n)
+       .def_readwrite("nmodels", &python_multitumor_analysis::nmodels)
+       .def_readwrite("BMD_type", &python_multitumor_analysis::BMD_type)
+       .def_readwrite("BMR", &python_multitumor_analysis::BMR)
+       .def_readwrite("alpha", &python_multitumor_analysis::alpha)
+       .def_readwrite("prior_cols", &python_multitumor_analysis::prior_cols)
+       .def_readwrite("degree", &python_multitumor_analysis::degree)
+       .def_readwrite("prior", &python_multitumor_analysis::prior);
+    py::class_<python_multitumor_result>(m, "python_multitumor_result")
+       .def(py::init<>())
+       .def_readwrite("ndatasets", &python_multitumor_result::ndatasets)
+       .def_readwrite("nmodels", &python_multitumor_result::nmodels)
+       .def_readwrite("models", &python_multitumor_result::models)
+       .def_readwrite("selectedModelIndex", &python_multitumor_result::selectedModelIndex)
+       .def_readwrite("slopeFactor", &python_multitumor_result::slopeFactor)
+       .def_readwrite("BMD", &python_multitumor_result::BMD)
+       .def_readwrite("BMDL", &python_multitumor_result::BMDL)
+       .def_readwrite("BMDU", &python_multitumor_result::BMDU)
+       .def_readwrite("combined_LL", &python_multitumor_result::combined_LL)
+       .def_readwrite("combined_LL_const", &python_multitumor_result::combined_LL_const);
     // functions
     init_test1(m);
 

@@ -71,13 +71,9 @@ struct BMDSMA_results{
 };
 
 struct BMDSmultitumor_result{
-  double BMD_MA;
-  double BMDL_MA;
-  double BMDU_MA;
-  int nFitted;  //# of fitted datasets (may be less than number of submitted datasets)
-  std::vector<double> BMD;  //size nFitted
-  std::vector<double> BMDL; //size nFitted
-  std::vector<double> BMDU; //size nFitted
+  double BMD_MT;
+  double BMDL_MT;
+  double BMDU_MT;
   double combined_LL;  //combined log-likelihood 
   double combined_LL_const; //combined log-likelihood constant
 };
@@ -273,9 +269,15 @@ struct python_multitumor_result{
   int ndatasets; //number of models for each
   std::vector<int> nmodels; //# of models per dataset (size ndatasets)
   std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
-  int dist_numE; // number of entries in rows for the bmd_dist
-  std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
-  struct BMDSmultitumor_result bmdsMtRes;
+  std::vector<int> selectedModelIndex;
+  //int dist_numE; // number of entries in rows for the bmd_dist
+  //std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  double BMD;
+  double BMDL;
+  double BMDU;
+  double slopeFactor;
+  double combined_LL;  //combined log-likelihood 
+  double combined_LL_const; //combined log-likelihood constant
 };
 
 
@@ -328,6 +330,10 @@ void convertFromPythonDichoAnalysis(struct dichotomous_analysis *anal, struct py
 void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes);
 
 void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret);
+
+void selectMultitumorModel();
+
+void runMultitumorModel();
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

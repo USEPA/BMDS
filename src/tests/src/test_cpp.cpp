@@ -23,6 +23,8 @@ void runPythonMultitumorAnalysis();
 void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
+void selectMultitumorModel();
+void runMultitumor(); 
 
 
 bool showResultsOverride = true;
@@ -35,10 +37,10 @@ int main(void){
 
 //  runOldContAnalysis();
 //  runCompleteContAnalysis();
-  runPythonDichoAnalysis();
+//  runPythonDichoAnalysis();
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
-//  runPythonMultitumorAnalysis();
+  runPythonMultitumorAnalysis();
 
   return 0;
 
@@ -4093,7 +4095,6 @@ void runPythonMultitumorAnalysis(){
 
   struct python_multitumor_result res;
   res.ndatasets = numDatasets;
-  res.dist_numE = 200;
 
   //create individual models analyses
   std::vector<std::vector<python_dichotomous_analysis>> models;
@@ -4158,15 +4159,31 @@ void runPythonMultitumorAnalysis(){
     res.models.push_back(modResGroup);
   }
 
-    
+  //run MSCombo
+  pythonBMDSMultitumor(&anal, &res);
+
+
+  //individual model results
   for (int dataset=0; dataset<numDatasets; dataset++){
     std::cout<<"dataset:"<<dataset<<std::endl;
     for (int mod=0; mod<anal.nmodels[dataset]; mod++){
         std::cout<<" model:"<<mod<<std::endl;
-        pythonBMDSDicho(&anal.models[dataset][mod], &res.models[dataset][mod]);
         printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
     }
   }
+
+  std::cout<<"Selected model Indexes:  ";
+  for (auto elem : res.selectedModelIndex) {
+        std::cout << elem << ", ";
+  }
+
+  std::cout<<"BMD:  "<<res.BMD<<std::endl;
+  std::cout<<"BMDL: "<<res.BMDL<<std::endl;
+  std::cout<<"BMDU: "<<res.BMDU<<std::endl;
+  std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
+  std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
+  std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
+  
 }
 
 
