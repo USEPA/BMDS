@@ -3,7 +3,8 @@
 # from pybmds import bmdscore
 import bmdscore
 import numpy as np
-#from pybmds import bmdscore
+
+# from pybmds import bmdscore
 import bmdscore
 
 pyMA = bmdscore.python_dichotomousMA_analysis()
