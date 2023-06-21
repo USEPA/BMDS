@@ -20,11 +20,11 @@ void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
 void runPythonMultitumorAnalysis();
+void runPythonNestedAnalysis();
 void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
+void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, bool showResultsOverride);
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
-void selectMultitumorModel();
-void runMultitumor(); 
 
 bool showResultsOverride = true;
 
@@ -39,7 +39,8 @@ int main(void){
 //  runPythonDichoAnalysis();
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
-  runPythonMultitumorAnalysis();
+//  runPythonMultitumorAnalysis();
+  runPythonNestedAnalysis();
 
   return 0;
 
@@ -4253,4 +4254,218 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols){
   } 
   return pr;
 
+}
+
+void runPythonNestedAnalysis(){
+
+  bool showResultsOverride = true;
+  struct python_nested_analysis pyAnal;
+  pyAnal.model = nlogistic; 
+  pyAnal.restricted = true;
+
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(0);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(25);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(50);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+  pyAnal.doses.push_back(100);
+
+  pyAnal.litterSize.push_back(16);
+  pyAnal.litterSize.push_back(9);
+  pyAnal.litterSize.push_back(15);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(13);
+  pyAnal.litterSize.push_back(9);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(9);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(9);
+  pyAnal.litterSize.push_back(13);
+  pyAnal.litterSize.push_back(12);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(10);
+  pyAnal.litterSize.push_back(15);
+  pyAnal.litterSize.push_back(7);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(12);
+  pyAnal.litterSize.push_back(13);
+  pyAnal.litterSize.push_back(12);
+  pyAnal.litterSize.push_back(14);
+  pyAnal.litterSize.push_back(11);
+  pyAnal.litterSize.push_back(8);
+  pyAnal.litterSize.push_back(10);
+
+  pyAnal.incidence.push_back(1);
+  pyAnal.incidence.push_back(1);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(3);
+  pyAnal.incidence.push_back(3);
+  pyAnal.incidence.push_back(0);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(1);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(3);
+  pyAnal.incidence.push_back(1);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(3);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(2);
+  pyAnal.incidence.push_back(4);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(8);
+  pyAnal.incidence.push_back(7);
+  pyAnal.incidence.push_back(8);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(6);
+  pyAnal.incidence.push_back(5);
+  pyAnal.incidence.push_back(4);
+
+  pyAnal.lsc.push_back(16);
+  pyAnal.lsc.push_back(9);
+  pyAnal.lsc.push_back(15);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(13);
+  pyAnal.lsc.push_back(9);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(9);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(9);
+  pyAnal.lsc.push_back(13);
+  pyAnal.lsc.push_back(12);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(10);
+  pyAnal.lsc.push_back(15);
+  pyAnal.lsc.push_back(7);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(12);
+  pyAnal.lsc.push_back(13);
+  pyAnal.lsc.push_back(12);
+  pyAnal.lsc.push_back(14);
+  pyAnal.lsc.push_back(11);
+  pyAnal.lsc.push_back(8);
+  pyAnal.lsc.push_back(10);
+
+  pyAnal.LSC_type = 1;
+  pyAnal.ILC_type = 1;
+  pyAnal.BMD_type = 1; // 1 = extra; added otherwise
+  pyAnal.background = 1;
+  pyAnal.BMR = 0.1;
+  pyAnal.alpha = 0.05;
+  pyAnal.iterations = 1000;
+  pyAnal.seed = BMDS_MISSING; 
+
+
+  struct python_nested_result pyRes; 
+
+  pythonBMDSNested(&pyAnal, &pyRes);
+
+  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
+}
+
+
+void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, bool showResultsOverride){
+
+   printf("tlink pyRes.validResult = %s\n", pyRes->bmdsRes.validResult ? "valid" : "invalid");
+   if (pyRes->bmdsRes.validResult || showResultsOverride){
+      std::cout<<"Valid Result"<<std::endl;
+      printf("\nBenchmark Dose\n");
+      //printf("max: %f\n",pyRes->max);
+      printf("BMD: %f\n",pyRes->bmdsRes.BMD);
+      printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
+      printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
+      printf("AIC: %f\n",pyRes->bmdsRes.AIC);
+      printf("P-value: %f\n", pyRes->combPVal);
+      printf("DOF: %f\n", pyRes->df);
+      printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
+ 
+      printf("\nModel Parameters\n");
+      printf("# of parms: %d\n", pyRes->nparms);
+      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+      for (int i=0; i<pyRes->nparms; i++){
+         printf("%d, %.10f\n", i, pyRes->parms[i]);
+         //printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );
+      }
+   } 
+//   printf("\ncov matrix\n");
+//   for (int i=0; i<pyAnal->parms*pyAnal->parms; i++){
+//     printf("%d, %f\n", i, pyRes->cov[i]);
+//   }
 }

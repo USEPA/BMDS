@@ -13,4 +13,5 @@ void init_test1(py::module &m) {
     m.def("pythonBMDSDichoMA", &pythonBMDSDichoMA, "Entry point to run BMDS dichotomous MA", py::arg("python_dichotomousMA_analysis"), py::arg("python_dichotomousMA_result"));
     m.def("pythonBMDSCont", &pythonBMDSCont, "Entry point to run BMDS continuous models", py::arg("python_continuous_analysis"), py::arg("python_continuous_model_result"));
     m.def("pythonBMDSMultitumor", &pythonBMDSMultitumor, "Entry point to run Multitumor analysis", py::arg("python_multitumor_analysis"), py::arg("python_multitumor_result"));
+    m.def("pythonBMDSNested", &pythonBMDSNested, "Entry point to run Nested analysis", py::arg("python_nested_analysis"), py::arg("python_nested_result"));
 }
