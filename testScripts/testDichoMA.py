@@ -1,11 +1,9 @@
 # /usr/bin/env python
 
 # from pybmds import bmdscore
-import bmdscore
-import numpy as np
-
 # from pybmds import bmdscore
 import bmdscore
+import numpy as np
 
 pyMA = bmdscore.python_dichotomousMA_analysis()
 pyMA.nmodels = 9
