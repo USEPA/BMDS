@@ -20,6 +20,7 @@ void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
 void runPythonMultitumorAnalysis();
+void runMultitumorModel();
 void runPythonNestedAnalysis();
 void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
@@ -40,7 +41,8 @@ int main(void){
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+//  runPythonNestedAnalysis();
+  runMultitumorModel();
 
   return 0;
 
@@ -4174,6 +4176,203 @@ void runPythonMultitumorAnalysis(){
   for (auto elem : res.selectedModelIndex) {
         std::cout << elem << ", ";
   }
+
+  std::cout<<"BMD:  "<<res.BMD<<std::endl;
+  std::cout<<"BMDL: "<<res.BMDL<<std::endl;
+  std::cout<<"BMDU: "<<res.BMDU<<std::endl;
+  std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
+  std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
+  std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
+  
+}
+
+
+void runMultitumorModel(){
+
+  enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+                                   //d_logprobit=5, d_multistage=6,d_probit=7,
+                                   //d_qlinear=8,d_weibull=9
+  int modelType = 1;       //1 = frequentist, 2 = bayesian
+  bool restricted = true;  //only used for frequentist models
+  int BMD_type = 1;        // 1 = extra ; added otherwise
+  double BMR = 0.1;
+  double alpha = 0.05;
+
+  //data
+  std::vector<double> doses1 = {0,50,100,150,200};
+  std::vector<double> Y1 = {0,5,30,65,90};
+  std::vector<double> n_group1 = {100,100,100,100,100};
+  std::vector<double> doses2 = {0,50,100,150,200};
+  std::vector<double> Y2 = {5,10,33,67,93};
+  std::vector<double> n_group2 = {100,100,100,100,100};
+  std::vector<double> doses3 = {0,50,100,150,200};
+  std::vector<double> Y3 = {1,68,78,88,98};
+  std::vector<double> n_group3 = {100,100,100,100,100};
+
+  std::vector<std::vector<double>> doses; 
+  std::vector<std::vector<double>> Y; 
+  std::vector<std::vector<double>> n_group;
+  doses.push_back(doses1);
+  doses.push_back(doses2);
+  doses.push_back(doses3);
+  Y.push_back(Y1);
+  Y.push_back(Y2);
+  Y.push_back(Y3);
+  n_group.push_back(n_group1);
+  n_group.push_back(n_group2);
+  n_group.push_back(n_group3); 
+
+  std::vector<int> n = {5,5,5};
+  std::vector<int> degree = {2,2,2};
+/////////////////////////////////////////////////
+////END USER INPUT
+////////////////////////////////////////////////////
+
+  //priors defined columnwise
+  int prCols = 5;
+
+  int numDatasets = Y.size();
+  //int numDatasets = 1;
+
+  struct python_multitumor_analysis anal;
+  anal.ndatasets = numDatasets;
+  anal.n = n;
+  anal.degree = degree;
+  anal.BMR = BMR;
+  anal.BMD_type = BMD_type;
+  anal.alpha = alpha;
+  anal.prior_cols = prCols;
+
+  struct python_multitumor_result res;
+  res.ndatasets = numDatasets;
+
+  //create individual models analyses
+  std::vector<std::vector<python_dichotomous_analysis>> models;
+  int count = 0;
+
+
+ 
+  for (int dataset=0; dataset<numDatasets; dataset++){
+    std::cout<<"adding dataset:"<<dataset<<std::endl;
+
+    int numDataRows = Y[dataset].size();
+
+    struct python_dichotomous_analysis modAnal; 
+    modAnal.model = d_multistage;
+    printf("model = %d\n",modAnal.model);
+    modAnal.BMD_type = BMD_type;
+    modAnal.BMR = BMR;
+    modAnal.alpha = alpha;
+    modAnal.prior_cols = prCols;
+ 
+    struct python_dichotomous_model_result modRes;
+    modRes.model = modAnal.model;
+    modRes.dist_numE = 200;
+
+
+    std::vector<python_dichotomous_analysis> modGroup;
+    std::vector<python_dichotomous_model_result> modResGroup;
+
+    //Individual model construction 
+    //declare analysis
+    modAnal.parms = 1 + degree[dataset];
+    modAnal.Y = Y[dataset];
+    modAnal.n_group = n_group[dataset];
+    modAnal.doses = doses[dataset];
+    modAnal.n = numDataRows;
+
+     std::cout<<"b4 if"<<std::endl;
+    //needs to be changed based on model degree
+    if (degree[dataset] == 0){
+      //handle autoselect degree
+      count = 0;
+      for (int deg=2; deg<anal.n[dataset]; deg++){
+        modAnal.degree = deg;
+        modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
+        modAnal.parms = modAnal.degree + 1;
+        modRes.nparms = modAnal.parms;
+        modGroup.push_back(modAnal);
+        modResGroup.push_back(modRes);
+        count++;
+      }
+    } else {
+      modAnal.degree = degree[dataset];
+      modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols); 
+      modRes.nparms = modAnal.parms;
+      modGroup.push_back(modAnal);
+      modResGroup.push_back(modRes);
+      count = 1;
+    }
+
+    std::cout<<"after if"<<std::endl;
+    anal.nmodels.push_back(count);
+    anal.models.push_back(modGroup);
+    res.nmodels.push_back(count);
+    res.models.push_back(modResGroup);
+  }
+
+  std::cout<<"adding selected model"<<std::endl;
+  res.selectedModelIndex.push_back(0);
+  res.selectedModelIndex.push_back(0);
+  res.selectedModelIndex.push_back(0);
+  std::cout<<"Selected model Indexes:  ";
+  for (auto elem : res.selectedModelIndex) {
+        std::cout << elem << ", ";
+  }
+  std::cout<<std::endl;
+
+  std::cout<<"adding res[0]"<<std::endl;
+  res.models[0][0].max = -182.8268;
+  res.models[0][0].parms.push_back(0.0);
+  res.models[0][0].parms.push_back(0.0);
+  res.models[0][0].parms.push_back(4.56977e-05);
+  res.models[0][0].bmd = 48.0167;
+  res.models[0][0].bmdsRes.BMD = 48.0167;
+  res.models[0][0].bmdsRes.BMDL = 44.1401;
+  res.models[0][0].bmdsRes.BMDU = 51.2664;
+  res.models[0][0].bmdsRes.AIC = 367.736;
+  res.models[0][0].bmdsRes.chisq = 8.17; 
+
+  std::cout<<"adding res[1]"<<std::endl;
+  res.models[1][0].max = -209.332;
+  res.models[1][0].parms.push_back(0.034571);
+  res.models[1][0].parms.push_back(0.0);
+  res.models[1][0].parms.push_back(4.90516e-05);
+  res.models[1][0].bmd = 47.2147;
+  res.models[1][0].bmdsRes.BMD = 47.2147;
+  res.models[1][0].bmdsRes.BMDL = 42.6674;
+  res.models[1][0].bmdsRes.BMDU = 50.8673;
+  res.models[1][0].bmdsRes.AIC = 422.664;
+  res.models[1][0].bmdsRes.chisq = 8.71; 
+
+  std::cout<<"adding res[2]"<<std::endl;
+  res.models[2][0].max = -171.622;
+  res.models[2][0].parms.push_back(0.011097);
+  res.models[2][0].parms.push_back(0.0169765);
+  res.models[2][0].parms.push_back(0.0);
+  res.models[2][0].bmd = 6.27976;
+  res.models[2][0].bmdsRes.BMD = 6.27976;
+  res.models[2][0].bmdsRes.BMDL = 5.59913;
+  res.models[2][0].bmdsRes.BMDU = 7.40053;
+  res.models[2][0].bmdsRes.AIC = 367.736;
+  res.models[2][0].bmdsRes.chisq = 8.17; 
+
+
+
+  std::cout<<"calling runMultitumor"<<std::endl;
+ //run MSCombo
+  // pythonBMDSMultitumor(&anal, &res);
+  runMultitumorModel(&anal, &res);
+
+//  //individual model results
+//  for (int dataset=0; dataset<numDatasets; dataset++){
+//    std::cout<<"dataset:"<<dataset<<std::endl;
+//    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
+//        std::cout<<" model:"<<mod<<std::endl;
+//        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
+//    }
+//  }
+
 
   std::cout<<"BMD:  "<<res.BMD<<std::endl;
   std::cout<<"BMDL: "<<res.BMDL<<std::endl;

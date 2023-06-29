@@ -1623,15 +1623,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    pyRes->selectedModelIndex.push_back(2);
 
    //run MSCombo
-   runMultitumorModel();  
-   //dev result stubs
-   pyRes->BMD = 6.005009;
-   pyRes->BMDL = 5.402722;
-   pyRes->BMDU = 6.9757479;
-   pyRes->slopeFactor = 0.018509189;
-   pyRes->combined_LL = -563.8220487; 
-   pyRes->combined_LL_const = 521.8050805; 
-  
+   runMultitumorModel(pyAnal, pyRes);  
 }  
 
 
@@ -1639,9 +1631,370 @@ void selectMultitumorModel(){
    std::cout<<"selectMultitumorModel to be implemented"<<std::endl;
 }
 
-void runMultitumorModel(){
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
    std::cout<<"runMultitumorModel"<<std::endl;
+
+   
+
+   //calculate combined LL & constant
+   pyRes->combined_LL = 0.0; 
+   pyRes->combined_LL_const = 0.0;
+   for (int i=0; i<pyAnal->ndatasets; i++){
+     int selIndex = pyRes->selectedModelIndex[i];
+     pyRes->combined_LL += pyRes->models[i][selIndex].max;
+     pyRes->combined_LL_const += LogLik_Constant(pyAnal->models[i][selIndex].Y, pyAnal->models[i][selIndex].n_group);
+   }
+
+   Multistage_ComboBMD(pyAnal, pyRes);
+
+   //pyRes->BMD = 6.005009;
+   pyRes->BMDL = -9999; // 5.402722;
+   pyRes->BMDU = -9999; // 6.9757479;
+   pyRes->slopeFactor = -9999; // 0.018509189;
+   //pyRes->combined_LL = -563.8220487; 
+   //pyRes->combined_LL_const = 521.8050805; 
+
 }
+
+
+/***************************************************************************
+ * Multistage_ComboBMD -- Used to calculate the BMD and BMDL for combined 
+ *                         Multistage models A and B
+ *  external: bmdparm
+ *  input:      *   nparm is the number of parameters
+ *   nparm is the number of parameters
+ *   p[] is the vector of fitted parameters
+ *   gtol is a small positive number
+ *   iter is not used ????????
+ *   xlk is the sum of log-likelihood for the fitted models (A + B)
+ *   Rlevel[] is the vector of BMR's
+ *   Bmdl[] is the vector of BMDL's for the BMR's
+ *   Bmdu[] is the vector of BMDU's for the BMR's
+ *   BMD is the benchmark dose
+ *  output: BMD, Bmdl[], prints BMDL
+ ****************************************************************************/
+void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
+   int cnparm, selIndex, nT;
+   double LR, xa, xb, D, fa, fb, Drange, cxmax, ck, poly;
+   double gtol = 1e-12;
+   double tol;  //for zeroin function
+   std::vector<double> cp;
+
+   std::cout<<"inside Multistage_ComboBMD"<<std::endl;
+   nT = pyRes->ndatasets;
+   //find largest nparm and largest dose
+   cnparm = 0;
+   cxmax = 0;
+   for(int i=0; i<nT; i++){
+      selIndex = pyRes->selectedModelIndex[i];
+      if(pyRes->models[i][selIndex].nparms > cnparm){
+         cnparm = pyRes->models[i][selIndex].nparms;
+      }
+      double tmpMax = *max_element(std::begin(pyAnal->models[i][selIndex].doses), std::end(pyAnal->models[i][selIndex].doses));
+      if(cxmax < tmpMax) cxmax = tmpMax;
+   }
+   std::cout<<"cnparm="<<cnparm<<std::endl;
+   //add all model parameters to combined p
+   cp.resize(cnparm, 0.0);
+   for(int i=0; i<nT; i++) {
+     selIndex = pyRes->selectedModelIndex[i];
+     cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]); 
+     for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
+        cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
+     }
+   }
+
+   //compute chi-squared value
+   double cl = 1.0 - pyAnal->alpha;
+   if (cl<0.5){
+     LR = 0.5*gsl_cdf_chisq_Pinv(1.0-2.0*cl, 1);
+   } else {
+     LR = 0.5*gsl_cdf_chisq_Pinv(2.0*cl-1.0, 1);
+   }
+
+   ck = -log(1-pyAnal->BMR);  //Extra risk
+   //solve the BMD
+   xa = D = 0.0;
+   fa = -ck;  //note:  ck>0.0
+   fb = fa;
+   Drange = cxmax; 
+   std::cout<<"Drange="<<Drange<<std::endl;
+
+   int k=1;
+   while(k<300 && fb<0){
+      fa=fb;
+      xa=D;
+      D=Drange*k/100.0;
+      std::cout<<"k="<<k<<", D="<<D<<std::endl;
+      poly=cp[cnparm-1];
+      std::cout<<"poly="<<poly<<std::endl;
+      for (int j=cnparm-2; j>0; j--){
+         std::cout<<"j="<<j<<", cp[j]="<<cp[j]<<std::endl;
+         poly=poly*D+cp[j];
+      }
+      std::cout<<"k="<<k<<", poly="<<poly<<std::endl;
+      poly=poly*D;
+      std::cout<<"final poly="<<poly<<std::endl;
+      fb=poly-ck;
+      k++;
+   }
+   std::cout<<"fb="<<fb<<std::endl;
+
+   if (fb<0) std::cout<<"BMD Computation failed.  BMD is larger than three times maximum input doses."<<std::endl;
+   xb = D;
+   tol = 1.0e-15;
+
+   //compute BMD
+   //BMD_func works on log scale, so convert xa and xb to logs
+   //If xa == 0, set xa = log(1e-300)
+   if (xa==0.0) xa = -690.7755;
+   else xa = log(xa);
+   xb = log(xb);
+
+   std::cout<<"calling zeroin with vals:"<<std::endl;
+   std::cout<<"xa="<<xa<<", xb="<<xb<<", cxmax="<<cxmax<<std::endl;
+   xb = zeroin(xa, xb, tol, BMD_func, cnparm, &cp[0], ck);
+   std::cout<<"return from zeroin xa="<<xa<<", xb="<<xb<<std::endl;
+   xa = exp(xa);
+   xb = exp(xb);
+   pyRes->BMD = xb;
+   std::cout<<"BMD="<<pyRes->BMD<<std::endl;
+
+}
+
+//calculate dichotomous log likelihood constant
+double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group){
+   
+   double X, N, NX, con, xf, nf, nxf, val;
+   
+   con = 0;
+   for (int i=0; i<Y.size(); i++){
+      X = Y[i]+1;
+      N = n_group[i] + 1;
+      NX = n_group[i] - Y[i] + 1;
+      xf = exp(DLgamma(X));
+      nf = exp(DLgamma(N));
+      nxf = exp(DLgamma(NX));
+      val = log(nf/(xf*nxf));
+      con += val;
+   }
+   
+   return con;
+}
+
+/*****************************************************************
+ * DLgama - double log gamma
+ *  input:
+ *   X - double value
+ *  Returns log(z-1)!
+ *************************/
+double DLgamma(double x){
+
+   double r, az, z, y, dl;
+   if (x==0) return 1;
+   z = x;
+   r = 12.0;
+   az = 1.0;
+   for (;z-r < 0; z++) az = az * z;
+  y = z * z;
+  dl=0.91893853320467274-z+(z-0.5)*log(z)+z*
+     (0.08333333333333333*y+0.0648322851140734)/
+     (y*(y+0.811320754825416)+0.01752021563249146);
+  dl = dl - log(az);
+  return dl ;  
+
+}
+
+/*
+ *  ************************************************************************
+ *	    		    C math library
+ * function ZEROIN - obtain a function zero within the given range
+ *
+ * Input
+ *	double zeroin(ax,bx,tol, f,nparm, parm, gtol)
+ *	double ax; 			Root will be sought for within
+ *	double bx;  			a range [ax,bx]
+ *	double (*f)(nparm, parm, double x, double gtol); Name of the function whose zero
+ *					will be sought
+ *	double tol;			Acceptable tolerance for the root value.
+ *					May be specified as 0.0 to cause
+ *					the program to find the root as
+ *					accurate as possible
+ *     int nparm                        length of parameter vector to f
+ *     double parm[]                    vector of parameters to f
+ *     double gtol                      additional scaler parameter to f
+ *
+ * Output
+ *	Zeroin returns an estimate for the root with accuracy
+ *	4*EPSILON*abs(x) + tol
+ *
+ * Algorithm
+ *	G.Forsythe, M.Malcolm, C.Moler, Computer methods for mathematical
+ *	computations. M., Mir, 1980, p.180 of the Russian edition
+ *
+ *	The function makes use of the bissection procedure combined with
+ *	the linear or quadric inverse interpolation.
+ *	At every step program operates on three abscissae - a, b, and c.
+ *	b - the last and the best approximation to the root
+ *	a - the last but one approximation
+ *	c - the last but one or even earlier approximation than a that
+ *		1) |f(b)| <= |f(c)|
+ *		2) f(b) and f(c) have opposite signs, i.e. b and c confine the root
+ *	At every step Zeroin selects one of the two new approximations, the
+ *	former being obtained by the bissection procedure and the latter
+ *	resulting in the interpolation (if a,b, and c are all different
+ *	the quadric interpolation is utilized, otherwise the linear one).
+ *	If the latter (i.e. obtained by the interpolation) point is 
+ *	reasonable (i.e. lies within the current interval [b,c] not being
+ *	too close to the boundaries) it is accepted. The bissection result
+ *	is used in the other case. Therefore, the range of uncertainty is
+ *	ensured to be reduced at least by the factor 1.6
+ *
+ ************************************************************************
+ */
+
+double zeroin(double ax,double bx, double tol,
+	      double (*f)(int, double [], double, double), int nparm,
+	      double Parms[], double ck)		
+     /* ax        Left border | of the range */
+     /* bx        Right border | the root is sought*/
+     /* f	  Function under investigation */
+     /* nparm     number of parameters in Parms */
+     /* Parms     vector of parameters to pass to f */
+     /* tol       Acceptable tolerance for the root */
+     /* gtol      tolerance to pass to f */
+{
+  double a,b,c;				/* Abscissae, descr. see above	*/
+  double fa;				/* f(a)				*/
+  double fb;				/* f(b)				*/
+  double fc;				/* f(c)				*/
+ 
+  std::cout<<"inside zeroin"<<std::endl;
+  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
+  std::cout<<"nparm="<<nparm<<std::endl;
+  int i;
+  for (i=0;i<nparm;i++){
+	  printf("i=%d, Parms[i]=%g\n",i,Parms[i]);
+  }
+
+  a = ax;  b = bx;
+  printf("fa calc\n");
+  fa = (*f)(nparm-1, Parms, a, ck);
+  printf("fb calc\n");
+  fb = (*f)(nparm-1, Parms, b, ck);
+  printf("fa=%g\n", fa);
+  printf("fb=%g\n", fb);
+  c = a;   fc = fa;
+
+  for(;;)		/* Main iteration loop	*/
+  {
+    double prev_step = b-a;		/* Distance from the last but one*/
+					/* to the last approximation	*/
+    double tol_act;			/* Actual tolerance		*/
+    double p;      			/* Interpolation step is calcu- */
+    double q;      			/* lated in the form p/q; divi- */
+  					/* sion operations is delayed   */
+ 					/* until the last moment	*/
+    double new_step;      		/* Step at this iteration       */
+   
+    if( fabs(fc) < fabs(fb) )
+    {                         		/* Swap data for b to be the 	*/
+	a = b;  b = c;  c = a;          /* best approximation		*/
+	fa=fb;  fb=fc;  fc=fa;
+    }
+    tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
+    new_step = (c-b)/2;
+
+    if( fabs(new_step) <= tol_act || fb == (double)0 )
+      return b;				/* Acceptable approx. is found	*/
+
+    			/* Decide if the interpolation can be tried	*/
+    if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
+	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
+    {					/* Interpolatiom may be tried	*/
+	double t1,cb,t2;
+	cb = c-b;
+	if( a==c )			/* If we have only two distinct	*/
+	{				/* points linear interpolation 	*/
+	  t1 = fb/fa;			/* can only be applied		*/
+	  p = cb*t1;
+	  q = 1.0 - t1;
+ 	}
+	else				/* Quadric inverse interpolation*/
+	{
+	  q = fa/fc;  t1 = fb/fc;  t2 = fb/fa;
+	  p = t2 * ( cb*q*(q-t1) - (b-a)*(t1-1.0) );
+	  q = (q-1.0) * (t1-1.0) * (t2-1.0);
+	}
+	if( p>(double)0 )		/* p was calculated with the op-*/
+	  q = -q;			/* posite sign; make p positive	*/
+	else				/* and assign possible minus to	*/
+	  p = -p;			/* q				*/
+
+	if( p < (0.75*cb*q-fabs(tol_act*q)/2)	/* If b+p/q falls in [b,c]*/
+	    && p < fabs(prev_step*q/2) )	/* and isn't too large	*/
+	  new_step = p/q;			/* it is accepted	*/
+					/* If p/q is too large then the	*/
+					/* bissection procedure can 	*/
+					/* reduce [b,c] range to more	*/
+					/* extent			*/
+    }
+
+    if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
+      {
+	if( new_step > (double)0 )	/* than tolerance		*/
+	  new_step = tol_act;
+	else
+	  new_step = -tol_act;
+      }
+
+    a = b;  fa = fb;			/* Save the previous approx.	*/
+    b += new_step;
+	printf("2nd fb calc\n");
+    fb = (*f)(nparm-1, Parms, b, ck);	/* Do step to a new approxim.	*/
+    if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
+    {                 			/* Adjust c for it to have a sign*/
+      c = a;  fc = fa;                  /* opposite to that of b	*/
+    }
+  }
+
+}
+
+
+/*****************************************************************
+ * BMD_func -- used to compute the values of functions BMD_f at
+ *            the point x, given the parm p[] and number of parm.
+ *            (ck is another parameter).
+ *            This routine is called by Binary_root().
+ *  input: n is the number of parameters
+ *         p[] is a vector of parameters
+ *         x is the natural log of a  dose level
+ *         ck
+ *  output: value of the function
+ *****************************************************************/
+double BMD_func(int n, double p[], double x, double ck)
+{
+  double  poly, fx, D;
+  int j;
+  printf("\ninside BMD_func\n");
+  D = exp(x);
+  printf("D=%g\n",D);
+  poly=p[n];
+  printf("poly=%g\n",poly);
+  for (j=n-1; j>0; j--) {
+     printf("j=%d, poly b4=%g\n", j, poly);
+     poly=poly*D+p[j];
+     printf("poly after=%g\n", poly);
+  }
+  poly = poly*D;
+  printf("final poly=%g\n",poly);
+  printf("ck = %g\n", ck);
+  fx = poly - ck; /* ck = log(1-A) */
+  return fx;
+}
+
 
 
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){

@@ -391,7 +391,17 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 
 void selectMultitumorModel();
 
-void runMultitumorModel();
+double DLgamma(double x);
+
+double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
+
+void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+double BMD_func(int n, double p[], double x, double ck);
+
+double zeroin(double ax,double bx, double tol, double (*f)(int, double [], double, double), int nparm, double Parms[], double ck);
+
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
