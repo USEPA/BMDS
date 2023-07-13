@@ -632,8 +632,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     gof->estSD.push_back(GOFres.sd[i]);
     gof->obsSD.push_back(GOFanal.sd[i]);
     gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-    gof->n = GOFanal.n;
+//    gof->n = GOFanal.n;
   }
+  gof->n = GOFanal.n;
   if (anal->disttype == distribution::log_normal){
     for (int i=0; i<GOFanal.n; i++){
       gof->calcMean.push_back(exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2));
@@ -1427,10 +1428,21 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->transform_dose = pyAnal->transform_dose;
   anal->suff_stat = pyAnal->suff_stat;
 
-  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+  bool validated = false;
+  if (pyAnal->suff_stat){
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size();
+  } else {
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size();
+  }
+
+  if (validated){
     for (int i=0; i<pyAnal->n; i++){
       anal->Y[i] = pyAnal->Y[i];
       anal->doses[i] = pyAnal->doses[i];
+    }
+  }
+  if (validated && pyAnal->suff_stat){
+    for (int i=0; i<pyAnal->n; i++){
       anal->n_group[i] = pyAnal->n_group[i];
       anal->sd[i] = pyAnal->sd[i];
     }
