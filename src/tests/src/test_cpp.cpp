@@ -39,7 +39,7 @@ int main(void){
 //  runCompleteContAnalysis();
 //  runPythonDichoAnalysis();
 //  runPythonDichoMA();
-//  runPythonContAnalysis();
+  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
 //  runPythonNestedAnalysis();
   runMultitumorModel();
@@ -3142,7 +3142,7 @@ void runPythonContAnalysis(){
 //cont data - suff stat: dose, Y, N, SD
 //cont data - individual: dose, response
 /////////////////////////////////////////////
-  bool suffStat = true;
+  bool suffStat = false;
 
   //continuous1.dax
 //  double D[] = {0,25,50, 100, 200};
@@ -3152,11 +3152,11 @@ void runPythonContAnalysis(){
   //isIncreasing = false;
 
   //continuous2.dax
-//  double D[] = {0,0,0,0,18,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,40,40,40,40,40};
-//  double Y[] = {39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,35.9,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,55.2,55.1,59.1,56.3,52.9,53.7};
-//  double N[1];
-//  double SD[1];
-//  isIncreasing = true;
+  double D[] = {0,0,0,0,18,18,18,18,18,20,20,20,20,30,30,30,30,35,35,35,35,40,40,40,40,40};
+  double Y[] = {39,38.4,36.3,37.1,40.2,45.3,42.1,38.3,35.9,42.5,45.2,40.1,39.8,50.1,53.4,48.2,52.1,56.1,50.4,53.2,55.2,55.1,59.1,56.3,52.9,53.7};
+  double N[1];
+  double SD[1];
+  isIncreasing = true;
 
     //continuous3.dax
 //  double D[] = {0,35,105,316,625};
@@ -3246,10 +3246,10 @@ void runPythonContAnalysis(){
 //   double SD[] = {19.9, 11.4, 20.3, 15.2, 25, 21.6};
  
    //c100
-   double D[] = {0, 62.5, 125, 250, 500};
-   double Y[] = {24.3, 27, 31.4, 39.3, 54.2};
-   double N[] = {10, 10, 10, 10, 10};
-   double SD[] = {4.93, 3.16, 7.05, 13.2, 25.8};
+//   double D[] = {0, 62.5, 125, 250, 500};
+//   double Y[] = {24.3, 27, 31.4, 39.3, 54.2};
+//   double N[] = {10, 10, 10, 10, 10};
+//   double SD[] = {4.93, 3.16, 7.05, 13.2, 25.8};
 
 //    //c101b
 //  double D[] = {0, 0.156, 0.312, 0.625, 1.25, 2.5};

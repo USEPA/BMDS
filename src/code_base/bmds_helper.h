@@ -275,16 +275,11 @@ struct python_multitumor_analysis{
 
   std::vector<int> n;     // total number of observations per dataset (size ndatasets)
   std::vector<int> nmodels;  //# of models per dataset (size ndatasets)
-  //std::vector<std::vector<double>> Y;  //observed + (size ndatasets*n[i])
-  //std::vector<std::vector<double>> doses;  //size ndatasets*n[i]
-  //std::vector<std::vector<double>> n_group; //size of group (size ndatasets*n[i])
   int BMD_type; // 1 = extra ; added otherwise
   double BMR;
   double alpha; // alpha of the analysis
   int prior_cols; // colunns in the prior
   std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
-  //std::vector<int> parms;   // number of parameters in the model
-  std::vector<std::vector<double>> prior;  //a column order matrix (parms x prior_cols)
 };
 
 struct python_multitumor_result{
@@ -398,6 +393,10 @@ double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
 double BMD_func(int n, double p[], double x, double ck);
+
+void getclmt(int probtype, int nMaxParms, double BMR, double Dose, double target, std::vector<double> pdParms, int riskType, double bmdl, std::vector<double> pdParms2, double retVal);
+
+double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 
 double zeroin(double ax,double bx, double tol, double (*f)(int, double [], double, double), int nparm, double Parms[], double ck);
 
