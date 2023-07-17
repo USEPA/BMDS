@@ -1415,7 +1415,7 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->model = pyAnal->model;
   anal->n = pyAnal->n;
   anal->BMD_type = pyAnal->BMD_type;
-  anal->isIncreasing;
+  anal->isIncreasing = pyAnal->isIncreasing;
   anal->BMR = pyAnal->BMR;
   anal->tail_prob = pyAnal->tail_prob;
   anal->disttype = pyAnal->disttype;
