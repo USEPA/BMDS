@@ -4,8 +4,10 @@
 	#include "stdafx.h"
 #endif
 #include <stdio.h>
+#include <iomanip>
 #include <math.h>
 //#include <cmath>
+#include <nlopt.h>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
@@ -2239,7 +2241,8 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
   which = 4;          /* Want a combined  lower confidence limit */
 
-  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+//  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+  target = (LR - pyRes->combined_LL);  /* The value we want the likelihood */
   /* at the BMDL to match             */
 //  fprintf(fp_log,"Combined Loglikelihood         %30.22g \n",xlk); 
 //  fprintf(fp_log,"Target                         %30.22g \n",target); 
@@ -2327,10 +2330,12 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      fprintf(fp_log,"\n");
       std::cout<<std::endl;
     }
+    std::cout<<"Dose(BMD)="<<Dose<<std::endl;
+    std::cout<<"log(BMD)="<<log(Dose)<<std::endl;
 
     double retVal;
 
-    getclmt(which, lnParmMax, pyAnal->BMR, Dose, target, pdParms, pyAnal->BMD_type, bmdl, pdParms2, retVal);
+    getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, bmdl);
 //  fflush(fp_log);
 
 //  getclmt_(&which, &lnParmMax, &BMR, &Dose,
@@ -2598,27 +2603,519 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   return fD;      /* return it to the calling function */
 }
 
-void getclmt(int probtype, int nMaxParms, double BMR, double Dose, double target, std::vector<double> pdParms, int riskType, double bmdl, std::vector<double> pdParms2, double retVal){
+void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, double bmdl){
    std::cout<<"Inside getclmt"<<std::endl;
-   
-   
-
-}
-
-
-double myfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
-//   if (grad){
-//      //fill all graients to zero
-//      std::fill(x.begin(), x.end(), 0);
-//      //set first grad to 1, since x[1] should be the BMD (Dose)
-//      grad[0] = 1.0;
+ 
+   int nT = pyRes->selectedModelIndex.size(); 
+   std::cout<<"nT = "<<nT<<std::endl;
+   double bmr = pyAnal->BMR;
+   double riskType = pyAnal->BMD_type; 
+   int N = 0;  //total length of parameter X vector.  X(0) = log(BMDL)
+   std::vector<int> degree;
+   for (int j=0; j<nT; j++){
+     int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
+     degree.push_back(modDeg);
+//     N += modDeg;
+   } 
+//   N += N + nT;
+   N = xParms.size() + 1;
+   double bmd = Dose;
+   std::cout<<"N = "<<N<<std::endl;
+//   std::cout<<"N = "<<xParms.size();
+   std::cout<<"bmd = "<<bmd<<std::endl;
+   std::cout<<"target = "<<target<<std::endl; 
+//   for (int i=0; i<xParms.size(); i++){  
+//     std::cout<<"i:"<<i<<", xParms[i]:"<<xParms[i]<<std::endl;
 //   }
-//   return x[1];  
-   return -9999;
+   std::vector<double> x(N);
+   int iOffset = 0;
+   x[0] = log(bmd);
+   //x[0] = log(5.401711/200);
+
+   //tmp only 
+   //X[0] = 1.686903;
+   for (int j=0; j<nT; j++){
+     for(int i=0; i<=degree[j]; i++){
+       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
+       iOffset++;
+     }
+   }
+   for (int i=0; i<x.size(); i++){
+     std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+   }
+   
+//   nlopt::opt opt(nlopt::LN_COBYLA, x.size());
+//   std::vector<double> lb(x.size());
+//   std::vector<double> ub(x.size());
+////   std::cout<<"prior G with size: "<<pyAnal->prG.size()<<std::endl;
+////   for (int i=0; i<pyAnal->prG.size(); i++){
+////      std::cout<<pyAnal->prG[i]<<",";
+////   }
+////   std::cout<<std::endl;
+////   std::cout<<"prior B with size: "<<pyAnal->prB.size()<<std::endl;
+////   for (int i=0; i<pyAnal->prB.size(); i++){
+////      std::cout<<pyAnal->prB[i]<<",";
+////   }
+////   std::cout<<std::endl;
+//
+//   double lminbmd = log(DBL_MIN) - log(maxDose);
+//   lb[0] = lminbmd;  //BMD lower limit
+//   for (int i=1; i<x.size(); i++){
+//     lb[i] = pyAnal->prB[3];  //beta min value 
+//   }
+//
+//   ub[0] = log(maxDose); 
+//   for (int i=1; i<x.size(); i++){
+//     ub[i] = pyAnal->prB[4];  //beta max value
+//   }
+//
+//   for(int i=0; i<x.size(); i++){
+//     std::cout<<"i:"<<i<<", lb="<<lb[i]<<std::endl;
+//   }
+//   for(int i=0; i<x.size(); i++){
+//     std::cout<<"i:"<<i<<", ub="<<ub[i]<<std::endl;
+//   }
+//
+//   opt.set_lower_bounds(lb);
+//   opt.set_upper_bounds(ub);
+//   opt.set_min_objective(objfunc, NULL);
+
+   nlopt::opt opt(nlopt::LN_AUGLAG, x.size());
+   //nlopt::opt local_opt(nlopt::LN_SBPLX, x.size());
+   nlopt::opt local_opt(nlopt::LD_SLSQP, x.size());
+
+   //local_opt.set_xtol_abs(1e-3);
+   local_opt.set_xtol_abs(1e-6);
+   //local_opt.set_initial_step(1e-4);
+   //local_opt.set_maxeval(10000);
+   local_opt.set_maxeval(1e7);
+
+
+
+   std::vector<double> lb(x.size());
+   std::vector<double> ub(x.size());
+
+   double lminbmd = log(DBL_MIN) - log(maxDose);
+   lb[0] = lminbmd;  //BMD lower limit
+   for (int i=1; i<x.size(); i++){
+     lb[i] = pyAnal->prB[3];  //beta min value
+   }
+
+   ub[0] = log(maxDose);
+   for (int i=1; i<x.size(); i++){
+     ub[i] = pyAnal->prB[4];  //beta max value
+   }
+
+   local_opt.set_lower_bounds(lb);
+   local_opt.set_upper_bounds(ub);
+   //std::vector<double> init(x.size());
+   //for(int i=0; i<x.size(); i++) init[i] = 1e-4;
+   //opt.set_initial_step(init);
+   //local_opt.set_initial_step(init);
+   
+//   //constraint data
+//   //
+   struct msComboEq1 eq1;
+   eq1.bmr = bmr;
+   eq1.nT = nT;
+   eq1.degree = degree;
+
+   struct msComboEq1 eq2 = eq1;
+
+   struct msComboIneq1 ineq1;
+   ineq1.nT = nT;
+   ineq1.target = target;
+   //TODO need to add handling of failed datasets
+   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
+     int selIndex = pyRes->selectedModelIndex[i];
+     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
+     for (int j=0; j<scaledDose.size(); j++){
+       scaledDose[j] /= maxDose;
+     }
+     ineq1.doses.push_back(scaledDose);
+     //ineq1.doses.push_back(pyAnal->models[i][selIndex].doses);
+     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
+     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+   }
+   ineq1.nObs = pyAnal->n;
+   ineq1.degree = degree;
+
+   std::vector<double> nullvec;
+   int tmpEq = myEqualityConstraint(x, nullvec, &eq1);
+   int tmpIneq = myInequalityConstraint1(x, nullvec, &ineq1);
+
+   std::cout<<"tmpEq = "<<tmpEq<<std::endl;
+   std::cout<<"tmpIneq = "<<tmpIneq<<std::endl;
+ 
+//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+//   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+////   opt.add_inequality_constraint(myInequalityConstraint2, &eq1, 1e-8);
+////   opt.add_inequality_constraint(myInequalityConstraint3, &eq2, 1e-8);
+//   opt.set_xtol_rel(1e-8);   
+
+   //opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-4);
+   //opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-4);
+   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-6);
+   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-6);
+   opt.set_min_objective(objfunc, NULL);  
+   opt.set_local_optimizer((const nlopt::opt) local_opt);
+   opt.set_lower_bounds(lb);
+   opt.set_upper_bounds(ub);
+   //opt.set_xtol_abs(1e-4);
+   opt.set_xtol_abs(1e-6);
+   opt.set_maxeval(20000);
+
+   double minf;
+
+
+   //check constraints with initial values
+      
+
+   try{
+     nlopt::result result = opt.optimize(x, minf);
+     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+     for (int i=0; i<x.size(); i++){
+        std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+     }
+   } catch (std::exception &e){
+     std::cout << "nlopt failed: " << e.what() << std::endl;
+   }
+  
 }
 
-double myconstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
-  return -9999;
+
+double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+   //obj function of form F(BMD, beta) = BMD, where BMD=X[0] and beta=X[i] where i>0
+   if (!grad.empty()){
+      //fill all gradients to zero (grad[1] to grad[n] are all zero
+      // because objective function only depends on X[0] 
+      std::fill(grad.begin(), grad.end(), 0);
+      //set first grad to 1, since x[1] should be the BMD (Dose)
+      grad[0] = 1.0;
+//      for (int i=1; i<=x.size(); i++){
+//         grad[i] = 0.0;
+//      }
+   }
+   return x[0];  
+}
+
+double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
+  
+   std::cout<<"inside equality constraint"<<std::endl;
+   msComboEq1 *d = reinterpret_cast<msComboEq1*>(data);
+   double bmr = d->bmr;
+   int nT = d->nT;
+   std::vector<int> degree = d->degree;
+
+   double D = exp(x[0]);
+   int iIndex = x.size() - 1;
+   double sum2 = 0.0;
+   double sum = 0.0;
+
+   if (!grad.empty()){
+     for (int l=nT-1; l>=0; l--){
+        sum = 0.0;
+        for (int k=degree[l]; k>0; k--){
+           sum = sum*D + k*x[iIndex]*D;
+           iIndex -= 1;
+        }
+        iIndex -= 1;
+        sum2 += sum;
+     } 
+     grad[0] = sum2;
+
+     iIndex = 1;
+     for (int k=0; k<nT; k++){
+        grad[iIndex] = 0.0;
+        if (iIndex == 2) {
+          grad[iIndex] = D;
+        } else {
+          grad[iIndex] = 0.0;
+        }
+        for (int j=2; j<=degree[k]; j++){
+          iIndex += 1;
+          grad[iIndex] = pow(D,j);
+        }
+        iIndex += 1;
+     }
+     for(int i=0; i<x.size(); i++){
+       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+     }
+   }
+
+   //equality constraint calc
+//   std::cout<<"D="<<D<<std::endl;
+   sum = log(1.0 - bmr);
+//   std::cout<<"sum="<<sum<<std::endl;
+   iIndex = x.size() - 1;
+   double sum3 = 0.0;
+
+   for (int l=nT-1; l>=0; l--){
+//     std::cout<<"loop l="<<l<<std::endl;
+     sum2 = 0.0;
+     for (int k=degree[l]; k>0; k--){
+        sum2 = sum2*D + x[iIndex]*D;
+//        std::cout<<"loop k="<<k<<", sum2="<<sum2<<std::endl;
+        iIndex -= 1;    
+     }
+     iIndex -= 1;
+     sum3 += sum2;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+   }
+
+   std::cout<<"HXI="<<(sum+sum3)<<std::endl;
+   return sum + sum3;
+}
+
+double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data){
+
+   //other items to import
+//   std::vector<int> nObs(3,5);
+//   target = -565.1748204457564952463;
+//   //end other items
+//   python_multitumor_result *pyAnal  = reinterpret_cast<python_multitumor_result*>(data);
+//   std::vector<int> degree = pyAnal->selectedModelIndex;
+//   int nT = 0;
+//   for (int i=0; i<degree.size(); i++){
+//     if (degree[i] > 0) nT++;
+//   }
+   std::cout<<"inside in-equality constraint"<<std::endl;
+   msComboIneq1 *d = reinterpret_cast<msComboIneq1*>(data);
+   double target = d->target;
+   int nT = d->nT;
+   std::vector<int> nObs = d->nObs;
+   std::vector<int> degree = d->degree;
+   std::vector<std::vector<double>> doses = d->doses;
+   std::vector<std::vector<double>> Y = d->Y;
+   std::vector<std::vector<double>> n_group = d->n_group;
+
+   int m = nT;
+   int iOffset = 1;
+   double resid = 0.0; 
+   if (!grad.empty()){
+     grad[0] = 0.0;  //is this needed.  Looks like it gets overwritten
+     for (int l=0; l<nT; l++){
+       m = m-1;
+       double iTop = degree[l] + iOffset;
+       double iBottom = iOffset;
+       for (int k=0; k<nObs[l]; k++){
+         double sum = x[iTop];
+         for (int j=iTop-1; j>=iBottom; j--){
+            sum = sum * doses[m][k] + x[j];
+         }
+         if (sum < 0) sum = 0.0;
+         double P = 1.0 - exp(-1.0*sum);
+         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
+         int iIndex = iTop;
+         for(int j=degree[l]; j>=0; j--){
+           grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));
+           iIndex = iIndex-1;
+         }
+       }  
+       iOffset = iTop + 1; 
+     } 
+   }
+
+
+   double sum2 = 0;
+   iOffset = 1;
+   m = nT;
+   for (int l=0; l<nT; l++){
+     m = m-1;
+     double iTop = degree[l] + iOffset;
+     double iBottom = iOffset;
+//     std::cout<<"loop l="<<l<<std::endl;
+//     std::cout<<"iTop="<<iTop<<", iBottom="<<iBottom<<std::endl;
+     for (int k=0; k<nObs[l]; k++){
+//       std::cout<<"loop k="<<k<<std::endl;
+       double sum = x[iTop];
+//       std::cout<<"iTop="<<iTop<<", sum="<<sum<<std::endl;
+       for (int j= iTop-1; j>=iBottom; j--){
+          sum = sum*doses[m][k] + x[j];
+//          std::cout<<"loop j="<<j<<", sum="<<sum<<std::endl;
+//          std::cout<<"m="<<m<<", k="<<k<<std::endl;
+//          std::cout<<"x[j]="<<x[j]<<std::endl;
+//          std::cout<<"doses[m][k]="<<doses[m][k]<<std::endl;
+       }
+       if (sum < 0) sum = 0.0;
+       double P = 1.0 - exp(-1*sum);
+       sum2 = sum2 + Y[m][k]*slog(P) + (n_group[m][k]-Y[m][k]) * slog(1.0 - P);
+//       std::cout<<"P="<<P<<std::endl;
+//       std::cout<<"sum2="<<sum2<<std::endl;
+     }
+     iOffset = iTop + 1;
+   }
+//   std::cout<<"target="<<target<<std::endl;
+//   std::cout<<"sum2="<<sum2<<std::endl;
+//   //std::cout<<"GXI="<<(target - sum2)<<std::endl;
+//   //return  target - sum2;
+   std::cout<<"GXI="<<(sum2 - target)<<std::endl;
+   return  sum2 - target;
+
+   
+
+}
+
+
+double myInequalityConstraint2(const std::vector<double> &x, std::vector<double> &grad, void *data){
+  
+   //will most likely need custom data struct
+//   python_multitumor_result *pyAnal  = reinterpret_cast<python_multitumor_result*>(data);
+//   std::vector<int> degree = pyAnal->selectedModelIndex;
+//   int nT = 0;
+//   for (int i=0; i<degree.size(); i++){
+//     if (degree[i] > 0) nT++;
+//   }
+//   double bmr = 0.1;  // need to get this from *data
+   // end values to import
+
+   msComboEq1 *d = reinterpret_cast<msComboEq1*>(data);
+   double bmr = d->bmr;
+   int nT = d->nT;
+   std::vector<int> degree = d->degree;
+
+   double D = exp(x[0]);
+   int iIndex = x.size() - 1;
+   double sum2 = 0.0;
+   double sum = 0.0;
+
+   if (!grad.empty()){
+     for (int l=nT-1; l>=0; l--){
+        sum = 0.0;
+        for (int k=degree[l]; k>0; k--){
+           sum = sum*D + k*x[iIndex]*D;
+           iIndex -= 1;
+        }
+        iIndex -= 1;
+        sum2 += sum;
+     } 
+     grad[0] = sum2;
+
+     iIndex = 1;
+     for (int k=0; k<nT; k++){
+        grad[iIndex] = 0.0;
+        if (iIndex == 2) {
+          grad[iIndex] = D;
+        } else {
+          grad[iIndex] = 0.0;
+        }
+        for (int j=2; j<=degree[k]; j++){
+          iIndex += 1;
+          grad[iIndex] = pow(D,j);
+        }
+        iIndex += 1;
+     }
+   }
+
+   //equality constraint calc
+//   std::cout<<"D="<<D<<std::endl;
+   sum = log(1.0 - bmr);
+//   std::cout<<"sum="<<sum<<std::endl;
+   iIndex = x.size() - 1;
+   double sum3 = 0.0;
+
+   for (int l=nT-1; l>=0; l--){
+//     std::cout<<"loop l="<<l<<std::endl;
+     sum2 = 0.0;
+     for (int k=degree[l]; k>0; k--){
+        sum2 = sum2*D + x[iIndex]*D;
+//        std::cout<<"loop k="<<k<<", sum2="<<sum2<<std::endl;
+        iIndex -= 1;    
+     }
+     iIndex -= 1;
+     sum3 += sum2;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+   }
+
+   std::cout<<"1 HXI="<<(sum+sum3)<<std::endl;
+   return sum + sum3;
+}
+
+
+double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data){
+  
+   msComboEq1 *d = reinterpret_cast<msComboEq1*>(data);
+   double bmr = d->bmr;
+   int nT = d->nT;
+   std::vector<int> degree = d->degree;
+
+   double D = exp(x[0]);
+   int iIndex = x.size() - 1;
+   double sum2 = 0.0;
+   double sum = 0.0;
+
+   if (!grad.empty()){
+     for (int l=nT-1; l>=0; l--){
+        sum = 0.0;
+        for (int k=degree[l]; k>0; k--){
+           sum = sum*D + k*x[iIndex]*D;
+           iIndex -= 1;
+        }
+        iIndex -= 1;
+        sum2 += sum;
+     } 
+     grad[0] = sum2;
+
+     iIndex = 1;
+     for (int k=0; k<nT; k++){
+        grad[iIndex] = 0.0;
+        if (iIndex == 2) {
+          grad[iIndex] = D;
+        } else {
+          grad[iIndex] = 0.0;
+        }
+        for (int j=2; j<=degree[k]; j++){
+          iIndex += 1;
+          grad[iIndex] = pow(D,j);
+        }
+        iIndex += 1;
+     }
+   }
+
+   //equality constraint calc
+//   std::cout<<"D="<<D<<std::endl;
+   sum = log(1.0 - bmr);
+//   std::cout<<"sum="<<sum<<std::endl;
+   iIndex = x.size() - 1;
+   double sum3 = 0.0;
+
+   for (int l=nT-1; l>=0; l--){
+//     std::cout<<"loop l="<<l<<std::endl;
+     sum2 = 0.0;
+     for (int k=degree[l]; k>0; k--){
+        sum2 = sum2*D + x[iIndex]*D;
+//        std::cout<<"loop k="<<k<<", sum2="<<sum2<<std::endl;
+        iIndex -= 1;    
+     }
+     iIndex -= 1;
+     sum3 += sum2;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+   }
+
+   std::cout<<"2 HXI="<<(sum+sum3)<<std::endl;
+   return -1*(sum + sum3);
+}
+
+
+double slog(double X){
+   double coefs[4] = {6.7165863851209542e50,-2.0154759155362862e+35, 2.0169759155362859e+19,-710};
+   if (X >= 1e-16){
+     return log(X);
+   } else {
+     double v = 0.0;
+     for (int i=1; i<5; i++){
+       v = X * v + coefs[i];
+     }
+     return v;
+   }
+}
+
+double dslog(double P){
+   if (P >= 1e-10){
+     return 1.0/P;
+   } else {
+     return 2.0e10 - 1.0e20 * P;
+   }
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){

@@ -39,7 +39,7 @@ int main(void){
 //  runCompleteContAnalysis();
 //  runPythonDichoAnalysis();
 //  runPythonDichoMA();
-  runPythonContAnalysis();
+//  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
 //  runPythonNestedAnalysis();
   runMultitumorModel();
@@ -4242,6 +4242,9 @@ void runMultitumorModel(){
   anal.BMD_type = BMD_type;
   anal.alpha = alpha;
   anal.prior_cols = prCols;
+
+  anal.prG.insert(anal.prG.begin(), prRFreqMultistageCancerG, prRFreqMultistageCancerG + anal.prior_cols);
+  anal.prB.insert(anal.prB.begin(), prRFreqMultistageCancerB, prRFreqMultistageCancerB + anal.prior_cols);
 
   struct python_multitumor_result res;
   res.ndatasets = numDatasets;

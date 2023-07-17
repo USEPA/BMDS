@@ -280,6 +280,8 @@ struct python_multitumor_analysis{
   double alpha; // alpha of the analysis
   int prior_cols; // colunns in the prior
   std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
+  std::vector<double> prG;  //background prior
+  std::vector<double> prB;  //beta prior
 };
 
 struct python_multitumor_result{
@@ -334,6 +336,22 @@ struct python_nested_result{
   struct nestedBootstrap boot;
   //Nested Reduced DataRow
   struct nestedReducedData reduced;
+};
+
+struct msComboEq1{
+   double bmr;
+   int nT;
+   std::vector<int> degree;
+};
+
+struct msComboIneq1{
+  int nT;
+  double target;  
+  std::vector<int> nObs;
+  std::vector<int> degree;
+  std::vector<std::vector<double>> doses;
+  std::vector<std::vector<double>> Y;
+  std::vector<std::vector<double>> n_group;
 };
 
 #ifdef _WIN32
@@ -394,11 +412,25 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
 double BMD_func(int n, double p[], double x, double ck);
 
-void getclmt(int probtype, int nMaxParms, double BMR, double Dose, double target, std::vector<double> pdParms, int riskType, double bmdl, std::vector<double> pdParms2, double retVal);
+void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, double bmdl);
 
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 
 double zeroin(double ax,double bx, double tol, double (*f)(int, double [], double, double), int nparm, double Parms[], double ck);
+
+double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+
+double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
+double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
+double myInequalityConstraint2(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
+double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
+double slog(double X);
+
+double dslog(double P);
 
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
