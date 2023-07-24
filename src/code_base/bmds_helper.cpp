@@ -215,8 +215,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 //        std::cout<<std::endl;
  
   bmdsRes->validResult = false;
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
+
   estimate_sm_laplace_dicho(anal, res, true);
 
   struct dichotomous_PGOF_data gofData;
@@ -389,6 +393,11 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
+
+  bmdsRes->BMD_MA = BMDS_MISSING;
+  bmdsRes->BMDL_MA = BMDS_MISSING;
+  bmdsRes->BMDU_MA = BMDS_MISSING;
+
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
@@ -506,6 +515,10 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->validResult = false;
   anal->transform_dose = false;
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
