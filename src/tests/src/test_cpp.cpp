@@ -4323,6 +4323,9 @@ void runMultitumorModel(){
         std::cout << elem << ", ";
   }
   std::cout<<std::endl;
+  res.validResult.push_back(true);
+  res.validResult.push_back(true);
+  res.validResult.push_back(true);
 
   std::cout<<"adding res[0]"<<std::endl;
   res.models[0][0].max = -182.8268;

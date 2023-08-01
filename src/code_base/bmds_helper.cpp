@@ -1719,26 +1719,31 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    std::vector<double> cp;
 
    std::cout<<"inside Multistage_ComboBMD"<<std::endl;
+
    nT = pyRes->ndatasets;
    //find largest nparm and largest dose
    cnparm = 0;
    cxmax = 0;
    for(int i=0; i<nT; i++){
-      selIndex = pyRes->selectedModelIndex[i];
-      if(pyRes->models[i][selIndex].nparms > cnparm){
-         cnparm = pyRes->models[i][selIndex].nparms;
+      if(pyRes->validResult[i]){ //only use datasets that have a selected model
+        selIndex = pyRes->selectedModelIndex[i];
+        if(pyRes->models[i][selIndex].nparms > cnparm){
+           cnparm = pyRes->models[i][selIndex].nparms;
+        }
+        double tmpMax = *max_element(std::begin(pyAnal->models[i][selIndex].doses), std::end(pyAnal->models[i][selIndex].doses));
+        if(cxmax < tmpMax) cxmax = tmpMax;
       }
-      double tmpMax = *max_element(std::begin(pyAnal->models[i][selIndex].doses), std::end(pyAnal->models[i][selIndex].doses));
-      if(cxmax < tmpMax) cxmax = tmpMax;
    }
    std::cout<<"cnparm="<<cnparm<<std::endl;
    //add all model parameters to combined p
    cp.resize(cnparm, 0.0);
    for(int i=0; i<nT; i++) {
-     selIndex = pyRes->selectedModelIndex[i];
-     cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]); 
-     for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
-        cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
+     if(pyRes->validResult[i]){  //only use datasets that have a selected model
+       selIndex = pyRes->selectedModelIndex[i];
+       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]); 
+       for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
+          cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
+       }
      }
    }
 
@@ -1799,7 +1804,27 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    std::cout<<"BMD="<<pyRes->BMD<<std::endl;
 
    is_zero = 0;
-   fa = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+
+   //restructure pyAnal and pyRes to remove unused datasets/models
+   struct python_multitumor_analysis pyAnal_red = *pyAnal;
+   struct python_multitumor_result pyRes_red = *pyRes;
+   //nT = pyRes->ndatasets;
+   for(int i=nT-1; i=0; i++){
+     if(!pyRes->validResult[i]){
+       std::cout<<"erasing dataset i:"<<i<<std::endl;
+       pyAnal_red.ndatasets--;
+       pyAnal_red.n.erase(pyAnal_red.n.begin() + i);
+       pyAnal_red.nmodels.erase(pyAnal_red.nmodels.begin() + i);
+       pyAnal_red.degree.erase(pyAnal_red.degree.begin() + i);
+       pyAnal_red.models.erase(pyAnal_red.models.begin() + i);                
+       pyRes_red.ndatasets--;
+       pyRes_red.nmodels.erase(pyRes_red.nmodels.begin() + i);
+       pyRes_red.selectedModelIndex.erase(pyRes_red.selectedModelIndex.begin() + i);
+       pyRes_red.models.erase(pyRes_red.models.begin() + i);
+     }
+   }
+
+   fa = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
 }
 
 //calculate dichotomous log likelihood constant
