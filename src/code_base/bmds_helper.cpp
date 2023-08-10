@@ -2774,21 +2774,21 @@ void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes
  
 //   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
 //   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
-////   opt.add_inequality_constraint(myInequalityConstraint2, &eq1, 1e-8);
-////   opt.add_inequality_constraint(myInequalityConstraint3, &eq2, 1e-8);
+   opt.add_inequality_constraint(myInequalityConstraint2, &eq1, 1e-8);
+   opt.add_inequality_constraint(myInequalityConstraint3, &eq2, 1e-8);
 //   opt.set_xtol_rel(1e-8);   
 
    //opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-4);
    //opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-4);
-   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-6);
+//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-6);
    opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-6);
    opt.set_min_objective(objfunc, NULL);  
-   opt.set_local_optimizer((const nlopt::opt) local_opt);
+//   opt.set_local_optimizer((const nlopt::opt) local_opt);
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
    //opt.set_xtol_abs(1e-4);
    opt.set_xtol_abs(1e-6);
-   opt.set_maxeval(20000);
+   //opt.set_maxeval(200000);
 
    double minf;
 
