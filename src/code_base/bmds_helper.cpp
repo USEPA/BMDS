@@ -5,6 +5,7 @@
 #endif
 #include <stdio.h>
 #include <math.h>
+#include <ctime>
 //#include <cmath>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
@@ -1645,7 +1646,61 @@ void runMultitumorModel(){
 
 
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
+ 
+   pyRes->validResult = false;
+ 
+   //set seed from time clock if default seed=0 is specified
+   if (pyAnal->seed == BMDS_MISSING){
+     pyAnal->seed = time (NULL);
+   }
+
+   //get correct number of dose groups
+   int ngrp = 0;
+   double tmp = BMDS_MISSING;
+   std::vector<int> grpSize;
+   for (int i=0; i<pyAnal->doses.size(); i++){
+      if (pyAnal->doses[i] == tmp){
+        //existing dose group
+
+        ngrp++;
+      } else {
+        //new dose group
+        if (i!=0){
+          grpSize.push_back(ngrp);
+        }
+        tmp = pyAnal->doses[i];
+        ngrp = 1;
+      }
+   }
+   //push last group size;
+   grpSize.push_back(ngrp);
+   pyRes->nparms = 5 + grpSize.size();
+
+//   std::cout<<"numGrps = "<<grpSize.size()<<std::endl;
+//   for(int i=0; i<grpSize.size(); i++){
+//      std::cout<<"i:"<<i<<", grpSize:"<<grpSize[i]<<std::endl;
+//   }
+//   std::cout<<"seed="<<pyAnal->seed<<std::endl;
+  
+  int knownParms = 0;
+  //handle specified parms
+  if (pyAnal->background == 0){
+    //set background to zero
+    knownParms++;
+  }   
+  if (pyAnal->ILC_type != 1){
+    //set phi parm values to zero
+  }
+  if (pyAnal->useLSC){
+    //set theta parm values to zero
+  }
    
+  if(grpSize.size() < pyRes->nparms - knownParms){
+    std::cout<<"Error: Fewer observations "<<grpSize.size()<<" than estimated parameters "<<pyRes->nparms-knownParms<<std::endl;
+    return;
+  }
+
+ 
    //stubbed results
    pyRes->bmdsRes.validResult = true;
    pyRes->bmdsRes.BMD = 12.95166613;

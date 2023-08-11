@@ -311,9 +311,10 @@ struct python_nested_analysis{
   std::vector<double> incidence;   
   std::vector<double> lsc;  //litter specific covariate
   int LSC_type;  // 1 = Overall Mean; control group mean otherwise
+  bool useLSC;  //whether to use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
-  double background; // 1 = estimated; zero otherwise
+  double background; // -9999 (BMDS_MISSING) = estimated; zero otherwise
   double BMR;
   double alpha;
   int iterations;
