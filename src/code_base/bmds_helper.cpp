@@ -135,8 +135,6 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 
   calcDichoAIC(anal, res, BMDSres, estParmCount);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
-//  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
-//  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 1.0-anal->alpha);
 
@@ -162,8 +160,6 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
  
 //  calculate MA quantiles
   BMDSres->BMD_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-//  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-//  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
   BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, alpha);
   BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
 
@@ -176,8 +172,6 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
         quantMA[i-distSize/2] = res->models[j]->bmd_dist[i];
       }
       BMDSres->BMD[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-//      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-//      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
       BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, alpha);
       BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
   }
@@ -202,8 +196,6 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-//  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, 0.05);
-//  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 0.95);
   BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 1.0-anal->alpha);
 

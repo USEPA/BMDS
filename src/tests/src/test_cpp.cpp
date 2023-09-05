@@ -36,11 +36,11 @@ int main(void){
 
 //  runOldContAnalysis();
 //  runCompleteContAnalysis();
-  runPythonDichoAnalysis();
+//  runPythonDichoAnalysis();
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
-//  runPythonNestedAnalysis();
+  runPythonNestedAnalysis();
 
   return 0;
 
@@ -920,7 +920,7 @@ void runPythonDichoAnalysis(){
 //USER INPUT
 ///////////////////////////////
 
-  enum dich_model model = d_hill;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+  enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                    //d_logprobit=5, d_multistage=6,d_probit=7,
                                    //d_qlinear=8,d_weibull=9
   int modelType = 1;       //1 = frequentist, 2 = bayesian
@@ -928,7 +928,7 @@ void runPythonDichoAnalysis(){
   int BMD_type = 1;        // 1 = extra ; added otherwise
   int degree = 3;  //for multistage only
   double BMR = 0.1;
-  double alpha = 0.01;
+  double alpha = 0.05;
 ///////////////////////////////
 //dicho data - dose, N, incidence
 ///////////////////////////////
@@ -992,9 +992,9 @@ void runPythonDichoAnalysis(){
 //  double N[] = {50, 49, 45};
 
   //D60
-//  double D[] = {0, 0.011, 0.057, 1.3, 5.6};
-//  double Y[] = {30, 26, 17, 27, 42};
-//  double N[] = {127, 63, 64, 64, 64};
+  double D[] = {0, 0.011, 0.057, 1.3, 5.6};
+  double Y[] = {30, 26, 17, 27, 42};
+  double N[] = {127, 63, 64, 64, 64};
 
   //D80
 //  double D[] = {0, 4.79, 9.57};
@@ -1020,12 +1020,6 @@ void runPythonDichoAnalysis(){
 //  double D[] = {0, 10, 30, 100};
 //  double Y[] = {0, 0, 8, 20};
 //  double N[] = {20, 20, 20, 20};
-
-  //custom
-  double D[] = {0, 0.3, 0.5, 1, 2};
-  double Y[] = {3, 3, 5, 15, 15};
-  double N[] = {16, 16, 16, 16, 16};
-
 
 /////////////////////////////////////////////////
 ////END USER INPUT
