@@ -443,8 +443,10 @@ double BMD_func(int n, double p[], double x, double ck)
 
 
 
-void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, double bmdl){
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
    std::cout<<"Inside getclmt"<<std::endl;
+
+   double val;
  
    int nT = pyRes->selectedModelIndex.size(); 
    std::cout<<"nT = "<<nT<<std::endl;
@@ -469,8 +471,8 @@ void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes
 //   }
    std::vector<double> x(N);
    int iOffset = 0;
-   x[0] = log(bmd);
-   //x[0] = log(5.401711/200);
+   //x[0] = log(bmd);
+   x[0] = log(5.401711/200);
 
    //tmp only 
    //X[0] = 1.686903;
@@ -535,7 +537,10 @@ void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes
    std::vector<double> lb(x.size());
    std::vector<double> ub(x.size());
 
+   //calculate the values that will correspond to '0' and 'infinity' in BMD calcs
    double lminbmd = log(DBL_MIN) - log(maxDose);
+   double lmaxbmd = log(DBL_MAX) - log(maxDose);
+
    lb[0] = lminbmd;  //BMD lower limit
    for (int i=1; i<x.size(); i++){
      lb[i] = pyAnal->prB[3];  //beta min value
@@ -626,7 +631,10 @@ void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes
    } catch (std::exception &e){
      std::cout << "nlopt failed: " << e.what() << std::endl;
    }
-  
+
+   val = x[0];
+   std::cout<<"val = "<< val<<std::endl; 
+   return val;
 }
 
 /*****************************************************************
@@ -942,7 +950,584 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
     double retVal;
 
-    getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, bmdl);
+    //bmdl calc
+    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
+//  fflush(fp_log);
+
+//  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//	   &target, pdParms, piSpec2,
+//	   pdParms, &temprisk, &bmdl,
+//	   pdParms2, &optite, &nresm,
+//	   bind, is_zero);
+//
+//  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//  i = 0;
+//  fprintf(fp_log,"\n          ");
+//  for(j = 1; j<=nT; j++)
+//    fprintf(fp_log,"    Tumor %d\t", j);
+//  fprintf(fp_log,"\n");
+//
+//  for(k = 0; k < nParmMax; k++)
+//    {
+//      for(j = 1; j <= nT; j++)
+//	fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//      fprintf(fp_log,"\n");
+//    }
+//  fflush(fp_log);
+//  nCall++;
+//
+//  /* optite is a value that is passed back from GETCL which         */
+//  /* determines whether the optimization was completed successfully */
+//  /* If optite is less than 0, then it did not, and we want         */
+//  /* to try a different starting point and recompute                */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//#if !0
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//#else
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//#endif
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()\n", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetMoreParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//
+//  /* Let user know if no optimum was found */
+//  if(ii == 10)
+//    {
+//#ifdef MISC_OUT
+//      fprintf(fp_out, "\nWarning:  completion code still negative");
+//#endif
+//      fprintf(fp_out, "\nBMDL did not converge for BMR = %f\n", BMR);
+//      bmdl_bmr_flag = 1;
+//    } /* end if */
+
+
+//  double **ppdParms;
+//  ppdParms = DMATRIX (1, nT, 1, nParmMax);
+
+  pdParms2 = pdParms;
+  int nT = 0;
+  for(int i=0; i<pyRes->ndatasets; i++){
+    if (pyRes->validResult[i]){
+      nT++;
+    }
+  }
+  std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
+  std::cout<<"********** pdParms2 Values **********"<<std::endl;
+//  fprintf(fp_log,"******* pdParms2 Values ********\n");
+  for (int j=0; j<pyRes->ndatasets; j++){
+    if(pyRes->validResult[j]){
+      std::cout<<"   Tumor " << j << "\t";
+    }
+  }
+  std::cout<<std::endl;
+//  for(j = 1; j<=nT; j++)
+//    fprintf(fp_log,"    Tumor %d\t", j);
+//  fprintf(fp_log,"\n");
+
+  k = -1;
+//  for(j = 1; j <= nParmMax; j++)
+  for (int j=0; j<nParmMax; j++)
+  {
+//      for(i = 1; i <= nT; i++)
+     for (int i=0; i<pyRes->ndatasets; i++)
+     {
+       if(pyRes->validResult[i]){
+	  k++;
+          std::cout<<pdParms2[k]<<"\t";
+//	  fprintf(fp_log,"%10.5g\t", pdParms2[k]);
+          if (j < pyRes->models[i][0].nparms)
+//	  if(j <= aParmList[i].nParms)
+	  {
+	    ppdParms[i][j] = pdParms2[k];
+	    if(k < pyAnal->ndatasets)
+            {                
+	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
+	    }
+	  }
+       }
+     }
+     std::cout<<std::endl;
+//      fprintf(fp_log,"\n");
+  }
+
+  /* unscale parameters  Note for use with ComboMaxLike use 1-nparm+1 locations
+ *      in parm and Aparm here instead of 0-nparm             */
+//  //for(i = 1; i<=nT; i++)
+//  //{
+//  //	for(j = 2; j<= aParmList[i].nParms; j++)
+//  //		ppdParms[i-1][j-1] = ppdParms2[i-1][j-1]/(pow(scale,(j-1)));
+//  //}
+//  //
+  int flag = 1;
+  std::cout<<"scale="<<scale<<std::endl; 
+  bmdl = exp(bmdl)*scale;
+  
+  xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
+//  /*  convert background parameters to non-exponential form for printing */
+//  //for(i = 1; i<= nT; i++)
+//  //{
+//  //	ppdParms[i-1][1] = 1-exp(-ppdParms[i-1][1]);
+//  //	ppdParms2[i-1][0] = 1-exp(-ppdParms2[i-1][0]);
+//  //	for(j = 1; j < aParmList[i].nParms; j++)
+//  //		ppdParms2[i-1][j] = 1-exp(-ppdParms2[i-1][j]);
+//  //}
+//  fprintf(fp_log,"\n\n Combined Log-Likelihood at BMDL (getcl) %30.22g\n",xlk2);
+//  fprintf(fp_log,"\n\n Combined Log-Likelihood at BMDL (combomaxlike) %30.22g\n",xlk3);
+//  fprintf(fp_log,"\n Combined BMDL                        %15.7g  \n",bmdl);
+//  fprintf(fp_log,"\n Combined Risk at BMDL                     %10.3g\n",crisk);
+//
+//  fD = bmdl;      /* Get bmdl and...                   */
+//  /* free malloc'ed memory */
+//  free(pdParms);
+//  free(pdParms2);
+//  free(pdVals);
+//  free(piSpec2);
+//  free(bind);
+//  free(adxmax);
+  //return fD;      /* return it to the calling function */
+  std::cout<<"BMDL_combofunc returns bmdl="<<bmdl<<std::endl;
+  return bmdl;
+}
+
+
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero) {
+
+  int optite, nresm, *bind, CBnparm;
+  int which, temprisk, lnParmMax;
+  double fD, bmdu,  target, xmax, xlk2, xlk3, crisk;
+  int i, j, nCall, k, nParmMax, ii = 0;
+  double scale;
+	
+  std::vector<double> adxmax;
+  int nParms;
+  fD = bmdu =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
+  optite = -5;
+  nCall = 1;
+  /*End GLN-01/15/2009 */
+
+  temprisk = 1;  //based on bmdparm.risk set to zero in original Multistage_ComboBMD
+
+
+  /* Get the degree of polynomial */
+  adxmax.resize(pyRes->ndatasets, 0.0);
+
+  CBnparm = lnParmMax = 0;
+  for(i = 0; i < pyRes->ndatasets; i++)
+  {
+//      xmax = aDataList[i].pdXi[1];
+    if(pyRes->validResult[i]){
+      int selModelIndex = pyRes->selectedModelIndex[i];
+      struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
+      struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
+      xmax = mod.doses[0];
+//      CBnparm = CBnparm + aParmList[i].nParms;
+      CBnparm = CBnparm + modRes.nparms;
+		
+//      if(aParmList[i].nParms > lnParmMax)
+//	lnParmMax = aParmList[i].nParms;
+      if(modRes.nparms > lnParmMax){
+         lnParmMax = modRes.nparms;
+      }
+
+//      fprintf(fp_log,"\n\nIn BMDL_combofunc, Tumor %d data\n", i);
+//      fprintf(fp_log,"       DOSE      Inc    N \n");
+      std::cout<<"\n\nIn BMDU_combofunc, Tumor "<<i<<" data"<<std::endl;
+      std::cout<<"       DOSE     Inc    N"<<std::endl;
+//      for(j = 1; j <= aDataList[i].nObs; j++)
+//	{
+//	  if(aDataList[i].pdXi[j] > xmax)
+//	    xmax = aDataList[i].pdXi[j];
+//
+//	  fprintf(fp_log,"%10.5g    %5.0f %5.0f \n",aDataList[i].pdXi[j], 
+//		  aDataList[i].pdYp[j], aDataList[i].pdYp[j]+aDataList[i].pdYn[j]);
+//	}
+      for(j=0; j<mod.n; j++){
+         if(mod.doses[j] > xmax){
+            xmax = mod.doses[j];
+         }
+         std::cout<<mod.doses[j]<<"   "<<mod.Y[j]<<"   "<<mod.n_group[j]<<std::endl;
+      }
+//      adxmax[i-1] = xmax;
+      adxmax[i] = xmax;
+    }
+  }
+  CBnparm = CBnparm + 1;
+  //bind = (int *) malloc((size_t)(CBnparm)*sizeof(int));
+
+  /** rescale all doses to be: 0 <= Dose <= 1 **/
+  xmax = adxmax[0];
+  //for(i=1; i<nT; i++)
+  for(i=0;i<pyRes->ndatasets; i++)
+    {
+      if(adxmax[i] > xmax) xmax = adxmax[i];
+    }
+  scale = xmax;
+
+  nParmMax = (int)lnParmMax;
+  nParms = pyRes->ndatasets*nParmMax;
+//  pdParms = (double *) malloc((size_t)(nParms)*sizeof(double));
+//  pdParmsBak = (double *) malloc((size_t)(nParms)*sizeof(double));
+//  pdParms2 = (double *) malloc((size_t)(nParms)*sizeof(double));
+//  pdVals = (double *) malloc((size_t)(nParms)*sizeof(double));
+//  piSpec2 = (int *) malloc((size_t)(nParms)*sizeof(int));
+//  //Initialized parameters
+//    for(i= 0; i < nParms; i++)
+//    {
+//      pdParms[i] = 0.0;
+//      pdParms2[i] = 0.0;
+//      pdVals[i] = 0.0;
+//      piSpec2[i] = 0L;
+//    }
+  std::vector<double> pdParms(nParms, 0.0);
+  std::vector<double> pdParmsBak(nParms, 0.0);
+  std::vector<double> pdParms2(nParms, 0.0);
+  std::vector<double> pdVals(nParms, 0.0);
+  std::vector<int> piSpec2(nParms, 0.0);
+
+
+//  fprintf(fp_log,"\n\nIn BMDL_combofunc, aParmList[i+1].pdParms[j+1](MLEs)\n");
+  std::cout<<"\nIn BMDL_combofunc, pdParms[j](MLEs)"<<std::endl;
+//  for(i = 1; i <= nT; i++)
+  for(i=0; i<pyAnal->ndatasets; i++)
+    {
+//      fprintf(fp_log,"Tumor %d=>", i);
+      std::cout<<"Tumor "<<i<<"=>"<<std::endl;
+      /* LCO 03/29/2010 - Use actual # parms for tumor */
+//      for(j = 1; j <= aParmList[i].nParms; j++)
+      for(j = 0; j<pyRes->models[i][0].nparms; j++)
+      {
+//	  fprintf(fp_log,"%10.5g\t", aParmList[i].pdParms[j]);
+        std::cout<<pyRes->models[i][0].parms[j]<<"\t";
+      }
+//      fprintf(fp_log,"\n");
+      std::cout<<std::endl;
+    }
+
+  k = -1;
+//  for(j = 1; j <= nParmMax; j++)
+  for(j=0; j<nParmMax; j++)
+    {
+/* Changed by lco 2009/12/09 so that order of parameters matches
+ *        * the order of data values.
+ *               for(i = 1; i <= nT; i++)
+ *                     */
+//      for(i = nT; i > 0; i--)
+      for(i=pyAnal->ndatasets-1; i>=0; i--)
+	{
+          k++;
+//	  if(j <= aParmList[i].nParms) 
+          if(j<pyRes->models[i][0].nparms)
+          {
+//	      pdParms[k] = aParmList[i].pdParms[j];
+//	      piSpec2[k] = aParmList[i].pnSpec[j];
+            pdParms[k] = pyRes->models[i][0].parms[j];
+            piSpec2[k] = 0.0;  //no user specified values
+ 	  }
+	}
+    }
+
+//  fprintf(fp_log,"\n\nIn BMDL_combofunc, pdParms Values (MLEs, k=%d, nParms=%d)\n", k, nParms);
+  std::cout<<"\n\nIn BMDL_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
+  i = 0;
+  /* fprintf(fp_log,"\n"); */
+//  for(j = 1; j<=nT; j++)
+  for(j=0; j<pyAnal->ndatasets; j++){
+//    fprintf(fp_log,"    Tumor %d\t", j);
+     std::cout<<"      Tumor "<<j<<"\t";
+  }
+//  fprintf(fp_log,"\n");
+  std::cout<<std::endl;
+
+  for(k = 0; k < nParmMax; k++)
+  {
+//      for(j = 1; j <= nT; j++)
+     for(j=0; j<pyAnal->ndatasets; j++){
+//	fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+       std::cout<<pdParms[i++]<<"\t";
+     }
+//      fprintf(fp_log,"\n");
+     std::cout<<std::endl;
+   }
+  /*End GLN-01/15/2009, get xmax, populate, print data to log  */
+
+  j=0;
+//  fprintf(fp_log,"\nIn BMDL_combofunc, Tumor Starting Values\n");
+  std::cout<<"\nIn BMDL_combofunc, Tumor Starting Values"<<std::endl;
+//  for(i = 0; i < nT; i++)
+  for(i=0; i<pyAnal->ndatasets; i++)
+  {
+//      fprintf(fp_log,"Tumor %d => %10.5g\n", i+1, pdParms[i]);
+     std::cout<<"Tumor "<<i<<" => "<<pdParms[i]<<std::endl;
+  }
+
+//  fprintf(fp_log,"\nMaximum Dose  = %12.5g \n",xmax); 
+  std::cout<<"\nMaximum Dose = "<<xmax<<std::endl;
+
+  Dose = Dose/scale;
+//  fprintf(fp_log,"Scale  = %12.5g \n",scale); 
+  std::cout<<"Scale = "<<scale<<std::endl;
+
+  which = 5;          /* Want a combined  upper confidence limit */
+
+//  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+  target = (LR - pyRes->combined_LL);  /* The value we want the likelihood */
+  /* at the BMDL to match             */
+//  fprintf(fp_log,"Combined Loglikelihood         %30.22g \n",xlk); 
+//  fprintf(fp_log,"Target                         %30.22g \n",target); 
+  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
+  std::cout<<"Target                         "<<target<<std::endl;
+
+  /* LCO 03/29/2010 - Rework the following loop because it references
+   * invalid parameter values when the tumors have different
+   * polynomial degrees.
+   */
+  k = -1;
+//  for(j = 1; j <= nParmMax; j++)
+
+//  std::cout<<"TMP OUT"<<std::endl;
+//  for (i=pyAnal->ndatasets-1; i>=0; i--){
+//    for(j=0; j<nParmMax; j++){
+//      std::cout<<"i="<<i<<", j="<<j<<", parm="<<pyRes->models[i][0].parms[j]<<std::endl;
+//    }
+//  }
+
+  for(j=0; j<nParmMax; j++)
+    {
+      /* Changed by lco 2009/12/09 so that order of parameters matches
+ *        * the order of data values.
+ *               for(i = 1; i <= nT; i++)
+ *                     */
+//      for(i = nT; i > 0; i--)
+      for(i = pyRes->ndatasets-1; i>=0; i--)
+      {
+        if(pyRes->validResult[i]){
+//	  int iParms = aParmList[i].nParms;
+          int iParms = pyRes->models[i][0].nparms;
+
+          k++;
+//	  if (j <= iParms) {
+          if (j <iParms){
+//	    pdParmsBak[k] =  aParmList[i].pdParms[j];
+//	    pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));
+            pdParmsBak[k] = pyRes->models[i][0].parms[j];
+            pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
+          } else {
+//	    pdParmsBak[k] = pdParms[k] = -99999;
+            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
+          }
+        }
+      }
+    }
+  std::cout<<"Here"<<std::endl;
+  /* One more step for the background terms */
+//  for(i = 0; i < nT; i++) {
+  for(i=0; i<pyRes->ndatasets; i++){
+//    pdParms[i] = -log(1.0 - pdParms[i]);
+    if(pyRes->validResult[i]){
+      pdParms[i] = -log(1.0 - pdParms[i]);
+    }
+  }
+  std::cout<<"\n\nValues BEFORE call "<<nCall<<" to getclmt_()";
+  std::cout<<"BMR="<<pyAnal->BMR<<" target="<<target<<std::endl;
+  std::cout<<"bmdu="<<bmdu<<" optite="<<optite<<std::endl;
+  i = 0;
+//  fprintf(fp_log,"\n");
+  std::cout<<std::endl;
+//  for(j = 1; j<=nT; j++)
+  for(j=0; j<pyRes->ndatasets; j++){
+//    fprintf(fp_log,"    Tumor %d\t\t\t", j);
+    if(pyRes->validResult[j]){
+      std::cout<<"    Tumor "<<j<<"\t\t\t";
+    }
+  }
+//  fprintf(fp_log,"\n");
+  std::cout<<std::endl;
+//  for(j = 1; j<=nT; j++)
+  for(j=0; j<pyAnal->ndatasets; j++){
+    if(pyRes->validResult[j]){
+//    fprintf(fp_log,"Scaled | Unscaled\t\t");
+      std::cout<<"Scaled | Unscaled\t\t";
+    }
+  }
+//  fprintf(fp_log,"\n")
+  std::cout<<std::endl;
+  for(k = 0; k < nParmMax; k++)
+    {
+//      for(j = 1; j <= nT; j++) {
+      for(j=0; j<pyRes->ndatasets; j++){
+//	fprintf(fp_log,"%10.5g | %10.5g\t\t", pdParms[i], pdParmsBak[i]);
+        if(pyRes->validResult[j]){
+          std::cout<<pdParms[i]<<" | "<<pdParmsBak[i]<<"\t\t";
+	  i++;
+        }
+      }
+//      fprintf(fp_log,"\n");
+      std::cout<<std::endl;
+    }
+    std::cout<<"Dose(BMD)="<<Dose<<std::endl;
+    std::cout<<"log(BMD)="<<log(Dose)<<std::endl;
+
+    double retVal;
+
+    bmdu = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, false);
 //  fflush(fp_log);
 
 //  getclmt_(&which, &lnParmMax, &BMR, &Dose,
@@ -1207,10 +1792,9 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  //}
 //  //
   int flag = 1; 
-  bmdl = bmdl*scale;
+  bmdu = exp(bmdu)*scale;
   
-  bmdl=5.40272;
-  xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
+  xlk3 = ComboMaxLike2(flag,bmdu,&crisk, ppdParms, pyAnal, pyRes);
 //  /*  convert background parameters to non-exponential form for printing */
 //  //for(i = 1; i<= nT; i++)
 //  //{
@@ -1232,7 +1816,8 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  free(piSpec2);
 //  free(bind);
 //  free(adxmax);
-  return fD;      /* return it to the calling function */
+  return bmdu;
+  //return fD;      /* return it to the calling function */
 }
 
 
@@ -1514,7 +2099,11 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
      }
    }
 
-   fa = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
+
+   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 }
 
 
@@ -1604,7 +2193,7 @@ double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *d
    }
 
    std::cout<<"obj2="<<(sum+sum3)<<std::endl;
-   return sum + sum3;
+   return fabs(sum + sum3);
 }
 
 

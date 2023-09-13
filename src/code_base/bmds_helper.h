@@ -414,8 +414,9 @@ double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
 double BMD_func(int n, double p[], double x, double ck);
-void getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, double bmdl);
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
