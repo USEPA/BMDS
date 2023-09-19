@@ -135,8 +135,8 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 
   calcDichoAIC(anal, res, BMDSres, estParmCount);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 1.0-anal->alpha);
 
   free(quant);
   free(val);
@@ -144,7 +144,7 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 }
 
 
-void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres){
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres, double alpha){
 
   int distSize = res->dist_numE*2;
 
@@ -157,11 +157,11 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
   for (int i = distSize/2; i < distSize; i++){
     quantMA[i-distSize/2] = res->bmd_dist[i];
   }
-
+ 
 //  calculate MA quantiles
   BMDSres->BMD_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
 
 // calculate individual model quantiles
   for (int j=0; j<anal->nmodels; j++){
@@ -172,8 +172,8 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
         quantMA[i-distSize/2] = res->models[j]->bmd_dist[i];
       }
       BMDSres->BMD[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
   }
   free(quantMA);
   free(valMA);
@@ -196,9 +196,8 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 1.0-anal->alpha);
 
   free(contVal);
   free(contQuant);
@@ -401,7 +400,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
-  collect_dichoMA_bmd_values(MA, res, bmdsRes);
+  collect_dichoMA_bmd_values(MA, res, bmdsRes, DA->alpha);
   for(int i=0; i<MA->nmodels; i++){
     rescale_dichoParms(MA->models[i], res->models[i]->parms);
   }
