@@ -214,8 +214,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 //        std::cout<<std::endl;
  
   bmdsRes->validResult = false;
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
+
   estimate_sm_laplace_dicho(anal, res, true);
 
   struct dichotomous_PGOF_data gofData;
@@ -388,6 +392,11 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
+
+  bmdsRes->BMD_MA = BMDS_MISSING;
+  bmdsRes->BMDL_MA = BMDS_MISSING;
+  bmdsRes->BMDU_MA = BMDS_MISSING;
+
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
@@ -505,6 +514,10 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->validResult = false;
   anal->transform_dose = false;
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
@@ -631,8 +644,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     gof->estSD.push_back(GOFres.sd[i]);
     gof->obsSD.push_back(GOFanal.sd[i]);
     gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-    gof->n = GOFanal.n;
+//    gof->n = GOFanal.n;
   }
+  gof->n = GOFanal.n;
   if (anal->disttype == distribution::log_normal){
     for (int i=0; i<GOFanal.n; i++){
       gof->calcMean.push_back(exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2));
@@ -1413,7 +1427,7 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->model = pyAnal->model;
   anal->n = pyAnal->n;
   anal->BMD_type = pyAnal->BMD_type;
-  anal->isIncreasing;
+  anal->isIncreasing = pyAnal->isIncreasing;
   anal->BMR = pyAnal->BMR;
   anal->tail_prob = pyAnal->tail_prob;
   anal->disttype = pyAnal->disttype;
@@ -1426,10 +1440,21 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->transform_dose = pyAnal->transform_dose;
   anal->suff_stat = pyAnal->suff_stat;
 
-  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+  bool validated = false;
+  if (pyAnal->suff_stat){
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size();
+  } else {
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size();
+  }
+
+  if (validated){
     for (int i=0; i<pyAnal->n; i++){
       anal->Y[i] = pyAnal->Y[i];
       anal->doses[i] = pyAnal->doses[i];
+    }
+  }
+  if (validated && pyAnal->suff_stat){
+    for (int i=0; i<pyAnal->n; i++){
       anal->n_group[i] = pyAnal->n_group[i];
       anal->sd[i] = pyAnal->sd[i];
     }
