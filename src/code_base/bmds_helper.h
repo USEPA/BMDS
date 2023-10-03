@@ -25,6 +25,8 @@
 #endif
 
 const double BMDS_EPS = 1.0e-6;
+const double CloseToZero = 1.0e-7;
+const double Log_zero = -22;  //e^(-22) ~ 2.7e-10
 const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
 extern std::string BMDS_VERSION; 
@@ -310,11 +312,11 @@ struct python_nested_analysis{
   std::vector<double> litterSize;
   std::vector<double> incidence;   
   std::vector<double> lsc;  //litter specific covariate
-  int LSC_type;  // 1 = Overall Mean; control group mean otherwise
+  int LSC_type;  // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
   bool useLSC;  //whether to use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
-  double background; // -9999 (BMDS_MISSING) = estimated; zero otherwise
+  bool estBackground; //if false, sets background to zero
   double BMR;
   double alpha;
   int iterations;
@@ -322,6 +324,7 @@ struct python_nested_analysis{
 };
 
 struct python_nested_result{
+  bool validResult;
   enum nested_model model;
   int nparms;
   std::vector<double> parms;
@@ -340,6 +343,21 @@ struct python_nested_result{
   struct nestedBootstrap boot;
   //Nested Reduced DataRow
   struct nestedReducedData reduced;
+};
+
+struct VarList{
+  int flag;
+  double S;
+  double SS;
+  double CSS;
+  double M;
+};
+
+struct AnaList{
+  double SS;
+  double MSE;
+  double DF;
+  double TEST;
 };
 
 #ifdef _WIN32

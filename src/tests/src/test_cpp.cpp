@@ -4423,10 +4423,11 @@ void runPythonNestedAnalysis(){
   pyAnal.lsc.push_back(8);
   pyAnal.lsc.push_back(10);
 
+  pyAnal.useLSC = true;
   pyAnal.LSC_type = 1;
   pyAnal.ILC_type = 1;
   pyAnal.BMD_type = 1; // 1 = extra; added otherwise
-  pyAnal.background = 1;
+  pyAnal.estBackground = true;
   pyAnal.BMR = 0.1;
   pyAnal.alpha = 0.05;
   pyAnal.iterations = 1000;

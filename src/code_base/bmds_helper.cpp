@@ -1645,8 +1645,23 @@ void runMultitumorModel(){
 }
 
 
+double PROBABILITY_INRANGE(double ex){
+
+  if(ex <= 0.00000001){
+    return 1.0e-7;
+  }
+  if(ex >= 0.9999999){
+    return 0.9999999;
+  }
+}
+
+
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
  
+   int BGINDEX = 0;  //location of background parameter in parms vector
+   int PHISTART = 6; //location of first PHI parameter in parms vector
+   int THETA1_INDEX = 3; //location of THETA1 parameter in parms vector 
+   int THETA2_INDEX = 4; //location of THETA2 parameter in parms vector
    pyRes->validResult = false;
  
    //set seed from time clock if default seed=0 is specified
@@ -1654,27 +1669,80 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      pyAnal->seed = time (NULL);
    }
 
-   //get correct number of dose groups
-   int ngrp = 0;
-   double tmp = BMDS_MISSING;
-   std::vector<int> grpSize;
-   for (int i=0; i<pyAnal->doses.size(); i++){
-      if (pyAnal->doses[i] == tmp){
-        //existing dose group
 
+   int Nobs = pyAnal->doses.size();
+   std::vector<double> Xi(Nobs);
+   std::vector<double> Yp(Nobs);
+   std::vector<double> Yn(Nobs);
+   std::vector<double> Ls(Nobs);
+   std::vector<double> SR(Nobs);
+   std::vector<int> Xg(Nobs, BMDS_MISSING);
+
+   //Need to implement
+   //quick workaround assuming vectors are already sorted
+   Xi = pyAnal->doses;
+   Yp = pyAnal->incidence;
+   for (int i=0; i<Nobs; i++){
+     Yn[i] = pyAnal->litterSize[i] -  pyAnal->incidence[i];
+   }
+   Ls = pyAnal->litterSize;
+   //Sort_4_By_Dose(Nobs, Xi, Yn, Yp, Ls);
+
+    
+       
+ 
+
+   //get correct number of dose groups
+   //assumes vectors are already sorted
+   int ngrp = 0;  //number of litters in dose group
+   double tmp = BMDS_MISSING;
+   int groupnum = 0;  //group number
+   std::vector<int> grpSize;
+   for (int i=0; i<Nobs; i++){
+      if (Xi[i] == tmp){
+        //existing dose group
         ngrp++;
       } else {
         //new dose group
         if (i!=0){
           grpSize.push_back(ngrp);
         }
-        tmp = pyAnal->doses[i];
+        tmp = Xi[i];
         ngrp = 1;
+        groupnum++;
       }
+      Xg[i] = groupnum;
    }
    //push last group size;
    grpSize.push_back(ngrp);
    pyRes->nparms = 5 + grpSize.size();
+
+   std::cout<<"Xi   , Yp,   Yn,   Ls,   Xg"<<std::endl;
+   for (int i=0; i<Nobs; i++){
+      std::cout<<Xi[i]<<", "<<Yp[i]<<", "<<Yn[i]<<", "<<Ls[i]<<", "<<Xg[i]<<std::endl;
+   }
+
+//   int Nobs = 0;
+//   for (int i=0; i<grpSize.size(); i++){
+//      Nobs += grpSize[i];
+//   }
+
+   //create and initialize vectors needed
+   pyRes->parms.resize(pyRes->nparms);
+   for (int i=0; i<pyRes->nparms; i++){
+     pyRes->parms[i] = BMDS_MISSING;
+   }
+   std::vector<bool> Spec(pyRes->nparms, false);
+   std::vector<bool> iniP(pyRes->nparms, false);
+   std::vector<VarList> varsum(3);
+   std::vector<AnaList> anasum(3);
+   std::vector<double> rlevel(5);
+   std::vector<double> bmdl(5);
+   std::vector<std::vector<double>> vcv(pyRes->nparms, std::vector<double>(pyRes->nparms));
+   double sijfixed;
+   std::vector<bool> SpBak;  //old values for spec
+   std::vector<double> pBak;  //old values for parms[];
+
 
 //   std::cout<<"numGrps = "<<grpSize.size()<<std::endl;
 //   for(int i=0; i<grpSize.size(); i++){
@@ -1684,22 +1752,201 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   
   int knownParms = 0;
   //handle specified parms
-  if (pyAnal->background == 0){
+  if (!pyAnal->estBackground){
     //set background to zero
+    pyRes->parms[BGINDEX] = 0;
+    Spec[BGINDEX] = true;
+    iniP[BGINDEX] = true;  //Specified implies initialized
     knownParms++;
   }   
   if (pyAnal->ILC_type != 1){
     //set phi parm values to zero
+    for (int i=PHISTART; i<pyRes->nparms; i++){
+      pyRes->parms[i] = 0.0;
+      Spec[i] = true;
+      iniP[i] = true;
+    }
+    knownParms += grpSize.size();
   }
-  if (pyAnal->useLSC){
+  if (!pyAnal->useLSC){
     //set theta parm values to zero
+    for (int i=THETA1_INDEX; i<=THETA2_INDEX; i++){
+       pyRes->parms[i] = 0.0;
+       Spec[i] = true;
+       iniP[i] = true;
+    }
+    knownParms += 2;  //theta1 and theta2
   }
    
-  if(grpSize.size() < pyRes->nparms - knownParms){
-    std::cout<<"Error: Fewer observations "<<grpSize.size()<<" than estimated parameters "<<pyRes->nparms-knownParms<<std::endl;
+  if(Nobs < pyRes->nparms - knownParms){
+    std::cout<<"Error: Fewer observations "<<Nobs<<" than estimated parameters "<<pyRes->nparms-knownParms<<std::endl;
     return;
   }
 
+  //make sure all litter sizes > 0
+  for (int i=0; i<Nobs; i++){
+    if (pyAnal->litterSize[i] <= 0.0){
+      std::cout<<"Error: All litter sizes must be greater than zero."<<std::endl;
+      return;
+    }
+  }
+
+  //compute init_lkf for full model and init_lkr for reduced model
+  double lkf = 0.0;
+  varsum[0].S = 0;
+  varsum[1].S = 0;
+  double W;
+  for (int i=0; i<Nobs; i++){
+    varsum[0].S += Yp[i];
+    varsum[1].S += Yn[i];
+    W = Yp[i] / (Yp[i] + Yn[i]);
+    if (W > 0){
+      lkf += Yp[i] * log (W);
+    }
+    if (W < 1){
+      lkf += Yn[i] * log(1-W);
+    }
+  }
+  W = varsum[0].S / (varsum[0].S + varsum[1].S);
+  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
+
+//  Nlogist_fit(nparm, ngrp, Parms, EPS, &iter, &xlk);
+  //compute statistics for litter-specific covariate
+  //smean1, smean, smin, smax, sdif
+  double sum1 = 0.0;
+  double nij = 0.0;
+  int count = 1;
+  while (Xg[count] == 1){
+    sum1 += pyAnal->lsc[count];
+    nij += 1.0;
+    count++;
+  }
+  double smean1  = sum1/nij;  //average lsc in group 1
+  
+  sum1 = 0.0;
+  nij = 0.0;
+
+  double smax = Ls[0];
+  double smin = Ls[0];
+  double xmax = 0.0;
+  for (int i=0; i<Nobs; i++){
+     double x = Xi[i];
+     sum1 += Ls[i];
+     nij += 1.0;
+     if (Ls[i] > smax){
+        smax = Ls[i];
+     }
+     if (Ls[i] < smin){
+        smin = Ls[i];
+     }
+     if (x > xmax){
+        xmax = x;
+     }
+  }
+  double smean = sum1/nij;  //overall average lsc
+
+  double sdif = smax - smin;
+
+  if (pyAnal->useLSC){
+     sijfixed = smean1;
+  } else {
+     sijfixed = smean;
+  }
+  
+  //Set up parameters
+  //no user initial values.  Always use default
+  SpBak = Spec;
+  pBak = pyRes->parms;
+
+  //Get the starting values in stages
+  //First get starting values for alpha, beta, and rho
+  int obs = 1;
+  std::vector<double> tmYn(grpSize.size(), 0);
+  std::vector<double> tmYp(grpSize.size(), 0);
+  std::vector<double> tmXi(grpSize.size(), 0);
+  std::vector<int> Spec2(2);
+
+  for (int j=0; j<grpSize.size(); j++){
+     while (obs<Nobs && Xg[obs] == j){
+        tmYn[j] += Yn[obs];
+        tmYp[j] =+ Yp[obs];
+        tmXi[j] =+ Xi[obs];
+        obs++;
+     }     
+  }
+  
+  //compute initial estimates
+  //std::vector<std::vector<double>> tmvcv(2, std::vector<double>(2));
+  Eigen::Matrix2d tmvcv;
+  std::vector<double> tmy(2);
+  double ymin = 1.0;
+  for (int i=0; i<grpSize.size(); i++){
+     W = tmYp[i] / (tmYp[i] + tmYn[i]);
+     W = PROBABILITY_INRANGE(W);   
+     if (W < ymin){
+       ymin = W;
+     }
+  }
+
+  for (int i=0; i<grpSize.size(); i++){
+     double x = tmXi[i];
+     W = log ((tmYp[i] - ymin*(tmYp[i] + tmYn[i]) + 0.5)/(tmYn[i] + 0.5));
+     if (x <= 1e-7){
+        x = Log_zero;
+     } else {
+        x = log(x);
+     }
+//     tmvcv[0][0] += 1.0;
+//     tmvcv[0][1] += x; 
+//     tmvcv[1][1] += x*x;
+     tmvcv(0,0) += 1.0;
+     tmvcv(0,1) += x; 
+     tmvcv(1,1) += x*x;
+     tmy[0] += W;
+     tmy[1] += W*x;
+  }
+
+//  tmvcv[1][0] = tmvcv[0][1];
+  tmvcv(1,0) = tmvcv(0,1);
+  Spec2[0] = SpBak[1];
+  Spec2[1] = SpBak[4];
+  pyRes->parms[0] = ymin + 0.001;  //in case ymin=0
+  if (Spec2[0] + Spec2[1] == 0){
+     if (tmvcv.allFinite()){
+        Eigen::Matrix2d inv = tmvcv.inverse();
+        pyRes->parms[1] = inv(0,0) * (tmy[0]) + inv(0,1) * (tmy[1]);
+        pyRes->parms[4] = inv(1,0) * (tmy[0]) + inv(1,1) * (tmy[1]);
+     } else {
+        pyRes->parms[4] = 1.001;
+        pyRes->parms[1] = -1.0;
+     }
+  }
+
+  if (pyAnal->restricted && pyRes->parms[4] < 1.000){
+     pyRes->parms[4] = 1.0001;
+  }
+
+ 
+  for (int i=0; i<2; i++){
+     if (SpBak[i] = 1){
+        pyRes->parms[i] = pBak[i];
+     }
+     if (SpBak[4] == 1){
+        pyRes->parms[4] = pBak[4];
+     }
+  } 
+
+  for (int i=5; i<pyRes->parms.size(); i++){
+     Spec[i] = 1;
+     pyRes->parms[i] = 0.0;
+  }
+  Spec[2] = Spec[3] = 1;
+  pyRes->parms[2] = pyRes->parms[3] = 0.0;
+
+  //This is a simple, non-nested log-logistic model
+  //MAX_lk (pyRes->parms, gtol, junk, xlk)
+
+  
  
    //stubbed results
    pyRes->bmdsRes.validResult = true;
