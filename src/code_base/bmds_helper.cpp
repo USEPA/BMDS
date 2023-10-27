@@ -137,8 +137,8 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 
   calcDichoAIC(anal, res, BMDSres, estParmCount);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 1.0-anal->alpha);
 
   free(quant);
   free(val);
@@ -146,7 +146,7 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 }
 
 
-void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres){
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres, double alpha){
 
   int distSize = res->dist_numE*2;
 
@@ -159,11 +159,11 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
   for (int i = distSize/2; i < distSize; i++){
     quantMA[i-distSize/2] = res->bmd_dist[i];
   }
-
+ 
 //  calculate MA quantiles
   BMDSres->BMD_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
 
 // calculate individual model quantiles
   for (int j=0; j<anal->nmodels; j++){
@@ -174,8 +174,8 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
         quantMA[i-distSize/2] = res->models[j]->bmd_dist[i];
       }
       BMDSres->BMD[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
   }
   free(quantMA);
   free(valMA);
@@ -198,9 +198,8 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 1.0-anal->alpha);
 
   free(contVal);
   free(contQuant);
@@ -2530,8 +2529,12 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
  
   bmdsRes->validResult = false;
   bmdsRes->slopeFactor = BMDS_MISSING;
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
+
   estimate_sm_laplace_dicho(anal, res, true);
 
   struct dichotomous_PGOF_data gofData;
@@ -2704,10 +2707,15 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
+
+  bmdsRes->BMD_MA = BMDS_MISSING;
+  bmdsRes->BMDL_MA = BMDS_MISSING;
+  bmdsRes->BMDU_MA = BMDS_MISSING;
+
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
-  collect_dichoMA_bmd_values(MA, res, bmdsRes);
+  collect_dichoMA_bmd_values(MA, res, bmdsRes, DA->alpha);
   for(int i=0; i<MA->nmodels; i++){
     rescale_dichoParms(MA->models[i], res->models[i]->parms);
   }
@@ -2821,6 +2829,10 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->validResult = false;
   anal->transform_dose = false;
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
@@ -2947,8 +2959,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     gof->estSD.push_back(GOFres.sd[i]);
     gof->obsSD.push_back(GOFanal.sd[i]);
     gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-    gof->n = GOFanal.n;
+//    gof->n = GOFanal.n;
   }
+  gof->n = GOFanal.n;
   if (anal->disttype == distribution::log_normal){
     for (int i=0; i<GOFanal.n; i++){
       gof->calcMean.push_back(exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2));
@@ -3729,7 +3742,7 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->model = pyAnal->model;
   anal->n = pyAnal->n;
   anal->BMD_type = pyAnal->BMD_type;
-  anal->isIncreasing;
+  anal->isIncreasing = pyAnal->isIncreasing;
   anal->BMR = pyAnal->BMR;
   anal->tail_prob = pyAnal->tail_prob;
   anal->disttype = pyAnal->disttype;
@@ -3742,10 +3755,21 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->transform_dose = pyAnal->transform_dose;
   anal->suff_stat = pyAnal->suff_stat;
 
-  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+  bool validated = false;
+  if (pyAnal->suff_stat){
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size();
+  } else {
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size();
+  }
+
+  if (validated){
     for (int i=0; i<pyAnal->n; i++){
       anal->Y[i] = pyAnal->Y[i];
       anal->doses[i] = pyAnal->doses[i];
+    }
+  }
+  if (validated && pyAnal->suff_stat){
+    for (int i=0; i<pyAnal->n; i++){
       anal->n_group[i] = pyAnal->n_group[i];
       anal->sd[i] = pyAnal->sd[i];
     }

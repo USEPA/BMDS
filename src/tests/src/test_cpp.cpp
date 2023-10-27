@@ -3959,11 +3959,20 @@ void runPythonContAnalysis(){
 
   printf("\n\nData\n");
   printf("Dose, N, Mean, Std. Dev.\n");
-  for (int i=0; i<anal.n; i++){
-     printf("%.20f, %.20f, %.20f, %.20f\n",anal.doses[i],anal.n_group[i], anal.Y[i], anal.sd[i]);
-  }
 
+ if (anal.suff_stat){
+    for (int i=0; i<anal.n; i++){
+       printf("%.20f, %.20f, %.20f, %.20f\n",anal.doses[i],anal.n_group[i], anal.Y[i], anal.sd[i]);
+
+    }
+  } else {
+    for (int i=0; i<anal.n; i++){
+       //printf("%.20f, %.20f, %.20f, %.20f\n",anal.doses[i],anal.n_group[i], anal.Y[i], anal.sd[i]);
+       printf("%.20f, %.20f\n",anal.doses[i],anal.Y[i]);
+    }
+  } 
   printf("\n\n");
+
   printf("calling pythonBMDSCont\n");
   pythonBMDSCont(&anal, &res);
 
