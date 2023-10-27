@@ -59,6 +59,7 @@ struct BMDS_results{
   std::vector<double> lowerConf;
   std::vector<double> upperConf;
   bool validResult;
+  double slopeFactor;
 };
 
 struct BMDSMA_results{

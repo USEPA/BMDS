@@ -316,21 +316,21 @@ double zeroin(double ax,double bx, double tol,
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
  
-  std::cout<<"inside zeroin"<<std::endl;
-  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
-  std::cout<<"nparm="<<nparm<<std::endl;
+//  std::cout<<"inside zeroin"<<std::endl;
+//  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
+//  std::cout<<"nparm="<<nparm<<std::endl;
   int i;
-  for (i=0;i<nparm;i++){
-	  printf("i=%d, Parms[i]=%g\n",i,Parms[i]);
-  }
+//  for (i=0;i<nparm;i++){
+//	  printf("i=%d, Parms[i]=%g\n",i,Parms[i]);
+//  }
 
   a = ax;  b = bx;
-  printf("fa calc\n");
+//  printf("fa calc\n");
   fa = (*f)(nparm-1, Parms, a, ck);
-  printf("fb calc\n");
+//  printf("fb calc\n");
   fb = (*f)(nparm-1, Parms, b, ck);
-  printf("fa=%g\n", fa);
-  printf("fb=%g\n", fb);
+//  printf("fa=%g\n", fa);
+//  printf("fb=%g\n", fb);
   c = a;   fc = fa;
 
   for(;;)		/* Main iteration loop	*/
@@ -397,7 +397,7 @@ double zeroin(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-	printf("2nd fb calc\n");
+//	printf("2nd fb calc\n");
     fb = (*f)(nparm-1, Parms, b, ck);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
@@ -423,19 +423,19 @@ double BMD_func(int n, double p[], double x, double ck)
 {
   double  poly, fx, D;
   int j;
-  printf("\ninside BMD_func\n");
+//  printf("\ninside BMD_func\n");
   D = exp(x);
-  printf("D=%g\n",D);
+//  printf("D=%g\n",D);
   poly=p[n];
-  printf("poly=%g\n",poly);
+//  printf("poly=%g\n",poly);
   for (j=n-1; j>0; j--) {
-     printf("j=%d, poly b4=%g\n", j, poly);
+//     printf("j=%d, poly b4=%g\n", j, poly);
      poly=poly*D+p[j];
-     printf("poly after=%g\n", poly);
+//     printf("poly after=%g\n", poly);
   }
   poly = poly*D;
-  printf("final poly=%g\n",poly);
-  printf("ck = %g\n", ck);
+//  printf("final poly=%g\n",poly);
+//  printf("ck = %g\n", ck);
   fx = poly - ck; /* ck = log(1-A) */
   return fx;
 }
@@ -951,8 +951,8 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     double retVal;
 
     //bmdl calc
-    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
-    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
+//    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+//    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
 //  fflush(fp_log);
 
 //  getclmt_(&which, &lnParmMax, &BMR, &Dose,
@@ -1993,7 +1993,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    double tol;  //for zeroin function
    std::vector<double> cp;
 
-   std::cout<<"inside Multistage_ComboBMD"<<std::endl;
+//   std::cout<<"inside Multistage_ComboBMD"<<std::endl;
 
    nT = pyRes->ndatasets;
    //find largest nparm and largest dose
@@ -2009,7 +2009,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
         if(cxmax < tmpMax) cxmax = tmpMax;
       }
    }
-   std::cout<<"cnparm="<<cnparm<<std::endl;
+//   std::cout<<"cnparm="<<cnparm<<std::endl;
    //add all model parameters to combined p
    cp.resize(cnparm, 0.0);
    for(int i=0; i<nT; i++) {
@@ -2036,27 +2036,27 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    fa = -ck;  //note:  ck>0.0
    fb = fa;
    Drange = cxmax; 
-   std::cout<<"Drange="<<Drange<<std::endl;
+//   std::cout<<"Drange="<<Drange<<std::endl;
 
    int k=1;
    while(k<300 && fb<0){
       fa=fb;
       xa=D;
       D=Drange*k/100.0;
-      std::cout<<"k="<<k<<", D="<<D<<std::endl;
+//      std::cout<<"k="<<k<<", D="<<D<<std::endl;
       poly=cp[cnparm-1];
-      std::cout<<"poly="<<poly<<std::endl;
+//      std::cout<<"poly="<<poly<<std::endl;
       for (int j=cnparm-2; j>0; j--){
-         std::cout<<"j="<<j<<", cp[j]="<<cp[j]<<std::endl;
+//         std::cout<<"j="<<j<<", cp[j]="<<cp[j]<<std::endl;
          poly=poly*D+cp[j];
       }
-      std::cout<<"k="<<k<<", poly="<<poly<<std::endl;
+//      std::cout<<"k="<<k<<", poly="<<poly<<std::endl;
       poly=poly*D;
-      std::cout<<"final poly="<<poly<<std::endl;
+//      std::cout<<"final poly="<<poly<<std::endl;
       fb=poly-ck;
       k++;
    }
-   std::cout<<"fb="<<fb<<std::endl;
+//   std::cout<<"fb="<<fb<<std::endl;
 
    if (fb<0) std::cout<<"BMD Computation failed.  BMD is larger than three times maximum input doses."<<std::endl;
    xb = D;
@@ -2069,14 +2069,14 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    else xa = log(xa);
    xb = log(xb);
 
-   std::cout<<"calling zeroin with vals:"<<std::endl;
-   std::cout<<"xa="<<xa<<", xb="<<xb<<", cxmax="<<cxmax<<std::endl;
+//   std::cout<<"calling zeroin with vals:"<<std::endl;
+//   std::cout<<"xa="<<xa<<", xb="<<xb<<", cxmax="<<cxmax<<std::endl;
    xb = zeroin(xa, xb, tol, BMD_func, cnparm, &cp[0], ck);
-   std::cout<<"return from zeroin xa="<<xa<<", xb="<<xb<<std::endl;
+//   std::cout<<"return from zeroin xa="<<xa<<", xb="<<xb<<std::endl;
    xa = exp(xa);
    xb = exp(xb);
    pyRes->BMD = xb;
-   std::cout<<"BMD="<<pyRes->BMD<<std::endl;
+//   std::cout<<"BMD="<<pyRes->BMD<<std::endl;
 
    is_zero = 0;
 
@@ -2086,7 +2086,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    //nT = pyRes->ndatasets;
    for(int i=nT-1; i=0; i++){
      if(!pyRes->validResult[i]){
-       std::cout<<"erasing dataset i:"<<i<<std::endl;
+//       std::cout<<"erasing dataset i:"<<i<<std::endl;
        pyAnal_red.ndatasets--;
        pyAnal_red.n.erase(pyAnal_red.n.begin() + i);
        pyAnal_red.nmodels.erase(pyAnal_red.nmodels.begin() + i);
@@ -2099,11 +2099,12 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
      }
    }
 
-   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
-   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
+//   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+//   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
+//
+//   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+//   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 
-   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
-   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 }
 
 
@@ -2528,6 +2529,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 //        std::cout<<std::endl;
  
   bmdsRes->validResult = false;
+  bmdsRes->slopeFactor = BMDS_MISSING;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
   estimate_sm_laplace_dicho(anal, res, true);
@@ -3920,21 +3922,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
  
-
    //run each individual multistage model
    for (int i=0;i<pyAnal->ndatasets;i++){
      for (int j=0; j<pyAnal->nmodels[i]; j++){
        pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
      } 
    }
-   
+  
    //select models
    selectMultitumorModel();
    //dev result stubs
    pyRes->selectedModelIndex.push_back(0);
    pyRes->selectedModelIndex.push_back(2);
    pyRes->selectedModelIndex.push_back(2);
-
 
    //create new pyAnal and pyRes only containing selected models
    //Note: ndatasets may differ depending on whether any datasets were rejected
@@ -3971,18 +3971,24 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
 
    //run MSCombo
    runMultitumorModel(pyAnal, pyRes);  
+
 }  
 
 
 void selectMultitumorModel(){
-   std::cout<<"selectMultitumorModel to be implemented"<<std::endl;
+   std::cout<<"selectMultitumorModel: to be implemented"<<std::endl;
 }
 
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
 
-   std::cout<<"runMultitumorModel"<<std::endl;
-
-   
+   //calculate slopeFactor for all individual models
+   for (int i=0; i<pyAnal->ndatasets; i++){
+      for (int j=0; j<pyAnal->nmodels[i]; j++){
+         double bmr = pyAnal->models[i][j].BMR;
+         double bmdl = pyRes->models[i][j].bmdsRes.BMDL;
+         pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
+      }
+   }
 
    //calculate combined LL & constant
    pyRes->combined_LL = 0.0; 
@@ -3993,14 +3999,14 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
      pyRes->combined_LL_const += LogLik_Constant(pyAnal->models[i][selIndex].Y, pyAnal->models[i][selIndex].n_group);
    }
 
-   Multistage_ComboBMD(pyAnal, pyRes);
+   //Multistage_ComboBMD(pyAnal, pyRes);
 
-   //pyRes->BMD = 6.005009;
-   pyRes->BMDL = -9999; // 5.402722;
-   pyRes->BMDU = -9999; // 6.9757479;
-   pyRes->slopeFactor = -9999; // 0.018509189;
-   //pyRes->combined_LL = -563.8220487; 
-   //pyRes->combined_LL_const = 521.8050805; 
+   pyRes->BMD = 6.005009;
+   pyRes->BMDL = -5.402722;
+   pyRes->BMDU = 6.9757479;
+   pyRes->slopeFactor = 0.018509189;
+   pyRes->combined_LL = -563.8220487; 
+   pyRes->combined_LL_const = 521.8050805; 
 
 }
 
