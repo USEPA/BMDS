@@ -407,7 +407,7 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 
 void selectMultitumorModel();
 
-void runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
 double DLgamma(double x);
 double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
