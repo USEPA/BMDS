@@ -100,7 +100,8 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("stdErr", &BMDS_results::stdErr)
        .def_readwrite("lowerConf", &BMDS_results::lowerConf)
        .def_readwrite("upperConf", &BMDS_results::upperConf)
-       .def_readwrite("validResult", &BMDS_results::validResult);
+       .def_readwrite("validResult", &BMDS_results::validResult)
+       .def_readwrite("slopeFactor", &BMDS_results::slopeFactor);
     py::class_<BMDSMA_results>(m, "BMDSMA_results")
        .def(py::init<>())
        .def_readwrite("BMD_MA", &BMDSMA_results::BMD_MA)
@@ -292,7 +293,9 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("alpha", &python_multitumor_analysis::alpha)
        .def_readwrite("prior_cols", &python_multitumor_analysis::prior_cols)
        .def_readwrite("degree", &python_multitumor_analysis::degree)
-       .def_readwrite("prior", &python_multitumor_analysis::prior);
+       .def_readwrite("prG", &python_multitumor_analysis::prG)
+       .def_readwrite("prB", &python_multitumor_analysis::prB);
+//       .def_readwrite("prior", &python_multitumor_analysis::prior);
     py::class_<python_multitumor_result>(m, "python_multitumor_result")
        .def(py::init<>())
        .def_readwrite("ndatasets", &python_multitumor_result::ndatasets)
@@ -300,10 +303,10 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("nmodels", &python_multitumor_result::nmodels)
        .def_readwrite("models", &python_multitumor_result::models)
        .def_readwrite("selectedModelIndex", &python_multitumor_result::selectedModelIndex)
-       .def_readwrite("slopeFactor", &python_multitumor_result::slopeFactor)
        .def_readwrite("BMD", &python_multitumor_result::BMD)
        .def_readwrite("BMDL", &python_multitumor_result::BMDL)
        .def_readwrite("BMDU", &python_multitumor_result::BMDU)
+       .def_readwrite("slopeFactor", &python_multitumor_result::slopeFactor)
        .def_readwrite("combined_LL", &python_multitumor_result::combined_LL)
        .def_readwrite("combined_LL_const", &python_multitumor_result::combined_LL_const);
     py::class_<python_nested_analysis>(m, "python_nested_analysis")

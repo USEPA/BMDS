@@ -59,6 +59,7 @@ struct BMDS_results{
   std::vector<double> lowerConf;
   std::vector<double> upperConf;
   bool validResult;
+  double slopeFactor;
 };
 
 struct BMDSMA_results{
@@ -275,16 +276,13 @@ struct python_multitumor_analysis{
 
   std::vector<int> n;     // total number of observations per dataset (size ndatasets)
   std::vector<int> nmodels;  //# of models per dataset (size ndatasets)
-  //std::vector<std::vector<double>> Y;  //observed + (size ndatasets*n[i])
-  //std::vector<std::vector<double>> doses;  //size ndatasets*n[i]
-  //std::vector<std::vector<double>> n_group; //size of group (size ndatasets*n[i])
   int BMD_type; // 1 = extra ; added otherwise
   double BMR;
   double alpha; // alpha of the analysis
   int prior_cols; // colunns in the prior
   std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
-  //std::vector<int> parms;   // number of parameters in the model
-  std::vector<std::vector<double>> prior;  //a column order matrix (parms x prior_cols)
+  std::vector<double> prG;  //background prior
+  std::vector<double> prB;  //beta prior
 };
 
 struct python_multitumor_result{
@@ -313,7 +311,7 @@ struct python_nested_analysis{
   int LSC_type;  // 1 = Overall Mean; control group mean otherwise
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
-  double background; // 1 = estimated; zero otherwise
+  double background; // -9999 (BMDS_MISSING) = estimated; zero otherwise
   double BMR;
   double alpha;
   int iterations;
@@ -339,6 +337,24 @@ struct python_nested_result{
   struct nestedBootstrap boot;
   //Nested Reduced DataRow
   struct nestedReducedData reduced;
+  bool validResult;
+};
+
+
+struct msComboEq{
+  double bmr;
+  int nT;
+  std::vector<int> degree;
+};
+
+struct msComboInEq{
+  int nT;
+  double target;
+  std::vector<int> nObs;
+  std::vector<int> degree;
+  std::vector<std::vector<double>> doses;
+  std::vector<std::vector<double>> Y;
+  std::vector<std::vector<double>> n_group;
 };
 
 #ifdef _WIN32
@@ -391,7 +407,27 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 
 void selectMultitumorModel();
 
-void runMultitumorModel();
+void runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+double DLgamma(double x);
+double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
+double zeroin(double ax,double bx, double tol,
+              double (*f)(int, double [], double, double), int nparm,
+              double Parms[], double ck);
+double BMD_func(int n, double p[], double x, double ck);
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
+double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint2(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double slog(double X);
+double dslog(double P);
+double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
