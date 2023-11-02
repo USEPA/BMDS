@@ -281,8 +281,6 @@ struct python_multitumor_analysis{
   double alpha; // alpha of the analysis
   int prior_cols; // colunns in the prior
   std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
-  std::vector<double> prG;  //background prior
-  std::vector<double> prB;  //beta prior
 };
 
 struct python_multitumor_result{

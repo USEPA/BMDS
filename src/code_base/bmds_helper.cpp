@@ -542,12 +542,14 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 
    lb[0] = lminbmd;  //BMD lower limit
    for (int i=1; i<x.size(); i++){
-     lb[i] = pyAnal->prB[3];  //beta min value
+     //lb[i] = pyAnal->prB[3];  //beta min value
+     lb[i] = 0.0; //beta min value
    }
 
    ub[0] = log(maxDose);
    for (int i=1; i<x.size(); i++){
-     ub[i] = pyAnal->prB[4];  //beta max value
+     //ub[i] = pyAnal->prB[4];  //beta max value
+     ub[i] = 1e4; //beta max value
    }
 
    local_opt.set_lower_bounds(lb);
@@ -4010,7 +4012,9 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
       for (int j=0; j<pyAnal->nmodels[i]; j++){
          double bmr = pyAnal->models[i][j].BMR;
          double bmdl = pyRes->models[i][j].bmdsRes.BMDL;
-         pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
+         if (bmdl <= 0.0){
+            pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
+         }
       }
    }
 
