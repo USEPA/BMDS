@@ -281,8 +281,6 @@ struct python_multitumor_analysis{
   double alpha; // alpha of the analysis
   int prior_cols; // colunns in the prior
   std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
-  std::vector<double> prG;  //background prior
-  std::vector<double> prB;  //beta prior
 };
 
 struct python_multitumor_result{
@@ -407,7 +405,7 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 
 void selectMultitumorModel();
 
-void runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
 double DLgamma(double x);
 double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);

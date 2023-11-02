@@ -4252,9 +4252,6 @@ void runMultitumorModel(){
   anal.alpha = alpha;
   anal.prior_cols = prCols;
 
-  anal.prG.insert(anal.prG.begin(), prRFreqMultistageCancerG, prRFreqMultistageCancerG + anal.prior_cols);
-  anal.prB.insert(anal.prB.begin(), prRFreqMultistageCancerB, prRFreqMultistageCancerB + anal.prior_cols);
-
   struct python_multitumor_result res;
   res.ndatasets = numDatasets;
 
@@ -4293,7 +4290,6 @@ void runMultitumorModel(){
     modAnal.doses = doses[dataset];
     modAnal.n = numDataRows;
 
-     std::cout<<"b4 if"<<std::endl;
     //needs to be changed based on model degree
     if (degree[dataset] == 0){
       //handle autoselect degree
@@ -4316,7 +4312,6 @@ void runMultitumorModel(){
       count = 1;
     }
 
-    std::cout<<"after if"<<std::endl;
     anal.nmodels.push_back(count);
     anal.models.push_back(modGroup);
     res.nmodels.push_back(count);
@@ -4328,10 +4323,11 @@ void runMultitumorModel(){
   res.selectedModelIndex.push_back(0);
   res.selectedModelIndex.push_back(0);
   std::cout<<"Selected model Indexes:  ";
-  for (auto elem : res.selectedModelIndex) {
-        std::cout << elem << ", ";
-  }
-  std::cout<<std::endl;
+  //for (auto elem : res.selectedModelIndex) {
+  //      std::cout << elem << ", ";
+  //}
+  //std::cout<<std::endl;
+
   res.validResult.push_back(true);
   res.validResult.push_back(true);
   res.validResult.push_back(true);
