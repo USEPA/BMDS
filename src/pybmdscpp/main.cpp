@@ -292,10 +292,7 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("BMR", &python_multitumor_analysis::BMR)
        .def_readwrite("alpha", &python_multitumor_analysis::alpha)
        .def_readwrite("prior_cols", &python_multitumor_analysis::prior_cols)
-       .def_readwrite("degree", &python_multitumor_analysis::degree)
-       .def_readwrite("prG", &python_multitumor_analysis::prG)
-       .def_readwrite("prB", &python_multitumor_analysis::prB);
-//       .def_readwrite("prior", &python_multitumor_analysis::prior);
+       .def_readwrite("degree", &python_multitumor_analysis::degree);
     py::class_<python_multitumor_result>(m, "python_multitumor_result")
        .def(py::init<>())
        .def_readwrite("ndatasets", &python_multitumor_result::ndatasets)

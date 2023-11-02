@@ -4012,7 +4012,7 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
       for (int j=0; j<pyAnal->nmodels[i]; j++){
          double bmr = pyAnal->models[i][j].BMR;
          double bmdl = pyRes->models[i][j].bmdsRes.BMDL;
-         if (bmdl <= 0.0){
+         if (bmdl > 0.0){
             pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
          }
       }
