@@ -4318,6 +4318,7 @@ void runMultitumorModel(){
     res.models.push_back(modResGroup);
   }
 
+  std::cout<<"adding selected model"<<std::endl;
   res.selectedModelIndex.push_back(0);
   res.selectedModelIndex.push_back(0);
   res.selectedModelIndex.push_back(0);
@@ -4326,6 +4327,7 @@ void runMultitumorModel(){
   //      std::cout << elem << ", ";
   //}
   //std::cout<<std::endl;
+
   res.validResult.push_back(true);
   res.validResult.push_back(true);
   res.validResult.push_back(true);
