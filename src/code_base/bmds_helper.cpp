@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <math.h>
 //#include <cmath>
-#include <nlopt.h>
+#include <nlopt.hpp>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
@@ -314,13 +314,15 @@ double zeroin(double ax,double bx, double tol,
   double fa;				/* f(a)				*/
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
- 
+
+  std::cout<< std::fixed << std::showpoint;
+  std::cout << std::setprecision(15); 
 //  std::cout<<"inside zeroin"<<std::endl;
 //  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
 //  std::cout<<"nparm="<<nparm<<std::endl;
-  int i;
+//  int i;
 //  for (i=0;i<nparm;i++){
-//	  printf("i=%d, Parms[i]=%g\n",i,Parms[i]);
+//	  std::cout<<"i="<<i<<", Parms[i]="<<Parms[i]<<std::endl;
 //  }
 
   a = ax;  b = bx;
@@ -342,7 +344,9 @@ double zeroin(double ax,double bx, double tol,
   					/* sion operations is delayed   */
  					/* until the last moment	*/
     double new_step;      		/* Step at this iteration       */
-   
+//    std::cout<<"start of loop"<<std::endl;
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     if( fabs(fc) < fabs(fb) )
     {                         		/* Swap data for b to be the 	*/
 	a = b;  b = c;  c = a;          /* best approximation		*/
@@ -351,13 +355,18 @@ double zeroin(double ax,double bx, double tol,
     tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
     new_step = (c-b)/2;
 
-    if( fabs(new_step) <= tol_act || fb == (double)0 )
+//    std::cout<<"tol_act="<<tol_act<<std::endl;
+    if( fabs(new_step) <= tol_act || fb == (double)0 ){
+//      std::cout<<"returning b:"<<b<<std::endl;
       return b;				/* Acceptable approx. is found	*/
+    }
 
+//    std::cout<<"continuing for another loop"<<std::endl;
     			/* Decide if the interpolation can be tried	*/
     if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
 	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
     {					/* Interpolatiom may be tried	*/
+//	std::cout<<"trying interpolation"<<std::endl;
 	double t1,cb,t2;
 	cb = c-b;
 	if( a==c )			/* If we have only two distinct	*/
@@ -388,6 +397,7 @@ double zeroin(double ax,double bx, double tol,
 
     if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
       {
+//	std::cout<<"adjusting step"<<std::endl;
 	if( new_step > (double)0 )	/* than tolerance		*/
 	  new_step = tol_act;
 	else
@@ -402,6 +412,8 @@ double zeroin(double ax,double bx, double tol,
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
   }
 
 }
@@ -440,191 +452,108 @@ double BMD_func(int n, double p[], double x, double ck)
 }
 
 
+double simple_test(){
 
-
-double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
-   std::cout<<"Inside getclmt"<<std::endl;
-
-   double val;
+   std::vector<double> x{-3.50573, 0.011159, 3.3953, 0, 0.0351827, 0, 1.96206, 0, 0, 1.82791};
+   double target = -565.17482044575650;
+   double bmr = 0.1;
+   
+   std::vector<double> lb{-713.695,0,0,0,0,0,0,0,0,0};
+   std::vector<double> ub{5.29832,10000,10000,10000,10000,10000,10000,10000,10000,10000};
  
-   int nT = pyRes->selectedModelIndex.size(); 
-   std::cout<<"nT = "<<nT<<std::endl;
-   double bmr = pyAnal->BMR;
-   double riskType = pyAnal->BMD_type; 
-   int N = 0;  //total length of parameter X vector.  X(0) = log(BMDL)
-   std::vector<int> degree;
-   for (int j=0; j<nT; j++){
-     int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
-     degree.push_back(modDeg);
-//     N += modDeg;
-   } 
-//   N += N + nT;
-   N = xParms.size() + 1;
-   double bmd = Dose;
-   std::cout<<"N = "<<N<<std::endl;
-//   std::cout<<"N = "<<xParms.size();
-   std::cout<<"bmd = "<<bmd<<std::endl;
-   std::cout<<"target = "<<target<<std::endl; 
-//   for (int i=0; i<xParms.size(); i++){  
-//     std::cout<<"i:"<<i<<", xParms[i]:"<<xParms[i]<<std::endl;
-//   }
-   std::vector<double> x(N);
-   int iOffset = 0;
-   //x[0] = log(bmd);
-   x[0] = log(5.401711/200);
+   std::vector<std::vector<double>> dose { {0, 50, 100, 150, 200}, {0, 50, 100, 150, 200}, {0, 50, 100, 150, 200}};
+   std::vector<std::vector<double>> Y { {0, 5, 30, 65, 90}, {5, 10, 33 ,67, 93}, {1, 68, 78, 88, 98}};
+   std::vector<std::vector<double>> n_group { {100, 100, 100, 100, 100}, {100, 100, 100, 100, 100}, {100, 100, 100, 100, 100}};
 
-   //tmp only 
-   //X[0] = 1.686903;
-   for (int j=0; j<nT; j++){
-     for(int i=0; i<=degree[j]; i++){
-       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
-       iOffset++;
-     }
-   }
+
+   std::vector<int> nobs {5,5,5};
+   std::vector<int> degree {2,2,2};
+
    for (int i=0; i<x.size(); i++){
      std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
    }
-   
-//   nlopt::opt opt(nlopt::LN_COBYLA, x.size());
-//   std::vector<double> lb(x.size());
-//   std::vector<double> ub(x.size());
-////   std::cout<<"prior G with size: "<<pyAnal->prG.size()<<std::endl;
-////   for (int i=0; i<pyAnal->prG.size(); i++){
-////      std::cout<<pyAnal->prG[i]<<",";
-////   }
-////   std::cout<<std::endl;
-////   std::cout<<"prior B with size: "<<pyAnal->prB.size()<<std::endl;
-////   for (int i=0; i<pyAnal->prB.size(); i++){
-////      std::cout<<pyAnal->prB[i]<<",";
-////   }
-////   std::cout<<std::endl;
-//
-//   double lminbmd = log(DBL_MIN) - log(maxDose);
-//   lb[0] = lminbmd;  //BMD lower limit
-//   for (int i=1; i<x.size(); i++){
-//     lb[i] = pyAnal->prB[3];  //beta min value 
-//   }
-//
-//   ub[0] = log(maxDose); 
-//   for (int i=1; i<x.size(); i++){
-//     ub[i] = pyAnal->prB[4];  //beta max value
-//   }
-//
-//   for(int i=0; i<x.size(); i++){
-//     std::cout<<"i:"<<i<<", lb="<<lb[i]<<std::endl;
-//   }
-//   for(int i=0; i<x.size(); i++){
-//     std::cout<<"i:"<<i<<", ub="<<ub[i]<<std::endl;
-//   }
-//
-//   opt.set_lower_bounds(lb);
-//   opt.set_upper_bounds(ub);
-//   opt.set_min_objective(objfunc, NULL);
 
-   nlopt::opt opt(nlopt::LN_AUGLAG, x.size());
-   //nlopt::opt local_opt(nlopt::LN_SBPLX, x.size());
-   nlopt::opt local_opt(nlopt::LD_SLSQP, x.size());
-
-   //local_opt.set_xtol_abs(1e-3);
-   local_opt.set_xtol_abs(1e-6);
-   //local_opt.set_initial_step(1e-4);
-   //local_opt.set_maxeval(10000);
-   local_opt.set_maxeval(1e7);
-
-
-
-   std::vector<double> lb(x.size());
-   std::vector<double> ub(x.size());
-
-   //calculate the values that will correspond to '0' and 'infinity' in BMD calcs
-   double lminbmd = log(DBL_MIN) - log(maxDose);
-   double lmaxbmd = log(DBL_MAX) - log(maxDose);
-
-   lb[0] = lminbmd;  //BMD lower limit
-   for (int i=1; i<x.size(); i++){
-     //lb[i] = pyAnal->prB[3];  //beta min value
-     lb[i] = 0.0; //beta min value
+   int nT = 3;
+   for (int i=0; i<nT; i++){
+      std::cout<<"tumor:"<<i<<std::endl;
+      std::cout<<"dose size:"<<dose[i].size()<<std::endl;
+      for (int j=0; j<dose[i].size(); j++){
+	 std::cout<<"dose:"<<dose[i][j]<< ", ";
+      }
+      std::cout<<std::endl;
    }
+   double maxDose = 200;
 
-   ub[0] = log(maxDose);
-   for (int i=1; i<x.size(); i++){
-     //ub[i] = pyAnal->prB[4];  //beta max value
-     ub[i] = 1e4; //beta max value
-   }
 
-   local_opt.set_lower_bounds(lb);
-   local_opt.set_upper_bounds(ub);
-   //std::vector<double> init(x.size());
-   //for(int i=0; i<x.size(); i++) init[i] = 1e-4;
-   //opt.set_initial_step(init);
-   //local_opt.set_initial_step(init);
-   
-//   //constraint data
-//   //
    struct msComboEq eq1;
    eq1.bmr = bmr;
    eq1.nT = nT;
    eq1.degree = degree;
+
 
    std::cout<<"maxDose = "<<maxDose<<std::endl;
    std::cout<<"bmr = "<<bmr<<std::endl;
    std::cout<<"nT = "<<nT<<std::endl;
    std::cout<<"degree ="<<eq1.degree[0]<<std::endl;
 
-   struct msComboEq eq2 = eq1;
-
    struct msComboInEq ineq1;
    ineq1.nT = nT;
    ineq1.target = target;
    //TODO need to add handling of failed datasets
-   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
-     int selIndex = pyRes->selectedModelIndex[i];
-     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
-     for (int j=0; j<scaledDose.size(); j++){
-       scaledDose[j] /= maxDose;
-     }
-     ineq1.doses.push_back(scaledDose);
-     //ineq1.doses.push_back(pyAnal->models[i][selIndex].doses);
-     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
-     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+   std::vector<std::vector<double>> scaledDose = dose;
+   for (int i=0; i<nT; i++){
+      for (int j=0; j<scaledDose[i].size (); j++){
+	  scaledDose[i][j] /= maxDose;
+      }
    }
-   ineq1.nObs = pyAnal->n;
+   for (int i=0; i<nT; i++){
+      ineq1.doses.push_back(scaledDose[i]);
+      ineq1.Y.push_back(Y[i]);
+      ineq1.n_group.push_back(n_group[i]);
+   }
+//   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
+//     int selIndex = pyRes->selectedModelIndex[i];
+//     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
+//     for (int j=0; j<scaledDose.size(); j++){
+//       scaledDose[j] /= maxDose;
+//     }
+//     ineq1.doses.push_back(scaledDose);
+//     //ineq1.doses.push_back(pyAnal->models[i][selIndex].doses);
+//     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
+//     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+//   }
+   ineq1.nObs = nobs; 
    ineq1.degree = degree;
 
-   std::vector<double> nullvec;
-//   int tmpEq = myEqualityConstraint(x, nullvec, &eq1);
-//   int tmpIneq = myInequalityConstraint1(x, nullvec, &ineq1);
 
+
+
+   std::vector<double> grad(x.size());
+//   int tmpEq = myEqualityConstraint(x, grad, &eq1);
 //   std::cout<<"tmpEq = "<<tmpEq<<std::endl;
+//   int tmpIneq = myInequalityConstraint1(x, grad, &ineq1);
 //   std::cout<<"tmpIneq = "<<tmpIneq<<std::endl;
- 
+
+
+   
+   nlopt::opt opt(nlopt::LD_SLSQP, x.size());   
+   opt.set_min_objective(objfunc_bmdl, NULL);
 //   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
 //   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
-//   opt.add_inequality_constraint(myInequalityConstraint2, &eq1, 1e-8);
-//   opt.add_inequality_constraint(myInequalityConstraint3, &eq2, 1e-8);
-//   opt.set_xtol_rel(1e-8);   
-
-   //opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-4);
-   //opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-4);
-//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-6);
-   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
-//   opt.set_min_objective(objfunc, NULL);  
-   opt.set_min_objective(objfunc2, &eq1);  
-//   opt.set_local_optimizer((const nlopt::opt) local_opt);
+   opt.add_equality_constraint(myEqualityConstraint, &eq1);
+   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1);
+   opt.set_xtol_rel(1e-8);   
+   opt.set_maxeval(10000);
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
-   //opt.set_xtol_abs(1e-4);
-   opt.set_xtol_abs(1e-8);
-   opt.set_maxeval(200000);
-
-   double minf;
 
 
-   //check constraints with initial values
-      
-
+   nlopt::result result = nlopt::FAILURE;
+   double minf, val;
+ 
    try{
-     nlopt::result result = opt.optimize(x, minf);
+     
+     result = opt.optimize(x, minf);
      std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
      for (int i=0; i<x.size(); i++){
         std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
@@ -635,8 +564,426 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 
    val = x[0];
    std::cout<<"val = "<< val<<std::endl; 
+
+   std::cout<<"finished simple_test"<<std::endl;
+
+
    return val;
+
 }
+
+
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
+   std::cout<<"Inside getclmt"<<std::endl;
+
+ 
+   int nT = pyRes->selectedModelIndex.size(); 
+   double bmr = pyAnal->BMR;
+////   double riskType = pyAnal->BMD_type; 
+////   int N = 0;  //total length of parameter X vector.  X(0) = log(BMDL)
+   std::vector<int> degree;
+   for (int j=0; j<nT; j++){
+     int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
+     degree.push_back(modDeg);
+   } 
+   int N = xParms.size() + 1;
+   double bmd = Dose;
+   std::vector<double> x(N);
+   int iOffset = 0;
+   x[0] = log(bmd);
+//   //x[0] = log(5.401711/200);
+//
+//   //tmp only 
+//   //X[0] = 1.686903;
+   for (int j=0; j<nT; j++){
+     for(int i=0; i<=degree[j]; i++){
+       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
+       iOffset++;
+     }
+   }
+
+
+   //need to round to roughly single-precision for convergence?????
+   for (int j=1; j<x.size(); j++){
+//      std::cout<<"before round j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+      x[j] = round_to(x[j], 0.00001);
+//      std::cout<<"before truncation j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+//      if (fabs(x[j]) < 1e-6){
+//         x[j] = 0.0;
+//         std::cout<<"truncating parm j:"<<j<<std::endl;
+//      }
+//      std::cout<<"after conditioning j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+   }
+
+//   std::cout<<"parms to optimizer"<<std::endl;
+//   for (int i=0; i<x.size(); i++){
+//     std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+//   }
+//   std::cout<<"target:"<<target<<std::endl;
+//
+   std::vector<double> lb(x.size());
+   std::vector<double> ub(x.size());
+
+   //calculate the values that will correspond to '0' and 'infinity' in BMD calcs
+   double lminbmd = log(DBL_MIN) - log(maxDose);
+   double lmaxbmd = log(DBL_MAX) - log(maxDose);
+
+   lb[0] = lminbmd;  //BMD lower limit
+   std::cout<<"i:0, lb="<<lb[0]<<std::endl;
+   for (int i=1; i<x.size(); i++){
+     //lb[i] = pyAnal->prB[3];  //beta min value
+     lb[i] = 0.0; //beta min value
+     std::cout<<"i:"<<i<<", lb="<<lb[i]<<std::endl;
+   }
+
+   ub[0] = log(maxDose);
+   std::cout<<"i:0, ub="<<ub[0]<<std::endl;
+   for (int i=1; i<x.size(); i++){
+     //ub[i] = pyAnal->prB[4];  //beta max value
+     ub[i] = 1e4; //beta max value
+     std::cout<<"i:"<<i<<", ub="<<ub[i]<<std::endl;
+   }
+
+   
+//   //constraint data
+   struct msComboEq eq1;
+   eq1.bmr = bmr;
+   eq1.nT = nT;
+   eq1.degree = degree;
+
+   struct msComboInEq ineq1;
+   ineq1.nT = nT;
+   ineq1.target = target;
+   //TODO need to add handling of failed datasets
+
+   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
+     int selIndex = pyRes->selectedModelIndex[i];
+     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
+     for (int j=0; j<scaledDose.size(); j++){
+       scaledDose[j] /= maxDose;
+//       std::cout<<"scaledDose[j]:"<<scaledDose[j]<<std::endl;
+     }
+     ineq1.doses.push_back(scaledDose);
+     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
+     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+   }
+   ineq1.nObs = pyAnal->n;
+   ineq1.degree = degree;
+
+
+
+   std::cout<<"Parms sent to optimizer"<<std::endl;
+   std::cout<<"x.size()="<<x.size()<<std::endl;
+   for (size_t i=0; i<x.size(); i++){
+      std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+   }
+
+
+//   std::vector<std::vector<double>> dose { {0, 50, 100, 150, 200}, {0, 50, 100, 150, 200}, {0, 50, 100, 150, 200}};
+//   std::vector<std::vector<double>> Y { {0, 5, 30, 65, 90}, {5, 10, 33 ,67, 93}, {1, 68, 78, 88, 98}};
+//   std::vector<std::vector<double>> n_group { {100, 100, 100, 100, 100}, {100, 100, 100, 100, 100}, {100, 100, 100, 100, 100}};
+//
+//   maxDose = 200;
+//   std::vector<int> nObs {5,5,5};
+//   std::vector<int> degree {2,2,2};
+
+//   struct msComboEq eq1;
+//   eq1.bmr = bmr;
+//   eq1.nT = nT;
+//   eq1.degree = degree;
+
+//   struct msComboInEq ineq1;
+//   ineq1.nT = nT;
+//   ineq1.target = target;
+//   std::vector<std::vector<double>> scaledDose = dose;
+//
+//   ineq1.doses = dose;
+//   ineq1.Y = Y;
+//   ineq1.n_group = n_group;
+//   for (int i=0; i<nT; i++){
+//      for (size_t j=0; j<dose[i].size (); j++){
+//         ineq1.doses[i][j] /= maxDose;
+//      }
+//   }
+//   ineq1.nObs = nObs;
+//   ineq1.degree = degree;
+
+
+
+   nlopt::opt opt(nlopt::LD_SLSQP, x.size());
+   if (isBMDL){
+      opt.set_min_objective(objfunc_bmdl, NULL);
+   } else {
+      opt.set_min_objective(objfunc_bmdu, NULL);
+   }
+   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+   opt.set_xtol_rel(1e-8);
+   opt.set_maxeval(1000000);
+   opt.set_lower_bounds(lb);
+   opt.set_upper_bounds(ub);
+
+   double minf, val;
+   nlopt::result result = nlopt::FAILURE;
+   try{
+     result = opt.optimize(x, minf);
+     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+     for (size_t i=0; i<x.size(); i++){
+        std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+     }
+   } catch (std::exception &e){
+     std::cout << "nlopt failed: " << e.what() << std::endl;
+   }
+
+   val = x[0];
+   std::cout<<"val = "<< val<<std::endl;
+
+
+   return val;
+
+
+
+
+//   std::cout<<"after ineq1 struct"<<std::endl;
+//   std::vector<double> grad(x.size());
+//   int tmpEq = myEqualityConstraint(x, grad, &eq1);
+//   std::cout<<"tmpEq = "<<tmpEq<<std::endl;
+//   int tmpIneq = myInequalityConstraint1(x, nullvec, &ineq1);
+//   int tmpIneq = myInequalityConstraint1(x, grad, &ineq1);
+//   std::cout<<"tmpIneq = "<<tmpIneq<<std::endl;
+ 
+//   nlopt::opt opt(nlopt::LD_SLSQP, x.size());   
+////   if (isBMDL){ 
+//     opt.set_min_objective(objfunc_bmdl, NULL);
+////   } else {
+////     opt.set_min_objective(objfunc_bmdu, NULL);
+////   }
+//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+//   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+////   opt.add_equality_constraint(myEqualityConstraint, &eq1);
+////   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1);
+//   opt.set_xtol_rel(1e-8);   
+//   opt.set_maxeval(10000);
+//   opt.set_lower_bounds(lb);
+//   opt.set_upper_bounds(ub);
+
+
+//   nlopt::opt opt(nlopt::LD_SLSQP, x.size());
+//   opt.set_min_objective(objfunc_bmdl, NULL);
+//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+//   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+//   opt.set_xtol_rel(1e-8);
+//   opt.set_maxeval(100000);
+//   opt.set_lower_bounds(lb);
+//   opt.set_upper_bounds(ub);
+//
+//
+//   double minf;
+//
+//   try{
+//     nlopt::result result = opt.optimize(x, minf);
+//     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+//     for (int i=0; i<x.size(); i++){
+//        std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+//     }
+//   } catch (std::exception &e){
+//     std::cout << "nlopt failed: " << e.what() << std::endl;
+//   }
+//
+//   val = x[0];
+//   std::cout<<"val = "<< val<<std::endl; 
+//   return val;
+}
+
+//double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
+//   std::cout<<"Inside getclmt"<<std::endl;
+//
+//
+//   //temp overrides for debugging
+////   std::cout<<"OVERRIDING INPUTS to getclmt"<<std::endl;
+////   //std::vector<double> x{-3.50573, 0.011159, 3.3953, 0, 0.0351827, 0, 1.96206, 0, 0, 1.82791};
+////   std::vector<double> x{-3.505725, 0.011159, 3.3953, 0, 0.0351827, 0, 1.96206, 0, 0, 1.82791};
+////   target = -565.17482044575650;
+//
+//   double val;
+// 
+//   int nT = pyRes->selectedModelIndex.size(); 
+//   double bmr = pyAnal->BMR;
+////   double riskType = pyAnal->BMD_type; 
+////   int N = 0;  //total length of parameter X vector.  X(0) = log(BMDL)
+//   std::vector<int> degree;
+//   for (int j=0; j<nT; j++){
+//     int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
+//     degree.push_back(modDeg);
+////     N += modDeg;
+//   } 
+////   N += N + nT;
+//   int N = xParms.size() + 1;
+//   double bmd = Dose;
+//   std::vector<double> x(N);
+////   std::cout<<"N = "<<N<<std::endl;
+//////   std::cout<<"N = "<<xParms.size();
+////   std::cout<<"bmd = "<<bmd<<std::endl;
+////   std::cout<<"target = "<<target<<std::endl; 
+//////   for (int i=0; i<xParms.size(); i++){  
+//////     std::cout<<"i:"<<i<<", xParms[i]:"<<xParms[i]<<std::endl;
+//////   }
+//   int iOffset = 0;
+//   x[0] = log(bmd);
+//   //x[0] = log(5.401711/200);
+//
+//   //tmp only 
+//   //X[0] = 1.686903;
+//   for (int j=0; j<nT; j++){
+//     for(int i=0; i<=degree[j]; i++){
+//       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
+//       iOffset++;
+//     }
+//   }
+//
+//
+//
+////   std::cout<< std::fixed << std::showpoint;
+////   std::cout << std::setprecision(15);
+////   std::cout<<"input parms"<<std::endl;
+//
+////   for (int j=1; j<x.size(); j++){
+//////      std::cout<<"before round j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+////      x[j] = round_to(x[j], 0.00001);
+//////      std::cout<<"before truncation j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+//////      if (fabs(x[j]) < 1e-6){
+//////         x[j] = 0.0;
+//////         std::cout<<"truncating parm j:"<<j<<std::endl;
+//////      }
+//////      std::cout<<"after conditioning j:"<<j<<", x[j]:"<<x[j]<<std::endl;
+////   }
+//
+////   x[0] = -3.505723392;  //kind of works
+////   x[0]=-3.50572;  //fails
+////   x[0]=-3.5057252; //fails   
+////   x[0]=-3.5057253; //works   
+////   x[0]=-3.505725; //works
+////   x[0]=-3.50573; //works
+////   x[1]=0.011159;
+////   x[2]=3.3953;
+//////   x[3]=0;
+////   x[4]=0.0351827;
+//////   x[5]=0;
+////   x[6]=1.96206;
+//////   x[7]=0;
+//////   x[8]=0;
+////   x[9]=1.82791;
+//
+//   std::cout<<"parms to optimizer"<<std::endl;
+//   for (int i=0; i<x.size(); i++){
+//     std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+//   }
+//   std::cout<<"target:"<<target<<std::endl;
+//
+//   std::vector<double> lb(x.size());
+//   std::vector<double> ub(x.size());
+//
+//   //calculate the values that will correspond to '0' and 'infinity' in BMD calcs
+//   double lminbmd = log(DBL_MIN) - log(maxDose);
+//   double lmaxbmd = log(DBL_MAX) - log(maxDose);
+//
+//   lb[0] = lminbmd;  //BMD lower limit
+//   std::cout<<"i:0, lb="<<lb[0]<<std::endl;
+//   for (int i=1; i<x.size(); i++){
+//     //lb[i] = pyAnal->prB[3];  //beta min value
+//     lb[i] = 0.0; //beta min value
+//     std::cout<<"i:"<<i<<", lb="<<lb[i]<<std::endl;
+//   }
+//
+//   ub[0] = log(maxDose);
+//   std::cout<<"i:0, ub="<<ub[0]<<std::endl;
+//   for (int i=1; i<x.size(); i++){
+//     //ub[i] = pyAnal->prB[4];  //beta max value
+//     ub[i] = 1e4; //beta max value
+//     std::cout<<"i:"<<i<<", ub="<<ub[i]<<std::endl;
+//   }
+//
+//   
+////   //constraint data
+////   //
+//   struct msComboEq eq1;
+//   eq1.bmr = bmr;
+//   eq1.nT = nT;
+//   eq1.degree = degree;
+//
+////   std::cout<<"maxDose = "<<maxDose<<std::endl;
+////   std::cout<<"bmr = "<<bmr<<std::endl;
+////   std::cout<<"nT = "<<nT<<std::endl;
+////   std::cout<<"degree ="<<eq1.degree[0]<<std::endl;
+//
+//
+//   struct msComboInEq ineq1;
+//   ineq1.nT = nT;
+//   ineq1.target = target;
+//   //TODO need to add handling of failed datasets
+//
+//   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
+//     int selIndex = pyRes->selectedModelIndex[i];
+//     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
+//     for (int j=0; j<scaledDose.size(); j++){
+//       scaledDose[j] /= maxDose;
+////       std::cout<<"scaledDose[j]:"<<scaledDose[j]<<std::endl;
+//     }
+//     ineq1.doses.push_back(scaledDose);
+//     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
+//     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+//   }
+//   ineq1.nObs = pyAnal->n;
+//   ineq1.degree = degree;
+//
+////   for (int i=0; i<pyRes->selectedModelIndex.size(); i++){
+////     for (int j=0; j<ineq1.doses[i].size(); j++){
+////        std::cout<<"ineq1 dose:"<<ineq1.doses[i][j]<<", Y:"<<ineq1.Y[i][j]<<", n_group:"<<ineq1.n_group[i][j]<<std::endl;
+////     }
+////   }
+//
+//   std::cout<<"after ineq1 struct"<<std::endl;
+//   std::vector<double> nullvec;
+//   std::vector<double> grad(x.size());
+//   //int tmpEq = myEqualityConstraint(x, nullvec, &eq1);
+//   int tmpEq = myEqualityConstraint(x, grad, &eq1);
+//   std::cout<<"tmpEq = "<<tmpEq<<std::endl;
+////   int tmpIneq = myInequalityConstraint1(x, nullvec, &ineq1);
+//   int tmpIneq = myInequalityConstraint1(x, grad, &ineq1);
+//   std::cout<<"tmpIneq = "<<tmpIneq<<std::endl;
+// 
+//   nlopt::opt opt(nlopt::LD_SLSQP, x.size());   
+////   if (isBMDL){ 
+//     opt.set_min_objective(objfunc_bmdl, NULL);
+////   } else {
+////     opt.set_min_objective(objfunc_bmdu, NULL);
+////   }
+//   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+//   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+////   opt.add_equality_constraint(myEqualityConstraint, &eq1);
+////   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1);
+//   opt.set_xtol_rel(1e-8);   
+//   opt.set_maxeval(10000);
+//   opt.set_lower_bounds(lb);
+//   opt.set_upper_bounds(ub);
+//
+//
+//   double minf;
+//
+//   try{
+//     nlopt::result result = opt.optimize(x, minf);
+//     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+//     for (int i=0; i<x.size(); i++){
+//        std::cout<<"i:"<<i<<", x[i]:"<<x[i]<<std::endl;
+//     }
+//   } catch (std::exception &e){
+//     std::cout << "nlopt failed: " << e.what() << std::endl;
+//   }
+//
+//   val = x[0];
+//   std::cout<<"val = "<< val<<std::endl; 
+//   return val;
+//}
 
 /*****************************************************************
  *  Added by CVL 7/2007 - start block
@@ -661,7 +1008,9 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   double fD, bmdl,  target, xmax, xlk2, xlk3, crisk;
   int i, j, nCall, k, nParmMax, ii = 0;
   double scale;
-	
+
+  std::cout<<"inside BMDL_combofunc"<<std::endl;
+
   /* GLN-01/15/2009 */
 //  double	*pdParms, *pdParms2, *pdVals /*, *adxmax*/;
   std::vector<double> adxmax;
@@ -693,7 +1042,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   for(i = 0; i < pyRes->ndatasets; i++)
   {
 //      xmax = aDataList[i].pdXi[1];
-    if(pyRes->validResult[i]){
+//    if(pyRes->validResult[i]){
       int selModelIndex = pyRes->selectedModelIndex[i];
       struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
       struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
@@ -727,7 +1076,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       }
 //      adxmax[i-1] = xmax;
       adxmax[i] = xmax;
-    }
+//    }
   }
   CBnparm = CBnparm + 1;
   //bind = (int *) malloc((size_t)(CBnparm)*sizeof(int));
@@ -847,11 +1196,15 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
   which = 4;          /* Want a combined  lower confidence limit */
 
-//  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
-  target = (LR - pyRes->combined_LL);  /* The value we want the likelihood */
+  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+//  target = (LR - pyRes->combined_LL);  /* The value we want the likelihood */
+  //target = -565.17482044575650;
   /* at the BMDL to match             */
 //  fprintf(fp_log,"Combined Loglikelihood         %30.22g \n",xlk); 
 //  fprintf(fp_log,"Target                         %30.22g \n",target); 
+  
+  std::cout<< std::fixed << std::showpoint;
+  std::cout << std::setprecision(15);
   std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
   std::cout<<"Target                         "<<target<<std::endl;
 
@@ -878,7 +1231,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(i = nT; i > 0; i--)
       for(i = pyRes->ndatasets-1; i>=0; i--)
       {
-        if(pyRes->validResult[i]){
+//        if(pyRes->validResult[i]){
 //	  int iParms = aParmList[i].nParms;
           int iParms = pyRes->models[i][0].nparms;
 
@@ -893,7 +1246,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //	    pdParmsBak[k] = pdParms[k] = -99999;
             pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
           }
-        }
+//        }
       }
     }
   std::cout<<"Here"<<std::endl;
@@ -901,9 +1254,9 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  for(i = 0; i < nT; i++) {
   for(i=0; i<pyRes->ndatasets; i++){
 //    pdParms[i] = -log(1.0 - pdParms[i]);
-    if(pyRes->validResult[i]){
+//    if(pyRes->validResult[i]){
       pdParms[i] = -log(1.0 - pdParms[i]);
-    }
+//    }
   }
   /* GLN-01/15/2009 */
 //  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()", nCall);
@@ -918,18 +1271,18 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  for(j = 1; j<=nT; j++)
   for(j=0; j<pyRes->ndatasets; j++){
 //    fprintf(fp_log,"    Tumor %d\t\t\t", j);
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
       std::cout<<"    Tumor "<<j<<"\t\t\t";
-    }
+//    }
   }
 //  fprintf(fp_log,"\n");
   std::cout<<std::endl;
 //  for(j = 1; j<=nT; j++)
   for(j=0; j<pyAnal->ndatasets; j++){
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
 //    fprintf(fp_log,"Scaled | Unscaled\t\t");
       std::cout<<"Scaled | Unscaled\t\t";
-    }
+//    }
   }
 //  fprintf(fp_log,"\n")
   std::cout<<std::endl;
@@ -938,10 +1291,10 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(j = 1; j <= nT; j++) {
       for(j=0; j<pyRes->ndatasets; j++){
 //	fprintf(fp_log,"%10.5g | %10.5g\t\t", pdParms[i], pdParmsBak[i]);
-        if(pyRes->validResult[j]){
+//        if(pyRes->validResult[j]){
           std::cout<<pdParms[i]<<" | "<<pdParmsBak[i]<<"\t\t";
 	  i++;
-        }
+//        }
       }
 //      fprintf(fp_log,"\n");
       std::cout<<std::endl;
@@ -952,8 +1305,13 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     double retVal;
 
     //bmdl calc
-//    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
-//    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
+   
+
+    //target = -565.17482044575650;  //works??
+    //target = -565.174822935405700; //calculated 
+    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+//    bmdl = simple_test();
+    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
 //  fflush(fp_log);
 
 //  getclmt_(&which, &lnParmMax, &BMR, &Dose,
@@ -1163,20 +1521,21 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  double **ppdParms;
 //  ppdParms = DMATRIX (1, nT, 1, nParmMax);
 
+  std::cout<<"Here after bmdl calc"<<std::endl;
   pdParms2 = pdParms;
   int nT = 0;
   for(int i=0; i<pyRes->ndatasets; i++){
-    if (pyRes->validResult[i]){
+//    if (pyRes->validResult[i]){
       nT++;
-    }
+//    }
   }
   std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
   std::cout<<"********** pdParms2 Values **********"<<std::endl;
 //  fprintf(fp_log,"******* pdParms2 Values ********\n");
   for (int j=0; j<pyRes->ndatasets; j++){
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
       std::cout<<"   Tumor " << j << "\t";
-    }
+//    }
   }
   std::cout<<std::endl;
 //  for(j = 1; j<=nT; j++)
@@ -1190,7 +1549,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(i = 1; i <= nT; i++)
      for (int i=0; i<pyRes->ndatasets; i++)
      {
-       if(pyRes->validResult[i]){
+//       if(pyRes->validResult[i]){
 	  k++;
           std::cout<<pdParms2[k]<<"\t";
 //	  fprintf(fp_log,"%10.5g\t", pdParms2[k]);
@@ -1203,7 +1562,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
 	    }
 	  }
-       }
+//       }
      }
      std::cout<<std::endl;
 //      fprintf(fp_log,"\n");
@@ -1256,7 +1615,9 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   double fD, bmdu,  target, xmax, xlk2, xlk3, crisk;
   int i, j, nCall, k, nParmMax, ii = 0;
   double scale;
-	
+
+  std::cout<<"inside BMDU_combofunc"<<std::endl;
+
   std::vector<double> adxmax;
   int nParms;
   fD = bmdu =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
@@ -1274,7 +1635,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   for(i = 0; i < pyRes->ndatasets; i++)
   {
 //      xmax = aDataList[i].pdXi[1];
-    if(pyRes->validResult[i]){
+//    if(pyRes->validResult[i]){
       int selModelIndex = pyRes->selectedModelIndex[i];
       struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
       struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
@@ -1308,7 +1669,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       }
 //      adxmax[i-1] = xmax;
       adxmax[i] = xmax;
-    }
+//    }
   }
   CBnparm = CBnparm + 1;
   //bind = (int *) malloc((size_t)(CBnparm)*sizeof(int));
@@ -1345,7 +1706,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
 
 //  fprintf(fp_log,"\n\nIn BMDL_combofunc, aParmList[i+1].pdParms[j+1](MLEs)\n");
-  std::cout<<"\nIn BMDL_combofunc, pdParms[j](MLEs)"<<std::endl;
+  std::cout<<"\nIn BMDU_combofunc, pdParms[j](MLEs)"<<std::endl;
 //  for(i = 1; i <= nT; i++)
   for(i=0; i<pyAnal->ndatasets; i++)
     {
@@ -1386,7 +1747,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     }
 
 //  fprintf(fp_log,"\n\nIn BMDL_combofunc, pdParms Values (MLEs, k=%d, nParms=%d)\n", k, nParms);
-  std::cout<<"\n\nIn BMDL_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
+  std::cout<<"\n\nIn BMDU_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
   i = 0;
   /* fprintf(fp_log,"\n"); */
 //  for(j = 1; j<=nT; j++)
@@ -1411,7 +1772,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
   j=0;
 //  fprintf(fp_log,"\nIn BMDL_combofunc, Tumor Starting Values\n");
-  std::cout<<"\nIn BMDL_combofunc, Tumor Starting Values"<<std::endl;
+  std::cout<<"\nIn BMDU_combofunc, Tumor Starting Values"<<std::endl;
 //  for(i = 0; i < nT; i++)
   for(i=0; i<pyAnal->ndatasets; i++)
   {
@@ -1429,7 +1790,8 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   which = 5;          /* Want a combined  upper confidence limit */
 
 //  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
-  target = (LR - pyRes->combined_LL);  /* The value we want the likelihood */
+  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+  std::cout<<"LR = "<<LR<<std::endl;
   /* at the BMDL to match             */
 //  fprintf(fp_log,"Combined Loglikelihood         %30.22g \n",xlk); 
 //  fprintf(fp_log,"Target                         %30.22g \n",target); 
@@ -1459,7 +1821,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(i = nT; i > 0; i--)
       for(i = pyRes->ndatasets-1; i>=0; i--)
       {
-        if(pyRes->validResult[i]){
+//        if(pyRes->validResult[i]){
 //	  int iParms = aParmList[i].nParms;
           int iParms = pyRes->models[i][0].nparms;
 
@@ -1474,17 +1836,17 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //	    pdParmsBak[k] = pdParms[k] = -99999;
             pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
           }
-        }
+//        }
       }
     }
-  std::cout<<"Here"<<std::endl;
+  std::cout<<"Here & Now"<<std::endl;
   /* One more step for the background terms */
 //  for(i = 0; i < nT; i++) {
   for(i=0; i<pyRes->ndatasets; i++){
 //    pdParms[i] = -log(1.0 - pdParms[i]);
-    if(pyRes->validResult[i]){
+//    if(pyRes->validResult[i]){
       pdParms[i] = -log(1.0 - pdParms[i]);
-    }
+//    }
   }
   std::cout<<"\n\nValues BEFORE call "<<nCall<<" to getclmt_()";
   std::cout<<"BMR="<<pyAnal->BMR<<" target="<<target<<std::endl;
@@ -1495,18 +1857,18 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //  for(j = 1; j<=nT; j++)
   for(j=0; j<pyRes->ndatasets; j++){
 //    fprintf(fp_log,"    Tumor %d\t\t\t", j);
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
       std::cout<<"    Tumor "<<j<<"\t\t\t";
-    }
+//    }
   }
 //  fprintf(fp_log,"\n");
   std::cout<<std::endl;
 //  for(j = 1; j<=nT; j++)
   for(j=0; j<pyAnal->ndatasets; j++){
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
 //    fprintf(fp_log,"Scaled | Unscaled\t\t");
       std::cout<<"Scaled | Unscaled\t\t";
-    }
+//    }
   }
 //  fprintf(fp_log,"\n")
   std::cout<<std::endl;
@@ -1515,10 +1877,10 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(j = 1; j <= nT; j++) {
       for(j=0; j<pyRes->ndatasets; j++){
 //	fprintf(fp_log,"%10.5g | %10.5g\t\t", pdParms[i], pdParmsBak[i]);
-        if(pyRes->validResult[j]){
+//        if(pyRes->validResult[j]){
           std::cout<<pdParms[i]<<" | "<<pdParmsBak[i]<<"\t\t";
 	  i++;
-        }
+//        }
       }
 //      fprintf(fp_log,"\n");
       std::cout<<std::endl;
@@ -1741,17 +2103,17 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   pdParms2 = pdParms;
   int nT = 0;
   for(int i=0; i<pyRes->ndatasets; i++){
-    if (pyRes->validResult[i]){
+//    if (pyRes->validResult[i]){
       nT++;
-    }
+//    }
   }
   std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
   std::cout<<"********** pdParms2 Values **********"<<std::endl;
 //  fprintf(fp_log,"******* pdParms2 Values ********\n");
   for (int j=0; j<pyRes->ndatasets; j++){
-    if(pyRes->validResult[j]){
+//    if(pyRes->validResult[j]){
       std::cout<<"   Tumor " << j << "\t";
-    }
+//    }
   }
   std::cout<<std::endl;
 //  for(j = 1; j<=nT; j++)
@@ -1765,7 +2127,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 //      for(i = 1; i <= nT; i++)
      for (int i=0; i<pyRes->ndatasets; i++)
      {
-       if(pyRes->validResult[i]){
+//       if(pyRes->validResult[i]){
 	  k++;
           std::cout<<pdParms2[k]<<"\t";
 //	  fprintf(fp_log,"%10.5g\t", pdParms2[k]);
@@ -1778,7 +2140,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
 	    }
 	  }
-       }
+//       }
      }
      std::cout<<std::endl;
 //      fprintf(fp_log,"\n");
@@ -1826,15 +2188,15 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
 
   std::cout<<"Inside ComboMaxLike2 with dose="<<dose<<std::endl;
 
-  p[0][0] = 0.00956248; 
-  p[0][1] = 3.79768;
-  p[0][2] = 6.55851e-23;
-  p[1][0] = 0.0344797;
-  p[1][1] = 0;
-  p[1][2] = 1.96658;
-  p[2][0] = 0;
-  p[2][1] = 0;
-  p[2][2] = 1.83147;
+//  p[0][0] = 0.00956248; 
+//  p[0][1] = 3.79768;
+//  p[0][2] = 6.55851e-23;
+//  p[1][0] = 0.0344797;
+//  p[1][1] = 0;
+//  p[1][2] = 1.96658;
+//  p[2][0] = 0;
+//  p[2][1] = 0;
+//  p[2][2] = 1.83147;
 
 
   int nObs, nT, nParms;
@@ -1852,7 +2214,7 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
 
   for(int n=0; n<pyRes->ndatasets; n++){
     std::cout<<"n="<<n<<std::endl;
-    if(pyRes->validResult[n]){
+//    if(pyRes->validResult[n]){
       dSumParm1 += p[n][0];
       nObs = pyAnal->models[n][0].n;
       std::cout<<"dSumParm1="<<dSumParm1<<std::endl;
@@ -1871,10 +2233,10 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
            prob = p[0][1];
            std::cout<<"prob="<<prob<<std::endl;
            for(int nt=1; nt<pyRes->ndatasets; nt++){
-             if(pyRes->validResult[nt]){
+//             if(pyRes->validResult[nt]){
                prob -= p[nt][1];
                std::cout<<"nt="<<nt<<", prob="<<prob<<std::endl;
-             }
+//             }
            }
          }
 
@@ -1882,9 +2244,9 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
            if (n==0 && flag==1 && j==1){
               pr = p[0][1];
               for (int nt=1; nt<pyRes->ndatasets; nt++){
-                  if (pyRes->validResult[nt]){
+//                  if (pyRes->validResult[nt]){
                     pr -= p[nt][1];
-                  }
+//                  }
               }
               prob = D*prob + pr;
            } else {
@@ -1907,7 +2269,7 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
            like += Yp*log(prob) + Yn*log(1-prob);
          }
       }
-    }
+//    }
   }
 
   std::cout<<"2 prob = "<<prob<<std::endl;
@@ -1925,9 +2287,9 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
     if (n ==0 && flag == 1 && nParms == 2){
        prob = p[0][1];
        for(int nt = 1; nt<pyRes->ndatasets; nt++){
-         if(pyRes->validResult[nt]){
+//         if(pyRes->validResult[nt]){
            prob -= p[nt][1];
-         }
+//         }
        }
        std::cout<<"Inside 1st if prob="<<prob<<std::endl;
     }
@@ -1936,9 +2298,9 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
          pr = p[0][1];
          std::cout<<"1 pr="<<pr<<std::endl;
          for (int nt = 1; nt<pyRes->ndatasets; nt++){
-           if (pyRes->validResult[nt]){
+//           if (pyRes->validResult[nt]){
              pr -= p[nt][1];
-           }
+//           }
          }
          std::cout<<"2 pr="<<pr<<std::endl;
          prob = dose*prob + pr;
@@ -1994,35 +2356,41 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    double tol;  //for zeroin function
    std::vector<double> cp;
 
-//   std::cout<<"inside Multistage_ComboBMD"<<std::endl;
+   std::cout<<"inside Multistage_ComboBMD"<<std::endl;
 
    nT = pyRes->ndatasets;
    //find largest nparm and largest dose
    cnparm = 0;
    cxmax = 0;
    for(int i=0; i<nT; i++){
-      if(pyRes->validResult[i]){ //only use datasets that have a selected model
+      std::cout<<"i:"<<i<<std::endl;
+//      if(pyRes->validResult[i]){ //only use datasets that have a selected model
+//	std::cout<<"is valid result"<<std::endl;
         selIndex = pyRes->selectedModelIndex[i];
         if(pyRes->models[i][selIndex].nparms > cnparm){
            cnparm = pyRes->models[i][selIndex].nparms;
         }
+	std::cout<<"b4 tmpMax"<<std::endl;
         double tmpMax = *max_element(std::begin(pyAnal->models[i][selIndex].doses), std::end(pyAnal->models[i][selIndex].doses));
         if(cxmax < tmpMax) cxmax = tmpMax;
-      }
+//      }
    }
-//   std::cout<<"cnparm="<<cnparm<<std::endl;
+   std::cout<<"cnparm="<<cnparm<<std::endl;
    //add all model parameters to combined p
    cp.resize(cnparm, 0.0);
    for(int i=0; i<nT; i++) {
-     if(pyRes->validResult[i]){  //only use datasets that have a selected model
+     std::cout<<"2nd loop i:"<<i<<std::endl;
+//     if(pyRes->validResult[i]){  //only use datasets that have a selected model
        selIndex = pyRes->selectedModelIndex[i];
-       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]); 
+       std::cout<<"selectedModelIndex:"<<pyRes->selectedModelIndex[i]<<std::endl;
+       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]);
+       std::cout<<"nparms:"<<pyRes->models[i][selIndex].nparms<<std::endl; 
        for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
           cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
        }
-     }
+//     }
    }
-
+   std::cout<<"computing chi-squared value"<<std::endl;
    //compute chi-squared value
    double cl = 1.0 - pyAnal->alpha;
    if (cl<0.5){
@@ -2030,6 +2398,9 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    } else {
      LR = 0.5*gsl_cdf_chisq_Pinv(2.0*cl-1.0, 1);
    }
+
+   std::cout<<"cl="<<cl<<std::endl;
+   std::cout<<"LR="<<LR<<std::endl;
 
    ck = -log(1-pyAnal->BMR);  //Extra risk
    //solve the BMD
@@ -2070,14 +2441,20 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    else xa = log(xa);
    xb = log(xb);
 
-//   std::cout<<"calling zeroin with vals:"<<std::endl;
-//   std::cout<<"xa="<<xa<<", xb="<<xb<<", cxmax="<<cxmax<<std::endl;
+   std::cout<< std::fixed << std::showpoint;
+   std::cout << std::setprecision(15);
+   std::cout<<"calling zeroin with vals:"<<std::endl;
+   std::cout<<"xa="<<xa<<", xb="<<xb<<", cxmax="<<cxmax<<std::endl;
    xb = zeroin(xa, xb, tol, BMD_func, cnparm, &cp[0], ck);
-//   std::cout<<"return from zeroin xa="<<xa<<", xb="<<xb<<std::endl;
+   std::cout<<"return from zeroin xa="<<xa<<", xb="<<xb<<std::endl;
+   //test
+//   std::cout<<"Remove override...debug only"<<std::endl;
+//   xa=1.791759469228055;
+//   xb=1.792593980541806;
    xa = exp(xa);
    xb = exp(xb);
    pyRes->BMD = xb;
-//   std::cout<<"BMD="<<pyRes->BMD<<std::endl;
+   std::cout<<"BMD="<<pyRes->BMD<<std::endl;
 
    is_zero = 0;
 
@@ -2086,7 +2463,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    struct python_multitumor_result pyRes_red = *pyRes;
    //nT = pyRes->ndatasets;
    for(int i=nT-1; i=0; i++){
-     if(!pyRes->validResult[i]){
+//     if(!pyRes->validResult[i]){
 //       std::cout<<"erasing dataset i:"<<i<<std::endl;
        pyAnal_red.ndatasets--;
        pyAnal_red.n.erase(pyAnal_red.n.begin() + i);
@@ -2098,13 +2475,13 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
        pyRes_red.selectedModelIndex.erase(pyRes_red.selectedModelIndex.begin() + i);
        pyRes_red.models.erase(pyRes_red.models.begin() + i);
      }
-   }
+//   }
+   std::cout<<"after dataset/model restructuring"<<std::endl;
+   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
 
-//   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
-//   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
-//
-//   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
-//   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
+   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 
 }
 
@@ -2114,7 +2491,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
 
 
-double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
    //obj function of form F(BMD, beta) = BMD, where BMD=X[0] and beta=X[i] where i>0
    if (!grad.empty()){
       //fill all gradients to zero (grad[1] to grad[n] are all zero
@@ -2122,82 +2499,91 @@ double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my
       std::fill(grad.begin(), grad.end(), 0);
       //set first grad to 1, since x[1] should be the BMD (Dose)
       grad[0] = 1.0;
-//      for (int i=1; i<=x.size(); i++){
-//         grad[i] = 0.0;
-//      }
    }
    return x[0];  
 }
 
-double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *data){
 
-   std::cout<<"inside obj2"<<std::endl;
-   msComboEq *d = reinterpret_cast<msComboEq*>(data);
-   double bmr = d->bmr;
-   int nT = d->nT;
-   std::vector<int> degree = d->degree;
-
-   double D = exp(x[0]);
-   int iIndex = x.size() - 1;
-   double sum2 = 0.0;
-   double sum = 0.0;
-
-   std::cout<<"starting calcs"<<std::endl;
+double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+   //obj function of form F(BMD, beta) = BMD, where BMD=X[0] and beta=X[i] where i>0
    if (!grad.empty()){
-     std::cout<<"Inside grad"<<std::endl;
-     for (int l=nT-1; l>=0; l--){
-        sum = 0.0;
-        for (int k=degree[l]; k>0; k--){
-           sum = sum*D + k*x[iIndex]*D;
-           iIndex -= 1;
-        }
-        iIndex -= 1;
-        sum2 += sum;
-     }
-     grad[0] = sum2;
-     std::cout<<"grad[0]="<<grad[0]<<std::endl;
-
-     iIndex = 1;
-     for (int k=0; k<nT; k++){
-        grad[iIndex] = 0.0;
-        if (iIndex == 2) {
-          grad[iIndex] = D;
-        } else {
-          grad[iIndex] = 0.0;
-        }
-        for (int j=2; j<=degree[k]; j++){
-          iIndex += 1;
-          grad[iIndex] = pow(D,j);
-        }
-        iIndex += 1;
-     }
-     for(int i=0; i<x.size(); i++){
-       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
-     }
+      //fill all gradients to zero (grad[1] to grad[n] are all zero
+      // because objective function only depends on X[0] 
+      std::fill(grad.begin(), grad.end(), 0);
+      //set first grad to 1, since x[1] should be the BMD (Dose)
+      grad[0] = -1.0;
    }
-   //equality constraint calc
-   sum = log(1.0 - bmr);
-   std::cout<<"sum="<<sum<<std::endl;
-   iIndex = x.size() - 1;
-   double sum3 = 0.0;
-   std::cout<<"Starting obj NT loop"<<std::endl;
-   for (int l=nT-1; l>=0; l--){
-     std::cout<<"loop l="<<l<<std::endl;
-     sum2 = 0.0;
-     for (int k=degree[l]; k>0; k--){
-        sum2 = sum2*D + x[iIndex]*D;
-        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
-        iIndex -= 1;
-     }
-     iIndex -= 1;
-     sum3 += sum2;
-     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
-   }
-
-   std::cout<<"obj2="<<(sum+sum3)<<std::endl;
-   return fabs(sum + sum3);
+   return -1*x[0];  
 }
 
+//double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *data){
+//
+//   std::cout<<"inside obj2"<<std::endl;
+//   msComboEq *d = reinterpret_cast<msComboEq*>(data);
+//   double bmr = d->bmr;
+//   int nT = d->nT;
+//   std::vector<int> degree = d->degree;
+//
+//   double D = exp(x[0]);
+//   int iIndex = x.size() - 1;
+//   double sum2 = 0.0;
+//   double sum = 0.0;
+//
+//   std::cout<<"starting calcs"<<std::endl;
+//   if (!grad.empty()){
+//     std::cout<<"Inside grad"<<std::endl;
+//     for (int l=nT-1; l>=0; l--){
+//        sum = 0.0;
+//        for (int k=degree[l]; k>0; k--){
+//           sum = sum*D + k*x[iIndex]*D;
+//           iIndex -= 1;
+//        }
+//        iIndex -= 1;
+//        sum2 += sum;
+//     }
+//     grad[0] = sum2;
+//     std::cout<<"grad[0]="<<grad[0]<<std::endl;
+//
+//     iIndex = 1;
+//     for (int k=0; k<nT; k++){
+//        grad[iIndex] = 0.0;
+//        if (iIndex == 2) {
+//          grad[iIndex] = D;
+//        } else {
+//          grad[iIndex] = 0.0;
+//        }
+//        for (int j=2; j<=degree[k]; j++){
+//          iIndex += 1;
+//          grad[iIndex] = pow(D,j);
+//        }
+//        iIndex += 1;
+//     }
+//     for(int i=0; i<x.size(); i++){
+//       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+//     }
+//   }
+//   //equality constraint calc
+//   sum = log(1.0 - bmr);
+//   std::cout<<"sum="<<sum<<std::endl;
+//   iIndex = x.size() - 1;
+//   double sum3 = 0.0;
+//   std::cout<<"Starting obj NT loop"<<std::endl;
+//   for (int l=nT-1; l>=0; l--){
+//     std::cout<<"loop l="<<l<<std::endl;
+//     sum2 = 0.0;
+//     for (int k=degree[l]; k>0; k--){
+//        sum2 = sum2*D + x[iIndex]*D;
+//        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
+//        iIndex -= 1;
+//     }
+//     iIndex -= 1;
+//     sum3 += sum2;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+//   }
+//
+//   std::cout<<"obj2="<<(sum+sum3)<<std::endl;
+//   return fabs(sum + sum3);
+//}
 
 double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
   
@@ -2224,19 +2610,31 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
      } 
      grad[0] = sum2;
 
+//     iIndex = 1;
+//     for (int k=0; k<nT; k++){
+//        grad[iIndex] = 0.0;
+//        if (iIndex == 2) {
+//          grad[iIndex] = D;
+//        } else {
+//          grad[iIndex] = 0.0;
+//        }
+//        for (int j=2; j<=degree[k]; j++){
+//          iIndex += 1;
+//          grad[iIndex] = pow(D,j);
+//        }
+//        iIndex += 1;
+//     }
      iIndex = 1;
      for (int k=0; k<nT; k++){
-        grad[iIndex] = 0.0;
-        if (iIndex == 2) {
-          grad[iIndex] = D;
-        } else {
-          grad[iIndex] = 0.0;
-        }
-        for (int j=2; j<=degree[k]; j++){
-          iIndex += 1;
-          grad[iIndex] = pow(D,j);
-        }
-        iIndex += 1;
+	for (int j=0; j<=degree[k]; j++){
+	   if (j==0){
+	      grad[iIndex]=0;
+           } else {
+	      grad[iIndex] = pow(D,j);
+	   }
+	   iIndex +=1;
+	}
+
      }
      for(int i=0; i<x.size(); i++){
        std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
@@ -2244,28 +2642,96 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
    }
 
    //equality constraint calc
-   std::cout<<"D="<<D<<std::endl;
+//   std::cout<<"D="<<D<<std::endl;
    sum = log(1.0 - bmr);
-   std::cout<<"sum="<<sum<<std::endl;
+//   std::cout<<"sum="<<sum<<std::endl;
    iIndex = x.size() - 1;
    double sum3 = 0.0;
 
    for (int l=nT-1; l>=0; l--){
-     std::cout<<"loop l="<<l<<std::endl;
+//     std::cout<<"loop l="<<l<<std::endl;
      sum2 = 0.0;
      for (int k=degree[l]; k>0; k--){
         sum2 = sum2*D + x[iIndex]*D;
-        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
+//        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
         iIndex -= 1;    
      }
      iIndex -= 1;
      sum3 += sum2;
-     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
    }
 
    std::cout<<"HXI="<<(sum+sum3)<<std::endl;
    return sum + sum3;
 }
+
+//double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
+//  
+//   std::cout<<"inside equality constraint"<<std::endl;
+//   msComboEq *d = reinterpret_cast<msComboEq*>(data);
+//   double bmr = d->bmr;
+//   int nT = d->nT;
+//   std::vector<int> degree = d->degree;
+//
+//   double D = exp(x[0]);
+//   int iIndex = x.size() - 1;
+//   double sum2 = 0.0;
+//   double sum = 0.0;
+//
+//   if (!grad.empty()){
+//     for (int l=nT-1; l>=0; l--){
+//        sum = 0.0;
+//        for (int k=degree[l]; k>0; k--){
+//           sum = sum*D + k*x[iIndex]*D;
+//           iIndex -= 1;
+//        }
+//        iIndex -= 1;
+//        sum2 += sum;
+//     } 
+//     grad[0] = sum2;
+//
+//     iIndex = 1;
+//     for (int k=0; k<nT; k++){
+//        grad[iIndex] = 0.0;
+//        if (iIndex == 2) {
+//          grad[iIndex] = D;
+//        } else {
+//          grad[iIndex] = 0.0;
+//        }
+//        for (int j=2; j<=degree[k]; j++){
+//          iIndex += 1;
+//          grad[iIndex] = pow(D,j);
+//        }
+//        iIndex += 1;
+//     }
+//     for(int i=0; i<x.size(); i++){
+//       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+//     }
+//   }
+//
+//   //equality constraint calc
+//   std::cout<<"D="<<D<<std::endl;
+//   sum = log(1.0 - bmr);
+//   std::cout<<"sum="<<sum<<std::endl;
+//   iIndex = x.size() - 1;
+//   double sum3 = 0.0;
+//
+//   for (int l=nT-1; l>=0; l--){
+//     std::cout<<"loop l="<<l<<std::endl;
+//     sum2 = 0.0;
+//     for (int k=degree[l]; k>0; k--){
+//        sum2 = sum2*D + x[iIndex]*D;
+//        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
+//        iIndex -= 1;    
+//     }
+//     iIndex -= 1;
+//     sum3 += sum2;
+//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
+//   }
+//
+//   std::cout<<"HXI="<<(sum+sum3)<<std::endl;
+//   return sum + sum3;
+//}
 
 double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data){
 
@@ -2293,27 +2759,39 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
    int iOffset = 1;
    double resid = 0.0; 
    if (!grad.empty()){
-     grad[0] = 0.0;  //is this needed.  Looks like it gets overwritten
+     for (size_t i=0; i<grad.size(); i++){
+        grad[i] = 0.0;
+     }
+     //grad[0] = 0.0;  //is this needed.  Looks like it gets overwritten
      for (int l=0; l<nT; l++){
        m = m-1;
        double iTop = degree[l] + iOffset;
        double iBottom = iOffset;
+//       std::cout<<"iTop="<<iTop<<", iBottom="<<iBottom<<std::endl;
        for (int k=0; k<nObs[l]; k++){
          double sum = x[iTop];
+//	 std::cout<<"1st sum="<<sum<<std::endl;
          for (int j=iTop-1; j>=iBottom; j--){
             sum = sum * doses[m][k] + x[j];
+//	    std::cout<<"j="<<j<<", 2nd sum = "<<sum<<std::endl;
          }
          if (sum < 0) sum = 0.0;
          double P = 1.0 - exp(-1.0*sum);
-         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
-         int iIndex = iTop;
-         for(int j=degree[l]; j>=0; j--){
+         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
+//	 std::cout<<"P="<<P<<", resid="<<resid<<std::endl;
+         int iIndex = iTop-1;
+//	 std::cout<<"start iIndex="<<iIndex<<std::endl;
+         for(int j=degree[l]-1; j>=0; j--){
            grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));
+//	   std::cout<<"j="<<j<<", iIndex="<<iIndex<<", grad="<<grad[iIndex]<<std::endl;
            iIndex = iIndex-1;
          }
        }  
        iOffset = iTop + 1; 
-     } 
+     }
+     for(int i=0; i<x.size(); i++){
+       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+     }
    }
 
 
@@ -2347,10 +2825,10 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
    }
 //   std::cout<<"target="<<target<<std::endl;
 //   std::cout<<"sum2="<<sum2<<std::endl;
-//   //std::cout<<"GXI="<<(target - sum2)<<std::endl;
-//   //return  target - sum2;
-   std::cout<<"GXI="<<(sum2 - target)<<std::endl;
-   return  sum2 - target;
+   std::cout<<"GXI="<<(target - sum2)<<std::endl;
+   return  target - sum2;
+//   std::cout<<"GXI="<<(sum2 - target)<<std::endl;
+//   return  sum2 - target;
 
    
 
@@ -2503,7 +2981,7 @@ double slog(double X){
      return log(X);
    } else {
      double v = 0.0;
-     for (int i=1; i<5; i++){
+     for (int i=0; i<4; i++){
        v = X * v + coefs[i];
      }
      return v;
@@ -3954,14 +4432,22 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
        pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
      } 
    }
+
+ 
+   for (int i=0;i<pyAnal->ndatasets;i++){
+      std::cout<<"dataset:"<<i<<", anal size:"<<pyAnal->models[i].size()<<", model res size:"<<pyRes->models[i].size()<<std::endl;
+      std::cout<<"pyAnal->nmodels:"<<pyAnal->nmodels[i]<<std::endl;
+      //std::cout<<"validResult:"<<pyRes->validResult[i]<<std::endl;
+   }
   
    //select models
    selectMultitumorModel();
    //dev result stubs
    pyRes->selectedModelIndex.push_back(0);
-   pyRes->selectedModelIndex.push_back(2);
-   pyRes->selectedModelIndex.push_back(2);
+   pyRes->selectedModelIndex.push_back(0);
+   pyRes->selectedModelIndex.push_back(0);
 
+//   std::cout<<"after model selection"<<std::endl;
    //create new pyAnal and pyRes only containing selected models
    //Note: ndatasets may differ depending on whether any datasets were rejected
    struct python_multitumor_analysis anal;
@@ -3971,8 +4457,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    anal.degree = pyAnal->degree;
    anal.n = pyAnal->n;
    for (int dataset=0; dataset<pyAnal->ndatasets; dataset++){
+     std::cout<<"dataset:"<<dataset<<std::endl;
      int selIndex = pyRes->selectedModelIndex[dataset];
-     if (selIndex > 0){
+     if (selIndex >= 0){
+//	std::cout<<"selIndex >=0"<<std::endl;
         std::vector<python_dichotomous_analysis> modGroup;
         std::vector<python_dichotomous_model_result> modResGroup;
         struct python_dichotomous_analysis modAnal;
@@ -3988,13 +4476,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
 //        modRes->nparms = modAnal->parms;
         anal.nmodels.push_back(1);
         modAnal = pyAnal->models[dataset][selIndex];
+	std::cout<<"size:"<<pyRes->models[dataset].size()<<std::endl;
         modRes = pyRes->models[dataset][selIndex];
         modGroup.push_back(modAnal);
         modResGroup.push_back(modRes);
+     } else {
+        std::cout<<"error in pythonBMDSMultitumor.  Individual model should have been selected"<<std::endl;
      }
    }
    anal.ndatasets = anal.nmodels.size();
 
+   std::cout<<"running multitumor model"<<std::endl;
    //run MSCombo
    runMultitumorModel(pyAnal, pyRes);  
 
@@ -4005,7 +4497,13 @@ void selectMultitumorModel(){
    std::cout<<"selectMultitumorModel: to be implemented"<<std::endl;
 }
 
+void BMDS_ENTRY_API __stdcall testCall(){
+  std::cout<<"Inside testCall"<<std::endl;
+}
+
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
+   std::cout<<"Inside runMultitumorModel"<<std::endl;
 
    //calculate slopeFactor for all individual models
    for (int i=0; i<pyAnal->ndatasets; i++){
@@ -4018,6 +4516,8 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
       }
    }
 
+   std::cout<<"after slopeFactor"<<std::endl;
+
    //calculate combined LL & constant
    pyRes->combined_LL = 0.0; 
    pyRes->combined_LL_const = 0.0;
@@ -4026,15 +4526,19 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
      pyRes->combined_LL += pyRes->models[i][selIndex].max;
      pyRes->combined_LL_const += LogLik_Constant(pyAnal->models[i][selIndex].Y, pyAnal->models[i][selIndex].n_group);
    }
+   pyRes->combined_LL = pyRes->combined_LL*-1;
+   pyRes->combined_LL_const = pyRes->combined_LL_const*-1;
 
-   //Multistage_ComboBMD(pyAnal, pyRes);
 
-   pyRes->BMD = 6.005009;
-   pyRes->BMDL = -5.402722;
-   pyRes->BMDU = 6.9757479;
-   pyRes->slopeFactor = 0.018509189;
-   pyRes->combined_LL = -563.8220487; 
-   pyRes->combined_LL_const = 521.8050805; 
+   std::cout<<"B4 Multistage_ComboBMD"<<std::endl;
+   Multistage_ComboBMD(pyAnal, pyRes);
+
+//   pyRes->BMD = 6.005009;
+//   pyRes->BMDL = -5.402722;
+//   pyRes->BMDU = 6.9757479;
+//   pyRes->slopeFactor = 0.018509189;
+//   pyRes->combined_LL = -563.8220487; 
+//   pyRes->combined_LL_const = 521.8050805; 
 
 }
 
@@ -4396,5 +4900,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    pyRes->reduced.upperConf.push_back(0.39977302);
    pyRes->reduced.upperConf.push_back(0.43230026);
    pyRes->reduced.upperConf.push_back(0.60240216);
+
+}
+
+
+double round_to(double value, double precision ){
+   std::cout << "input value: "<< value<<std::endl;
+   std::cout << "precision: "<< precision << std::endl;
+   double res = std::round(value / precision) * precision;
+   std::cout << "output value:"<< res << std::endl;
+   return res;
+//   return std::round(value / precision) * precision;
 
 }

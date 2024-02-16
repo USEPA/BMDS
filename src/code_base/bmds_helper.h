@@ -407,6 +407,8 @@ void selectMultitumorModel();
 
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
+void BMDS_ENTRY_API __stdcall testCall();
+
 double DLgamma(double x);
 double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
 double zeroin(double ax,double bx, double tol,
@@ -417,7 +419,8 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
-double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
@@ -425,6 +428,7 @@ double myInequalityConstraint2(const std::vector<double> &x, std::vector<double>
 double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double slog(double X);
 double dslog(double P);
+double round_to(double value, double precision = 1.0);
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
