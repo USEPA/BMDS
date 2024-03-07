@@ -4730,6 +4730,15 @@ void BMDS_ENTRY_API __stdcall testCall(){
   std::cout<<"Inside testCall"<<std::endl;
 }
 
+double calcSlopeFactor(double bmr, double bmdl){
+   
+   if (bmdl > 0.0){
+      return bmr/bmdl;
+   } else {
+      return BMDS_MISSING;
+   }
+}
+
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
 
    std::cout<<"Inside runMultitumorModel"<<std::endl;
@@ -4744,9 +4753,10 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
 //	 std::cout<<"after BMR:"<<bmr<<std::endl;
          double bmdl = pyRes->models[i][j].bmdsRes.BMDL;
 //	 std::cout<<"after BMDL:"<<bmdl<<std::endl;
-         if (bmdl > 0.0){
-            pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
-         }
+//         if (bmdl > 0.0){
+//            pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
+//         }
+         pyRes->models[i][j].bmdsRes.setSlopeFactor(bmr);
 //	 std::cout<<"after slopefactor:"<<pyRes->models[i][j].bmdsRes.slopeFactor<<std::endl;
       }
    }
@@ -4777,7 +4787,8 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
    }
    Multistage_ComboBMD(pyAnal, pyRes);
 
-   pyRes->slopeFactor = pyAnal->BMR/pyRes->BMDL;
+//   pyRes->slopeFactor = pyAnal->BMR/pyRes->BMDL;
+   pyRes->setSlopeFactor(pyAnal->BMR);
 
    std::cout<<"after Multistage_ComboBMD"<<std::endl;
    std::cout<<"BMD:"<<pyRes->BMD<<std::endl;

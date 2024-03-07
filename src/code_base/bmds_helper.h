@@ -38,6 +38,9 @@ enum nested_model {nlogistic =1, nctr=2};
 #pragma pack(4)
 #endif
 
+//forward declarations
+double calcSlopeFactor(double bmr, double bmdl);
+
 struct test_struct{
   double BMD;
   int n;
@@ -60,6 +63,10 @@ struct BMDS_results{
   std::vector<double> upperConf;
   bool validResult;
   double slopeFactor;
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
 };
 
 struct BMDSMA_results{
@@ -327,6 +334,10 @@ struct python_multitumor_result{
   double slopeFactor;
   double combined_LL;  //combined log-likelihood 
   double combined_LL_const; //combined log-likelihood constant
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
 };
 
 struct python_nested_analysis{
