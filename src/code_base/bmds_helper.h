@@ -201,6 +201,36 @@ struct python_dichotomous_model_result{
   struct dichotomous_GOF gof;
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
+
+//  double getSRAtBMDDose(std::vector<double> doses){
+//     std::vector<double> diff;
+//     double absDiff = DBL_MAX;
+//     double srVal = BMDS_MISSING;
+//     if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
+//	return BMDS_MISSING;
+//     }
+//     for (int i=0; i<doses.size(); i++){
+//        diff.push_back(abs(bmdsRes.BMD - doses[i]));
+//     }
+//     int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
+//
+//     return gof.residual[minIndex];
+//  }
+
+  double getSRAtDose(double targetDose, std::vector<double> doses){
+     std::vector<double> diff;
+     double absDiff = DBL_MAX;
+     double srVal = BMDS_MISSING;
+     if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
+	return BMDS_MISSING;
+     }
+     for (int i=0; i<doses.size(); i++){
+        diff.push_back(abs(targetDose - doses[i]));
+     }
+     int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
+
+     return gof.residual[minIndex];
+  }
 };
 
 struct python_dichotomousMA_analysis{
@@ -403,7 +433,9 @@ void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python
 
 void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret);
 
-void selectMultitumorModel();
+void selectMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analModels, std::vector<python_dichotomous_model_result> &resModels);
 
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 

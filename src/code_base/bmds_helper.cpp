@@ -575,7 +575,10 @@ double simple_test(){
 
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
    std::cout<<"Inside getclmt"<<std::endl;
-
+   std::cout<<"xParms at start of getclmt"<<std::endl;
+   for (size_t i=0; i<xParms.size(); i++){
+      std::cout<<"i:"<<i<<", parm:"<<xParms[i]<<std::endl;
+   }
  
    int nT = pyRes->selectedModelIndex.size(); 
    double bmr = pyAnal->BMR;
@@ -595,13 +598,56 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 //
 //   //tmp only 
 //   //X[0] = 1.686903;
-   for (int j=0; j<nT; j++){
-     for(int i=0; i<=degree[j]; i++){
-       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
-       iOffset++;
-     }
+
+   //needs to be fixed
+//   for (int j=0; j<nT; j++){
+//     for(int i=0; i<=degree[j]; i++){
+//       std::cout<<"iOffset:"<<iOffset<<" goes to "<<(j+i*(degree[j]+1)+1)<<std::endl;
+//       std::cout<<"    for j:"<<j<<" and degree:"<<degree[j]<<std::endl;
+//       x[j+i*(degree[j]+1)+1] = xParms[iOffset];
+//       iOffset++;
+//     }
+//   }
+
+   std::vector<std::vector<double>> tmp2;
+   //restructure to group like terms together
+   int count = 0;
+   for (int i=0; i<nT; i++){
+      std::vector<double> theParms;
+      for (int j=0; j<=degree[i]; j++){
+	 theParms.push_back(xParms[count]);
+	 count++;
+      }
+      tmp2.push_back(theParms);
    }
 
+
+   //just for testing to compare to xParms
+   for (int i=0; i<nT; i++){
+      for (int j=0; j<=degree[i]; j++){
+         std::cout<<"i,j="<<i<<","<<j<<" with value:"<<tmp2[i][j]<<std::endl;
+      }
+   }
+
+   int maxDegree = *max_element(degree.begin(), degree.end());
+   count = 1;
+   for (int j=0; j<=maxDegree; j++){
+      for (int i=0; i<nT; i++){
+	 if (j<tmp2[i].size()){
+            x[count] = tmp2[i][j];
+	    count++;
+	 }
+      }
+   } 
+
+//   tmp proof of concept
+//   for (int i=0; i<xParms.size(); i++){
+//      x[i+1] = xParms[i];
+//   }
+   std::cout<<"final parm check"<<std::endl;
+   for (int i=0; i<=xParms.size();i++){
+      std::cout<<"i:"<<i<<", parm:"<<x[i]<<std::endl;
+   }
 
    //need to round to roughly single-precision for convergence?????
    for (int j=1; j<x.size(); j++){
@@ -2337,7 +2383,7 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
  *                         Multistage models A and B
  *  external: bmdparm
  *  input:      *   nparm is the number of parameters
- *   nparm is the number of parameters
+ *   nparm is the number of parameters/
  *   p[] is the vector of fitted parameters
  *   gtol is a small positive number
  *   iter is not used ????????
@@ -2359,6 +2405,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    std::cout<<"inside Multistage_ComboBMD"<<std::endl;
 
    nT = pyRes->ndatasets;
+   std::cout<<"nT:"<<nT<<std::endl;
    //find largest nparm and largest dose
    cnparm = 0;
    cxmax = 0;
@@ -2367,6 +2414,8 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 //      if(pyRes->validResult[i]){ //only use datasets that have a selected model
 //	std::cout<<"is valid result"<<std::endl;
         selIndex = pyRes->selectedModelIndex[i];
+	std::cout<<"pyRes->selectedModelIndex[i]:"<<pyRes->selectedModelIndex[i]<<std::endl;;
+	std::cout<<"selected degree:"<<pyAnal->degree[i]<<std::endl;
         if(pyRes->models[i][selIndex].nparms > cnparm){
            cnparm = pyRes->models[i][selIndex].nparms;
         }
@@ -2382,9 +2431,9 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
      std::cout<<"2nd loop i:"<<i<<std::endl;
 //     if(pyRes->validResult[i]){  //only use datasets that have a selected model
        selIndex = pyRes->selectedModelIndex[i];
-       std::cout<<"selectedModelIndex:"<<pyRes->selectedModelIndex[i]<<std::endl;
-       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]);
+       std::cout<<"selectedModelIndex:"<<selIndex<<std::endl;
        std::cout<<"nparms:"<<pyRes->models[i][selIndex].nparms<<std::endl; 
+       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]);
        for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
           cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
        }
@@ -2408,7 +2457,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    fa = -ck;  //note:  ck>0.0
    fb = fa;
    Drange = cxmax; 
-//   std::cout<<"Drange="<<Drange<<std::endl;
+   std::cout<<"Drange="<<Drange<<std::endl;
 
    int k=1;
    while(k<300 && fb<0){
@@ -2428,7 +2477,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
       fb=poly-ck;
       k++;
    }
-//   std::cout<<"fb="<<fb<<std::endl;
+   std::cout<<"fb="<<fb<<std::endl;
 
    if (fb<0) std::cout<<"BMD Computation failed.  BMD is larger than three times maximum input doses."<<std::endl;
    xb = D;
@@ -2459,28 +2508,30 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
    is_zero = 0;
 
    //restructure pyAnal and pyRes to remove unused datasets/models
-   struct python_multitumor_analysis pyAnal_red = *pyAnal;
-   struct python_multitumor_result pyRes_red = *pyRes;
-   //nT = pyRes->ndatasets;
-   for(int i=nT-1; i=0; i++){
-//     if(!pyRes->validResult[i]){
-//       std::cout<<"erasing dataset i:"<<i<<std::endl;
-       pyAnal_red.ndatasets--;
-       pyAnal_red.n.erase(pyAnal_red.n.begin() + i);
-       pyAnal_red.nmodels.erase(pyAnal_red.nmodels.begin() + i);
-       pyAnal_red.degree.erase(pyAnal_red.degree.begin() + i);
-       pyAnal_red.models.erase(pyAnal_red.models.begin() + i);                
-       pyRes_red.ndatasets--;
-       pyRes_red.nmodels.erase(pyRes_red.nmodels.begin() + i);
-       pyRes_red.selectedModelIndex.erase(pyRes_red.selectedModelIndex.begin() + i);
-       pyRes_red.models.erase(pyRes_red.models.begin() + i);
-     }
+//   struct python_multitumor_analysis pyAnal_red = *pyAnal;
+//   struct python_multitumor_result pyRes_red = *pyRes;
+//   //nT = pyRes->ndatasets;
+//   for(int i=nT-1; i=0; i++){
+////     if(!pyRes->validResult[i]){
+////       std::cout<<"erasing dataset i:"<<i<<std::endl;
+//       pyAnal_red.ndatasets--;
+//       pyAnal_red.n.erase(pyAnal_red.n.begin() + i);
+//       pyAnal_red.nmodels.erase(pyAnal_red.nmodels.begin() + i);
+//       pyAnal_red.degree.erase(pyAnal_red.degree.begin() + i);
+//       pyAnal_red.models.erase(pyAnal_red.models.begin() + i);                
+//       pyRes_red.ndatasets--;
+//       pyRes_red.nmodels.erase(pyRes_red.nmodels.begin() + i);
+//       pyRes_red.selectedModelIndex.erase(pyRes_red.selectedModelIndex.begin() + i);
+//       pyRes_red.models.erase(pyRes_red.models.begin() + i);
+//     }
 //   }
-   std::cout<<"after dataset/model restructuring"<<std::endl;
-   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+//   std::cout<<"after dataset/model restructuring"<<std::endl;
+   pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+//   pyRes->BMDL = BMDL_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
    std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
 
-   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
+   pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+//   pyRes->BMDU = BMDU_combofunc(&pyAnal_red, &pyRes_red, xb, xa, LR, tol, &is_zero);
    std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 
 }
@@ -4428,9 +4479,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
  
    //run each individual multistage model
    for (int i=0;i<pyAnal->ndatasets;i++){
-     for (int j=0; j<pyAnal->nmodels[i]; j++){
-       pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
-     } 
+     //only all individual multistage models if degree == 0
+     //else only run the specified model
+     if (pyAnal->degree[i] ==0){
+       for (int j=0; j<pyAnal->nmodels[i]; j++){
+         pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
+       } 
+     } else {
+       pythonBMDSDicho(&pyAnal->models[i][0], &pyRes->models[i][0]);   
+     }
    }
 
  
@@ -4441,11 +4498,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    }
   
    //select models
-   selectMultitumorModel();
+   selectMultitumorModel(pyAnal, pyRes);
    //dev result stubs
-   pyRes->selectedModelIndex.push_back(0);
-   pyRes->selectedModelIndex.push_back(0);
-   pyRes->selectedModelIndex.push_back(0);
+//   pyRes->selectedModelIndex.push_back(0);
+//   pyRes->selectedModelIndex.push_back(0);
+//   pyRes->selectedModelIndex.push_back(0);
 
 //   std::cout<<"after model selection"<<std::endl;
    //create new pyAnal and pyRes only containing selected models
@@ -4454,13 +4511,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    struct python_multitumor_result res;
 
    //anal.nmodels = 1; //only one selected model per dataset
-   anal.degree = pyAnal->degree;
+   //anal.degree = pyAnal->degree;
+
    anal.n = pyAnal->n;
+   anal.BMR = pyAnal->BMR;
+   anal.alpha = pyAnal->alpha;
+   anal.prior_cols = pyAnal->prior_cols;
+   pyRes->validResult.clear();
    for (int dataset=0; dataset<pyAnal->ndatasets; dataset++){
      std::cout<<"dataset:"<<dataset<<std::endl;
      int selIndex = pyRes->selectedModelIndex[dataset];
      if (selIndex >= 0){
-//	std::cout<<"selIndex >=0"<<std::endl;
+        pyRes->validResult.push_back(true);
+	std::cout<<"selIndex is:"<<selIndex<<std::endl;
         std::vector<python_dichotomous_analysis> modGroup;
         std::vector<python_dichotomous_model_result> modResGroup;
         struct python_dichotomous_analysis modAnal;
@@ -4476,25 +4539,191 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
 //        modRes->nparms = modAnal->parms;
         anal.nmodels.push_back(1);
         modAnal = pyAnal->models[dataset][selIndex];
+        modGroup.push_back(modAnal);
+	anal.degree.push_back(modAnal.degree);
+	anal.models.push_back(modGroup);
+	anal.n.push_back(modAnal.n);
+	anal.ndatasets++;
+
+	res.nmodels.push_back(1);
+	res.selectedModelIndex.push_back(0);  //selected index is always zero since only one model
 	std::cout<<"size:"<<pyRes->models[dataset].size()<<std::endl;
         modRes = pyRes->models[dataset][selIndex];
-        modGroup.push_back(modAnal);
         modResGroup.push_back(modRes);
+	res.models.push_back(modResGroup);
+
      } else {
-        std::cout<<"error in pythonBMDSMultitumor.  Individual model should have been selected"<<std::endl;
+        //std::cout<<"error in pythonBMDSMultitumor.  Individual model should have been selected"<<std::endl;
+	     std::cout<<"Warning: multistage model not selected for dataset:"<<dataset<<std::endl;
+	     std::cout<<"This dataset will be dropped."<<std::endl;
+	     pyRes->validResult.push_back(false);
      }
    }
    anal.ndatasets = anal.nmodels.size();
+   res.ndatasets = anal.ndatasets;
 
-   std::cout<<"running multitumor model"<<std::endl;
+   std::cout<<"running multitumor model with "<<anal.ndatasets<<" datasets"<<std::endl;
    //run MSCombo
-   runMultitumorModel(pyAnal, pyRes);  
+   //runMultitumorModel(pyAnal, pyRes);  
+   runMultitumorModel(&anal, &res);  
 
+   pyRes->BMD = res.BMD;
+   pyRes->BMDL = res.BMDL;
+   pyRes->BMDU = res.BMDU;
+   pyRes->slopeFactor = res.slopeFactor;
+   pyRes->combined_LL = res.combined_LL;
+   pyRes->combined_LL_const = res.combined_LL_const;
 }  
 
 
-void selectMultitumorModel(){
+void selectMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
    std::cout<<"selectMultitumorModel: to be implemented"<<std::endl;
+
+
+   if (pyRes->selectedModelIndex.size() > 0){
+      pyRes->selectedModelIndex.clear();
+   }
+
+   for (int i=0; i<pyAnal->ndatasets; i++){ 
+      if(pyAnal->degree[i] == 0){
+        std::cout<<"Begin model selection for dataset:"<<i<<std::endl;
+        int selectedIndex = selectBestMultitumorModel(pyAnal->models[i], pyRes->models[i]);
+        pyRes->selectedModelIndex.push_back(selectedIndex);
+        std::cout<<"for dataset:"<<i<<" selected index:"<<selectedIndex<<std::endl;
+      } else {
+	//in this case the only the user selected model was run
+	pyRes->selectedModelIndex.push_back(0);
+      }
+   }
+
+}
+
+int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analModels, std::vector<python_dichotomous_model_result> &resModels){
+
+   std::cout<<"inside selectBestMultitumorModel"<<std::endl;
+   double bmdDoseSRLimit = 2.0; // scaled residual at BMD dose < value
+   double controlDoseSRLimit = 2.0; // scaled residual at control dose < value
+   double pValueMin = 0.05; // p-value > value
+
+   std::vector<bool> modelHitBoundary;  //checks whether specific model hit boundary
+   std::vector<bool> adequateFit;
+   bool anyHitBoundary = false;
+   bool anyAdequateFit = false;
+
+   for (int i=0; i<analModels.size(); i++){
+      std::cout<<"analyzing model:"<<i<<std::endl;
+      //check parameter boundaries
+      modelHitBoundary.push_back(false);
+      std::vector<bool> bounded = resModels[i].bmdsRes.bounded;
+      for (int j=0; j<bounded.size(); j++){
+         if (bounded[j]){
+            modelHitBoundary[i] = true;
+	    std::cout<<"    hit boundary for parm:"<<j<<std::endl;
+	 }
+      }
+      //check adequate fit
+      //1. scaled residual at BMD dose < bmdDoseSRLimit
+      //2. scaled residual at control dose < controlDoseSRLimit
+      //3. If 1 & 2 are met, p-value > pValueMin
+      //Note: these values are all currently hardcoded.  Need to account for/allow user changes
+      adequateFit.push_back(false);
+      if (resModels[i].getSRAtDose(resModels[i].bmdsRes.BMD, analModels[i].doses) < bmdDoseSRLimit && resModels[i].gof.residual[0] < controlDoseSRLimit && resModels[i].gof.p_value > pValueMin){
+        adequateFit[i] = true;
+        std::cout<<"   setting adequateFit for model:"<<i<<std::endl;	
+      }
+   }
+
+
+   //first only examine models up to k-2
+   anyHitBoundary = false;
+   anyAdequateFit = false;
+   for (int i=0; i<analModels.size()-1; i++){
+     if(modelHitBoundary[i]){
+        anyHitBoundary = true;
+     }
+     if(adequateFit[i]){
+        anyAdequateFit = true;
+     }
+   }
+
+   if (anyHitBoundary) std::cout<<"at least one model hit a boundary"<<std::endl;
+   if (anyAdequateFit) std::cout<<"at least one model adequately fit"<<std::endl;
+
+   if (anyHitBoundary){
+      std::cout<<"Using SOP step 2 due to model hitting boundary"<<std::endl;
+      //at least one model had a parameter that hit a boundary
+      //step 2 under SOP instructions
+      if(adequateFit[0] && adequateFit[1]){
+	 std::cout<<"2. Both linear and quadratic adequately fit"<<std::endl;
+         //both linear and quadratic models fit
+         if(!modelHitBoundary[0] && !modelHitBoundary[1]){
+	    std::cout<<"Neither linear or quadratic hit a boundary"<<std::endl;
+            //choose model with lowest AIC
+            if (round_to(resModels[1].bmdsRes.AIC, BMDS_EPS) < round_to(resModels[0].bmdsRes.AIC, BMDS_EPS)){
+	       std::cout<<"quadratic had lowest AIC"<<std::endl;
+	       return 1;
+	    } else {
+	       std::cout<<"linear had lowest AIC"<<std::endl;
+	       return 0;
+	    }
+	 } else {
+           //choose model with lowest BMDL
+           std::cout<<"2. linear and/or quadratic hit boundary"<<std::endl;
+	   if (round_to(resModels[1].bmdsRes.BMDL, BMDS_EPS) < round_to(resModels[0].bmdsRes.BMDL, BMDS_EPS)){
+	       std::cout<<"quadratic had lowest BMDL"<<std::endl;
+              return 1;
+	   } else {
+	       std::cout<<"linear had lowest BMDL"<<std::endl;
+	      return 0;
+	   }
+	 }	 
+      } else if(adequateFit[0]){
+        //only linear fits
+	std::cout<<"only linear adequately fit"<<std::endl;
+	return 0;
+      } else if(adequateFit[1]){
+        //only quadratic fits
+	std::cout<<"only quadratic adequately fit"<<std::endl;
+	return 1;
+      } else {
+	//neither fit - refer to SWG
+	std::cout<<"neither linear or quadratic adequately fit. returning no model selected"<<std::endl;
+	return -1;
+      }
+      //return 1;
+
+   } else {
+      std::cout<<"Using SOP step 1 since no model hit a boundary"<<std::endl;
+      //no models had a paramter hit the boundary
+      //step 1 under SOP instructions
+      if(anyAdequateFit){
+	 std::cout<<"1. some models adequately fit, using lowest AIC"<<std::endl;
+         //use lowest AIC model that adequately fits up to k-2 model (exclude k-1 model)
+         std::vector<double> modelAIC;
+	 for (int i=0; i<resModels.size()-1; i++){
+            modelAIC.push_back(resModels[i].bmdsRes.AIC);  
+	 }
+	 //now find the lowest AIC
+         int index = std::distance(std::begin(modelAIC), std::min_element(std::begin(modelAIC), std::end(modelAIC)));
+	 std::cout<<"model:"<<index<<" had lowest AIC of "<<resModels[index].bmdsRes.AIC<<std::endl;
+         return index;
+      } else {
+	 //no adequateFit models.  Examine k-1 model
+         std::cout<<"1. No models adequately fit.  Examining k-1 model"<<std::endl;
+         if(adequateFit[analModels.size()-1]){
+            std::cout<<"k-1 model adequately fit"<<std::endl;
+            return analModels.size()-1; //use k-1 model
+	 } else {
+            std::cout<<"k-1 model did NOT adequately fit; returning no model selected"<<std::endl;
+            return -1;  //no model selected
+	 }
+      }
+   }
+
+
+
+
+   return(1);  //returns degree 2 for current test example
 }
 
 void BMDS_ENTRY_API __stdcall testCall(){
@@ -4505,14 +4734,20 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
 
    std::cout<<"Inside runMultitumorModel"<<std::endl;
 
+   std::cout<<"pyAnal->ndatasets:"<<pyAnal->ndatasets<<std::endl;
    //calculate slopeFactor for all individual models
    for (int i=0; i<pyAnal->ndatasets; i++){
       for (int j=0; j<pyAnal->nmodels[i]; j++){
+//	 std::cout<<"for dataset:"<<i<<" there are "<<pyAnal->nmodels[i]<<" models"<<std::endl;
+//	 std::cout<<"double check pyAnal->models[i].size():"<<pyAnal->models[i].size()<<std::endl;
          double bmr = pyAnal->models[i][j].BMR;
+//	 std::cout<<"after BMR:"<<bmr<<std::endl;
          double bmdl = pyRes->models[i][j].bmdsRes.BMDL;
+//	 std::cout<<"after BMDL:"<<bmdl<<std::endl;
          if (bmdl > 0.0){
             pyRes->models[i][j].bmdsRes.slopeFactor = bmr/bmdl;
          }
+//	 std::cout<<"after slopefactor:"<<pyRes->models[i][j].bmdsRes.slopeFactor<<std::endl;
       }
    }
 
@@ -4522,16 +4757,32 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
    pyRes->combined_LL = 0.0; 
    pyRes->combined_LL_const = 0.0;
    for (int i=0; i<pyAnal->ndatasets; i++){
+     std::cout<<"inside loop i:"<<i<<std::endl;
      int selIndex = pyRes->selectedModelIndex[i];
+     std::cout<<"after selIndex"<<std::endl;
      pyRes->combined_LL += pyRes->models[i][selIndex].max;
+     std::cout<<"after max"<<std::endl;
      pyRes->combined_LL_const += LogLik_Constant(pyAnal->models[i][selIndex].Y, pyAnal->models[i][selIndex].n_group);
+     std::cout<<"after combined_LL_const"<<std::endl;
    }
    pyRes->combined_LL = pyRes->combined_LL*-1;
    pyRes->combined_LL_const = pyRes->combined_LL_const*-1;
 
 
    std::cout<<"B4 Multistage_ComboBMD"<<std::endl;
+   std::cout<<"pyRes->ndatasets:"<<pyRes->ndatasets<<std::endl;
+   for (size_t i=0; i<pyRes->ndatasets; i++){
+      std::cout<<"i:"<<i<<", selectedModelIndex:"<<pyRes->selectedModelIndex[i]<<std::endl;
+      std::cout<<"   degree:"<<pyAnal->degree[i]<<std::endl;
+   }
    Multistage_ComboBMD(pyAnal, pyRes);
+
+   pyRes->slopeFactor = pyAnal->BMR/pyRes->BMDL;
+
+   std::cout<<"after Multistage_ComboBMD"<<std::endl;
+   std::cout<<"BMD:"<<pyRes->BMD<<std::endl;
+   std::cout<<"BMDL:"<<pyRes->BMDL<<std::endl;
+   std::cout<<"BMDU:"<<pyRes->BMDU<<std::endl;
 
 //   pyRes->BMD = 6.005009;
 //   pyRes->BMDL = -5.402722;

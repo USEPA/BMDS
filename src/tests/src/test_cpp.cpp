@@ -4143,7 +4143,8 @@ void runPythonMultitumorAnalysis(){
     if (degree[dataset] == 0){
       //handle autoselect degree
       count = 0;
-      for (int deg=2; deg<anal.n[dataset]; deg++){
+      //run models from degree = 1 to k-1, where k = number of dose groups
+      for (int deg=1; deg<anal.n[dataset]; deg++){
         modAnal.degree = deg;
         modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
         modAnal.parms = modAnal.degree + 1;
