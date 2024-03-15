@@ -30,7 +30,6 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols);
 bool showResultsOverride = true;
 
 int main(void){
-//  test();
 
 //  runOldDichoAnalysis();
 
@@ -48,24 +47,6 @@ int main(void){
 
 }
 
-
-void test(){
-  std::string ver = version();
-  std::cout << "Version: " << ver << std::endl;
-  
-  int i = 3;
-  int j = 5;
-
-  int res = add2(i,j);
-  std::cout << "Add " << i << " + " << j << " = " << res << std::endl;
-  struct test_struct t;
-  t.BMD = 3.14;
-  t.n = 42;
-  t.validResult = false;
-  t.doses.assign({1,2,3,4,5}); 
-  testFun(&t);
-
-}
 
 //struct contInputData{
 //   double *D;

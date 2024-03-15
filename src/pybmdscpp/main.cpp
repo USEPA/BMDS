@@ -101,7 +101,8 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("lowerConf", &BMDS_results::lowerConf)
        .def_readwrite("upperConf", &BMDS_results::upperConf)
        .def_readwrite("validResult", &BMDS_results::validResult)
-       .def_readwrite("slopeFactor", &BMDS_results::slopeFactor);
+       .def_readwrite("slopeFactor", &BMDS_results::slopeFactor)
+       .def("setSlopeFactor", &BMDS_results::setSlopeFactor);
     py::class_<BMDSMA_results>(m, "BMDSMA_results")
        .def(py::init<>())
        .def_readwrite("BMD_MA", &BMDSMA_results::BMD_MA)
@@ -305,7 +306,8 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("BMDU", &python_multitumor_result::BMDU)
        .def_readwrite("slopeFactor", &python_multitumor_result::slopeFactor)
        .def_readwrite("combined_LL", &python_multitumor_result::combined_LL)
-       .def_readwrite("combined_LL_const", &python_multitumor_result::combined_LL_const);
+       .def_readwrite("combined_LL_const", &python_multitumor_result::combined_LL_const)
+       .def("setSlopeFactor", &python_multitumor_result::setSlopeFactor);
     py::class_<python_nested_analysis>(m, "python_nested_analysis")
        .def(py::init<>())
        .def_readwrite("model", &python_nested_analysis::model)
