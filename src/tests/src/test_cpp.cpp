@@ -20,7 +20,7 @@ void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
 void runPythonMultitumorAnalysis();
-void runMultitumorModel();
+void runTestMultitumorModel();
 void runPythonNestedAnalysis();
 void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
@@ -30,7 +30,6 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols);
 bool showResultsOverride = true;
 
 int main(void){
-//  test();
 
 //  runOldDichoAnalysis();
 
@@ -42,30 +41,12 @@ int main(void){
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
 //  runPythonNestedAnalysis();
-  runMultitumorModel();
+  runTestMultitumorModel();
 
   return 0;
 
 }
 
-
-void test(){
-  std::string ver = version();
-  std::cout << "Version: " << ver << std::endl;
-  
-  int i = 3;
-  int j = 5;
-
-  int res = add2(i,j);
-  std::cout << "Add " << i << " + " << j << " = " << res << std::endl;
-  struct test_struct t;
-  t.BMD = 3.14;
-  t.n = 42;
-  t.validResult = false;
-  t.doses.assign({1,2,3,4,5}); 
-  testFun(&t);
-
-}
 
 //struct contInputData{
 //   double *D;
@@ -4143,7 +4124,8 @@ void runPythonMultitumorAnalysis(){
     if (degree[dataset] == 0){
       //handle autoselect degree
       count = 0;
-      for (int deg=2; deg<anal.n[dataset]; deg++){
+      //run models from degree = 1 to k-1, where k = number of dose groups
+      for (int deg=1; deg<anal.n[dataset]; deg++){
         modAnal.degree = deg;
         modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
         modAnal.parms = modAnal.degree + 1;
@@ -4196,7 +4178,7 @@ void runPythonMultitumorAnalysis(){
 }
 
 
-void runMultitumorModel(){
+void runTestMultitumorModel(){
 
   enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                    //d_logprobit=5, d_multistage=6,d_probit=7,
@@ -4318,62 +4300,64 @@ void runMultitumorModel(){
     res.models.push_back(modResGroup);
   }
 
-  std::cout<<"adding selected model"<<std::endl;
-  res.selectedModelIndex.push_back(0);
-  res.selectedModelIndex.push_back(0);
-  res.selectedModelIndex.push_back(0);
-  std::cout<<"Selected model Indexes:  ";
-  //for (auto elem : res.selectedModelIndex) {
-  //      std::cout << elem << ", ";
-  //}
-  //std::cout<<std::endl;
+//  std::cout<<"adding selected model"<<std::endl;
+//  res.selectedModelIndex.push_back(0);
+//  res.selectedModelIndex.push_back(0);
+//  res.selectedModelIndex.push_back(0);
+//  std::cout<<"Selected model Indexes:  ";
 
-  res.validResult.push_back(true);
-  res.validResult.push_back(true);
-  res.validResult.push_back(true);
+//  res.validResult.push_back(true);
+//  res.validResult.push_back(true);
+//  res.validResult.push_back(true);
 
-  std::cout<<"adding res[0]"<<std::endl;
-  res.models[0][0].max = -182.8268;
-  res.models[0][0].parms.push_back(0.0);
-  res.models[0][0].parms.push_back(0.0);
-  res.models[0][0].parms.push_back(4.56977e-05);
-  res.models[0][0].bmd = 48.0167;
-  res.models[0][0].bmdsRes.BMD = 48.0167;
-  res.models[0][0].bmdsRes.BMDL = 44.1401;
-  res.models[0][0].bmdsRes.BMDU = 51.2664;
-  res.models[0][0].bmdsRes.AIC = 367.736;
-  res.models[0][0].bmdsRes.chisq = 8.17; 
-
-  std::cout<<"adding res[1]"<<std::endl;
-  res.models[1][0].max = -209.332;
-  res.models[1][0].parms.push_back(0.034571);
-  res.models[1][0].parms.push_back(0.0);
-  res.models[1][0].parms.push_back(4.90516e-05);
-  res.models[1][0].bmd = 47.2147;
-  res.models[1][0].bmdsRes.BMD = 47.2147;
-  res.models[1][0].bmdsRes.BMDL = 42.6674;
-  res.models[1][0].bmdsRes.BMDU = 50.8673;
-  res.models[1][0].bmdsRes.AIC = 422.664;
-  res.models[1][0].bmdsRes.chisq = 8.71; 
-
-  std::cout<<"adding res[2]"<<std::endl;
-  res.models[2][0].max = -171.622;
-  res.models[2][0].parms.push_back(0.011097);
-  res.models[2][0].parms.push_back(0.0169765);
-  res.models[2][0].parms.push_back(0.0);
-  res.models[2][0].bmd = 6.27976;
-  res.models[2][0].bmdsRes.BMD = 6.27976;
-  res.models[2][0].bmdsRes.BMDL = 5.59913;
-  res.models[2][0].bmdsRes.BMDU = 7.40053;
-  res.models[2][0].bmdsRes.AIC = 367.736;
-  res.models[2][0].bmdsRes.chisq = 8.17; 
+//  std::cout<<"adding res[0]"<<std::endl;
+//  res.models[0][0].max = -182.8268;
+//  res.models[0][0].parms.push_back(0.0);
+//  res.models[0][0].parms.push_back(0.0);
+//  res.models[0][0].parms.push_back(4.56977e-05);
+//  res.models[0][0].bmd = 48.0167;
+//  res.models[0][0].bmdsRes.BMD = 48.0167;
+//  res.models[0][0].bmdsRes.BMDL = 44.1401;
+//  res.models[0][0].bmdsRes.BMDU = 51.2664;
+//  res.models[0][0].bmdsRes.AIC = 367.736;
+//  res.models[0][0].bmdsRes.chisq = 8.17; 
+//
+//  std::cout<<"adding res[1]"<<std::endl;
+//  res.models[1][0].max = -209.332;
+//  res.models[1][0].parms.push_back(0.034571);
+//  res.models[1][0].parms.push_back(0.0);
+//  res.models[1][0].parms.push_back(4.90516e-05);
+//  res.models[1][0].bmd = 47.2147;
+//  res.models[1][0].bmdsRes.BMD = 47.2147;
+//  res.models[1][0].bmdsRes.BMDL = 42.6674;
+//  res.models[1][0].bmdsRes.BMDU = 50.8673;
+//  res.models[1][0].bmdsRes.AIC = 422.664;
+//  res.models[1][0].bmdsRes.chisq = 8.71; 
+//
+//  std::cout<<"adding res[2]"<<std::endl;
+//  res.models[2][0].max = -171.622;
+//  res.models[2][0].parms.push_back(0.011097);
+//  res.models[2][0].parms.push_back(0.0169765);
+//  res.models[2][0].parms.push_back(0.0);
+//  res.models[2][0].bmd = 6.27976;
+//  res.models[2][0].bmdsRes.BMD = 6.27976;
+//  res.models[2][0].bmdsRes.BMDL = 5.59913;
+//  res.models[2][0].bmdsRes.BMDU = 7.40053;
+//  res.models[2][0].bmdsRes.AIC = 367.736;
+//  res.models[2][0].bmdsRes.chisq = 8.17; 
 
 
 
   std::cout<<"calling runMultitumor"<<std::endl;
  //run MSCombo
   // pythonBMDSMultitumor(&anal, &res);
-  runMultitumorModel(&anal, &res);
+  
+
+  std::cout<<"here"<<std::endl; 
+//  runMultitumorModel(&anal, &res);
+  pythonBMDSMultitumor(&anal, &res);
+//  testCall();
+
 
 //  //individual model results
 //  for (int dataset=0; dataset<numDatasets; dataset++){

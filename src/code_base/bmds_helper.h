@@ -38,6 +38,9 @@ enum nested_model {nlogistic =1, nctr=2};
 #pragma pack(4)
 #endif
 
+//forward declarations
+double calcSlopeFactor(double bmr, double bmdl);
+
 struct test_struct{
   double BMD;
   int n;
@@ -60,6 +63,10 @@ struct BMDS_results{
   std::vector<double> upperConf;
   bool validResult;
   double slopeFactor;
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
 };
 
 struct BMDSMA_results{
@@ -201,6 +208,9 @@ struct python_dichotomous_model_result{
   struct dichotomous_GOF gof;
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
+
+
+  double getSRAtDose(double targetDose, std::vector<double> doses);
 };
 
 struct python_dichotomousMA_analysis{
@@ -297,6 +307,10 @@ struct python_multitumor_result{
   double slopeFactor;
   double combined_LL;  //combined log-likelihood 
   double combined_LL_const; //combined log-likelihood constant
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
 };
 
 struct python_nested_analysis{
@@ -403,7 +417,9 @@ void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python
 
 void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret);
 
-void selectMultitumorModel();
+void selectMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analModels, std::vector<python_dichotomous_model_result> &resModels);
 
 void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 
@@ -417,7 +433,8 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
-double objfunc(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
@@ -425,6 +442,7 @@ double myInequalityConstraint2(const std::vector<double> &x, std::vector<double>
 double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double slog(double X);
 double dslog(double P);
+double round_to(double value, double precision = 1.0);
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);

@@ -38,7 +38,7 @@ ENDIF()
 find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 # Include dir
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR}/../include)
 
 #lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
