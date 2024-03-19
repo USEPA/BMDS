@@ -209,35 +209,8 @@ struct python_dichotomous_model_result{
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
 
-//  double getSRAtBMDDose(std::vector<double> doses){
-//     std::vector<double> diff;
-//     double absDiff = DBL_MAX;
-//     double srVal = BMDS_MISSING;
-//     if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
-//	return BMDS_MISSING;
-//     }
-//     for (int i=0; i<doses.size(); i++){
-//        diff.push_back(abs(bmdsRes.BMD - doses[i]));
-//     }
-//     int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
-//
-//     return gof.residual[minIndex];
-//  }
 
-  double getSRAtDose(double targetDose, std::vector<double> doses){
-     std::vector<double> diff;
-     double absDiff = DBL_MAX;
-     double srVal = BMDS_MISSING;
-     if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
-	return BMDS_MISSING;
-     }
-     for (int i=0; i<doses.size(); i++){
-        diff.push_back(abs(targetDose - doses[i]));
-     }
-     int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
-
-     return gof.residual[minIndex];
-  }
+  double getSRAtDose(double targetDose, std::vector<double> doses);
 };
 
 struct python_dichotomousMA_analysis{

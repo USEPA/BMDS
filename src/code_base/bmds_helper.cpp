@@ -14,6 +14,23 @@
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
 std::string BMDS_VERSION = "2023.10a1";
 
+
+double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses){
+   std::vector<double> diff;
+   double absDiff = DBL_MAX;
+   double srVal = BMDS_MISSING;
+   if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
+      return BMDS_MISSING;
+   }
+   for (int i=0; i<doses.size(); i++){
+      diff.push_back(abs(targetDose - doses[i]));
+   }
+   int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
+
+   return gof.residual[minIndex];
+}
+
+
 int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
    int bounded = 0;
@@ -1647,75 +1664,6 @@ double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, voi
    }
    return -1*x[0];  
 }
-
-//double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *data){
-//
-//   std::cout<<"inside obj2"<<std::endl;
-//   msComboEq *d = reinterpret_cast<msComboEq*>(data);
-//   double bmr = d->bmr;
-//   int nT = d->nT;
-//   std::vector<int> degree = d->degree;
-//
-//   double D = exp(x[0]);
-//   int iIndex = x.size() - 1;
-//   double sum2 = 0.0;
-//   double sum = 0.0;
-//
-//   std::cout<<"starting calcs"<<std::endl;
-//   if (!grad.empty()){
-//     std::cout<<"Inside grad"<<std::endl;
-//     for (int l=nT-1; l>=0; l--){
-//        sum = 0.0;
-//        for (int k=degree[l]; k>0; k--){
-//           sum = sum*D + k*x[iIndex]*D;
-//           iIndex -= 1;
-//        }
-//        iIndex -= 1;
-//        sum2 += sum;
-//     }
-//     grad[0] = sum2;
-//     std::cout<<"grad[0]="<<grad[0]<<std::endl;
-//
-//     iIndex = 1;
-//     for (int k=0; k<nT; k++){
-//        grad[iIndex] = 0.0;
-//        if (iIndex == 2) {
-//          grad[iIndex] = D;
-//        } else {
-//          grad[iIndex] = 0.0;
-//        }
-//        for (int j=2; j<=degree[k]; j++){
-//          iIndex += 1;
-//          grad[iIndex] = pow(D,j);
-//        }
-//        iIndex += 1;
-//     }
-//     for(int i=0; i<x.size(); i++){
-//       std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
-//     }
-//   }
-//   //equality constraint calc
-//   sum = log(1.0 - bmr);
-//   std::cout<<"sum="<<sum<<std::endl;
-//   iIndex = x.size() - 1;
-//   double sum3 = 0.0;
-//   std::cout<<"Starting obj NT loop"<<std::endl;
-//   for (int l=nT-1; l>=0; l--){
-//     std::cout<<"loop l="<<l<<std::endl;
-//     sum2 = 0.0;
-//     for (int k=degree[l]; k>0; k--){
-//        sum2 = sum2*D + x[iIndex]*D;
-//        std::cout<<"loop k="<<k<<", iIndex="<<iIndex<<", sum2="<<sum2<<std::endl;
-//        iIndex -= 1;
-//     }
-//     iIndex -= 1;
-//     sum3 += sum2;
-//     std::cout<<"l="<<l<<", sum3="<<sum3<<std::endl;
-//   }
-//
-//   std::cout<<"obj2="<<(sum+sum3)<<std::endl;
-//   return fabs(sum + sum3);
-//}
 
 double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
   
@@ -3874,3 +3822,5 @@ double round_to(double value, double precision ){
    double res = std::round(value / precision) * precision;
    return res;
 }
+
+
