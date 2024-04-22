@@ -17,7 +17,7 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: ["3.11"]
-        os: ["windows-2022"]
+        os: ["windows-2024"]
     steps:
       - uses: actions/checkout@v3
       # - name: install nlopt
@@ -37,6 +37,7 @@ jobs:
       #     git clone --depth 1 --branch 3.4.0 https://gitlab.com/libeigen/eigen.git
       #     ls ${{github.workspace}}\eigen\Eigen\src
       #     echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
+      - uses: microsoft/setup-msbuild@v2
       - name: install gsl
         shell: pwsh
         run: |
