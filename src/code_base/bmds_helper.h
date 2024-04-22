@@ -29,12 +29,17 @@ const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
 extern std::string BMDS_VERSION; 
 
+enum nested_model {nlogistic =1, nctr=2};
+
 // BMDS helper structures
 #ifdef _WIN64
 #pragma pack(8)
 #elif _WIN32
 #pragma pack(4)
 #endif
+
+//forward declarations
+double calcSlopeFactor(double bmr, double bmdl);
 
 struct test_struct{
   double BMD;
@@ -57,6 +62,11 @@ struct BMDS_results{
   std::vector<double> lowerConf;
   std::vector<double> upperConf;
   bool validResult;
+  double slopeFactor;
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
 };
 
 struct BMDSMA_results{
@@ -69,7 +79,6 @@ struct BMDSMA_results{
   std::vector<double> ebLower;  //size is number of dose groups
   std::vector<double> ebUpper;  //size is number of dose groups
 };
-
 
 //all arrays are length 4
 struct testsOfInterest {
@@ -92,7 +101,7 @@ struct continuous_AOD{
   std::vector<int> nParms;
   std::vector<double> AIC;
   double addConst;
-  struct testsOfInterest *TOI;
+  struct testsOfInterest TOI;
 };
 
 struct dicho_AOD{
@@ -138,6 +147,34 @@ struct dichotomous_GOF {
   std::vector<double> ebUpper;
 };
 
+struct nestedBootstrap{
+  int numRuns;
+  std::vector<double> pVal; //size = numRuns + 1
+  std::vector<double> perc50;
+  std::vector<double> perc90;
+  std::vector<double> perc95;
+  std::vector<double> perc99;
+};
+
+struct nestedLitterData{
+  int numRows;
+  std::vector<double> dose; //size = numRows
+  std::vector<double> LSC;
+  std::vector<double> estProb;
+  std::vector<double> litterSize;
+  std::vector<double> expected;
+  std::vector<int> observed;
+  std::vector<double> SR;
+};
+
+struct nestedReducedData{
+  int numRows;
+  std::vector<double> dose; //size = numRows
+  std::vector<double> propAffect;  //estimate of proportion affected
+  std::vector<double> lowerConf;
+  std::vector<double> upperConf;
+};
+
 struct python_dichotomous_analysis{
   int model; // Model Type as listed in dich_model
   int n;     // total number of observations obs/n
@@ -168,6 +205,12 @@ struct python_dichotomous_model_result{
   double  bmd;                  // the central estimate of the BMD
   double gof_p_value;           // P-value from Chi Square goodness of fit
   double gof_chi_sqr_statistic; // Chi Square Statistic for goodness of fit
+  struct dichotomous_GOF gof;
+  struct BMDS_results bmdsRes;
+  struct dicho_AOD aod;
+
+
+  double getSRAtDose(double targetDose, std::vector<double> doses);
 };
 
 struct python_dichotomousMA_analysis{
@@ -180,6 +223,7 @@ struct python_dichotomousMA_analysis{
                        		// presently there are only 5
   std::vector<int> models;      // list of models this is defined by dich_model.
   std::vector<double> modelPriors; // prior probability on the model
+  struct python_dichotomous_analysis pyDA;
 };
 
 struct python_dichotomousMA_result{
@@ -188,6 +232,7 @@ struct python_dichotomousMA_result{
   int dist_numE; // number of entries in rows for the bmd_dist
   std::vector<double> post_probs; // posterior probabilities
   std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  struct BMDSMA_results bmdsRes;
 };
 
 struct python_continuous_analysis{
@@ -211,6 +256,8 @@ struct python_continuous_analysis{
   int parms; // number of parameters
   int prior_cols;
   int transform_dose; // Use the arc-sin-hyperbolic inverse to transform dose.
+  bool restricted;
+  bool detectAdvDir;
 };
 
 struct python_continuous_model_result{
@@ -225,9 +272,102 @@ struct python_continuous_model_result{
   double    total_df;        // Total degrees of freedom
   double    bmd;             // The bmd at the maximum
   std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  struct continuous_GOF gof;
+  struct BMDS_results bmdsRes;
+  struct continuous_AOD aod;
 };
 
 
+struct python_multitumor_analysis{
+//  int model; // Model Type as listed in dich_model
+  int ndatasets;
+
+  std::vector<std::vector<python_dichotomous_analysis>> models; //(size ndatasets * nmodels[i])
+
+  std::vector<int> n;     // total number of observations per dataset (size ndatasets)
+  std::vector<int> nmodels;  //# of models per dataset (size ndatasets)
+  int BMD_type; // 1 = extra ; added otherwise
+  double BMR;
+  double alpha; // alpha of the analysis
+  int prior_cols; // colunns in the prior
+  std::vector<int> degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
+};
+
+struct python_multitumor_result{
+  int ndatasets; //number of models for each
+  std::vector<bool> validResult;
+  std::vector<int> nmodels; //# of models per dataset (size ndatasets)
+  std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
+  std::vector<int> selectedModelIndex;
+  //int dist_numE; // number of entries in rows for the bmd_dist
+  //std::vector<double> bmd_dist; // bmd ma distribution (dist_numE x 2) matrix
+  double BMD;
+  double BMDL;
+  double BMDU;
+  double slopeFactor;
+  double combined_LL;  //combined log-likelihood 
+  double combined_LL_const; //combined log-likelihood constant
+
+  void setSlopeFactor(double bmr){
+      slopeFactor = calcSlopeFactor(bmr, BMDL);
+  }
+};
+
+struct python_nested_analysis{
+  int model;  //model type in nest_model enum
+  bool restricted;
+  std::vector<double> doses;
+  std::vector<double> litterSize;
+  std::vector<double> incidence;   
+  std::vector<double> lsc;  //litter specific covariate
+  int LSC_type;  // 1 = Overall Mean; control group mean otherwise
+  int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
+  int BMD_type;  // 1 = extra;  added otherwise
+  double background; // -9999 (BMDS_MISSING) = estimated; zero otherwise
+  double BMR;
+  double alpha;
+  int iterations;
+  long seed;  // -9999 = automatic;  seed value otherwise
+};
+
+struct python_nested_result{
+  enum nested_model model;
+  int nparms;
+  std::vector<double> parms;
+  std::vector<double> cov;
+  double max;
+  double df;
+  double fixedLSC;
+  double LL;
+  double obsChiSq;
+  double combPVal;
+  std::vector<double> SRs;
+  struct BMDS_results bmdsRes;
+  //NestedLitterDataRow
+  struct nestedLitterData litter;
+  //NestedBootstrapRow
+  struct nestedBootstrap boot;
+  //Nested Reduced DataRow
+  struct nestedReducedData reduced;
+  bool validResult;
+};
+
+
+struct msComboEq{
+  double bmr;
+  int nT;
+  std::vector<int> degree;
+};
+
+struct msComboInEq{
+  int nT;
+  double target;
+  std::vector<int> nObs;
+  std::vector<int> degree;
+  std::vector<std::vector<double>> doses;
+  std::vector<std::vector<double>> Y;
+  std::vector<std::vector<double>> n_group;
+};
 
 #ifdef _WIN32
 #pragma pack()
@@ -260,7 +400,7 @@ void calc_dichoAOD(struct dichotomous_analysis *DA, struct dichotomous_model_res
 
 void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct BMDS_results *BMDres, double estParmCount);
 
-void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres);
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDres, double alpha);
 
 void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *BMDres);
 
@@ -277,6 +417,34 @@ void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python
 
 void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret);
 
+void selectMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analModels, std::vector<python_dichotomous_model_result> &resModels);
+
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+double DLgamma(double x);
+double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
+double zeroin(double ax,double bx, double tol,
+              double (*f)(int, double [], double, double), int nparm,
+              double Parms[], double ck);
+double BMD_func(int n, double p[], double x, double ck);
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
+double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
+double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint2(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
+double slog(double X);
+double dslog(double P);
+double round_to(double value, double precision = 1.0);
+double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
+
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
@@ -289,11 +457,15 @@ int BMDS_ENTRY_API __stdcall add2(int i, int j);
 
 void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes);
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes);
 
-void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted);
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes);
 
 #ifdef __cplusplus
 }

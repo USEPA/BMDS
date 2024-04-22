@@ -135,3 +135,7 @@
   double prRFreqPoly4NCVUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,-1e8,0,0,0,0,-1000,-1000,1e8,1e8,1e8,1e8,1e8,1000,1000}; //poly 4
   double prRFreqPoly5NCVUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,-1e8,0,0,0,0,0,-1000,-1000,1e8,1e8,1e8,1e8,1e8,1e8,1000,1000}; //poly 5
 
+
+  //MS cancer
+  double prRFreqMultistageCancerG[] = {0, -17, 0, -18, 18};
+  double prRFreqMultistageCancerB[] = {0, 0.1, 0, 0, 1e4};

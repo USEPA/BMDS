@@ -34,7 +34,7 @@ ELSE()
 ENDIF()
 find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
-include_directories(${CPP_BASE}/tests/src ${CPP_BASE}/build ${CPP_BASE}/include ${CPP_BASE}/code_base ${EIGEN_DIR} ${NLOPT_DIR} ${GSL_DIR})
+include_directories(${CPP_BASE}/tests/src ${CPP_BASE}/build ${CPP_BASE}/include ${CPP_BASE}/code_base ${EIGEN_DIR} ${NLOPT_DIR}/../include ${GSL_DIR})
 
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 

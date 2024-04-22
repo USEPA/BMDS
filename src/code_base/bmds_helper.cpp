@@ -4,13 +4,32 @@
 	#include "stdafx.h"
 #endif
 #include <stdio.h>
+#include <iomanip>
 #include <math.h>
 //#include <cmath>
+#include <nlopt.hpp>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
 std::string BMDS_VERSION = "2023.10a1";
+
+
+double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses){
+   std::vector<double> diff;
+   double absDiff = DBL_MAX;
+   double srVal = BMDS_MISSING;
+   if(!bmdsRes.validResult ||  doses.size() != gof.residual.size()){
+      return BMDS_MISSING;
+   }
+   for (int i=0; i<doses.size(); i++){
+      diff.push_back(abs(targetDose - doses[i]));
+   }
+   int minIndex = std::distance(std::begin(diff), std::min_element(std::begin(diff), std::end(diff)));
+
+   return gof.residual[minIndex];
+}
+
 
 int checkForBoundedParms(int nparms, double *parms, double *lowerBound, double *upperBound, struct BMDS_results *BMDSres ){
    // First find number of bounded parms
@@ -135,8 +154,8 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 
   calcDichoAIC(anal, res, BMDSres, estParmCount);
   BMDSres->BMD = findQuantileVals(quant, val, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(quant, val, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(quant, val, distSize/2, 1.0-anal->alpha);
 
   free(quant);
   free(val);
@@ -144,7 +163,7 @@ void collect_dicho_bmd_values(struct dichotomous_analysis *anal, struct dichotom
 }
 
 
-void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres){
+void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res, struct BMDSMA_results *BMDSres, double alpha){
 
   int distSize = res->dist_numE*2;
 
@@ -157,11 +176,11 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
   for (int i = distSize/2; i < distSize; i++){
     quantMA[i-distSize/2] = res->bmd_dist[i];
   }
-
+ 
 //  calculate MA quantiles
   BMDSres->BMD_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+  BMDSres->BMDL_MA = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+  BMDSres->BMDU_MA = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
 
 // calculate individual model quantiles
   for (int j=0; j<anal->nmodels; j++){
@@ -172,8 +191,8 @@ void collect_dichoMA_bmd_values(struct dichotomousMA_analysis *anal, struct dich
         quantMA[i-distSize/2] = res->models[j]->bmd_dist[i];
       }
       BMDSres->BMD[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.50);
-      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.05);
-      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 0.95);
+      BMDSres->BMDL[j] = findQuantileVals(quantMA, valMA, distSize/2, alpha);
+      BMDSres->BMDU[j] = findQuantileVals(quantMA, valMA, distSize/2, 1.0-alpha);
   }
   free(quantMA);
   free(valMA);
@@ -196,20 +215,1617 @@ void collect_cont_bmd_values(struct continuous_analysis *anal, struct continuous
 
   calcContAIC(anal, res, BMDSres);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize/2, 0.50);
-  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, 0.05);
-  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 0.95);
+  BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize/2, anal->alpha);
+  BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize/2, 1.0-anal->alpha);
 
   free(contVal);
   free(contQuant);
 }
 
+/*****************************************************************
+ * DLgama - double log gamma
+ *  input:
+ *   X - double value
+ *  Returns log(z-1)!
+ *************************/
+double DLgamma(double x){
+
+   double r, az, z, y, dl;
+   if (x==0) return 1;
+   z = x;
+   r = 12.0;
+   az = 1.0;
+   for (;z-r < 0; z++) az = az * z;
+  y = z * z;
+  dl=0.91893853320467274-z+(z-0.5)*log(z)+z*
+     (0.08333333333333333*y+0.0648322851140734)/
+     (y*(y+0.811320754825416)+0.01752021563249146);
+  dl = dl - log(az);
+  return dl ;  
+
+}
+
+//calculate dichotomous log likelihood constant
+double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group){
+   
+   double X, N, NX, con, xf, nf, nxf, val;
+   
+   con = 0;
+   for (int i=0; i<Y.size(); i++){
+      X = Y[i]+1;
+      N = n_group[i] + 1;
+      NX = n_group[i] - Y[i] + 1;
+      xf = exp(DLgamma(X));
+      nf = exp(DLgamma(N));
+      nxf = exp(DLgamma(NX));
+      val = log(nf/(xf*nxf));
+      con += val;
+   }
+   
+   return con;
+}
+
+
+
+
+/*
+ *  ************************************************************************
+ *	    		    C math library
+ * function ZEROIN - obtain a function zero within the given range
+ *
+ * Input
+ *	double zeroin(ax,bx,tol, f,nparm, parm, gtol)
+ *	double ax; 			Root will be sought for within
+ *	double bx;  			a range [ax,bx]
+ *	double (*f)(nparm, parm, double x, double gtol); Name of the function whose zero
+ *					will be sought
+ *	double tol;			Acceptable tolerance for the root value.
+ *					May be specified as 0.0 to cause
+ *					the program to find the root as
+ *					accurate as possible
+ *     int nparm                        length of parameter vector to f
+ *     double parm[]                    vector of parameters to f
+ *     double gtol                      additional scaler parameter to f
+ *
+ * Output
+ *	Zeroin returns an estimate for the root with accuracy
+ *	4*EPSILON*abs(x) + tol
+ *
+ * Algorithm
+ *	G.Forsythe, M.Malcolm, C.Moler, Computer methods for mathematical
+ *	computations. M., Mir, 1980, p.180 of the Russian edition
+ *
+ *	The function makes use of the bissection procedure combined with
+ *	the linear or quadric inverse interpolation.
+ *	At every step program operates on three abscissae - a, b, and c.
+ *	b - the last and the best approximation to the root
+ *	a - the last but one approximation
+ *	c - the last but one or even earlier approximation than a that
+ *		1) |f(b)| <= |f(c)|
+ *		2) f(b) and f(c) have opposite signs, i.e. b and c confine the root
+ *	At every step Zeroin selects one of the two new approximations, the
+ *	former being obtained by the bissection procedure and the latter
+ *	resulting in the interpolation (if a,b, and c are all different
+ *	the quadric interpolation is utilized, otherwise the linear one).
+ *	If the latter (i.e. obtained by the interpolation) point is 
+ *	reasonable (i.e. lies within the current interval [b,c] not being
+ *	too close to the boundaries) it is accepted. The bissection result
+ *	is used in the other case. Therefore, the range of uncertainty is
+ *	ensured to be reduced at least by the factor 1.6
+ *
+ ************************************************************************
+ */
+
+double zeroin(double ax,double bx, double tol,
+	      double (*f)(int, double [], double, double), int nparm,
+	      double Parms[], double ck)		
+     /* ax        Left border | of the range */
+     /* bx        Right border | the root is sought*/
+     /* f	  Function under investigation */
+     /* nparm     number of parameters in Parms */
+     /* Parms     vector of parameters to pass to f */
+     /* tol       Acceptable tolerance for the root */
+     /* gtol      tolerance to pass to f */
+//TODO: clean up comments after debugging is complete
+{
+  double a,b,c;				/* Abscissae, descr. see above	*/
+  double fa;				/* f(a)				*/
+  double fb;				/* f(b)				*/
+  double fc;				/* f(c)				*/
+
+  std::cout<< std::fixed << std::showpoint;
+  std::cout << std::setprecision(15); 
+//  std::cout<<"inside zeroin"<<std::endl;
+//  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
+//  std::cout<<"nparm="<<nparm<<std::endl;
+//  int i;
+//  for (i=0;i<nparm;i++){
+//	  std::cout<<"i="<<i<<", Parms[i]="<<Parms[i]<<std::endl;
+//  }
+
+  a = ax;  b = bx;
+//  printf("fa calc\n");
+  fa = (*f)(nparm-1, Parms, a, ck);
+//  printf("fb calc\n");
+  fb = (*f)(nparm-1, Parms, b, ck);
+//  printf("fa=%g\n", fa);
+//  printf("fb=%g\n", fb);
+  c = a;   fc = fa;
+
+  for(;;)		/* Main iteration loop	*/
+  {
+    double prev_step = b-a;		/* Distance from the last but one*/
+					/* to the last approximation	*/
+    double tol_act;			/* Actual tolerance		*/
+    double p;      			/* Interpolation step is calcu- */
+    double q;      			/* lated in the form p/q; divi- */
+  					/* sion operations is delayed   */
+ 					/* until the last moment	*/
+    double new_step;      		/* Step at this iteration       */
+//    std::cout<<"start of loop"<<std::endl;
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+    if( fabs(fc) < fabs(fb) )
+    {                         		/* Swap data for b to be the 	*/
+	a = b;  b = c;  c = a;          /* best approximation		*/
+	fa=fb;  fb=fc;  fc=fa;
+    }
+    tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
+    new_step = (c-b)/2;
+
+//    std::cout<<"tol_act="<<tol_act<<std::endl;
+    if( fabs(new_step) <= tol_act || fb == (double)0 ){
+//      std::cout<<"returning b:"<<b<<std::endl;
+      return b;				/* Acceptable approx. is found	*/
+    }
+
+//    std::cout<<"continuing for another loop"<<std::endl;
+    			/* Decide if the interpolation can be tried	*/
+    if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
+	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
+    {					/* Interpolatiom may be tried	*/
+//	std::cout<<"trying interpolation"<<std::endl;
+	double t1,cb,t2;
+	cb = c-b;
+	if( a==c )			/* If we have only two distinct	*/
+	{				/* points linear interpolation 	*/
+	  t1 = fb/fa;			/* can only be applied		*/
+	  p = cb*t1;
+	  q = 1.0 - t1;
+ 	}
+	else				/* Quadric inverse interpolation*/
+	{
+	  q = fa/fc;  t1 = fb/fc;  t2 = fb/fa;
+	  p = t2 * ( cb*q*(q-t1) - (b-a)*(t1-1.0) );
+	  q = (q-1.0) * (t1-1.0) * (t2-1.0);
+	}
+	if( p>(double)0 )		/* p was calculated with the op-*/
+	  q = -q;			/* posite sign; make p positive	*/
+	else				/* and assign possible minus to	*/
+	  p = -p;			/* q				*/
+
+	if( p < (0.75*cb*q-fabs(tol_act*q)/2)	/* If b+p/q falls in [b,c]*/
+	    && p < fabs(prev_step*q/2) )	/* and isn't too large	*/
+	  new_step = p/q;			/* it is accepted	*/
+					/* If p/q is too large then the	*/
+					/* bissection procedure can 	*/
+					/* reduce [b,c] range to more	*/
+					/* extent			*/
+    }
+
+    if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
+      {
+//	std::cout<<"adjusting step"<<std::endl;
+	if( new_step > (double)0 )	/* than tolerance		*/
+	  new_step = tol_act;
+	else
+	  new_step = -tol_act;
+      }
+
+    a = b;  fa = fb;			/* Save the previous approx.	*/
+    b += new_step;
+//	printf("2nd fb calc\n");
+    fb = (*f)(nparm-1, Parms, b, ck);	/* Do step to a new approxim.	*/
+    if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
+    {                 			/* Adjust c for it to have a sign*/
+      c = a;  fc = fa;                  /* opposite to that of b	*/
+    }
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+  }
+
+}
+
+
+/*****************************************************************
+ * BMD_func -- used to compute the values of functions BMD_f at
+ *            the point x, given the parm p[] and number of parm.
+ *            (ck is another parameter).
+ *            This routine is called by Binary_root().
+ *  input: n is the number of parameters
+ *         p[] is a vector of parameters
+ *         x is the natural log of a  dose level
+ *         ck
+ *  output: value of the function
+ *****************************************************************/
+double BMD_func(int n, double p[], double x, double ck)
+{
+  double  poly, fx, D;
+  int j;
+//  printf("\ninside BMD_func\n");
+  D = exp(x);
+//  printf("D=%g\n",D);
+  poly=p[n];
+//  printf("poly=%g\n",poly);
+  for (j=n-1; j>0; j--) {
+//     printf("j=%d, poly b4=%g\n", j, poly);
+     poly=poly*D+p[j];
+//     printf("poly after=%g\n", poly);
+  }
+  poly = poly*D;
+//  printf("final poly=%g\n",poly);
+//  printf("ck = %g\n", ck);
+  fx = poly - ck; /* ck = log(1-A) */
+  return fx;
+}
+
+
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
+ 
+   int nT = pyRes->selectedModelIndex.size(); 
+   double bmr = pyAnal->BMR;
+   std::vector<int> degree;
+   for (int j=0; j<nT; j++){
+     int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
+     degree.push_back(modDeg);
+   } 
+   int N = xParms.size() + 1;
+   double bmd = Dose;
+   std::vector<double> x(N);
+   int iOffset = 0;
+   x[0] = log(bmd);
+
+   std::vector<std::vector<double>> tmp2;
+   //restructure to group like terms together
+   int count = 0;
+   for (int i=0; i<nT; i++){
+      std::vector<double> theParms;
+      for (int j=0; j<=degree[i]; j++){
+	 theParms.push_back(xParms[count]);
+	 count++;
+      }
+      tmp2.push_back(theParms);
+   }
+
+   int maxDegree = *max_element(degree.begin(), degree.end());
+   count = 1;
+   for (int j=0; j<=maxDegree; j++){
+      for (int i=0; i<nT; i++){
+	 if (j<tmp2[i].size()){
+            x[count] = tmp2[i][j];
+	    count++;
+	 }
+      }
+   } 
+
+   //need to round to roughly single-precision for convergence?????
+   for (int j=1; j<x.size(); j++){
+      x[j] = round_to(x[j], 0.00001);
+   }
+
+   std::vector<double> lb(x.size());
+   std::vector<double> ub(x.size());
+
+   //calculate the values that will correspond to '0' and 'infinity' in BMD calcs
+   double lminbmd = log(DBL_MIN) - log(maxDose);
+   double lmaxbmd = log(DBL_MAX) - log(maxDose);
+
+   lb[0] = lminbmd;  //BMD lower limit
+   for (int i=1; i<x.size(); i++){
+     lb[i] = 0.0; //beta min value
+   }
+
+   ub[0] = log(maxDose);
+   for (int i=1; i<x.size(); i++){
+     ub[i] = 1e4; //beta max value
+   }
+
+   
+//   //constraint data
+   struct msComboEq eq1;
+   eq1.bmr = bmr;
+   eq1.nT = nT;
+   eq1.degree = degree;
+
+   struct msComboInEq ineq1;
+   ineq1.nT = nT;
+   ineq1.target = target;
+   //TODO need to add handling of failed datasets
+
+   for(int i=0; i<pyRes->selectedModelIndex.size(); i++){
+     int selIndex = pyRes->selectedModelIndex[i];
+     std::vector<double> scaledDose = pyAnal->models[i][selIndex].doses;
+     for (int j=0; j<scaledDose.size(); j++){
+       scaledDose[j] /= maxDose;
+     }
+     ineq1.doses.push_back(scaledDose);
+     ineq1.Y.push_back(pyAnal->models[i][selIndex].Y);
+     ineq1.n_group.push_back(pyAnal->models[i][selIndex].n_group);
+   }
+   ineq1.nObs = pyAnal->n;
+   ineq1.degree = degree;
+
+
+   nlopt::opt opt(nlopt::LD_SLSQP, x.size());
+   if (isBMDL){
+      opt.set_min_objective(objfunc_bmdl, NULL);
+   } else {
+      opt.set_min_objective(objfunc_bmdu, NULL);
+   }
+   opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
+   opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
+   opt.set_xtol_rel(1e-8);
+   opt.set_maxeval(1000000);
+   opt.set_lower_bounds(lb);
+   opt.set_upper_bounds(ub);
+
+   double minf, val;
+   nlopt::result result = nlopt::FAILURE;
+   try{
+     result = opt.optimize(x, minf);
+//     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+   } catch (std::exception &e){
+     std::cout << "nlopt failed: " << e.what() << std::endl;
+   }
+
+   val = x[0];
+
+
+   return val;
+
+}
+
+
+/*****************************************************************
+ *  Added by CVL 7/2007 - start block
+ * BMDL_combofunc -- returns the lower confidence limit, BMDL.
+ *  external: Spec[]
+ *  input:
+ *   nparm is the number of parameters for Model B
+ *   Anparm is the number of parameters for Model A
+ *   xlk is the log-likelihood of the fitted model
+ *   Dose is the BMD or upper dose limit
+ *   pBak[] is the vector of fitted parameters for Model B
+ *   pABak[] is the vector of fitted parameters for Model A
+ *   D is a lower dose limit
+ *   gtol is a small positive number (tolerance)
+ *  output: lower confidence limit
+ *****************************************************************/
+//TODO: combine with BMDU_combofunc
+double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero)
+{ 	/* ck and LR are calculated in Multistage_ComboBMD() */
+
+  int optite, nresm, *bind, CBnparm;
+  int which, temprisk, lnParmMax;
+  double fD, bmdl,  target, xmax, xlk2, xlk3, crisk;
+  int i, j, nCall, k, nParmMax, ii = 0;
+  double scale;
+
+//  std::cout<<"inside BMDL_combofunc"<<std::endl;
+
+  std::vector<double> adxmax;
+  int nParms;
+  fD = bmdl =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
+  optite = -5;
+  nCall = 1;
+
+  temprisk = 1;  //based on bmdparm.risk set to zero in original Multistage_ComboBMD
+
+  adxmax.resize(pyRes->ndatasets, 0.0);
+
+
+
+  CBnparm = lnParmMax = 0;
+  for(i = 0; i < pyRes->ndatasets; i++)
+  {
+      int selModelIndex = pyRes->selectedModelIndex[i];
+      struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
+      struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
+      xmax = mod.doses[0];
+      CBnparm = CBnparm + modRes.nparms;
+		
+      if(modRes.nparms > lnParmMax){
+         lnParmMax = modRes.nparms;
+      }
+
+//      std::cout<<"\n\nIn BMDL_combofunc, Tumor "<<i<<" data"<<std::endl;
+//      std::cout<<"       DOSE     Inc    N"<<std::endl;
+      for(j=0; j<mod.n; j++){
+         if(mod.doses[j] > xmax){
+            xmax = mod.doses[j];
+         }
+//         std::cout<<mod.doses[j]<<"   "<<mod.Y[j]<<"   "<<mod.n_group[j]<<std::endl;
+      }
+      adxmax[i] = xmax;
+  }
+  CBnparm = CBnparm + 1;
+
+  /** rescale all doses to be: 0 <= Dose <= 1 **/
+  xmax = adxmax[0];
+  for(i=0;i<pyRes->ndatasets; i++)
+    {
+      if(adxmax[i] > xmax) xmax = adxmax[i];
+    }
+  scale = xmax;
+
+  nParmMax = (int)lnParmMax;
+  nParms = pyRes->ndatasets*nParmMax;
+  std::vector<double> pdParms(nParms, 0.0);
+  std::vector<double> pdParmsBak(nParms, 0.0);
+  std::vector<double> pdParms2(nParms, 0.0);
+  std::vector<double> pdVals(nParms, 0.0);
+  std::vector<int> piSpec2(nParms, 0.0);
+
+
+//  std::cout<<"\nIn BMDL_combofunc, pdParms[j](MLEs)"<<std::endl;
+//  for(i=0; i<pyAnal->ndatasets; i++)
+//    {
+//      std::cout<<"Tumor "<<i<<"=>"<<std::endl;
+//      for(j = 0; j<pyRes->models[i][0].nparms; j++)
+//      {
+//        std::cout<<pyRes->models[i][0].parms[j]<<"\t";
+//      }
+//      std::cout<<std::endl;
+//    }
+
+  k = -1;
+  for(j=0; j<nParmMax; j++)
+    {
+      for(i=pyAnal->ndatasets-1; i>=0; i--)
+	{
+          k++;
+          if(j<pyRes->models[i][0].nparms)
+          {
+            pdParms[k] = pyRes->models[i][0].parms[j];
+            piSpec2[k] = 0.0;  //no user specified values
+ 	  }
+	}
+    }
+
+//  std::cout<<"\n\nIn BMDL_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
+  i = 0;
+//  for(j=0; j<pyAnal->ndatasets; j++){
+//     std::cout<<"      Tumor "<<j<<"\t";
+//  }
+//  std::cout<<std::endl;
+
+//  for(k = 0; k < nParmMax; k++)
+//  {
+//     for(j=0; j<pyAnal->ndatasets; j++){
+//       std::cout<<pdParms[i++]<<"\t";
+//     }
+//     std::cout<<std::endl;
+//   }
+
+  j=0;
+//  std::cout<<"\nIn BMDL_combofunc, Tumor Starting Values"<<std::endl;
+//  for(i=0; i<pyAnal->ndatasets; i++)
+//  {
+//     std::cout<<"Tumor "<<i<<" => "<<pdParms[i]<<std::endl;
+//  }
+
+//  std::cout<<"\nMaximum Dose = "<<xmax<<std::endl;
+
+  Dose = Dose/scale;
+//  std::cout<<"Scale = "<<scale<<std::endl;
+
+  which = 4;          /* Want a combined  lower confidence limit */
+
+  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+  
+//  std::cout<< std::fixed << std::showpoint;
+//  std::cout << std::setprecision(15);
+//  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
+//  std::cout<<"Target                         "<<target<<std::endl;
+
+  k = -1;
+
+  for(j=0; j<nParmMax; j++)
+    {
+      for(i = pyRes->ndatasets-1; i>=0; i--)
+      {
+          int iParms = pyRes->models[i][0].nparms;
+
+          k++;
+          if (j <iParms){
+            pdParmsBak[k] = pyRes->models[i][0].parms[j];
+            pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
+          } else {
+            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
+          }
+      }
+    }
+//  /* One more step for the background terms */
+  for(i=0; i<pyRes->ndatasets; i++){
+      pdParms[i] = -log(1.0 - pdParms[i]);
+  }
+//  std::cout<<"\n\nValues BEFORE call "<<nCall<<" to getclmt_()";
+//  std::cout<<"BMR="<<pyAnal->BMR<<" target="<<target<<std::endl;
+//  std::cout<<"bmdl="<<bmdl<<" optite="<<optite<<std::endl;
+  i = 0;
+//  std::cout<<std::endl;
+//  for(j=0; j<pyRes->ndatasets; j++){
+//      std::cout<<"    Tumor "<<j<<"\t\t\t";
+//  }
+//  std::cout<<std::endl;
+//  for(j=0; j<pyAnal->ndatasets; j++){
+//      std::cout<<"Scaled | Unscaled\t\t";
+//  }
+//  std::cout<<std::endl;
+//  for(k = 0; k < nParmMax; k++)
+//    {
+//      for(j=0; j<pyRes->ndatasets; j++){
+//          std::cout<<pdParms[i]<<" | "<<pdParmsBak[i]<<"\t\t";
+//	  i++;
+//      }
+//      std::cout<<std::endl;
+//    }
+//    std::cout<<"Dose(BMD)="<<Dose<<std::endl;
+//    std::cout<<"log(BMD)="<<log(Dose)<<std::endl;
+
+    double retVal;
+
+    //bmdl calc
+   
+
+    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+//    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
+//
+//  fflush(fp_log);
+
+//  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//  i = 0;
+//  fprintf(fp_log,"\n          ");
+//  for(j = 1; j<=nT; j++)
+//    fprintf(fp_log,"    Tumor %d\t", j);
+//  fprintf(fp_log,"\n");
+//
+//  for(k = 0; k < nParmMax; k++)
+//    {
+//      for(j = 1; j <= nT; j++)
+//	fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//      fprintf(fp_log,"\n");
+//    }
+//  fflush(fp_log);
+//  nCall++;
+//
+//  /* optite is a value that is passed back from GETCL which         */
+//  /* determines whether the optimization was completed successfully */
+//  /* If optite is less than 0, then it did not, and we want         */
+//  /* to try a different starting point and recompute                */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//#if !0
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//#else
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//#endif
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()\n", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetMoreParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//
+//  /* Let user know if no optimum was found */
+//  if(ii == 10)
+//    {
+//#ifdef MISC_OUT
+//      fprintf(fp_out, "\nWarning:  completion code still negative");
+//#endif
+//      fprintf(fp_out, "\nBMDL did not converge for BMR = %f\n", BMR);
+//      bmdl_bmr_flag = 1;
+//    } /* end if */
+
+
+
+//  std::cout<<"Here after bmdl calc"<<std::endl;
+  pdParms2 = pdParms;
+  int nT = 0;
+  for(int i=0; i<pyRes->ndatasets; i++){
+      nT++;
+  }
+  std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
+//  std::cout<<"********** pdParms2 Values **********"<<std::endl;
+//  for (int j=0; j<pyRes->ndatasets; j++){
+//      std::cout<<"   Tumor " << j << "\t";
+//  }
+//  std::cout<<std::endl;
+
+  k = -1;
+  for (int j=0; j<nParmMax; j++)
+  {
+     for (int i=0; i<pyRes->ndatasets; i++)
+     {
+	  k++;
+//          std::cout<<pdParms2[k]<<"\t";
+          if (j < pyRes->models[i][0].nparms)
+	  {
+	    ppdParms[i][j] = pdParms2[k];
+	    if(k < pyAnal->ndatasets)
+            {                
+	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
+	    }
+	  }
+     }
+//     std::cout<<std::endl;
+  }
+
+  int flag = 1;
+//  std::cout<<"scale="<<scale<<std::endl; 
+  bmdl = exp(bmdl)*scale;
+  
+  xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
+//  std::cout<<"BMDL_combofunc returns bmdl="<<bmdl<<std::endl;
+  return bmdl;
+}
+
+
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero) {
+
+  int optite, nresm, *bind, CBnparm;
+  int which, temprisk, lnParmMax;
+  double fD, bmdu,  target, xmax, xlk2, xlk3, crisk;
+  int i, j, nCall, k, nParmMax, ii = 0;
+  double scale;
+
+//  std::cout<<"inside BMDU_combofunc"<<std::endl;
+
+  std::vector<double> adxmax;
+  int nParms;
+  fD = bmdu =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
+  optite = -5;
+  nCall = 1;
+
+  temprisk = 1;  //based on bmdparm.risk set to zero in original Multistage_ComboBMD
+
+
+  /* Get the degree of polynomial */
+  adxmax.resize(pyRes->ndatasets, 0.0);
+
+  CBnparm = lnParmMax = 0;
+  for(i = 0; i < pyRes->ndatasets; i++)
+  {
+      int selModelIndex = pyRes->selectedModelIndex[i];
+      struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
+      struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
+      xmax = mod.doses[0];
+      CBnparm = CBnparm + modRes.nparms;
+		
+      if(modRes.nparms > lnParmMax){
+         lnParmMax = modRes.nparms;
+      }
+
+//      std::cout<<"\n\nIn BMDU_combofunc, Tumor "<<i<<" data"<<std::endl;
+//      std::cout<<"       DOSE     Inc    N"<<std::endl;
+      for(j=0; j<mod.n; j++){
+         if(mod.doses[j] > xmax){
+            xmax = mod.doses[j];
+         }
+//         std::cout<<mod.doses[j]<<"   "<<mod.Y[j]<<"   "<<mod.n_group[j]<<std::endl;
+      }
+      adxmax[i] = xmax;
+  }
+  CBnparm = CBnparm + 1;
+
+  /** rescale all doses to be: 0 <= Dose <= 1 **/
+  xmax = adxmax[0];
+  for(i=0;i<pyRes->ndatasets; i++)
+    {
+      if(adxmax[i] > xmax) xmax = adxmax[i];
+    }
+  scale = xmax;
+
+  nParmMax = (int)lnParmMax;
+  nParms = pyRes->ndatasets*nParmMax;
+  std::vector<double> pdParms(nParms, 0.0);
+  std::vector<double> pdParmsBak(nParms, 0.0);
+  std::vector<double> pdParms2(nParms, 0.0);
+  std::vector<double> pdVals(nParms, 0.0);
+  std::vector<int> piSpec2(nParms, 0.0);
+
+
+//  std::cout<<"\nIn BMDU_combofunc, pdParms[j](MLEs)"<<std::endl;
+//  for(i=0; i<pyAnal->ndatasets; i++)
+//    {
+//      std::cout<<"Tumor "<<i<<"=>"<<std::endl;
+//      for(j = 0; j<pyRes->models[i][0].nparms; j++)
+//      {
+//        std::cout<<pyRes->models[i][0].parms[j]<<"\t";
+//      }
+//      std::cout<<std::endl;
+//    }
+
+  k = -1;
+  for(j=0; j<nParmMax; j++)
+    {
+      for(i=pyAnal->ndatasets-1; i>=0; i--)
+	{
+          k++;
+          if(j<pyRes->models[i][0].nparms)
+          {
+            pdParms[k] = pyRes->models[i][0].parms[j];
+            piSpec2[k] = 0.0;  //no user specified values
+ 	  }
+	}
+    }
+
+//  std::cout<<"\n\nIn BMDU_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
+  i = 0;
+//  for(j=0; j<pyAnal->ndatasets; j++){
+//     std::cout<<"      Tumor "<<j<<"\t";
+//  }
+//  std::cout<<std::endl;
+
+//  for(k = 0; k < nParmMax; k++)
+//  {
+//     for(j=0; j<pyAnal->ndatasets; j++){
+//       std::cout<<pdParms[i++]<<"\t";
+//     }
+//     std::cout<<std::endl;
+//   }
+
+  j=0;
+//  std::cout<<"\nIn BMDU_combofunc, Tumor Starting Values"<<std::endl;
+//  for(i=0; i<pyAnal->ndatasets; i++)
+//  {
+//     std::cout<<"Tumor "<<i<<" => "<<pdParms[i]<<std::endl;
+//  }
+//
+//  std::cout<<"\nMaximum Dose = "<<xmax<<std::endl;
+
+  Dose = Dose/scale;
+//  std::cout<<"Scale = "<<scale<<std::endl;
+
+  which = 5;          /* Want a combined  upper confidence limit */
+
+  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
+//  std::cout<<"LR = "<<LR<<std::endl;
+//  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
+//  std::cout<<"Target                         "<<target<<std::endl;
+
+  k = -1;
+
+  for(j=0; j<nParmMax; j++)
+    {
+      for(i = pyRes->ndatasets-1; i>=0; i--)
+      {
+          int iParms = pyRes->models[i][0].nparms;
+
+          k++;
+          if (j <iParms){
+            pdParmsBak[k] = pyRes->models[i][0].parms[j];
+            pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
+          } else {
+            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
+          }
+      }
+    }
+  for(i=0; i<pyRes->ndatasets; i++){
+      pdParms[i] = -log(1.0 - pdParms[i]);
+  }
+//  std::cout<<"\n\nValues BEFORE call "<<nCall<<" to getclmt_()";
+//  std::cout<<"BMR="<<pyAnal->BMR<<" target="<<target<<std::endl;
+//  std::cout<<"bmdu="<<bmdu<<" optite="<<optite<<std::endl;
+  i = 0;
+//  std::cout<<std::endl;
+//  for(j=0; j<pyRes->ndatasets; j++){
+//      std::cout<<"    Tumor "<<j<<"\t\t\t";
+//  }
+//  std::cout<<std::endl;
+//  for(j=0; j<pyAnal->ndatasets; j++){
+//      std::cout<<"Scaled | Unscaled\t\t";
+//  }
+//  std::cout<<std::endl;
+//  for(k = 0; k < nParmMax; k++)
+//    {
+//      for(j=0; j<pyRes->ndatasets; j++){
+//          std::cout<<pdParms[i]<<" | "<<pdParmsBak[i]<<"\t\t";
+//	  i++;
+//      }
+//      std::cout<<std::endl;
+//    }
+//    std::cout<<"Dose(BMD)="<<Dose<<std::endl;
+//    std::cout<<"log(BMD)="<<log(Dose)<<std::endl;
+
+    double retVal;
+
+    bmdu = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, false);
+//  fflush(fp_log);
+
+//  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//	   &target, pdParms, piSpec2,
+//	   pdParms, &temprisk, &bmdl,
+//	   pdParms2, &optite, &nresm,
+//	   bind, is_zero);
+//
+//  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//  i = 0;
+//  fprintf(fp_log,"\n          ");
+//  for(j = 1; j<=nT; j++)
+//    fprintf(fp_log,"    Tumor %d\t", j);
+//  fprintf(fp_log,"\n");
+//
+//  for(k = 0; k < nParmMax; k++)
+//    {
+//      for(j = 1; j <= nT; j++)
+//	fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//      fprintf(fp_log,"\n");
+//    }
+//  fflush(fp_log);
+//  nCall++;
+//
+//  /* optite is a value that is passed back from GETCL which         */
+//  /* determines whether the optimization was completed successfully */
+//  /* If optite is less than 0, then it did not, and we want         */
+//  /* to try a different starting point and recompute                */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//#if !0
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//#else
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetNewParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//#endif
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()\n", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  i = 0;
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//  if(optite < 0 )
+//    {
+//#ifdef MISC_OUT
+//      /* Warn user */
+//      fprintf(fp_out, "**** WARNING:  Completion code = %d.  Optimum not found. Trying new starting point****\n\n", optite);
+//#endif
+//      /* Try up to 10 times if needed */
+//      for(ii = 0; ii < 10; ii++)
+//	{
+//	  /* Get original values */
+//	  k = -1;
+//	  for(i = 1; i <= nT; i++)
+//	    {
+//	      for(j = 1; j <= nParmMax; j++)
+//		{
+//		  k++;
+//		  pdParms[k] = aParmList[i].pdParms[j] * (pow(scale,(j-1)));;
+//		}
+//	    }
+//	  GetMoreParms2(pdParms, nParmMax);  /* Get a new starting point */
+//
+//	  /* again, reparameterize p[0] */
+//	  for(i = 0; i < nT; i++)
+//	    {
+//	      pdParms[i] = -log(1-aParmList[i+1].pdParms[1]);
+//	    }
+//
+//	  /* Try again */
+//	  fprintf(fp_log,"\n\n\nValues BEFORE call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  fflush(fp_log);
+//
+//	  getclmt_(&which, &lnParmMax, &BMR, &Dose,
+//		   &target, pdParms, piSpec2,
+//		   pdParms, &temprisk, &bmdl,
+//		   pdParms2, &optite, &nresm,
+//		   bind, is_zero);
+//
+//	  fprintf(fp_log,"\n\nValues AFTER call %d to getclmt_()", nCall);
+//	  fprintf(fp_log,"BMR=%10.5g target=%10.5g\n",BMR, target);
+//	  fprintf(fp_log,"bmdl=%10.5g optite=%d", bmdl, optite);
+//	  fprintf(fp_log,"\n");
+//	  for(j = 1; j<=nT; j++)
+//	    fprintf(fp_log,"    Tumor %d\t", j);
+//	  fprintf(fp_log,"\n");
+//	  i = 0;
+//	  for(k = 0; k < nParmMax; k++)
+//	    {
+//	      for(j = 1; j <= nT; j++)
+//		fprintf(fp_log,"%10.5g\t", pdParms[i++]);
+//	      fprintf(fp_log,"\n");
+//	    }
+//	  nCall++;
+//	  fflush(fp_log);
+//
+//	  /* if optite >= 0, it is successful, and we can stop */
+//	  if(optite >= 0)
+//	    break;
+//#ifdef MISC_OUT
+//	  /* otherwise, issues another warning, and continue trying */
+//	  else
+//	    fprintf(fp_out, "**** WARNING %d:  Completion code = %d trying new start****\n\n", ii, optite);
+//#endif
+//	} /* end for */
+//
+//    } /* end: if (optite < 0) */
+//
+//
+//  /* Let user know if no optimum was found */
+//  if(ii == 10)
+//    {
+//#ifdef MISC_OUT
+//      fprintf(fp_out, "\nWarning:  completion code still negative");
+//#endif
+//      fprintf(fp_out, "\nBMDL did not converge for BMR = %f\n", BMR);
+//      bmdl_bmr_flag = 1;
+//    } /* end if */
+
+
+//  double **ppdParms;
+//  ppdParms = DMATRIX (1, nT, 1, nParmMax);
+
+  pdParms2 = pdParms;
+  int nT = 0;
+  for(int i=0; i<pyRes->ndatasets; i++){
+      nT++;
+  }
+  std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
+//  std::cout<<"********** pdParms2 Values **********"<<std::endl;
+//  for (int j=0; j<pyRes->ndatasets; j++){
+//      std::cout<<"   Tumor " << j << "\t";
+//  }
+//  std::cout<<std::endl;
+
+  k = -1;
+  for (int j=0; j<nParmMax; j++)
+  {
+     for (int i=0; i<pyRes->ndatasets; i++)
+     {
+	  k++;
+//          std::cout<<pdParms2[k]<<"\t";
+          if (j < pyRes->models[i][0].nparms)
+	  {
+	    ppdParms[i][j] = pdParms2[k];
+	    if(k < pyAnal->ndatasets)
+            {                
+	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
+	    }
+	  }
+     }
+//     std::cout<<std::endl;
+  }
+
+  int flag = 1; 
+  bmdu = exp(bmdu)*scale;
+  
+  xlk3 = ComboMaxLike2(flag,bmdu,&crisk, ppdParms, pyAnal, pyRes);
+  return bmdu;
+}
+
+
+double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes){
+
+  int nObs, nT, nParms;
+  double prob, like, dSumParm1, pr, bkg;
+
+  prob = like = dSumParm1 = 0.0;
+
+  for(int n=0; n<pyRes->ndatasets; n++){
+      dSumParm1 += p[n][0];
+      nObs = pyAnal->models[n][0].n;
+      int selIndex = pyRes->selectedModelIndex[n];
+      nParms = pyRes->models[n][selIndex].nparms;
+      for (int i=0; i<nObs; i++){
+         double D, Yn, Yp;
+         D = pyAnal->models[n][selIndex].doses[i];
+         Yp = pyAnal->models[n][selIndex].Y[i];
+         Yn = pyAnal->models[n][selIndex].n_group[i] - Yp;
+         prob = p[n][nParms-1];
+         if(n==0 && flag==1 && nParms==2){
+           prob = p[0][1];
+           for(int nt=1; nt<pyRes->ndatasets; nt++){
+               prob -= p[nt][1];
+           }
+         }
+
+         for (int j=nParms-1; j>=0; j--){
+           if (n==0 && flag==1 && j==1){
+              pr = p[0][1];
+              for (int nt=1; nt<pyRes->ndatasets; nt++){
+                    pr -= p[nt][1];
+              }
+              prob = D*prob + pr;
+           } else {
+              prob = D*prob + p[n][j]; 
+           }
+         }
+         prob = (1-exp(-1.0* prob));
+         if ((prob==0) || (prob == 1)){
+           if(Yp <=0 || Yn <=0){
+             like += 0;
+           } else {
+             if (prob == 1){
+               like += Yn*(-710);
+             } else {
+               like += Yp*(-710);
+             }
+           }
+         } else {
+           like += Yp*log(prob) + Yn*log(1-prob);
+         }
+      }
+  }
+
+
+  bkg = 1.0 - exp(-1.0*(dSumParm1));
+
+
+  for(int n=0; n<pyRes->ndatasets; n++){
+    int selIndex = pyRes->selectedModelIndex[n];
+    nParms = pyRes->models[n][selIndex].nparms;
+
+    prob = p[n][nParms-1];
+    if (n ==0 && flag == 1 && nParms == 2){
+       prob = p[0][1];
+       for(int nt = 1; nt<pyRes->ndatasets; nt++){
+           prob -= p[nt][1];
+       }
+    }
+    for (int j=nParms-1; j>=0; j--){
+       if (n==0 && flag == 1 && j==1){
+         pr = p[0][1];
+         for (int nt = 1; nt<pyRes->ndatasets; nt++){
+             pr -= p[nt][1];
+         }
+         prob = dose*prob + pr;
+       } else {
+         prob = dose*prob + p[n][j];
+       }
+    }
+
+  }
+
+  if (bkg == 1.0){
+    *crisk = 0.0;
+  } else {
+    *crisk = ((1.0 - exp(-1.0*(prob))) - bkg)/(1.0-bkg);
+  }
+
+  return like;
+}
+
+
+/***************************************************************************
+ * Multistage_ComboBMD -- Used to calculate the BMD and BMDL for combined 
+ *                         Multistage models A and B
+ *  external: bmdparm
+ *  input:      *   nparm is the number of parameters
+ *   nparm is the number of parameters/
+ *   p[] is the vector of fitted parameters
+ *   gtol is a small positive number
+ *   iter is not used ????????
+ *   xlk is the sum of log-likelihood for the fitted models (A + B)
+ *   Rlevel[] is the vector of BMR's
+ *   Bmdl[] is the vector of BMDL's for the BMR's
+ *   Bmdu[] is the vector of BMDU's for the BMR's
+ *   BMD is the benchmark dose
+ *  output: BMD, Bmdl[], prints BMDL
+ ****************************************************************************/
+void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
+   int cnparm, selIndex, nT, is_zero;
+   double LR, xa, xb, D, fa, fb, Drange, cxmax, ck, poly;
+   double gtol = 1e-12;
+   double tol;  //for zeroin function
+   std::vector<double> cp;
+
+
+   nT = pyRes->ndatasets;
+   //find largest nparm and largest dose
+   cnparm = 0;
+   cxmax = 0;
+   for(int i=0; i<nT; i++){
+        selIndex = pyRes->selectedModelIndex[i];
+        if(pyRes->models[i][selIndex].nparms > cnparm){
+           cnparm = pyRes->models[i][selIndex].nparms;
+        }
+        double tmpMax = *max_element(std::begin(pyAnal->models[i][selIndex].doses), std::end(pyAnal->models[i][selIndex].doses));
+        if(cxmax < tmpMax) cxmax = tmpMax;
+   }
+   //add all model parameters to combined p
+   cp.resize(cnparm, 0.0);
+   for(int i=0; i<nT; i++) {
+       selIndex = pyRes->selectedModelIndex[i];
+       cp[0] = cp[0] - log(1.0 - pyRes->models[i][selIndex].parms[0]);
+       for(int j=1; j<pyRes->models[i][selIndex].nparms; j++){
+          cp[j] = cp[j] + pyRes->models[i][selIndex].parms[j];  
+       }
+   }
+   //compute chi-squared value
+   double cl = 1.0 - pyAnal->alpha;
+   if (cl<0.5){
+     LR = 0.5*gsl_cdf_chisq_Pinv(1.0-2.0*cl, 1);
+   } else {
+     LR = 0.5*gsl_cdf_chisq_Pinv(2.0*cl-1.0, 1);
+   }
+
+   ck = -log(1-pyAnal->BMR);  //Extra risk
+   //solve the BMD
+   xa = D = 0.0;
+   fa = -ck;  //note:  ck>0.0
+   fb = fa;
+   Drange = cxmax; 
+
+   int k=1;
+   while(k<300 && fb<0){
+      fa=fb;
+      xa=D;
+      D=Drange*k/100.0;
+      poly=cp[cnparm-1];
+      for (int j=cnparm-2; j>0; j--){
+         poly=poly*D+cp[j];
+      }
+      poly=poly*D;
+      fb=poly-ck;
+      k++;
+   }
+
+   if (fb<0) std::cout<<"BMD Computation failed.  BMD is larger than three times maximum input doses."<<std::endl;
+   xb = D;
+   tol = 1.0e-15;
+
+   //compute BMD
+   //BMD_func works on log scale, so convert xa and xb to logs
+   if (xa==0.0) xa = -690.7755;
+   else xa = log(xa);
+   xb = log(xb);
+
+   xb = zeroin(xa, xb, tol, BMD_func, cnparm, &cp[0], ck);
+   xa = exp(xa);
+   xb = exp(xb);
+   pyRes->BMD = xb;
+
+   is_zero = 0;
+
+   pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+//   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
+
+   pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+//   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
+
+}
+
+
+
+
+
+
+
+double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+   //obj function of form F(BMD, beta) = BMD, where BMD=X[0] and beta=X[i] where i>0
+   if (!grad.empty()){
+      //fill all gradients to zero (grad[1] to grad[n] are all zero
+      // because objective function only depends on X[0] 
+      std::fill(grad.begin(), grad.end(), 0);
+      //set first grad to 1, since x[1] should be the BMD (Dose)
+      grad[0] = 1.0;
+   }
+   return x[0];  
+}
+
+
+double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+   //obj function of form F(BMD, beta) = BMD, where BMD=X[0] and beta=X[i] where i>0
+   if (!grad.empty()){
+      //fill all gradients to zero (grad[1] to grad[n] are all zero
+      // because objective function only depends on X[0] 
+      std::fill(grad.begin(), grad.end(), 0);
+      //set first grad to 1, since x[1] should be the BMD (Dose)
+      grad[0] = -1.0;
+   }
+   return -1*x[0];  
+}
+
+double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
+  
+   msComboEq *d = reinterpret_cast<msComboEq*>(data);
+   double bmr = d->bmr;
+   int nT = d->nT;
+   std::vector<int> degree = d->degree;
+
+   double D = exp(x[0]);
+   int iIndex = x.size() - 1;
+   double sum2 = 0.0;
+   double sum = 0.0;
+
+   if (!grad.empty()){
+     for (int l=nT-1; l>=0; l--){
+        sum = 0.0;
+        for (int k=degree[l]; k>0; k--){
+           sum = sum*D + k*x[iIndex]*D;
+           iIndex -= 1;
+        }
+        iIndex -= 1;
+        sum2 += sum;
+     } 
+     grad[0] = sum2;
+
+     iIndex = 1;
+     for (int k=0; k<nT; k++){
+	for (int j=0; j<=degree[k]; j++){
+	   if (j==0){
+	      grad[iIndex]=0;
+           } else {
+	      grad[iIndex] = pow(D,j);
+	   }
+	   iIndex +=1;
+	}
+
+     }
+   }
+
+   //equality constraint calc
+   sum = log(1.0 - bmr);
+   iIndex = x.size() - 1;
+   double sum3 = 0.0;
+
+   for (int l=nT-1; l>=0; l--){
+     sum2 = 0.0;
+     for (int k=degree[l]; k>0; k--){
+        sum2 = sum2*D + x[iIndex]*D;
+        iIndex -= 1;    
+     }
+     iIndex -= 1;
+     sum3 += sum2;
+   }
+
+   return sum + sum3;
+}
+
+
+double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data){
+
+   msComboInEq *d = reinterpret_cast<msComboInEq*>(data);
+   double target = d->target;
+   int nT = d->nT;
+   std::vector<int> nObs = d->nObs;
+   std::vector<int> degree = d->degree;
+   std::vector<std::vector<double>> doses = d->doses;
+   std::vector<std::vector<double>> Y = d->Y;
+   std::vector<std::vector<double>> n_group = d->n_group;
+
+   int m = nT;
+   int iOffset = 1;
+   double resid = 0.0; 
+   if (!grad.empty()){
+     for (size_t i=0; i<grad.size(); i++){
+        grad[i] = 0.0;
+     }
+     for (int l=0; l<nT; l++){
+       m = m-1;
+       double iTop = degree[l] + iOffset;
+       double iBottom = iOffset;
+       for (int k=0; k<nObs[l]; k++){
+         double sum = x[iTop];
+         for (int j=iTop-1; j>=iBottom; j--){
+            sum = sum * doses[m][k] + x[j];
+         }
+         if (sum < 0) sum = 0.0;
+         double P = 1.0 - exp(-1.0*sum);
+         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
+         int iIndex = iTop-1;
+         for(int j=degree[l]-1; j>=0; j--){
+           grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));
+           iIndex = iIndex-1;
+         }
+       }  
+       iOffset = iTop + 1; 
+     }
+   }
+
+
+   double sum2 = 0;
+   iOffset = 1;
+   m = nT;
+   for (int l=0; l<nT; l++){
+     m = m-1;
+     double iTop = degree[l] + iOffset;
+     double iBottom = iOffset;
+     for (int k=0; k<nObs[l]; k++){
+       double sum = x[iTop];
+       for (int j= iTop-1; j>=iBottom; j--){
+          sum = sum*doses[m][k] + x[j];
+       }
+       if (sum < 0) sum = 0.0;
+       double P = 1.0 - exp(-1*sum);
+       sum2 = sum2 + Y[m][k]*slog(P) + (n_group[m][k]-Y[m][k]) * slog(1.0 - P);
+     }
+     iOffset = iTop + 1;
+   }
+   return  target - sum2;
+
+}
+
+
+double slog(double X){
+   double coefs[4] = {6.7165863851209542e50,-2.0154759155362862e+35, 2.0169759155362859e+19,-710};
+   if (X >= 1e-16){
+     return log(X);
+   } else {
+     double v = 0.0;
+     for (int i=0; i<4; i++){
+       v = X * v + coefs[i];
+     }
+     return v;
+   }
+}
+
+double dslog(double P){
+   if (P >= 1e-10){
+     return 1.0/P;
+   } else {
+     return 2.0e10 - 1.0e20 * P;
+   }
+}
+
+
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
-  
+ 
+//  std::cout<<"degree = "<<anal->degree;
+//  std::cout<<"degree:"<<anal->degree<<std::endl;
+//        for (int k=0; k<anal->prior_cols*anal->parms; k++){
+//          std::cout<<anal->prior[k]<<", ";
+//        }
+//        std::cout<<std::endl;
+ 
   bmdsRes->validResult = false;
+  bmdsRes->slopeFactor = BMDS_MISSING;
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->bounded.resize(anal->parms);
   fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
+
   estimate_sm_laplace_dicho(anal, res, true);
 
   struct dichotomous_PGOF_data gofData;
@@ -382,10 +1998,15 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes){
 
+
+  bmdsRes->BMD_MA = BMDS_MISSING;
+  bmdsRes->BMDL_MA = BMDS_MISSING;
+  bmdsRes->BMDU_MA = BMDS_MISSING;
+
   estimate_ma_laplace_dicho(MA, DA, res);
 
 
-  collect_dichoMA_bmd_values(MA, res, bmdsRes);
+  collect_dichoMA_bmd_values(MA, res, bmdsRes, DA->alpha);
   for(int i=0; i<MA->nmodels; i++){
     rescale_dichoParms(MA->models[i], res->models[i]->parms);
   }
@@ -500,6 +2121,9 @@ void calcParmCIs_dicho (struct dichotomous_model_result *res, struct BMDS_result
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *anal, struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
 
+  bmdsRes->BMD = BMDS_MISSING;
+  bmdsRes->BMDL = BMDS_MISSING;
+  bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->validResult = false;
   anal->transform_dose = false;
   //if (anal->model == cont_model::polynomial && anal->disttype == distribution::log_normal){
@@ -626,8 +2250,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
     gof->estSD.push_back(GOFres.sd[i]);
     gof->obsSD.push_back(GOFanal.sd[i]);
     gof->res.push_back(sqrt(gof->size[i])*(gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-    gof->n = GOFanal.n;
+//    gof->n = GOFanal.n;
   }
+  gof->n = GOFanal.n;
   if (anal->disttype == distribution::log_normal){
     for (int i=0; i<GOFanal.n; i++){
       gof->calcMean.push_back(exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2));
@@ -668,9 +2293,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   aod->LL.resize(5);
   aod->nParms.resize(5);
   aod->AIC.resize(5);  
-  aod->TOI->llRatio.resize(4);
-  aod->TOI->DF.resize(4);
-  aod->TOI->pVal.resize(4);
+  aod->TOI.llRatio.resize(4);
+  aod->TOI.DF.resize(4);
+  aod->TOI.pVal.resize(4);
   calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
 
   rescale_contParms(anal, res->parms); 
@@ -689,7 +2314,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
   }
   //Use Matt's BMD by default
   bmdsRes->BMD = res->bmd;
-
 
   clean_cont_results(res, bmdsRes, aod, gof);
 
@@ -715,7 +2339,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
  // std::cout << "Condition number: " << max/min << std::endl;
  delete [] GOFres.expected;
  delete [] GOFres.sd;
- 
 }
 
 
@@ -842,7 +2465,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
   } else {
     estimate_normal_aod(CA, &CD);
   }
-
   //fill aod with results and calculate tests of interest
   aod->LL[0] = -1*CD.A1;
   aod->nParms[0] = CD.N1;
@@ -927,7 +2549,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
     aod->addConst -= tmp;
   }
 
-
   calcTestsOfInterest(aod);
 }
 
@@ -935,7 +2556,6 @@ void calc_contAOD(struct continuous_analysis *CA, struct continuous_analysis *GO
 
 void calcTestsOfInterest(struct continuous_AOD *aod){
 
-  struct testsOfInterest *TOI = aod->TOI;
   double dev;
   int df;
 
@@ -946,9 +2566,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   if (dev < BMDS_EPS){
      dev = 0.0;
   }
-  TOI->llRatio[0] = dev = 2*dev;
-  TOI->DF[0] = df = aod->nParms[1] - aod->nParms[4];
-  TOI->pVal[0] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[0] = dev = 2*dev;
+
+  aod->TOI.DF[0] = df = aod->nParms[1] - aod->nParms[4];
+  aod->TOI.pVal[0] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #2 - A1 vs A2 - homogeneity of variance across dose groups
   dev = (aod->LL[1] - aod->LL[0]);
@@ -956,10 +2577,10 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
   if (dev < BMDS_EPS){
      dev = 0.0;
   }
-  TOI->llRatio[1] = dev = 2*dev;
+  aod->TOI.llRatio[1] = dev = 2*dev;
   //TOI->llRatio[1] = dev = 2 * (aod->LL[1] - aod->LL[0]);
-  TOI->DF[1] = df = aod->nParms[1] - aod->nParms[0];
-  TOI->pVal[1] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.DF[1] = df = aod->nParms[1] - aod->nParms[0];
+  aod->TOI.pVal[1] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #3 - A2 vs A3 - Does the model describe variances adequately
   dev = (aod->LL[1] - aod->LL[2]);
@@ -968,9 +2589,9 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
      dev = 0.0;
   }
   //TOI->llRatio[2] = dev = 2 * (aod->LL[1] - aod->LL[2]);
-  TOI->llRatio[2] = dev = 2*dev;
-  TOI->DF[2] = df = aod->nParms[1] - aod->nParms[2];
-  TOI->pVal[2] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[2] = dev = 2*dev;
+  aod->TOI.DF[2] = df = aod->nParms[1] - aod->nParms[2];
+  aod->TOI.pVal[2] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //Test #4 - A3 vs Fitted - does the fitted model describe the obs data adequately 
   dev = (aod->LL[2] - aod->LL[3]);
@@ -979,13 +2600,13 @@ void calcTestsOfInterest(struct continuous_AOD *aod){
      dev = 0.0;
   }
   //TOI->llRatio[3] = dev = 2 * (aod->LL[2] - aod->LL[3]);
-  TOI->llRatio[3] = dev = 2*dev;
-  TOI->DF[3] = df = aod->nParms[2] - aod->nParms[3];
-  TOI->pVal[3] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
+  aod->TOI.llRatio[3] = dev = 2*dev;
+  aod->TOI.DF[3] = df = aod->nParms[2] - aod->nParms[3];
+  aod->TOI.pVal[3] = (std::isnan(dev) || dev < 0.0 || df < 0.0) ? -1 : 1.0 - gsl_cdf_chisq_P(dev, df);
 
   //DOF check for test 4
-  if (TOI->DF[3] <= 0) {
-     TOI->pVal[3] = BMDS_MISSING;
+  if (aod->TOI.DF[3] <= 0) {
+     aod->TOI.pVal[3] = BMDS_MISSING;
   }
 }
 
@@ -1216,9 +2837,9 @@ void clean_cont_results(struct continuous_model_result *res, struct BMDS_results
     cleanDouble(&aod->LL[i]);
     cleanDouble(&aod->AIC[i]);
     for (int j=0; j<4; j++){
-      cleanDouble(&aod->TOI->llRatio[j]);
-      cleanDouble(&aod->TOI->DF[j]);
-      cleanDouble(&aod->TOI->pVal[j]);
+      cleanDouble(&aod->TOI.llRatio[j]);
+      cleanDouble(&aod->TOI.DF[j]);
+      cleanDouble(&aod->TOI.pVal[j]);
     }        
   }
   cleanDouble(&aod->addConst);
@@ -1292,18 +2913,6 @@ string BMDS_ENTRY_API __stdcall version(){
 
 int BMDS_ENTRY_API __stdcall add2(int i, int j) {
     return i + j;
-}
-
-void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t){
-    std::cout<<"Inside testFun"<<std::endl;
-
-    std::cout<<"t->BMD="<<t->BMD<<std::endl;
-    std::cout<<"t->n="<<t->n<<std::endl;
-    std::cout<<"t->validResult="<<(t->validResult ? "true" : "false")<<std::endl;
-    std::cout<<"Doses:"<<std::endl;
-    for (double dose: t->doses) std::cout<< dose << std::endl;
-    std::cout<<"Finish testFun"<<std::endl;
-
 }
 
 
@@ -1412,7 +3021,7 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->model = pyAnal->model;
   anal->n = pyAnal->n;
   anal->BMD_type = pyAnal->BMD_type;
-  anal->isIncreasing;
+  anal->isIncreasing = pyAnal->isIncreasing;
   anal->BMR = pyAnal->BMR;
   anal->tail_prob = pyAnal->tail_prob;
   anal->disttype = pyAnal->disttype;
@@ -1425,10 +3034,21 @@ void convertFromPythonContAnalysis(struct continuous_analysis *anal, struct pyth
   anal->transform_dose = pyAnal->transform_dose;
   anal->suff_stat = pyAnal->suff_stat;
 
-  if(pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size()){
+  bool validated = false;
+  if (pyAnal->suff_stat){
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() && pyAnal->doses.size() == pyAnal->n_group.size();
+  } else {
+    validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size();
+  }
+
+  if (validated){
     for (int i=0; i<pyAnal->n; i++){
       anal->Y[i] = pyAnal->Y[i];
       anal->doses[i] = pyAnal->doses[i];
+    }
+  }
+  if (validated && pyAnal->suff_stat){
+    for (int i=0; i<pyAnal->n; i++){
       anal->n_group[i] = pyAnal->n_group[i];
       anal->sd[i] = pyAnal->sd[i];
     }
@@ -1483,7 +3103,7 @@ void convertToPythonContRes(struct continuous_model_result *res, struct python_c
   
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod){
+void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes){
 
   //1st convert from python struct
   dichotomous_analysis anal;
@@ -1499,13 +3119,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonDichoRes(&res, pyRes);
 
-  runBMDSDichoAnalysis(&anal, &res, gof, bmdsRes, aod);     
+  runBMDSDichoAnalysis(&anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod);     
 
   convertToPythonDichoRes(&res, pyRes);
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomous_analysis *pyDA, struct python_dichotomousMA_result *pyRes, struct BMDSMA_results *bmdsRes){
+void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes){
 
 //convert python_dichtomousMA_analysis to dichotomousMA_analysis
   dichotomousMA_analysis MA;
@@ -1519,11 +3139,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 //convert python_dichotomous_analysis to dichotomous_analysis
   dichotomous_analysis DA;
-  DA.Y = new double[pyDA->n];
-  DA.doses = new double[pyDA->n];
-  DA.n_group = new double[pyDA->n];
-  DA.prior = new double[pyDA->parms*pyDA->prior_cols];
-  convertFromPythonDichoAnalysis(&DA, pyDA);
+  DA.Y = new double[pyMA->pyDA.n];
+  DA.doses = new double[pyMA->pyDA.n];
+  DA.n_group = new double[pyMA->pyDA.n];
+  DA.prior = new double[pyMA->pyDA.parms*pyMA->pyDA.prior_cols];
+  convertFromPythonDichoAnalysis(&DA, &pyMA->pyDA);
 
 //  convertFromPythonDichoMARes(&res, pyRes);
 
@@ -1545,7 +3165,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
   maRes.post_probs = new double[pyRes->nmodels];
   maRes.bmd_dist = new double[pyRes->dist_numE*2];
 
-  runBMDSDichoMA(&MA, &DA, &maRes, bmdsRes);
+  runBMDSDichoMA(&MA, &DA, &maRes, &pyRes->bmdsRes);
 //convert back to python objs
 //pyDA should not change
   pyRes->post_probs.resize(pyRes->nmodels);
@@ -1579,7 +3199,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_anal
 
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes, struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof, bool *detectAdvDir, bool *restricted){
+void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *pyAnal, struct python_continuous_model_result *pyRes){
 
   //convert pyAnal to anal
   continuous_analysis anal;
@@ -1597,8 +3217,610 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(struct python_continuous_analysis *
   res.bmd_dist = new double[pyRes->dist_numE*2];
   convertFromPythonContRes(&res, pyRes);
 
-  runBMDSContAnalysis(&anal, &res, bmdsRes, aod, gof, detectAdvDir, restricted);
+  runBMDSContAnalysis(&anal, &res, &pyRes->bmdsRes, &pyRes->aod, &pyRes->gof, &pyAnal->detectAdvDir, &pyAnal->restricted);
 
   convertToPythonContRes(&res, pyRes);
 
 }
+
+void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+ 
+   //run each individual multistage model
+   for (int i=0;i<pyAnal->ndatasets;i++){
+     //only all individual multistage models if degree == 0
+     //else only run the specified model
+     if (pyAnal->degree[i] ==0){
+       for (int j=0; j<pyAnal->nmodels[i]; j++){
+         pythonBMDSDicho(&pyAnal->models[i][j], &pyRes->models[i][j]);  
+       } 
+     } else {
+       pythonBMDSDicho(&pyAnal->models[i][0], &pyRes->models[i][0]);   
+     }
+   }
+
+   //select models
+   selectMultitumorModel(pyAnal, pyRes);
+
+   //create new pyAnal and pyRes only containing selected models
+   //Note: ndatasets may differ from previous structs (pyAnal & pyRes) depending on whether any datasets were rejected
+   struct python_multitumor_analysis anal;
+   struct python_multitumor_result res;
+
+
+   anal.n = pyAnal->n;
+   anal.BMR = pyAnal->BMR;
+   anal.alpha = pyAnal->alpha;
+   anal.prior_cols = pyAnal->prior_cols;
+   pyRes->validResult.clear();
+   for (int dataset=0; dataset<pyAnal->ndatasets; dataset++){
+     int selIndex = pyRes->selectedModelIndex[dataset];
+     if (selIndex >= 0){
+        pyRes->validResult.push_back(true);
+        std::vector<python_dichotomous_analysis> modGroup;
+        std::vector<python_dichotomous_model_result> modResGroup;
+        struct python_dichotomous_analysis modAnal;
+        struct python_dichotomous_model_result modRes;
+        
+        anal.nmodels.push_back(1);
+        modAnal = pyAnal->models[dataset][selIndex];
+        modGroup.push_back(modAnal);
+	anal.degree.push_back(modAnal.degree);
+	anal.models.push_back(modGroup);
+	anal.n.push_back(modAnal.n);
+	anal.ndatasets++;
+
+	res.nmodels.push_back(1);
+	res.selectedModelIndex.push_back(0);  //selected index is always zero since only one model
+        modRes = pyRes->models[dataset][selIndex];
+        modResGroup.push_back(modRes);
+	res.models.push_back(modResGroup);
+
+     } else {
+	//std::cout<<"Warning: multistage model not selected for dataset:"<<dataset<<std::endl;
+	//std::cout<<"This dataset will be dropped."<<std::endl;
+	pyRes->validResult.push_back(false);
+     }
+   }
+   anal.ndatasets = anal.nmodels.size();
+   res.ndatasets = anal.ndatasets;
+
+//   std::cout<<"running multitumor model with "<<anal.ndatasets<<" datasets"<<std::endl;
+   //run MSCombo
+   runMultitumorModel(&anal, &res);  
+
+   pyRes->BMD = res.BMD;
+   pyRes->BMDL = res.BMDL;
+   pyRes->BMDU = res.BMDU;
+   pyRes->slopeFactor = res.slopeFactor;
+   pyRes->combined_LL = res.combined_LL;
+   pyRes->combined_LL_const = res.combined_LL_const;
+}  
+
+
+void selectMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
+
+   if (pyRes->selectedModelIndex.size() > 0){
+      pyRes->selectedModelIndex.clear();
+   }
+
+   for (int i=0; i<pyAnal->ndatasets; i++){ 
+      if(pyAnal->degree[i] == 0){
+        int selectedIndex = selectBestMultitumorModel(pyAnal->models[i], pyRes->models[i]);
+        pyRes->selectedModelIndex.push_back(selectedIndex);
+      } else {
+	//in this case the only the user selected model was run
+	pyRes->selectedModelIndex.push_back(0);
+      }
+   }
+
+}
+
+int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analModels, std::vector<python_dichotomous_model_result> &resModels){
+
+   double bmdDoseSRLimit = 2.0; // scaled residual at BMD dose < value
+   double controlDoseSRLimit = 2.0; // scaled residual at control dose < value
+   double pValueMin = 0.05; // p-value > value
+
+   std::vector<bool> modelHitBoundary;  //checks whether specific model hit boundary
+   std::vector<bool> adequateFit;
+   bool anyHitBoundary = false;
+   bool anyAdequateFit = false;
+
+   for (int i=0; i<analModels.size(); i++){
+      //check parameter boundaries
+      modelHitBoundary.push_back(false);
+      std::vector<bool> bounded = resModels[i].bmdsRes.bounded;
+      for (int j=0; j<bounded.size(); j++){
+         if (bounded[j]){
+            modelHitBoundary[i] = true;
+//	    std::cout<<"    hit boundary for parm:"<<j<<std::endl;
+	 }
+      }
+      //check adequate fit
+      //1. scaled residual at BMD dose < bmdDoseSRLimit
+      //2. scaled residual at control dose < controlDoseSRLimit
+      //3. If 1 & 2 are met, p-value > pValueMin
+      //Note: these values are all currently hardcoded.  Need to account for/allow user changes
+      adequateFit.push_back(false);
+      if (resModels[i].getSRAtDose(resModels[i].bmdsRes.BMD, analModels[i].doses) < bmdDoseSRLimit && resModels[i].gof.residual[0] < controlDoseSRLimit && resModels[i].gof.p_value > pValueMin){
+        adequateFit[i] = true;
+      }
+   }
+
+
+   //first only examine models up to k-2
+   anyHitBoundary = false;
+   anyAdequateFit = false;
+   for (int i=0; i<analModels.size()-1; i++){
+     if(modelHitBoundary[i]){
+        anyHitBoundary = true;
+     }
+     if(adequateFit[i]){
+        anyAdequateFit = true;
+     }
+   }
+
+   if (anyHitBoundary){
+//      std::cout<<"Using SOP step 2 due to model hitting boundary"<<std::endl;
+      //at least one model had a parameter that hit a boundary
+      //step 2 under SOP instructions
+      if(adequateFit[0] && adequateFit[1]){
+         //both linear and quadratic models fit
+         if(!modelHitBoundary[0] && !modelHitBoundary[1]){
+            //choose model with lowest AIC
+            if (round_to(resModels[1].bmdsRes.AIC, BMDS_EPS) < round_to(resModels[0].bmdsRes.AIC, BMDS_EPS)){
+	       return 1;
+	    } else {
+	       return 0;
+	    }
+	 } else {
+           //choose model with lowest BMDL
+	   if (round_to(resModels[1].bmdsRes.BMDL, BMDS_EPS) < round_to(resModels[0].bmdsRes.BMDL, BMDS_EPS)){
+              return 1;
+	   } else {
+	      return 0;
+	   }
+	 }	 
+      } else if(adequateFit[0]){
+        //only linear fits
+	return 0;
+      } else if(adequateFit[1]){
+        //only quadratic fits
+	return 1;
+      } else {
+	//neither fit - refer to SWG
+	return -1;
+      }
+      //return 1;
+
+   } else {
+      //no models had a paramter hit the boundary
+      //step 1 under SOP instructions
+      if(anyAdequateFit){
+         //use lowest AIC model that adequately fits up to k-2 model (exclude k-1 model)
+         std::vector<double> modelAIC;
+	 for (int i=0; i<resModels.size()-1; i++){
+            modelAIC.push_back(resModels[i].bmdsRes.AIC);  
+	 }
+	 //now find the lowest AIC
+         int index = std::distance(std::begin(modelAIC), std::min_element(std::begin(modelAIC), std::end(modelAIC)));
+         return index;
+      } else {
+	 //no adequateFit models.  Examine k-1 model
+         if(adequateFit[analModels.size()-1]){
+            return analModels.size()-1; //use k-1 model
+	 } else {
+            return -1;  //no model selected
+	 }
+      }
+   }
+}
+
+double calcSlopeFactor(double bmr, double bmdl){
+   
+   if (bmdl > 0.0){
+      return bmr/bmdl;
+   } else {
+      return BMDS_MISSING;
+   }
+}
+
+void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes){
+
+
+   //calculate slopeFactor for all individual models
+   for (int i=0; i<pyAnal->ndatasets; i++){
+      for (int j=0; j<pyAnal->nmodels[i]; j++){
+         double bmr = pyAnal->models[i][j].BMR;
+         pyRes->models[i][j].bmdsRes.setSlopeFactor(bmr);
+      }
+   }
+
+
+   //calculate combined LL & constant
+   pyRes->combined_LL = 0.0; 
+   pyRes->combined_LL_const = 0.0;
+   for (int i=0; i<pyAnal->ndatasets; i++){
+     int selIndex = pyRes->selectedModelIndex[i];
+     pyRes->combined_LL += pyRes->models[i][selIndex].max;
+     pyRes->combined_LL_const += LogLik_Constant(pyAnal->models[i][selIndex].Y, pyAnal->models[i][selIndex].n_group);
+   }
+   pyRes->combined_LL = pyRes->combined_LL*-1;
+   pyRes->combined_LL_const = pyRes->combined_LL_const*-1;
+
+
+   Multistage_ComboBMD(pyAnal, pyRes);
+
+   pyRes->setSlopeFactor(pyAnal->BMR);
+
+}
+
+
+
+
+
+void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
+   
+   //stubbed results
+   pyRes->bmdsRes.validResult = true;
+   pyRes->bmdsRes.BMD = 12.95166613;
+   pyRes->bmdsRes.BMDL = 9.643478831;
+   pyRes->bmdsRes.BMDU = (double)BMDS_MISSING;
+
+   pyRes->bmdsRes.AIC = 546.9572409;
+   pyRes->bmdsRes.chisq = 19.6087053;
+   pyRes->combPVal = 0.994;
+   pyRes->df = 35;
+
+   pyRes->nparms = 9;
+   pyRes->parms.push_back(0.084733516);
+   pyRes->parms.push_back(-4.109651594);
+   pyRes->parms.push_back(0.004761366);
+   pyRes->parms.push_back(-0.055489253);
+   pyRes->parms.push_back(1.0);
+   pyRes->parms.push_back(0);
+   pyRes->parms.push_back(0);
+   pyRes->parms.push_back(0);
+   pyRes->parms.push_back(0);
+
+   pyAnal->seed = 1687267999;
+   //pyAnal->iterations = 1000;
+   pyRes->LL = -269.478205;
+   pyRes->obsChiSq = 19.6087053;
+
+   pyRes->boot.numRuns = 3;   
+   pyRes->boot.pVal.push_back(0.994);
+   pyRes->boot.pVal.push_back(0.997);
+   pyRes->boot.pVal.push_back(0.991);
+   pyRes->boot.pVal.push_back(0.994);
+   pyRes->boot.perc50.push_back(38.79787451);
+   pyRes->boot.perc50.push_back(38.19554318);
+   pyRes->boot.perc50.push_back(37.75643018);
+   pyRes->boot.perc50.push_back(38.26776644);
+   pyRes->boot.perc90.push_back(51.1848655);
+   pyRes->boot.perc90.push_back(50.4569082);
+   pyRes->boot.perc90.push_back(50.3883043);
+   pyRes->boot.perc90.push_back(50.6118335);
+   pyRes->boot.perc95.push_back(54.69182);
+   pyRes->boot.perc95.push_back(53.99859);
+   pyRes->boot.perc95.push_back(54.18472);
+   pyRes->boot.perc95.push_back(54.55846);
+   pyRes->boot.perc99.push_back(60.479415);
+   pyRes->boot.perc99.push_back(63.639965);
+   pyRes->boot.perc99.push_back(61.778094);
+   pyRes->boot.perc99.push_back(62.421371);
+
+   pyRes->SRs.push_back(-0.31484);
+   pyRes->SRs.push_back(0.314837);
+   pyRes->SRs.push_back(-0.31484);
+   pyRes->SRs.push_back(0.314837);
+   pyRes->SRs.push_back(-0.31484);
+   pyRes->SRs.push_back(0.314837);
+
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(0);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(25);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(50);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+   pyRes->litter.dose.push_back(100);
+
+   pyRes->litter.LSC.push_back(9);
+   pyRes->litter.LSC.push_back(9);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(13);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(15);
+   pyRes->litter.LSC.push_back(16);
+   pyRes->litter.LSC.push_back(9);
+   pyRes->litter.LSC.push_back(9);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(12);
+   pyRes->litter.LSC.push_back(13);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(7);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(15);
+   pyRes->litter.LSC.push_back(8);
+   pyRes->litter.LSC.push_back(10);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(11);
+   pyRes->litter.LSC.push_back(12);
+   pyRes->litter.LSC.push_back(12);
+   pyRes->litter.LSC.push_back(13);
+   pyRes->litter.LSC.push_back(14);
+   pyRes->litter.LSC.push_back(14);
+
+   pyRes->litter.estProb.push_back(0.127585814);
+   pyRes->litter.estProb.push_back(0.127585814);
+   pyRes->litter.estProb.push_back(0.13234718);
+   pyRes->litter.estProb.push_back(0.13234718);
+   pyRes->litter.estProb.push_back(0.137108547);
+   pyRes->litter.estProb.push_back(0.14663128);
+   pyRes->litter.estProb.push_back(0.151392646);
+   pyRes->litter.estProb.push_back(0.151392646);
+   pyRes->litter.estProb.push_back(0.156154013);
+   pyRes->litter.estProb.push_back(0.160915379);
+   pyRes->litter.estProb.push_back(0.301527034);
+   pyRes->litter.estProb.push_back(0.301527034);
+   pyRes->litter.estProb.push_back(0.297781775);
+   pyRes->litter.estProb.push_back(0.297781775);
+   pyRes->litter.estProb.push_back(0.294373053);
+   pyRes->litter.estProb.push_back(0.291294677);
+   pyRes->litter.estProb.push_back(0.288539894);
+   pyRes->litter.estProb.push_back(0.286101463);
+   pyRes->litter.estProb.push_back(0.286101463);
+   pyRes->litter.estProb.push_back(0.286101463);
+   pyRes->litter.estProb.push_back(0.433391608);
+   pyRes->litter.estProb.push_back(0.410232266);
+   pyRes->litter.estProb.push_back(0.410232266);
+   pyRes->litter.estProb.push_back(0.40315061);
+   pyRes->litter.estProb.push_back(0.40315061);
+   pyRes->litter.estProb.push_back(0.40315061);
+   pyRes->litter.estProb.push_back(0.40315061);
+   pyRes->litter.estProb.push_back(0.38390157);
+   pyRes->litter.estProb.push_back(0.38390157);
+   pyRes->litter.estProb.push_back(0.378161814);
+   pyRes->litter.estProb.push_back(0.572726279);
+   pyRes->litter.estProb.push_back(0.553298381);
+   pyRes->litter.estProb.push_back(0.543802864);
+   pyRes->litter.estProb.push_back(0.543802864);
+   pyRes->litter.estProb.push_back(0.534476942);
+   pyRes->litter.estProb.push_back(0.534476942);
+   pyRes->litter.estProb.push_back(0.52533783);
+   pyRes->litter.estProb.push_back(0.516402011);
+   pyRes->litter.estProb.push_back(0.516402011);
+
+   pyRes->litter.litterSize.push_back(9);
+   pyRes->litter.litterSize.push_back(9);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(13);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(15);
+   pyRes->litter.litterSize.push_back(16);
+   pyRes->litter.litterSize.push_back(9);
+   pyRes->litter.litterSize.push_back(9);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(12);
+   pyRes->litter.litterSize.push_back(13);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(7);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(15);
+   pyRes->litter.litterSize.push_back(8);
+   pyRes->litter.litterSize.push_back(10);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(11);
+   pyRes->litter.litterSize.push_back(12);
+   pyRes->litter.litterSize.push_back(12);
+   pyRes->litter.litterSize.push_back(13);
+   pyRes->litter.litterSize.push_back(14);
+   pyRes->litter.litterSize.push_back(14);   
+
+   pyRes->litter.expected.push_back(1.148272326);
+   pyRes->litter.expected.push_back(1.148272326);
+   pyRes->litter.expected.push_back(1.323471805);
+   pyRes->litter.expected.push_back(1.323471805);
+   pyRes->litter.expected.push_back(1.508194016);
+   pyRes->litter.expected.push_back(1.906206638);
+   pyRes->litter.expected.push_back(2.119497049);
+   pyRes->litter.expected.push_back(2.119497049);
+   pyRes->litter.expected.push_back(2.342310192);
+   pyRes->litter.expected.push_back(2.574646069);
+   pyRes->litter.expected.push_back(2.713743308);
+   pyRes->litter.expected.push_back(2.713743308);
+   pyRes->litter.expected.push_back(2.977817749);
+   pyRes->litter.expected.push_back(2.977817749);
+   pyRes->litter.expected.push_back(3.238103583);
+   pyRes->litter.expected.push_back(3.495536119);
+   pyRes->litter.expected.push_back(3.751018618);
+   pyRes->litter.expected.push_back(4.005420479);
+   pyRes->litter.expected.push_back(4.005420479);
+   pyRes->litter.expected.push_back(4.005420479);
+   pyRes->litter.expected.push_back(3.033741255);
+   pyRes->litter.expected.push_back(4.102322662);
+   pyRes->litter.expected.push_back(4.102322662);
+   pyRes->litter.expected.push_back(4.434656714);
+   pyRes->litter.expected.push_back(4.434656714);
+   pyRes->litter.expected.push_back(4.434656714);
+   pyRes->litter.expected.push_back(4.434656714);
+   pyRes->litter.expected.push_back(5.374621982);
+   pyRes->litter.expected.push_back(5.374621982);
+   pyRes->litter.expected.push_back(5.672427209);
+   pyRes->litter.expected.push_back(4.581810233);
+   pyRes->litter.expected.push_back(5.532983808);
+   pyRes->litter.expected.push_back(5.981831502);
+   pyRes->litter.expected.push_back(5.981831502);
+   pyRes->litter.expected.push_back(6.413723301);
+   pyRes->litter.expected.push_back(6.413723301);
+   pyRes->litter.expected.push_back(6.829391788);
+   pyRes->litter.expected.push_back(7.229628148);
+   pyRes->litter.expected.push_back(7.229628148);
+
+   pyRes->litter.observed.push_back(0);
+   pyRes->litter.observed.push_back(1);
+   pyRes->litter.observed.push_back(1);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(3);
+   pyRes->litter.observed.push_back(3);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(1);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(1);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(3);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(3);
+   pyRes->litter.observed.push_back(2);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(5);
+   pyRes->litter.observed.push_back(4);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(8);
+   pyRes->litter.observed.push_back(8);
+   pyRes->litter.observed.push_back(7);
+   pyRes->litter.observed.push_back(6);
+   pyRes->litter.observed.push_back(6);
+
+   pyRes->litter.SR.push_back(-1.147257987);
+   pyRes->litter.SR.push_back(-0.148141348);
+   pyRes->litter.SR.push_back(-0.301860366);
+   pyRes->litter.SR.push_back(0.631328744);
+   pyRes->litter.SR.push_back(0.431109028);
+   pyRes->litter.SR.push_back(0.857594396);
+   pyRes->litter.SR.push_back(0.65653973);
+   pyRes->litter.SR.push_back(-0.089101984);
+   pyRes->litter.SR.push_back(-0.243481535);
+   pyRes->litter.SR.push_back(-1.071325161);
+   pyRes->litter.SR.push_back(-0.518421334);
+   pyRes->litter.SR.push_back(1.660602955);
+   pyRes->litter.SR.push_back(-0.676196332);
+   pyRes->litter.SR.push_back(-1.367732493);
+   pyRes->litter.SR.push_back(0.504037656);
+   pyRes->litter.SR.push_back(-0.314836859);
+   pyRes->litter.SR.push_back(1.376689417);
+   pyRes->litter.SR.push_back(1.179530167);
+   pyRes->litter.SR.push_back(-0.003205497);
+   pyRes->litter.SR.push_back(-0.594573329);
+   pyRes->litter.SR.push_back(-0.788462565);
+   pyRes->litter.SR.push_back(0.577118305);
+   pyRes->litter.SR.push_back(0.577118305);
+   pyRes->litter.SR.push_back(-0.267167737);
+   pyRes->litter.SR.push_back(-0.267167737);
+   pyRes->litter.SR.push_back(0.347496039);
+   pyRes->litter.SR.push_back(-0.267167737);
+   pyRes->litter.SR.push_back(-0.755412682);
+   pyRes->litter.SR.push_back(-0.205870559);
+   pyRes->litter.SR.push_back(0.174415333);
+   pyRes->litter.SR.push_back(0.298883377);
+   pyRes->litter.SR.push_back(-0.975099884);
+   pyRes->litter.SR.push_back(0.010998302);
+   pyRes->litter.SR.push_back(0.010998302);
+   pyRes->litter.SR.push_back(0.918022312);
+   pyRes->litter.SR.push_back(0.918022312);
+   pyRes->litter.SR.push_back(0.094758157);
+   pyRes->litter.SR.push_back(-0.65761782);
+   pyRes->litter.SR.push_back(-0.65761782);
+
+   pyRes->reduced.dose.push_back(0);
+   pyRes->reduced.dose.push_back(25);
+   pyRes->reduced.dose.push_back(50);
+   pyRes->reduced.dose.push_back(100);
+   pyRes->reduced.propAffect.push_back(0.14049587);
+   pyRes->reduced.propAffect.push_back(0.31034482);
+   pyRes->reduced.propAffect.push_back(0.38596491);
+   pyRes->reduced.propAffect.push_back(0.53333333);
+   pyRes->reduced.lowerConf.push_back(0.10100315);
+   pyRes->reduced.lowerConf.push_back(0.23266263);
+   pyRes->reduced.lowerConf.push_back(0.34156249);
+   pyRes->reduced.lowerConf.push_back(0.46300766);
+   pyRes->reduced.upperConf.push_back(0.19144442);
+   pyRes->reduced.upperConf.push_back(0.39977302);
+   pyRes->reduced.upperConf.push_back(0.43230026);
+   pyRes->reduced.upperConf.push_back(0.60240216);
+
+}
+
+
+double round_to(double value, double precision ){
+   double res = std::round(value / precision) * precision;
+   return res;
+}
+
+
