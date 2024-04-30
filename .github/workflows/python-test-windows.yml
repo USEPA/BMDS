@@ -19,7 +19,7 @@ jobs:
         python-version: ["3.11"]
         os: ["windows-latest"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # - name: install nlopt
       #   shell: cmd
       #   run: |
@@ -37,24 +37,34 @@ jobs:
       #     git clone --depth 1 --branch 3.4.0 https://gitlab.com/libeigen/eigen.git
       #     ls ${{github.workspace}}\eigen\Eigen\src
       #     echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
-      - uses: microsoft/setup-msbuild@v2
+
+      # - name: install gsl
+      #   shell: pwsh
+      #   run: |
+      #     Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
+      #     conda --version
+      #     conda info
+      #     # conda install -c conda-forge --yes gsl==2.7 eigen==3.4.0 nlopt==2.7.1 cmake make ninja conda-build
+      #     conda install -c conda-forge --yes gsl==2.7
+      #     Invoke-Expression "ls $Env:CONDA\Library"
+      #     echo "GSL_DIR=$Env:CONDA\Library" >> $env:GITHUB_ENV
+
       - name: install gsl
-        shell: pwsh
         run: |
-          Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
-          conda --version
-          conda info
-          # conda install -c conda-forge --yes gsl==2.7 eigen==3.4.0 nlopt==2.7.1 cmake make ninja conda-build
-          conda install -c conda-forge --yes gsl==2.7
-          Invoke-Expression "ls $Env:CONDA\Library"
-          echo "GSL_DIR=$Env:CONDA\Library" >> $env:GITHUB_ENV
+          cd ..
+          git clone --depth 1 https://github.com/ampl/gsl.git
+          cd gsl
+          mkdir build
+          cd build
+          cmake .. -DNO_AMPL_BINDINGS=1
+          cmake --build .
+          echo "GSL_DIR=${{github.workspace}}\..\gsl" >> $env:GITHUB_ENV
+
+
       - name: build bmds with cmake
         shell: pwsh
         run: |
-          gci env:* | sort-object name
-          Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
-          conda env list
-          # build bmdscore cmake
+          cd ${{github.workspace}}
           mkdir build
           cd build
           cmake ..
