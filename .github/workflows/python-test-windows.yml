@@ -32,12 +32,12 @@ jobs:
       - name: download eigen
         run: |
           cd ${{github.workspace}}\..
-          git clone --depth 1 --branch 3.4.0 https://github.com/libigl/eigen.git
+          git clone --depth 1 https://github.com/libigl/eigen.git
           echo "EIGEN_DIR=${{github.workspace}}\..\eigen" >> $env:GITHUB_ENV
       - name: install nlopt
         run: |
           cd ${{github.workspace}}\..
-          git clone --depth 1 --branch v2.7.1 https://github.com/stevengj/nlopt.git
+          git clone --depth 1 https://github.com/stevengj/nlopt.git
           cd nlopt
           mkdir build
           cd build
