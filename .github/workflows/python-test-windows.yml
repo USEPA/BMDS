@@ -9,6 +9,7 @@ on:
 env:
   PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
   PYTHON_EXECUTABLE: $Env:CONDA\python.exe
+  BUILD_TYPE: Release
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -51,9 +52,9 @@ jobs:
           cd gsl
           mkdir build
           cd build
-          cmake ..
-          cmake --build .
-          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Debug;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
+          cmake .. -DNO_AMPL_BINDINGS=1
+          cmake --build . --config Release
+          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Release;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
