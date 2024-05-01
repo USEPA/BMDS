@@ -46,7 +46,7 @@ jobs:
           echo "NLOPT_DIR=${{github.workspace}}\..\nlopt\src\api;${{github.workspace}}\..\nlopt\build\Release;${{github.workspace}}\..\nlopt\build" >> $env:GITHUB_ENV
       - name: install gsl
         run: |
-          cd ..
+          cd ${{github.workspace}}\..
           git clone --depth 1 https://github.com/ampl/gsl.git
           cd gsl
           mkdir build
