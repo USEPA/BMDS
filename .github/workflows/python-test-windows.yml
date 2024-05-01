@@ -52,8 +52,8 @@ jobs:
           mkdir build
           cd build
           cmake ..
-          cmake --build . --config Release
-          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Release;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
+          cmake --build .
+          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Debug;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
