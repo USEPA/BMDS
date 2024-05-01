@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+env:
+  PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
+  PYTHON_EXECUTABLE: $Env:CONDA\python.exe
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
@@ -18,37 +22,28 @@ jobs:
       matrix:
         python-version: ["3.11"]
         os: ["windows-latest"]
+
     steps:
       - uses: actions/checkout@v4
-      # - name: install nlopt
-      #   shell: cmd
-      #   run: |
-      #     :: https://github.com/stevengj/nlopt/tags
-      #     git clone --depth 1 --branch v2.7.1 https://github.com/stevengj/nlopt.git
-      #     cd nlopt
-      #     cmake -DCMAKE_INSTALL_PREFIX=%cd:\=/%/install .
-      #     cmake --build . --config Release --target install
-      #     ls ${{github.workspace}}\nlopt\install\include
-      #     echo "NLOPT_DIR=${{github.workspace}}\nlopt\install\include\" >> $env:GITHUB_ENV
-      # - name: install eigen
-      #   shell: pwsh
-      #   run: |
-      #     # https://gitlab.com/libeigen/eigen/-/tags
-      #     git clone --depth 1 --branch 3.4.0 https://gitlab.com/libeigen/eigen.git
-      #     ls ${{github.workspace}}\eigen\Eigen\src
-      #     echo "EIGEN_DIR=${{github.workspace}}\eigen\Eigen\src" >> $env:GITHUB_ENV
-
-      # - name: install gsl
-      #   shell: pwsh
-      #   run: |
-      #     Invoke-Expression "$Env:CONDA\shell\condabin\conda-hook.ps1"
-      #     conda --version
-      #     conda info
-      #     # conda install -c conda-forge --yes gsl==2.7 eigen==3.4.0 nlopt==2.7.1 cmake make ninja conda-build
-      #     conda install -c conda-forge --yes gsl==2.7
-      #     Invoke-Expression "ls $Env:CONDA\Library"
-      #     echo "GSL_DIR=$Env:CONDA\Library" >> $env:GITHUB_ENV
-
+      - name: set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: download eigen
+        run: |
+          cd ${{github.workspace}}\..
+          git clone --depth 1 --branch 3.4.0 https://github.com/libigl/eigen.git
+          echo "EIGEN_DIR=${{github.workspace}}\..\eigen" >> $env:GITHUB_ENV
+      - name: install nlopt
+        run: |
+          cd ${{github.workspace}}\..
+          git clone --depth 1 --branch v2.7.1 https://github.com/stevengj/nlopt.git
+          cd nlopt
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+          echo "NLOPT_DIR=${{github.workspace}}\..\nlopt\src\api;${{github.workspace}}\..\nlopt\build\Release;${{github.workspace}}\..\nlopt\build" >> $env:GITHUB_ENV
       - name: install gsl
         run: |
           cd ..
@@ -56,11 +51,9 @@ jobs:
           cd gsl
           mkdir build
           cd build
-          cmake .. -DNO_AMPL_BINDINGS=1
-          cmake --build .
-          echo "GSL_DIR=${{github.workspace}}\..\gsl" >> $env:GITHUB_ENV
-
-
+          cmake ..
+          cmake --build . --config Release
+          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Release;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
@@ -69,10 +62,6 @@ jobs:
           cd build
           cmake ..
           cmake --build . --config Release
-      # - name: Set up Python ${{ matrix.python-version }}
-      #   uses: actions/setup-python@v4
-      #   with:
-      #     python-version: ${{ matrix.python-version }}
       # - name: try to restore pip cache
       #   uses: actions/cache@v3
       #   with:

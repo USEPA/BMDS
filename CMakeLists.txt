@@ -65,7 +65,7 @@ find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 project(bmdscore)
 
-include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${GSL_DIR})
+include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${NLOPT_DIR} ${GSL_DIR})
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
 file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/code_base/*.cpp")
