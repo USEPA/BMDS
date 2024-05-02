@@ -10,6 +10,7 @@ env:
   PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
   PYTHON_EXECUTABLE: $Env:CONDA\python.exe
   BUILD_TYPE: Release
+  DEPENDENCY_DIR: ${{github.workspace}}\..\deps
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -30,31 +31,43 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: restore github dependencies from cache
+        id: cache-github
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPENDENCY_DIR }}
+          key: ${{runner.os}}-github-deps
+      - name: create dependency dir
+        if: steps.cache-github.outputs.cache-hit != 'true'
+        run: mkdir ${{ env.DEPENDENCY_DIR }}
       - name: download eigen
+        if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
-          cd ${{github.workspace}}\..
+          cd ${{ env.DEPENDENCY_DIR }}
           git clone --depth 1 https://github.com/libigl/eigen.git
-          echo "EIGEN_DIR=${{github.workspace}}\..\eigen" >> $env:GITHUB_ENV
+          echo "${{ env.DEPENDENCY_DIR }}\eigen" >> $env:GITHUB_ENV
       - name: install nlopt
+        if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
-          cd ${{github.workspace}}\..
+          cd ${{ env.DEPENDENCY_DIR }}
           git clone --depth 1 https://github.com/stevengj/nlopt.git
           cd nlopt
           mkdir build
           cd build
           cmake ..
           cmake --build . --config Release
-          echo "NLOPT_DIR=${{github.workspace}}\..\nlopt\src\api;${{github.workspace}}\..\nlopt\build\Release;${{github.workspace}}\..\nlopt\build" >> $env:GITHUB_ENV
+          echo "NLOPT_DIR=${{ env.DEPENDENCY_DIR }}\nlopt\src\api;${{ env.DEPENDENCY_DIR }}\nlopt\build\Release;${{ env.DEPENDENCY_DIR }}\nlopt\build" >> $env:GITHUB_ENV
       - name: install gsl
+        if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
-          cd ${{github.workspace}}\..
+          cd ${{ env.DEPENDENCY_DIR }}
           git clone --depth 1 https://github.com/ampl/gsl.git
           cd gsl
           mkdir build
           cd build
           cmake .. -DNO_AMPL_BINDINGS=1
           cmake --build . --config Release
-          echo "GSL_DIR=${{github.workspace}}\..\gsl\build\Release;${{github.workspace}}\..\gsl\build" >> $env:GITHUB_ENV
+          echo "GSL_DIR=${{ env.DEPENDENCY_DIR }}\gsl\build\Release;${{ env.DEPENDENCY_DIR }}\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
@@ -64,7 +77,7 @@ jobs:
           cmake ..
           cmake --build . --config Release
       # - name: try to restore pip cache
-      #   uses: actions/cache@v3
+      #   uses: actions/cache@v4
       #   with:
       #     path: ~/.cache/pip
       #     key: ${{ runner.os }}-pip-${{ hashFiles('setup.py', 'requirements_dev.txt') }}
