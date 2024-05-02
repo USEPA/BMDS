@@ -35,19 +35,19 @@ jobs:
         id: cache-github
         uses: actions/cache@v4
         with:
-          path: $DEPENDENCY_DIR
+          path: $Env:DEPENDENCY_DIR
           key: ${{runner.os}}-github-deps
       - name: create dependency dir
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: mkdir ${{ env.DEPENDENCY_DIR }}
       - name: download eigen
-        working-directory: $DEPENDENCY_DIR
+        working-directory: $Env:DEPENDENCY_DIR
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/libigl/eigen.git
-          echo "$DEPENDENCY_DIR\eigen" >> $env:GITHUB_ENV
+          echo "$Env:DEPENDENCY_DIR\eigen" >> $env:GITHUB_ENV
       - name: install nlopt
-        working-directory: $DEPENDENCY_DIR
+        working-directory: $Env:DEPENDENCY_DIR
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/stevengj/nlopt.git
@@ -56,9 +56,9 @@ jobs:
           cd build
           cmake ..
           cmake --build . --config Release
-          echo "NLOPT_DIR=$DEPENDENCY_DIR\nlopt\src\api;$DEPENDENCY_DIR\nlopt\build\Release;$DEPENDENCY_DIR\nlopt\build" >> $env:GITHUB_ENV
+          echo "NLOPT_DIR=$Env:DEPENDENCY_DIR\nlopt\src\api;$Env:DEPENDENCY_DIR\nlopt\build\Release;$Env:DEPENDENCY_DIR\nlopt\build" >> $env:GITHUB_ENV
       - name: install gsl
-        working-directory: $DEPENDENCY_DIR
+        working-directory: $Env:DEPENDENCY_DIR
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/ampl/gsl.git
@@ -67,7 +67,7 @@ jobs:
           cd build
           cmake .. -DNO_AMPL_BINDINGS=1
           cmake --build . --config Release
-          echo "GSL_DIR=$DEPENDENCY_DIR\gsl\build\Release;$DEPENDENCY_DIR\gsl\build" >> $env:GITHUB_ENV
+          echo "GSL_DIR=$Env:DEPENDENCY_DIR\gsl\build\Release;$Env:DEPENDENCY_DIR\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
