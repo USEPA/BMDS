@@ -10,7 +10,7 @@ env:
   PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
   PYTHON_EXECUTABLE: $Env:CONDA\python.exe
   BUILD_TYPE: Release
-  DEPENDENCY_DIR: $Env:HOME\github-deps
+  DEPENDENCY_DIR: $HOME\github-deps
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -35,19 +35,19 @@ jobs:
         id: cache-github
         uses: actions/cache@v4
         with:
-          path: $Env:DEPENDENCY_DIR
+          path: ${{env.DEPENDENCY_DIR}}
           key: ${{runner.os}}-github-deps
       - name: create dependency dir
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: mkdir ${{ env.DEPENDENCY_DIR }}
       - name: download eigen
-        working-directory: $Env:DEPENDENCY_DIR
+        working-directory: ${{env.DEPENDENCY_DIR}}
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/libigl/eigen.git
-          echo "$Env:DEPENDENCY_DIR\eigen" >> $env:GITHUB_ENV
+          echo "${{env.DEPENDENCY_DIR}}\eigen" >> $env:GITHUB_ENV
       - name: install nlopt
-        working-directory: $Env:DEPENDENCY_DIR
+        working-directory: ${{env.DEPENDENCY_DIR}}
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/stevengj/nlopt.git
@@ -56,9 +56,9 @@ jobs:
           cd build
           cmake ..
           cmake --build . --config Release
-          echo "NLOPT_DIR=$Env:DEPENDENCY_DIR\nlopt\src\api;$Env:DEPENDENCY_DIR\nlopt\build\Release;$Env:DEPENDENCY_DIR\nlopt\build" >> $env:GITHUB_ENV
+          echo "NLOPT_DIR=${{env.DEPENDENCY_DIR}}\nlopt\src\api;${{env.DEPENDENCY_DIR}}\nlopt\build\Release;${{env.DEPENDENCY_DIR}}\nlopt\build" >> $env:GITHUB_ENV
       - name: install gsl
-        working-directory: $Env:DEPENDENCY_DIR
+        working-directory: ${{env.DEPENDENCY_DIR}}
         if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://github.com/ampl/gsl.git
@@ -67,7 +67,7 @@ jobs:
           cd build
           cmake .. -DNO_AMPL_BINDINGS=1
           cmake --build . --config Release
-          echo "GSL_DIR=$Env:DEPENDENCY_DIR\gsl\build\Release;$Env:DEPENDENCY_DIR\gsl\build" >> $env:GITHUB_ENV
+          echo "GSL_DIR=${{env.DEPENDENCY_DIR}}\gsl\build\Release;${{env.DEPENDENCY_DIR}}\gsl\build" >> $env:GITHUB_ENV
       - name: build bmds with cmake
         shell: pwsh
         run: |
