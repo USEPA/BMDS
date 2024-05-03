@@ -10,7 +10,6 @@ env:
   PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
   PYTHON_EXECUTABLE: $Env:CONDA\python.exe
   BUILD_TYPE: Release
-  DEPENDENCY_DIR: ${{github.workspace}}\..\deps
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -31,6 +30,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: set dependency direcory
+        run: echo "DEPENDENCY_DIR=$HOME\github-deps" >> $env:GITHUB_ENV
       - name: restore github dependencies from cache
         id: cache-github
         uses: actions/cache@v4
