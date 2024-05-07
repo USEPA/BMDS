@@ -20,10 +20,10 @@ clean: ## remove build artifacts
 	@rm -rf dist/
 
 lint:  ## Check for python formatting issues via black & flake8
-	@black . --check && ruff .
+	@ruff format . --check && ruff check .
 
 format:  ## Modify python code using black & show flake8 issues
-	@black . && ruff . --fix --show-fixes
+	@ruff format . && ruff check . --fix --show-fixes
 
 test: ## Run unit tests
 	@py.test

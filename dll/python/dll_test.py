@@ -4,7 +4,7 @@ import ctypes
 import json
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 
 def _list_to_c(list: list[Any], ctype):
@@ -40,7 +40,7 @@ class DichotomousAnalysis(NamedTuple):
     prior_cols: int
 
     class Struct(ctypes.Structure):
-        _fields_ = [
+        _fields_: ClassVar[list[tuple[str, Any]]] = [
             ("model", ctypes.c_int),  # Model Type as listed in DichModel
             ("n", ctypes.c_int),  # total number of observations obs/n
             ("Y", ctypes.POINTER(ctypes.c_double)),  # observed +
@@ -105,7 +105,7 @@ class DichotomousModelResult(NamedTuple):
     dist_numE: int
 
     class Struct(ctypes.Structure):
-        _fields_ = [
+        _fields_: ClassVar[list[tuple[str, Any]]] = [
             ("model", ctypes.c_int),  # dichotomous model specification
             ("nparms", ctypes.c_int),  # number of parameters in the model
             ("parms", ctypes.POINTER(ctypes.c_double)),  # parameter estimate
