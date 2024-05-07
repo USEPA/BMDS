@@ -29,8 +29,6 @@ python -m pip install -r requirements_dev.txt
 
 # build
 make build     # recompile source for development of pybmds package
-# generate python type stubs file bmdscore.pyi
-stubgen -p pybmds.bmdscore -o src/
 
 # test local install
 pybmds hello

@@ -39,6 +39,8 @@ goto :eof
 
 :build
 python setup.py develop
+stubgen -p pybmds.bmdscore -o src
+ruff format src\pybmds\bmdscore.pyi
 goto :eof
 
 :dist
