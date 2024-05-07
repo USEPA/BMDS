@@ -21,11 +21,11 @@ echo.  dist         build wheel package for distribution
 goto :eof
 
 :lint
-black . --check && ruff .
+ruff format . --check && ruff .
 goto :eof
 
 :format
-black . && ruff . --fix --show-fixes
+ruff format . && ruff . --fix --show-fixes
 goto :eof
 
 :test
@@ -39,6 +39,8 @@ goto :eof
 
 :build
 python setup.py develop
+stubgen -p pybmds.bmdscore -o src
+ruff format src\pybmds\bmdscore.pyi
 goto :eof
 
 :dist

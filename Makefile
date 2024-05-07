@@ -16,14 +16,13 @@ help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 clean: ## remove build artifacts
-	@rm -rf build/
-	@rm -rf dist/
+	@rm -rf build/ dist/
 
-lint:  ## Check for python formatting issues via black & flake8
-	@black . --check && ruff .
+lint:  ## Check for python formatting issues
+	@ruff format . --check && ruff check .
 
-format:  ## Modify python code using black & show flake8 issues
-	@black . && ruff . --fix --show-fixes
+format:  ## Modify python code where possible
+	@ruff format . && ruff check . --fix --show-fixes
 
 test: ## Run unit tests
 	@py.test
@@ -34,8 +33,10 @@ coverage: ## Generate coverage report
 
 build: ## Rebuild in development environment
 	@python setup.py develop
-	@ls -lh src/pybmds
+	@stubgen -p pybmds.bmdscore -o src/
+	@ruff format src/pybmds/bmdscore.pyi
+	@ls -lh src/pybmds/
 
-dist: clean ## Build wheel package for distribution
+dist: ## Build wheel package for distribution
 	@python setup.py bdist_wheel
-	@ls -l dist
+	@ls -lh dist

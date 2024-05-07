@@ -87,6 +87,8 @@ jobs:
       - name: Build pybmds
         run: |
           python setup.py develop
+          stubgen -p pybmds.bmdscore -o src
+          ruff format src\pybmds\bmdscore.pyi
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
