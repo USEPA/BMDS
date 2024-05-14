@@ -22,6 +22,12 @@ ENDIF()
 IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
 ENDIF()
+IF(DEFINED ENV{CMAKE_CXX_COMPILER})
+  set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+ENDIF()
+IF(DEFINED ENV{TEST_EXC})
+  set(TEST_EXC $ENV{TEST_EXC})
+ENDIF()
 
 IF(WIN32)
   add_compile_definitions(RBMDS_EXPORTS)
@@ -37,14 +43,12 @@ ELSE()
 ENDIF()
 find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
-# Include dir
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR}/../include)
 
 #lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
-# Src
-AUX_SOURCE_DIRECTORY(code_base SRC_FILES)
+# Include dir
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR} ${NLOPT_DIR}/../include)
 
 # Headers
 set(PROJECT_SOURCE_DIR "code_base")
@@ -153,11 +157,46 @@ ENDIF(WIN32)
 # Include directories
 target_include_directories(bmdscore PRIVATE include)
 
-# Install
-#install(TARGETS bmdscore DESTINATION )
+#Add the executable target for the tests
+add_executable(unit_tests ./unitTests/test_main.cpp ./unitTests/unit_tests.cpp ./unitTests/integration_tests.cpp)
 
-# Install the headers
-#install(FILES include/bmdscore DESTINATION include)
+#Link the library to the test executable
+target_link_libraries(unit_tests bmdscore)
 
-# Create base directory
-#install(DIRECTORY include DESTINATION include)
+#ENable code coverage analysis
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+
+#Add a custom target for generating coverage report
+add_custom_target(coverage
+	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
+
+	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/code_base/ -c -o ./coverage.info
+	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
+	COMMAND lcov -r ./coverage.info
+	COMMAND lcov -r ./coverage.info -o ./coverage.info
+	COMMAND genhtml ./coverage.info -o ./coverage
+	WORKING_DIRECTORY ./
+	COMMENT "Generating code coverage report"
+	message(STATUS "NLOPT_DIR=${NLOPT_DIR}")
+
+)
+
+#Add a custom target for executing tests and generating coverage report
+add_custom_target(run_tests
+	COMMAND ./unit_tests
+	DEPENDS unit_tests
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+	COMMENT "Running tests and generating code coverage report"
+)
+
+#Add a custom target for executing tests, generating coverage data, and generating HTML report
+add_custom_target(run_tests_with_coverage
+	COMMAND ./unit_tests
+	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
+	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/code_base/ -c -o ./coverage.info
+	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
+	COMMAND genhtml ./coverage.info -o ./coverage
+	WORKING_DIRECTORY ./  #${PROJECT_BINARY_DIR}
+	COMMENT "Running test, generating coverage data, and generating HTML report"
+)
+
