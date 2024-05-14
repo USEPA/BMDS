@@ -47,14 +47,8 @@ find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 #lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
-#set (NLOPT_BASE "/home/csimmo02/BMDS/RBMDS/libs/nlopt-2.6.2")
-#cmake_path(GET NLOPT_DIR PARENT_PATH NLOPT_BASE)
-
 # Include dir
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR} ${NLOPT_DIR}/../include)
-
-# Src
-#AUX_SOURCE_DIRECTORY(code_base SRC_FILES)
 
 # Headers
 set(PROJECT_SOURCE_DIR "code_base")
@@ -176,11 +170,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
 add_custom_target(coverage
 	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
 
-	#COMMAND lcov -d ./CMakeFiles/unit_tests.dir/unitTests/ ./CMakeFiles/bmdscore.dir/code_base/ -c -o ./coverage.info
 	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/code_base/ -c -o ./coverage.info
-	#COMMAND lcov -r ./coverage.info /home/csimmo02/BMDS/RBMDS/libs/nlopt-2.6.2/lib64/../ ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
 	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
-	#	COMMAND lcov -r ./coverage.info ${EIGEN_DIR}/* ${NLOPT_DIR}/../* '/home/csimmo02/BMDS/RBMDS/libs/*' '*gcc*' -o ./coverage.info --ignore-errors unused
 	COMMAND lcov -r ./coverage.info
 	COMMAND lcov -r ./coverage.info -o ./coverage.info
 	COMMAND genhtml ./coverage.info -o ./coverage
@@ -202,21 +193,10 @@ add_custom_target(run_tests
 add_custom_target(run_tests_with_coverage
 	COMMAND ./unit_tests
 	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
-	#COMMAND lcov -d ./CMakeFiles/unit_tests.dir/unitTests/ -c -o ./coverage.info --ignore-errors unused
 	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/code_base/ -c -o ./coverage.info
-	#COMMAND lcov -r ./coverage.info -o ./coverage.info --ignore-errors unused
 	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
 	COMMAND genhtml ./coverage.info -o ./coverage
 	WORKING_DIRECTORY ./  #${PROJECT_BINARY_DIR}
 	COMMENT "Running test, generating coverage data, and generating HTML report"
 )
 
-
-# Install
-#install(TARGETS bmdscore DESTINATION )
-
-# Install the headers
-#install(FILES include/bmdscore DESTINATION include)
-
-# Create base directory
-#install(DIRECTORY include DESTINATION include)

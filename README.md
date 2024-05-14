@@ -46,3 +46,21 @@ make dist     # build a portable python wheel for distribution
 ```
 
 Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.
+
+### C++ build and testing
+
+# build c++ code
+inside src/build directory
+cmake ..
+make
+
+# run all tests
+inside src/build directory
+make run_tests
+
+# generate coverage report
+make coverage
+
+#run all tests and generate coverage report
+make run_tests_with_coverage
+
