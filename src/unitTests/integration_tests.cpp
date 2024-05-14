@@ -6,6 +6,7 @@
 #include "priors.h"
 #include <string>
 #include <iostream>
+#include <vector>
 #include "integration_tests.h"
 
 bool showResultsOverride = true;
@@ -18,277 +19,26 @@ int run_all_integrationTests(){
 	return 0;
 }
 
+
 void runPythonDichoAnalysis(){
 
-  printf("Running dichotomous analysis\n");
-
-///////////////////////////////
-//USER INPUT
-///////////////////////////////
-
-  enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
-                                   //d_logprobit=5, d_multistage=6,d_probit=7,
-                                   //d_qlinear=8,d_weibull=9
-  int modelType = 1;       //1 = frequentist, 2 = bayesian
-  bool restricted = true;  //only used for frequentist models
-  int BMD_type = 1;        // 1 = extra ; added otherwise
-  int degree = 3;  //for multistage only
+  dich_model model = d_multistage;
+  int modelType = 1;
+  bool restricted = true;
+  int BMD_type = 1;
+  int degree = 3;
   double BMR = 0.1;
   double alpha = 0.05;
-///////////////////////////////
-//dicho data - dose, N, incidence
-///////////////////////////////
-  //Dichotomous.dax Effect 1
-  double D[] = {0,50, 100, 150, 200};
-  double Y[] = {0, 5, 30, 65, 90};
-  double N[] = {100, 100, 100, 100, 100};
+  std::vector<double> D{0, 50, 100, 150, 200};
+  std::vector<double> Y{0, 5, 30, 65, 90};
+  std::vector<double> N{100, 100, 100, 100, 100};
 
-  /////////////////////////////////////////////////
-////END USER INPUT
-////////////////////////////////////////////////////
 
-  //struct dichotomous_analysis anal;
   struct python_dichotomous_analysis anal;
-
-  int numDataRows = sizeof(D)/sizeof(D[0]);
-
-  //check data array sizes for consistency
-  size_t numElementsY = sizeof(Y)/sizeof(Y[0]);
-  size_t numElementsN = sizeof(N)/sizeof(N[0]);
-  if (numDataRows != numElementsY || numElementsY != numElementsN) {
-    printf("Number of data elements are not consistent\nExiting Code\n");
-    exit(-1);
-  }
-
-
-  //priors defined columnwise
-  int prCols = 5;
-
-  //define priors/parameter constraints
-  int numParms;
-  printf("model = %d\n",model);
-  switch(model) {
-    case d_hill:
-       numParms = 4;
-       break;
-    case d_gamma:
-       numParms = 3;
-       break;
-    case d_logistic:
-       numParms = 2;
-       break;
-    case d_loglogistic:
-       numParms = 3;
-       break;
-    case d_logprobit:
-       numParms = 3;
-       break;
-    case d_multistage:
-       //numParms = 2 + degree;
-       numParms = 1 + degree;
-       break;
-    case d_probit:
-       numParms = 2;
-       break;
-    case d_qlinear:
-       numParms = 2;
-       break;
-    case d_weibull:
-       numParms = 3;
-       break;
-    default :
-      printf("error in numParms\n");
-      return;
-
-  }
-
-  double *prior;
-  if (modelType == 1) {
-    //frequentist
-    if (restricted) {
-      switch(model) {
-        case d_hill:
-          anal.model = d_hill;
-          prior = prRFreqDHill;
-          break;
-        case d_gamma:
-          anal.model = d_gamma;
-          prior = prRFreqGamma;
-          break;
-        case d_logistic:
-          printf("error with restricted logistic model\n");
-          return;
-          break;
-        case d_loglogistic:
-          anal.model = d_loglogistic;
-          prior = prRFreqLogLogistic;
-          break;
-        case d_logprobit:
-          anal.model = d_logprobit;
-          prior = prRFreqLogProbit;
-          break;
-        case d_multistage:
-          anal.model = d_multistage;
-          if (degree == 1){
-            prior = prRFreqMulti1;
-          } else if (degree == 2){
-            prior = prRFreqMulti2;
-          } else if (degree == 3){
-            prior = prRFreqMulti3;
-          } else if (degree == 4){
-            prior = prRFreqMulti4;
-          } else if (degree == 5){
-            prior = prRFreqMulti5;
-          }
-          break;
-        case d_probit:
-          printf("error with restricted probit model\n");
-          return;
-          break;
-        case d_qlinear:
-          printf("error with restricted QLinear model\n");
-          return;
-          break;
-        case d_weibull:
-          anal.model = d_weibull;
-          prior = prRFreqWeibull;
-          break;
-        default:
-          printf("error with restricted models\n");
-          return;
-      }
-    } else {
-      //unrestricted
-      switch(model) {
-        case d_hill:
-          anal.model = d_hill;
-          prior = prUFreqDHill;
-          break;
-        case d_gamma:
-          anal.model = d_gamma;
-          prior = prUFreqGamma;
-          break;
-        case d_logistic:
-          anal.model = d_logistic;
-          prior = prUFreqLogistic;
-          break;
-        case d_loglogistic:
-          anal.model = d_loglogistic;
-          prior = prUFreqLogLogistic;
-          break;
-        case d_logprobit:
-          anal.model = d_logprobit;
-          prior = prUFreqLogProbit;
-          break;
-        case d_multistage:
-          anal.model = d_multistage;
-          if (degree == 1){
-            prior = prUFreqMulti1;
-          } else if (degree == 2){
-            prior = prUFreqMulti2;
-          } else if (degree == 3){
-            prior = prUFreqMulti3;
-          } else if (degree == 4){
-            prior = prUFreqMulti4;
-          } else if (degree == 5){
-            prior = prUFreqMulti5;
-          }
-          break;
-        case d_probit:
-          anal.model = d_probit;
-          prior = prUFreqProbit;
-          break;
-        case d_qlinear:
-          anal.model = d_qlinear;
-          prior = prUFreqQLinear;
-          break;
-        case d_weibull:
-          anal.model = d_weibull;
-          prior = prUFreqWeibull;
-          break;
-        default:
-          printf("error with restricted models\n");
-          return;
-      }
-    }
-  } else {
-    //bayesian
-    switch(model) {
-        case d_hill:
-          anal.model = d_hill;
-          prior = prBayesianDHill;
-          break;
-        case d_gamma:
-          anal.model = d_gamma;
-          prior = prBayesianGamma;
-          break;
-        case d_logistic:
-          anal.model = d_logistic;
-          prior = prBayesianLogistic;
-          return;
-          break;
-        case d_loglogistic:
-          anal.model = d_loglogistic;
-          prior = prBayesianLogLogistic;
-          break;
-        case d_logprobit:
-          anal.model = d_logprobit;
-          prior = prBayesianLogProbit;
-          break;
-        case d_multistage:
-          anal.model = d_multistage;
-          if (degree == 1){
-            prior = prBayesianMulti1;
-          } else if (degree == 2){
-            prior = prBayesianMulti2;
-          } else if (degree == 3){
-            prior = prBayesianMulti3;
-          } else if (degree == 4){
-            prior = prBayesianMulti4;
-          } else if (degree == 5){
-            prior = prBayesianMulti5;
-          }
-          break;
-        case d_probit:
-          anal.model = d_probit;
-          prior = prBayesianProbit;
-          break;
-        case d_qlinear:
-          anal.model =d_qlinear;
-          prior = prBayesianQLinear;
-          break;
-        case d_weibull:
-          anal.model = d_weibull;
-          prior = prBayesianWeibull;
-          break;
-        default:
-          printf("error with restricted models\n");
-          return;
-        }
-  }
-
-  //declare analysis
-  anal.BMD_type = BMD_type;
-  anal.BMR = BMR;
-  anal.alpha = alpha;
-  anal.parms = numParms;
-  anal.Y.assign(Y, Y + numDataRows);
-  anal.n_group.assign(N, N + numDataRows);
-  anal.doses.assign(D, D + numDataRows);
-  anal.prior_cols = prCols;
-  anal.n = numDataRows;
-  anal.degree = degree;
-  anal.prior.assign(prior, prior + anal.prior_cols*anal.parms);
-
   struct python_dichotomous_model_result res;
-  res.model = anal.model;
-  res.dist_numE = 200;
-  res.nparms = anal.parms;
-
+  createDichoAnalysisStructs(model, modelType, restricted, BMD_type, degree, BMR, alpha, D, Y, N, &anal, &res);
 
   pythonBMDSDicho(&anal, &res);
-
-//  printDichoModResult(&anal, &res, showResultsOverride);
 
 }
 
@@ -1191,3 +941,240 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols){
 
 }
 
+
+
+void createDichoAnalysisStructs(dich_model model, int modelType, bool restricted, int BMD_type, int degree, double BMR, double alpha, std::vector<double> &D, std::vector<double> &Y, std::vector<double> &N, python_dichotomous_analysis* anal, python_dichotomous_model_result* res){
+	
+	int prCols = 5;
+	int dist_numE = 200;
+
+	int numDataRows = D.size();
+        int numElementsY = Y.size();
+        int numElementsN = N.size();
+        if (numDataRows != numElementsY || numElementsY != numElementsN) {
+		std::cout<<"Number of data elements are not consistent"<<std::endl<<"Exiting Code"<<std::endl;
+            exit(-1);
+        }
+
+	//define priors/parameter constraints
+	int numParms;
+	//printf("model = %d\n",model);
+	switch(model) {
+	  case d_hill:
+	     numParms = 4;
+	     break;
+	  case d_gamma:
+	     numParms = 3;
+	     break;
+	  case d_logistic:
+	     numParms = 2;
+	     break;
+	  case d_loglogistic:
+	     numParms = 3;
+	     break;
+	  case d_logprobit:
+	     numParms = 3;
+	     break;
+	  case d_multistage:
+	     //numParms = 2 + degree;
+	     numParms = 1 + degree;
+	     break;
+	  case d_probit:
+	     numParms = 2;
+	     break;
+	  case d_qlinear:
+	     numParms = 2;
+	     break;
+	  case d_weibull:
+	     numParms = 3;
+	     break;
+	  default :
+	    printf("error in numParms\n");
+	    return;
+	
+	}
+
+	std::vector<double> prior;
+	if (modelType == 1) {
+	  //frequentist
+	  if (restricted) {
+	    switch(model) {
+	      case d_hill:
+	        anal->model = d_hill;
+	        prior = prRFreqDHill;
+	        break;
+	      case d_gamma:
+	        anal->model = d_gamma;
+	        prior = prRFreqGamma;
+	        break;
+	      case d_logistic:
+	        printf("error with restricted logistic model\n");
+	        return;
+	        break;
+	      case d_loglogistic:
+	        anal->model = d_loglogistic;
+	        prior = prRFreqLogLogistic;
+	        break;
+	      case d_logprobit:
+	        anal->model = d_logprobit;
+	        prior = prRFreqLogProbit;
+	        break;
+	      case d_multistage:
+	        anal->model = d_multistage;
+	        if (degree == 1){
+	          prior = prRFreqMulti1;
+	        } else if (degree == 2){
+	          prior = prRFreqMulti2;
+	        } else if (degree == 3){
+	          prior = prRFreqMulti3;
+	        } else if (degree == 4){
+	          prior = prRFreqMulti4;
+	        } else if (degree == 5){
+	          prior = prRFreqMulti5;
+	        }
+	        break;
+	      case d_probit:
+	        printf("error with restricted probit model\n");
+	        return;
+	        break;
+	      case d_qlinear:
+	        printf("error with restricted QLinear model\n");
+	        return;
+	        break;
+	      case d_weibull:
+	        anal->model = d_weibull;
+	        prior = prRFreqWeibull;
+	        break;
+	      default:
+	        printf("error with restricted models\n");
+	        return;
+	    }
+	  } else {
+	    //unrestricted
+	    switch(model) {
+	      case d_hill:
+	        anal->model = d_hill;
+	        prior = prUFreqDHill;
+	        break;
+	      case d_gamma:
+	        anal->model = d_gamma;
+	        prior = prUFreqGamma;
+	        break;
+	      case d_logistic:
+	        anal->model = d_logistic;
+	        prior = prUFreqLogistic;
+	        break;
+	      case d_loglogistic:
+	        anal->model = d_loglogistic;
+	        prior = prUFreqLogLogistic;
+	        break;
+	      case d_logprobit:
+	        anal->model = d_logprobit;
+	        prior = prUFreqLogProbit;
+	        break;
+	      case d_multistage:
+	        anal->model = d_multistage;
+	        if (degree == 1){
+	          prior = prUFreqMulti1;
+	        } else if (degree == 2){
+	          prior = prUFreqMulti2;
+	        } else if (degree == 3){
+	          prior = prUFreqMulti3;
+	        } else if (degree == 4){
+	          prior = prUFreqMulti4;
+	        } else if (degree == 5){
+	          prior = prUFreqMulti5;
+	        }
+	        break;
+	      case d_probit:
+	        anal->model = d_probit;
+	        prior = prUFreqProbit;
+	        break;
+	      case d_qlinear:
+	        anal->model = d_qlinear;
+	        prior = prUFreqQLinear;
+	        break;
+	      case d_weibull:
+	        anal->model = d_weibull;
+	        prior = prUFreqWeibull;
+	        break;
+	      default:
+	        printf("error with restricted models\n");
+	        return;
+	    }
+	  }
+	} else {
+	  //bayesian
+	  switch(model) {
+	      case d_hill:
+	        anal->model = d_hill;
+	        prior = prBayesianDHill;
+	        break;
+	      case d_gamma:
+	        anal->model = d_gamma;
+	        prior = prBayesianGamma;
+	        break;
+	      case d_logistic:
+	        anal->model = d_logistic;
+	        prior = prBayesianLogistic;
+	        return;
+	        break;
+	      case d_loglogistic:
+	        anal->model = d_loglogistic;
+	        prior = prBayesianLogLogistic;
+	        break;
+	      case d_logprobit:
+	        anal->model = d_logprobit;
+	        prior = prBayesianLogProbit;
+	        break;
+	      case d_multistage:
+	        anal->model = d_multistage;
+	        if (degree == 1){
+	          prior = prBayesianMulti1;
+	        } else if (degree == 2){
+	          prior = prBayesianMulti2;
+	        } else if (degree == 3){
+	          prior = prBayesianMulti3;
+	        } else if (degree == 4){
+	          prior = prBayesianMulti4;
+	        } else if (degree == 5){
+	          prior = prBayesianMulti5;
+	        }
+	        break;
+	      case d_probit:
+	        anal->model = d_probit;
+	        prior = prBayesianProbit;
+	        break;
+	      case d_qlinear:
+	        anal->model =d_qlinear;
+	        prior = prBayesianQLinear;
+	        break;
+	      case d_weibull:
+	        anal->model = d_weibull;
+	        prior = prBayesianWeibull;
+	        break;
+	      default:
+	        printf("error with restricted models\n");
+	        return;
+	      }
+	}
+
+	//declare analysis
+	anal->BMD_type = BMD_type;
+	anal->BMR = BMR;
+	anal->alpha = alpha;
+	anal->parms = numParms;
+        anal->Y = Y;
+	anal->n_group = N;
+	anal->doses = D;
+	anal->prior_cols = prCols;
+	anal->n = numDataRows;
+	anal->degree = degree;
+	anal->prior = prior;
+
+	res->model = anal->model;
+	res->dist_numE = dist_numE;
+	res->nparms = anal->parms;
+
+	return ;
+}

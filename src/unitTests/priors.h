@@ -1,3 +1,4 @@
+#include <vector>
 /////////////////////////
 //Initial values & Priors//
 ///////////////////////////
@@ -5,44 +6,44 @@
 //Dichotomous Models
 //
 //////////BAYESIAN////////////////
-  double prBayesianDHill[] = {1,1,1,2,-1,0,-3,0.693147,2,3,3.3,0.5,-40,-40,-40,0,40,40,40,40};
-  double prBayesianGamma[] = {1,2,2,0,0.693147,0,2,0.424264,1,-18,0.2,0,18,20,10000};
-  double prBayesianLogistic[] = {1,2,0, 0, 2, 2, -20, 0, 20, 40};
-  double prBayesianLogLogistic[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
-  double prBayesianLogProbit[] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
-  double prBayesianMulti1[] = {1,2,0,0,2,1,-20,0,20,1e6}; //degree 1
-  double prBayesianMulti2[] = {1,2,2,0,0,0,2,1,1,-20,0,0,20,1e6,1e6}; //degree 2
-  double prBayesianMulti3[] = {1,2,2,2,0,0,0,0,2,1,1,1,-20,0,0,0,20,1e6,1e6,1e6}; //degree 3
-  double prBayesianMulti4[] = {1,2,2,2,2,0,0,0,0,0,2,1,1,1,1,-20,0,0,0,0,20,1e6,1e6,1e6,1e6}; //degree 4
-  double prBayesianMulti5[] = {1,2,2,2,2,2,0,0,0,0,0,0,2,1,1,1,1,1,-20,0,0,0,0,0,20,1e6,1e6,1e6,1e6,1e6}; //degree 5
-  double prBayesianProbit[] = {1,2,0,0,2,1,-20,0,20,40};
-  double prBayesianQLinear[] = {1,2,0,0,2,1,-20,0,20,18};
-  double prBayesianWeibull[] = {1,2,2,0,0.424264,0,2,0.5,1.5,-20,0,0,20,40,10000};
+  std::vector<double> prBayesianDHill{1,1,1,2,-1,0,-3,0.693147,2,3,3.3,0.5,-40,-40,-40,0,40,40,40,40};
+  std::vector<double> prBayesianGamma{1,2,2,0,0.693147,0,2,0.424264,1,-18,0.2,0,18,20,10000};
+  std::vector<double> prBayesianLogistic{1,2,0, 0, 2, 2, -20, 0, 20, 40};
+  std::vector<double> prBayesianLogLogistic{1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
+  std::vector<double> prBayesianLogProbit{1,1,2,0,0,0.693147,2,1,0.5,-20,-40,0,20,40,20};
+  std::vector<double> prBayesianMulti1{1,2,0,0,2,1,-20,0,20,1e6}; //degree 1
+  std::vector<double> prBayesianMulti2{1,2,2,0,0,0,2,1,1,-20,0,0,20,1e6,1e6}; //degree 2
+  std::vector<double> prBayesianMulti3{1,2,2,2,0,0,0,0,2,1,1,1,-20,0,0,0,20,1e6,1e6,1e6}; //degree 3
+  std::vector<double> prBayesianMulti4{1,2,2,2,2,0,0,0,0,0,2,1,1,1,1,-20,0,0,0,0,20,1e6,1e6,1e6,1e6}; //degree 4
+  std::vector<double> prBayesianMulti5{1,2,2,2,2,2,0,0,0,0,0,0,2,1,1,1,1,1,-20,0,0,0,0,0,20,1e6,1e6,1e6,1e6,1e6}; //degree 5
+  std::vector<double> prBayesianProbit{1,2,0,0,2,1,-20,0,20,40};
+  std::vector<double> prBayesianQLinear{1,2,0,0,2,1,-20,0,20,18};
+  std::vector<double> prBayesianWeibull{1,2,2,0,0.424264,0,2,0.5,1.5,-20,0,0,20,40,10000};
 //////////UNRESTRICTED FREQ////////////////
-  double prUFreqLogistic[] = {0,0,0,0,0,0,-18,0,18,100};
-  double prUFreqDHill[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1e-8,18,18,18,18};
-  double prUFreqGamma[] = {0,0,0,0,0,0,0,0,0,-18,0.2,0,18,18,100};
-  double prUFreqLogLogistic[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
-  double prUFreqLogProbit[] = {0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
-  double prUFreqMulti1[] = {0,0,0,0,0,0,-18,-18,18,100}; //degree 1
-  double prUFreqMulti2[] = {0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4}; //degree 2
-  double prUFreqMulti3[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,18,100,1e4,1e4}; //degree 3
-  double prUFreqMulti4[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,18,100,1e4,1e4,1e4}; //degree 4 NOTWORKING
-  double prUFreqMulti5[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,-18,18,1e4,1e4,1e4,1e4,1e4}; //degree 5 NOTWORKING
-  double prUFreqProbit[] = {0,0,0,0,0,0,-18,0,18,18};
-  double prUFreqQLinear[] = {0,0,0,0,0,0,-18,0,18,100};
-  double prUFreqWeibull[] = {0,0,0,0,0,0,0,0,0,-18,1e-6,1e-6,18,18,100};
-//////////RESTRICTED FREQ////////////////
-  double prRFreqDHill[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1,18,18,18,18};
-  double prRFreqGamma[] = {0,0,0,0,0,0,0,0,0,-18,1,0,18,18,100};
-  double prRFreqLogLogistic[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
-  double prRFreqLogProbit[] = {0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
-  double prRFreqMulti1[] = {0,0,0,0,0,0,-18,0,18,1e4}; //degree 1
-  double prRFreqMulti2[] = {0,0,0,0,0,0,0,0,0,-18,0,0,18,1e4,1e4}; //degree 2
-  double prRFreqMulti3[] = {0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,18,1e4,1e4,1e4}; //degree 3
-  double prRFreqMulti4[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,18,1e4,1e4,1e4,1e4}; //degree 4
-  double prRFreqMulti5[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,0,18,1e4,1e4,1e4,1e4,1e4}; //degree 5
-  double prRFreqWeibull[] = {0,0,0,0,0,0,0,0,0,-18,1,1e-6,18,18,100};
+  std::vector<double> prUFreqLogistic{0,0,0,0,0,0,-18,0,18,100};
+  std::vector<double> prUFreqDHill{0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1e-8,18,18,18,18};
+  std::vector<double> prUFreqGamma{0,0,0,0,0,0,0,0,0,-18,0.2,0,18,18,100};
+  std::vector<double> prUFreqLogLogistic{0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
+  std::vector<double> prUFreqLogProbit{0,0,0,0,0,0,0,0,0,-18,-18,1e-4,18,18,18};
+  std::vector<double> prUFreqMulti1{0,0,0,0,0,0,-18,-18,18,100}; //degree 1
+  std::vector<double> prUFreqMulti2{0,0,0,0,0,0,0,0,0,-18,-18,-18,18,100,1e4}; //degree 2
+  std::vector<double> prUFreqMulti3{0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,18,100,1e4,1e4}; //degree 3
+  std::vector<double> prUFreqMulti4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,18,100,1e4,1e4,1e4}; //degree 4 NOTWORKING
+  std::vector<double> prUFreqMulti5{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,-18,-18,-18,18,1e4,1e4,1e4,1e4,1e4}; //degree 5 NOTWORKING
+  std::vector<double> prUFreqProbit{0,0,0,0,0,0,-18,0,18,18};
+  std::vector<double> prUFreqQLinear{0,0,0,0,0,0,-18,0,18,100};
+  std::vector<double> prUFreqWeibull{0,0,0,0,0,0,0,0,0,-18,1e-6,1e-6,18,18,100};
+//std::vector<//////>//RESTRICTED FREQ////////////////
+  std::vector<double> prRFreqDHill{0,0,0,0,0,0,0,0,0,0,0,0,-18,-18,-18,1,18,18,18,18};
+  std::vector<double> prRFreqGamma{0,0,0,0,0,0,0,0,0,-18,1,0,18,18,100};
+  std::vector<double> prRFreqLogLogistic{0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
+  std::vector<double> prRFreqLogProbit{0,0,0,0,0,0,0,0,0,-18,-18,1,18,18,18};
+  std::vector<double> prRFreqMulti1{0,0,0,0,0,0,-18,0,18,1e4}; //degree 1
+  std::vector<double> prRFreqMulti2{0,0,0,0,0,0,0,0,0,-18,0,0,18,1e4,1e4}; //degree 2
+  std::vector<double> prRFreqMulti3{0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,18,1e4,1e4,1e4}; //degree 3
+  std::vector<double> prRFreqMulti4{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,18,1e4,1e4,1e4,1e4}; //degree 4
+  std::vector<double> prRFreqMulti5{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-18,0,0,0,0,0,18,1e4,1e4,1e4,1e4,1e4}; //degree 5
+  std::vector<double> prRFreqWeibull{0,0,0,0,0,0,0,0,0,-18,1,1e-6,18,18,100};
 /////////////////////////////////////////////////////////////////////////////
 //Continuous Models
 /////////////////////////////////////////////////////////////////////////////
