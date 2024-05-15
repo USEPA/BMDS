@@ -186,7 +186,7 @@ add_custom_target(run_tests
 	COMMAND ./unit_tests
 	DEPENDS unit_tests
 	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-	COMMENT "Running tests and generating code coverage report"
+	COMMENT "Running tests and generating code coverage data"
 )
 
 #Add a custom target for executing tests, generating coverage data, and generating HTML report
