@@ -40,14 +40,10 @@ void runPythonDichoAnalysis(){
 
   pythonBMDSDicho(&anal, &res);
 
+//  printDichoModResult(&anal, &res, showResultsOverride);
 }
 
-
-
-
 void runPythonContAnalysis(){
-
-  printf("Running python continuous analysis\n");
 
   cont_model model = exp_5;
   int modelType = 1;
@@ -78,17 +74,19 @@ void runPythonContAnalysis(){
 
   pythonBMDSCont(&anal, &res);
 
-  printContModResult(&anal, &res, showResultsOverride);
+//  printContModResult(&anal, &res, showResultsOverride);
 }
+
 
 
 void runPythonMultitumorAnalysis(){
 
-  enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
-                                   //d_logprobit=5, d_multistage=6,d_probit=7,
-                                   //d_qlinear=8,d_weibull=9
-  int modelType = 1;       //1 = frequentist, 2 = bayesian
-  bool restricted = true;  //only used for frequentist models
+//  enum dich_model model = d_multistage;  //d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+//                                   //d_logprobit=5, d_multistage=6,d_probit=7,
+//                                   //d_qlinear=8,d_weibull=9
+//  int modelType = 1;       //1 = frequentist, 2 = bayesian
+//  bool restricted = true;  //only used for frequentist models
+//
   int BMD_type = 1;        // 1 = extra ; added otherwise
   double BMR = 0.1;
   double alpha = 0.05;
@@ -117,118 +115,124 @@ void runPythonMultitumorAnalysis(){
   n_group.push_back(n_group2);
   n_group.push_back(n_group3);
 
-  std::vector<int> n = {5,5,5};
+  std::vector<int> dataSize = {5,5,5};
   std::vector<int> degree = {0,0,0};
+
 /////////////////////////////////////////////////
 ////END USER INPUT
 ////////////////////////////////////////////////////
 
-  //priors defined columnwise
-  int prCols = 5;
-
-  int numDatasets = Y.size();
-  //int numDatasets = 1;
+//  //priors defined columnwise
+//  int prCols = 5;
+//
+//  int numDatasets = Y.size();
+//  //int numDatasets = 1;
+//
+//  struct python_multitumor_analysis anal;
+//  anal.ndatasets = numDatasets;
+//  anal.n = n;
+//  anal.degree = degree;
+//  anal.BMR = BMR;
+//  anal.BMD_type = BMD_type;
+//  anal.alpha = alpha;
+//  anal.prior_cols = prCols;
+//
+//  struct python_multitumor_result res;
+//  res.ndatasets = numDatasets;
+//
+//  //create individual models analyses
+//  std::vector<std::vector<python_dichotomous_analysis>> models;
+//  int count = 0;
+//
+//
+//
+//  for (int dataset=0; dataset<numDatasets; dataset++){
+//
+//    int numDataRows = Y[dataset].size();
+//
+//    struct python_dichotomous_analysis modAnal;
+//    modAnal.model = d_multistage;
+//    printf("model = %d\n",modAnal.model);
+//    modAnal.BMD_type = BMD_type;
+//    modAnal.BMR = BMR;
+//    modAnal.alpha = alpha;
+//    modAnal.prior_cols = prCols;
+//
+//    struct python_dichotomous_model_result modRes;
+//    modRes.model = modAnal.model;
+//    modRes.dist_numE = 200;
+//
+//
+//    std::vector<python_dichotomous_analysis> modGroup;
+//    std::vector<python_dichotomous_model_result> modResGroup;
+//
+//    //Individual model construction
+//    //declare analysis
+//    modAnal.parms = 1 + degree[dataset];
+//    modAnal.Y = Y[dataset];
+//    modAnal.n_group = n_group[dataset];
+//    modAnal.doses = doses[dataset];
+//    modAnal.n = numDataRows;
+//
+//    //needs to be changed based on model degree
+//    if (degree[dataset] == 0){
+//      //handle autoselect degree
+//      count = 0;
+//      //run models from degree = 1 to k-1, where k = number of dose groups
+//      for (int deg=1; deg<anal.n[dataset]; deg++){
+//        modAnal.degree = deg;
+//        modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
+//        modAnal.parms = modAnal.degree + 1;
+//        modRes.nparms = modAnal.parms;
+//        modGroup.push_back(modAnal);
+//        modResGroup.push_back(modRes);
+//        count++;
+//      }
+//    } else {
+//      modAnal.degree = degree[dataset];
+//      modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
+//      modRes.nparms = modAnal.parms;
+//      modGroup.push_back(modAnal);
+//      modResGroup.push_back(modRes);
+//      count = 1;
+//    }
+//
+//
+//    anal.nmodels.push_back(count);
+//    anal.models.push_back(modGroup);
+//    res.nmodels.push_back(count);
+//    res.models.push_back(modResGroup);
+//  }
 
   struct python_multitumor_analysis anal;
-  anal.ndatasets = numDatasets;
-  anal.n = n;
-  anal.degree = degree;
-  anal.BMR = BMR;
-  anal.BMD_type = BMD_type;
-  anal.alpha = alpha;
-  anal.prior_cols = prCols;
-
   struct python_multitumor_result res;
-  res.ndatasets = numDatasets;
 
-  //create individual models analyses
-  std::vector<std::vector<python_dichotomous_analysis>> models;
-  int count = 0;
-
-
-
-  for (int dataset=0; dataset<numDatasets; dataset++){
-
-    int numDataRows = Y[dataset].size();
-
-    struct python_dichotomous_analysis modAnal;
-    modAnal.model = d_multistage;
-    printf("model = %d\n",modAnal.model);
-    modAnal.BMD_type = BMD_type;
-    modAnal.BMR = BMR;
-    modAnal.alpha = alpha;
-    modAnal.prior_cols = prCols;
-
-    struct python_dichotomous_model_result modRes;
-    modRes.model = modAnal.model;
-    modRes.dist_numE = 200;
-
-
-    std::vector<python_dichotomous_analysis> modGroup;
-    std::vector<python_dichotomous_model_result> modResGroup;
-
-    //Individual model construction
-    //declare analysis
-    modAnal.parms = 1 + degree[dataset];
-    modAnal.Y = Y[dataset];
-    modAnal.n_group = n_group[dataset];
-    modAnal.doses = doses[dataset];
-    modAnal.n = numDataRows;
-
-    //needs to be changed based on model degree
-    if (degree[dataset] == 0){
-      //handle autoselect degree
-      count = 0;
-      //run models from degree = 1 to k-1, where k = number of dose groups
-      for (int deg=1; deg<anal.n[dataset]; deg++){
-        modAnal.degree = deg;
-        modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
-        modAnal.parms = modAnal.degree + 1;
-        modRes.nparms = modAnal.parms;
-        modGroup.push_back(modAnal);
-        modResGroup.push_back(modRes);
-        count++;
-      }
-    } else {
-      modAnal.degree = degree[dataset];
-      modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
-      modRes.nparms = modAnal.parms;
-      modGroup.push_back(modAnal);
-      modResGroup.push_back(modRes);
-      count = 1;
-    }
-
-
-    anal.nmodels.push_back(count);
-    anal.models.push_back(modGroup);
-    res.nmodels.push_back(count);
-    res.models.push_back(modResGroup);
-  }
+  createMultitumorAnalysis(BMD_type, BMR, alpha, doses, n_group, Y, dataSize, degree, &anal, &res);
 
   //run MSCombo
   pythonBMDSMultitumor(&anal, &res);
 
 
-  //individual model results
-  for (int dataset=0; dataset<numDatasets; dataset++){
-    std::cout<<"dataset:"<<dataset<<std::endl;
-    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
-        std::cout<<" model:"<<mod<<std::endl;
-        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
-    }
-  }
-
-  std::cout<<"Selected model Indexes:  ";
-  for (auto elem : res.selectedModelIndex) {
-        std::cout << elem << ", ";
-  }
-
-  std::cout<<"BMD:  "<<res.BMD<<std::endl;
-  std::cout<<"BMDL: "<<res.BMDL<<std::endl;
-  std::cout<<"BMDU: "<<res.BMDU<<std::endl;
-  std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
-  std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
-  std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
+//  //individual model results
+//  for (int dataset=0; dataset<numDatasets; dataset++){
+//    std::cout<<"dataset:"<<dataset<<std::endl;
+//    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
+//        std::cout<<" model:"<<mod<<std::endl;
+//        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
+//    }
+//  }
+//
+//  std::cout<<"Selected model Indexes:  ";
+//  for (auto elem : res.selectedModelIndex) {
+//        std::cout << elem << ", ";
+//  }
+//
+//  std::cout<<"BMD:  "<<res.BMD<<std::endl;
+//  std::cout<<"BMDL: "<<res.BMDL<<std::endl;
+//  std::cout<<"BMDU: "<<res.BMDU<<std::endl;
+//  std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
+//  std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
+//  std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
 
 }
 
@@ -240,8 +244,7 @@ void runPythonMultitumorAnalysis(){
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride){
 
 
-    printf("tlink bmdsRes.validResult = %s\n", pyRes->bmdsRes.validResult ? "valid" : "invalid");
-    if (pyRes->bmdsRes.validResult || showResultsOverride){
+    if (pyRes->bmdsRes.validResult && showResultsOverride){
        std::cout<<"Valid Result"<<std::endl;
     printf("\nBenchmark Dose\n");
     printf("max: %f\n",pyRes->max);
@@ -292,71 +295,73 @@ void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct pyth
 }
 
 void printContModResult(struct python_continuous_analysis *anal, struct python_continuous_model_result *res, bool showResultsOverride){
+	
+	
+	if (res->bmdsRes.validResult && showResultsOverride){
 
-	if(anal->detectAdvDir){
-	  printf("auto adverse direction: %s\n", anal->isIncreasing ? "increasing" : "decreasing");
-	}
+		if(anal->detectAdvDir){
+		  printf("auto adverse direction: %s\n", anal->isIncreasing ? "increasing" : "decreasing");
+		}
+		
+		printf("\n\n");
+		printf("prior after adj by model code:\n");
+		for (int i=0; i<anal->prior_cols*anal->parms; i++){
+		  printf("%.20f\n",anal->prior[i]);
+		}
+		
+		printf("\n\n----------OUTPUT-----------\n");
+		printf("tlink BMDSres.validResult = %s\n", res->bmdsRes.validResult ? "valid" : "invalid");
+
+
 	
-	printf("\n\n");
-	printf("prior after adj by model code:\n");
-	for (int i=0; i<anal->prior_cols*anal->parms; i++){
-	  printf("%.20f\n",anal->prior[i]);
-	}
+		printf("\nBenchmark Dose\n");
+		printf("max:  %f\n",res->max);
+		printf("BMD:  %f\n",res->bmdsRes.BMD);
+		printf("Matt's BMD:  %f\n",res->bmd);
+		printf("BMDL: %f\n",res->bmdsRes.BMDL);
+		printf("BMDU: %f\n",res->bmdsRes.BMDU);
+		printf("AIC:  %f\n",res->bmdsRes.AIC);
+		printf("LPP: %f\n", res->bmdsRes.BIC_equiv);
+		printf("Test 4 P-value: %f\n", res->aod.TOI.pVal[3]);
+		printf("DOF: %f\n", res->aod.TOI.DF[3]);
+		printf("ChiSq: %f\n", res->bmdsRes.chisq);
+		
+		printf("\nModel Parameters\n");
+		printf("# of parms: %d\n", anal->parms);
+		printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+		for (int i=0; i<anal->parms; i++){
+		   printf("%d, %.20f, %s, %f, %f, %f\n", i, res->parms[i], res->bmdsRes.bounded[i]? "true" : "false", res->bmdsRes.stdErr[i], res->bmdsRes.lowerConf[i], res->bmdsRes.upperConf[i]);
+		   printf("bounded %d = %s\n", i, res->bmdsRes.bounded[i] ? "true" : "false");
+		}
+		
+		printf("\nGoodness of Fit\n");
+		printf("res.gof.n = %d\n",res->gof.n);
+		printf("Dose, Size, EstMed, CalcMed, ObsMean, EstSD, CalcSD, ObsSD, SR\n");
+		for(int i=0; i<res->gof.n; i++){
+		  printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n",res->gof.dose[i],res->gof.size[i],res->gof.estMean[i],res->gof.calcMean[i],res->gof.obsMean[i],res->gof.estSD[i],res->gof.calcSD[i],res->gof.obsSD[i],res->gof.res[i]);
+		}
+		printf("\nError Bars\n");
+		for(int i=0; i<res->gof.n; i++){
+		  printf("%f, %f\n", res->gof.ebLower[i], res->gof.ebUpper[i]);
+		}
+		
+		printf("\nLikelihoods of Interest\n");
+		for (int i=0; i<5; i++){
+		  printf("i:%d, LL:%f, nParms:%d, AIC:%f\n",i,res->aod.LL[i],res->aod.nParms[i],res->aod.AIC[i]);
+		}
+		printf("additive constant:%f\n",res->aod.addConst);
+		
+		printf("\nTests of Interest:\n");
+		for (int i=0; i<4; i++){
+		  printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,res->aod.TOI.llRatio[i],res->aod.TOI.DF[i],res->aod.TOI.pVal[i]);
+		}
+		
+		printf("\nBMD Dist:\n");
+		for (int i=0; i<res->dist_numE; i++){
+		  printf("i:%d, perc:%f, dist:%f\n", i, res->bmd_dist[i+res->dist_numE], res->bmd_dist[i]);
+		}
 	
-	printf("\n\n----------OUTPUT-----------\n");
-	printf("tlink BMDSres.validResult = %s\n", res->bmdsRes.validResult ? "valid" : "invalid");
-	if (res->bmdsRes.validResult || showResultsOverride){
-	
-	printf("\nBenchmark Dose\n");
-	printf("max:  %f\n",res->max);
-	printf("BMD:  %f\n",res->bmdsRes.BMD);
-	printf("Matt's BMD:  %f\n",res->bmd);
-	printf("BMDL: %f\n",res->bmdsRes.BMDL);
-	printf("BMDU: %f\n",res->bmdsRes.BMDU);
-	printf("AIC:  %f\n",res->bmdsRes.AIC);
-	printf("LPP: %f\n", res->bmdsRes.BIC_equiv);
-	printf("Test 4 P-value: %f\n", res->aod.TOI.pVal[3]);
-	printf("DOF: %f\n", res->aod.TOI.DF[3]);
-	printf("ChiSq: %f\n", res->bmdsRes.chisq);
-	
-	printf("\nModel Parameters\n");
-	printf("# of parms: %d\n", anal->parms);
-	printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
-	for (int i=0; i<anal->parms; i++){
-	   printf("%d, %.20f, %s, %f, %f, %f\n", i, res->parms[i], res->bmdsRes.bounded[i]? "true" : "false", res->bmdsRes.stdErr[i], res->bmdsRes.lowerConf[i], res->bmdsRes.upperConf[i]);
-	   printf("bounded %d = %s\n", i, res->bmdsRes.bounded[i] ? "true" : "false");
-	}
-	
-	printf("\nGoodness of Fit\n");
-	printf("res.gof.n = %d\n",res->gof.n);
-	printf("Dose, Size, EstMed, CalcMed, ObsMean, EstSD, CalcSD, ObsSD, SR\n");
-	for(int i=0; i<res->gof.n; i++){
-	  printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n",res->gof.dose[i],res->gof.size[i],res->gof.estMean[i],res->gof.calcMean[i],res->gof.obsMean[i],res->gof.estSD[i],res->gof.calcSD[i],res->gof.obsSD[i],res->gof.res[i]);
-	}
-	printf("\nError Bars\n");
-	for(int i=0; i<res->gof.n; i++){
-	  printf("%f, %f\n", res->gof.ebLower[i], res->gof.ebUpper[i]);
-	}
-	
-	printf("\nLikelihoods of Interest\n");
-	for (int i=0; i<5; i++){
-	  printf("i:%d, LL:%f, nParms:%d, AIC:%f\n",i,res->aod.LL[i],res->aod.nParms[i],res->aod.AIC[i]);
-	}
-	printf("additive constant:%f\n",res->aod.addConst);
-	
-	printf("\nTests of Interest:\n");
-	for (int i=0; i<4; i++){
-	  printf("i:%d, llRatio:%f, DF:%f, pVal:%f\n",i,res->aod.TOI.llRatio[i],res->aod.TOI.DF[i],res->aod.TOI.pVal[i]);
-	}
-	
-	printf("\nBMD Dist:\n");
-	for (int i=0; i<res->dist_numE; i++){
-	  printf("i:%d, perc:%f, dist:%f\n", i, res->bmd_dist[i+res->dist_numE], res->bmd_dist[i]);
-	}
-	
-	} else {
-	  printf("Model was not run\n");
-	}
+	} 
 
 }
 
@@ -641,7 +646,6 @@ void createContAnalysisStructs(cont_model model, int modelType, bool restricted,
 
 	//define priors/parameter constraints
 	int numParms;
-	printf("model = %d\n",model);
 	switch(model) {
 	  case hill:
 	     numParms = 6;
@@ -672,7 +676,6 @@ void createContAnalysisStructs(cont_model model, int modelType, bool restricted,
 	if (modelType == 1) {
 	  //frequentist
 	  if (restricted) {
-	    printf("choosing frequentist restricted priors\n");
 	    switch(model) {
 	      case hill:
 	        anal->model = hill;
@@ -1101,4 +1104,84 @@ void createContAnalysisStructs(cont_model model, int modelType, bool restricted,
 	res->aod = aod;
 
 	return;
+}
+
+
+void createMultitumorAnalysis(int BMD_type, double BMR, double alpha, std::vector<std::vector<double>> doses, std::vector<std::vector<double>> N, std::vector<std::vector<double>> Y, std::vector<int> dataSize, std::vector<int> degree, python_multitumor_analysis *anal, python_multitumor_result *res){
+	
+	enum dich_model model = d_multistage;
+	bool restricted = true;
+	int dist_numE = 200;
+	int prCols = 5;
+	
+        int numDatasets = Y.size();
+	anal->ndatasets = numDatasets;
+	anal->n = dataSize;
+	anal->degree = degree;
+	anal->BMR = BMR;
+	anal->BMD_type = BMD_type;
+	anal->alpha = alpha;
+	anal->prior_cols = prCols;
+
+	res->ndatasets = anal->ndatasets;
+
+	//create individual models analyses
+	std::vector<std::vector<python_dichotomous_analysis>> models;
+	int count = 0;
+
+	for (int dataset=0; dataset<numDatasets; dataset++){
+
+		int numDataRows = Y[dataset].size();
+		struct python_dichotomous_analysis modAnal;
+		modAnal.model = d_multistage;
+		modAnal.BMD_type = BMD_type;
+		modAnal.BMR = BMR;
+		modAnal.alpha = alpha;
+		modAnal.prior_cols = prCols;
+
+		struct python_dichotomous_model_result modRes;
+		modRes.model = modAnal.model;
+		modRes.dist_numE = dist_numE;
+
+		std::vector<python_dichotomous_analysis> modGroup;
+		std::vector<python_dichotomous_model_result> modResGroup;
+
+		//Individual model construction
+		//declare analysis
+		modAnal.parms = 1 + degree[dataset];
+		modAnal.Y = Y[dataset];
+		modAnal.n_group = N[dataset];
+		modAnal.doses = doses[dataset];
+		modAnal.n = numDataRows;
+
+		if (degree[dataset] == 0){
+			//handle autoselect degree
+			count = 0;
+			//run models from degree = 1 to k-1, where k=number of dose groups
+			for (int deg=1; deg<anal->n[dataset]; deg++){
+				modAnal.degree = deg;
+				modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
+				modAnal.parms = modAnal.degree + 1;
+				modRes.nparms = modAnal.parms;
+				modGroup.push_back(modAnal);
+				modResGroup.push_back(modRes);
+				count++;
+			}
+		} else {
+			modAnal.degree = degree[dataset];
+			modAnal.prior = getMultitumorPrior(modAnal.degree, modAnal.prior_cols);
+			modRes.nparms = modAnal.parms;
+			modGroup.push_back(modAnal);
+			modResGroup.push_back(modRes);
+			count = 1;
+		}
+
+		anal->nmodels.push_back(count);
+		anal->models.push_back(modGroup);
+		res->nmodels.push_back(count);
+		res->models.push_back(modResGroup);
+	}
+	
+	return;
+
 }
