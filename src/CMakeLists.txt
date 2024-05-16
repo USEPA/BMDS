@@ -158,7 +158,7 @@ ENDIF(WIN32)
 target_include_directories(bmdscore PRIVATE include)
 
 #Add the executable target for the tests
-add_executable(unit_tests ./unitTests/test_main.cpp ./unitTests/unit_tests.cpp ./unitTests/integration_tests.cpp)
+add_executable(unit_tests ./unitTests/test_main.cpp ./unitTests/unit_tests.cpp ./unitTests/integration_tests.cpp ./unitTests/test_func.cpp)
 
 #Link the library to the test executable
 target_link_libraries(unit_tests bmdscore)

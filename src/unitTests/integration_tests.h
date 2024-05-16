@@ -1,5 +1,6 @@
 
 #include "bmds_helper.h"
+#include "test_func.h"
 
 void runPythonDichoAnalysis();
 void runPythonContAnalysis();
