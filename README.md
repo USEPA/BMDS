@@ -49,13 +49,14 @@ Github actions are setup to execute whenever code is pushed to check code format
 
 ### C++ build and testing
 
-# build c++ code
 inside src/build directory
+
+```bash
+# build c++ code
 cmake ..
 make
 
 # run all tests
-inside src/build directory
 make run_tests
 
 # generate coverage report
@@ -63,4 +64,4 @@ make coverage
 
 #run all tests and generate coverage report
 make run_tests_with_coverage
-
+```

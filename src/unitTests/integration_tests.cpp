@@ -94,7 +94,6 @@ void runPythonContAnalysis(){
 }
 
 
-
 void runPythonMultitumorAnalysis(){
 
   int BMD_type = 1;        // 1 = extra ; added otherwise
@@ -140,7 +139,6 @@ void runPythonMultitumorAnalysis(){
 
 
 
-
 //Helper routines
 
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride){
@@ -148,49 +146,49 @@ void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct pyth
 
     if (pyRes->bmdsRes.validResult && showResultsOverride){
        std::cout<<"Valid Result"<<std::endl;
-    printf("\nBenchmark Dose\n");
-    printf("max: %f\n",pyRes->max);
-    printf("BMD: %f\n",pyRes->bmdsRes.BMD);
-    printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
-    printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
-    printf("AIC: %f\n",pyRes->bmdsRes.AIC);
-    printf("LPP: %f\n", pyRes->bmdsRes.BIC_equiv);
-    printf("P-value: %f\n", pyRes->gof.p_value);
-    printf("DOF: %f\n", pyRes->gof.df);
-    printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
-
-    printf("\nModel Parameters\n");
-    printf("# of parms: %d\n", pyAnal->parms);
-    printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
-    for (int i=0; i<pyAnal->parms; i++){
-       printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );
-    }
-
-    printf("\ncov matrix\n");
-    for (int i=0; i<pyAnal->parms*pyAnal->parms; i++){
-      printf("%d, %f\n", i, pyRes->cov[i]);
-    }
-
-    printf("\nGoodness of Fit\n");
-    printf("Dose, EstProb, Expected, Observed, Size, ScaledRes\n");
-    for (int i=0; i<pyRes->gof.n; i++){
-      printf("%f, %f, %f, %f, %f, %f\n", pyAnal->doses[i], pyRes->gof.expected[i]/pyAnal->n_group[i], pyRes->gof.expected[i], pyAnal->Y[i], pyAnal->n_group[i], pyRes->gof.residual[i]);
-    }
-    printf("\nError bars\n");
-    for (int i=0; i<pyRes->gof.n; i++){
-      printf("%f, %f\n", pyRes->gof.ebLower[i], pyRes->gof.ebUpper[i]);
-    }
-
-    printf("\nAnalysis of Deviance\n");
-    printf("  Model,   LL,    #parms,   deviance,   test DF,  pval\n");
-    printf("Full Model,  %f,  %d,  -,  -,  NA\n", pyRes->aod.fullLL, pyRes->aod.nFull);
-    printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.fittedLL, pyRes->aod.nFit, pyRes->aod.devFit, pyRes->aod.dfFit, pyRes->aod.pvFit);
-    printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.redLL, pyRes->aod.nRed, pyRes->aod.devRed, pyRes->aod.dfRed, pyRes->aod.pvRed);
-
-    printf("\nBMD Dist:\n");
-    for (int i=0; i<pyRes->dist_numE; i++){
-      printf("i:%d, perc:%f, dist:%f\n", i, pyRes->bmd_dist[i+pyRes->dist_numE], pyRes->bmd_dist[i]);
-    }
+       printf("\nBenchmark Dose\n");
+       printf("max: %f\n",pyRes->max);
+       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
+       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
+       printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
+       printf("AIC: %f\n",pyRes->bmdsRes.AIC);
+       printf("LPP: %f\n", pyRes->bmdsRes.BIC_equiv);
+       printf("P-value: %f\n", pyRes->gof.p_value);
+       printf("DOF: %f\n", pyRes->gof.df);
+       printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
+   
+       printf("\nModel Parameters\n");
+       printf("# of parms: %d\n", pyAnal->parms);
+       printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+       for (int i=0; i<pyAnal->parms; i++){
+          printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );
+       }
+   
+       printf("\ncov matrix\n");
+       for (int i=0; i<pyAnal->parms*pyAnal->parms; i++){
+         printf("%d, %f\n", i, pyRes->cov[i]);
+       }
+   
+       printf("\nGoodness of Fit\n");
+       printf("Dose, EstProb, Expected, Observed, Size, ScaledRes\n");
+       for (int i=0; i<pyRes->gof.n; i++){
+         printf("%f, %f, %f, %f, %f, %f\n", pyAnal->doses[i], pyRes->gof.expected[i]/pyAnal->n_group[i], pyRes->gof.expected[i], pyAnal->Y[i], pyAnal->n_group[i], pyRes->gof.residual[i]);
+       }
+       printf("\nError bars\n");
+       for (int i=0; i<pyRes->gof.n; i++){
+         printf("%f, %f\n", pyRes->gof.ebLower[i], pyRes->gof.ebUpper[i]);
+       }
+   
+       printf("\nAnalysis of Deviance\n");
+       printf("  Model,   LL,    #parms,   deviance,   test DF,  pval\n");
+       printf("Full Model,  %f,  %d,  -,  -,  NA\n", pyRes->aod.fullLL, pyRes->aod.nFull);
+       printf("Fitted Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.fittedLL, pyRes->aod.nFit, pyRes->aod.devFit, pyRes->aod.dfFit, pyRes->aod.pvFit);
+       printf("Reduced Model,  %f,  %d,  %f,  %d,  %f\n", pyRes->aod.redLL, pyRes->aod.nRed, pyRes->aod.devRed, pyRes->aod.dfRed, pyRes->aod.pvRed);
+   
+       printf("\nBMD Dist:\n");
+       for (int i=0; i<pyRes->dist_numE; i++){
+         printf("i:%d, perc:%f, dist:%f\n", i, pyRes->bmd_dist[i+pyRes->dist_numE], pyRes->bmd_dist[i]);
+       }
   } else {
      printf("\nModel was not run\n");
   }
