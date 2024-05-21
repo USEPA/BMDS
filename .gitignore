@@ -13,6 +13,7 @@ create_dll_compile.bash
 .ipynb_checkpoints/
 .mypy_cache/
 .pytest_cache/
+.ruff_cache/
 .vscode/
 build/
 dist/
