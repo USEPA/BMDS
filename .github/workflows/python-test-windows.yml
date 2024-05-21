@@ -2,10 +2,10 @@ name: Python test windows
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
 
 env:
   PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages

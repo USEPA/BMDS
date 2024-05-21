@@ -1,0 +1,26 @@
+from enum import StrEnum
+
+
+class RuleClass(StrEnum):
+    gof = "gof"
+    dof_zero = "dof_zero"
+    high_bmd = "high_bmd"
+    warnings = "warnings"
+    high_bmdl = "high_bmdl"
+    roi_large = "roi_large"
+    gof_cancer = "gof_cancer"
+    aic_missing = "aic_missing"
+    bmd_missing = "bmd_missing"
+    roi_missing = "roi_missing"
+    bmdl_missing = "bmdl_missing"
+    bmdu_missing = "bmdu_missing"
+    low_bmd_fail = "low_bmd_fail"
+    low_bmd_warn = "low_bmd_warn"
+    variance_fit = "variance_fit"
+    low_bmdl_fail = "low_bmdl_fail"
+    low_bmdl_warn = "low_bmdl_warn"
+    variance_type = "variance_type"
+    control_stdev_fit = "control_stdev_fit"
+    bmd_bmdl_ratio_fail = "bmd_bmdl_ratio_fail"
+    bmd_bmdl_ratio_warn = "bmd_bmdl_ratio_warn"
+    control_residual_high = "control_residual_high"

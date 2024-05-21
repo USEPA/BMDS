@@ -1,18 +1,10 @@
-*.html
-*.docx
 *.o
-# *.tar.gz
 *.a
 *.la
 *.so
-*.Rproj.user
-*.tgz
-.Rproj.user
 .DS_Store
-*.o
 *.so
-.Rhistory
-build/
+
 create_dll_compile.bash
 
 # python
@@ -22,10 +14,11 @@ create_dll_compile.bash
 .mypy_cache/
 .pytest_cache/
 .vscode/
+build/
 dist/
 htmlcov/
 venv/
 *.log
 *.py[cod]
-.coverage
+.coverage/
 .env

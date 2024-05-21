@@ -1,3 +1,3 @@
-recursive-include * *.pyi
+recursive-include * *.pyi *.json *.csv *.docx
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
