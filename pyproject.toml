@@ -50,6 +50,7 @@ docs = [
 requires = [
   "pybind11>=2.10.4",
   "setuptools>=67.7.2",
+  "wheel~=0.43.0",
 ]
 build-backend = "setuptools.build_meta"
 
