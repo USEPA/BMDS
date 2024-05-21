@@ -26,8 +26,10 @@ jobs:
         run: |
           source ./tools/linux_ci.sh
           python -m pip install -U pip wheel
-          python setup.py bdist_wheel
-          pip install "$(ls dist/*.whl | head -n 1)[dev,docs]"
+          python -m pip install -e ".[dev,docs]"
+          stubgen -p pybmds.bmdscore -o src/
+          ruff format src/pybmds/bmdscore.pyi
+          make dist
       - name: Check linting
         run: |
           make lint
