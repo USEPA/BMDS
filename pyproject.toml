@@ -29,17 +29,18 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pytest~=8.2.1",
-  "pytest-mpl~=0.17.0",
   "coverage~=7.5.1",
+  "mypy~=1.10.0",
+  "pytest-mpl~=0.17.0",
+  "pytest~=8.2.1",
   "ruff~=0.4.4",
 ]
 docs = [
   "Sphinx~=7.3.7",
-  "sphinx-autobuild~=2024.4.16",
   "myst-nb~=1.1.0",
   "myst-parser~=3.0.1",
   "pydata-sphinx-theme~=0.15.2",
+  "sphinx-autobuild~=2024.4.16",
 ]
 
 [project.scripts]
@@ -47,8 +48,8 @@ docs = [
 
 [build-system]
 requires = [
-  "setuptools>=67.7.2",
   "pybind11>=2.10.4",
+  "setuptools>=67.7.2",
 ]
 build-backend = "setuptools.build_meta"
 
