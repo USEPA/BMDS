@@ -22,13 +22,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Cache build
-        uses: actions/cache@v4
-        with:
-          path: |
-            build
-            src/pybmds/bmdscore*
-          key: pybmds-${{ runner.os }}-${{ matrix.python-version }}
       - name: Install dependencies and build pybmds
         run: |
           source ./tools/linux_ci.sh
