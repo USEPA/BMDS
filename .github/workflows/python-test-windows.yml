@@ -36,8 +36,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            build
             src/pybmds/bmdscore*
-          key: ${{ runner.os }}-${{ matrix.python-version }}-build
+          key: pybmds-${{ runner.os }}-${{ matrix.python-version }}
       - name: set dependency directory
         run: echo "DEPENDENCY_DIR=$HOME\github-deps" >> $env:GITHUB_ENV
       - name: restore github dependencies from cache
