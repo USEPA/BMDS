@@ -32,6 +32,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/pybmds/bmdscore*
+          key: ${{ runner.os }}-${{ matrix.python-version }}-build
       - name: set dependency directory
         run: echo "DEPENDENCY_DIR=$HOME\github-deps" >> $env:GITHUB_ENV
       - name: restore github dependencies from cache
@@ -73,13 +79,12 @@ jobs:
           echo "EIGEN_DIR=${{ env.DEPENDENCY_DIR }}\eigen" >> $env:GITHUB_ENV
           echo "NLOPT_DIR=${{ env.DEPENDENCY_DIR }}\nlopt\src\api;${{ env.DEPENDENCY_DIR }}\nlopt\build\Release;${{ env.DEPENDENCY_DIR }}\nlopt\build" >> $env:GITHUB_ENV
           echo "GSL_DIR=${{ env.DEPENDENCY_DIR }}\gsl\build\Release;${{ env.DEPENDENCY_DIR }}\gsl\build" >> $env:GITHUB_ENV
-      - name: build bmds with cmake
-        shell: pwsh
-        run: |
-          mkdir build
-          cd build
-          cmake ..
-          cmake --build . --config Release
+      - name: Cache python build
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/pybmds/bmdscore*
+          key: ${{ runner.os }}-${{ matrix.python-version }}-python-build
       - name: Build package
         run: |
           python -m pip install -U pip wheel
