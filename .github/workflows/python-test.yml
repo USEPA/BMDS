@@ -26,9 +26,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .egg-info/
-            src/pybmds/bmdscore*
-          key: pybmds-${{ runner.os }}-${{ matrix.python-version }}
+            ./.egg-info/
+            ./pybmds.egg-info/
+            ./src/.egg-info/
+            ./src/pybmds.egg-info/
+            ./src/pybmds/bmdscore*
+          key: pybmds2-${{ runner.os }}-${{ matrix.python-version }}
       - name: Install dependencies and build pybmds
         run: |
           source ./tools/linux_ci.sh
@@ -38,6 +41,8 @@ jobs:
           ruff format src/pybmds/bmdscore.pyi
       - name: Check linting
         run: |
+          ls -laht
+          ls src -laht
           make lint
       - name: Test with pytest
         run: |
@@ -52,4 +57,7 @@ jobs:
           path: |
             ./docs/build/html
             ./dist/*.whl
-            ./egg-info/
+            ./.egg-info/
+            ./pybmds.egg-info/
+            ./src/.egg-info/
+            ./src/pybmds.egg-info/
