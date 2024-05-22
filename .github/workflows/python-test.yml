@@ -22,6 +22,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .egg-info/
+            src/pybmds/bmdscore*
+          key: pybmds-${{ runner.os }}-${{ matrix.python-version }}
       - name: Install dependencies and build pybmds
         run: |
           source ./tools/linux_ci.sh
@@ -29,7 +36,6 @@ jobs:
           python -m pip install -e ".[dev,docs]"
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
-          python setup.py bdist_wheel
       - name: Check linting
         run: |
           make lint
@@ -46,3 +52,4 @@ jobs:
           path: |
             ./docs/build/html
             ./dist/*.whl
+            ./egg-info/
