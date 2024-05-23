@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build dist docs docs-clean
+.PHONY: clean lint format test coverage build dist docs docs-clean loc
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -47,3 +47,12 @@ docs: ## Build documentation {html}
 
 docs-clean: ## Clean documentation
 	@$(MAKE) -C docs clean
+
+loc: ## Generate lines of code report
+	@cloc \
+		--exclude-dir=build,dist,venv \
+		--exclude-ext=json,yaml,svg,toml,ini \
+		--vcs=git \
+		--counted loc-files.txt \
+		--md \
+		.
