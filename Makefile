@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build develop
+.PHONY: clean lint format test coverage build dist docs docs-clean
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -40,3 +40,10 @@ build: ## Rebuild in development environment
 dist: ## Build wheel package for distribution
 	@python setup.py bdist_wheel
 	@ls -lh dist
+
+docs: ## Build documentation {html}
+	sphinx-build -W -b html docs/source docs/build/html
+	@echo "HTML: \"docs/build/html/index.html\""
+
+docs-clean: ## Clean documentation
+	@$(MAKE) -C docs clean

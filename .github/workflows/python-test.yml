@@ -3,9 +3,9 @@ name: Python test linux
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
 
 jobs:
   test:
@@ -22,24 +22,42 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install dependencies
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./.egg-info/
+            ./pybmds.egg-info/
+            ./src/.egg-info/
+            ./src/pybmds.egg-info/
+            ./src/pybmds/bmdscore*
+          key: pybmds2-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install dependencies and build pybmds
         run: |
+          source ./tools/linux_ci.sh
           python -m pip install -U pip wheel
-          python -m pip install -r requirements_dev.txt
+          python -m pip install -e ".[dev,docs]"
+          stubgen -p pybmds.bmdscore -o src
+          ruff format src/pybmds/bmdscore.pyi
       - name: Check linting
         run: |
+          ls -laht
+          ls src -laht
           make lint
-      - name: Compile bmdscore and build pybmds
-        run: |
-          source ./tools/linux_ci.sh
-          make build
       - name: Test with pytest
         run: |
-          make test
-      - name: Build package
+          coverage run -m pytest
+          echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
+          coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+      - name: Build documentation
         run: |
-          source ./tools/linux_ci.sh
-          make dist
+          make docs
       - uses: actions/upload-artifact@v4
         with:
-          path: ./dist/*.whl
+          path: |
+            ./docs/build/html
+            ./dist/*.whl
+            ./.egg-info/
+            ./pybmds.egg-info/
+            ./src/.egg-info/
+            ./src/pybmds.egg-info/
