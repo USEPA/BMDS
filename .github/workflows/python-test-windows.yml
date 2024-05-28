@@ -49,7 +49,7 @@ jobs:
           cd ${{ env.DEPENDENCY_DIR }}
           git clone --depth 1 https://github.com/libigl/eigen.git
       - name: install nlopt
-        if: steps.cache-github.outputs.cache-hit != 'true'
+        # if: steps.cache-github.outputs.cache-hit != 'true'
         run: |
           cd ${{ env.DEPENDENCY_DIR }}
           git clone --depth 1 https://github.com/stevengj/nlopt.git
