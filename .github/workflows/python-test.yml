@@ -32,8 +32,8 @@ jobs:
           ruff format src/pybmds/bmdscore.pyi
       - name: Check linked files
         run: |
-          python -m pip install pefile
-          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+          ls -lah src/pybmds
+          ldd src/pybmds/bmdscore*.so
       - name: loc
         run: |
           sudo apt-get install -y cloc

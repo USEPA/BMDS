@@ -56,7 +56,7 @@ jobs:
           cd nlopt
           mkdir build
           cd build
-          cmake ..
+          cmake -DBUILD_SHARED_LIBS=OFF ..
           cmake --build . --config Release
       - name: install gsl
         if: steps.cache-github.outputs.cache-hit != 'true'
