@@ -12,16 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Cache build
-        id: cache-build
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-bmdscore-build
-        with:
-          path: src/build
-          key: src-build
-      - if: ${{ steps.cache-build.outputs.cache-hit != 'true' }}
-        name: Install dependencies and build
+      - name: Install dependencies and build
         run: |
           source ./tools/linux_ci.sh
           mkdir -p src/build
@@ -30,13 +21,11 @@ jobs:
           make -j$(nproc)
       - name: Run tests
         run: |
-          source ./tools/linux_ci.sh
           cd src/build
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
         with:
           name: cpp-coverage
           path: |
-            ./src/build/coverage.info
-            ./src/build/coverage
+            ./src/build/coverage/*
 
