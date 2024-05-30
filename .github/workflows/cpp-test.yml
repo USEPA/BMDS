@@ -17,6 +17,8 @@ jobs:
           source ./tools/linux_ci.sh
           mkdir -p src/build
           cd src/build
+          gcc --version
+          lcov --version
           cmake ..
           make -j$(nproc)
           make run_tests_with_coverage
