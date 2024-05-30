@@ -12,14 +12,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies and build
+      - name: Install dependencies
         run: |
           source ./tools/linux_ci.sh
+      - name: Build bmdscore
+        run: |
           mkdir -p src/build
           cd src/build
           cmake ..
           make -j$(nproc)
-      - name: Run tests
+      - name: Run tests and generate report
         run: |
           cd src/build
           make run_tests_with_coverage
