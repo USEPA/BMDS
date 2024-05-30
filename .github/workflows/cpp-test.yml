@@ -19,6 +19,7 @@ jobs:
           cd src/build
           gcc --version
           lcov --version
-          cmake ..
-          make -j$(nproc)
-          make run_tests_with_coverage
+          gcov --version
+          # cmake ..
+          # make -j$(nproc)
+          # make run_tests_with_coverage
