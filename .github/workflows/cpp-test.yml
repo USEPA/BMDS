@@ -27,6 +27,6 @@ jobs:
         with:
           name: cpp-coverage
           path: |
-            ./coverage.info
-            ./coverage
+            ./src/build/coverage.info
+            ./src/build/coverage
 
