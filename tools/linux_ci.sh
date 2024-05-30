@@ -9,3 +9,4 @@ export CMAKE_C_COMPILER="/usr/bin/gcc-11"
 export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
 export PYTHON_EXECUTABLE=$(which python)
 export PYTHON_LIBRARY_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+export TEST_EXC="'/usr/include/*'"
