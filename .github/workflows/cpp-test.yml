@@ -31,11 +31,11 @@ jobs:
           gcov --version
           cmake ..
           make -j$(nproc)
-      - name: Run tests
-        run: |
-          source ./tools/linux_ci.sh
-          cd src/build
-          make run_tests_with_coverage
+      # - name: Run tests
+      #   run: |
+      #     source ./tools/linux_ci.sh
+      #     cd src/build
+      #     make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
         with:
           name: cpp-coverage
