@@ -26,9 +26,6 @@ jobs:
           source ./tools/linux_ci.sh
           mkdir -p src/build
           cd src/build
-          gcc --version
-          lcov --version
-          gcov --version
           cmake ..
           make -j$(nproc)
       - name: Run tests
