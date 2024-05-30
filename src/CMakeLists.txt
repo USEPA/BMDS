@@ -195,8 +195,7 @@ add_custom_target(run_tests_with_coverage
 	COMMAND ./unit_tests
 	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
 	COMMAND lcov -c -o ./coverage.info
-	COMMAND lcov -r ./coverage.info -o ./coverage.info --ignore-errors unused \
-		${TEST_EXC} ${EIGEN_DIR} '/usr/include/*' '*c++*' '*gcc*'
+	COMMAND lcov -r ./coverage.info -o ./coverage.info --ignore-errors unused ${TEST_EXC} ${EIGEN_DIR} '/usr/include/*' '*c++*' '*gcc*'
 	COMMAND genhtml ./coverage.info -o ./coverage
 	WORKING_DIRECTORY ./  #${PROJECT_BINARY_DIR}
 	COMMENT "Running test, generating coverage data, and generating HTML report"
