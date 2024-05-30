@@ -12,7 +12,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies and build
+      - name: Cache build
+        id: cache-build
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-bmdscore-build
+        with:
+          path: src/build
+          key: src-build
+      - if: ${{ steps.cache-build.outputs.cache-hit != 'true' }}
+        name: Install dependencies and build
         run: |
           source ./tools/linux_ci.sh
           mkdir -p src/build
@@ -22,6 +31,8 @@ jobs:
           gcov --version
           cmake ..
           make -j$(nproc)
+      - name: Run tests
+        run: |
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
         with:
