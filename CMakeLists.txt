@@ -10,7 +10,7 @@ ExternalProject_Add(
         GIT_TAG "80dc998efced8ceb2be59756668a7e90e8bef917" # v2.10.4
         SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/pybind11"
         # Override default steps with no action, we just want the clone step.
-        UPDATE_COMMAND ""
+        UPDATE_COMMAND ""       
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
@@ -38,6 +38,9 @@ IF(DEFINED ENV{CMAKE_C_COMPILER})
 ENDIF()
 IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
+ENDIF()
+IF(DEFINED ENV{PYTHON_LIBRARY_DIR})
+  set(PYTHON_LIBRARY_DIR $ENV{PYTHON_LIBRARY_DIR})
 ENDIF()
 
 IF(WIN32)
@@ -73,7 +76,7 @@ file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES} )
 
 include(pybind11.cmake)
-pybind11_add_module(bmdscore
+pybind11_add_module(bmdscore 
 	${SOURCE_FILES}
 	${HEADER_FILES}
 	${PYTHON_FILES}
@@ -84,3 +87,8 @@ IF(WIN32)
 ELSE()
 	target_link_libraries(bmdscore PUBLIC GSL::gsl GSL::gslcblas ${NLOPT_LIB})
 ENDIF(WIN32)
+
+install(TARGETS bmdscore
+  COMPONENT python
+  LIBRARY DESTINATION "${PYTHON_LIBRARY_DIR}"
+  )
