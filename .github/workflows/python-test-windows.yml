@@ -1,15 +1,13 @@
 name: Python test windows
 
 on:
-  pull_request:
+  # pull_request:
   push:
     branches:
       - main
   workflow_dispatch:
 
 env:
-  PYTHON_LIBRARY_DIR: $Env:CONDA\Lib\site-packages
-  PYTHON_EXECUTABLE: $Env:CONDA\python.exe
   BUILD_TYPE: Release
 
 concurrency:
