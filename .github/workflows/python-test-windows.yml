@@ -1,6 +1,7 @@
 name: Python test windows
 
 on:
+  pull_request:
   push:
     branches:
       - main
