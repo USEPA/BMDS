@@ -1,3 +1,4 @@
+# This builds pybmds
 cmake_minimum_required(VERSION 3.1)
 
 project(pybind11-download NONE)
@@ -10,7 +11,7 @@ ExternalProject_Add(
         GIT_TAG "80dc998efced8ceb2be59756668a7e90e8bef917" # v2.10.4
         SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/pybind11"
         # Override default steps with no action, we just want the clone step.
-        UPDATE_COMMAND ""       
+        UPDATE_COMMAND ""
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
@@ -76,7 +77,7 @@ file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES} )
 
 include(pybind11.cmake)
-pybind11_add_module(bmdscore 
+pybind11_add_module(bmdscore
 	${SOURCE_FILES}
 	${HEADER_FILES}
 	${PYTHON_FILES}
