@@ -18,16 +18,16 @@ fi
 # eigen
 cd $GITHUB_WORKSPACE
 cp ./vendor/$EIGEN.tar.gz $DEPS
-cd $DEPS && tar -xf $EIGEN.tar.gz
+cd $DEPS && tar -xf $EIGEN.tar.gz && mv ./$EIGEN ./eigen
 
 # nlopt
 cd $GITHUB_WORKSPACE
 cp ./vendor/$NLOPT.tar.gz $DEPS
-cd $DEPS && tar -xf $NLOPT.tar.gz
-cd $NLOPT && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=OFF .. && cmake --build . --config Release
+cd $DEPS && tar -xf $NLOPT.tar.gz && mv ./$NLOPT ./nlopt
+cd ./nlopt && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=OFF .. && cmake --build . --config Release
 
 # gsl
 cd $GITHUB_WORKSPACE
 cp ./vendor/$GSL.tar.gz $DEPS
-cd $DEPS && tar -xf $GSL.tar.gz
-cd $GSL && mkdir build && cd build && cmake .. -DNO_AMPL_BINDINGS=1 && cmake --build . --config Release
+cd $DEPS && tar -xf $GSL.tar.gz  && mv ./$GSL ./gsl
+cd ./gsl && mkdir build && cd build && cmake .. -DNO_AMPL_BINDINGS=1 && cmake --build . --config Release
