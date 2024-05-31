@@ -70,6 +70,10 @@ jobs:
           cmake --build . --config Release
       - uses: actions/upload-artifact@v4
         with:
+          name: cibw-wheels-z
+          path: ./github-deps
+      - uses: actions/upload-artifact@v4
+        with:
           name: cibw-wheels-e
           path: ./github-deps/eigen
       - uses: actions/upload-artifact@v4
