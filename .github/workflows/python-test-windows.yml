@@ -42,7 +42,7 @@ jobs:
       - name: Build package
         shell: bash
         run: |
-          export DEP=""${{ env.DEPENDENCY_DIR }}"
+          export DEP="${{ env.DEPENDENCY_DIR }}"
           export EIGEN_DIR="$DEP/eigen"
           export NLOPT_DIR="$DEP/nlopt/src/api:$DEP/nlopt/build/Release:$DEP/nlopt/build"
           export GSL_DIR="$DEP/gsl/build/Release:$DEP/gsl/build"
