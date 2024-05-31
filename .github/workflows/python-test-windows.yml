@@ -70,20 +70,16 @@ jobs:
           cmake --build . --config Release
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-z
-          path: ./github-deps
-      - uses: actions/upload-artifact@v4
-        with:
           name: cibw-wheels-e
-          path: ./github-deps/eigen
+          path: /github-deps/eigen
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-g
-          path: ./github-deps/gsl
+          path: /github-deps/gsl
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-n
-          path: ./github-deps/nlopt
+          path: /github-deps/nlopt
       # - name: set eigen/nlopt/gsl directories
       #   run: |
       #     echo "EIGEN_DIR=${{ env.DEPENDENCY_DIR }}\eigen" >> $env:GITHUB_ENV
