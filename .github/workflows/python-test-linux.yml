@@ -1,4 +1,4 @@
-name: Python test linux
+name: Test pybmds Linux
 
 on:
   # pull_request:

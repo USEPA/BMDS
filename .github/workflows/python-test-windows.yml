@@ -1,4 +1,4 @@
-name: Python test windows
+name: Test pybmds Windows
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: C++ test linux
+name: Test bmdscore Linux
 
 on:
   # pull_request:
