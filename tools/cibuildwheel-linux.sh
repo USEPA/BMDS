@@ -2,5 +2,10 @@
 
 set -xe
 
-source ./tools/linux_ci_setup.sh
-source ./tools/linux_ci_env.sh
+yum update -y
+yum install -y cmake gsl-devel eigen3-devel
+
+cp ./vendor/nlopt-2.7.1.tar.gz ~
+cd ~
+tar -xf nlopt-2.7.1.tar.gz && cd nlopt-2.7.1 && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=OFF .. && make install
+cd $GITHUB_WORKSPACE
