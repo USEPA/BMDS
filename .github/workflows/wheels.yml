@@ -1,10 +1,10 @@
 name: Build Python Packages
 
 on:
-  pull_request:
+  schedule:
+    - cron: '30 3 1 */1 *'  # At 03:30 on the 1st of every month
+  tags:
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
 
