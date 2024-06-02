@@ -1,7 +1,7 @@
 name: C++ test linux
 
 on:
-  pull_request:
+  # pull_request:
   push:
     branches:
       - main

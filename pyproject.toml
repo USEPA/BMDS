@@ -76,9 +76,9 @@ test-command = "pytest {project}/tests"
 before-build = "bash tools/windows_ci.sh"
 
 [tool.cibuildwheel.windows.environment]
-EIGEN_DIR="D:/a/bmds-core/bmds-core/deps/eigen"
-NLOPT_DIR="D:/a/bmds-core/bmds-core/deps/nlopt/src/api;D:/a/bmds-core/bmds-core/deps/nlopt/build/Release;D:/a/bmds-core/bmds-core/deps/nlopt/build"
-GSL_DIR="D:/a/bmds-core/bmds-core/deps/gsl/build/Release;D:/a/bmds-core/bmds-core/deps/gsl/build"
+EIGEN_DIR="D:/a/bmds/bmds/deps/eigen"
+NLOPT_DIR="D:/a/bmds/bmds/deps/nlopt/src/api;D:/a/bmds/bmds/deps/nlopt/build/Release;D:/a/bmds/bmds/deps/nlopt/build"
+GSL_DIR="D:/a/bmds/bmds/deps/gsl/build/Release;D:/a/bmds/bmds/deps/gsl/build"
 
 [tool.cibuildwheel.linux]
 before-build = "tools/cibuildwheel-linux.sh"
