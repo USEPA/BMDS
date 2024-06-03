@@ -24,8 +24,6 @@ Visual Studio 19 or greater
 |NLOPT_DIR|path to nlopt lib directory|/home/username/libs/nlopt-2.6.2/lib64|
 |CMAKE_C_COMPILER|path to c compiler|/usr/local/apps/gcc/9.1.0/bin/gcc|
 |CMAKE_CXX_COMPILER|path to c++ compiler|/usr/local/apps/gcc/9.1.0/bin/g++|
-|PYTHON_EXECUTABLE|path to python executable |/home/username/mambaforge/bin/python|
-|PYTHON_LIBRARY_DIR|path to python site-packages directory| /home/username/venv/Lib/site-packages|
 
 ## Build process
 
