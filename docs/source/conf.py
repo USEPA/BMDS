@@ -11,6 +11,15 @@ templates_path = ["_templates"]
 
 exclude_patterns = []
 
+myst_enable_extensions = [
+    "attrs_inline",
+    "colon_fence",
+    "dollarmath",
+    "fieldlist",
+    "html_image",
+    "smartquotes",
+]
+
 # HTML settings
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
