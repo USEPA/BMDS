@@ -14,11 +14,47 @@ Conceptual diagram of how the bmds software packages are organized. The `pybmds`
 
 If you're familiar with Python and packages (or R packages), then installing these packages should be should be familiar. If you're not, see the guides below.
 
+(epa-guide)=
+## Quick Start (EPA Guide)
+
+:::{tip}
+This portion of the guide is recommended as we develop pre-release versions. Recommended for EPA staff. Please check the FAQ below with any questions, or reach out to [Andy Shapiro](mailto:shapiro.andy@epa.gov) for any feedback.  If anything is missing from the guide or anything is confusing, please let us know!
+:::
+
+After installing Python, open up your terminal on your computer. Ensure that Python is on your path:
+
+```bash
+python -V
+```
+
+This should return a Python version (eg., `Python 3.12.3`).  Note that the Python version must be 3.11 or higher.
+
+Next, while on the EPA VPN, install the packages:
+
+```bash
+python -m pip install pybmds --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
+python -m pip install bmds_ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
+```
+
+This should install `pybmds` (the BMDS execution engine) and `bmds_ui` (the BMDS Desktop graphical user interface) along with it's related dependencies. Now, you're ready to use the application.
+
+Start the application:
+
+```bash
+bmds-desktop
+```
+
+Check the version:
+
+```bash
+bmds-desktop --version
+```
+
 ## Python Novice
 
 Here's a simple guide for installation, where we make a few decisions for you for how to install to simplify the installation. If you run into issues, please see the FAQ below, or feel free to contact us.  The only requirement is Python on you computer.
 
-First, install Python. Ideally, use the most recent version available; you'll need at least Python 3.11 (released in 2022). You can install it from [python.org](https://python.org), or [Anaconda](https://www.anaconda.com/), or whatever your organization prefers. During installation, ensure it is added to your path.
+First, install Python. Ideally, use the most recent version available; you'll need at least Python 3.11 (released in 2022). You can install it from [python.org](https://python.org), or [Anaconda](https://www.anaconda.com/), or whatever your organization prefers. During installation, ensure it is added to your path (this is an option on some Windows installers).
 
 After installing, open a terminal on your computer. On Windows, use Windows Terminal (it should be built-in to recent Windows versions). On Mac, you can use the built-in Terminal. After starting, check if Python is available:
 
@@ -26,26 +62,54 @@ After installing, open a terminal on your computer. On Windows, use Windows Term
 python -V
 ```
 
-If Python wasn't found, follow the FAQ below to add to your path, and then continue after adding to your path.
+This should return a Python version (eg., `Python 3.12.3`). If Python wasn't found, follow the FAQ below to add to your path, and then continue after adding to your path.
 
-Like many other programming languages (R, JavaScript), Python has a built-in package installer ([pip](https://pypi.org/project/pip/)), which makes it possible to install 3rd party packages (like `pybmds` or `bmds-desktop`). Generally, that's as easy as installing `python -m pip install <package-name>`. However, we recommend installing in another more advanced tool, [pipx](https://pipx.pypa.io/), so that you can have multiple versions of BMDS Desktop on your computer at the same time:
+Like many other programming languages (R, JavaScript), Python has a package installer (the <u>P</u>ackage <u>I</u>nstaller for <u>P</u>ython, or [pip](https://pypi.org/project/pip/)) for short, which makes it possible to install 3rd party packages (like `pybmds` or `bmds-desktop`). Pip is installed when you install Python automatically.
+
+To install, run the installer command. This will install the latest version available and compatible with your computer:
 
 ```bash
-# install the latest version of the installer
-python -m pip install -U pip
-# install pipx, just for you as a user, not globally on your computer
-python -m pip install --user -U pipx
-# now install a particular version of pybmds and bmds desktop
-pipx install --suffix=-24.1 --preinstall pybmds==24.1 bmds-desktop=24.1
-# they should now appear on your terminal
+python -m pip install bmds-desktop
+```
+
+:::{error}
+This command will not work until EPA releases the software publicly. See the [guide above](epa-guide) for EPA staff. However, we'd love feedback on the guide as these instructions will be public when we release.
+:::
+
+After install, you can start BMDS Desktop:
+
+```bash
+bmds-desktop
+```
+
+You can also check the version of BMDS Desktop installed:
+
+```bash
+bmds-desktop --version
+```
+
+### Installing multiple version of BMDS Desktop
+
+It is possible to install multiple version of BMDS Desktop on your computer if you'd like to run different versions for different projects. For experienced Python users, you install different versions in different [virtual environments ](https://docs.python.org/3/tutorial/venv.html). For new Python users, we recommend using another package for managing environments, [pipx](https://pipx.pypa.io/). This would allow you to have multiple versions of BMDS Desktop on your computer at the same time:
+
+First, install pipx:
+
+```bash
+python -m pip install pipx
+```
+
+Next, install a particular version of BMDS Desktop:
+
+```bash
+pipx install --suffix=-24.1 bmds-desktop==24.1
 pipx --list
 ```
 
-After successful installation, you should be able to start the application:
+After installation, you can start a particular version:
 
 ```bash
-bmds_desktop-24.1 --version
-bmds_desktop-24.1
+bmds-desktop-24.1 --version
+bmds-desktop-24.1
 ```
 
 ## Familiar with Python
@@ -54,7 +118,7 @@ If you're familiar with Python, installation should be straightforward. You'll n
 
 ```bash
 python -m pip install -U pip
-python -m pip install -U pybmds bmds-desktop
+python -m pip install -U bmds-desktop
 ```
 
 We recommend using virtual environments since that allows you to have multiple versions of the software installed on your computer. The guide above describes using pipx for virtual environment management, but this is optional. You do not need to install `bmds-desktop` if you only wish to run `pybmds` without the web-based user interface.
@@ -109,14 +173,20 @@ pipx --list
 
 ### Uninstalling BMDS Desktop
 
-Assuming you followed the guide describe above which puts BMDS in an isolated environment using `pipx`:
+If you install BMDS Desktop using `pip`, you should be able to uninstall the same way:
+
+```bash
+python -m pip uninstall bmds-desktop
+```
+
+If you followed the guide which used `pipx` for installing multiple version of BMDS Desktop on your computer at the same time, you can uninstall using `pipx`:
 
 ```bash
 # show
 pipx list
 
 # uninstall your environment with the correct prefix (see the output from pip list)
-pipx uninstall bmds_desktop-24.1
+pipx uninstall bmds_ui-24.1
 
 # you can even uninstall pipx after removing all your environments
 python -m pip uninstall -U pipx
