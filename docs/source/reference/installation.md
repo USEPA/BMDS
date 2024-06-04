@@ -36,7 +36,7 @@ python -m pip install pybmds --index-url https://gitlab.epa.gov/api/v4/projects/
 python -m pip install bmds_ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
 ```
 
-This should install `pybmds` (the BMDS execution engine) and `bmds_ui` (the BMDS Desktop graphical user interface) along with it's related dependencies. Now, you're ready to use the application.
+This should install `pybmds` (the BMDS execution engine) and `bmds_ui` (the BMDS Desktop User Interface) along with it's related dependencies. Now, you're ready to use the application.
 
 Start the application:
 
@@ -69,7 +69,7 @@ Like many other programming languages (R, JavaScript), Python has a package inst
 To install, run the installer command. This will install the latest version available and compatible with your computer:
 
 ```bash
-python -m pip install bmds-desktop
+python -m pip install bmds-ui
 ```
 
 :::{error}
@@ -101,7 +101,7 @@ python -m pip install pipx
 Next, install a particular version of BMDS Desktop:
 
 ```bash
-pipx install --suffix=-24.1 bmds-desktop==24.1
+pipx install --suffix=-24.1 bmds-ui==24.1
 pipx --list
 ```
 
@@ -117,8 +117,7 @@ bmds-desktop-24.1
 If you're familiar with Python, installation should be straightforward. You'll need Python 3.11 or higher. You can use any version of Python - python.org, anaconda, etc. Using [pip](https://pypi.org/project/pip/), or your preferred Python package manager, install the packages.
 
 ```bash
-python -m pip install -U pip
-python -m pip install -U bmds-desktop
+python -m pip install -U bmds-ui
 ```
 
 We recommend using virtual environments since that allows you to have multiple versions of the software installed on your computer. The guide above describes using pipx for virtual environment management, but this is optional. You do not need to install `bmds-desktop` if you only wish to run `pybmds` without the web-based user interface.
@@ -161,14 +160,20 @@ Next, start up your terminal. Ensure you have Python installed and available on 
 ```bash
 # change directory to where you downloaded the files (or move the files to your current path)
 cd "path-to-downloads"
-# install the latest version of the installer
-python -m pip install -U pip
 # install pipx, just for you as a user, not globally on your computer
 python -m pip install --user -U pipx
 # install the files, using the complete filenames for the files on your computer
-pipx install --preinstall pybmds-24.1-cp312-cp312-win_amd64.whl --suffix=-24.1 bmds-desktop-24.1-cp312-cp312-win_amd64.whl
+pipx install --preinstall pybmds-24.1-cp312-cp312-win_amd64.whl --suffix=-24.1 bmds_ui-24.1-cp312-cp312-win_amd64.whl
 # they should now appear on your terminal
 pipx --list
+```
+
+### Updating BMDS Desktop
+
+To upgrade to the latest version:
+
+```bash
+python -m pip install --upgrade bmds-ui
 ```
 
 ### Uninstalling BMDS Desktop
@@ -186,7 +191,7 @@ If you followed the guide which used `pipx` for installing multiple version of B
 pipx list
 
 # uninstall your environment with the correct prefix (see the output from pip list)
-pipx uninstall bmds_ui-24.1
+pipx uninstall bmds-ui-24.1
 
 # you can even uninstall pipx after removing all your environments
 python -m pip uninstall -U pipx
