@@ -472,18 +472,28 @@ double BMD_func(int n, double p[], double x, double ck)
 
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
  
+   int iter = 0;
+   bool fail = true;
+   double val, minf;
+
+   std::cout<<"inside getclmt with iter="<<iter<<std::endl;
    int nT = pyRes->selectedModelIndex.size(); 
    double bmr = pyAnal->BMR;
+   std::cout<<"bmr:"<<bmr<<std::endl;
    std::vector<int> degree;
    for (int j=0; j<nT; j++){
      int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
      degree.push_back(modDeg);
+     std::cout<<"i:"<<j<<", degree[i]:"<<modDeg<<std::endl;
    } 
    int N = xParms.size() + 1;
+   std::cout<<"inside getclmt with Dose:"<<Dose<<std::endl;
    double bmd = Dose;
+   std::cout<<" bmd:"<<bmd<<std::endl;
    std::vector<double> x(N);
    int iOffset = 0;
    x[0] = log(bmd);
+   std::cout<<"X[0]:"<<x[0]<<std::endl;
 
    std::vector<std::vector<double>> tmp2;
    //restructure to group like terms together
@@ -506,11 +516,17 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 	    count++;
 	 }
       }
-   } 
+   }
+
+
+//   std::cout<<"DEBUG ONLY!!!!!!REMOVE!!!!!!!!"<<std::endl;
+//   x[8] = 0.0; 
 
    //need to round to roughly single-precision for convergence?????
+   std::cout<<"i:0, x[i]:"<<x[0]<<std::endl;
    for (int j=1; j<x.size(); j++){
       x[j] = round_to(x[j], 0.00001);
+      std::cout<<"i:"<<j<<", x[i]:"<<x[j]<<std::endl;
    }
 
    std::vector<double> lb(x.size());
@@ -520,17 +536,29 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    double lminbmd = log(DBL_MIN) - log(maxDose);
    double lmaxbmd = log(DBL_MAX) - log(maxDose);
 
-   lb[0] = lminbmd;  //BMD lower limit
+   if (isBMDL){
+      lb[0] = lminbmd;  //BMD lower limit
+   } else {
+      lb[0] = log(bmd);
+   }
+   std::cout<<"i:1, lb[i]:"<<lb[0]<<std::endl;
    for (int i=1; i<x.size(); i++){
      lb[i] = 0.0; //beta min value
+     std::cout<<"i:"<<i<<", lb[i]:"<<lb[i]<<std::endl;
    }
 
-   ub[0] = log(maxDose);
+   if (isBMDL){
+     ub[0] = log(bmd);
+   }else {
+     ub[0] = log(maxDose);
+   }
+   std::cout<<"i:1, ub[i]:"<<ub[0]<<std::endl;
    for (int i=1; i<x.size(); i++){
      ub[i] = 1e4; //beta max value
+     std::cout<<"i:"<<i<<", ub[i]:"<<ub[i]<<std::endl;
    }
 
-   
+   std::cout<<"target:"<<target<<std::endl;
 //   //constraint data
    struct msComboEq eq1;
    eq1.bmr = bmr;
@@ -569,15 +597,26 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
 
-   double minf, val;
    nlopt::result result = nlopt::FAILURE;
-   try{
-     result = opt.optimize(x, minf);
-//     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
-   } catch (std::exception &e){
-     std::cout << "nlopt failed: " << e.what() << std::endl;
+
+   while (fail && iter<20){
+     try{
+       result = opt.optimize(x, minf);
+       fail = false;
+  //     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
+     } catch (std::exception &e){
+       std::cout << "nlopt failed: " << e.what() << std::endl;
+       if (iter < 10){
+         getNewParms2(x);
+       } else {
+         getMoreParms2(x);
+       }  
+       iter++;
+     }
+
    }
 
+   std::cout<<"exiting getclmt with iter:"<<iter<<std::endl;
    val = x[0];
 
 
@@ -585,6 +624,24 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 
 }
 
+void getNewParms2(std::vector<double> x){
+  /* Find parameters by randomly selecting new parameters in */
+  /* a uniform interval of p[i] +/- .0005*p[i]               */
+  for (int i=0; i<x.size(); i++){
+     x[i] = (x[i]*.001)*(rand()/32768.0) + x[i] - x[i]*0.0005;
+     if (x[i] < 0) x[i] = 0.0;
+  }
+}
+
+void getMoreParms2(std::vector<double> x){
+  /* Find parameters by randomly selecting new parameters in */
+  /* a uniform interval of (0,1)                             */
+  /* background is chosen randomly from (0, 0.01)            */
+  for (int i=0; i<x.size(); i++){
+     x[i] = -1 + 2*rand()/32768.0;
+     if (x[i] < 0) x[i] = -x[i];
+  }
+}
 
 /*****************************************************************
  *  Added by CVL 7/2007 - start block
@@ -611,7 +668,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   int i, j, nCall, k, nParmMax, ii = 0;
   double scale;
 
-//  std::cout<<"inside BMDL_combofunc"<<std::endl;
+  std::cout<<"inside BMDL_combofunc"<<std::endl;
 
   std::vector<double> adxmax;
   int nParms;
@@ -625,14 +682,17 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
 
 
-  CBnparm = lnParmMax = 0;
+//  CBnparm = lnParmMax = 0;
+  lnParmMax = 0;
+  nParms = 0;
   for(i = 0; i < pyRes->ndatasets; i++)
   {
       int selModelIndex = pyRes->selectedModelIndex[i];
       struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
       struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
       xmax = mod.doses[0];
-      CBnparm = CBnparm + modRes.nparms;
+//      CBnparm = CBnparm + modRes.nparms;
+      nParms = nParms + modRes.nparms;
 		
       if(modRes.nparms > lnParmMax){
          lnParmMax = modRes.nparms;
@@ -648,7 +708,19 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       }
       adxmax[i] = xmax;
   }
-  CBnparm = CBnparm + 1;
+
+//  std::cout<<"Res parms----"<<std::endl;
+//  for(int i=0; i< pyRes->ndatasets; i++){
+//     int selModelIndex = pyRes->selectedModelIndex[i];
+//     struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
+//     std::cout<<"dataset: "<<i<<", with nparms: "<<modRes.nparms<<std::endl;
+//     for(int j=0; j<modRes.nparms; j++){
+//	std::cout<<"  parm:"<<j<<", val:"<<modRes.parms[j]<<std::endl;
+//     }
+//  }
+//  CBnparm = CBnparm + 1;
+  //nParms++;  //add extra parm for bmd
+  std::cout<<"nParms: " <<nParms<<std::endl;
 
   /** rescale all doses to be: 0 <= Dose <= 1 **/
   xmax = adxmax[0];
@@ -659,7 +731,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   scale = xmax;
 
   nParmMax = (int)lnParmMax;
-  nParms = pyRes->ndatasets*nParmMax;
+//  nParms = pyRes->ndatasets*nParmMax;
   std::vector<double> pdParms(nParms, 0.0);
   std::vector<double> pdParmsBak(nParms, 0.0);
   std::vector<double> pdParms2(nParms, 0.0);
@@ -667,6 +739,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   std::vector<int> piSpec2(nParms, 0.0);
 
 
+//    std::cout<<"Size of pdParms 0:"<<pdParms.size()<<std::endl;
 //  std::cout<<"\nIn BMDL_combofunc, pdParms[j](MLEs)"<<std::endl;
 //  for(i=0; i<pyAnal->ndatasets; i++)
 //    {
@@ -683,14 +756,22 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     {
       for(i=pyAnal->ndatasets-1; i>=0; i--)
 	{
-          k++;
+	  int selModelIndex = pyRes->selectedModelIndex[i];
+//	  std::cout<<"dataset:"<<i<<std::endl;
+//	  std::cout<<"k="<<k<<std::endl;
+//	  std::cout<<"pyRes->models[i][0].nparms:"<<pyRes->models[i][0].nparms<<std::endl;
           if(j<pyRes->models[i][0].nparms)
           {
+            k++;
+//            std::cout<<"dataset:"<<i<<", parm:"<<j<<", to position:"<<k<<std::endl;
             pdParms[k] = pyRes->models[i][0].parms[j];
+//	    std::cout<<"   with value:"<<pdParms[k]<<std::endl;
             piSpec2[k] = 0.0;  //no user specified values
  	  }
 	}
     }
+
+//    std::cout<<"Size of pdParms 1:"<<pdParms.size()<<std::endl;
 
 //  std::cout<<"\n\nIn BMDL_combofunc, pdParms values (MLEs, k="<<k<<", nParms="<<nParms<<")"<<std::endl;
   i = 0;
@@ -723,10 +804,10 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
   target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
   
-//  std::cout<< std::fixed << std::showpoint;
-//  std::cout << std::setprecision(15);
-//  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
-//  std::cout<<"Target                         "<<target<<std::endl;
+  std::cout<< std::fixed << std::showpoint;
+  std::cout << std::setprecision(15);
+  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
+  std::cout<<"Target                         "<<target<<std::endl;
 
   k = -1;
 
@@ -736,15 +817,16 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       {
           int iParms = pyRes->models[i][0].nparms;
 
-          k++;
           if (j <iParms){
+            k++;
             pdParmsBak[k] = pyRes->models[i][0].parms[j];
             pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
-          } else {
-            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
+          //} else {
+          //  pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
           }
       }
     }
+//    std::cout<<"Size of pdParms 1:"<<pdParms.size()<<std::endl;
 //  /* One more step for the background terms */
   for(i=0; i<pyRes->ndatasets; i++){
       pdParms[i] = -log(1.0 - pdParms[i]);
@@ -776,8 +858,14 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     double retVal;
 
     //bmdl calc
-   
-
+//    std::cout<<"pdParms----"<<std::endl;
+//    for (int i=0; i<pdParms.size(); i++){
+//       std::cout<<"i:"<<i<<", pdParm:"<<pdParms[i]<<std::endl;
+//    } 
+    std::cout<<"Calling bmdl getclmt with:"<<std::endl;
+    std::cout<<"  Dose:"<<Dose<<std::endl;
+    std::cout<<"  target:"<<target<<std::endl;
+    std::cout<<"  xmax:"<<xmax<<std::endl;
     bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
 //    std::cout<<"getclmt returned bmdl = "<<bmdl<<std::endl;
 //
@@ -1015,8 +1103,10 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   }
 
   int flag = 1;
-//  std::cout<<"scale="<<scale<<std::endl; 
+  std::cout<<"scale="<<scale<<std::endl; 
+  std::cout<<"bmdl b4 scale:"<<bmdl<<std::endl;
   bmdl = exp(bmdl)*scale;
+  std::cout<<"bmdl after scale:"<<bmdl<<std::endl;
   
   xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
 //  std::cout<<"BMDL_combofunc returns bmdl="<<bmdl<<std::endl;
@@ -1026,7 +1116,7 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
 double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero) {
 
-  int optite, nresm, *bind, CBnparm;
+  int optite, nresm, *bind;
   int which, temprisk, lnParmMax;
   double fD, bmdu,  target, xmax, xlk2, xlk3, crisk;
   int i, j, nCall, k, nParmMax, ii = 0;
@@ -1046,14 +1136,16 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   /* Get the degree of polynomial */
   adxmax.resize(pyRes->ndatasets, 0.0);
 
-  CBnparm = lnParmMax = 0;
+  lnParmMax = 0;
+  nParms = 0;
   for(i = 0; i < pyRes->ndatasets; i++)
   {
       int selModelIndex = pyRes->selectedModelIndex[i];
       struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
       struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
       xmax = mod.doses[0];
-      CBnparm = CBnparm + modRes.nparms;
+      //CBnparm = CBnparm + modRes.nparms;
+      nParms = nParms + modRes.nparms;
 		
       if(modRes.nparms > lnParmMax){
          lnParmMax = modRes.nparms;
@@ -1069,7 +1161,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       }
       adxmax[i] = xmax;
   }
-  CBnparm = CBnparm + 1;
+//  CBnparm = CBnparm + 1;
 
   /** rescale all doses to be: 0 <= Dose <= 1 **/
   xmax = adxmax[0];
@@ -1080,7 +1172,7 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   scale = xmax;
 
   nParmMax = (int)lnParmMax;
-  nParms = pyRes->ndatasets*nParmMax;
+  //nParms = pyRes->ndatasets*nParmMax;
   std::vector<double> pdParms(nParms, 0.0);
   std::vector<double> pdParmsBak(nParms, 0.0);
   std::vector<double> pdParms2(nParms, 0.0);
@@ -1104,9 +1196,9 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
     {
       for(i=pyAnal->ndatasets-1; i>=0; i--)
 	{
-          k++;
           if(j<pyRes->models[i][0].nparms)
           {
+            k++;
             pdParms[k] = pyRes->models[i][0].parms[j];
             piSpec2[k] = 0.0;  //no user specified values
  	  }
@@ -1143,9 +1235,9 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   which = 5;          /* Want a combined  upper confidence limit */
 
   target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
-//  std::cout<<"LR = "<<LR<<std::endl;
-//  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
-//  std::cout<<"Target                         "<<target<<std::endl;
+  std::cout<<"LR = "<<LR<<std::endl;
+  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
+  std::cout<<"Target                         "<<target<<std::endl;
 
   k = -1;
 
@@ -1155,12 +1247,12 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       {
           int iParms = pyRes->models[i][0].nparms;
 
-          k++;
           if (j <iParms){
+            k++;
             pdParmsBak[k] = pyRes->models[i][0].parms[j];
             pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
-          } else {
-            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
+          //} else {
+          //  pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
           }
       }
     }
@@ -1193,6 +1285,10 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
     double retVal;
 
+    std::cout<<"Calling bmdu getclmt with:"<<std::endl;
+    std::cout<<"  Dose:"<<Dose<<std::endl;
+    std::cout<<"  target:"<<target<<std::endl;
+    std::cout<<"  xmax:"<<xmax<<std::endl;
     bmdu = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, false);
 //  fflush(fp_log);
 
@@ -1435,7 +1531,10 @@ double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   }
 
   int flag = 1; 
+  std::cout<<"scale="<<scale<<std::endl; 
+  std::cout<<"bmdu b4 scale:"<<bmdu<<std::endl;
   bmdu = exp(bmdu)*scale;
+  std::cout<<"bmdu after scale:"<<bmdu<<std::endl;
   
   xlk3 = ComboMaxLike2(flag,bmdu,&crisk, ppdParms, pyAnal, pyRes);
   return bmdu;
@@ -1626,9 +1725,13 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
    is_zero = 0;
 
+   std::cout<<"calling BMDL_combofunc with xb:"<<xb<<std::endl;
+   std::cout<<"xb:"<<xb<<", xa:"<<xa<<", LR:"<<LR<<std::endl;
    pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
 //   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
 
+   std::cout<<"calling BMDU_combofunc with xb:"<<xb<<std::endl;
+   std::cout<<"xb:"<<xb<<", xa:"<<xa<<", LR:"<<LR<<std::endl;
    pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
 //   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 
