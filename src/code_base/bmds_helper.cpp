@@ -335,21 +335,10 @@ double zeroin(double ax,double bx, double tol,
 
   std::cout<< std::fixed << std::showpoint;
   std::cout << std::setprecision(15); 
-//  std::cout<<"inside zeroin"<<std::endl;
-//  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
-//  std::cout<<"nparm="<<nparm<<std::endl;
-//  int i;
-//  for (i=0;i<nparm;i++){
-//	  std::cout<<"i="<<i<<", Parms[i]="<<Parms[i]<<std::endl;
-//  }
 
   a = ax;  b = bx;
-//  printf("fa calc\n");
   fa = (*f)(nparm-1, Parms, a, ck);
-//  printf("fb calc\n");
   fb = (*f)(nparm-1, Parms, b, ck);
-//  printf("fa=%g\n", fa);
-//  printf("fb=%g\n", fb);
   c = a;   fc = fa;
 
   for(;;)		/* Main iteration loop	*/
@@ -362,9 +351,6 @@ double zeroin(double ax,double bx, double tol,
   					/* sion operations is delayed   */
  					/* until the last moment	*/
     double new_step;      		/* Step at this iteration       */
-//    std::cout<<"start of loop"<<std::endl;
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     if( fabs(fc) < fabs(fb) )
     {                         		/* Swap data for b to be the 	*/
 	a = b;  b = c;  c = a;          /* best approximation		*/
@@ -373,18 +359,14 @@ double zeroin(double ax,double bx, double tol,
     tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
     new_step = (c-b)/2;
 
-//    std::cout<<"tol_act="<<tol_act<<std::endl;
     if( fabs(new_step) <= tol_act || fb == (double)0 ){
-//      std::cout<<"returning b:"<<b<<std::endl;
       return b;				/* Acceptable approx. is found	*/
     }
 
-//    std::cout<<"continuing for another loop"<<std::endl;
     			/* Decide if the interpolation can be tried	*/
     if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
 	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
     {					/* Interpolatiom may be tried	*/
-//	std::cout<<"trying interpolation"<<std::endl;
 	double t1,cb,t2;
 	cb = c-b;
 	if( a==c )			/* If we have only two distinct	*/
@@ -415,7 +397,6 @@ double zeroin(double ax,double bx, double tol,
 
     if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
       {
-//	std::cout<<"adjusting step"<<std::endl;
 	if( new_step > (double)0 )	/* than tolerance		*/
 	  new_step = tol_act;
 	else
@@ -430,8 +411,6 @@ double zeroin(double ax,double bx, double tol,
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
   }
 
 }
@@ -476,24 +455,18 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    bool fail = true;
    double val, minf;
 
-   std::cout<<"inside getclmt with iter="<<iter<<std::endl;
    int nT = pyRes->selectedModelIndex.size(); 
    double bmr = pyAnal->BMR;
-   std::cout<<"bmr:"<<bmr<<std::endl;
    std::vector<int> degree;
    for (int j=0; j<nT; j++){
      int modDeg = pyAnal->models[j][pyRes->selectedModelIndex[j]].degree;
      degree.push_back(modDeg);
-     std::cout<<"i:"<<j<<", degree[i]:"<<modDeg<<std::endl;
    } 
    int N = xParms.size() + 1;
-   std::cout<<"inside getclmt with Dose:"<<Dose<<std::endl;
    double bmd = Dose;
-   std::cout<<" bmd:"<<bmd<<std::endl;
    std::vector<double> x(N);
    int iOffset = 0;
    x[0] = log(bmd);
-   std::cout<<"X[0]:"<<x[0]<<std::endl;
 
    std::vector<std::vector<double>> tmp2;
    //restructure to group like terms together
@@ -519,14 +492,9 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    }
 
 
-//   std::cout<<"DEBUG ONLY!!!!!!REMOVE!!!!!!!!"<<std::endl;
-//   x[8] = 0.0; 
-
    //need to round to roughly single-precision for convergence?????
-   std::cout<<"i:0, x[i]:"<<x[0]<<std::endl;
    for (int j=1; j<x.size(); j++){
       x[j] = round_to(x[j], 0.00001);
-      std::cout<<"i:"<<j<<", x[i]:"<<x[j]<<std::endl;
    }
 
    std::vector<double> lb(x.size());
@@ -541,10 +509,8 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    } else {
       lb[0] = log(bmd);
    }
-   std::cout<<"i:1, lb[i]:"<<lb[0]<<std::endl;
    for (int i=1; i<x.size(); i++){
      lb[i] = 0.0; //beta min value
-     std::cout<<"i:"<<i<<", lb[i]:"<<lb[i]<<std::endl;
    }
 
    if (isBMDL){
@@ -552,14 +518,10 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    }else {
      ub[0] = log(maxDose);
    }
-   std::cout<<"i:1, ub[i]:"<<ub[0]<<std::endl;
    for (int i=1; i<x.size(); i++){
      ub[i] = 1e4; //beta max value
-     std::cout<<"i:"<<i<<", ub[i]:"<<ub[i]<<std::endl;
    }
 
-   std::cout<<"target:"<<target<<std::endl;
-//   //constraint data
    struct msComboEq eq1;
    eq1.bmr = bmr;
    eq1.nT = nT;
@@ -616,7 +578,6 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 
    }
 
-   std::cout<<"exiting getclmt with iter:"<<iter<<std::endl;
    val = x[0];
 
 
@@ -731,9 +692,6 @@ double BMDL_BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct pyt
   Dose = Dose/scale;
 
   target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
-  std::cout<<"LR = "<<LR<<std::endl;
-  std::cout<<"Combined Loglikelihood         "<<pyRes->combined_LL<<std::endl;
-  std::cout<<"Target                         "<<target<<std::endl;
 
   k = -1;
 
@@ -974,18 +932,8 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
    is_zero = 0;
 
-   std::cout<<"calling BMDL_combofunc with xb:"<<xb<<std::endl;
-   std::cout<<"xb:"<<xb<<", xa:"<<xa<<", LR:"<<LR<<std::endl;
-   //pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
-   
    pyRes->BMDL = BMDL_BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, true);
-//   std::cout<<"pyRes->BMDL="<<pyRes->BMDL<<std::endl;
-
-   std::cout<<"calling BMDU_combofunc with xb:"<<xb<<std::endl;
-   std::cout<<"xb:"<<xb<<", xa:"<<xa<<", LR:"<<LR<<std::endl;
-   //pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
    pyRes->BMDU = BMDL_BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, false);
-//   std::cout<<"pyRes->BMDU="<<pyRes->BMDU<<std::endl;
 
 }
 
@@ -1165,13 +1113,6 @@ double dslog(double P){
 
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD){
- 
-//  std::cout<<"degree = "<<anal->degree;
-//  std::cout<<"degree:"<<anal->degree<<std::endl;
-//        for (int k=0; k<anal->prior_cols*anal->parms; k++){
-//          std::cout<<anal->prior[k]<<", ";
-//        }
-//        std::cout<<std::endl;
  
   bmdsRes->validResult = false;
   bmdsRes->slopeFactor = BMDS_MISSING;
@@ -2639,7 +2580,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    anal.ndatasets = anal.nmodels.size();
    res.ndatasets = anal.ndatasets;
 
-//   std::cout<<"running multitumor model with "<<anal.ndatasets<<" datasets"<<std::endl;
    //run MSCombo
    runMultitumorModel(&anal, &res);  
 
