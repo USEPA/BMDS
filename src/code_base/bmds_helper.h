@@ -430,8 +430,7 @@ double zeroin(double ax,double bx, double tol,
               double Parms[], double ck);
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
-double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
-double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double BMDL_BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, bool isBMDL);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
@@ -444,6 +443,9 @@ double slog(double X);
 double dslog(double P);
 double round_to(double value, double precision = 1.0);
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
+
+void getNewParms2(std::vector<double> x);
+void getMoreParms2(std::vector<double> x);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
