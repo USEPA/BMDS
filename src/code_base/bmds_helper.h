@@ -306,17 +306,20 @@ struct python_multitumor_result{
 };
 
 struct python_nested_analysis{
-  int model;  //model type in nest_model enum
+  enum nested_model model;  //model type in nest_model enum
   bool restricted;
   std::vector<double> doses;
   std::vector<double> litterSize;
   std::vector<double> incidence;   
   std::vector<double> lsc;  //litter specific covariate
+  std::vector<double> prior;  //a column order matrix (parms x prior_cols)
   int LSC_type;  // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
   bool useLSC;  //whether to use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
   bool estBackground; //if false, sets background to zero
+  int parms; //number of parameters in model
+  int prior_cols;
   double BMR;
   double alpha;
   int iterations;
@@ -329,8 +332,13 @@ struct python_nested_result{
   int nparms;
   std::vector<double> parms;
   std::vector<double> cov;
+  int dist_numE;  //number of entries in rows for the bmd dist
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
   double max;
-  double df;
+  double bmd;
+  std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
+  //double df;
   double fixedLSC;
   double LL;
   double obsChiSq;
@@ -358,6 +366,16 @@ struct AnaList{
   double MSE;
   double DF;
   double TEST;
+};
+
+struct nestedObjData{
+  std::vector<double> Ls;
+  std::vector<double> Xi;
+  std::vector<int> Xg;
+  std::vector<double> Yp;
+  std::vector<double> Yn;
+  double smax;
+  double smin;
 };
 
 #ifdef _WIN32
@@ -411,6 +429,18 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
 void selectMultitumorModel();
 
 void runMultitumorModel();
+
+void probability_inrange(double *ex);
+
+double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin);
+
+double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g);
+
+void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi);
+
+double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass);
+
+double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

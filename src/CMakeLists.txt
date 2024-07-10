@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.1)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -22,6 +23,9 @@ ENDIF()
 IF(DEFINED ENV{CMAKE_CXX_COMPILER})
   set(CMAKE_CXX_COMPILER $ENV{CMAKE_CXX_COMPILER})
 ENDIF()
+IF(DEFINED ENV{TEST_EXC})
+  set(TEST_EXC $ENV{TEST_EXC})
+ENDIF()
 
 IF(WIN32)
   add_compile_definitions(RBMDS_EXPORTS)
@@ -37,14 +41,12 @@ ELSE()
 ENDIF()
 find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
-# Include dir
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR})
 
 #lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
-# Src
-AUX_SOURCE_DIRECTORY(code_base SRC_FILES)
+# Include dir
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/code_base ${CMAKE_CURRENT_SOURCE_DIR}/include ${EIGEN_DIR} ${GSL_DIR} ${NLOPT_DIR} ${NLOPT_DIR}/../include)
 
 # Headers
 set(PROJECT_SOURCE_DIR "code_base")
@@ -53,88 +55,88 @@ set(PROJECT_INCLUDE_DIR "include")
 # Source files
 set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/analysis_of_deviance.cpp
-	${PROJECT_SOURCE_DIR}/analysis_of_deviance.h
+        ${PROJECT_SOURCE_DIR}/analysis_of_deviance.h
         ${PROJECT_SOURCE_DIR}/bmds_helper.cpp
-	${PROJECT_SOURCE_DIR}/bmds_helper.h
-	${PROJECT_SOURCE_DIR}/bmdStruct.cpp
-	${PROJECT_SOURCE_DIR}/bmdStruct.h
-	${PROJECT_SOURCE_DIR}/continuous_clean_aux.cpp
-	${PROJECT_SOURCE_DIR}/continuous_clean_aux.h
-	${PROJECT_SOURCE_DIR}/continuous_entry_code.cpp
-	${PROJECT_SOURCE_DIR}/continuous_entry_code.h
-	${PROJECT_SOURCE_DIR}/continuous_model_functions.cpp
-	${PROJECT_SOURCE_DIR}/continuous_model_functions.h
-	${PROJECT_SOURCE_DIR}/DichGammaBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/DichLogisticBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/DichLogProbitBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/dichotomous_entry_code.cpp
-	${PROJECT_SOURCE_DIR}/dichotomous_entry_code.h
-	${PROJECT_SOURCE_DIR}/DichProbitBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/DichQlinearBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/DichWeibullBMD_NC.cpp
-	${PROJECT_SOURCE_DIR}/framework.h
-	${PROJECT_SOURCE_DIR}/gradient.cpp
-	${PROJECT_SOURCE_DIR}/gradient.h
-	${PROJECT_SOURCE_DIR}/helperfunctions.cpp
-	${PROJECT_SOURCE_DIR}/IDPrior.cpp
-	${PROJECT_SOURCE_DIR}/IDPriorMCMC.cpp
-	${PROJECT_SOURCE_DIR}/list_r_conversion.h
-	${PROJECT_SOURCE_DIR}/lognormal_EXP_NC.cpp
-	${PROJECT_SOURCE_DIR}/lognormal_HILL_NC.cpp
-	${PROJECT_SOURCE_DIR}/lognormal_POLYNOMIAL_NC.cpp
-	${PROJECT_SOURCE_DIR}/lognormal_POWER_NC.cpp
-	${PROJECT_SOURCE_DIR}/lognormalModels.cpp
+        ${PROJECT_SOURCE_DIR}/bmds_helper.h
+        ${PROJECT_SOURCE_DIR}/bmdStruct.cpp
+        ${PROJECT_SOURCE_DIR}/bmdStruct.h
+        ${PROJECT_SOURCE_DIR}/continuous_clean_aux.cpp
+        ${PROJECT_SOURCE_DIR}/continuous_clean_aux.h
+        ${PROJECT_SOURCE_DIR}/continuous_entry_code.cpp
+        ${PROJECT_SOURCE_DIR}/continuous_entry_code.h
+        ${PROJECT_SOURCE_DIR}/continuous_model_functions.cpp
+        ${PROJECT_SOURCE_DIR}/continuous_model_functions.h
+        ${PROJECT_SOURCE_DIR}/DichGammaBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/DichLogisticBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/DichLogProbitBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/dichotomous_entry_code.cpp
+        ${PROJECT_SOURCE_DIR}/dichotomous_entry_code.h
+        ${PROJECT_SOURCE_DIR}/DichProbitBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/DichQlinearBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/DichWeibullBMD_NC.cpp
+        ${PROJECT_SOURCE_DIR}/framework.h
+        ${PROJECT_SOURCE_DIR}/gradient.cpp
+        ${PROJECT_SOURCE_DIR}/gradient.h
+        ${PROJECT_SOURCE_DIR}/helperfunctions.cpp
+        ${PROJECT_SOURCE_DIR}/IDPrior.cpp
+        ${PROJECT_SOURCE_DIR}/IDPriorMCMC.cpp
+        ${PROJECT_SOURCE_DIR}/list_r_conversion.h
+        ${PROJECT_SOURCE_DIR}/lognormal_EXP_NC.cpp
+        ${PROJECT_SOURCE_DIR}/lognormal_HILL_NC.cpp
+        ${PROJECT_SOURCE_DIR}/lognormal_POLYNOMIAL_NC.cpp
+        ${PROJECT_SOURCE_DIR}/lognormal_POWER_NC.cpp
+        ${PROJECT_SOURCE_DIR}/lognormalModels.cpp
         ${PROJECT_SOURCE_DIR}/normal_EXP_NC.cpp
-	${PROJECT_SOURCE_DIR}/normal_FUNL_NC.cpp
+        ${PROJECT_SOURCE_DIR}/normal_FUNL_NC.cpp
         ${PROJECT_SOURCE_DIR}/normal_HILL_NC.cpp
-	${PROJECT_SOURCE_DIR}/normal_likelihoods.cpp
-	${PROJECT_SOURCE_DIR}/normal_POLYNOMIAL_NC.cpp
-	${PROJECT_SOURCE_DIR}/normal_POWER_NC.cpp
-	${PROJECT_SOURCE_DIR}/normalModels.cpp
-#	${PROJECT_SOURCE_DIR}/pch.cpp
-#	${PROJECT_SOURCE_DIR}/pch.h
-	${PROJECT_SOURCE_DIR}/stdafx.cpp
-	${PROJECT_SOURCE_DIR}/stdafx.h
-	${PROJECT_SOURCE_DIR}/targetver.h
-	${PROJECT_INCLUDE_DIR}/binomialTests.h
-	${PROJECT_INCLUDE_DIR}/binomModels.h
-	${PROJECT_INCLUDE_DIR}/bmd_calculate.h
-	${PROJECT_INCLUDE_DIR}/bmds_entry.h
-	${PROJECT_INCLUDE_DIR}/cBMDstatmod.h
-	${PROJECT_INCLUDE_DIR}/cmodeldefs.h
-	${PROJECT_INCLUDE_DIR}/dBMDstatmod.h
-	${PROJECT_INCLUDE_DIR}/DichGammaBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichHillBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichLogisticBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichLogLogisticBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichLogProbitBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichMultistageBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichProbitBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichQlinearBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/DichWeibullBMD_NC.h
-	${PROJECT_INCLUDE_DIR}/IDPrior.h
-	${PROJECT_INCLUDE_DIR}/IDPriorMCMC.h
-	${PROJECT_INCLUDE_DIR}/log_likelihoods.h
-	${PROJECT_INCLUDE_DIR}/lognormal_EXP_NC.h
-	${PROJECT_INCLUDE_DIR}/lognormal_HILL_NC.h
-	${PROJECT_INCLUDE_DIR}/lognormal_likelihoods.h
-	${PROJECT_INCLUDE_DIR}/lognormal_POLYNOMIAL_NC.h
-	${PROJECT_INCLUDE_DIR}/lognormal_POWER_NC.h
-	${PROJECT_INCLUDE_DIR}/lognormalModels.h
-	${PROJECT_INCLUDE_DIR}/lognormalTests.h
-	${PROJECT_INCLUDE_DIR}/mcmc_anal.h
-	${PROJECT_INCLUDE_DIR}/mcmc_analysis.h
-	${PROJECT_INCLUDE_DIR}/mcmc_struct.h
-	${PROJECT_INCLUDE_DIR}/normal_EXP_NC.h
-	${PROJECT_INCLUDE_DIR}/normal_FUNL_NC.h
-	${PROJECT_INCLUDE_DIR}/normal_HILL_NC.h
-	${PROJECT_INCLUDE_DIR}/normal_likelihoods.h
-	${PROJECT_INCLUDE_DIR}/normal_POLYNOMIAL_NC.h
-	${PROJECT_INCLUDE_DIR}/normal_POWER_NC.h
-	${PROJECT_INCLUDE_DIR}/normalModels.h
-	${PROJECT_INCLUDE_DIR}/statisticalmodel.h
-	${PROJECT_INCLUDE_DIR}/statmod.h
-	)
+        ${PROJECT_SOURCE_DIR}/normal_likelihoods.cpp
+        ${PROJECT_SOURCE_DIR}/normal_POLYNOMIAL_NC.cpp
+        ${PROJECT_SOURCE_DIR}/normal_POWER_NC.cpp
+        ${PROJECT_SOURCE_DIR}/normalModels.cpp
+#       ${PROJECT_SOURCE_DIR}/pch.cpp
+#       ${PROJECT_SOURCE_DIR}/pch.h
+        ${PROJECT_SOURCE_DIR}/stdafx.cpp
+        ${PROJECT_SOURCE_DIR}/stdafx.h
+        ${PROJECT_SOURCE_DIR}/targetver.h
+        ${PROJECT_INCLUDE_DIR}/binomialTests.h
+        ${PROJECT_INCLUDE_DIR}/binomModels.h
+        ${PROJECT_INCLUDE_DIR}/bmd_calculate.h
+        ${PROJECT_INCLUDE_DIR}/bmds_entry.h
+        ${PROJECT_INCLUDE_DIR}/cBMDstatmod.h
+        ${PROJECT_INCLUDE_DIR}/cmodeldefs.h
+        ${PROJECT_INCLUDE_DIR}/dBMDstatmod.h
+        ${PROJECT_INCLUDE_DIR}/DichGammaBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichHillBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichLogisticBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichLogLogisticBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichLogProbitBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichMultistageBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichProbitBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichQlinearBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/DichWeibullBMD_NC.h
+        ${PROJECT_INCLUDE_DIR}/IDPrior.h
+        ${PROJECT_INCLUDE_DIR}/IDPriorMCMC.h
+        ${PROJECT_INCLUDE_DIR}/log_likelihoods.h
+        ${PROJECT_INCLUDE_DIR}/lognormal_EXP_NC.h
+        ${PROJECT_INCLUDE_DIR}/lognormal_HILL_NC.h
+        ${PROJECT_INCLUDE_DIR}/lognormal_likelihoods.h
+        ${PROJECT_INCLUDE_DIR}/lognormal_POLYNOMIAL_NC.h
+        ${PROJECT_INCLUDE_DIR}/lognormal_POWER_NC.h
+        ${PROJECT_INCLUDE_DIR}/lognormalModels.h
+        ${PROJECT_INCLUDE_DIR}/lognormalTests.h
+        ${PROJECT_INCLUDE_DIR}/mcmc_anal.h
+        ${PROJECT_INCLUDE_DIR}/mcmc_analysis.h
+        ${PROJECT_INCLUDE_DIR}/mcmc_struct.h
+        ${PROJECT_INCLUDE_DIR}/normal_EXP_NC.h
+        ${PROJECT_INCLUDE_DIR}/normal_FUNL_NC.h
+        ${PROJECT_INCLUDE_DIR}/normal_HILL_NC.h
+        ${PROJECT_INCLUDE_DIR}/normal_likelihoods.h
+        ${PROJECT_INCLUDE_DIR}/normal_POLYNOMIAL_NC.h
+        ${PROJECT_INCLUDE_DIR}/normal_POWER_NC.h
+        ${PROJECT_INCLUDE_DIR}/normalModels.h
+        ${PROJECT_INCLUDE_DIR}/statisticalmodel.h
+        ${PROJECT_INCLUDE_DIR}/statmod.h
+        )
 
 # Set up such that XCode organizes the files correctly
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
@@ -153,11 +155,3 @@ ENDIF(WIN32)
 # Include directories
 target_include_directories(bmdscore PRIVATE include)
 
-# Install
-#install(TARGETS bmdscore DESTINATION )
-
-# Install the headers
-#install(FILES include/bmdscore DESTINATION include)
-
-# Create base directory
-#install(DIRECTORY include DESTINATION include)

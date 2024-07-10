@@ -1382,6 +1382,65 @@ void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct pyth
   }
 }
 
+
+//void convertFromPythonNestedAnalysis(struct nested_analysis *anal, struct python_nested_analysis *pyAnal){
+//
+//  int n = pyAnal->doses.size();
+//  anal->model = pyAnal->model;
+//  anal->n = n;
+//  anal->BMD_type = pyAnal->BMD_type;
+//  anal->BMR = pyAnal->BMR;
+//  anal->LSC_type = pyAnal->LSC_type;
+//  anal->ILC_type = pyAnal->ILC_type;
+//  anal->alpha = pyAnal->alpha;
+//  anal->parms = pyAnal->parms;
+//  anal->prior_cols = pyAnal->prior_cols;
+//
+//  if(n == pyAnal->incidence.size() && n == pyAnal->litterSize.size() && n == pyAnal->lsc.size()){
+//    for (int i=0; i<n; i++){
+//      anal->Y[i] = pyAnal->incidence[i];
+//      anal->doses[i] = pyAnal->doses[i];
+//      anal->n_litter[i] = pyAnal->litterSize[i];
+//      anal->lsc[i] = pyAnal->lsc[i];
+//    }
+//  }
+//  if(pyAnal->prior.size() > 0){
+//    for (int i=0; i<pyAnal->prior.size(); i++){
+//      anal->prior[i] = pyAnal->prior[i];
+//    }
+//  }
+//}
+//
+//
+//void convertFromPythonNestedRes(struct nested_model_result *res, struct python_nested_result *pyRes){
+//  res->model = pyRes->model;
+//  res->nparms = pyRes->nparms;
+//  res->max = pyRes->max;
+//  res->dist_numE = pyRes->dist_numE;
+//  res->model_df = pyRes->model_df;
+//  res->total_df = pyRes->total_df;
+//  res->bmd = pyRes->bmd;
+//  res->comb_p_value = pyRes->combPVal;
+//  res->obs_chi_sqr = pyRes->obsChiSq;
+//  res->fixedLSC = pyRes->fixedLSC;
+//  //arrays & vectors
+//  if(pyRes->parms.size() > 0){
+//    for (int i=0; i<pyRes->parms.size(); i++){
+//      res->parms[i] = pyRes->parms[i];
+//    } 
+//  }
+//  if(pyRes->cov.size() > 0){
+//    for (int i=0; i<pyRes->cov.size(); i++){
+//      res->cov[i] =  pyRes->cov[i];
+//    }
+//  }
+//  if(pyRes->bmd_dist.size() > 0){
+//    for (int i=0; i<pyRes->bmd_dist.size(); i++){
+//      res->bmd_dist[i] = pyRes->bmd_dist[i];
+//    }
+//  }
+//}
+
 void convertFromPythonDichoMAAnalysis(struct dichotomousMA_analysis *MA, struct python_dichotomousMA_analysis *pyMA){
 
   MA->nmodels = pyMA->nmodels;
@@ -1648,21 +1707,32 @@ void runMultitumorModel(){
 double PROBABILITY_INRANGE(double ex){
 
   if(ex <= 0.00000001){
-    return 1.0e-7;
+    ex = 1.0e-7;
   }
   if(ex >= 0.9999999){
-    return 0.9999999;
+    ex = 0.9999999;
   }
+  return ex;
 }
 
-
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
- 
+
+
+
+   //////////////////////////////
+   // Parm vector indexes
+   // 0 = alpha (intercept or background)
+   // 1 = beta
+   // 2 = THETA1
+   // 3 = THETA2
+   // 4 = rho
+   // 5 = PHISTART - first PHI parameter
+   //
    int BGINDEX = 0;  //location of background parameter in parms vector
    int PHISTART = 6; //location of first PHI parameter in parms vector
    int THETA1_INDEX = 3; //location of THETA1 parameter in parms vector 
    int THETA2_INDEX = 4; //location of THETA2 parameter in parms vector
-   pyRes->validResult = false;
+   bool validResult = false;
  
    //set seed from time clock if default seed=0 is specified
    if (pyAnal->seed == BMDS_MISSING){
@@ -1671,12 +1741,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 
    int Nobs = pyAnal->doses.size();
-   std::vector<double> Xi(Nobs);
-   std::vector<double> Yp(Nobs);
-   std::vector<double> Yn(Nobs);
-   std::vector<double> Ls(Nobs);
-   std::vector<double> SR(Nobs);
-   std::vector<int> Xg(Nobs, BMDS_MISSING);
+   std::vector<double> Xi(Nobs); //doses (independent data var)
+   std::vector<double> Yp(Nobs); //incidence (positive dependent var)
+   std::vector<double> Yn(Nobs); //negative dependent var
+   std::vector<double> Ls(Nobs); //litter size
+   std::vector<double> SR(Nobs); //scaled residual
+   std::vector<int> Xg(Nobs, BMDS_MISSING); //markings for group number
 
    //Need to implement
    //quick workaround assuming vectors are already sorted
@@ -1688,34 +1758,45 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    Ls = pyAnal->litterSize;
    //Sort_4_By_Dose(Nobs, Xi, Yn, Yp, Ls);
 
-    
-       
- 
 
    //get correct number of dose groups
    //assumes vectors are already sorted
-   int ngrp = 0;  //number of litters in dose group
-   double tmp = BMDS_MISSING;
-   int groupnum = 0;  //group number
-   std::vector<int> grpSize;
+//   int ngrp = 0;  //number of litters in dose group
+//   double tmp = BMDS_MISSING;
+//   int groupnum = 0;  //group number
+//   std::vector<int> grpSize;
+//   for (int i=0; i<Nobs; i++){
+//      if (Xi[i] == tmp){
+//        //existing dose group
+//        ngrp++;
+//      } else {
+//        //new dose group
+//        if (i!=0){
+//          grpSize.push_back(ngrp);
+//        }
+//        tmp = Xi[i];
+//        ngrp = 1;
+//        groupnum++;
+//      }
+//      Xg[i] = groupnum;
+//   }
+   double junk1 = Xi[0];
+   int junk = 1;
    for (int i=0; i<Nobs; i++){
-      if (Xi[i] == tmp){
-        //existing dose group
-        ngrp++;
+      if (Xi[i] == junk1){
+	 Xg[i] = junk;
       } else {
-        //new dose group
-        if (i!=0){
-          grpSize.push_back(ngrp);
-        }
-        tmp = Xi[i];
-        ngrp = 1;
-        groupnum++;
+	 Xg[i] = ++junk;
+	 junk1 = Xi[i];
       }
-      Xg[i] = groupnum;
    }
+   int ngrp=junk;
+
+   std::cout<<"ngrp = "<<ngrp<<std::endl;
    //push last group size;
-   grpSize.push_back(ngrp);
-   pyRes->nparms = 5 + grpSize.size();
+   //grpSize.push_back(ngrp);
+   //pyRes->nparms = 5 + grpSize.size();
+   pyRes->nparms = 5 + ngrp;
 
    std::cout<<"Xi   , Yp,   Yn,   Ls,   Xg"<<std::endl;
    for (int i=0; i<Nobs; i++){
@@ -1732,18 +1813,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    for (int i=0; i<pyRes->nparms; i++){
      pyRes->parms[i] = BMDS_MISSING;
    }
-   std::vector<bool> Spec(pyRes->nparms, false);
-   std::vector<bool> iniP(pyRes->nparms, false);
-   std::vector<VarList> varsum(3);
-   std::vector<AnaList> anasum(3);
-   std::vector<double> rlevel(5);
-   std::vector<double> bmdl(5);
-   std::vector<std::vector<double>> vcv(pyRes->nparms, std::vector<double>(pyRes->nparms));
-   double sijfixed;
-   std::vector<bool> SpBak;  //old values for spec
-   std::vector<double> pBak;  //old values for parms[];
-
-
+//   std::vector<bool> Spec(pyRes->nparms, false);
+//   std::vector<bool> iniP(pyRes->nparms, false);
+//   std::vector<VarList> varsum(3);
+//   std::vector<AnaList> anasum(3);
+//   std::vector<double> rlevel(5);
+//   std::vector<double> bmdl(5);
+//   std::vector<std::vector<double>> vcv(pyRes->nparms, std::vector<double>(pyRes->nparms));
+//   double sijfixed;
+//   std::vector<bool> SpBak;  //old values for spec
+//   std::vector<double> pBak;  //old values for parms[];
+//
+//
 //   std::cout<<"numGrps = "<<grpSize.size()<<std::endl;
 //   for(int i=0; i<grpSize.size(); i++){
 //      std::cout<<"i:"<<i<<", grpSize:"<<grpSize[i]<<std::endl;
@@ -1755,25 +1836,25 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   if (!pyAnal->estBackground){
     //set background to zero
     pyRes->parms[BGINDEX] = 0;
-    Spec[BGINDEX] = true;
-    iniP[BGINDEX] = true;  //Specified implies initialized
+//    Spec[BGINDEX] = true;
+//    iniP[BGINDEX] = true;  //Specified implies initialized
     knownParms++;
   }   
   if (pyAnal->ILC_type != 1){
     //set phi parm values to zero
     for (int i=PHISTART; i<pyRes->nparms; i++){
       pyRes->parms[i] = 0.0;
-      Spec[i] = true;
-      iniP[i] = true;
+//      Spec[i] = true;
+//      iniP[i] = true;
     }
-    knownParms += grpSize.size();
+    knownParms += ngrp;
   }
   if (!pyAnal->useLSC){
     //set theta parm values to zero
     for (int i=THETA1_INDEX; i<=THETA2_INDEX; i++){
        pyRes->parms[i] = 0.0;
-       Spec[i] = true;
-       iniP[i] = true;
+//       Spec[i] = true;
+//       iniP[i] = true;
     }
     knownParms += 2;  //theta1 and theta2
   }
@@ -1793,12 +1874,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   //compute init_lkf for full model and init_lkr for reduced model
   double lkf = 0.0;
-  varsum[0].S = 0;
-  varsum[1].S = 0;
-  double W;
+  double pdep = 0.0;  //positive response
+  double ndep = 0.0;  //negative response 
+//  varsum[0].S = 0;
+//  varsum[1].S = 0;
+  double W;  
   for (int i=0; i<Nobs; i++){
-    varsum[0].S += Yp[i];
-    varsum[1].S += Yn[i];
+//    varsum[0].S += Yp[i];
+//    varsum[1].S += Yn[i];
+    pdep += Yp[i];
+    ndep += Yn[i];
     W = Yp[i] / (Yp[i] + Yn[i]);
     if (W > 0){
       lkf += Yp[i] * log (W);
@@ -1807,498 +1892,932 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
       lkf += Yn[i] * log(1-W);
     }
   }
-  W = varsum[0].S / (varsum[0].S + varsum[1].S);
-  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
+//  W = varsum[0].S / (varsum[0].S + varsum[1].S);
+  W = pdep / (pdep + ndep);
+//  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
+  double lkr = pdep * log(W) + ndep * log(1-W);
 
-//  Nlogist_fit(nparm, ngrp, Parms, EPS, &iter, &xlk);
-  //compute statistics for litter-specific covariate
-  //smean1, smean, smin, smax, sdif
+  //Nlogist_fit(nparm, ngrp, Parms, EPS, &iter, &xlk);
+  double EPS = 3.0e-8;
+  int iter = 0;
+  double xlk = 0.0;
+ // int ret = Nlogist_fit(pyRes->nparms, ngrp, pyRes->parms, EPS, &iter, &xlk, Xg, Ls, Xi);
+////////////////////////////////////////////////////
+// START NLOGIST_FIT
+// //////////////////////////////////////////////////
+ 
+  std::cout<<"Inside Nlogist_fit"<<std::endl;
   double sum1 = 0.0;
   double nij = 0.0;
-  int count = 1;
-  while (Xg[count] == 1){
-    sum1 += pyAnal->lsc[count];
-    nij += 1.0;
-    count++;
+  int index=0;
+  while (Xg[index] == 1){
+    sum1 += Ls[index];
+    nij +=1.0;
+    index++;
   }
-  double smean1  = sum1/nij;  //average lsc in group 1
-  
+  double smean1 = sum1/nij;  //the average lsc in group 1
+  std::cout<<"average lsc in group 1:"<<smean1<<std::endl;
+
   sum1 = 0.0;
   nij = 0.0;
-
   double smax = Ls[0];
   double smin = Ls[0];
   double xmax = 0.0;
-  for (int i=0; i<Nobs; i++){
-     double x = Xi[i];
-     sum1 += Ls[i];
-     nij += 1.0;
-     if (Ls[i] > smax){
-        smax = Ls[i];
-     }
-     if (Ls[i] < smin){
-        smin = Ls[i];
-     }
-     if (x > xmax){
-        xmax = x;
-     }
+  double x = 0.0;
+  for (int i=0; i<=Nobs; i++){
+    x = Xi[i];
+    sum1 += Ls[i];
+    nij += 1.0;
+    if (Ls[i] > smax) smax = Ls[i];
+    if (Ls[i] < smin) smin = Ls[i];
+    if (x > xmax) xmax = x;
   }
   double smean = sum1/nij;  //overall average lsc
+  std::cout<<"overall average lsc:"<<smean<<std::endl;
 
-  double sdif = smax - smin;
-
-  if (pyAnal->useLSC){
+  double sijfixed = smean;  //default to overall mean.  Not used if pyAnal->LSCType = 0 (do not use LSC) 
+  if (pyAnal->LSC_type == 2){  //control group mean
      sijfixed = smean1;
-  } else {
-     sijfixed = smean;
   }
-  
-  //Set up parameters
-  //no user initial values.  Always use default
-  SpBak = Spec;
-  pBak = pyRes->parms;
+
+  std::vector<double> pBak = pyRes->parms;
+
+  //compute default starting values for all unfixed parameters
+  //revisit if we need to fix any parameters
 
   //Get the starting values in stages
-  //First get starting values for alpha, beta, and rho
-  int obs = 1;
-  std::vector<double> tmYn(grpSize.size(), 0);
-  std::vector<double> tmYp(grpSize.size(), 0);
-  std::vector<double> tmXi(grpSize.size(), 0);
-  std::vector<int> Spec2(2);
+  //First, get starting values for alpha, beta, and rho
 
-  for (int j=0; j<grpSize.size(); j++){
-     while (obs<Nobs && Xg[obs] == j){
-        tmYn[j] += Yn[obs];
-        tmYp[j] =+ Yp[obs];
-        tmXi[j] =+ Xi[obs];
-        obs++;
-     }     
+
+   std::vector<double> tmpXi(Nobs); //doses (independent data var)
+   std::vector<double> tmpYp(Nobs); //incidence (positive dependent var)
+   std::vector<double> tmpYn(Nobs); //negative dependent var
+   std::vector<double> tmpy(2);
+   //std::vector<std::vector<double>> tmpvcv(2,std::vector<double>(2));
+   Eigen::Matrix2d tmpvcv(2,2);
+
+  index = 0;
+  //convert nested data to dichotomous data
+  for (int j = 0; j<ngrp; j++){
+     tmpYn[j] = 0;
+     tmpYp[j] = 0;
+     while (index < Nobs && Xg[index] == (j+1)){  //note - index is 1 behind group number (index=0 for group 1)
+        tmpYn[j] += Yn[index];
+	tmpYp[j] += Yp[index];
+	tmpXi[j] = Xi[index];
+	index++;
+     }
+     std::cout<<"j:"<<j<<", tmpYn:"<<tmpYn[j]<<", tmpYp:"<<tmpYp[j]<<", tmpXi[j]:"<<tmpXi[j]<<std::endl;
   }
   
   //compute initial estimates
-  //std::vector<std::vector<double>> tmvcv(2, std::vector<double>(2));
-  Eigen::Matrix2d tmvcv;
-  std::vector<double> tmy(2);
   double ymin = 1.0;
-  for (int i=0; i<grpSize.size(); i++){
-     W = tmYp[i] / (tmYp[i] + tmYn[i]);
-     W = PROBABILITY_INRANGE(W);   
-     if (W < ymin){
-       ymin = W;
-     }
+  for (int i=0; i<ngrp; i++){
+     W = tmpYp[i]/(tmpYp[i]+tmpYn[i]);
+     probability_inrange(&W);
+     if (W < ymin) ymin = W;
   }
 
-  for (int i=0; i<grpSize.size(); i++){
-     double x = tmXi[i];
-     W = log ((tmYp[i] - ymin*(tmYp[i] + tmYn[i]) + 0.5)/(tmYn[i] + 0.5));
-     if (x <= 1e-7){
-        x = Log_zero;
+  for (int i=0; i<ngrp; i++){
+     x = tmpXi[i];
+     std::cout<<"i:"<<i<<", init x="<<x<<std::endl;
+     W = log((tmpYp[i] - ymin*(tmpYp[i] + tmpYn[i]) + 0.5)/(tmpYn[i] + 0.5));
+     if (x<=CloseToZero){
+        x=Log_zero;
+	std::cout<<"x logzero for i="<<i<<std::endl;
      } else {
-        x = log(x);
+	x = log(x);
+	std::cout<<"x logx for i="<<i<<std::endl;
      }
-//     tmvcv[0][0] += 1.0;
-//     tmvcv[0][1] += x; 
-//     tmvcv[1][1] += x*x;
-     tmvcv(0,0) += 1.0;
-     tmvcv(0,1) += x; 
-     tmvcv(1,1) += x*x;
-     tmy[0] += W;
-     tmy[1] += W*x;
+     //tmpvcv[0][0] += 1.0;
+     //tmpvcv[0][1] += x;
+     //tmpvcv[1][1] += x*x;
+     tmpvcv(0,0) += 1.0;
+     tmpvcv(0,1) += x;
+     tmpvcv(1,1) += x*x;
+     tmpy[0] += W;
+     tmpy[1] += W*x;
+     std::cout<<"i:"<<i<<", x="<<x<<", W="<<W<<std::endl;
+     std::cout<<"tmpvcv(0,0)="<<tmpvcv(0,0)<<", tmpvcv(0,1)="<<tmpvcv(0,1)<<", tmpvcv(1,1)="<<tmpvcv(1,1)<<std::endl;
+     std::cout<<"tmpy[0]="<<tmpy[0]<<", tmpy[1]="<<tmpy[1]<<std::endl;
   }
-
-//  tmvcv[1][0] = tmvcv[0][1];
-  tmvcv(1,0) = tmvcv(0,1);
-  Spec2[0] = SpBak[1];
-  Spec2[1] = SpBak[4];
+  //tmpvcv[1][0] = tmpvcv[0][1];
+  tmpvcv(1,0) = tmpvcv(0,1);
   pyRes->parms[0] = ymin + 0.001;  //in case ymin=0
-  if (Spec2[0] + Spec2[1] == 0){
-     if (tmvcv.allFinite()){
-        Eigen::Matrix2d inv = tmvcv.inverse();
-        pyRes->parms[1] = inv(0,0) * (tmy[0]) + inv(0,1) * (tmy[1]);
-        pyRes->parms[4] = inv(1,0) * (tmy[0]) + inv(1,1) * (tmy[1]);
-     } else {
-        pyRes->parms[4] = 1.001;
-        pyRes->parms[1] = -1.0;
-     }
+
+  std::cout<<"det tmpvcv:"<<tmpvcv.determinant()<<std::endl; 
+  if (tmpvcv.determinant() > 0){
+    Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
+    pyRes->parms[1] = invtmpvcv(0,0) * tmpy[0] + invtmpvcv(0,1) * tmpy[1];
+    pyRes->parms[4] = invtmpvcv(1,0) * tmpy[0] + invtmpvcv(1,1) * tmpy[1];
+  } else {
+    pyRes->parms[1] = -1.0;
+    pyRes->parms[4] = 1.001;
   }
 
   if (pyAnal->restricted && pyRes->parms[4] < 1.000){
-     pyRes->parms[4] = 1.0001;
+    pyRes->parms[4] = 1.0001;
   }
 
- 
-  for (int i=0; i<2; i++){
-     if (SpBak[i] = 1){
-        pyRes->parms[i] = pBak[i];
-     }
-     if (SpBak[4] == 1){
-        pyRes->parms[4] = pBak[4];
-     }
-  } 
-
-  for (int i=5; i<pyRes->parms.size(); i++){
-     Spec[i] = 1;
+  //setup log-logistic model
+  for (int i=5; i<pyRes->nparms; i++){
      pyRes->parms[i] = 0.0;
   }
-  Spec[2] = Spec[3] = 1;
   pyRes->parms[2] = pyRes->parms[3] = 0.0;
 
-  //This is a simple, non-nested log-logistic model
-  //MAX_lk (pyRes->parms, gtol, junk, xlk)
+  //simple non-nested log-logistic model
+  double gtol = 3e-8;
 
+  std::cout<<std::endl;
+  std::cout<<"b4 Nlogist_lk pass=1"<<std::endl;
+  for (int i=0; i<pyRes->nparms; i++){
+     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+  }
+
+  //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
+  int pass = 1;
+  double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
+  std::cout<<"retVal:"<<retVal<<std::endl;
+
+
+  //Now alpha p[0], beta p[1], and rho[4] contain starting estimates
+  //Second, get initial values for Phi's
+  int count = 0;
+  //for (int i=5; i<n; i++){
+  //  count += SpBak[i];
+  //}
+  //Currently do not allow specification of Phi values, so this is always true
+  if (count < ngrp){
+    // leave theta1 and theta2 = 0.0;
+    for (int i=5; i<pyRes->nparms; i++){
+      //set back to original parms
+      //pyRes->parms[i] = pBak[i];
+      //if (SpBak[i] == 0){
+      pyRes->parms[i] = 0.01;
+      //}
+    }
+    for (int i=5; i<pyRes->nparms; i++){
+      pyRes->parms[i] = pyRes->parms[i]/(1-pyRes->parms[i]);  //Phi --> Psi
+    }
   
- 
-   //stubbed results
-   pyRes->bmdsRes.validResult = true;
-   pyRes->bmdsRes.BMD = 12.95166613;
-   pyRes->bmdsRes.BMDL = 9.643478831;
-   pyRes->bmdsRes.BMDU = (double)BMDS_MISSING;
+    std::cout<<std::endl;
+    std::cout<<"b4 Nlogist_lk pass=2"<<std::endl;
+    for (int i=0; i<pyRes->nparms; i++){
+       std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+    }
 
-   pyRes->bmdsRes.AIC = 546.9572409;
-   pyRes->bmdsRes.chisq = 19.6087053;
-   pyRes->combPVal = 0.994;
-   pyRes->df = 35;
+    pass = 2;
+    retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
 
-   pyRes->nparms = 9;
-   pyRes->parms.push_back(0.084733516);
-   pyRes->parms.push_back(-4.109651594);
-   pyRes->parms.push_back(0.004761366);
-   pyRes->parms.push_back(-0.055489253);
-   pyRes->parms.push_back(1.0);
-   pyRes->parms.push_back(0);
-   pyRes->parms.push_back(0);
-   pyRes->parms.push_back(0);
-   pyRes->parms.push_back(0);
+    //Transform parameters to "external" form
+    for (int i=5; i<pyRes->nparms; i++){
+      pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
+    }
 
-   pyAnal->seed = 1687267999;
-   //pyAnal->iterations = 1000;
-   pyRes->LL = -269.478205;
-   pyRes->obsChiSq = 19.6087053;
+    //When theta1 ==0, internal and external forms for alpha are the same,
+    //so we do not need to back transform p[0]    
+  }
 
-   pyRes->boot.numRuns = 3;   
-   pyRes->boot.pVal.push_back(0.994);
-   pyRes->boot.pVal.push_back(0.997);
-   pyRes->boot.pVal.push_back(0.991);
-   pyRes->boot.pVal.push_back(0.994);
-   pyRes->boot.perc50.push_back(38.79787451);
-   pyRes->boot.perc50.push_back(38.19554318);
-   pyRes->boot.perc50.push_back(37.75643018);
-   pyRes->boot.perc50.push_back(38.26776644);
-   pyRes->boot.perc90.push_back(51.1848655);
-   pyRes->boot.perc90.push_back(50.4569082);
-   pyRes->boot.perc90.push_back(50.3883043);
-   pyRes->boot.perc90.push_back(50.6118335);
-   pyRes->boot.perc95.push_back(54.69182);
-   pyRes->boot.perc95.push_back(53.99859);
-   pyRes->boot.perc95.push_back(54.18472);
-   pyRes->boot.perc95.push_back(54.55846);
-   pyRes->boot.perc99.push_back(60.479415);
-   pyRes->boot.perc99.push_back(63.639965);
-   pyRes->boot.perc99.push_back(61.778094);
-   pyRes->boot.perc99.push_back(62.421371);
+  //Finally, get starting values for Thetas
+  for (int i=2; i<=3; i++){
+    //if not set
+    pyRes->parms[i] = 0.0;
+  }
 
-   pyRes->SRs.push_back(-0.31484);
-   pyRes->SRs.push_back(0.314837);
-   pyRes->SRs.push_back(-0.31484);
-   pyRes->SRs.push_back(0.314837);
-   pyRes->SRs.push_back(-0.31484);
-   pyRes->SRs.push_back(0.314837);
+  //Fit the model
 
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(0);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(25);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(50);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
-   pyRes->litter.dose.push_back(100);
+  //Transform the parameters to the "internal" form
+  for (int i=5; i<pyRes->nparms; i++){
+    pyRes->parms[i] = pyRes->parms[i]/(1-pyRes->parms[i]);  //Phi --> Psi
+  }
 
-   pyRes->litter.LSC.push_back(9);
-   pyRes->litter.LSC.push_back(9);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(13);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(15);
-   pyRes->litter.LSC.push_back(16);
-   pyRes->litter.LSC.push_back(9);
-   pyRes->litter.LSC.push_back(9);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(12);
-   pyRes->litter.LSC.push_back(13);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(7);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(15);
-   pyRes->litter.LSC.push_back(8);
-   pyRes->litter.LSC.push_back(10);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(11);
-   pyRes->litter.LSC.push_back(12);
-   pyRes->litter.LSC.push_back(12);
-   pyRes->litter.LSC.push_back(13);
-   pyRes->litter.LSC.push_back(14);
-   pyRes->litter.LSC.push_back(14);
+  double junk3;
+  //don't currently allow spec so this is always true
+//  if (Spec[0] == Spec[2]){
+  junk1 = pyRes->parms[0];
+  junk3 = pyRes->parms[2];
+  pyRes->parms[0] = junk1 + smin * junk3;
+  pyRes->parms[2] = junk1 + smax * junk3;
+//  }
 
-   pyRes->litter.estProb.push_back(0.127585814);
-   pyRes->litter.estProb.push_back(0.127585814);
-   pyRes->litter.estProb.push_back(0.13234718);
-   pyRes->litter.estProb.push_back(0.13234718);
-   pyRes->litter.estProb.push_back(0.137108547);
-   pyRes->litter.estProb.push_back(0.14663128);
-   pyRes->litter.estProb.push_back(0.151392646);
-   pyRes->litter.estProb.push_back(0.151392646);
-   pyRes->litter.estProb.push_back(0.156154013);
-   pyRes->litter.estProb.push_back(0.160915379);
-   pyRes->litter.estProb.push_back(0.301527034);
-   pyRes->litter.estProb.push_back(0.301527034);
-   pyRes->litter.estProb.push_back(0.297781775);
-   pyRes->litter.estProb.push_back(0.297781775);
-   pyRes->litter.estProb.push_back(0.294373053);
-   pyRes->litter.estProb.push_back(0.291294677);
-   pyRes->litter.estProb.push_back(0.288539894);
-   pyRes->litter.estProb.push_back(0.286101463);
-   pyRes->litter.estProb.push_back(0.286101463);
-   pyRes->litter.estProb.push_back(0.286101463);
-   pyRes->litter.estProb.push_back(0.433391608);
-   pyRes->litter.estProb.push_back(0.410232266);
-   pyRes->litter.estProb.push_back(0.410232266);
-   pyRes->litter.estProb.push_back(0.40315061);
-   pyRes->litter.estProb.push_back(0.40315061);
-   pyRes->litter.estProb.push_back(0.40315061);
-   pyRes->litter.estProb.push_back(0.40315061);
-   pyRes->litter.estProb.push_back(0.38390157);
-   pyRes->litter.estProb.push_back(0.38390157);
-   pyRes->litter.estProb.push_back(0.378161814);
-   pyRes->litter.estProb.push_back(0.572726279);
-   pyRes->litter.estProb.push_back(0.553298381);
-   pyRes->litter.estProb.push_back(0.543802864);
-   pyRes->litter.estProb.push_back(0.543802864);
-   pyRes->litter.estProb.push_back(0.534476942);
-   pyRes->litter.estProb.push_back(0.534476942);
-   pyRes->litter.estProb.push_back(0.52533783);
-   pyRes->litter.estProb.push_back(0.516402011);
-   pyRes->litter.estProb.push_back(0.516402011);
+  //ML fit and return log-likelihood value
+  std::cout<<std::endl;
+  std::cout<<"b4 Nlogist_lk pass=3"<<std::endl;
+  for (int i=0; i<pyRes->nparms; i++){
+     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+  }
+  pass = 3;
+  retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
 
-   pyRes->litter.litterSize.push_back(9);
-   pyRes->litter.litterSize.push_back(9);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(13);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(15);
-   pyRes->litter.litterSize.push_back(16);
-   pyRes->litter.litterSize.push_back(9);
-   pyRes->litter.litterSize.push_back(9);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(12);
-   pyRes->litter.litterSize.push_back(13);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(7);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(15);
-   pyRes->litter.litterSize.push_back(8);
-   pyRes->litter.litterSize.push_back(10);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(11);
-   pyRes->litter.litterSize.push_back(12);
-   pyRes->litter.litterSize.push_back(12);
-   pyRes->litter.litterSize.push_back(13);
-   pyRes->litter.litterSize.push_back(14);
-   pyRes->litter.litterSize.push_back(14);   
 
-   pyRes->litter.expected.push_back(1.148272326);
-   pyRes->litter.expected.push_back(1.148272326);
-   pyRes->litter.expected.push_back(1.323471805);
-   pyRes->litter.expected.push_back(1.323471805);
-   pyRes->litter.expected.push_back(1.508194016);
-   pyRes->litter.expected.push_back(1.906206638);
-   pyRes->litter.expected.push_back(2.119497049);
-   pyRes->litter.expected.push_back(2.119497049);
-   pyRes->litter.expected.push_back(2.342310192);
-   pyRes->litter.expected.push_back(2.574646069);
-   pyRes->litter.expected.push_back(2.713743308);
-   pyRes->litter.expected.push_back(2.713743308);
-   pyRes->litter.expected.push_back(2.977817749);
-   pyRes->litter.expected.push_back(2.977817749);
-   pyRes->litter.expected.push_back(3.238103583);
-   pyRes->litter.expected.push_back(3.495536119);
-   pyRes->litter.expected.push_back(3.751018618);
-   pyRes->litter.expected.push_back(4.005420479);
-   pyRes->litter.expected.push_back(4.005420479);
-   pyRes->litter.expected.push_back(4.005420479);
-   pyRes->litter.expected.push_back(3.033741255);
-   pyRes->litter.expected.push_back(4.102322662);
-   pyRes->litter.expected.push_back(4.102322662);
-   pyRes->litter.expected.push_back(4.434656714);
-   pyRes->litter.expected.push_back(4.434656714);
-   pyRes->litter.expected.push_back(4.434656714);
-   pyRes->litter.expected.push_back(4.434656714);
-   pyRes->litter.expected.push_back(5.374621982);
-   pyRes->litter.expected.push_back(5.374621982);
-   pyRes->litter.expected.push_back(5.672427209);
-   pyRes->litter.expected.push_back(4.581810233);
-   pyRes->litter.expected.push_back(5.532983808);
-   pyRes->litter.expected.push_back(5.981831502);
-   pyRes->litter.expected.push_back(5.981831502);
-   pyRes->litter.expected.push_back(6.413723301);
-   pyRes->litter.expected.push_back(6.413723301);
-   pyRes->litter.expected.push_back(6.829391788);
-   pyRes->litter.expected.push_back(7.229628148);
-   pyRes->litter.expected.push_back(7.229628148);
 
-   pyRes->litter.observed.push_back(0);
-   pyRes->litter.observed.push_back(1);
-   pyRes->litter.observed.push_back(1);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(3);
-   pyRes->litter.observed.push_back(3);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(1);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(1);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(3);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(3);
-   pyRes->litter.observed.push_back(2);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(5);
-   pyRes->litter.observed.push_back(4);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(8);
-   pyRes->litter.observed.push_back(8);
-   pyRes->litter.observed.push_back(7);
-   pyRes->litter.observed.push_back(6);
-   pyRes->litter.observed.push_back(6);
 
-   pyRes->litter.SR.push_back(-1.147257987);
-   pyRes->litter.SR.push_back(-0.148141348);
-   pyRes->litter.SR.push_back(-0.301860366);
-   pyRes->litter.SR.push_back(0.631328744);
-   pyRes->litter.SR.push_back(0.431109028);
-   pyRes->litter.SR.push_back(0.857594396);
-   pyRes->litter.SR.push_back(0.65653973);
-   pyRes->litter.SR.push_back(-0.089101984);
-   pyRes->litter.SR.push_back(-0.243481535);
-   pyRes->litter.SR.push_back(-1.071325161);
-   pyRes->litter.SR.push_back(-0.518421334);
-   pyRes->litter.SR.push_back(1.660602955);
-   pyRes->litter.SR.push_back(-0.676196332);
-   pyRes->litter.SR.push_back(-1.367732493);
-   pyRes->litter.SR.push_back(0.504037656);
-   pyRes->litter.SR.push_back(-0.314836859);
-   pyRes->litter.SR.push_back(1.376689417);
-   pyRes->litter.SR.push_back(1.179530167);
-   pyRes->litter.SR.push_back(-0.003205497);
-   pyRes->litter.SR.push_back(-0.594573329);
-   pyRes->litter.SR.push_back(-0.788462565);
-   pyRes->litter.SR.push_back(0.577118305);
-   pyRes->litter.SR.push_back(0.577118305);
-   pyRes->litter.SR.push_back(-0.267167737);
-   pyRes->litter.SR.push_back(-0.267167737);
-   pyRes->litter.SR.push_back(0.347496039);
-   pyRes->litter.SR.push_back(-0.267167737);
-   pyRes->litter.SR.push_back(-0.755412682);
-   pyRes->litter.SR.push_back(-0.205870559);
-   pyRes->litter.SR.push_back(0.174415333);
-   pyRes->litter.SR.push_back(0.298883377);
-   pyRes->litter.SR.push_back(-0.975099884);
-   pyRes->litter.SR.push_back(0.010998302);
-   pyRes->litter.SR.push_back(0.010998302);
-   pyRes->litter.SR.push_back(0.918022312);
-   pyRes->litter.SR.push_back(0.918022312);
-   pyRes->litter.SR.push_back(0.094758157);
-   pyRes->litter.SR.push_back(-0.65761782);
-   pyRes->litter.SR.push_back(-0.65761782);
 
-   pyRes->reduced.dose.push_back(0);
-   pyRes->reduced.dose.push_back(25);
-   pyRes->reduced.dose.push_back(50);
-   pyRes->reduced.dose.push_back(100);
-   pyRes->reduced.propAffect.push_back(0.14049587);
-   pyRes->reduced.propAffect.push_back(0.31034482);
-   pyRes->reduced.propAffect.push_back(0.38596491);
-   pyRes->reduced.propAffect.push_back(0.53333333);
-   pyRes->reduced.lowerConf.push_back(0.10100315);
-   pyRes->reduced.lowerConf.push_back(0.23266263);
-   pyRes->reduced.lowerConf.push_back(0.34156249);
-   pyRes->reduced.lowerConf.push_back(0.46300766);
-   pyRes->reduced.upperConf.push_back(0.19144442);
-   pyRes->reduced.upperConf.push_back(0.39977302);
-   pyRes->reduced.upperConf.push_back(0.43230026);
-   pyRes->reduced.upperConf.push_back(0.60240216);
+//  double ll = Nlogist_lk(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin);
+
+//  std::cout<<"after Nlogist_lk"<<std::endl;
+//  for (int i=0; i<pyRes->nparms; i++){
+//     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+//  }
+
+//   //stubbed results
+//   pyRes->bmdsRes.validResult = true;
+//   pyRes->bmdsRes.BMD = 12.95166613;
+//   pyRes->bmdsRes.BMDL = 9.643478831;
+//   pyRes->bmdsRes.BMDU = (double)BMDS_MISSING;
+//
+//   pyRes->bmdsRes.AIC = 546.9572409;
+//   pyRes->bmdsRes.chisq = 19.6087053;
+//   pyRes->combPVal = 0.994;
+//   //pyRes->df = 35;
+//   pyRes->model_df = 35;
+//   pyRes->total_df = 35;
+//
+//   pyRes->nparms = 9;
+//   pyRes->parms.push_back(0.084733516);
+//   pyRes->parms.push_back(-4.109651594);
+//   pyRes->parms.push_back(0.004761366);
+//   pyRes->parms.push_back(-0.055489253);
+//   pyRes->parms.push_back(1.0);
+//   pyRes->parms.push_back(0);
+//   pyRes->parms.push_back(0);
+//   pyRes->parms.push_back(0);
+//   pyRes->parms.push_back(0);
+//
+//   pyAnal->seed = 1687267999;
+//   //pyAnal->iterations = 1000;
+//   pyRes->LL = -269.478205;
+//   pyRes->obsChiSq = 19.6087053;
+//
+//   pyRes->boot.numRuns = 3;   
+//   pyRes->boot.pVal.push_back(0.994);
+//   pyRes->boot.pVal.push_back(0.997);
+//   pyRes->boot.pVal.push_back(0.991);
+//   pyRes->boot.pVal.push_back(0.994);
+//   pyRes->boot.perc50.push_back(38.79787451);
+//   pyRes->boot.perc50.push_back(38.19554318);
+//   pyRes->boot.perc50.push_back(37.75643018);
+//   pyRes->boot.perc50.push_back(38.26776644);
+//   pyRes->boot.perc90.push_back(51.1848655);
+//   pyRes->boot.perc90.push_back(50.4569082);
+//   pyRes->boot.perc90.push_back(50.3883043);
+//   pyRes->boot.perc90.push_back(50.6118335);
+//   pyRes->boot.perc95.push_back(54.69182);
+//   pyRes->boot.perc95.push_back(53.99859);
+//   pyRes->boot.perc95.push_back(54.18472);
+//   pyRes->boot.perc95.push_back(54.55846);
+//   pyRes->boot.perc99.push_back(60.479415);
+//   pyRes->boot.perc99.push_back(63.639965);
+//   pyRes->boot.perc99.push_back(61.778094);
+//   pyRes->boot.perc99.push_back(62.421371);
+//
+//   pyRes->SRs.push_back(-0.31484);
+//   pyRes->SRs.push_back(0.314837);
+//   pyRes->SRs.push_back(-0.31484);
+//   pyRes->SRs.push_back(0.314837);
+//   pyRes->SRs.push_back(-0.31484);
+//   pyRes->SRs.push_back(0.314837);
+//
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(0);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(25);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(50);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//   pyRes->litter.dose.push_back(100);
+//
+//   pyRes->litter.LSC.push_back(9);
+//   pyRes->litter.LSC.push_back(9);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(13);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(15);
+//   pyRes->litter.LSC.push_back(16);
+//   pyRes->litter.LSC.push_back(9);
+//   pyRes->litter.LSC.push_back(9);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(12);
+//   pyRes->litter.LSC.push_back(13);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(7);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(15);
+//   pyRes->litter.LSC.push_back(8);
+//   pyRes->litter.LSC.push_back(10);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(11);
+//   pyRes->litter.LSC.push_back(12);
+//   pyRes->litter.LSC.push_back(12);
+//   pyRes->litter.LSC.push_back(13);
+//   pyRes->litter.LSC.push_back(14);
+//   pyRes->litter.LSC.push_back(14);
+//
+//   pyRes->litter.estProb.push_back(0.127585814);
+//   pyRes->litter.estProb.push_back(0.127585814);
+//   pyRes->litter.estProb.push_back(0.13234718);
+//   pyRes->litter.estProb.push_back(0.13234718);
+//   pyRes->litter.estProb.push_back(0.137108547);
+//   pyRes->litter.estProb.push_back(0.14663128);
+//   pyRes->litter.estProb.push_back(0.151392646);
+//   pyRes->litter.estProb.push_back(0.151392646);
+//   pyRes->litter.estProb.push_back(0.156154013);
+//   pyRes->litter.estProb.push_back(0.160915379);
+//   pyRes->litter.estProb.push_back(0.301527034);
+//   pyRes->litter.estProb.push_back(0.301527034);
+//   pyRes->litter.estProb.push_back(0.297781775);
+//   pyRes->litter.estProb.push_back(0.297781775);
+//   pyRes->litter.estProb.push_back(0.294373053);
+//   pyRes->litter.estProb.push_back(0.291294677);
+//   pyRes->litter.estProb.push_back(0.288539894);
+//   pyRes->litter.estProb.push_back(0.286101463);
+//   pyRes->litter.estProb.push_back(0.286101463);
+//   pyRes->litter.estProb.push_back(0.286101463);
+//   pyRes->litter.estProb.push_back(0.433391608);
+//   pyRes->litter.estProb.push_back(0.410232266);
+//   pyRes->litter.estProb.push_back(0.410232266);
+//   pyRes->litter.estProb.push_back(0.40315061);
+//   pyRes->litter.estProb.push_back(0.40315061);
+//   pyRes->litter.estProb.push_back(0.40315061);
+//   pyRes->litter.estProb.push_back(0.40315061);
+//   pyRes->litter.estProb.push_back(0.38390157);
+//   pyRes->litter.estProb.push_back(0.38390157);
+//   pyRes->litter.estProb.push_back(0.378161814);
+//   pyRes->litter.estProb.push_back(0.572726279);
+//   pyRes->litter.estProb.push_back(0.553298381);
+//   pyRes->litter.estProb.push_back(0.543802864);
+//   pyRes->litter.estProb.push_back(0.543802864);
+//   pyRes->litter.estProb.push_back(0.534476942);
+//   pyRes->litter.estProb.push_back(0.534476942);
+//   pyRes->litter.estProb.push_back(0.52533783);
+//   pyRes->litter.estProb.push_back(0.516402011);
+//   pyRes->litter.estProb.push_back(0.516402011);
+//
+//   pyRes->litter.litterSize.push_back(9);
+//   pyRes->litter.litterSize.push_back(9);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(13);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(15);
+//   pyRes->litter.litterSize.push_back(16);
+//   pyRes->litter.litterSize.push_back(9);
+//   pyRes->litter.litterSize.push_back(9);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(12);
+//   pyRes->litter.litterSize.push_back(13);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(7);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(15);
+//   pyRes->litter.litterSize.push_back(8);
+//   pyRes->litter.litterSize.push_back(10);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(11);
+//   pyRes->litter.litterSize.push_back(12);
+//   pyRes->litter.litterSize.push_back(12);
+//   pyRes->litter.litterSize.push_back(13);
+//   pyRes->litter.litterSize.push_back(14);
+//   pyRes->litter.litterSize.push_back(14);   
+//
+//   pyRes->litter.expected.push_back(1.148272326);
+//   pyRes->litter.expected.push_back(1.148272326);
+//   pyRes->litter.expected.push_back(1.323471805);
+//   pyRes->litter.expected.push_back(1.323471805);
+//   pyRes->litter.expected.push_back(1.508194016);
+//   pyRes->litter.expected.push_back(1.906206638);
+//   pyRes->litter.expected.push_back(2.119497049);
+//   pyRes->litter.expected.push_back(2.119497049);
+//   pyRes->litter.expected.push_back(2.342310192);
+//   pyRes->litter.expected.push_back(2.574646069);
+//   pyRes->litter.expected.push_back(2.713743308);
+//   pyRes->litter.expected.push_back(2.713743308);
+//   pyRes->litter.expected.push_back(2.977817749);
+//   pyRes->litter.expected.push_back(2.977817749);
+//   pyRes->litter.expected.push_back(3.238103583);
+//   pyRes->litter.expected.push_back(3.495536119);
+//   pyRes->litter.expected.push_back(3.751018618);
+//   pyRes->litter.expected.push_back(4.005420479);
+//   pyRes->litter.expected.push_back(4.005420479);
+//   pyRes->litter.expected.push_back(4.005420479);
+//   pyRes->litter.expected.push_back(3.033741255);
+//   pyRes->litter.expected.push_back(4.102322662);
+//   pyRes->litter.expected.push_back(4.102322662);
+//   pyRes->litter.expected.push_back(4.434656714);
+//   pyRes->litter.expected.push_back(4.434656714);
+//   pyRes->litter.expected.push_back(4.434656714);
+//   pyRes->litter.expected.push_back(4.434656714);
+//   pyRes->litter.expected.push_back(5.374621982);
+//   pyRes->litter.expected.push_back(5.374621982);
+//   pyRes->litter.expected.push_back(5.672427209);
+//   pyRes->litter.expected.push_back(4.581810233);
+//   pyRes->litter.expected.push_back(5.532983808);
+//   pyRes->litter.expected.push_back(5.981831502);
+//   pyRes->litter.expected.push_back(5.981831502);
+//   pyRes->litter.expected.push_back(6.413723301);
+//   pyRes->litter.expected.push_back(6.413723301);
+//   pyRes->litter.expected.push_back(6.829391788);
+//   pyRes->litter.expected.push_back(7.229628148);
+//   pyRes->litter.expected.push_back(7.229628148);
+//
+//   pyRes->litter.observed.push_back(0);
+//   pyRes->litter.observed.push_back(1);
+//   pyRes->litter.observed.push_back(1);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(3);
+//   pyRes->litter.observed.push_back(3);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(1);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(1);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(3);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(3);
+//   pyRes->litter.observed.push_back(2);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(5);
+//   pyRes->litter.observed.push_back(4);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(8);
+//   pyRes->litter.observed.push_back(8);
+//   pyRes->litter.observed.push_back(7);
+//   pyRes->litter.observed.push_back(6);
+//   pyRes->litter.observed.push_back(6);
+//
+//   pyRes->litter.SR.push_back(-1.147257987);
+//   pyRes->litter.SR.push_back(-0.148141348);
+//   pyRes->litter.SR.push_back(-0.301860366);
+//   pyRes->litter.SR.push_back(0.631328744);
+//   pyRes->litter.SR.push_back(0.431109028);
+//   pyRes->litter.SR.push_back(0.857594396);
+//   pyRes->litter.SR.push_back(0.65653973);
+//   pyRes->litter.SR.push_back(-0.089101984);
+//   pyRes->litter.SR.push_back(-0.243481535);
+//   pyRes->litter.SR.push_back(-1.071325161);
+//   pyRes->litter.SR.push_back(-0.518421334);
+//   pyRes->litter.SR.push_back(1.660602955);
+//   pyRes->litter.SR.push_back(-0.676196332);
+//   pyRes->litter.SR.push_back(-1.367732493);
+//   pyRes->litter.SR.push_back(0.504037656);
+//   pyRes->litter.SR.push_back(-0.314836859);
+//   pyRes->litter.SR.push_back(1.376689417);
+//   pyRes->litter.SR.push_back(1.179530167);
+//   pyRes->litter.SR.push_back(-0.003205497);
+//   pyRes->litter.SR.push_back(-0.594573329);
+//   pyRes->litter.SR.push_back(-0.788462565);
+//   pyRes->litter.SR.push_back(0.577118305);
+//   pyRes->litter.SR.push_back(0.577118305);
+//   pyRes->litter.SR.push_back(-0.267167737);
+//   pyRes->litter.SR.push_back(-0.267167737);
+//   pyRes->litter.SR.push_back(0.347496039);
+//   pyRes->litter.SR.push_back(-0.267167737);
+//   pyRes->litter.SR.push_back(-0.755412682);
+//   pyRes->litter.SR.push_back(-0.205870559);
+//   pyRes->litter.SR.push_back(0.174415333);
+//   pyRes->litter.SR.push_back(0.298883377);
+//   pyRes->litter.SR.push_back(-0.975099884);
+//   pyRes->litter.SR.push_back(0.010998302);
+//   pyRes->litter.SR.push_back(0.010998302);
+//   pyRes->litter.SR.push_back(0.918022312);
+//   pyRes->litter.SR.push_back(0.918022312);
+//   pyRes->litter.SR.push_back(0.094758157);
+//   pyRes->litter.SR.push_back(-0.65761782);
+//   pyRes->litter.SR.push_back(-0.65761782);
+//
+//   pyRes->reduced.dose.push_back(0);
+//   pyRes->reduced.dose.push_back(25);
+//   pyRes->reduced.dose.push_back(50);
+//   pyRes->reduced.dose.push_back(100);
+//   pyRes->reduced.propAffect.push_back(0.14049587);
+//   pyRes->reduced.propAffect.push_back(0.31034482);
+//   pyRes->reduced.propAffect.push_back(0.38596491);
+//   pyRes->reduced.propAffect.push_back(0.53333333);
+//   pyRes->reduced.lowerConf.push_back(0.10100315);
+//   pyRes->reduced.lowerConf.push_back(0.23266263);
+//   pyRes->reduced.lowerConf.push_back(0.34156249);
+//   pyRes->reduced.lowerConf.push_back(0.46300766);
+//   pyRes->reduced.upperConf.push_back(0.19144442);
+//   pyRes->reduced.upperConf.push_back(0.39977302);
+//   pyRes->reduced.upperConf.push_back(0.43230026);
+//   pyRes->reduced.upperConf.push_back(0.60240216);
 
 }
+
+
+double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass){
+
+   std::cout<<"Inside opt_nlogistic"<<std::endl;
+
+   bool fail = true;
+   double minf;
+   //start with hardcoded parameter limits
+   //will move these to header
+   double slopeUpperBound = 18.0;
+   int nparm = p.size();
+
+   std::vector<double> lb(nparm);
+   std::vector<double> ub(nparm);
+   //alpha
+   lb[0] = 0.0;
+   ub[0] = 1.0;
+   //beta
+   lb[1] = -1.0*DBL_MAX;
+   ub[1] = DBL_MAX;
+   //theta1
+   lb[2] = 0.0;
+   if (pass == 1 || pass == 2){
+     ub[2] = 0.0;
+   } else {
+     ub[2] = 1.0;
+   }
+   //theta2
+   if (pass == 1 || pass == 2){
+     lb[3] = 0.0;
+     ub[3] = 0.0;
+   } else {
+     lb[3] = -1.0*DBL_MAX;
+     ub[3] = DBL_MAX;
+   }
+   //rho
+   if (isRestricted){
+     lb[4] = 1.0;
+   } else {
+     lb[4] = 0.0;
+   }
+   ub[4] = slopeUpperBound;
+   //phi(s)
+   for (int i=5; i<nparm; i++){
+     lb[i] = 0.0;
+     if (pass == 1){
+       ub[i] = 0.0;
+     } else {
+       ub[i] = DBL_MAX;
+     }
+   }
+   
+   //Description of optimization problem
+   //minimize -log-likelihood
+   //inequality constraints
+   //	alpha + theta1*rij >=0
+   //	alpha + theta1*rij < 1
+
+
+   nlopt::opt opt(nlopt::LD_SLSQP, nparm);
+   //BMD opt
+   
+   struct nestedObjData objData;
+   objData.Ls = Ls;
+   objData.Xi = Xi;
+   objData.Xg = Xg;
+   objData.Yp = Yp;
+   objData.Yn = Yn;
+   objData.smax = smax;
+   objData.smin = smin; 
+
+   opt.set_min_objective(objfunc_nlogistic_ll, &objData);
+//   opt.add_inequality_constraint(nlogistic_ineq1, &ineq1, 1e-8);
+//   opt.add_inequality_constraint(nlogistic_ineq2, &ineq1, 1e-8);
+   opt.set_xtol_rel(1e-8);
+   //opt.set_xtol_abs(1e-8);
+   opt.set_maxeval(1000000);
+   opt.set_lower_bounds(lb);
+   opt.set_upper_bounds(ub);
+
+   nlopt::result result = nlopt::FAILURE;
+
+   while (fail){
+     try{
+       result = opt.optimize(p, minf);
+       fail = false;
+     } catch (std::exception &e){
+       std::cout << "nlogistic opt failed: " << e.what() << std::endl;
+     }
+
+   }
+  
+   std::cout<<"minf = "<<minf<<std::endl; 
+   std::cout<<"parm after opt"<<std::endl;
+   for(int i=0; i<nparm; i++){
+     std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
+   } 
+   return result;
+}
+
+
+void probability_inrange(double *ex){
+  if (*ex < 1.0e-7) *ex = 1.0e-7;
+  if (*ex > 0.9999999) *ex = 0.9999999;
+}
+
+
+double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data){
+
+  nestedObjData *d = reinterpret_cast<nestedObjData*>(data);
+  //from data struct
+  std::vector<double> Ls = d->Ls;
+  std::vector<double> Xi = d->Xi;
+  std::vector<int> Xg = d->Xg;
+  std::vector<double> Yp = d->Yp;
+  std::vector<double> Yn = d->Yn;
+  double smax = d->smax;
+  double smin = d->smin;
+
+  if (!grad.empty()){
+    Nlogist_g(p, Ls, Xi, Xg, Yp, Yn, smax, smin, grad);
+  }
+
+  //negative log-likelihood calc
+  double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin);
+
+  return loglike;
+
+}
+
+// Used to comput the log-likelihood for Nlogistic model
+double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin){
+
+   int Nobs = Xi.size();
+   int nparms = p.size();
+   std::vector<double> probs(Nobs);
+   std::vector<std::vector<double>> gradij(Nobs, std::vector<double> (5));  
+
+
+   bool compgrad = false;
+   bool isBMDL = false;
+//   std::cout<<"b4 Nlogist_probs"<<std::endl;
+   Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi);
+//   std::cout<<"after Nlogist_probs"<<std::endl;
+//   for(int i=0; i<Nobs; i++){
+//     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
+//   } 
+   
+   double tm, tm1, tm2, tm3;
+   int plus5, j;
+   double xlk = 0.0;   
+   for (int i=0; i<Nobs; i++){
+     tm1 = 0.0;
+     tm2 = 0.0;
+     tm3 = 0.0;
+     plus5 = 5 + Xg[i];
+     j = (int) Yp[i];
+     //if (probs[i] == 0.0 && j > 0){ //this should be changed for better floating point comparison
+     if (probs[i] < CloseToZero && j > 0){ 
+        tm1 -=40.0;
+     } else {
+       for (int k=1; k<=j; k++){
+          tm = probs[i] + (k-1)*p[plus5];
+	  tm1 += log(tm);
+       }
+     }
+     j = (int) Yn[i];
+     if (probs[i] >=1.0 && j > 0){
+       tm2 -=40.0;
+     } else {
+       for (int k=1; k<=j; k++){
+         tm = 1.0 - probs[i] + (k-1)*p[plus5];
+	 tm2 += log(tm);
+       }
+     }
+     j = (int) (Yn[i] + Yp[i]);
+     for (int k=1; k<=j; k++){
+       tm = 1.0 + (k-1)*p[plus5];
+       tm3 += log(tm);
+     }
+     xlk += (tm1 + tm2 - tm3);
+   }
+   std::cout<<"returning:"<<(-1.0*xlk)<<" from Nlogist_lk"<<std::endl;
+  
+   //returns negative log likelihood
+   return -1.0*xlk;
+}
+
+
+//Used to compute the gradients for Nlogist_model.  Parameters are in "internal" transformed form.
+double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g){
+
+
+
+  int Nobs = Xi.size();
+  int nparm = p.size();
+  std::vector<double> probs(Nobs);
+  std::vector<std::vector<double>> gradij(Nobs, std::vector<double> (5));
+  double ex, tm, tm1, tm2, tm3, tm1a, tm2a, tm3a, tm12;
+  int plus5, j;
+  std::vector<double> tmp_g(nparm);
+  std::vector<double> dd(nparm);
+
+
+  bool compgrad = true;
+  bool isBMDL = false;
+  std::cout<<"b4 Nlogist_probs"<<std::endl;
+  Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi);
+
+
+  //initial tmp g[j]'s
+  for (int i=0; i<nparm; i++){
+    tmp_g[i] = 0.0;
+  }
+  for (int i=0; i<Nobs; i++){
+    ex = probs[i];
+
+    //compute first partial derivatives
+    tm1 = tm2 = tm3 = 0.0;
+    tm1a = tm2a = tm3a = 0.0;
+    for (int j=5; j<nparm; j++){
+      dd[j] = 0.0;
+    }    
+    plus5 = 5 + Xg[i];
+    j = (int) Yp[i];
+    if (ex > 0.0){
+      for (int k=1; k<=j; k++){
+        tm = ex + (k-1)*p[plus5];
+	tm1 += 1.0/tm;
+	tm1a += (1.0/tm)*(k-1);
+      }
+    }
+    j = (int) Yn[i];
+    if (ex < 1.0){
+      for (int k=1; k<=j; k++){
+        tm = 1.0-ex+(k-1)*p[plus5];
+	tm2 += 1.0/tm;
+	tm2a += (1.0/tm)*(k-1);
+      }
+    }
+    j = (int) (Yn[i] + Yp[i]);
+    for (int k=1; k<=j; k++){
+      tm = 1.0+(k-1)*p[plus5];
+      if (tm == 0.0) tm = 0.000001;
+      tm3 += 1.0/tm;
+      tm3a += (1.0/tm)*(k-1);
+    }
+    tm12 = (tm1-tm2);
+    for (int k=0; k<5; k++){
+      dd[k] = gradij[i][k]*tm12;
+    }
+    for (int k=0; k<nparm; k++){
+      tmp_g[k] -= dd[k];
+    }
+  }
+  //end of 1st partial derivative
+  g = tmp_g;
+ 
+  return 0;
+}
+
+void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi){
+
+  double spij, smij, ex, ex1, ex2, ex3, dd2;
+
+  double sdif = smax - smin;
+  int nparms = p.size();
+  int Nobs = Xi.size();
+
+  std::vector<double> pint (nparms);
+  for (int i=0; i<nparms; i++){
+    pint[i] = p[i];
+  }
+
+
+  if (isBMDL){
+	  ////FILL THIS IN
+  }
+
+  for (int i=0; i<Nobs; i++){
+    spij = (smax - Ls[i])/sdif;
+    smij = (Ls[i] - smin)/sdif;
+
+    //enforce alpha+Theta1*Sij >= 0
+    //We currently don't allow the user to specify Theta parameters
+    //will need to possibly address this for python code
+    //if (Spec[0] == Spec[2]){
+    //   ex = spij * pint[0] + smij * pint[2];
+    //} else {
+       ex = pint[0] + Ls[i] * pint[2];
+    //}
+    ex2 = 1.0 - ex;
+    ex1 = 0.0;
+    if (Xi[i] > 0){
+       ex1 = exp(-(pint[1] + pint[3] * Ls[i] + pint[4] * log(Xi[i])));
+       ex = ex + ex2/(1+ex1);
+    }
+    probability_inrange(&ex);
+    probs[i] = ex;    
+
+    if (compgrad){
+       ex3 = ex1 / ((1.0+ex1)*(1.0+ex1));
+       dd2 = ex2*ex3;
+
+       if (isBMDL){
+	 ////FILL THIS IN
+       } else {
+         //enforce alpha+Theta1*Sij >= 0
+         //We currently don't allow specifying Theta parameters
+         //will need to possibly address this for python code
+	 //if (Spec[0] == Spec[2]){
+         //   if (Xi[i] > 0){
+	 //     gradij]i][0] = spij * (1.0 - 1.0/(1.0+ex1));
+	 //     gradij[i][2] = smij * (1.0 - 1.0/(1.0+ex1));
+	 //   } else {
+	 //     //Case where Xi[i] == 0
+         //     gradij[i][0] = spij;
+	 //     gradij[i][2] = smij;
+	 //   }
+	 //} else {
+            if (Xi[i] > 0){
+	      gradij[i][0] = 1.0 - 1.0/(1.0+ex1);
+	      gradij[i][2] = Ls[i] * gradij[i][0];
+	    } else {
+	      //Case where Xi[i] == 0
+	      gradij[i][0] = 1.0;
+	      gradij[i][2] = Ls[i];
+	    }
+	 //} //end of derivates that depend on the transformation of alpha and theta1
+	 if (Xi[i] > 0){
+           gradij[i][1] = dd2;
+	   gradij[i][3] = dd2 * Ls[i];
+	   gradij[i][4] = dd2 * log(Xi[i]);
+	 } else {
+	   gradij[i][1] = 0.0;
+	   gradij[i][3] = 0.0;
+	   gradij[i][4] = 0.0;
+	 }
+       }
+    }
+
+  }
+
+};
