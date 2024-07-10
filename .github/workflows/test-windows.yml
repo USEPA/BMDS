@@ -1,4 +1,4 @@
-name: Test pybmds Windows
+name: Test Windows
 
 on:
   push:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  pybmds:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
