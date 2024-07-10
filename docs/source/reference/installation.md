@@ -24,7 +24,7 @@ This portion of the guide is recommended as we develop pre-release versions. Rec
 After installing Python, open up your terminal on your computer. Ensure that Python is on your path:
 
 ```bash
-python -V
+python --version
 ```
 
 This should return a Python version (eg., `Python 3.12.3`).  Note that the Python version must be 3.11 or higher.
@@ -59,7 +59,7 @@ First, install Python. Ideally, use the most recent version available; you'll ne
 After installing, open a terminal on your computer. On Windows, use Windows Terminal (it should be built-in to recent Windows versions). On Mac, you can use the built-in Terminal. After starting, check if Python is available:
 
 ```bash
-python -V
+python --version
 ```
 
 This should return a Python version (eg., `Python 3.12.3`). If Python wasn't found, follow the FAQ below to add to your path, and then continue after adding to your path.
@@ -132,7 +132,7 @@ First, you'll need to find where Python was installed on your computer. Open up 
 
 On the Start Menu, search for "environment" and then click the "Edit the system environment variables". This should open the "System Properties" dialog. Select "Environment Variables", and under the "User Variables" section, there should be a variable named Path. Edit the Path, and add the folder that contains the Python path for the Python installation above.
 
-After adding the location, restart your terminal. If you type the command `python -V` the version of Python should now appear! You are ready to continue installation.
+After adding the location, restart your terminal. If you type the command `python --version` the version of Python should now appear! You are ready to continue installation.
 
 ### How do I Add Python to my Path (Mac)?
 
