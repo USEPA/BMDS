@@ -6,7 +6,7 @@ authors = [
   {name = "BMDS development team"},
 ]
 readme = "README.md"
-version = "24.1a0"
+version = "24.1a2"
 classifiers = [
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
@@ -51,8 +51,8 @@ docs = [
 
 [build-system]
 requires = [
-  "pybind11>=2.10.4",
-  "setuptools>=67.7.2",
+  "pybind11~=2.10.4",
+  "setuptools~=67.7.2",
 ]
 build-backend = "setuptools.build_meta"
 

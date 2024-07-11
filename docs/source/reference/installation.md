@@ -33,10 +33,10 @@ Next, while on the EPA VPN, install the packages:
 
 ```bash
 python -m pip install pybmds --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
-python -m pip install bmds_ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
+python -m pip install bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
 ```
 
-This should install `pybmds` (the BMDS execution engine) and `bmds_ui` (the BMDS Desktop User Interface) along with it's related dependencies. Now, you're ready to use the application.
+This should install `pybmds` (the BMDS execution engine) and `bmds-ui` (the BMDS Desktop User Interface) along with it's related dependencies. Now, you're ready to use the application.
 
 Start the application:
 
@@ -163,7 +163,7 @@ cd "path-to-downloads"
 # install pipx, just for you as a user, not globally on your computer
 python -m pip install --user -U pipx
 # install the files, using the complete filenames for the files on your computer
-pipx install --preinstall pybmds-24.1-cp312-cp312-win_amd64.whl --suffix=-24.1 bmds_ui-24.1-cp312-cp312-win_amd64.whl
+pipx install --preinstall pybmds-24.1-cp312-cp312-win_amd64.whl --suffix=-24.1 bmds-ui-24.1-cp312-cp312-win_amd64.whl
 # they should now appear on your terminal
 pipx --list
 ```

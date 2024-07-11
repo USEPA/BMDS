@@ -1,4 +1,4 @@
-name: Test pybmds Linux
+name: Test Linux
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  pybmds:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +54,31 @@ jobs:
           make docs
       - uses: actions/upload-artifact@v4
         with:
+          name: docs
           path: |
-            ./docs/build/html
-            ./dist/*.whl
+            ./docs/build/html/*
+
+  bmdscore:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          source ./tools/linux_ci_setup.sh
+      - name: Build bmdscore
+        run: |
+          source ./tools/linux_ci_env.sh
+          mkdir -p src/build
+          cd src/build
+          cmake ..
+          make -j$(nproc)
+      - name: Run tests and generate report
+        run: |
+          source ./tools/linux_ci_env.sh
+          cd src/build
+          make run_tests_with_coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cpp-coverage
+          path: |
+            ./src/build/coverage/*
