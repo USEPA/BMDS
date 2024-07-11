@@ -140,7 +140,7 @@ class Multitumor:
         self,
         datasets: list[DichotomousDataset],
         degrees: list[int] | None = None,
-        model_settings: DichotomousModelSettings | dict | None = None,
+        settings: DichotomousModelSettings | dict | None = None,
         id: int | None = None,
         name: str = "",
         description: str = "",
@@ -156,7 +156,7 @@ class Multitumor:
             if dataset.metadata.id is None:
                 dataset.metadata.id = i
         self.degrees: list[int] = degrees or [0] * len(datasets)
-        self.settings: DichotomousModelSettings = self.get_base_settings(model_settings)
+        self.settings: DichotomousModelSettings = self.get_base_settings(settings)
         self.results = results
         self.structs: tuple | None = None
         self.models: list[list[MultistageCancer]] = []
@@ -545,7 +545,7 @@ class MultitumorSchema(BaseModel):
         mt = Multitumor(
             datasets=datasets,
             degrees=self.settings.degrees,
-            model_settings=settings,
+            settings=settings,
             id=self.id,
             name=self.name,
             description=self.description,
