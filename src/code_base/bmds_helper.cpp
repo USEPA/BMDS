@@ -2036,7 +2036,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
   int pass = 1;
-  double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
+  double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   std::cout<<"retVal:"<<retVal<<std::endl;
 
 
@@ -2067,7 +2067,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
 
     pass = 2;
-    retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
+    retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
 
     //Transform parameters to "external" form
     for (int i=5; i<pyRes->nparms; i++){
@@ -2107,11 +2107,66 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
   }
   pass = 3;
-  retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass);
+  retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
+
+  std::cout<<"retVal:"<<retVal<<std::endl;
+  std::cout<<"LL: "<<xlk<<std::endl;
 
 
+  //Transform the parameters to the "external" form
+  for (int i=5; i<pyRes->nparms; i++){
+     pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);
+  }
 
+  //don't currently allow spec so this is always true
+//  if (Spec[0] == Spec[2]){
+  double sdif = smax - smin;
+  junk1 = pyRes->parms[0];
+  junk3 = pyRes->parms[2];
+  pyRes->parms[0] = (smax * junk1 - smin * junk3)/sdif;
+  pyRes->parms[2] = (junk3 - junk1)/sdif;
 
+  std::cout<<"Here!!!!"<<std::endl;
+
+  //TODO:  check which parms hit the bound
+
+  //TODO:  check retVal to make sure convergence was achieved
+  //if (retVal == 1){
+  
+  //compute Hessian
+  // Eigen::Matrix2d vcv(pyRes->nparms,pyRes->nparms);
+  //nvar = Nlogist_vcv(vcv);
+  //remove rows and columns of vcv that correspond to bounded parms
+  // nvar = Take_out_bounded_parms(nvar, bounded, vcv);
+  // std::vector<std::vector<double>> inv_vcv = vcv.inverse
+  
+  //compute and output the analysis of deviance
+  //DTMS3ANOVA (nparm, Nobs, Spec, lkf, xlk, lkr, anasum, bounded);
+
+  //double MAP = anasum[2].SS;
+  //double AIC = -2*anasum[2].SS + 2*(1.0+anasum[3].DF - anasum[2].DF);
+
+  //Generate litter data results
+  //myGoodness (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
+
+  //more goodness of git calcs
+  //N_Goodness (ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
+
+  //calculate confidence intervals at each dose level for graphical output
+  //std::vector<double> LL (ngrp);
+  //std::vector<double> UL (ngrp);
+  //std::vector<double> phat (ngrp);
+  //Nested_CI(ngrp, Nobs, Yp, Yn, Xg, 0.95, LL, phat, UL);
+
+  //Compute BMD
+//  double back = pyRes->parms[0] + pyRes->parms[2] *sijfixed;
+//  double back1 = 1 - back;
+//  if (bmdparm.risk==1) back1 = 1;
+//  Nlogist_BMD (nparm, Parms, EPS, &junk, xlk, Rlevel, Bmdl, &BMD);
+   std::cout<<"b4 Nlogist_BMD"<<std::endl;
+   Nlogist_BMD (pyAnal, pyRes->parms, smin, smax, sijfixed, xmax, xlk);
+   //mySRoI(zOut, ngrp, Nobs, GXi, Xi, Xg, SR, Ls, sijfixed, BMD);
+   //myBootstrap (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR, BSIter, BSSeed);
 
 //  double ll = Nlogist_lk(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin);
 
@@ -2478,7 +2533,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 }
 
 
-double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass){
+double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk){
 
    std::cout<<"Inside opt_nlogistic"<<std::endl;
 
@@ -2536,7 +2591,9 @@ double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, cons
    //	alpha + theta1*rij < 1
 
 
-   nlopt::opt opt(nlopt::LD_SLSQP, nparm);
+   //nlopt::opt opt(nlopt::LD_SLSQP, nparm);
+   //nlopt::opt opt(nlopt::LN_SBPLX, nparm);
+   nlopt::opt opt(nlopt::LD_LBFGS, nparm);
    //BMD opt
    
    struct nestedObjData objData;
@@ -2573,7 +2630,9 @@ double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, cons
    std::cout<<"parm after opt"<<std::endl;
    for(int i=0; i<nparm; i++){
      std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
-   } 
+   }
+   xlk = minf; 
+
    return result;
 }
 
@@ -2819,5 +2878,107 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
     }
 
   }
+}
 
-};
+void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double> &p, double smin, double smax, double sijfixed, double xmax, double xlk){
+
+  int nparm = p.size();
+  double BMR = pyAnal->BMR;
+  int riskType = pyAnal->BMD_type;
+  double LR, junk1, junk3, ck;
+  double CL = 1.0 - pyAnal->alpha;
+
+  //If ML is the value of the maximized log-likelihood, then ML - LR is the value log-likehood at the BMDL or BMDU
+  if (CL < 0.5){
+    LR = QCHISQ(1.0 - 2*CL, 1)/2.0; 
+  } else {
+    LR = QCHISQ(2*CL - 1.0, 1)/2.0;
+  }
+
+  std::vector<double> pint = p;
+  
+  //transform parameters into "internal" form
+  for (int i=5; i<nparm; i++){
+    pint[i] = pint[i]/(1-pint[i]);  //Phi->Psi
+  }  
+
+  //this is always true since we don't allow specifying parameters
+  //if (Spec[0]==Spec[2]){
+  junk1 = pint[0];
+  junk3 = pint[2];
+  pint[0] = junk1 + smin * junk3;
+  pint[2] = junk1 + smax * junk3;
+
+  //Rlevel[1]?????
+  double sdif = smax - smin;
+
+  double spfixed = (smax - sijfixed)/sdif;
+  double snfixed = (sijfixed - smin)/sdif;  
+
+  if (riskType == 1){
+    //extra risk
+    ck = -log((1-BMR)/BMR);
+  } else {
+    //added risk
+    //Always true since we don't allow specifying parameters
+    //if (Spec[0] == Spec[2]){
+      ck = -1.0 * log((1-pint[0] * spfixed - pint[2]*snfixed)/BMR - 1);
+    //} else {
+    //  ck = -1.0 * log((1-pint[0] -pint[2] * sijfixed)/BMR - 1);
+    //}
+  }
+
+  double BMD;
+  if (pint[4] <= (ck - pint[1] - pint[3] * sijfixed)/250){
+    //Power parameter is essentially zero.  BMD is set to 100  * max(Dose)
+    BMD = 100 * xmax;
+  } else {
+    BMD = exp((ck - pint[1] - pint[3]*sijfixed)/pint[4]);  
+  }
+
+  std::cout<<"BMD: "<<BMD<<std::endl;
+
+  //Is this needed????
+  //Predict(doses, lsc, 2, pa, pred);
+  
+
+  //Search for BMDL
+  int stepsize = 0.5;  //Start close to the BMD and work downwards
+  
+  double xa = BMD * stepsize;
+  double tol = FMAX(BMD*0.001, 0.0000001);
+  double BMD_lk = xlk;
+
+  double fb = DBL_MAX;
+
+  std::vector<double> pa(nparm);
+  std::vector<double> pb(nparm);
+
+  for (int i=0; i<nparm; i++){
+    pa[i] = pb[i] = pint[i];
+  }
+
+  double fa = BMDL_func(nparm, pa, xa, tol);
+
+
+}
+
+//QCHISQ - inverse chi-square function
+double QCHISQ(double p, int m){
+   int which = 2;
+   int status;
+   double chisq, q, df, bound;
+
+   df = (double) m;
+   double x = gsl_cdf_chisq_Pinv(p, df);
+   return x;
+}
+
+//BMDL_func - used to compare the values of functions BMDL_f (the X^2 value) at the point D,
+//   given the parm p[] and the number of parm.  Input parameters are in the "internal" form.
+//   This routine is called by zeroin()
+//
+double BMDL_func(){
+}
+
+
