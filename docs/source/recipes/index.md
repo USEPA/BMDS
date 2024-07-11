@@ -5,6 +5,7 @@
 
 dichotomous
 dichotomous_ma
+multitumor
 continuous
 nested_dichotomous
 batch
