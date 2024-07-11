@@ -125,3 +125,4 @@ pyAnal.nmodels = nmodels
 pyRes.nmodels = nmodels
 
 bmdscore.pythonBMDSMultitumor(pyAnal, pyRes)
+print(pyRes.BMD)  # noqa: T201
