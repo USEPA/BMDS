@@ -40,7 +40,7 @@ def write_docx_frequentist_table(report: Report, session):
         len(session.models) + 1 + (1 if avg_row else 0), 9, style=styles.table
     )
 
-    write_cell(tbl.cell(0, 0), "Model Average", style=hdr)
+    write_cell(tbl.cell(0, 0), "Dataset: Model", style=hdr)
     write_cell(tbl.cell(0, 1), "BMDL", style=hdr)
     write_cell(tbl.cell(0, 2), "BMD", style=hdr)
     write_cell(tbl.cell(0, 3), "BMDU", style=hdr)
@@ -64,16 +64,24 @@ def write_docx_frequentist_table(report: Report, session):
     for ds_idx, ds_models in enumerate(session.models):
         row = ds_idx + 1 + (1 if avg_row else 0)
         idx = session.results.selected_model_indexes[ds_idx]
-        model = ds_models[idx]
-        write_cell(tbl.cell(row, 0), model.name(), body)
-        write_cell(tbl.cell(row, 1), model.results.bmdl, body)
-        write_cell(tbl.cell(row, 2), model.results.bmd, body)
-        write_cell(tbl.cell(row, 3), model.results.bmdu, body)
-        write_cell(tbl.cell(row, 4), model.results.slope_factor, body)
-        write_cell(tbl.cell(row, 5), model.get_gof_pvalue(), body)
-        write_cell(tbl.cell(row, 6), model.results.fit.aic, body)
-        write_cell(tbl.cell(row, 7), model.results.gof.residual[0], body)
-        write_cell(tbl.cell(row, 8), model.results.gof.roi, body)
+        if idx is None:
+            dataset = session.datasets[ds_idx]
+            write_cell(tbl.cell(row, 0), f"{dataset._get_dataset_name()}:\nno model", body)
+            for j in range(1, 9):
+                write_cell(tbl.cell(row, j), "-", body)
+        else:
+            model = ds_models[idx]
+            write_cell(
+                tbl.cell(row, 0), f"{model.dataset._get_dataset_name()}:\n{model.name()}", body
+            )
+            write_cell(tbl.cell(row, 1), model.results.bmdl, body)
+            write_cell(tbl.cell(row, 2), model.results.bmd, body)
+            write_cell(tbl.cell(row, 3), model.results.bmdu, body)
+            write_cell(tbl.cell(row, 4), model.results.slope_factor, body)
+            write_cell(tbl.cell(row, 5), model.get_gof_pvalue(), body)
+            write_cell(tbl.cell(row, 6), model.results.fit.aic, body)
+            write_cell(tbl.cell(row, 7), model.results.gof.residual[0], body)
+            write_cell(tbl.cell(row, 8), model.results.gof.roi, body)
 
     # set column width
     widths = np.array([2, 1, 1, 1, 1, 1, 1, 1.5, 1.5])
@@ -102,10 +110,21 @@ def write_docx_inputs_table(report: Report, session):
         write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
 
 
-def write_docx_model(report: Report, model, header_level: int = 1, bmd_cdf_table: bool = False):
+def write_docx_model(
+    report: Report,
+    model,
+    header_level: int = 1,
+    bmd_cdf_table: bool = False,
+    include_dataset_name: bool = False,
+):
     styles = report.styles
     header_style = styles.get_header_style(header_level)
-    report.document.add_paragraph(model.name(), header_style)
+    name = (
+        f"{model.dataset._get_dataset_name()}: {model.name()}"
+        if include_dataset_name
+        else model.name()
+    )
+    report.document.add_paragraph(name, header_style)
     if model.has_results:
         report.document.add_paragraph(add_mpl_figure(report.document, model.plot(), 6))
         if bmd_cdf_table:
@@ -374,17 +393,15 @@ class Multitumor:
         ax = fig.axes[0]
 
         # add individual model fits
-        selected_models = [
-            self.models[i][idx] for i, idx in enumerate(self.results.selected_model_indexes)
-        ]
+        selected_models = []
         color_cycle = cycle(plotting.INDIVIDUAL_MODEL_COLORS)
-        for idx, model in enumerate(selected_models):
+        for idx, dataset in enumerate(self.datasets):
             color = next(color_cycle)
-            dataset = model.dataset
             if idx == 0:
                 ax.set_xlabel(dataset.get_xlabel())
                 ax.set_ylabel(dataset.get_ylabel())
                 ax.set_title("Model Average")
+            selected_idx = self.results.selected_model_indexes[idx]
             ax.scatter(
                 dataset.doses,
                 dataset.plot_data().mean,
@@ -392,13 +409,17 @@ class Multitumor:
                 edgecolors=color,
                 s=70,
                 linewidth=2,
+                label=dataset._get_dataset_name() if selected_idx is None else None,
             )
-            ax.plot(
-                model.results.plotting.dr_x,
-                model.results.plotting.dr_y,
-                label=f"{dataset._get_dataset_name()}; {model.name()}",
-                c=color,
-            )
+            if selected_idx is not None:
+                model = self.models[idx][selected_idx]
+                ax.plot(
+                    model.results.plotting.dr_x,
+                    model.results.plotting.dr_y,
+                    label=f"{dataset._get_dataset_name()}; {model.name()}",
+                    c=color,
+                )
+                selected_models.append(model)
 
         # add slope factor line and bmd interval
         if self.results.bmdl and self.results.slope_factor:
@@ -453,6 +474,7 @@ class Multitumor:
 
         h1 = report.styles.get_header_style(header_level)
         h2 = report.styles.get_header_style(header_level + 1)
+        h3 = report.styles.get_header_style(header_level + 2)
         report.document.add_paragraph(self.session_title(), h1)
 
         if self.description:
@@ -471,13 +493,31 @@ class Multitumor:
         report.document.add_paragraph(add_mpl_figure(report.document, self.plot(), 6))
         report.document.add_paragraph("Individual Model Results", h2)
 
-        for selected_idx, dataset_models in zip(
-            self.results.selected_model_indexes, self.models, strict=True
+        for dataset, selected_idx, models in zip(
+            self.datasets, self.results.selected_model_indexes, self.models, strict=True
         ):
-            for idx, model in enumerate(dataset_models):
-                if all_models or selected_idx == idx:
+            if all_models:
+                report.document.add_paragraph(dataset._get_dataset_name(), h3)
+                for model in models:
                     write_docx_model(
-                        report, model, header_level=header_level + 2, bmd_cdf_table=bmd_cdf_table
+                        report,
+                        model,
+                        header_level=header_level + 2,
+                        bmd_cdf_table=bmd_cdf_table,
+                        include_dataset_name=False,
+                    )
+            else:
+                if selected_idx is None:
+                    report.document.add_paragraph(dataset._get_dataset_name(), h3)
+                    report.document.add_paragraph("No model was selected.")
+                else:
+                    model = models[selected_idx]
+                    write_docx_model(
+                        report,
+                        model,
+                        header_level=header_level + 2,
+                        bmd_cdf_table=bmd_cdf_table,
+                        include_dataset_name=True,
                     )
 
         if citation:
