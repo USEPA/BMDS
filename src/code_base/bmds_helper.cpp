@@ -566,7 +566,8 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    opt.add_equality_constraint(myEqualityConstraint, &eq1, 1e-8);
    opt.add_inequality_constraint(myInequalityConstraint1, &ineq1, 1e-8);
    opt.set_xtol_rel(1e-8);
-   opt.set_maxeval(1000000);
+   //opt.set_maxeval(1000000);
+   opt.set_maxeval(100000);
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
 
@@ -3866,6 +3867,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
   objData.pass = 1;
+  objData.tol = 1e-8;
+  objData.optimizer = 3;
   double retVal = opt_nlogistic(pyRes->parms, &objData);
   std::cout<<"retVal:"<<retVal<<std::endl;
 
@@ -3996,9 +3999,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 //  if (bmdparm.risk==1) back1 = 1;
 //  Nlogist_BMD (nparm, Parms, EPS, &junk, xlk, Rlevel, Bmdl, &BMD);
    std::cout<<"b4 Nlogist_BMD"<<std::endl;
-   Nlogist_BMD (pyAnal, pyRes->parms, smin, smax, sijfixed, xmax, &objData);
+   Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
    //mySRoI(zOut, ngrp, Nobs, GXi, Xi, Xg, SR, Ls, sijfixed, BMD);
    //myBootstrap (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR, BSIter, BSSeed);
+
+
+
+
+
 
 //  double ll = Nlogist_lk(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin);
 
@@ -4423,10 +4431,17 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    //	alpha + theta1*rij >=0
    //	alpha + theta1*rij < 1
 
-
+   nlopt::opt opt;
+   if (objData->optimizer == 1){
+	opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
+   } else if (objData->optimizer == 3){
+     opt= nlopt::opt(nlopt::LD_LBFGS, nparm);
+   } else {
+     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
+   }
    //nlopt::opt opt(nlopt::LD_SLSQP, nparm);
    //nlopt::opt opt(nlopt::LN_SBPLX, nparm);
-   nlopt::opt opt(nlopt::LD_LBFGS, nparm);
+//   nlopt::opt opt(nlopt::LD_LBFGS, nparm);
    //BMD opt
    
 //   struct nestedObjData objData;
@@ -4440,11 +4455,11 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    //opt.set_min_objective(objfunc_nlogistic_ll, &objData);
    opt.set_min_objective(objfunc_nlogistic_ll, objData);
-//   opt.add_inequality_constraint(nlogistic_ineq1, &ineq1, 1e-8);
-//   opt.add_inequality_constraint(nlogistic_ineq2, &ineq1, 1e-8);
-   opt.set_xtol_rel(1e-8);
-   //opt.set_xtol_abs(1e-8);
-   opt.set_maxeval(1000000);
+   //opt.set_xtol_rel(1e-8);
+   std::cout<<"tolerance:"<<objData->tol<<std::endl;
+   opt.set_xtol_rel(objData->tol);
+   //opt.set_maxeval(1000000);
+   opt.set_maxeval(10000);
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
 
@@ -4557,7 +4572,7 @@ double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<dou
      }
      xlk += (tm1 + tm2 - tm3);
    }
-   std::cout<<"returning:"<<(-1.0*xlk)<<" from Nlogist_lk"<<std::endl;
+//   std::cout<<"returning:"<<(-1.0*xlk)<<" from Nlogist_lk"<<std::endl;
   
    //returns negative log likelihood
    return -1.0*xlk;
@@ -4581,7 +4596,7 @@ double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<doub
 
   bool compgrad = true;
   bool isBMDL = false;
-  std::cout<<"b4 Nlogist_probs"<<std::endl;
+//  std::cout<<"b4 Nlogist_probs"<<std::endl;
   Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
 
 
@@ -4726,9 +4741,10 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
   }
 }
 
-void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double> &p, double smin, double smax, double sijfixed, double xmax,  
+void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax,  
 		struct nestedObjData *objData){
 
+  std::vector<double> p = pyRes->parms;
   int nparm = p.size();
   double BMR = pyAnal->BMR;
   int riskType = pyAnal->BMD_type;
@@ -4795,7 +4811,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double
   double xb = BMD; 
   double xa = xb * stepsize;
   double tol = std::max(BMD*0.001, 0.0000001);
-
+  std::cout<<"tol:"<<tol<<std::endl;
   double fb = DBL_MAX;
 
   std::vector<double> pa(nparm);
@@ -4806,6 +4822,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double
   }
 
   objData->isBMDL = true;
+  objData->optimizer = 3;
   double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
 
   std::cout<<"1st fa:"<<fa<<std::endl;
@@ -4814,9 +4831,9 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
   
   int trip =0;
-  std::cout<<"xa:"<<xa<<std::endl;
+//  std::cout<<"xa:"<<xa<<std::endl;
   double tmp = fabs(fa-fb);
-  std::cout<<"flatness:"<<tmp<<std::endl;
+//  std::cout<<"flatness:"<<tmp<<std::endl;
   while (fa<0.0 && xa > DBL_MIN && fabs(fa-fb)>DBL_EPSILON){
     xb = xa;
     fb = fa;
@@ -4825,18 +4842,25 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double
 
     fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
     trip++;
-    std::cout<<"trip:"<<trip<<", with fa:"<<fa<<std::endl;
-    std::cout<<"xa:"<<xa<<", tmp:"<<tmp<<std::endl;
+//    std::cout<<"trip:"<<trip<<", with fa:"<<fa<<std::endl;
+//    std::cout<<"xa:"<<xa<<", tmp:"<<tmp<<std::endl;
   }
  
   double BMDL;
-  std::cout<<"Final fa:"<<fa<<std::endl; 
+//  std::cout<<"Final fa:"<<fa<<std::endl; 
   if (fa < 0.0){
-    std::cout<<"Problem finding BMDL!!!"<<std::endl;
+//    std::cout<<"Problem finding BMDL!!!"<<std::endl;
     BMDL = -1.0;
     return;
   } else {
-    std::cout<<"BMDL between xa:"<<xa<<" and xb:"<<xb<<std::endl;
+//    std::cout<<"BMDL between xa:"<<xa<<" and xb:"<<xb<<std::endl;
+//    std::cout<<"B4 zeroin_nested"<<std::endl;
+    objData->optimizer = 1;
+    outputObjData(objData);
+
+    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
+    //BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-8, objData);
+//    std::cout<<"zeroin returned BMDL:"<<BMDL<<std::endl;
   }  
 
 }
@@ -4852,6 +4876,21 @@ double QCHISQ(double p, int m){
    return x;
 }
 
+void outputObjData(struct nestedObjData *objData){
+
+  std::cout<<"nestedObjData-------------"<<std::endl;
+  std::cout<<"ck:"<<objData->ck<<std::endl;
+  std::cout<<"LR:"<<objData->LR<<std::endl;
+  std::cout<<"xlk:"<<objData->xlk<<std::endl;
+  std::cout<<"BMD_lk:"<<objData->BMD_lk<<std::endl;
+  std::cout<<"tD:"<<objData->tD<<std::endl;
+  std::cout<<"sijfixed:"<<objData->sijfixed<<std::endl;
+  std::cout<<"riskType:"<<objData->riskType<<std::endl;
+  std::cout<<"BMR:"<<objData->BMR<<std::endl;
+
+}
+
+
 //BMDL_func - used to compare the values of functions BMDL_f (the X^2 value) at the point D,
 //   given the parm p[] and the number of parm.  Input parameters are in the "internal" form.
 //   This routine is called by zeroin()
@@ -4862,14 +4901,19 @@ double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjD
 //
 //  //tD = D;
   objData->tD = D;
+  objData->tol = gtol;
 //  //MAX_lk (nparm, p, gtol, &junk, &xlk);
   
   std::vector<double> parms(p, p+nparm); 
+//  std::cout<<"inside BMDL_func B4 opt_nlogistic"<<std::endl;
+  outputObjData(objData);
   double retVal = opt_nlogistic(parms, objData);
+//  std::cout<<"inside BMDL_func after opt_nlogistic"<<std::endl;
 
   fD = objData->BMD_lk - objData->xlk - objData->LR;
-  std::cout<<"BMD_lk:"<<objData->BMD_lk<<std::endl;
-  std::cout<<"xlk:"<<objData->xlk<<std::endl;  
+  //std::cout<<"BMD_lk:"<<objData->BMD_lk<<std::endl;
+  //std::cout<<"xlk:"<<objData->xlk<<std::endl;  
+//  std::cout<<"fD:"<<fD<<std::endl;
   return fD;
 
 }
@@ -4930,8 +4974,8 @@ double round_to(double value, double precision ){
  */
 
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData), int nparm,
-	      double Parms[], double ck, struct nestedObjData objData)		
+	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
+	      double Parms[], double ck, struct nestedObjData *objData)		
      /* ax        Left border | of the range */
      /* bx        Right border | the root is sought*/
      /* f	  Function under investigation */
@@ -4957,14 +5001,14 @@ double zeroin_nested(double ax,double bx, double tol,
 //  }
 
   a = ax;  b = bx;
-//  printf("fa calc\n");
+  printf("fa calc\n");
   fa = (*f)(nparm-1, Parms, a, ck, objData);
-//  printf("fb calc\n");
+  printf("fb calc\n");
   fb = (*f)(nparm-1, Parms, b, ck, objData);
-//  printf("fa=%g\n", fa);
-//  printf("fb=%g\n", fb);
+  printf("fa=%g\n", fa);
+  printf("fb=%g\n", fb);
   c = a;   fc = fa;
-
+  int pass = 1;
   for(;;)		/* Main iteration loop	*/
   {
     double prev_step = b-a;		/* Distance from the last but one*/
@@ -4975,9 +5019,10 @@ double zeroin_nested(double ax,double bx, double tol,
   					/* sion operations is delayed   */
  					/* until the last moment	*/
     double new_step;      		/* Step at this iteration       */
-//    std::cout<<"start of loop"<<std::endl;
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<"start of loop with pass:"<<pass<<std::endl;
+    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     if( fabs(fc) < fabs(fb) )
     {                         		/* Swap data for b to be the 	*/
 	a = b;  b = c;  c = a;          /* best approximation		*/
@@ -4986,18 +5031,18 @@ double zeroin_nested(double ax,double bx, double tol,
     tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
     new_step = (c-b)/2;
 
-//    std::cout<<"tol_act="<<tol_act<<std::endl;
+    std::cout<<"tol_act="<<tol_act<<std::endl;
     if( fabs(new_step) <= tol_act || fb == (double)0 ){
-//      std::cout<<"returning b:"<<b<<std::endl;
+      std::cout<<"returning b:"<<b<<std::endl;
       return b;				/* Acceptable approx. is found	*/
     }
 
-//    std::cout<<"continuing for another loop"<<std::endl;
+    std::cout<<"continuing for another loop"<<std::endl;
     			/* Decide if the interpolation can be tried	*/
     if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
 	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
     {					/* Interpolatiom may be tried	*/
-//	std::cout<<"trying interpolation"<<std::endl;
+	std::cout<<"trying interpolation"<<std::endl;
 	double t1,cb,t2;
 	cb = c-b;
 	if( a==c )			/* If we have only two distinct	*/
@@ -5028,7 +5073,7 @@ double zeroin_nested(double ax,double bx, double tol,
 
     if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
       {
-//	std::cout<<"adjusting step"<<std::endl;
+	std::cout<<"adjusting step"<<std::endl;
 	if( new_step > (double)0 )	/* than tolerance		*/
 	  new_step = tol_act;
 	else
@@ -5037,14 +5082,15 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-//	printf("2nd fb calc\n");
+	printf("2nd fb calc\n");
     fb = (*f)(nparm-1, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+    pass++;
   }
 
 }

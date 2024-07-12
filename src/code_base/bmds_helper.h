@@ -415,6 +415,8 @@ struct nestedObjData{
   double sijfixed;
   int riskType;
   double BMR;
+  double tol;  //tolerance for optimization
+  int optimizer; //1=LD_SLSQP, 2=???, 3=LD_LBFGS
 };
 
 #ifdef _WIN32
@@ -477,8 +479,8 @@ double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData), int nparm,
-	      double Parms[], double ck, struct nestedObjData objData);	
+	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
+	      double Parms[], double ck, struct nestedObjData *objData);	
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
@@ -509,11 +511,13 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
 
-void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double> &p, double smin, double smax, double sijfixed, double xmax, struct nestedObjData *objData);
+void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax, struct nestedObjData *objData);
 
 double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
+
+void outputObjData(struct nestedObjData *objData);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

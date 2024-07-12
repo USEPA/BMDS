@@ -40,8 +40,8 @@ int main(void){
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
-//  runPythonNestedAnalysis();
-  runTestMultitumorModel();
+  runPythonNestedAnalysis();
+//  runTestMultitumorModel();
 
   return 0;
 
@@ -4627,12 +4627,30 @@ void runPythonNestedAnalysis(){
   pyAnal.iterations = 1000;
   pyAnal.seed = BMDS_MISSING; 
 
+  int numDoseGroups = 4;
 
   struct python_nested_result pyRes; 
+  pyAnal.parms = 5+numDoseGroups;
+  pyRes.model = pyAnal.model;
+  pyRes.nparms = pyAnal.parms;
+
+  struct BMDS_results bmdsRes;
+
+  //set all parms as unbounded initially
+  for (int i=0; i<pyAnal.parms; i++){
+     bmdsRes.bounded.push_back(false);
+     bmdsRes.stdErr.push_back(BMDS_MISSING);
+     bmdsRes.lowerConf.push_back(BMDS_MISSING);
+     bmdsRes.upperConf.push_back(BMDS_MISSING);
+  }
+  bmdsRes.BMD = -9999.0;
+  bmdsRes.BMDU = -9999.0;
+  bmdsRes.BMDL = -9999.0;
+  bmdsRes.AIC = -9999.0;
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
-  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
+//  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
 }
 
 
@@ -4648,7 +4666,7 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
       printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
       printf("AIC: %f\n",pyRes->bmdsRes.AIC);
       printf("P-value: %f\n", pyRes->combPVal);
-      printf("DOF: %f\n", pyRes->df);
+      //printf("DOF: %f\n", pyRes->df);
       printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
  
       printf("\nModel Parameters\n");
