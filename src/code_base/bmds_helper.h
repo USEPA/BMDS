@@ -403,6 +403,18 @@ struct nestedObjData{
   std::vector<double> Yn;
   double smax;
   double smin;
+  double isBMDL;
+  bool restricted;
+  int pass;
+  //only used for BMDL
+  double ck;
+  double LR;
+  double xlk;     //tmp likelihood (for BMDL calc)
+  double BMD_lk;  //likelihood for BMD
+  double tD;  //initially holds BMD dose
+  double sijfixed;
+  int riskType;
+  double BMR;
 };
 
 #ifdef _WIN32
@@ -464,6 +476,9 @@ double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
 double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
+double zeroin_nested(double ax,double bx, double tol,
+	      double (*f)(int, double [], double, double, struct nestedObjData), int nparm,
+	      double Parms[], double ck, struct nestedObjData objData);	
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
@@ -483,17 +498,20 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
 
 void probability_inrange(double *ex);
 
-double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin);
+double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, bool isBMDL, double D, double sijfixed, int riskType, double BMR);
 
-double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g);
+double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR);
 
-void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi);
+void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi, double D, double sijfixed, int riskType, double BMR);
 
-double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk);
+//double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk);
+double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
 
-void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double> &p, double smin, double smax, double sijfixed, double xmax, double xlk);
+void Nlogist_BMD(struct python_nested_analysis *pyAnal, const std::vector<double> &p, double smin, double smax, double sijfixed, double xmax, struct nestedObjData *objData);
+
+double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
 
