@@ -3851,6 +3851,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
   }
 
+  std::cout<<"DBL_MAX:"<<DBL_MAX<<std::endl;
   //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
   //double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   struct nestedObjData objData;
@@ -3869,6 +3870,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.pass = 1;
   objData.tol = 1e-8;
   objData.optimizer = 3;
+  objData.prior = pyAnal->prior;
+
   double retVal = opt_nlogistic(pyRes->parms, &objData);
   std::cout<<"retVal:"<<retVal<<std::endl;
 
@@ -3952,6 +3955,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   for (int i=5; i<pyRes->nparms; i++){
      pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);
   }
+  
+  std::cout<<"Returned parms after BMD"<<std::endl;
+  for (int i=0; i<pyRes->nparms; i++){
+    std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+  }
 
   //don't currently allow spec so this is always true
 //  if (Spec[0] == Spec[2]){
@@ -3997,10 +4005,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 //  double back = pyRes->parms[0] + pyRes->parms[2] *sijfixed;
 //  double back1 = 1 - back;
 //  if (bmdparm.risk==1) back1 = 1;
-//  Nlogist_BMD (nparm, Parms, EPS, &junk, xlk, Rlevel, Bmdl, &BMD);
-   std::cout<<"b4 Nlogist_BMD"<<std::endl;
+
+
    Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
+
    //mySRoI(zOut, ngrp, Nobs, GXi, Xi, Xg, SR, Ls, sijfixed, BMD);
+   
    //myBootstrap (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR, BSIter, BSSeed);
 
 
@@ -4373,10 +4383,97 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 }
 
 
+void SRoI(std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD){
+
+  double idiff, diff;
+  int locDose = 0;	//location of closest dosegroup
+  int locLSC = 0;	//location of closest LSC (first found)
+  int litSR = 1;  	//number of litters with closest LSC
+  double closeDose = 0;
+  double closeLSC = 0;
+  double maxSR, minSR, avgSR, maxabsSR, minabsSR, avgabsSR; 
+
+  //choose does group closest to BMD
+  diff = DBL_MAX;
+  int ngrp=Xg.size();
+  int Nobs = Xi.size();
+
+  //define GXi
+  std::vector<double> GXi(ngrp);
+  for (int j=0; j<Nobs; j++){
+    for (int i=0; i<ngrp; i++){
+      GXi[i] = Xi[j];
+    }
+  }
+
+  for (int i=0; i<ngrp; i++){
+     idiff = fabs(BMD - GXi[i]);
+     if (idiff < diff){
+       diff = idiff;
+       locDose = i;
+       closeDose = GXi[i];
+     }
+  } 
+
+  //choose LSC closest to mean LSC
+  diff = DBL_MAX;
+  for (int i=0; i<Nobs; i++){
+    if (Xi[i] == closeDose){ //picks out dose group that is closest to BMD
+      idiff = fabs(LSC[i] - meanLSC);
+      if (idiff == diff) litSR++;
+      if (idiff < diff){
+        litSR = 1; 	//reset litter count
+	diff = idiff;
+	closeLSC = LSC[i];	//value of closest LSC
+	locLSC = i;
+      }
+    }
+  }
+
+  //calculate max, min, average SRoI and |SRoi|
+  maxSR = SR[locLSC];
+  minSR = SR[locLSC];
+  avgSR = SR[locLSC];
+  maxabsSR = fabs(SR[locLSC]);
+  minabsSR = fabs(SR[locLSC]);
+  avgabsSR = fabs(SR[locLSC]);
+
+  if (litSR != 1){
+    avgSR = 0;
+    avgabsSR = 0;
+    for (int i=locLSC; i<locLSC+litSR-1; i++){ //relies on dose groups being sorted by LSC
+       if (Xi[i] == GXi[locDose] && LSC[i] == closeLSC){
+         if (SR[i] > maxSR) maxSR = SR[i];
+	 if (SR[i] < minSR) minSR = SR[i];
+	 if (fabs(SR[i]) > maxabsSR) maxabsSR = fabs(SR[i]);
+	 if (fabs(SR[i]) < minabsSR) minabsSR = fabs(SR[i]);
+	 avgSR += SR[i];
+	 avgabsSR += fabs(SR[i]);
+       }
+    }
+    avgSR /= litSR;
+    avgabsSR /= litSR;
+  }
+
+  //need return structure
+  //minSR;
+  //avgSR;
+  //maxSR;
+  //litSR; 	//num litters;
+
+}
+
+
 //double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk){
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    std::cout<<"Inside opt_nlogistic"<<std::endl;
+   std::cout<<"prior"<<std::endl;
+   for (int i=0; i<objData->prior.size(); i++){
+      std::cout<<"i:"<<i<<", val:"<<objData->prior[i]<<std::endl;
+   }
+
+   int nparm_prior = objData->prior.size()/2;
 
    bool fail = true;
    double minf;
@@ -4385,45 +4482,86 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    double slopeUpperBound = 18.0;
    int nparm = p.size();
 
+   std::cout<<"nparm:"<<nparm<<std::endl;
+   std::cout<<"objData.prior.size():"<<objData->prior.size()<<std::endl;
+
    std::vector<double> lb(nparm);
    std::vector<double> ub(nparm);
    //alpha
-   lb[0] = 0.0;
-   ub[0] = 1.0;
+   lb[0] = objData->prior[0];  //0.0;
+   ub[0] = objData->prior[nparm_prior]; //1.0;
    //beta
-   lb[1] = -1.0*DBL_MAX;
-   ub[1] = DBL_MAX;
+   lb[1] = objData->prior[1];  //-1.0*DBL_MAX;
+   ub[1] = objData->prior[nparm_prior+1]; //DBL_MAX;
    //theta1
-   lb[2] = 0.0;
+   lb[2] = objData->prior[2];  //0.0;
    if (objData->pass == 1 || objData->pass == 2){
      ub[2] = 0.0;
    } else {
-     ub[2] = 1.0;
+     ub[2] = objData->prior[nparm_prior+2]; //1.0;
    }
    //theta2
    if (objData->pass == 1 || objData->pass == 2){
      lb[3] = 0.0;
      ub[3] = 0.0;
    } else {
-     lb[3] = -1.0*DBL_MAX;
-     ub[3] = DBL_MAX;
+     lb[3] = objData->prior[3];  //-1.0*DBL_MAX;
+     ub[3] = objData->prior[nparm_prior+3];  //DBL_MAX;
    }
    //rho
-   if (objData->restricted){
-     lb[4] = 1.0;
-   } else {
-     lb[4] = 0.0;
-   }
-   ub[4] = slopeUpperBound;
+   //if (objData->restricted){
+   //  lb[4] = 1.0;
+   //} else {
+   //  lb[4] = 0.0;
+   //}
+   lb[4] = objData->prior[4];  //0.0/1.0 (unrestricted/restricted)
+   ub[4] = objData->prior[nparm_prior+4];  //slopeUpperBound;
    //phi(s)
    for (int i=5; i<nparm; i++){
-     lb[i] = 0.0;
+     lb[i] = objData->prior[5];  //0.0;
      if (objData->pass == 1){
        ub[i] = 0.0;
      } else {
-       ub[i] = DBL_MAX;
+       ub[i] = objData->prior[nparm_prior+5];  //DBL_MAX;
      }
    }
+//   //alpha
+//   lb[0] = 0.0;
+//   ub[0] = 1.0;
+//   //beta
+//   lb[1] = -1.0*DBL_MAX;
+//   ub[1] = DBL_MAX;
+//   //theta1
+//   lb[2] = 0.0;
+//   if (objData->pass == 1 || objData->pass == 2){
+//     ub[2] = 0.0;
+//   } else {
+//     ub[2] = 1.0;
+//   }
+//   //theta2
+//   if (objData->pass == 1 || objData->pass == 2){
+//     lb[3] = 0.0;
+//     ub[3] = 0.0;
+//   } else {
+//     lb[3] = -1.0*DBL_MAX;
+//     ub[3] = DBL_MAX;
+//   }
+//   //rho
+//   if (objData->restricted){
+//     lb[4] = 1.0;
+//   } else {
+//     lb[4] = 0.0;
+//   }
+//   ub[4] = slopeUpperBound;
+//   //phi(s)
+//   for (int i=5; i<nparm; i++){
+//     lb[i] = 0.0;
+//     if (objData->pass == 1){
+//       ub[i] = 0.0;
+//     } else {
+//       ub[i] = DBL_MAX;
+//     }
+//   }
    
    //Description of optimization problem
    //minimize -log-likelihood
@@ -4801,6 +4939,8 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   std::cout<<"BMD: "<<BMD<<std::endl;
+  pyRes->bmdsRes.BMD = BMD;
+  pyRes->bmd = BMD;
 
   //Is this needed????
   //Predict(doses, lsc, 2, pa, pred);
@@ -4860,8 +5000,9 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 
     BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
     //BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-8, objData);
-//    std::cout<<"zeroin returned BMDL:"<<BMDL<<std::endl;
+    std::cout<<"zeroin returned BMDL:"<<BMDL<<std::endl;
   }  
+  pyRes->bmdsRes.BMDL = BMDL;
 
 }
 
@@ -4903,13 +5044,15 @@ double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjD
   objData->tD = D;
   objData->tol = gtol;
 //  //MAX_lk (nparm, p, gtol, &junk, &xlk);
-  
+  std::cout<<"inside BMDL_func nparm:"<<nparm<<std::endl; 
   std::vector<double> parms(p, p+nparm); 
 //  std::cout<<"inside BMDL_func B4 opt_nlogistic"<<std::endl;
   outputObjData(objData);
   double retVal = opt_nlogistic(parms, objData);
 //  std::cout<<"inside BMDL_func after opt_nlogistic"<<std::endl;
 
+  //set result parms to return array
+  p = &parms[0];
   fD = objData->BMD_lk - objData->xlk - objData->LR;
   //std::cout<<"BMD_lk:"<<objData->BMD_lk<<std::endl;
   //std::cout<<"xlk:"<<objData->xlk<<std::endl;  

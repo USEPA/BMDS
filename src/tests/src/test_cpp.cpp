@@ -26,6 +26,7 @@ void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
 void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, bool showResultsOverride);
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
+std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted);
 
 bool showResultsOverride = true;
 
@@ -4450,6 +4451,41 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols){
 
 }
 
+std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted){
+
+  
+  std::cout<<"Inside getNestedPrior"<<std::endl;
+  std::cout<<"prior_cols:"<<prior_cols<<std::endl;
+  std::vector<double> prG(prNLogisticG, prNLogisticG + prior_cols);
+  std::vector<double> prB(prNLogisticB, prNLogisticB + prior_cols);
+  std::vector<double> prT1(prNLogisticT1, prNLogisticT1 + prior_cols);
+  std::vector<double> prT2(prNLogisticT2, prNLogisticT2 + prior_cols);
+  std::vector<double> prURho(prUNLogisticRho, prUNLogisticRho + prior_cols);
+  std::vector<double> prRRho(prRNLogisticRho, prRNLogisticRho + prior_cols);
+  std::vector<double> prPhi(prNLogisticPhi, prNLogisticPhi + prior_cols);
+
+  std::vector<double> pr;
+
+  for (int i=0; i<prior_cols; i++){
+    pr.push_back(prG[i]);
+    pr.push_back(prB[i]);
+    pr.push_back(prT1[i]);
+    pr.push_back(prT2[i]);
+    if (restricted){
+      pr.push_back(prRRho[i]);
+    } else {
+      pr.push_back(prURho[i]);
+    }
+    for (int j=0; j<ngrp; j++){
+      pr.push_back(prPhi[i]);
+    }
+  }
+
+  std::cout<<"returning pr with size:"<<pr.size()<<std::endl;
+  return pr;
+
+}
+
 void runPythonNestedAnalysis(){
 
   bool showResultsOverride = true;
@@ -4626,8 +4662,14 @@ void runPythonNestedAnalysis(){
   pyAnal.alpha = 0.05;
   pyAnal.iterations = 1000;
   pyAnal.seed = BMDS_MISSING; 
+  pyAnal.prior_cols = 2;
 
   int numDoseGroups = 4;
+
+  pyAnal.prior.resize(pyAnal.prior_cols*(5+numDoseGroups), 0.0);
+  std::cout<<"prior size:"<<pyAnal.prior.size()<<std::endl;
+  pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, pyAnal.restricted);
+  std::cout<<"prior size:"<<pyAnal.prior.size()<<std::endl;
 
   struct python_nested_result pyRes; 
   pyAnal.parms = 5+numDoseGroups;
@@ -4650,7 +4692,7 @@ void runPythonNestedAnalysis(){
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
-//  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
+  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
 }
 
 
@@ -4664,14 +4706,14 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
       printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
-      printf("AIC: %f\n",pyRes->bmdsRes.AIC);
-      printf("P-value: %f\n", pyRes->combPVal);
-      //printf("DOF: %f\n", pyRes->df);
-      printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
- 
-      printf("\nModel Parameters\n");
-      printf("# of parms: %d\n", pyRes->nparms);
-      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+//      printf("AIC: %f\n",pyRes->bmdsRes.AIC);
+//      printf("P-value: %f\n", pyRes->combPVal);
+//      //printf("DOF: %f\n", pyRes->df);
+//      printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
+// 
+//      printf("\nModel Parameters\n");
+//      printf("# of parms: %d\n", pyRes->nparms);
+//      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
       for (int i=0; i<pyRes->nparms; i++){
          printf("%d, %.10f\n", i, pyRes->parms[i]);
          //printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );

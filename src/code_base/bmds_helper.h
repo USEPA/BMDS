@@ -401,6 +401,7 @@ struct nestedObjData{
   std::vector<int> Xg;
   std::vector<double> Yp;
   std::vector<double> Yn;
+  std::vector<double> prior;
   double smax;
   double smin;
   double isBMDL;
@@ -518,6 +519,8 @@ double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjD
 double QCHISQ(double p, int m);
 
 void outputObjData(struct nestedObjData *objData);
+
+void SRoI(std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 
