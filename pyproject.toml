@@ -47,7 +47,7 @@ docs = [
 ]
 
 [project.scripts]
-"bmds-priors-report" = "bmds.cli.priors_report:main"
+"bmds-priors-report" = "pybmds.cli.priors_report:main"
 
 [build-system]
 requires = [

@@ -2,6 +2,7 @@
 *.a
 *.la
 *.so
+.coverage
 .DS_Store
 *.so
 

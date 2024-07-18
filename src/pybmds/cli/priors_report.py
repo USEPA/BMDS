@@ -5,9 +5,10 @@ from datetime import datetime
 from io import StringIO
 from pathlib import Path
 
+from .. import __version__
 from ..constants import DistType, PriorClass
-from ..datasets import ContinuousDataset, DichotomousDataset
-from ..models import continuous, dichotomous
+from ..datasets import ContinuousDataset, DichotomousDataset, NestedDichotomousDataset
+from ..models import continuous, dichotomous, nested_dichotomous
 
 
 def write_model(f: StringIO, ModelClass: type[dichotomous.BmdModel]):
@@ -18,9 +19,12 @@ def write_break(f: StringIO):
     f.write(f'{"-"*80}\n\n')
 
 
-def write_settings(f: StringIO, model: dichotomous.BmdModel, settings: dict):
-    f.write("\n".join(f"* {k}: {v!r}" for k, v in settings.items()) + "\n\n")
-    f.write(model.settings.priors.report_tbl() + "\n\n")
+def write_settings(f: StringIO, model: dichotomous.BmdModel, settings: dict, footnote: str = ""):
+    if settings:
+        f.write("\n".join(f"* {k}: {v!r}" for k, v in settings.items()) + "\n\n")
+    if footnote:
+        footnote = f"\n{footnote}\n"
+    f.write(model.priors_tbl() + footnote + "\n\n")
 
 
 def dichotomous_priors(f: StringIO):
@@ -58,6 +62,12 @@ def dichotomous_priors(f: StringIO):
     _print_d_model(dichotomous.LogProbit, True)
     _print_d_model(dichotomous.Weibull, True)
     _print_d_model(dichotomous.Multistage, True)
+
+    # special case for multistage cancer model
+    model = dichotomous.MultistageCancer(dataset=dichotomous_dataset)
+    write_model(f, dichotomous.MultistageCancer)
+    write_settings(f, model, {})
+
     _print_d_model(dichotomous.DichotomousHill, True)
 
 
@@ -141,11 +151,65 @@ def continuous_priors(f: StringIO):
     write_break(f)
 
 
+def nested_dichotomous_priors(f: StringIO):
+    # fmt: off
+    dichotomous_dataset =NestedDichotomousDataset(
+        doses=[
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            25, 25, 25, 25, 25, 25, 25, 25, 25,
+            50, 50, 50, 50, 50, 50, 50, 50, 50,
+        ],
+        litter_ns=[
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            15, 15, 15, 15, 15, 15, 15, 15, 15,
+            20, 20, 20, 20, 20, 20, 20, 20, 20,
+        ],
+        incidences=[
+            1, 1, 2, 3, 3, 0, 2, 2, 1, 2, 4,
+            5, 6, 2, 6, 3, 1, 2, 4, 3,
+            4, 5, 5, 4, 5, 4, 5, 6, 2,
+        ],
+        litter_covariates=[
+            16, 9, 15, 14, 13, 9, 10, 14, 10, 11, 14,
+            9, 14, 9, 13, 12, 10, 10, 11, 14,
+            11, 11, 14, 11, 10, 11, 10, 15, 7,
+        ]
+    )
+    # fmt: on
+
+    def _print_model(
+        ModelClass: type[nested_dichotomous.BmdModelNestedDichotomous], footnote: str = ""
+    ):
+        write_model(f, ModelClass)
+
+        # print unrestricted
+        settings = {"priors": PriorClass.frequentist_unrestricted}
+        model = ModelClass(dataset=dichotomous_dataset, settings=settings)
+        write_settings(f, model, settings, footnote)
+
+        # print restricted
+        settings = {"priors": PriorClass.frequentist_restricted}
+        model = ModelClass(dataset=dichotomous_dataset, settings=settings)
+        write_settings(f, model, settings, footnote)
+
+        write_break(f)
+
+    f.write("## Nested Dichotomous\n\n")
+    _print_model(nested_dichotomous.NestedLogistic)
+    _print_model(
+        nested_dichotomous.Nctr,
+        footnote="Theta values are based on litter group sizes; this shows values from 5 to 20.",
+    )
+
+
 def create_report() -> StringIO:
     f = StringIO()
-    f.write(f"# BMDS priors report:\n\nGenerated on: {datetime.now()}\n\n")
+    f.write(
+        f"# BMDS priors report\n\nVersion: pybmds {__version__}\nGenerated on: {datetime.now()}\n\n"
+    )
     dichotomous_priors(f)
     continuous_priors(f)
+    nested_dichotomous_priors(f)
     return f
 
 
