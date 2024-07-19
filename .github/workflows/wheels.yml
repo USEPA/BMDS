@@ -15,7 +15,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CIBW_PRERELEASE_PYTHONS: True
-      CIBW_BUILD_FRONTEND: build[uv]
     strategy:
       matrix:
         os: [ubuntu-22.04, windows-2022, macos-14]
