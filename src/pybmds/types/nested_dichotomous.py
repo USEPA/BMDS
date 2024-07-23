@@ -10,6 +10,7 @@ from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
 from ..utils import camel_to_title, multi_lstrip, pretty_table
 from .common import NumpyFloatArray, clean_array, residual_of_interest
+from .priors import ModelPriors, PriorClass
 
 
 class RiskType(IntEnum):
@@ -58,6 +59,7 @@ class NestedDichotomousModelSettings(BaseModel):
     bootstrap_iterations: int = Field(default=1000, gt=10, lt=10000)
     bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1000))  # noqa: S311
     name: str = ""  # override model name
+    priors: PriorClass | ModelPriors | None = None  # if None; default used
 
     model_config = ConfigDict(extra="forbid")
 
