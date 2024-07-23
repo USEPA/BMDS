@@ -3546,9 +3546,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    // 5 = PHISTART - first PHI parameter
    //
    int BGINDEX = 0;  //location of background parameter in parms vector
-   int PHISTART = 6; //location of first PHI parameter in parms vector
-   int THETA1_INDEX = 3; //location of THETA1 parameter in parms vector 
-   int THETA2_INDEX = 4; //location of THETA2 parameter in parms vector
+   int PHISTART = 5; //location of first PHI parameter in parms vector
+   int THETA1_INDEX = 2; //location of THETA1 parameter in parms vector 
+   int THETA2_INDEX = 3; //location of THETA2 parameter in parms vector
    bool validResult = false;
  
    //set seed from time clock if default seed=0 is specified
@@ -3614,6 +3614,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    //grpSize.push_back(ngrp);
    //pyRes->nparms = 5 + grpSize.size();
    pyRes->nparms = 5 + ngrp;
+   std::vector<bool> Spec(pyRes->nparms, false);
 
    std::cout<<"Xi   , Yp,   Yn,   Ls,   Xg"<<std::endl;
    for (int i=0; i<Nobs; i++){
@@ -3653,7 +3654,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   if (!pyAnal->estBackground){
     //set background to zero
     pyRes->parms[BGINDEX] = 0;
-//    Spec[BGINDEX] = true;
+    Spec[BGINDEX] = true;
 //    iniP[BGINDEX] = true;  //Specified implies initialized
     knownParms++;
   }   
@@ -3661,7 +3662,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     //set phi parm values to zero
     for (int i=PHISTART; i<pyRes->nparms; i++){
       pyRes->parms[i] = 0.0;
-//      Spec[i] = true;
+      Spec[i] = true;
 //      iniP[i] = true;
     }
     knownParms += ngrp;
@@ -3670,7 +3671,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     //set theta parm values to zero
     for (int i=THETA1_INDEX; i<=THETA2_INDEX; i++){
        pyRes->parms[i] = 0.0;
-//       Spec[i] = true;
+       Spec[i] = true;
 //       iniP[i] = true;
     }
     knownParms += 2;  //theta1 and theta2
@@ -3741,7 +3742,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double smin = Ls[0];
   double xmax = 0.0;
   double x = 0.0;
-  for (int i=0; i<=Nobs; i++){
+  for (int i=0; i<Nobs; i++){
     x = Xi[i];
     sum1 += Ls[i];
     nij += 1.0;
@@ -3846,7 +3847,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double gtol = 3e-8;
 
   std::cout<<std::endl;
-  std::cout<<"b4 Nlogist_lk pass=1"<<std::endl;
+  std::cout<<"b4 opt_nlogistic pass=1"<<std::endl;
   for (int i=0; i<pyRes->nparms; i++){
      std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
   }
@@ -3871,6 +3872,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.tol = 1e-8;
   objData.optimizer = 3;
   objData.prior = pyAnal->prior;
+  objData.Spec = Spec;
+  objData.Spec[THETA1_INDEX] = true;
+  objData.Spec[THETA2_INDEX] = true;
+  for (int i=PHISTART; i<pyRes->nparms; i++){
+     objData.Spec[i] = true;
+  }
+  outputObjData(&objData);
+
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
   std::cout<<"retVal:"<<retVal<<std::endl;
@@ -3897,12 +3906,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   
     std::cout<<std::endl;
-    std::cout<<"b4 Nlogist_lk pass=2"<<std::endl;
+    std::cout<<"b4 opt_nlogistic pass=2"<<std::endl;
     for (int i=0; i<pyRes->nparms; i++){
        std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
     }
 
     objData.pass = 2;
+    objData.Spec = Spec;
+    objData.Spec[THETA1_INDEX] = true;
+    objData.Spec[THETA2_INDEX] = true;
+    //pass 2 has thetas set to zero
+
     //retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
@@ -3930,20 +3944,33 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   double junk3;
   //don't currently allow spec so this is always true
-//  if (Spec[0] == Spec[2]){
+  if (Spec[0] == Spec[2]){
   junk1 = pyRes->parms[0];
   junk3 = pyRes->parms[2];
   pyRes->parms[0] = junk1 + smin * junk3;
   pyRes->parms[2] = junk1 + smax * junk3;
-//  }
+  }
 
   //ML fit and return log-likelihood value
+  objData.pass = 3;
+  objData.Spec = Spec;
+  objData.optimizer=1;
+
+  for (int i=0; i<pyRes->nparms; i++){
+    if (Spec[i]){
+      pyRes->parms[i] = 0.0;
+    }
+  }
+  //pyRes->parms[5] = 0.0;
+  //pyRes->parms[6] = 0.0;
+  //pyRes->parms[7] = 0.0;
+  //pyRes->parms[8] = 0.0;
   std::cout<<std::endl;
-  std::cout<<"b4 Nlogist_lk pass=3"<<std::endl;
+  std::cout<<"b4 opt_nlogistic pass=3"<<std::endl;
   for (int i=0; i<pyRes->nparms; i++){
      std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
   }
-  objData.pass = 3;
+
   //retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   retVal = opt_nlogistic(pyRes->parms, &objData);
   objData.BMD_lk = objData.xlk;  //save BMD likelihood
@@ -4472,7 +4499,7 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    for (int i=0; i<objData->prior.size(); i++){
       std::cout<<"i:"<<i<<", val:"<<objData->prior[i]<<std::endl;
    }
-
+   std::vector<bool>Spec = objData->Spec;
    int nparm_prior = objData->prior.size()/2;
 
    bool fail = true;
@@ -4495,13 +4522,15 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    ub[1] = objData->prior[nparm_prior+1]; //DBL_MAX;
    //theta1
    lb[2] = objData->prior[2];  //0.0;
-   if (objData->pass == 1 || objData->pass == 2){
+   //if (objData->pass == 1 || objData->pass == 2){
+   if (Spec[2]){
      ub[2] = 0.0;
    } else {
      ub[2] = objData->prior[nparm_prior+2]; //1.0;
    }
    //theta2
-   if (objData->pass == 1 || objData->pass == 2){
+   //if (objData->pass == 1 || objData->pass == 2){
+   if (Spec[3]){
      lb[3] = 0.0;
      ub[3] = 0.0;
    } else {
@@ -4519,7 +4548,8 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    //phi(s)
    for (int i=5; i<nparm; i++){
      lb[i] = objData->prior[5];  //0.0;
-     if (objData->pass == 1){
+     //if (objData->pass == 1){
+     if (Spec[i]){
        ub[i] = 0.0;
      } else {
        ub[i] = objData->prior[nparm_prior+5];  //DBL_MAX;
@@ -4591,8 +4621,18 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 //   objData.smax = smax;
 //   objData.smin = smin; 
 
+
+   //if (pass == 3){
+   if (Spec[0] == Spec[3]){
+     //set inequality constraint alpha + Theta1*Sij>=0
+     //inequality restraint not compatible with LD_LBFGS
+     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
+     opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
+   } 
+
    //opt.set_min_objective(objfunc_nlogistic_ll, &objData);
    opt.set_min_objective(objfunc_nlogistic_ll, objData);
+
    //opt.set_xtol_rel(1e-8);
    std::cout<<"tolerance:"<<objData->tol<<std::endl;
    opt.set_xtol_rel(objData->tol);
@@ -4632,49 +4672,79 @@ void probability_inrange(double *ex){
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data){
 
-  nestedObjData *d = reinterpret_cast<nestedObjData*>(data);
+  nestedObjData *objData = reinterpret_cast<nestedObjData*>(data);
   //from data struct
-  std::vector<double> Ls = d->Ls;
-  std::vector<double> Xi = d->Xi;
-  std::vector<int> Xg = d->Xg;
-  std::vector<double> Yp = d->Yp;
-  std::vector<double> Yn = d->Yn;
-  double smax = d->smax;
-  double smin = d->smin;
-  bool isBMDL = d->isBMDL;
-  double D = d->tD;
-  double sijfixed = d->sijfixed;
-  int riskType = d->riskType;
-  double BMR = d->BMR;
+  std::vector<double> Ls = objData->Ls;
+  std::vector<double> Xi = objData->Xi;
+  std::vector<int> Xg = objData->Xg;
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  double smax = objData->smax;
+  double smin = objData->smin;
+  bool isBMDL = objData->isBMDL;
+  double D = objData->tD;
+  double sijfixed = objData->sijfixed;
+  int riskType = objData->riskType;
+  double BMR = objData->BMR;
+
+  
 
   if (!grad.empty()){
-    Nlogist_g(p, Ls, Xi, Xg, Yp, Yn, smax, smin, grad, D, sijfixed, riskType, BMR);
+    //Nlogist_g(p, Ls, Xi, Xg, Yp, Yn, smax, smin, grad, D, sijfixed, riskType, BMR);
+    Nlogist_g(p, grad, objData);
   }
 
   //negative log-likelihood calc
   //double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin);
-  double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin, isBMDL, D, sijfixed, riskType, BMR);
+  //double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin, isBMDL, D, sijfixed, riskType, BMR);
+  double loglike = Nlogist_lk(p, objData);
 
   return loglike;
 
 }
 
-// Used to comput the log-likelihood for Nlogistic model
-double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, bool isBMDL, double D, double sijfixed, int riskType, double BMR){
 
-   int Nobs = Xi.size();
-   int nparms = p.size();
-   std::vector<double> probs(Nobs);
-   std::vector<std::vector<double>> gradij(Nobs, std::vector<double> (5));  
+double nestedInequalityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
+  //alpha + theta1 *Rij > = 0
+  nestedObjData *objData = reinterpret_cast<nestedObjData*>(data);
+  //std::vector<double> Ls = objData->Ls;
+  double sijfixed = objData->sijfixed;
+
+  if (!grad.empty()){
+    for (size_t i=0; i<grad.size(); i++){
+       grad[i] = 0.0;
+    }
+    grad[0] = -1.0*x[2];
+    grad[2] = -1.0*x[0];
+  }
+
+  double constraint = -1.0*(x[0]+x[2]*sijfixed);
+  return constraint;
+
+}
+
+// Used to comput the log-likelihood for Nlogistic model
+//double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, bool isBMDL, double D, double sijfixed, int riskType, double BMR){
+double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
+
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  std::vector<int> Xg = objData->Xg;
+
+  int Nobs = Yp.size();
+  int nparms = p.size();
+  std::vector<double> probs(Nobs);
+  std::vector<std::vector<double>> gradij(Nobs, std::vector<double> (5));  
 
 
    bool compgrad = false;
-//   std::cout<<"b4 Nlogist_probs"<<std::endl;
-   Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
-//   std::cout<<"after Nlogist_probs"<<std::endl;
-//   for(int i=0; i<Nobs; i++){
-//     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
-//   } 
+   std::cout<<"inside Nlogist_lk b4 Nlogist_probs"<<std::endl;
+   //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
+   Nlogist_probs(probs, p, compgrad, gradij, objData);
+   std::cout<<"inside Nlogist_lk after Nlogist_probs"<<std::endl;
+   for(int i=0; i<Nobs; i++){
+     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
+   } 
    
    double tm, tm1, tm2, tm3;
    int plus5, j;
@@ -4718,11 +4788,15 @@ double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<dou
 
 
 //Used to compute the gradients for Nlogist_model.  Parameters are in "internal" transformed form.
-double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR){
+//double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR){
+double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData){
+
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  std::vector<int> Xg = objData->Xg;
 
 
-
-  int Nobs = Xi.size();
+  int Nobs = Yp.size();
   int nparm = p.size();
   std::vector<double> probs(Nobs);
   std::vector<std::vector<double>> gradij(Nobs, std::vector<double> (5));
@@ -4733,9 +4807,24 @@ double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<doub
 
 
   bool compgrad = true;
-  bool isBMDL = false;
 //  std::cout<<"b4 Nlogist_probs"<<std::endl;
-  Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
+//  REMOVE THESE
+  bool isBMDL = objData->isBMDL;
+  double smax = objData->smax;
+  double smin = objData->smin;
+  std::vector<double> Ls = objData->Ls;
+  std::vector<double> Xi = objData->Xi;
+  double D = objData->tD;
+  double sijfixed = objData->sijfixed;
+  int riskType = objData->riskType;
+  double BMR = objData->BMR;
+  //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
+  std::cout<<"inside Nlogist_g b4 Nlogist_probs"<<std::endl;
+  Nlogist_probs(probs, p, compgrad, gradij, objData);
+  std::cout<<"inside Nlogist_g after Nlogist_probs"<<std::endl;
+  for(int i=0; i<Nobs; i++){
+    std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
+  } 
 
 
   //initial tmp g[j]'s
@@ -4789,9 +4878,21 @@ double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<doub
   return 0;
 }
 
-void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi, double tD, double sijfixed, int riskType, double BMR){
+//void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi, double tD, double sijfixed, int riskType, double BMR){
+void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, struct nestedObjData *objData){
 
-  double spij, smij, ex, ex1, ex2, ex3, dd2;
+  bool isBMDL = objData->isBMDL;
+  double smax = objData->smax;
+  double smin = objData->smin;
+  std::vector<double> Ls = objData->Ls;
+  std::vector<double> Xi = objData->Xi;
+  double sijfixed = objData->sijfixed;
+  int riskType = objData->riskType;
+  double BMR = objData->BMR; 
+  double tD = objData->tD;
+  std::vector<bool> Spec = objData->Spec;
+
+  double spij, smij, ex, ex1, ex2, ex3, ex4, dd2;
 
   double sdif = smax - smin;
   double spfixed = (smax - sijfixed)/sdif;
@@ -4806,11 +4907,18 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
 
 
   if (isBMDL){
-//    if (Spec[0]==Spec[2])  -- always true
-    if (riskType == 1){ //Extra
-      pint[1] = log(BMR/(1.0-BMR)) - pint[3]*sijfixed - pint[4]*log(tD);
-    } else { //Added
-      pint[1] = -log((1-pint[0]*spfixed -pint[2]*snfixed)/BMR -1) - pint[3]*sijfixed - pint[4]*log(tD);
+    if (Spec[0]==Spec[2]) { 
+      if (riskType == 1){ //Extra
+        pint[1] = log(BMR/(1.0-BMR)) - pint[3]*sijfixed - pint[4]*log(tD);
+      } else { //Added
+        pint[1] = -log((1-pint[0]*spfixed -pint[2]*snfixed)/BMR -1) - pint[3]*sijfixed - pint[4]*log(tD);
+      }
+    } else {
+      if (riskType == 1){ //Extra
+        pint[1] = log(BMR/(1.0-BMR)) - pint[3]*sijfixed-pint[4]*log(tD);
+      } else { //Added
+        pint[1] = -log((1-pint[0] - pint[2]*sijfixed)/BMR-1) - pint[3]*sijfixed - pint[4]*log(tD);
+      }
     }
   }
 
@@ -4819,13 +4927,17 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
     smij = (Ls[i] - smin)/sdif;
 
     //enforce alpha+Theta1*Sij >= 0
-    //We currently don't allow the user to specify Theta parameters
-    //will need to possibly address this for python code
-    //if (Spec[0] == Spec[2]){
-    //   ex = spij * pint[0] + smij * pint[2];
-    //} else {
+    std::cout<<"Here !!!! pass:"<<objData->pass<<std::endl;
+    std::cout<<"Spec[0]="<<Spec[0]<<std::endl;
+    std::cout<<"Spec[2]="<<Spec[2]<<std::endl;
+    if (Spec[0] == Spec[2]){
+       std::cout<<"selected 1st option"<<std::endl;
+       ex = spij * pint[0] + smij * pint[2];
+       std::cout<<"spij:"<<spij<<", pint[0]:"<<pint[0]<<", smij:"<<smij<<", pint[2]:"<<pint[2]<<std::endl;
+    } else {
        ex = pint[0] + Ls[i] * pint[2];
-    //}
+       std::cout<<"selected 2nd option"<<std::endl;
+    }
     ex2 = 1.0 - ex;
     ex1 = 0.0;
     if (Xi[i] > 0){
@@ -4840,21 +4952,40 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
        dd2 = ex2*ex3;
 
        if (isBMDL){
-	 ////FILL THIS IN
+	 if (riskType == 1){ //Extra
+           ex4 = 0.0;
+	 } else { //Added
+           ex4 = 1.0/(ex2 - BMR);
+	 } 
+	 if (Spec[0] == Spec[2]){
+           if (Xi[i] > 0){
+	     gradij[i][0] = (spij * (1.0-1.0/(1.0+ex1))+dd2*ex4*spfixed);
+	     gradij[i][2] = (smij * (1.0-1.0/(1.0+ex1))+dd2*ex4*snfixed);
+	   } else {
+             gradij[i][0] = spij;
+	     gradij[i][2] = smij;
+	   }
+	 } else {
+	   if (Xi[i] > 0){
+             gradij[i][0] = 1.0 - 1.0/(1.0+ex1)+dd2*ex4;
+	     gradij[i][2] = Ls[i] * gradij[i][0];
+	   } else {
+	     gradij[i][0] = 1.0;
+	     gradij[i][2] = Ls[i];
+	   }
+	 }
        } else {
          //enforce alpha+Theta1*Sij >= 0
-         //We currently don't allow specifying Theta parameters
-         //will need to possibly address this for python code
-	 //if (Spec[0] == Spec[2]){
-         //   if (Xi[i] > 0){
-	 //     gradij]i][0] = spij * (1.0 - 1.0/(1.0+ex1));
-	 //     gradij[i][2] = smij * (1.0 - 1.0/(1.0+ex1));
-	 //   } else {
-	 //     //Case where Xi[i] == 0
-         //     gradij[i][0] = spij;
-	 //     gradij[i][2] = smij;
-	 //   }
-	 //} else {
+	 if (Spec[0] == Spec[2]){
+            if (Xi[i] > 0){
+	      gradij[i][0] = spij * (1.0 - 1.0/(1.0+ex1));
+	      gradij[i][2] = smij * (1.0 - 1.0/(1.0+ex1));
+	    } else {
+	      //Case where Xi[i] == 0
+              gradij[i][0] = spij;
+	      gradij[i][2] = smij;
+	    }
+	 } else {
             if (Xi[i] > 0){
 	      gradij[i][0] = 1.0 - 1.0/(1.0+ex1);
 	      gradij[i][2] = Ls[i] * gradij[i][0];
@@ -4863,7 +4994,7 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
 	      gradij[i][0] = 1.0;
 	      gradij[i][2] = Ls[i];
 	    }
-	 //} //end of derivates that depend on the transformation of alpha and theta1
+	 } //end of derivates that depend on the transformation of alpha and theta1
 	 if (Xi[i] > 0){
            gradij[i][1] = dd2;
 	   gradij[i][3] = dd2 * Ls[i];
@@ -4882,6 +5013,7 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
 void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax,  
 		struct nestedObjData *objData){
 
+  std::cout<<"inside Nlogist_BMD"<<std::endl;
   std::vector<double> p = pyRes->parms;
   int nparm = p.size();
   double BMR = pyAnal->BMR;
@@ -4962,7 +5094,8 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   objData->isBMDL = true;
-  objData->optimizer = 3;
+  //objData->optimizer = 3;
+  objData->optimizer = 1;
   double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
 
   std::cout<<"1st fa:"<<fa<<std::endl;
@@ -5004,6 +5137,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }  
   pyRes->bmdsRes.BMDL = BMDL;
 
+  std::cout<<"end Nlogist_BMD"<<std::endl;
 }
 
 //QCHISQ - inverse chi-square function
@@ -5028,6 +5162,10 @@ void outputObjData(struct nestedObjData *objData){
   std::cout<<"sijfixed:"<<objData->sijfixed<<std::endl;
   std::cout<<"riskType:"<<objData->riskType<<std::endl;
   std::cout<<"BMR:"<<objData->BMR<<std::endl;
+
+  for (int i=0; i<objData->Spec.size(); i++){
+    std::cout<<"i:"<<i<<", Spec:"<<objData->Spec[i]<<std::endl;
+  }
 
 }
 
