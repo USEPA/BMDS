@@ -97,13 +97,11 @@ class Session:
         self.recommender: Recommender | None = None
         self.selected: SelectedModel = SelectedModel(self)
 
-    def add_default_bayesian_models(
-        self, global_settings: dict | None = None, model_average: bool = True
-    ):
-        global_settings = deepcopy(global_settings) if global_settings else {}
-        global_settings["priors"] = PriorClass.bayesian
+    def add_default_bayesian_models(self, settings: dict | None = None, model_average: bool = True):
+        settings = deepcopy(settings) if settings else {}
+        settings["priors"] = PriorClass.bayesian
         for name in self.model_options[self.dataset.dtype].keys():
-            model_settings = deepcopy(global_settings)
+            model_settings = deepcopy(settings)
             if name in Models.VARIABLE_POLYNOMIAL():
                 model_settings.update(degree=2)
             self.add_model(name, settings=model_settings)
@@ -111,9 +109,9 @@ class Session:
         if model_average and self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
             self.add_model_averaging()
 
-    def add_default_models(self, global_settings=None):
+    def add_default_models(self, settings: dict | None = None):
         for name in self.model_options[self.dataset.dtype].keys():
-            model_settings = deepcopy(global_settings) if global_settings is not None else None
+            model_settings = deepcopy(settings) if settings is not None else None
             if name in Models.VARIABLE_POLYNOMIAL():
                 min_poly_order = 2
                 max_poly_order = min(self.dataset.num_dose_groups - 1, MAXIMUM_POLYNOMIAL_ORDER + 1)
