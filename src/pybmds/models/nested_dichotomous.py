@@ -155,6 +155,7 @@ class Nctr(BmdModelNestedDichotomous):
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
+        # TODO - update formula as needed
         g = params["g"]
         b = params["b"]
         theta1 = params["theta1"]
