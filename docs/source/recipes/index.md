@@ -5,8 +5,10 @@
 
 dichotomous
 dichotomous_ma
+multitumor
 continuous
 nested_dichotomous
+preparing-datasets
 batch
-excel
+custom-excel-exports
 ```
