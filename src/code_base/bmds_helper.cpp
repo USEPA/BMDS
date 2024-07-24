@@ -3961,31 +3961,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
       pyRes->parms[i] = 0.0;
     }
   }
-  //pyRes->parms[5] = 0.0;
-  //pyRes->parms[6] = 0.0;
-  //pyRes->parms[7] = 0.0;
-  //pyRes->parms[8] = 0.0;
-  std::cout<<std::endl;
-  std::cout<<"b4 opt_nlogistic pass=3"<<std::endl;
-  for (int i=0; i<pyRes->nparms; i++){
-     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-  }
 
-  //retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   retVal = opt_nlogistic(pyRes->parms, &objData);
   objData.BMD_lk = objData.xlk;  //save BMD likelihood
-
-  std::cout<<"retVal:"<<retVal<<std::endl;
-  std::cout<<"LL: "<<objData.xlk<<std::endl;
+  pyRes->LL = objData.xlk;
 
   //Transform the parameters to the "external" form
   for (int i=5; i<pyRes->nparms; i++){
      pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);
-  }
-  
-  std::cout<<"Returned parms after BMD"<<std::endl;
-  for (int i=0; i<pyRes->nparms; i++){
-    std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
   }
 
   //don't currently allow spec so this is always true
@@ -3997,15 +3980,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     pyRes->parms[2] = (junk3 - junk1)/sdif;
   }
 
-
-  //TODO:  check which parms hit the bound
-
   //TODO:  check retVal to make sure convergence was achieved
   //if (retVal == 1){
  
-  std::cout<<"b4 vcv declaration"<<std::endl; 
   //compute Hessian
-//  Eigen::Matrix2d vcv(pyRes->nparms,pyRes->nparms);
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
 
 
@@ -4020,14 +3998,56 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 //  pyRes->parms[7]=0.0;
 //  pyRes->parms[8]=0.0;
 
+  std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double> (pyRes->nparms));
+  Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData, vcv_tmp); 
 
-  std::cout<<"calling Nlogist_vcv"<<std::endl;
-  Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData); 
-   //nvar = Nlogist_vcv(vcv);
-  //remove rows and columns of vcv that correspond to bounded parms
-  // nvar = Take_out_bounded_parms(nvar, bounded, vcv);
-  // std::vector<std::vector<double>> inv_vcv = vcv.inverse
+  for (int i=0; i<pyRes->nparms; i++){
+    vcv.row(i) = Eigen::VectorXd::Map(&vcv_tmp[i][0], vcv_tmp[i].size());
+  }
   
+  std::vector<double> lowerBound(pyAnal->prior.begin(), pyAnal->prior.begin() + pyRes->nparms);
+  std::vector<double> upperBound(pyAnal->prior.begin() + pyRes->nparms, pyAnal->prior.end());
+
+  //TODO:  make sure this catches all parms in Spec vector
+  int numBounded = checkForBoundedParms(pyRes->nparms, &pyRes->parms[0], &lowerBound[0], &upperBound[0], &pyRes->bmdsRes);
+
+  //remove rows and columns of vcv that correspond to bounded parms
+  for (int i=0; i<pyRes->nparms; i++){
+     if (pyRes->bmdsRes.bounded[i]){
+       vcv.row(i).setZero();
+       vcv.col(i).setZero();
+     }
+  }
+
+  Eigen::MatrixXd red_vcv(pyRes->nparms-numBounded,pyRes->nparms-numBounded);
+  int jvar=0;
+  int ivar=0;
+  for (int i=0; i<vcv.cols(); i++){
+    if (!pyRes->bmdsRes.bounded[i]){
+      for (int j=0; j<vcv.rows(); j++){
+        if (!pyRes->bmdsRes.bounded[j]){
+	  red_vcv(ivar,jvar)=vcv(i,j);
+          jvar++;
+	}
+      }
+      ivar++;
+      jvar=0;
+    }
+  }
+
+
+  Eigen::MatrixXd inv_vcv(pyRes->nparms,pyRes->nparms);
+  if (red_vcv.determinant() > 0){
+    inv_vcv = red_vcv.inverse();
+    for(int i=0; i<pyRes->nparms; i++){
+       if (!pyRes->bmdsRes.bounded[i]){
+         pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(i,i));
+       } else {
+	 pyRes->bmdsRes.stdErr[i] = BMDS_MISSING;
+       }
+    }
+  }
+
   //compute and output the analysis of deviance
   //DTMS3ANOVA (nparm, Nobs, Spec, lkf, xlk, lkr, anasum, bounded);
 
@@ -4427,9 +4447,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 }
 
-void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData){
+void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData, std::vector<std::vector<double>> &vcv){
 
-  std::cout<<"inside Nlogist_vcv"<<std::endl;
+//  std::cout<<"inside Nlogist_vcv"<<std::endl;
   double tmp;
   int jvar;
 
@@ -4438,32 +4458,32 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
   double smax = objData->smax;
   objData->isBMDL = false;
 
-  std::cout<<"smin:"<<smin<<std::endl;
-  std::cout<<"smax:"<<smax<<std::endl;
+//  std::cout<<"smin:"<<smin<<std::endl;
+//  std::cout<<"smax:"<<smax<<std::endl;
   //Spec[1] == Spec[3]  always
   std::vector<double> ptemp = p;
   double junk1 = ptemp[0];
   double junk3 = ptemp[2];
-  std::cout<<"b4 transform"<<std::endl;
-  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
-  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
+//  std::cout<<"b4 transform"<<std::endl;
+//  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
+//  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
   ptemp[0] = junk1+smin*junk3;
   ptemp[2] = junk1 + smax*junk3;
-  std::cout<<"after transform"<<std::endl;
-  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
-  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
+//  std::cout<<"after transform"<<std::endl;
+//  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
+//  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
 
   //Get a value of h for each parameter
   double hrat = pow(1.0e-16, 0.333333);
   std::vector<double> h(p.size());
   std::vector<double> gradp(p.size());
   std::vector<double> gradm(p.size());
-  std::vector<std::vector<double>> vcv(p.size(), std::vector<double> (p.size()));
+  //std::vector<std::vector<double>> vcv(p.size(), std::vector<double> (p.size()));
   //Eigen::MatrixXd vcv(p.size(),p.size());
 
-  std::cout<<"Here1"<<std::endl;
+//  std::cout<<"Here1"<<std::endl;
   for (int i=0; i<ptemp.size(); i++){
-     std::cout<<"i:"<<i<<", ptemp:"<<ptemp[i]<<std::endl;
+//     std::cout<<"i:"<<i<<", ptemp:"<<ptemp[i]<<std::endl;
      if (fabs(ptemp[i]) > 1.0e-7){
        h[i] = hrat * fabs(ptemp[i]);
        tmp = ptemp[i] + h[i];
@@ -4473,57 +4493,56 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
      }
   }
 
-  for (int i=0; i<ptemp.size(); i++){
-     std::cout<<"i:"<<i<<", h:"<<h[i]<<std::endl;
-  }
+//  for (int i=0; i<ptemp.size(); i++){
+//     std::cout<<"i:"<<i<<", h:"<<h[i]<<std::endl;
+//  }
 
   std::vector<double> saveParms = ptemp;
   int ivar = 0;
   int nvar = 0;
 
-  std::cout<<"Here2"<<std::endl;
+//  std::cout<<"Here2"<<std::endl;
   for (int i=0; i<ptemp.size(); i++){
-    std::cout<<"start of vcv loop i:"<<i<<std::endl;
+//    std::cout<<"start of vcv loop i:"<<i<<std::endl;
     if (i>0) saveParms[i-1] = ptemp[i-1];
     if (!Spec[i]) nvar++;
     saveParms[i] = ptemp[i] + h[i];
-    for(int i=0; i<saveParms.size();i++){
-        std::cout<<"i:"<<i<<", saveParms:"<<saveParms[i]<<std::endl;
-    }
-    std::cout<<"calling Nlogist_gradp with i:"<<i<<std::endl;
+//    for(int i=0; i<saveParms.size();i++){
+//        std::cout<<"i:"<<i<<", saveParms:"<<saveParms[i]<<std::endl;
+//    }
+//    std::cout<<"calling Nlogist_gradp with i:"<<i<<std::endl;
     Nlogist_grad(saveParms, objData, gradp);
-    for (int i=0; i<gradp.size(); i++){
-      std::cout<<"i:"<<i<<", gradp:"<<gradp[i]<<std::endl;
-    }
+//    for (int i=0; i<gradp.size(); i++){
+//      std::cout<<"i:"<<i<<", gradp:"<<gradp[i]<<std::endl;
+//    }
     saveParms[i] = ptemp[i] - h[i];
-    std::cout<<"calling Nlogist_gradm with i:"<<i<<std::endl;
+//    std::cout<<"calling Nlogist_gradm with i:"<<i<<std::endl;
     Nlogist_grad(saveParms, objData, gradm);
     //Now compute the 2nd derivative
     jvar = 0;
     for (int j=0; j<ptemp.size(); j++){
-      std::cout<<"start of loop j:"<<j<<std::endl;
+//      std::cout<<"start of loop j:"<<j<<std::endl;
       if (!Spec[j])
       //vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
 //      std::cout<<"adding to ivar:"<<ivar<<", jvar:"<<jvar<<std::endl;
       vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
-      std::cout<<"after add"<<std::endl;
+//      std::cout<<"after add"<<std::endl;
       jvar++;
     }
     ivar++;
     nvar++;
-    std::cout<<"end of loop i:"<<i<<std::endl;
-    std::cout<<"ivar:"<<ivar<<", nvar:"<<nvar<<std::endl;
+//    std::cout<<"end of loop i:"<<i<<std::endl;
+//    std::cout<<"ivar:"<<ivar<<", nvar:"<<nvar<<std::endl;
   }
 
-  std::cout<<"vcv matrix"<<std::endl;
-  for (int i=0; i<ptemp.size(); i++){
-    for (int j=0; j<ptemp.size(); j++){
-       std::cout<<"i:"<<i<<", j:"<<j<<", vcv:"<<vcv[i][j]<<std::endl;
-    }
-  }
+//  std::cout<<"vcv matrix"<<std::endl;
+//  for (int i=0; i<ptemp.size(); i++){
+//    for (int j=0; j<ptemp.size(); j++){
+//       std::cout<<"i:"<<i<<", j:"<<j<<", vcv:"<<vcv[i][j]<<std::endl;
+//    }
+//  }
 
-  //nvar = Take_Out_Bounded_Parms(bounded, vcv);
-  std::cout<<"end of Nlogist_vcv"<<std::endl;
+//  std::cout<<"end of Nlogist_vcv"<<std::endl;
 }
 
 // Computes the gradient of the nested logistic likelihood function with respect to the user form (external of the parameters.  This is
