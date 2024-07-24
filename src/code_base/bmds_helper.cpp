@@ -3815,9 +3815,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      tmpvcv(1,1) += x*x;
      tmpy[0] += W;
      tmpy[1] += W*x;
-     std::cout<<"i:"<<i<<", x="<<x<<", W="<<W<<std::endl;
-     std::cout<<"tmpvcv(0,0)="<<tmpvcv(0,0)<<", tmpvcv(0,1)="<<tmpvcv(0,1)<<", tmpvcv(1,1)="<<tmpvcv(1,1)<<std::endl;
-     std::cout<<"tmpy[0]="<<tmpy[0]<<", tmpy[1]="<<tmpy[1]<<std::endl;
+//     std::cout<<"i:"<<i<<", x="<<x<<", W="<<W<<std::endl;
+//     std::cout<<"tmpvcv(0,0)="<<tmpvcv(0,0)<<", tmpvcv(0,1)="<<tmpvcv(0,1)<<", tmpvcv(1,1)="<<tmpvcv(1,1)<<std::endl;
+//     std::cout<<"tmpy[0]="<<tmpy[0]<<", tmpy[1]="<<tmpy[1]<<std::endl;
   }
   //tmpvcv[1][0] = tmpvcv[0][1];
   tmpvcv(1,0) = tmpvcv(0,1);
@@ -3846,13 +3846,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //simple non-nested log-logistic model
   double gtol = 3e-8;
 
-  std::cout<<std::endl;
-  std::cout<<"b4 opt_nlogistic pass=1"<<std::endl;
-  for (int i=0; i<pyRes->nparms; i++){
-     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-  }
+//  std::cout<<std::endl;
+//  std::cout<<"b4 opt_nlogistic pass=1"<<std::endl;
+//  for (int i=0; i<pyRes->nparms; i++){
+//     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+//  }
 
-  std::cout<<"DBL_MAX:"<<DBL_MAX<<std::endl;
+//  std::cout<<"DBL_MAX:"<<DBL_MAX<<std::endl;
   //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
   //double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   struct nestedObjData objData;
@@ -3868,7 +3868,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.sijfixed = sijfixed;
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
-  objData.pass = 1;
+//  objData.pass = 1;
   objData.tol = 1e-8;
   objData.optimizer = 3;
   objData.prior = pyAnal->prior;
@@ -3878,7 +3878,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   for (int i=PHISTART; i<pyRes->nparms; i++){
      objData.Spec[i] = true;
   }
-  outputObjData(&objData);
+//  outputObjData(&objData);
 
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
@@ -3911,7 +3911,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
        std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
     }
 
-    objData.pass = 2;
+//    objData.pass = 2;
     objData.Spec = Spec;
     objData.Spec[THETA1_INDEX] = true;
     objData.Spec[THETA2_INDEX] = true;
@@ -3952,7 +3952,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //ML fit and return log-likelihood value
-  objData.pass = 3;
+//  objData.pass = 3;
   objData.Spec = Spec;
   objData.optimizer=1;
 
@@ -3989,23 +3989,41 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //don't currently allow spec so this is always true
-//  if (Spec[0] == Spec[2]){
   double sdif = smax - smin;
-  junk1 = pyRes->parms[0];
-  junk3 = pyRes->parms[2];
-  pyRes->parms[0] = (smax * junk1 - smin * junk3)/sdif;
-  pyRes->parms[2] = (junk3 - junk1)/sdif;
+  if (Spec[0] == Spec[2]){
+    junk1 = pyRes->parms[0];
+    junk3 = pyRes->parms[2];
+    pyRes->parms[0] = (smax * junk1 - smin * junk3)/sdif;
+    pyRes->parms[2] = (junk3 - junk1)/sdif;
+  }
 
-  std::cout<<"Here!!!!"<<std::endl;
 
   //TODO:  check which parms hit the bound
 
   //TODO:  check retVal to make sure convergence was achieved
   //if (retVal == 1){
-  
+ 
+  std::cout<<"b4 vcv declaration"<<std::endl; 
   //compute Hessian
-  // Eigen::Matrix2d vcv(pyRes->nparms,pyRes->nparms);
-  //nvar = Nlogist_vcv(vcv);
+//  Eigen::Matrix2d vcv(pyRes->nparms,pyRes->nparms);
+  Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
+
+
+  //temp DEBUG override of parm values for comparison with old code
+//  pyRes->parms[0]=0.084734;
+//  pyRes->parms[1]=-4.109652;
+//  pyRes->parms[2]=0.004761;
+//  pyRes->parms[3]=-0.055489;
+//  pyRes->parms[4]=1.000;
+//  pyRes->parms[5]=0.0;
+//  pyRes->parms[6]=0.0;
+//  pyRes->parms[7]=0.0;
+//  pyRes->parms[8]=0.0;
+
+
+  std::cout<<"calling Nlogist_vcv"<<std::endl;
+  Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData); 
+   //nvar = Nlogist_vcv(vcv);
   //remove rows and columns of vcv that correspond to bounded parms
   // nvar = Take_out_bounded_parms(nvar, bounded, vcv);
   // std::vector<std::vector<double>> inv_vcv = vcv.inverse
@@ -4409,6 +4427,137 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 }
 
+void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData){
+
+  std::cout<<"inside Nlogist_vcv"<<std::endl;
+  double tmp;
+  int jvar;
+
+  std::vector<bool> Spec = objData->Spec;
+  double smin = objData->smin;
+  double smax = objData->smax;
+  objData->isBMDL = false;
+
+  std::cout<<"smin:"<<smin<<std::endl;
+  std::cout<<"smax:"<<smax<<std::endl;
+  //Spec[1] == Spec[3]  always
+  std::vector<double> ptemp = p;
+  double junk1 = ptemp[0];
+  double junk3 = ptemp[2];
+  std::cout<<"b4 transform"<<std::endl;
+  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
+  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
+  ptemp[0] = junk1+smin*junk3;
+  ptemp[2] = junk1 + smax*junk3;
+  std::cout<<"after transform"<<std::endl;
+  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
+  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
+
+  //Get a value of h for each parameter
+  double hrat = pow(1.0e-16, 0.333333);
+  std::vector<double> h(p.size());
+  std::vector<double> gradp(p.size());
+  std::vector<double> gradm(p.size());
+  std::vector<std::vector<double>> vcv(p.size(), std::vector<double> (p.size()));
+  //Eigen::MatrixXd vcv(p.size(),p.size());
+
+  std::cout<<"Here1"<<std::endl;
+  for (int i=0; i<ptemp.size(); i++){
+     std::cout<<"i:"<<i<<", ptemp:"<<ptemp[i]<<std::endl;
+     if (fabs(ptemp[i]) > 1.0e-7){
+       h[i] = hrat * fabs(ptemp[i]);
+       tmp = ptemp[i] + h[i];
+       h[i] = tmp - ptemp[i];  ///WHY????
+     } else {
+       h[i] = hrat;
+     }
+  }
+
+  for (int i=0; i<ptemp.size(); i++){
+     std::cout<<"i:"<<i<<", h:"<<h[i]<<std::endl;
+  }
+
+  std::vector<double> saveParms = ptemp;
+  int ivar = 0;
+  int nvar = 0;
+
+  std::cout<<"Here2"<<std::endl;
+  for (int i=0; i<ptemp.size(); i++){
+    std::cout<<"start of vcv loop i:"<<i<<std::endl;
+    if (i>0) saveParms[i-1] = ptemp[i-1];
+    if (!Spec[i]) nvar++;
+    saveParms[i] = ptemp[i] + h[i];
+    for(int i=0; i<saveParms.size();i++){
+        std::cout<<"i:"<<i<<", saveParms:"<<saveParms[i]<<std::endl;
+    }
+    std::cout<<"calling Nlogist_gradp with i:"<<i<<std::endl;
+    Nlogist_grad(saveParms, objData, gradp);
+    for (int i=0; i<gradp.size(); i++){
+      std::cout<<"i:"<<i<<", gradp:"<<gradp[i]<<std::endl;
+    }
+    saveParms[i] = ptemp[i] - h[i];
+    std::cout<<"calling Nlogist_gradm with i:"<<i<<std::endl;
+    Nlogist_grad(saveParms, objData, gradm);
+    //Now compute the 2nd derivative
+    jvar = 0;
+    for (int j=0; j<ptemp.size(); j++){
+      std::cout<<"start of loop j:"<<j<<std::endl;
+      if (!Spec[j])
+      //vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
+//      std::cout<<"adding to ivar:"<<ivar<<", jvar:"<<jvar<<std::endl;
+      vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
+      std::cout<<"after add"<<std::endl;
+      jvar++;
+    }
+    ivar++;
+    nvar++;
+    std::cout<<"end of loop i:"<<i<<std::endl;
+    std::cout<<"ivar:"<<ivar<<", nvar:"<<nvar<<std::endl;
+  }
+
+  std::cout<<"vcv matrix"<<std::endl;
+  for (int i=0; i<ptemp.size(); i++){
+    for (int j=0; j<ptemp.size(); j++){
+       std::cout<<"i:"<<i<<", j:"<<j<<", vcv:"<<vcv[i][j]<<std::endl;
+    }
+  }
+
+  //nvar = Take_Out_Bounded_Parms(bounded, vcv);
+  std::cout<<"end of Nlogist_vcv"<<std::endl;
+}
+
+// Computes the gradient of the nested logistic likelihood function with respect to the user form (external of the parameters.  This is
+// to be used in Nlogist_vcv to compute a finite difference approximation to the hessian of the likelihood function.
+void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad){
+
+  int nparm = p.size();
+  std::vector<double> pint = p;
+  //transform the parameters to "internal" form
+  for (int j=5; j<nparm; j++){
+     pint[j] = pint[j] / (1-pint[j]);
+  }
+
+  std::cout<<"inside Nlogist_grad phi->psi"<<std::endl;
+  for (int j=0; j<nparm; j++){
+     std::cout<<"j:"<<j<<", pint:"<<pint[j]<<std::endl;
+  }
+
+  //outputObjData(objData);
+
+  //no parmaters are pre-specified so all can vary.  nvar = nparm
+//  double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR)
+//  double ret = Nlogist_g(&pint, objData->Ls, objData->Xi, objData->Xg, objData->Yp, objDataYn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR)
+  std::cout<<"calling Nlogist_g"<<std::endl;
+  Nlogist_g(pint, grad, objData);
+
+  //Nlogist_g returns the gradient of the negative loglikelihood
+  for (int i=0; i<nparm; i++){
+    grad[i]*=-1.0;
+  }
+
+}
+
+
 
 void SRoI(std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD){
 
@@ -4494,11 +4643,11 @@ void SRoI(std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LS
 //double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk){
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
-   std::cout<<"Inside opt_nlogistic"<<std::endl;
-   std::cout<<"prior"<<std::endl;
-   for (int i=0; i<objData->prior.size(); i++){
-      std::cout<<"i:"<<i<<", val:"<<objData->prior[i]<<std::endl;
-   }
+//   std::cout<<"Inside opt_nlogistic"<<std::endl;
+//   std::cout<<"prior"<<std::endl;
+//   for (int i=0; i<objData->prior.size(); i++){
+//      std::cout<<"i:"<<i<<", val:"<<objData->prior[i]<<std::endl;
+//   }
    std::vector<bool>Spec = objData->Spec;
    int nparm_prior = objData->prior.size()/2;
 
@@ -4509,8 +4658,8 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    double slopeUpperBound = 18.0;
    int nparm = p.size();
 
-   std::cout<<"nparm:"<<nparm<<std::endl;
-   std::cout<<"objData.prior.size():"<<objData->prior.size()<<std::endl;
+//   std::cout<<"nparm:"<<nparm<<std::endl;
+//   std::cout<<"objData.prior.size():"<<objData->prior.size()<<std::endl;
 
    std::vector<double> lb(nparm);
    std::vector<double> ub(nparm);
@@ -4634,7 +4783,7 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    opt.set_min_objective(objfunc_nlogistic_ll, objData);
 
    //opt.set_xtol_rel(1e-8);
-   std::cout<<"tolerance:"<<objData->tol<<std::endl;
+//   std::cout<<"tolerance:"<<objData->tol<<std::endl;
    opt.set_xtol_rel(objData->tol);
    //opt.set_maxeval(1000000);
    opt.set_maxeval(10000);
@@ -4653,11 +4802,11 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    }
   
-   std::cout<<"minf = "<<minf<<std::endl; 
-   std::cout<<"parm after opt"<<std::endl;
-   for(int i=0; i<nparm; i++){
-     std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
-   }
+//   std::cout<<"minf = "<<minf<<std::endl; 
+//   std::cout<<"parm after opt"<<std::endl;
+//   for(int i=0; i<nparm; i++){
+//     std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
+//   }
    objData->xlk = -1.0*minf; 
 
    return result;
@@ -4738,13 +4887,13 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
 
 
    bool compgrad = false;
-   std::cout<<"inside Nlogist_lk b4 Nlogist_probs"<<std::endl;
+//   std::cout<<"inside Nlogist_lk b4 Nlogist_probs"<<std::endl;
    //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
    Nlogist_probs(probs, p, compgrad, gradij, objData);
-   std::cout<<"inside Nlogist_lk after Nlogist_probs"<<std::endl;
-   for(int i=0; i<Nobs; i++){
-     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
-   } 
+//   std::cout<<"inside Nlogist_lk after Nlogist_probs"<<std::endl;
+//   for(int i=0; i<Nobs; i++){
+//     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
+//   } 
    
    double tm, tm1, tm2, tm3;
    int plus5, j;
@@ -4794,7 +4943,7 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
   std::vector<double> Yp = objData->Yp;
   std::vector<double> Yn = objData->Yn;
   std::vector<int> Xg = objData->Xg;
-
+  std::vector<bool> Spec = objData->Spec;
 
   int Nobs = Yp.size();
   int nparm = p.size();
@@ -4805,33 +4954,39 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
   std::vector<double> tmp_g(nparm);
   std::vector<double> dd(nparm);
 
+//  std::cout<<"parameter vector in  Nlogist_g"<<std::endl;
+//  for (int i=0; i<p.size(); i++){
+//    std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
+//  }
 
   bool compgrad = true;
 //  std::cout<<"b4 Nlogist_probs"<<std::endl;
 //  REMOVE THESE
-  bool isBMDL = objData->isBMDL;
-  double smax = objData->smax;
-  double smin = objData->smin;
-  std::vector<double> Ls = objData->Ls;
-  std::vector<double> Xi = objData->Xi;
-  double D = objData->tD;
-  double sijfixed = objData->sijfixed;
-  int riskType = objData->riskType;
-  double BMR = objData->BMR;
+//  bool isBMDL = objData->isBMDL;
+//  double smax = objData->smax;
+//  double smin = objData->smin;
+//  std::vector<double> Ls = objData->Ls;
+//  std::vector<double> Xi = objData->Xi;
+//  double D = objData->tD;
+//  double sijfixed = objData->sijfixed;
+//  int riskType = objData->riskType;
+//  double BMR = objData->BMR;
   //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
-  std::cout<<"inside Nlogist_g b4 Nlogist_probs"<<std::endl;
+//  std::cout<<"inside Nlogist_g b4 Nlogist_probs"<<std::endl;
   Nlogist_probs(probs, p, compgrad, gradij, objData);
-  std::cout<<"inside Nlogist_g after Nlogist_probs"<<std::endl;
-  for(int i=0; i<Nobs; i++){
-    std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
-  } 
+//  std::cout<<"inside Nlogist_g after Nlogist_probs"<<std::endl;
+//  for(int i=0; i<Nobs; i++){
+//    std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
+//  } 
 
 
   //initial tmp g[j]'s
   for (int i=0; i<nparm; i++){
     tmp_g[i] = 0.0;
   }
+//  std::cout<<"begin Nlogist_g loop"<<std::endl;
   for (int i=0; i<Nobs; i++){
+//    std::cout<<"i:"<<i<<std::endl;
     ex = probs[i];
 
     //compute first partial derivatives
@@ -4840,40 +4995,72 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
     for (int j=5; j<nparm; j++){
       dd[j] = 0.0;
     }    
-    plus5 = 5 + Xg[i];
+    plus5 = 4 + Xg[i];
     j = (int) Yp[i];
+    //std::cout<<"ex>0 loop"<<std::endl;
     if (ex > 0.0){
       for (int k=1; k<=j; k++){
         tm = ex + (k-1)*p[plus5];
 	tm1 += 1.0/tm;
 	tm1a += (1.0/tm)*(k-1);
+	//std::cout<<"k:"<<k<<", tm:"<<tm<<", tm1:"<<tm1<<", tm1a:"<<tm1a<<std::endl;
       }
     }
     j = (int) Yn[i];
+    //std::cout<<"ex<1 loop"<<std::endl;
     if (ex < 1.0){
       for (int k=1; k<=j; k++){
         tm = 1.0-ex+(k-1)*p[plus5];
 	tm2 += 1.0/tm;
 	tm2a += (1.0/tm)*(k-1);
+	//std::cout<<"k:"<<k<<", tm:"<<tm<<", tm2:"<<tm2<<", tm2a:"<<tm2a<<std::endl;
       }
     }
     j = (int) (Yn[i] + Yp[i]);
+    //std::cout<<"last loop"<<std::endl;
     for (int k=1; k<=j; k++){
       tm = 1.0+(k-1)*p[plus5];
       if (tm == 0.0) tm = 0.000001;
       tm3 += 1.0/tm;
       tm3a += (1.0/tm)*(k-1);
+      //std::cout<<"k:"<<k<<", tm:"<<tm<<", tm3:"<<tm3<<", tm3a:"<<tm3a<<std::endl;
     }
     tm12 = (tm1-tm2);
-    for (int k=0; k<5; k++){
-      dd[k] = gradij[i][k]*tm12;
+//    std::cout<<"tm1:"<<tm1<<", tm2:"<<tm2<<std::endl;
+    for (int j=0; j<5; j++){
+//      std::cout<<"i:"<<i<<", j:"<<j<<", gradij:"<<gradij[i][j]<<", tm12:"<<tm12<<std::endl;
+      dd[j] = gradij[i][j]*tm12;
+//      std::cout<<"i:"<<i<<", j:"<<j<<", dd:"<<dd[j]<<std::endl;
     }
-    for (int k=0; k<nparm; k++){
-      tmp_g[k] -= dd[k];
+    dd[plus5] = (tm1a + tm2a - tm3a);
+    for (int j=0; j<nparm; j++){
+      tmp_g[j] -= dd[j];
+//      std::cout<<"i:"<<i<<", j:"<<j<<", tmp_g:"<<tmp_g[j]<<std::endl;
     }
   }
+//  std::cout<<"final tmp_g"<<std::endl;
+//  for (int j=0; j<nparm; j++){
+//    std::cout<<"j:"<<j<<", tmp_g:"<<tmp_g[j]<<std::endl;
+//  }
   //end of 1st partial derivative
   g = tmp_g;
+  for (int j=0; j<nparm; j++){
+    if (Spec[j]){
+      g[j] = 0.0;
+    }
+  }
+  //int jvar = 0;
+  //for (int j=0; j<nparm; j++){
+  //  if (!Spec[j]){
+  //    g[jvar] = tmp_g[j];
+  //    jvar++; 
+  //  }
+  //}
+
+//  std::cout<<"Nlogist_g returning"<<std::endl;
+//  for (int k=0; k<nparm; k++){
+//     std::cout<<"k:"<<k<<", g:"<<g[k]<<std::endl;
+//  }
  
   return 0;
 }
@@ -4927,16 +5114,16 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
     smij = (Ls[i] - smin)/sdif;
 
     //enforce alpha+Theta1*Sij >= 0
-    std::cout<<"Here !!!! pass:"<<objData->pass<<std::endl;
-    std::cout<<"Spec[0]="<<Spec[0]<<std::endl;
-    std::cout<<"Spec[2]="<<Spec[2]<<std::endl;
+//    std::cout<<"Here !!!! pass:"<<objData->pass<<std::endl;
+//    std::cout<<"Spec[0]="<<Spec[0]<<std::endl;
+//    std::cout<<"Spec[2]="<<Spec[2]<<std::endl;
     if (Spec[0] == Spec[2]){
-       std::cout<<"selected 1st option"<<std::endl;
+//       std::cout<<"selected 1st option"<<std::endl;
        ex = spij * pint[0] + smij * pint[2];
-       std::cout<<"spij:"<<spij<<", pint[0]:"<<pint[0]<<", smij:"<<smij<<", pint[2]:"<<pint[2]<<std::endl;
+//       std::cout<<"spij:"<<spij<<", pint[0]:"<<pint[0]<<", smij:"<<smij<<", pint[2]:"<<pint[2]<<std::endl;
     } else {
        ex = pint[0] + Ls[i] * pint[2];
-       std::cout<<"selected 2nd option"<<std::endl;
+//       std::cout<<"selected 2nd option"<<std::endl;
     }
     ex2 = 1.0 - ex;
     ex1 = 0.0;
@@ -5013,7 +5200,7 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
 void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax,  
 		struct nestedObjData *objData){
 
-  std::cout<<"inside Nlogist_BMD"<<std::endl;
+//  std::cout<<"inside Nlogist_BMD"<<std::endl;
   std::vector<double> p = pyRes->parms;
   int nparm = p.size();
   double BMR = pyAnal->BMR;
@@ -5083,7 +5270,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   double xb = BMD; 
   double xa = xb * stepsize;
   double tol = std::max(BMD*0.001, 0.0000001);
-  std::cout<<"tol:"<<tol<<std::endl;
+//  std::cout<<"tol:"<<tol<<std::endl;
   double fb = DBL_MAX;
 
   std::vector<double> pa(nparm);
@@ -5098,7 +5285,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   objData->optimizer = 1;
   double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
 
-  std::cout<<"1st fa:"<<fa<<std::endl;
+//  std::cout<<"1st fa:"<<fa<<std::endl;
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
@@ -5129,7 +5316,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 //    std::cout<<"BMDL between xa:"<<xa<<" and xb:"<<xb<<std::endl;
 //    std::cout<<"B4 zeroin_nested"<<std::endl;
     objData->optimizer = 1;
-    outputObjData(objData);
+//    outputObjData(objData);
 
     BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
     //BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-8, objData);
@@ -5137,7 +5324,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }  
   pyRes->bmdsRes.BMDL = BMDL;
 
-  std::cout<<"end Nlogist_BMD"<<std::endl;
+//  std::cout<<"end Nlogist_BMD"<<std::endl;
 }
 
 //QCHISQ - inverse chi-square function
@@ -5182,10 +5369,10 @@ double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjD
   objData->tD = D;
   objData->tol = gtol;
 //  //MAX_lk (nparm, p, gtol, &junk, &xlk);
-  std::cout<<"inside BMDL_func nparm:"<<nparm<<std::endl; 
+//  std::cout<<"inside BMDL_func nparm:"<<nparm<<std::endl; 
   std::vector<double> parms(p, p+nparm); 
 //  std::cout<<"inside BMDL_func B4 opt_nlogistic"<<std::endl;
-  outputObjData(objData);
+//  outputObjData(objData);
   double retVal = opt_nlogistic(parms, objData);
 //  std::cout<<"inside BMDL_func after opt_nlogistic"<<std::endl;
 
@@ -5271,8 +5458,8 @@ double zeroin_nested(double ax,double bx, double tol,
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
 
-  std::cout<< std::fixed << std::showpoint;
-  std::cout << std::setprecision(15); 
+//  std::cout<< std::fixed << std::showpoint;
+//  std::cout << std::setprecision(15); 
 //  std::cout<<"inside zeroin"<<std::endl;
 //  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
 //  std::cout<<"nparm="<<nparm<<std::endl;
@@ -5282,12 +5469,12 @@ double zeroin_nested(double ax,double bx, double tol,
 //  }
 
   a = ax;  b = bx;
-  printf("fa calc\n");
+//  printf("fa calc\n");
   fa = (*f)(nparm-1, Parms, a, ck, objData);
-  printf("fb calc\n");
+//  printf("fb calc\n");
   fb = (*f)(nparm-1, Parms, b, ck, objData);
-  printf("fa=%g\n", fa);
-  printf("fb=%g\n", fb);
+//  printf("fa=%g\n", fa);
+//  printf("fb=%g\n", fb);
   c = a;   fc = fa;
   int pass = 1;
   for(;;)		/* Main iteration loop	*/
@@ -5300,10 +5487,10 @@ double zeroin_nested(double ax,double bx, double tol,
   					/* sion operations is delayed   */
  					/* until the last moment	*/
     double new_step;      		/* Step at this iteration       */
-    std::cout<<std::endl;
-    std::cout<<"start of loop with pass:"<<pass<<std::endl;
-    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+//    std::cout<<std::endl;
+//    std::cout<<"start of loop with pass:"<<pass<<std::endl;
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     if( fabs(fc) < fabs(fb) )
     {                         		/* Swap data for b to be the 	*/
 	a = b;  b = c;  c = a;          /* best approximation		*/
@@ -5312,18 +5499,18 @@ double zeroin_nested(double ax,double bx, double tol,
     tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
     new_step = (c-b)/2;
 
-    std::cout<<"tol_act="<<tol_act<<std::endl;
+//    std::cout<<"tol_act="<<tol_act<<std::endl;
     if( fabs(new_step) <= tol_act || fb == (double)0 ){
-      std::cout<<"returning b:"<<b<<std::endl;
+//      std::cout<<"returning b:"<<b<<std::endl;
       return b;				/* Acceptable approx. is found	*/
     }
 
-    std::cout<<"continuing for another loop"<<std::endl;
+//    std::cout<<"continuing for another loop"<<std::endl;
     			/* Decide if the interpolation can be tried	*/
     if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
 	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
     {					/* Interpolatiom may be tried	*/
-	std::cout<<"trying interpolation"<<std::endl;
+//	std::cout<<"trying interpolation"<<std::endl;
 	double t1,cb,t2;
 	cb = c-b;
 	if( a==c )			/* If we have only two distinct	*/
@@ -5354,7 +5541,7 @@ double zeroin_nested(double ax,double bx, double tol,
 
     if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
       {
-	std::cout<<"adjusting step"<<std::endl;
+//	std::cout<<"adjusting step"<<std::endl;
 	if( new_step > (double)0 )	/* than tolerance		*/
 	  new_step = tol_act;
 	else
@@ -5363,14 +5550,14 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-	printf("2nd fb calc\n");
+//	printf("2nd fb calc\n");
     fb = (*f)(nparm-1, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
-    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
+//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
+//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     pass++;
   }
 

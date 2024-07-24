@@ -407,7 +407,6 @@ struct nestedObjData{
   double smin;
   double isBMDL;
   bool restricted;
-  int pass;
   //only used for BMDL
   double ck;
   double LR;
@@ -518,6 +517,10 @@ double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &g
 double nestedInequalityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
 
 void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax, struct nestedObjData *objData);
+
+void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData);
+
+void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
 double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
 
