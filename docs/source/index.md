@@ -1,23 +1,50 @@
----
-html_theme.sidebar_secondary.remove: true
----
+<p align="center" style="margin-top: 40px; margin-bottom: 40px;">
+  <img src="_static/img/pybmds.png" width="210px">
+</p>
 
-# pybmds
+**pybmds** is a Python package for executing the U.S. EPA Benchmark Dose Modeling Software (BMDS).
 
-A Python package for executing the U.S. EPA Benchmark Dose Modeling Software (BMDS).
 
-## User's Guide
+::::{tab-set}
+:::{tab-item} install with pip
 
-```{toctree}
-:maxdepth: 2
-
-reference/index
+```bash
+pip install bmds
 ```
 
-## Recipes
+:::
+:::{tab-item} install with conda
 
-```{toctree}
-:maxdepth: 2
+```bash
+pip install bmds
+```
 
-recipes/index
+:::
+::::
+
+**Highlights:**
+
+* a
+* b
+* c
+
+Add screenshots of a few things
+
+# Contents
+
+```{eval-rst}
+.. toctree::
+   :maxdepth: 2
+
+   reference/index
+   recipes/index
+```
+
+```{eval-rst}
+.. toctree::
+   :caption: Links
+   :maxdepth: 2
+
+   US EPA BMDS <https://epa.gov/bmds>
+   Github <https://github.com/USEPA/bmds>
 ```
