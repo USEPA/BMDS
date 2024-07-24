@@ -13,7 +13,7 @@ When configuration a session, a user selects which models and models recommendat
 
 If at least one viable model exists, then it may be selected as a best fitting model. This would be consistent with what was done in the workflow diagram below:
 
-![_static/img/logic.png](../_static/img/logic.png)
+![Recommendation logic diagram](../_static/img/logic.png)
 
 **Model binning and recommendation. From [Wignall et al. 2014](http://dx.doi.org/10.1289/ehp.1307539).**
 
