@@ -9,8 +9,9 @@ This guide describes the use and installation of both **pybmds** and **BMDS Desk
 :::{admonition} NOTE - this will not work until we officially release!
 :class: error
 
-The installation guide below will not work until we are cleared to release the the software on [pypi](https://pypi.org/); please follow the [EPA installation guide](./reference/installation.md#quick-start-epa-guide) until we can release formally on the internet.  This note will be removed after an official release.
-:::
+The content below below will not work until we are cleared to release the the software on [pypi](https://pypi.org/); please follow the [EPA installation guide](./installation.md#internal-epa) until we can release formally on the internet.  This message will be removed prior to official release.
+
+---
 
 To install **BMDS Desktop** (which includes pybmds):
 
@@ -23,10 +24,11 @@ To install just **pybmds**:
 ```bash
 pip install bmds
 ```
+:::
 
 :::{tip}
 
-We recommend using the [installation guide](./reference/installation.md) if you plan on seriously using pybmds or BMDS Desktop for work on multiple projects; the guide makes it eaiser to setup multiple versions, and describes in detail how upgrade or uninstall existing versions.
+We recommend using the [installation guide](./installation.md) if you plan on seriously using pybmds or BMDS Desktop for work on multiple projects; the guide makes it easier to setup multiple versions, and describes in detail how upgrade or uninstall existing versions, and describes possible issues and solutions that may arise during installation.
 :::
 
 **Highlights:**
