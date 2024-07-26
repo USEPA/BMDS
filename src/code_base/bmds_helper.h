@@ -554,7 +554,7 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
 void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P);
 
 //void SortByLs(std::vector<int> &GrpSize, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Ep);
-void SortNestedData(std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc);
+void SortNestedData(const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

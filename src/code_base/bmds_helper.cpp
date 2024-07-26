@@ -4140,8 +4140,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
    Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
-//   Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, &grpSize, pyRes->bmd);
-//
+   Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
+
 //   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
 
 
@@ -4731,7 +4731,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 
 }
 
-void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, std::vector<int> &grpSize, double bmd){
+void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, const std::vector<int> &grpSize, double bmd){
 
   int locDose = 0;
   int locLSC = 0;
@@ -4826,6 +4826,12 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
 //  std::cout<<"num size:"<<num.size()<<std::endl;
 //  std::cout<<"den size:"<<den.size()<<std::endl;
   raoscott(objData, num, den);
+
+//  std::cout<<"raoscott return"<<std::endl;
+//  std::cout<<"num\tden"<<std::endl;
+//  for (int i=0; i<ngrp; i++){
+//    std::cout<<num[i]<<"\t"<<den[i]<<std::endl;
+//  }
   //Quantal_CI requires number pos and number neg
   //after this, den contains the number unaffected (transformed)
   for (int i=0; i<ngrp; i++) den[i] -= num[i];
@@ -4834,6 +4840,7 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
 //  std::cout<<"num size:"<<num.size()<<std::endl;
 //  std::cout<<"den size:"<<den.size()<<std::endl;
   Quantal_CI(num, den, conf, redData);
+
 }
 
 void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, struct nestedReducedData *redData){
@@ -4847,6 +4854,8 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
   int Nobs = Yp.size();
 //  std::cout<<"Nobs:"<<Nobs<<std::endl;
 
+//  std::cout<<"1st version of reduced data"<<std::endl;
+//  std::cout<<"n\tpAff\tLC\tUC"<<std::endl;
   for (int i=0; i<Nobs; i++){
     n = Yp[i] + Yn[i];
     redData->propAffect[i] = phat = Yp[i]/n;
@@ -4854,6 +4863,7 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
     redData->lowerConf[i] /= 2.0*(n+cc2);
     redData->upperConf[i] = (2*Yp[i] + cc2 + 1.0) + cc*sqrt(cc2 + (2.0-1.0/n)+4.0*phat*(Yn[i]-1.0));
     redData->upperConf[i] /= 2.0*(n+cc2);
+//    std::cout<<n<<"\t"<<redData->propAffect[i]<<"\t"<<redData->lowerConf[i]<<"\t"<<redData->upperConf[i]<<std::endl;
   }
 
 }
@@ -4870,7 +4880,7 @@ void raoscott(struct nestedObjData *objData, std::vector<double> &num, std::vect
   int grpsize;
 
 
-  for (int j=0; j<ngrp; j++){
+  for (int j=1; j<=ngrp; j++){
     sumnum = sumden = 0.0;
     for (int i=0; i<Nobs; i++){
       if (j == Xg[i]){
@@ -4894,8 +4904,8 @@ void raoscott(struct nestedObjData *objData, std::vector<double> &num, std::vect
     } else {
       di = 1.0;
     }
-    num[j] = sumnum/di;
-    den[j] = sumden/di;
+    num[j-1] = sumnum/di;
+    den[j-1] = sumden/di;
   }
 
 
@@ -4992,7 +5002,7 @@ void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData
 }
 
 
-void SortNestedData(std::vector<int> &grpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc){
+void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc){
   //sorts nested data by Xi -> Ls(or Lsc) -> Yp
 
   int ngrp = grpSize.size();

@@ -4920,6 +4920,14 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
 //     printf("%d, %f\n", i, pyRes->cov[i]);
 //   }
 
+   std::cout<<"----SROI Data----"<<std::endl;
+   std::cout<<"min SR:"<<pyRes->srData.minSR<<std::endl;
+   std::cout<<"min |SR|:"<<pyRes->srData.minAbsSR<<std::endl;
+   std::cout<<"avg SR:"<<pyRes->srData.avgSR<<std::endl;
+   std::cout<<"avg |SR|:"<<pyRes->srData.avgAbsSR<<std::endl;
+   std::cout<<"max SR:"<<pyRes->srData.maxSR<<std::endl;
+   std::cout<<"max |SR|:"<<pyRes->srData.maxAbsSR<<std::endl;
+
    std::cout<<"----Litter Data----"<<std::endl;
    std::cout<<"Dose\tLSC\tEstProb\t\tLS\tExp\tObs\tSR"<<std::endl;
    for (int i=0; i<pyRes->litter.dose.size(); i++){
@@ -4927,6 +4935,7 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
      std::cout<<pyRes->litter.dose[i]<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
    }
    std::cout<<"chiSq:"<<pyRes->litter.chiSq<<std::endl;
+
 
 
 }
