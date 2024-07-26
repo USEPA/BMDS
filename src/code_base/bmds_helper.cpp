@@ -3563,6 +3563,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    std::vector<double> Yn(Nobs); //negative dependent var
    std::vector<double> Ls(Nobs); //litter size
    std::vector<double> SR(Nobs); //scaled residual
+   std::vector<double> Lsc(Nobs);
    std::vector<int> Xg(Nobs, BMDS_MISSING); //markings for group number
 
    //Need to implement
@@ -3573,8 +3574,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      Yn[i] = pyAnal->litterSize[i] -  pyAnal->incidence[i];
    }
    Ls = pyAnal->litterSize;
+   Lsc = pyAnal->lsc;
    //Sort_4_By_Dose(Nobs, Xi, Yn, Yp, Ls);
-
 
    //get correct number of dose groups
    //assumes vectors are already sorted
@@ -3608,6 +3609,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
       }
    }
    int ngrp=junk;
+   //compute the group size  
+   std::vector<int> grpSize(ngrp);
+   for (int i = 0; i<Nobs; i++) {
+     grpSize[Xg[i]-1] += 1;
+   }
+   SortNestedData (grpSize, Xi, Ls, Yp, Yn, Lsc, false);  //Sort by Xi->Ls->Yp
 
    std::cout<<"ngrp = "<<ngrp<<std::endl;
    //push last group size;
@@ -3690,30 +3697,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
-  //compute init_lkf for full model and init_lkr for reduced model
-  double lkf = 0.0;
-  double pdep = 0.0;  //positive response
-  double ndep = 0.0;  //negative response 
-//  varsum[0].S = 0;
-//  varsum[1].S = 0;
-  double W;  
-  for (int i=0; i<Nobs; i++){
-//    varsum[0].S += Yp[i];
-//    varsum[1].S += Yn[i];
-    pdep += Yp[i];
-    ndep += Yn[i];
-    W = Yp[i] / (Yp[i] + Yn[i]);
-    if (W > 0){
-      lkf += Yp[i] * log (W);
-    }
-    if (W < 1){
-      lkf += Yn[i] * log(1-W);
-    }
-  }
-//  W = varsum[0].S / (varsum[0].S + varsum[1].S);
-  W = pdep / (pdep + ndep);
-//  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
-  double lkr = pdep * log(W) + ndep * log(1-W);
 
   //Nlogist_fit(nparm, ngrp, Parms, EPS, &iter, &xlk);
   double EPS = 3.0e-8;
@@ -3790,6 +3773,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   
   //compute initial estimates
   double ymin = 1.0;
+  double W = 0.0;
   for (int i=0; i<ngrp; i++){
      W = tmpYp[i]/(tmpYp[i]+tmpYn[i]);
      probability_inrange(&W);
@@ -3861,6 +3845,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.Xg = Xg;
   objData.Yp = Yp;
   objData.Yn = Yn;
+  objData.Lsc = Lsc;
+  objData.ngrp = ngrp;
   objData.smax = smax;
   objData.smin = smin;
   objData.restricted = pyAnal->restricted;
@@ -3988,15 +3974,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 
   //temp DEBUG override of parm values for comparison with old code
-//  pyRes->parms[0]=0.084734;
-//  pyRes->parms[1]=-4.109652;
-//  pyRes->parms[2]=0.004761;
-//  pyRes->parms[3]=-0.055489;
-//  pyRes->parms[4]=1.000;
-//  pyRes->parms[5]=0.0;
-//  pyRes->parms[6]=0.0;
-//  pyRes->parms[7]=0.0;
-//  pyRes->parms[8]=0.0;
+  std::cout<<"Overriding parms values for DEBUG"<<std::endl;
+  pyRes->parms[0]=0.084734;
+  pyRes->parms[1]=-4.109652;
+  pyRes->parms[2]=0.004761;
+  pyRes->parms[3]=-0.055489;
+  pyRes->parms[4]=1.000;
+  pyRes->parms[5]=0.0;
+  pyRes->parms[6]=0.0;
+  pyRes->parms[7]=0.0;
+  pyRes->parms[8]=0.0;
 
   std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double> (pyRes->nparms));
   Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData, vcv_tmp); 
@@ -4051,13 +4038,92 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //compute and output the analysis of deviance
   //DTMS3ANOVA (nparm, Nobs, Spec, lkf, xlk, lkr, anasum, bounded);
 
-  //double MAP = anasum[2].SS;
-  //double AIC = -2*anasum[2].SS + 2*(1.0+anasum[3].DF - anasum[2].DF);
+  struct nested_AOD fullAnova;
+  struct nested_AOD fittedAnova;
+  struct nested_AOD redAnova;
+
+  //compute init_lkf for full model and init_lkr for reduced model
+  double lkf = 0.0;   //full model likelihood
+  double pdep = 0.0;  //positive response
+  double ndep = 0.0;  //negative response 
+    
+  for (int i=0; i<Nobs; i++){
+    pdep += Yp[i];
+    ndep += Yn[i];
+    W = Yp[i] / (Yp[i] + Yn[i]);
+    if (W > 0){
+      lkf += Yp[i] * log (W);
+    }
+    if (W < 1){
+      lkf += Yn[i] * log(1-W);
+    }
+  }
+//  W = varsum[0].S / (varsum[0].S + varsum[1].S);
+  W = pdep / (pdep + ndep);
+//  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
+  double lkr = pdep * log(W) + ndep * log(1-W);  //reduced model likelihood
+
+  double dev = 2*(lkf - pyRes->LL);
+  int df = Nobs - pyRes->nparms-1 - numBounded;
+  pyRes->model_df = df;
+  double pv;
+  if (dev < 0.0){
+    pv = BMDS_MISSING;
+  } else {
+    if (df > 0){
+      pv = CHISQ(dev, df);
+    }else {
+      pv = BMDS_MISSING;
+    }
+  }
+
+  int numSpec = 0;
+  for (int i=0; i<Spec.size(); i++){
+     if (Spec[i]) numSpec++;
+  }
+
+  fullAnova.df = pyRes->nparms - 1 - numSpec;
+  fullAnova.LL = lkf;
+
+  fittedAnova.LL = pyRes->LL;
+  fittedAnova.dev = dev;
+  fittedAnova.df = df;
+  fittedAnova.pv = pv; 
+
+
+  if (Nobs > 1){
+    dev = 2*(lkf - lkr);
+    if (dev <= 0){
+      pv = BMDS_MISSING;
+    } else {
+      pv = CHISQ(dev, Nobs - 1);
+    }
+  } else {
+    pv = BMDS_MISSING;
+  }
+
+  redAnova.LL = lkr;
+  redAnova.dev = dev;
+  redAnova.df = Nobs - 1;
+  redAnova.pv = pv;
+  
+  
+  //Vector containing
+  std::vector<nested_AOD> anovaVec;
+  anovaVec.push_back(fullAnova);
+  anovaVec.push_back(fittedAnova);
+  anovaVec.push_back(redAnova);
+
+  pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2*(1.0 + redAnova.df - fittedAnova.df);
 
   //Generate litter data results
   //myGoodness (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
 
-  //more goodness of git calcs
+  Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
+
+  Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
+
+  //more goodness of fit calcs
   //N_Goodness (ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
 
   //calculate confidence intervals at each dose level for graphical output
@@ -4074,10 +4140,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
    Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
-   //mySRoI(zOut, ngrp, Nobs, GXi, Xi, Xg, SR, Ls, sijfixed, BMD);
-   
-   //myBootstrap (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR, BSIter, BSSeed);
-
+//   Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, &grpSize, pyRes->bmd);
+//
+//   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
 
 
 
@@ -4447,6 +4512,717 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 }
 
+void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations){
+
+  int ngrp = objData->ngrp; 
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  std::vector<int> Xg = objData->Xg;
+  int Nobs = Yp.size();
+  std::vector<double> grpSize(ngrp, 0); 
+  std::vector<double> phi(ngrp);
+  std::vector<double> Ep(Nobs);
+  std::vector<double> Ysum(Nobs);
+  std::vector<double> Ypp(Nobs);
+  std::vector<double> var(Nobs);
+
+  //bootstrap variables
+  gsl_rng * r;                  // random value for beta distribution 
+  const gsl_rng_type * type;    // type for beta distribution
+  double urand;                 /* uniform random value [0,1]  */ 
+  int SRsqCount;  	//tracks SR^2 >= SR^2 original
+  int BSLoops = 3;	//number of times to repeat bootstrap method
+  std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
+  std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations));
+  std::vector<double> Yp_new(Nobs);	//pseudo-observed values
+  std::vector<double> SR_new(Nobs);	//SR values based on new variables
+  double cutpoint;	//cut-off probability for bootstrapping
+  double a,b; 		//values for beta distribution function
+  double x, cum_beta, cum_beta_comp, cum_beta_comp_low, cum_beta_comp_hi; //cumulative beta variables for NaN method
+  std::vector<double> pv(BSLoops);
+  double cum_beta_step = 0.00001; 	//step size for cumulative beta table
+  double eps = 10e-8;	//accuracy to test for est.prob = 0;
+  std::vector<double> pctTemp(BSLoops+1);
+  int perloc;
+
+
+  //compute the # of obs in each group
+  for (int i=0; i<Nobs; i++) grpSize[Xg[i]] += 1;
+  //assumes PHI_START = 5
+  for (int i=0; i<ngrp; i++){
+      phi[i] = pyRes->parms[5+i];
+  }
+
+  //compute the estimated probability and expected obs
+  Nlogist_Predict(pyRes->parms, objData, Ep);
+
+  for (int i=0; i<Nobs; i++){
+    Ysum[i] = Yp[i] + Yn[i];
+    Ypp[i] = Ep[i] * Ysum[i];
+    var[i] = Ysum[i] * Ep[i] *  (1-Ep[i])*(1.0+(Ysum[i]-1.0)*phi[Xg[i]]); 
+  }
+
+//  //Add capability to tally # of observed at each value
+//  int max = 0;
+//  for (i=0; i<Nobs; i++){
+//    if (max < (int)YSum[i]) max = (int)YSum[i];
+//  }
+//  std::vector<int> obsCount(max);
+
+  double gfit = pyRes->litter.chiSq;
+  int df = pyRes->model_df;
+
+  //bootstrap method for nested models
+  
+  //set up GSL random number generator
+  gsl_rng_env_setup();
+  type = gsl_rng_default;
+  r = gsl_rng_alloc(type);
+  gsl_rng_set(r, seed);
+
+  for (int l=0; l<BSLoops; l++){
+    SRsqCount = 0;
+
+    for (int i=0; i<iterations; i++){
+       SR_newsqsum[l][i] = 0;  //Set SR squared sum to zero for new calcs
+       for (int j=0; j<Nobs; j++){  //loop over each line in litter data
+         Yp_new[j] = 0;  //reset pseudo-observed value to zero
+
+	 //find cut-off probability (cutpoint)
+	 if ((phi[Xg[j]] == 0) || (phi[Xg[j]] == 1)){
+           cutpoint = Ep[j];
+	 } else {
+	   //find cut-off probability from beta distribution
+	   //be sure not to evaluate a,b and beta distribution if Ep[j] = 0.  This will skip next if statement also: if (isnan(cutpoint))
+	   if (Ep[j] <= eps){
+	     cutpoint = 0.0;
+	   } else {
+	     double tempvalue = Ep[j]*(1.0-Ep[j])/(Ep[j]*(1.0-Ep[j])*phi[Xg[j]]) - 1.0;
+	     a = Ep[j]*tempvalue;
+	     b = (1.0 - Ep[j])*tempvalue;
+	     cutpoint = gsl_ran_beta(r, a, b);
+	   }
+	 }
+	 if (isnan(cutpoint)){
+	   cum_beta_comp_low = gsl_cdf_beta_P(cum_beta_step, a, b);  	//low end of cumulative scale
+	   cum_beta_comp_hi = gsl_cdf_beta_P(1.0-cum_beta_step, a, b); 	//high end of cumulative scale
+	   cum_beta = gsl_rng_uniform(r);			//random value to compare to cumulative scale
+
+	   if (cum_beta < cum_beta_comp_low) {	//if random value is less than low end
+	     cutpoint = 0;
+	   } else if (cum_beta >= cum_beta_comp_hi){	//if random value is greater than high end
+	     cutpoint = 1.0 - cum_beta_step;
+	   } else if (fabs(cum_beta_comp_low - cum_beta)<fabs(cum_beta_comp_hi - cum_beta)){ 	//if random value is closer to low end
+	     cum_beta_comp = 0;
+	     x=0;
+	     while (x<=1.0 && cum_beta > cum_beta_comp){
+	       cutpoint = x;
+	       x += cum_beta_step;
+	       cum_beta_comp = gsl_cdf_beta_P(x,a,b);
+	     }
+	   } else { 	//random value is closer to high end
+	     cum_beta_comp = 1.0;
+	     x=1;
+	     cutpoint = 1.0;
+	     while (x>=0.0 && cum_beta < cum_beta_comp){
+	       x -= cum_beta_step;
+	       cutpoint = x;
+	       cum_beta_comp = gsl_cdf_beta_P(x, a, b);
+	     }
+	   }
+	 }
+
+	 //calculate pseudo-observed value
+	 if (Ep[j] <= eps){  	//if est prob = 0, then bootstrap must produce zero responses for this observation
+           Yp_new[j] = 0;
+	 } else if(phi[Xg[j]] != 1){
+           for (int k=0; i<Ysum[j]; k++){
+	     urand = gsl_rng_uniform(r); 	//generate uniform random number
+	     if (urand <= cutpoint) Yp_new[j]++;
+	   }
+	 } else {	//phi = 1 method
+	   urand = gsl_rng_uniform(r);
+	   if (urand <= cutpoint){
+	     Yp_new[j] = Ysum[j];
+	   } else {
+	     Yp_new[j] = 0;
+	   }
+	 } 
+
+	 //calculate scaled residual based on pseudo-observation Yp_new
+	 SR_new[j] = var[j] > 0 ? (Yp_new[j] - Ypp[j])/sqrt(var[j]) : 0;
+	 SR_newsqsum[l][i] += SR_new[j] * SR_new[j];
+
+       } //end Nobs loop
+
+       if (SR_newsqsum[l][i] >= gfit) SRsqCount++;
+
+    } //end iterations loop
+
+    pv[l] = (double) SRsqCount/iterations; //compute p-value for each BS loop
+
+  } //end BSLoops loop
+
+  //calculate chi-square percentiles for each BS loop
+  double  pavg = 0;
+
+  for (int l=0; l<BSLoops; l++){
+    pyRes->boot.pVal[l] = pv[l];
+//    std::cout<<"l:"<<l<<", b4 sort"<<std::endl; 
+//    for (int i=0; i<SR_newsqsum[l].size(); i++){
+//      std::cout<< SR_newsqsum[l][i] << ", ";
+//    } 
+//    std::cout<<std::endl;
+    //compute percentile values of sum of SR^2
+    sort(SR_newsqsum[l].begin(), SR_newsqsum[l].end()); 
+//    std::cout<<"l:"<<l<<", after sort"<<std::endl; 
+//    for (int i=0; i<SR_newsqsum[l].size(); i++){
+//      std::cout<< SR_newsqsum[l][i] << ", ";
+//    } 
+//    std::cout<<std::endl;
+    for (int k=0; k<percentiles.size(); k++){
+      double temp = percentiles[k] * iterations;
+      if ((ceilf(temp)==temp) && (floorf(temp)==temp)){
+         perloc = (int)temp;
+	 pctTemp[k] = SR_newsqsum[l][perloc];
+      } else {
+	 perloc = (int)ceilf(temp);
+	 pctTemp[k] = (SR_newsqsum[l][perloc]+SR_newsqsum[l][perloc+1])/2.0;
+      }
+    }
+    pyRes->boot.perc50[l] = pctTemp[0];
+    pyRes->boot.perc90[l] = pctTemp[1];
+    pyRes->boot.perc95[l] = pctTemp[2];
+    pyRes->boot.perc99[l] = pctTemp[3];
+    pavg += pv[l];
+  }
+
+  //combined p-value
+  pavg /= BSLoops;
+
+  //combined chi-square percentiles
+  //1st flatten the 2d vector
+  std::vector<double> combSR (BSLoops * iterations);
+  int count = 0;
+  for (int i=0; i<BSLoops; i++){
+    for (int j=0; j<iterations; j++){
+       combSR[count] = SR_newsqsum[i][j];
+       count++;
+    }
+  }
+  sort(combSR.begin(), combSR.end());
+  pyRes->boot.pVal[BSLoops+1] = pavg;
+  for (int k=0; k<percentiles.size(); k++){
+    double temp = percentiles[k] * BSLoops*iterations;
+    if ((ceilf(temp)==temp) && (floorf(temp)==temp)){
+      perloc = (int) temp;
+      pctTemp[k] = combSR[perloc-1]; //CHECK THIS!!!
+    } else {
+      perloc = (int)ceilf(temp);
+      pctTemp[k] = (combSR[perloc-1] + combSR[perloc])/2.0;
+    }
+  }
+  pyRes->boot.perc50[BSLoops+1] = pctTemp[0];
+  pyRes->boot.perc90[BSLoops+1] = pctTemp[1];
+  pyRes->boot.perc95[BSLoops+1] = pctTemp[2];
+  pyRes->boot.perc99[BSLoops+1] = pctTemp[3];
+
+  gsl_rng_free(r);  //free memory from random generator
+
+}
+
+void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, std::vector<int> &grpSize, double bmd){
+
+  int locDose = 0;
+  int locLSC = 0;
+  double closeDose = 0.0;
+  double closeLSC = 0.0;
+  int litSR = 1;
+  double idiff;
+  
+  int ngrp = objData->ngrp;
+  std::vector<double> Xi = objData->Xi;
+  std::vector<int> Xg = objData->Xg;
+  std::vector<double> Lsc = objData->Lsc;
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  std::vector<double> Ls = objData->Ls;
+
+  //Need to sort data by Lsc
+  SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
+
+
+  double meanLSC = objData->sijfixed;
+  int Nobs = Xi.size();
+  std::vector<double> GXi(ngrp);
+
+  for (int j=0; j<Nobs; j++){
+    for (int i=0; i<ngrp; i++){
+      if (Xg[j] == i){
+        GXi[i] = Xi[j];
+      }
+    } 
+  }
+
+  //choose dose group closest to BMD
+  double diff = DBL_MAX;
+  for (int i=0; i<ngrp; i++){
+    idiff = fabs(bmd - GXi[i]);
+    if (idiff < diff){
+      diff = idiff;
+      locDose = i;
+      closeDose = GXi[i];
+    }
+  }
+
+  //choose LSC closest to mean LSC
+  diff = DBL_MAX;
+  for (int i=0; i<Nobs; i++){
+    if (Xi[i] = closeDose){
+      idiff = fabs(Lsc[i] - meanLSC);
+      if (idiff == idiff) litSR++;
+      if (idiff < diff){
+        litSR = 1;
+	diff = idiff;
+	closeLSC = Lsc[i];
+	locLSC = i;
+      }
+    }
+  }
+
+  //calculate max, min, average SRoI and |SRoI|
+  srData->maxSR = SR[locLSC];
+  srData->minSR = SR[locLSC];
+  srData->avgSR = SR[locLSC];
+  srData->maxAbsSR = fabs(SR[locLSC]);
+  srData->minAbsSR = fabs(SR[locLSC]);
+  srData->avgAbsSR = fabs(SR[locLSC]);
+
+  if (litSR !=1){
+    srData->avgSR = 0;
+    srData->avgAbsSR = 0;
+    for (int i=locLSC; i<=locLSC+litSR-1; i++){   	//relies on dose groups being sorted by LSC
+      if (SR[i] > srData->maxSR) srData->maxSR = SR[i];
+      if (SR[i] < srData->minSR) srData->minSR = SR[i];
+      if (fabs(SR[i]) > srData->maxAbsSR) srData->maxAbsSR = fabs(SR[i]);
+      if (fabs(SR[i]) < srData->minAbsSR) srData->minAbsSR = fabs(SR[i]);
+      srData->avgSR += SR[i];
+      srData->avgAbsSR += fabs(SR[i]);
+    }
+    srData->avgSR /= litSR;
+    srData->avgAbsSR /= litSR;
+  }
+}
+
+void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nestedReducedData *redData){
+
+  int ngrp = objData->ngrp;
+  std::vector<double> num(ngrp);
+  std::vector<double> den(ngrp);
+//  std::cout<<"inside Nlogist_reduced"<<std::endl;
+//  std::cout<<"ngrp:"<<ngrp<<std::endl;
+//
+//  std::cout<<"b4 raoscott"<<std::endl;
+//  std::cout<<"num size:"<<num.size()<<std::endl;
+//  std::cout<<"den size:"<<den.size()<<std::endl;
+  raoscott(objData, num, den);
+  //Quantal_CI requires number pos and number neg
+  //after this, den contains the number unaffected (transformed)
+  for (int i=0; i<ngrp; i++) den[i] -= num[i];
+  double conf = 1 - alpha;
+//  std::cout<<"b4 Quantal_CI"<<std::endl;
+//  std::cout<<"num size:"<<num.size()<<std::endl;
+//  std::cout<<"den size:"<<den.size()<<std::endl;
+  Quantal_CI(num, den, conf, redData);
+}
+
+void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, struct nestedReducedData *redData){
+
+  double n, phat;
+  //double cc = RNORM(1.0 - (1.0  - conf)/2.0);
+  double p = 1.0 - (1.0-conf)/2.0;
+  double sigma = 1.0;
+  double cc = gsl_cdf_gaussian_Pinv(p, sigma);
+  double cc2 = cc*cc;
+  int Nobs = Yp.size();
+//  std::cout<<"Nobs:"<<Nobs<<std::endl;
+
+  for (int i=0; i<Nobs; i++){
+    n = Yp[i] + Yn[i];
+    redData->propAffect[i] = phat = Yp[i]/n;
+    redData->lowerConf[i] = (2*Yp[i] + cc2 - 1.0) - cc*sqrt(cc2 - (2.0+1.0/n)+4.0*phat*(Yn[i]+1.0));
+    redData->lowerConf[i] /= 2.0*(n+cc2);
+    redData->upperConf[i] = (2*Yp[i] + cc2 + 1.0) + cc*sqrt(cc2 + (2.0-1.0/n)+4.0*phat*(Yn[i]-1.0));
+    redData->upperConf[i] /= 2.0*(n+cc2);
+  }
+
+}
+
+
+void raoscott(struct nestedObjData *objData, std::vector<double> &num, std::vector<double> &den){
+
+  int ngrp = objData->ngrp;
+  int Nobs = objData->Xi.size();
+  std::vector<int> Xg = objData->Xg;
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  double sumnum, sumden, sumsq, phat, rij, vi, di;
+  int grpsize;
+
+
+  for (int j=0; j<ngrp; j++){
+    sumnum = sumden = 0.0;
+    for (int i=0; i<Nobs; i++){
+      if (j == Xg[i]){
+	sumnum += Yp[i];
+	sumden += (Yp[i] + Yn[i]);
+      }
+    }
+    phat = sumnum/sumden;
+    sumsq = 0;
+    grpsize = 0;
+    for (int i=0; i<Nobs; i++){
+      if (j==Xg[i]){
+        grpsize++;
+	rij = Yp[i] - phat * (Yp[i] + Yn[i]);
+	sumsq += rij * rij;
+      }
+    }
+    vi = grpsize * sumsq/((grpsize - 1) * sumden * sumden);
+    if (phat > 0 && phat < 1){
+      di = sumden * vi/(phat * (1.0 - phat));
+    } else {
+      di = 1.0;
+    }
+    num[j] = sumnum/di;
+    den[j] = sumden/di;
+  }
+
+
+
+}
+
+void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData, struct nestedLitterData *litterData, const std::vector<int> &grpSize){
+  
+  std::vector<double> Yp = objData->Yp;
+  std::vector<double> Yn = objData->Yn;
+  std::vector<double> Ls = objData->Ls;
+  std::vector<double> Lsc = objData->Lsc;
+  std::vector<double> Xi = objData->Xi;
+  std::vector<int> Xg = objData->Xg;
+  int ngrp = objData->ngrp;
+  int Nobs = Yp.size();
+  int nparm = parms.size();
+//  std::vector<int> GrpSize(ngrp, 0);
+  std::vector<double> Ep(Nobs);
+  std::vector<double> phi(ngrp);  //phi parms for each group
+  std::vector<double> Ysum(Nobs);
+  std::vector<double> Ypp(Nobs);
+  std::vector<double> Var(Nobs);
+  std::vector<double> SR(Nobs);
+
+  std::cout<<"inside Nlogist_GOF data:"<<std::endl;
+  std::cout<<"Xi\tLs\tYp\tYn\tLsc\tEp"<<std::endl;
+  for(int i=0; i<Ls.size(); i++){
+    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Lsc[i]<<"\t"<<Ep[i]<<std::endl;
+  }
+  //compute the GrpSize  
+//  std::cout<<"computing group size"<<std::endl;
+//  for (int i = 0; i<Nobs; i++) {
+//    GrpSize[Xg[i]-1] += 1;
+////    std::cout<<"i:"<<i<<", Xg[i]:"<<Xg[i]<<", grpSize[]:"<<GrpSize[Xg[i]]<<std::endl;
+//  }
+//  std::cout<<"final group size"<<std::endl;
+//  for (int i=0; i<GrpSize.size(); i++){
+//    std:cout<<"group:"<<i<<", grpSize:"<<GrpSize[i]<<std::endl;
+//  }
+
+  //assumes PHI_START = 5
+  for (int i=0; i<ngrp; i++){
+      phi[i] = parms[5+i];
+  }
+
+
+  //Predict
+  Nlogist_Predict(parms, objData, Ep);
+
+//  std::cout<<"b4 SortByLs"<<std::endl;
+//  std::cout<<"Xi\tLs\tYp\tYn\tEp"<<std::endl;
+//  for(int i=0; i<Ls.size(); i++){
+//    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Ep[i]<<std::endl;
+//  }
+//  //SortByLs
+//  SortByLs (GrpSize, Ls, Yp, Yn, Ep);
+//  std::cout<<"after SortByLs"<<std::endl;
+//  std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
+//  for(int i=0; i<Ls.size(); i++){
+//    std::cout<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Ep[i]<<std::endl;
+//  }
+  //replace objData with sorted values
+  objData->Ls = Ls;
+  objData->Lsc = Lsc;
+  objData->Yp = Yp;
+  objData->Yn = Yn;
+  for (int i=0; i<Nobs; i++){
+    Ysum[i] = Yp[i] + Yn[i];
+    Ypp[i] = Ep[i] * Ysum[i];
+    Var[i] = Ysum[i] * Ep[i] * ((1 - Ep[i])*(1.0+(Ysum[i] - 1.0)*phi[Xg[i]])); 
+  }
+
+  //compute the goodness of fit test for litter data
+  double gfit = 0.0;
+  for (int i=0; i<Nobs; i++){
+    if (Var[i] > 0){
+      SR[i] = Var[i] > 0 ? (Yp[i] - Ypp[i])/sqrt(Var[i]) : 0;
+      gfit += SR[i]*SR[i];
+    }
+  }
+  litterData->chiSq = gfit;
+
+  for (int i=0; i<Nobs; i++){
+    litterData->dose[i] = Xi[i];
+    litterData->LSC[i] = Lsc[i];
+    litterData->estProb[i] = Ep[i];
+    litterData->litterSize[i] = Ysum[i];
+    litterData->expected[i] = Ypp[i];
+    litterData->observed[i] = Yp[i];
+    litterData->SR[i] = (Var[i] > 0 ? (Yp[i] - Ypp[i])/sqrt(Var[i]) : 0);  
+  }
+
+}
+
+
+void SortNestedData(std::vector<int> &grpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc){
+  //sorts nested data by Xi -> Ls(or Lsc) -> Yp
+
+  int ngrp = grpSize.size();
+//  std::cout<<"ngrp:"<<ngrp<<std::endl;
+//  std::cout<<"grpSize"<<std::endl;
+//  for (int i=0; i<ngrp; i++){
+//    std::cout<<"i:"<<i<<", grpSize:"<<grpSize[i]<<std::endl;
+//  }
+  int Nobs = Xi.size();
+
+  std::vector<double> origXi = Xi;
+  std::vector<double> origLs = Ls;
+  std::vector<double> origYp = Yp;
+  std::vector<double> origYn = Yn;
+  std::vector<double> origLsc = Lsc;
+
+  std::vector<double> newXi(Nobs);
+  std::vector<double> newLs(Nobs);
+  std::vector<double> newYp(Nobs);
+  std::vector<double> newYn(Nobs);
+  std::vector<double> newLsc(Nobs);
+  
+  //first pull out each dose group, then sort each dose group, then combine back
+  int grpStart = 0;
+  for (int i=0; i<ngrp; i++){
+    int thisGrpSize = grpSize[i];
+//    std::cout<<"thisGrpSize:"<<thisGrpSize<<std::endl;
+//    //first pull out subset of vectors
+//    std::vector<double> tmpLs(origLs.begin() + grpStart, origLs.begin()+grpStart+thisGrpSize);
+//    std::vector<double> tmpYp(origYp.begin() + grpStart, origYp.begin()+grpStart+thisGrpSize);
+//    std::vector<double> tmpYn(origYn.begin() + grpStart, origYn.begin()+grpStart+thisGrpSize);
+//    std::vector<double> tmpEp(origEp.begin() + grpStart, origEp.begin()+grpStart+thisGrpSize);   
+
+    std::vector<std::vector<double>> sortV;
+    for (int j=grpStart; j<grpStart+thisGrpSize; j++){
+      std::vector<double> tmp;
+      tmp.push_back(origXi[j]);
+      tmp.push_back(origLs[j]);
+      tmp.push_back(origYp[j]);
+      tmp.push_back(origYn[j]);
+      tmp.push_back(origLsc[j]);
+      sortV.push_back(tmp);
+    }
+//    std::cout<<"original vector for group:"<<i<<std::endl;
+//    std::cout<<std::endl;
+//    for (const auto& row : sortV){
+//      for (const auto& col : row){
+//        std::cout<< col << " " ;
+//      }
+//      std::cout<<std::endl;
+//    } 
+    //first sort the grouped vector by the 3rd vector Yp
+    //then sort the grouped vector by 2nd vector Ls or 5th vector Lsc
+    //then sort the grouped vector by 1st vector Xi
+    std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[2] < b[2];});
+    if (sortByLsc){
+      std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[4] < b[4];});
+    } else {
+      std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[1] < b[1];});
+    }
+    std::sort(sortV.begin(), sortV.end());
+//    std::cout<<"sorted vector"<<std::endl;
+//    std::cout<<std::endl;
+//    for (const auto& row : sortV){
+//      for (const auto& col : row){
+//        std::cout<< col << " " ;
+//      }
+//      std::cout<<std::endl;
+//    } 
+
+    //insert into new vector
+////    newLs.insert(newLs.end(), sortV[0].begin(), sortV[0].end());
+////    newYp.insert(newYp.end(), sortV[1].begin(), sortV[1].end());
+////    newYn.insert(newYn.end(), sortV[2].begin(), sortV[2].end());
+////    newEp.insert(newEp.end(), sortV[3].begin(), sortV[3].end());
+//    std::cout<<"sortV size i:"<<sortV.size()<<", j:"<<sortV[0].size()<<std::endl;
+    for (int i=grpStart; i<grpStart + thisGrpSize; i++){
+//      std::cout<<"insertion point:"<<i<<std::endl;
+      newXi[i] = sortV[i-grpStart][0];
+      newLs[i] = sortV[i-grpStart][1];
+      newYp[i] = sortV[i-grpStart][2];
+      newYn[i] = sortV[i-grpStart][3];
+      newLsc[i] = sortV[i-grpStart][4];
+    }
+
+//    std::cout<<"current full vector"<<std::endl;
+//    std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
+//    for (int i=0; i<newLs.size(); i++){
+//      std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
+//    }
+
+    grpStart += grpSize[i]; //set grpStart index for next group
+  } 
+
+  std::cout<<"final full vector"<<std::endl;
+  std::cout<<"Xi\tLs\tYp\tYn\tLsc"<<std::endl;
+  for (int i=0; i<Nobs; i++){
+    std::cout<<newXi[i]<<"\t"<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newLsc[i]<<std::endl;   
+  }
+
+  //replace original with sorted
+  Xi = newXi;
+  Ls = newLs;
+  Yp = newYp;
+  Yn = newYn;
+  Lsc = newLsc;
+}
+
+//void SortByLs(std::vector<int> &GrpSize, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Ep){
+//
+////  std::cout<<"inside sortByLs"<<std::endl;
+//  int ngrp = GrpSize.size();
+////  std::cout<<"ngrp:"<<ngrp<<std::endl;
+////  std::cout<<"GrpSize"<<std::endl;
+////  for (int i=0; i<ngrp; i++){
+////    std::cout<<"i:"<<i<<", grpSize:"<<GrpSize[i]<<std::endl;
+////  }
+//  int Nobs = Ls.size();
+//
+//  std::vector<double> origLs = Ls;
+//  std::vector<double> origYp = Yp;
+//  std::vector<double> origYn = Yn;
+//  std::vector<double> origEp = Ep;
+//
+//  std::vector<double> newLs(Nobs);
+//  std::vector<double> newYp(Nobs);
+//  std::vector<double> newYn(Nobs);
+//  std::vector<double> newEp(Nobs);
+//  
+//  //first pull out each dose group, then sort each dose group, then combine back
+//  int grpStart = 0;
+//  for (int i=0; i<ngrp; i++){
+//    int thisGrpSize = GrpSize[i];
+////    std::cout<<"thisGrpSize:"<<thisGrpSize<<std::endl;
+////    //first pull out subset of vectors
+////    std::vector<double> tmpLs(origLs.begin() + grpStart, origLs.begin()+grpStart+thisGrpSize);
+////    std::vector<double> tmpYp(origYp.begin() + grpStart, origYp.begin()+grpStart+thisGrpSize);
+////    std::vector<double> tmpYn(origYn.begin() + grpStart, origYn.begin()+grpStart+thisGrpSize);
+////    std::vector<double> tmpEp(origEp.begin() + grpStart, origEp.begin()+grpStart+thisGrpSize);   
+//
+//    std::vector<std::vector<double>> sortV;
+//    for (int j=grpStart; j<grpStart+thisGrpSize; j++){
+//      std::vector<double> tmp;
+//      tmp.push_back(origLs[j]);
+//      tmp.push_back(origYp[j]);
+//      tmp.push_back(origYn[j]);
+//      tmp.push_back(origEp[j]);
+//      sortV.push_back(tmp);
+//    }
+////    std::cout<<"original vector for group:"<<i<<std::endl;
+////    std::cout<<std::endl;
+////    for (const auto& row : sortV){
+////      for (const auto& col : row){
+////        std::cout<< col << " " ;
+////      }
+////      std::cout<<std::endl;
+////    } 
+//    //first sort the grouped vector by the 2nd vector Yp
+//    //then sort the grouped vector by 1st vector Ls
+//    std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[1] < b[1];});
+//    std::sort(sortV.begin(), sortV.end());
+////    std::cout<<"sorted vector"<<std::endl;
+////    std::cout<<std::endl;
+////    for (const auto& row : sortV){
+////      for (const auto& col : row){
+////        std::cout<< col << " " ;
+////      }
+////      std::cout<<std::endl;
+////    } 
+//
+//    //insert into new vector
+//////    newLs.insert(newLs.end(), sortV[0].begin(), sortV[0].end());
+//////    newYp.insert(newYp.end(), sortV[1].begin(), sortV[1].end());
+//////    newYn.insert(newYn.end(), sortV[2].begin(), sortV[2].end());
+//////    newEp.insert(newEp.end(), sortV[3].begin(), sortV[3].end());
+////    std::cout<<"sortV size i:"<<sortV.size()<<", j:"<<sortV[0].size()<<std::endl;
+//    for (int i=grpStart; i<grpStart + thisGrpSize; i++){
+////      std::cout<<"insertion point:"<<i<<std::endl;
+//      newLs[i] = sortV[i-grpStart][0];
+//      newYp[i] = sortV[i-grpStart][1];
+//      newYn[i] = sortV[i-grpStart][2];
+//      newEp[i] = sortV[i-grpStart][3];
+//    }
+//
+////    std::cout<<"current full vector"<<std::endl;
+////    std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
+////    for (int i=0; i<newLs.size(); i++){
+////      std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
+////    }
+//
+//    grpStart += GrpSize[i]; //set grpStart index for next group
+//  } 
+//
+////  std::cout<<"final full vector"<<std::endl;
+////  std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
+////  for (int i=0; i<Nobs; i++){
+////    std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
+////  }
+//
+//  //replace original with sorted
+//  Ls = newLs;
+//  Yp = newYp;
+//  Yn = newYn;
+//  Ep = newEp;
+//}
+
+
+void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P){
+
+  std::vector<double> Xi = objData->Xi;
+  std::vector<double> Lsc = objData->Lsc;
+
+  double bkg;
+  int Nobs = Xi.size();
+  for (int i=0; i<Nobs; i++){
+    bkg = parms[0] + parms[2]*Lsc[i];
+    if (Xi[i] <=0.0){
+      P[i] = bkg;
+    } else {
+      P[i] = bkg + (1.0-bkg)/(1.0+exp(-(parms[1] + parms[3] * Lsc[i] + parms[4]*log(Xi[i]))));
+    }
+  }
+
+//  std::cout<<"P[i]"<<std::endl;
+//  for (int i=0; i<Nobs; i++){
+//    std::cout<<"i:"<<i<<", P:"<<P[i]<<std::endl;
+//  }
+
+}
+
 void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData, std::vector<std::vector<double>> &vcv){
 
 //  std::cout<<"inside Nlogist_vcv"<<std::endl;
@@ -4576,87 +5352,6 @@ void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::ve
 
 }
 
-
-
-void SRoI(std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD){
-
-  double idiff, diff;
-  int locDose = 0;	//location of closest dosegroup
-  int locLSC = 0;	//location of closest LSC (first found)
-  int litSR = 1;  	//number of litters with closest LSC
-  double closeDose = 0;
-  double closeLSC = 0;
-  double maxSR, minSR, avgSR, maxabsSR, minabsSR, avgabsSR; 
-
-  //choose does group closest to BMD
-  diff = DBL_MAX;
-  int ngrp=Xg.size();
-  int Nobs = Xi.size();
-
-  //define GXi
-  std::vector<double> GXi(ngrp);
-  for (int j=0; j<Nobs; j++){
-    for (int i=0; i<ngrp; i++){
-      GXi[i] = Xi[j];
-    }
-  }
-
-  for (int i=0; i<ngrp; i++){
-     idiff = fabs(BMD - GXi[i]);
-     if (idiff < diff){
-       diff = idiff;
-       locDose = i;
-       closeDose = GXi[i];
-     }
-  } 
-
-  //choose LSC closest to mean LSC
-  diff = DBL_MAX;
-  for (int i=0; i<Nobs; i++){
-    if (Xi[i] == closeDose){ //picks out dose group that is closest to BMD
-      idiff = fabs(LSC[i] - meanLSC);
-      if (idiff == diff) litSR++;
-      if (idiff < diff){
-        litSR = 1; 	//reset litter count
-	diff = idiff;
-	closeLSC = LSC[i];	//value of closest LSC
-	locLSC = i;
-      }
-    }
-  }
-
-  //calculate max, min, average SRoI and |SRoi|
-  maxSR = SR[locLSC];
-  minSR = SR[locLSC];
-  avgSR = SR[locLSC];
-  maxabsSR = fabs(SR[locLSC]);
-  minabsSR = fabs(SR[locLSC]);
-  avgabsSR = fabs(SR[locLSC]);
-
-  if (litSR != 1){
-    avgSR = 0;
-    avgabsSR = 0;
-    for (int i=locLSC; i<locLSC+litSR-1; i++){ //relies on dose groups being sorted by LSC
-       if (Xi[i] == GXi[locDose] && LSC[i] == closeLSC){
-         if (SR[i] > maxSR) maxSR = SR[i];
-	 if (SR[i] < minSR) minSR = SR[i];
-	 if (fabs(SR[i]) > maxabsSR) maxabsSR = fabs(SR[i]);
-	 if (fabs(SR[i]) < minabsSR) minabsSR = fabs(SR[i]);
-	 avgSR += SR[i];
-	 avgabsSR += fabs(SR[i]);
-       }
-    }
-    avgSR /= litSR;
-    avgabsSR /= litSR;
-  }
-
-  //need return structure
-  //minSR;
-  //avgSR;
-  //maxSR;
-  //litSR; 	//num litters;
-
-}
 
 
 //double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk){
@@ -5348,13 +6043,18 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 
 //QCHISQ - inverse chi-square function
 double QCHISQ(double p, int m){
-   int which = 2;
-   int status;
-   double chisq, q, df, bound;
 
-   df = (double) m;
+   double df = (double) m;
    double x = gsl_cdf_chisq_Pinv(p, df);
    return x;
+}
+
+double CHISQ(double x, int m){
+
+   double df = (double) m;
+   double p = gsl_cdf_chisq_P(x, df);
+   return p;
+
 }
 
 void outputObjData(struct nestedObjData *objData){

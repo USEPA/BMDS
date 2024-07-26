@@ -4821,6 +4821,7 @@ void runPythonNestedAnalysis(){
 
   int numDoseGroups = 4;
 
+  int Nobs = pyAnal.doses.size();
   pyAnal.prior.resize(pyAnal.prior_cols*(5+numDoseGroups), 0.0);
   std::cout<<"prior size:"<<pyAnal.prior.size()<<std::endl;
   pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, pyAnal.restricted);
@@ -4849,6 +4850,38 @@ void runPythonNestedAnalysis(){
   bmdsRes.BMDL = -9999.0;
   bmdsRes.AIC = -9999.0;
   pyRes.bmdsRes = bmdsRes;
+
+  struct nestedLitterData litter;
+  std::vector<double> litterDose(Nobs);
+  std::vector<double> litterLSC(Nobs);
+  std::vector<double> litterEP(Nobs);
+  std::vector<double> litterSize(Nobs);
+  std::vector<double> litterEx(Nobs);
+  std::vector<int> litterObs(Nobs);
+  std::vector<double> litterSR(Nobs);
+  litter.dose = litterDose;
+  litter.LSC = litterLSC;
+  litter.estProb = litterEP;
+  litter.litterSize = litterSize;
+  litter.expected = litterEx;
+  litter.observed = litterObs;
+  litter.SR = litterSR;
+  pyRes.litter = litter;
+
+  struct nestedReducedData redData;
+  std::vector<double> redDose(numDoseGroups); //size = numRows
+  std::vector<double> redPA(numDoseGroups);  //estimate of proportion affected
+  std::vector<double> redLC(numDoseGroups);  //reduced data lower confidence limit
+  std::vector<double> redUC(numDoseGroups);  //reduced data upper confidence limit
+  redData.numRows = numDoseGroups;
+  redData.dose = redDose; //size = numRows
+  redData.propAffect = redPA;  //estimate of proportion affected
+  redData.lowerConf = redLC;
+  redData.upperConf = redUC;
+  pyRes.reduced = redData;
+
+  struct nestedSRData srData;
+  pyRes.srData = srData;
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
@@ -4886,4 +4919,14 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
 //   for (int i=0; i<pyAnal->parms*pyAnal->parms; i++){
 //     printf("%d, %f\n", i, pyRes->cov[i]);
 //   }
+
+   std::cout<<"----Litter Data----"<<std::endl;
+   std::cout<<"Dose\tLSC\tEstProb\t\tLS\tExp\tObs\tSR"<<std::endl;
+   for (int i=0; i<pyRes->litter.dose.size(); i++){
+//     std::cout<<pyRes->litter.dose<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
+     std::cout<<pyRes->litter.dose[i]<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
+   }
+   std::cout<<"chiSq:"<<pyRes->litter.chiSq<<std::endl;
+
+
 }
