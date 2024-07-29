@@ -4751,14 +4751,13 @@ void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, st
   //Need to sort data by Lsc
   SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
 
-
   double meanLSC = objData->sijfixed;
   int Nobs = Xi.size();
   std::vector<double> GXi(ngrp);
 
   for (int j=0; j<Nobs; j++){
     for (int i=0; i<ngrp; i++){
-      if (Xg[j] == i){
+      if (Xg[j] == i+1){
         GXi[i] = Xi[j];
       }
     } 
@@ -4778,9 +4777,9 @@ void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, st
   //choose LSC closest to mean LSC
   diff = DBL_MAX;
   for (int i=0; i<Nobs; i++){
-    if (Xi[i] = closeDose){
+    if (Xi[i] == closeDose){
       idiff = fabs(Lsc[i] - meanLSC);
-      if (idiff == idiff) litSR++;
+      if (idiff == diff) litSR++;
       if (idiff < diff){
         litSR = 1;
 	diff = idiff;
@@ -4797,7 +4796,7 @@ void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, st
   srData->maxAbsSR = fabs(SR[locLSC]);
   srData->minAbsSR = fabs(SR[locLSC]);
   srData->avgAbsSR = fabs(SR[locLSC]);
-
+  
   if (litSR !=1){
     srData->avgSR = 0;
     srData->avgAbsSR = 0;
