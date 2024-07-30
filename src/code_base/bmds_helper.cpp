@@ -3535,7 +3535,6 @@ double PROBABILITY_INRANGE(double ex){
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
 
 
-
    //////////////////////////////
    // Parm vector indexes
    // 0 = alpha (intercept or background)
@@ -4531,7 +4530,9 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   const gsl_rng_type * type;    // type for beta distribution
   double urand;                 /* uniform random value [0,1]  */ 
   int SRsqCount;  	//tracks SR^2 >= SR^2 original
-  int BSLoops = 3;	//number of times to repeat bootstrap method
+  int BSLoops = pyRes->boot.numRuns;	//number of times to repeat bootstrap method
+  std::cout<<"BSLoops:"<<BSLoops<<std::endl;
+//  int BSLoops = 3;	//number of times to repeat bootstrap method
   std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
   std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations, 0));
   std::vector<double> Yp_new(Nobs);	//pseudo-observed values

@@ -4885,7 +4885,7 @@ void runPythonNestedAnalysis(){
 
   struct nestedBootstrap bootData;
   int numBootRuns = 3;
-  pyRes.boot.numRuns = numBootRuns;
+  //pyRes.boot.numRuns = numBootRuns;
   std::vector<double> pVal(numBootRuns+1);
   std::vector<double> perc50(numBootRuns+1);
   std::vector<double> perc90(numBootRuns+1);
@@ -4897,8 +4897,12 @@ void runPythonNestedAnalysis(){
   bootData.perc95 = perc95;
   bootData.perc99 = perc99;
   pyRes.boot = bootData;
+  pyRes.boot.numRuns = 3;
 
+  std::cout<<"b4 call boot runs:"<<pyRes.boot.numRuns<<std::endl;
   pythonBMDSNested(&pyAnal, &pyRes);
+
+
 
   printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
 }
