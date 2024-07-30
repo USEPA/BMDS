@@ -4808,7 +4808,6 @@ void runPythonNestedAnalysis(){
   pyAnal.lsc.push_back(8);
   pyAnal.lsc.push_back(10);
 
-  pyAnal.useLSC = true;
   pyAnal.LSC_type = 1;
   pyAnal.ILC_type = 1;
   pyAnal.BMD_type = 1; // 1 = extra; added otherwise

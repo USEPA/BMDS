@@ -334,7 +334,7 @@ struct python_nested_analysis{
   std::vector<double> lsc;  //litter specific covariate
   std::vector<double> prior;  //a column order matrix (parms x prior_cols)
   int LSC_type;  // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
-  bool useLSC;  //whether to use LSC
+//  bool useLSC;  //whether to use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
   bool estBackground; //if false, sets background to zero
@@ -412,6 +412,8 @@ struct nestedObjData{
   int ngrp;
   double smax;
   double smin;
+  int LSC_type;
+  int ILC_type;
   double isBMDL;
   bool restricted;
   //only used for BMDL

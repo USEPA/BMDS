@@ -3609,7 +3609,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     Spec[BGINDEX] = true;
     knownParms++;
   }   
-  if (pyAnal->ILC_type != 1){
+  if (pyAnal->ILC_type == 0){
     //set phi parm values to zero
     for (int i=PHISTART; i<pyRes->nparms; i++){
       pyRes->parms[i] = 0.0;
@@ -3617,7 +3617,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
     knownParms += ngrp;
   }
-  if (!pyAnal->useLSC){
+  if (pyAnal->LSC_type == 0){
     //set theta parm values to zero
     for (int i=THETA1_INDEX; i<=THETA2_INDEX; i++){
        pyRes->parms[i] = 0.0;
@@ -3678,7 +3678,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      sijfixed = smean1;
   }
 
-  std::vector<double> pBak = pyRes->parms;
+
 
   //compute default starting values for all unfixed parameters
   //revisit if we need to fix any parameters
@@ -3763,6 +3763,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.Yn = Yn;
   objData.Lsc = Lsc;
   objData.ngrp = ngrp;
+  objData.LSC_type = pyAnal->LSC_type;
+  objData.ILC_type = pyAnal->ILC_type;
   objData.smax = smax;
   objData.smin = smin;
   objData.restricted = pyAnal->restricted;
@@ -3780,6 +3782,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      objData.Spec[i] = true;
   }
 
+  std::vector<double> pBak = pyRes->parms;
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
 
@@ -3788,12 +3791,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //Second, get initial values for Phi's
   int count = 0;
   //Currently do not allow specification of Phi values, so this is always true
-  if (count < ngrp){
+  if (count < ngrp && pyAnal->ILC_type != 0){
     // leave theta1 and theta2 = 0.0;
     for (int i=5; i<pyRes->nparms; i++){
       //set back to original parms
       //if (SpBak[i] == 0){
-      pyRes->parms[i] = 0.01;
+      //pyRes->parms[i] = 0.01;
+      pyRes->parms[i] = pBak[i];
       //}
     }
     for (int i=5; i<pyRes->nparms; i++){
@@ -3831,7 +3835,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   double junk3;
-  //don't currently allow spec so this is always true
   if (Spec[0] == Spec[2]){
   junk1 = pyRes->parms[0];
   junk3 = pyRes->parms[2];
@@ -3858,7 +3861,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);
   }
 
-  //don't currently allow spec so this is always true
   double sdif = smax - smin;
   if (Spec[0] == Spec[2]){
     junk1 = pyRes->parms[0];
@@ -5010,6 +5012,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 		struct nestedObjData *objData){
 
   std::vector<double> p = pyRes->parms;
+  std::vector<bool> Spec = objData->Spec;
   int nparm = p.size();
   double BMR = pyAnal->BMR;
   int riskType = pyAnal->BMD_type;
@@ -5030,11 +5033,12 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     pint[i] = pint[i]/(1-pint[i]);  //Phi->Psi
   }  
 
-  //this is always true since we don't allow specifying parameters
-  junk1 = pint[0];
-  junk3 = pint[2];
-  pint[0] = junk1 + smin * junk3;
-  pint[2] = junk1 + smax * junk3;
+  if (Spec[0] == Spec[2]){
+    junk1 = pint[0];
+    junk3 = pint[2];
+    pint[0] = junk1 + smin * junk3;
+    pint[2] = junk1 + smax * junk3;
+  }
 
   double sdif = smax - smin;
 
@@ -5046,12 +5050,11 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     ck = -log((1-BMR)/BMR);
   } else {
     //added risk
-    //Always true since we don't allow specifying parameters
-    //if (Spec[0] == Spec[2]){
+    if (Spec[0] == Spec[2]){
       ck = -1.0 * log((1-pint[0] * spfixed - pint[2]*snfixed)/BMR - 1);
-    //} else {
-    //  ck = -1.0 * log((1-pint[0] -pint[2] * sijfixed)/BMR - 1);
-    //}
+    } else {
+      ck = -1.0 * log((1-pint[0] -pint[2] * sijfixed)/BMR - 1);
+    }
   }
   objData->ck = ck;
 
