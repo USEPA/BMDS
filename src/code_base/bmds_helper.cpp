@@ -3732,13 +3732,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   tmpvcv(1,0) = tmpvcv(0,1);
   pyRes->parms[0] = ymin + 0.001;  //in case ymin=0
 
-  if (tmpvcv.determinant() > 0){
-    Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
-    pyRes->parms[1] = invtmpvcv(0,0) * tmpy[0] + invtmpvcv(0,1) * tmpy[1];
-    pyRes->parms[4] = invtmpvcv(1,0) * tmpy[0] + invtmpvcv(1,1) * tmpy[1];
-  } else {
-    pyRes->parms[1] = -1.0;
-    pyRes->parms[4] = 1.001;
+  if (!Spec[0] && !Spec[1]){
+    if (tmpvcv.determinant() > 0){
+      Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
+      pyRes->parms[1] = invtmpvcv(0,0) * tmpy[0] + invtmpvcv(0,1) * tmpy[1];
+      pyRes->parms[4] = invtmpvcv(1,0) * tmpy[0] + invtmpvcv(1,1) * tmpy[1];
+    } else {
+      pyRes->parms[1] = -1.0;
+      pyRes->parms[4] = 1.001;
+    }
   }
 
   if (pyAnal->restricted && pyRes->parms[4] < 1.000){
@@ -3752,7 +3754,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   pyRes->parms[2] = pyRes->parms[3] = 0.0;
 
   //simple non-nested log-logistic model
-  double gtol = 3e-8;
 
   //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
   struct nestedObjData objData;
@@ -3790,6 +3791,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //Now alpha p[0], beta p[1], and rho[4] contain starting estimates
   //Second, get initial values for Phi's
   int count = 0;
+  for (int i=PHISTART; i<pyRes->nparms; i++){
+    if (Spec[i]) count++;
+  }
   //Currently do not allow specification of Phi values, so this is always true
   if (count < ngrp && pyAnal->ILC_type != 0){
     // leave theta1 and theta2 = 0.0;
@@ -3951,8 +3955,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double lkr = pdep * log(W) + ndep * log(1-W);  //reduced model likelihood
 
   double dev = 2*(lkf - pyRes->LL);
-  int df = Nobs - pyRes->nparms-1 - numBounded;
-  pyRes->model_df = df;
+//  int df = Nobs - pyRes->nparms-1 - numBounded;
+  int df = pyRes->nparms - numBounded;
   double pv;
   if (dev < 0.0){
     pv = BMDS_MISSING;
@@ -3966,17 +3970,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   int numSpec = 0;
   for (int i=0; i<Spec.size(); i++){
-     if (Spec[i]) numSpec++;
+    if (Spec[i]) numSpec++;
   }
 
-  fullAnova.df = pyRes->nparms - 1 - numSpec;
+  //fullAnova.df = pyRes->nparms - 1 - numSpec;
+  fullAnova.df = pyRes->nparms - numSpec;
   fullAnova.LL = lkf;
 
   fittedAnova.LL = pyRes->LL;
   fittedAnova.dev = dev;
-  fittedAnova.df = df;
+  fittedAnova.df = Nobs - df;
   fittedAnova.pv = pv; 
-
 
   if (Nobs > 1){
     dev = 2*(lkf - lkr);
@@ -4003,8 +4007,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2*(1.0 + redAnova.df - fittedAnova.df);
 
+  pyRes->model_df = fittedAnova.df;
   //Generate litter data results
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
+  pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
+
 
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
@@ -4185,6 +4192,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   //combined p-value
   pavg /= BSLoops;
   pyRes->boot.pVal[BSLoops] = pavg;
+  pyRes->combPVal = pavg;
 
   //combined chi-square percentiles
   //1st flatten the 2d vector
@@ -4531,12 +4539,14 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
   double smax = objData->smax;
   objData->isBMDL = false;
 
-  //Spec[1] == Spec[3]  always
   std::vector<double> ptemp = p;
-  double junk1 = ptemp[0];
-  double junk3 = ptemp[2];
-  ptemp[0] = junk1+smin*junk3;
-  ptemp[2] = junk1 + smax*junk3;
+
+  if (Spec[0] == Spec[2]){
+    double junk1 = ptemp[0];
+    double junk3 = ptemp[2];
+    ptemp[0] = junk1+smin*junk3;
+    ptemp[2] = junk1 + smax*junk3;
+  }
 
   //Get a value of h for each parameter
   double hrat = pow(1.0e-16, 0.333333);
@@ -4560,17 +4570,20 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
 
   for (int i=0; i<ptemp.size(); i++){
     if (i>0) saveParms[i-1] = ptemp[i-1];
-    if (!Spec[i]) nvar++;
-    saveParms[i] = ptemp[i] + h[i];
-    Nlogist_grad(saveParms, objData, gradp);
-    saveParms[i] = ptemp[i] - h[i];
-    Nlogist_grad(saveParms, objData, gradm);
-    //Now compute the 2nd derivative
-    jvar = 0;
-    for (int j=0; j<ptemp.size(); j++){
-      if (!Spec[j])
-      vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
-      jvar++;
+    if (!Spec[i]) {
+      nvar++;
+      saveParms[i] = ptemp[i] + h[i];
+      Nlogist_grad(saveParms, objData, gradp);
+      saveParms[i] = ptemp[i] - h[i];
+      Nlogist_grad(saveParms, objData, gradm);
+      //Now compute the 2nd derivative
+      jvar = 0;
+      for (int j=0; j<ptemp.size(); j++){
+        if (!Spec[j]){
+          vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
+          jvar++;
+	}
+      }
     }
     ivar++;
     nvar++;

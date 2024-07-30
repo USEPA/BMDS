@@ -4911,13 +4911,14 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
       printf("LL: %f\n", pyRes->LL);
 //      printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
-//      printf("AIC: %f\n",pyRes->bmdsRes.AIC);
-//      printf("P-value: %f\n", pyRes->combPVal);
-//      //printf("DOF: %f\n", pyRes->df);
-//      printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
-// 
-//      printf("\nModel Parameters\n");
-//      printf("# of parms: %d\n", pyRes->nparms);
+      printf("AIC: %f\n",pyRes->bmdsRes.AIC);
+      printf("P-value: %f\n", pyRes->combPVal);
+      //printf("DOF: %f\n", pyRes->df);
+      printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
+ 
+      printf("\nModel Parameters\n");
+      printf("# of parms: %d\n", pyRes->nparms);
+      printf("DOF: %f\n", pyRes->model_df);
 //      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
       for (int i=0; i<pyRes->nparms; i++){
          //printf("%d, %.10f\n", i, pyRes->parms[i]);
