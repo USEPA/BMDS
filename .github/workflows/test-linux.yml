@@ -8,13 +8,10 @@ on:
   workflow_dispatch:
     inputs:
       generateDocx:
+      tags:
         description: 'Generate docx report'
-        required: true
-        default: 'no'
-        type: choice
-        options:
-        - yes
-        - no
+        required: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -34,10 +31,10 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
-          source ./tools/linux_ci_setup.sh
-          echo "$generateDocx"
+          echo "generateDocx:-$generateDocx-"
           exit 1
-          if [ "$generateDocx" = "yes" ]; then
+          source ./tools/linux_ci_setup.sh
+          if [ "$generateDocx" = "true" ]; then
             sudo apt-get install -y pandoc
           fi
       - name: Build pybmds
@@ -68,7 +65,7 @@ jobs:
       - name: Build documentation
         run: |
           make docs
-          if [ "$generateDocx" = "yes" ]; then
+          if [ "$generateDocx" = "true" ]; then
             make docs-docx
             rm -rf docs/build/singlehtml
           fi
