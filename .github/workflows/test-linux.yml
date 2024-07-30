@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       generateDocx:
-        description: "Generate docx report"
-        required: false
-        default: no
+        description: 'Generate docx report'
+        required: true
+        default: 'no'
         type: choice
         options:
         - yes
