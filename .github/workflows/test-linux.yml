@@ -23,6 +23,8 @@ concurrency:
 jobs:
   pybmds:
     runs-on: ubuntu-22.04
+    env:
+      generateDocx: ${{ inputs.generateDocx }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -33,6 +35,8 @@ jobs:
       - name: Install dependencies
         run: |
           source ./tools/linux_ci_setup.sh
+          echo "$generateDocx"
+          exit 1
           if [ "$generateDocx" = "yes" ]; then
             sudo apt-get install -y pandoc
           fi
