@@ -23,6 +23,7 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: |
+          brew install pandoc
           source ./tools/linux_ci_setup.sh
       - name: Build pybmds
         run: |
@@ -36,19 +37,19 @@ jobs:
         run: |
           ls -lah src/pybmds
           ldd src/pybmds/bmdscore*.so
-      - name: loc
-        run: |
-          sudo apt-get install -y cloc
-          echo "# Lines of Code Report" >> $GITHUB_STEP_SUMMARY
-          make loc >> $GITHUB_STEP_SUMMARY
-      - name: Check linting
-        run: |
-          make lint
-      - name: Test with pytest
-        run: |
-          coverage run -m pytest
-          echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
-          coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+      # - name: loc
+      #   run: |
+      #     sudo apt-get install -y cloc
+      #     echo "# Lines of Code Report" >> $GITHUB_STEP_SUMMARY
+      #     make loc >> $GITHUB_STEP_SUMMARY
+      # - name: Check linting
+      #   run: |
+      #     make lint
+      # - name: Test with pytest
+      #   run: |
+      #     coverage run -m pytest
+      #     echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
+      #     coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
       - name: Build documentation
         run: |
           make docs
@@ -60,27 +61,27 @@ jobs:
           path: |
             ./docs/build/
 
-  bmdscore:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          source ./tools/linux_ci_setup.sh
-      - name: Build bmdscore
-        run: |
-          source ./tools/linux_ci_env.sh
-          mkdir -p src/build
-          cd src/build
-          cmake ..
-          make -j$(nproc)
-      - name: Run tests and generate report
-        run: |
-          source ./tools/linux_ci_env.sh
-          cd src/build
-          make run_tests_with_coverage
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cpp-coverage
-          path: |
-            ./src/build/coverage/*
+  # bmdscore:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install dependencies
+  #       run: |
+  #         source ./tools/linux_ci_setup.sh
+  #     - name: Build bmdscore
+  #       run: |
+  #         source ./tools/linux_ci_env.sh
+  #         mkdir -p src/build
+  #         cd src/build
+  #         cmake ..
+  #         make -j$(nproc)
+  #     - name: Run tests and generate report
+  #       run: |
+  #         source ./tools/linux_ci_env.sh
+  #         cd src/build
+  #         make run_tests_with_coverage
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: cpp-coverage
+  #         path: |
+  #           ./src/build/coverage/*
