@@ -1,7 +1,6 @@
-# Recipes
+# pybmds Recipes
 
-The examples below describe some key capabilities key capabilities
-
+The examples below describe some key capabilities of `pybmds`.
 
 ## Modeling
 

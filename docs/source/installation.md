@@ -4,7 +4,7 @@ We recommend installing `bmds-ui` on your computer, which makes it possible to r
 
 
 :::{note}
-This guide documents a standard installation processes for packages in the Python ecosystem. If you have a colleague or friend that uses Python, they can likely help! If you do not and need support, please feel free to [contact us](https://ecomments.epa.gov/bmds).
+This guide documents a standard installation processes for packages in the Python ecosystem. If you have a colleague or friend that uses Python, they can likely help! If you do not and need support, please [contact us](https://ecomments.epa.gov/bmds).
 :::
 
 (part-1)=

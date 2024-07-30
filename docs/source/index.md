@@ -5,7 +5,7 @@
 
 **pybmds** is a Python package for executing the U.S. EPA Benchmark Dose Modeling Software (BMDS). The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and tumor (as well as multitumor modeling). The pybmds library is designed for those familiar with scripting to conduct dose-response modeling.
 
-**BMDS Desktop** is an application for running dose-response modeling using a Graphical User Interface (GUI) locally. The **bmds-ui** Python package installs BMDS Desktop; it can also be used to deploy a copy of the [BMDS Online](https://bmdsonline.epa.gov) application.
+**BMDS Desktop** is an application for running dose-response modeling using a Graphical User Interface (GUI) locally. The **bmds-ui** Python package installs BMDS Desktop; it can also be used to deploy an application online, such as the U.S. EPA's [BMDS Online](https://bmdsonline.epa.gov) deployment.
 
 :::{note}
 
@@ -76,8 +76,9 @@ session.plot(colorize=True)
    installation
    desktop
    quickstart
-   reference/index
    recipes/index
+   logic
+   development
    history
 ```
 
@@ -86,7 +87,7 @@ session.plot(colorize=True)
    :caption: Links
    :maxdepth: 2
 
-   US EPA BMDS <https://epa.gov/bmds>
+   U.S. EPA BMDS <https://epa.gov/bmds>
    Github pybmds <https://github.com/USEPA/bmds>
    Github bmds-ui <https://github.com/USEPA/bmds-ui>
 ```
