@@ -3565,8 +3565,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    std::vector<double> Lsc(Nobs);
    std::vector<int> Xg(Nobs, BMDS_MISSING); //markings for group number
 
-   //Need to implement
-   //quick workaround assuming vectors are already sorted
    Xi = pyAnal->doses;
    Yp = pyAnal->incidence;
    for (int i=0; i<Nobs; i++){
@@ -3574,29 +3572,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    }
    Ls = pyAnal->litterSize;
    Lsc = pyAnal->lsc;
-   //Sort_4_By_Dose(Nobs, Xi, Yn, Yp, Ls);
 
-   //get correct number of dose groups
-   //assumes vectors are already sorted
-//   int ngrp = 0;  //number of litters in dose group
-//   double tmp = BMDS_MISSING;
-//   int groupnum = 0;  //group number
-//   std::vector<int> grpSize;
-//   for (int i=0; i<Nobs; i++){
-//      if (Xi[i] == tmp){
-//        //existing dose group
-//        ngrp++;
-//      } else {
-//        //new dose group
-//        if (i!=0){
-//          grpSize.push_back(ngrp);
-//        }
-//        tmp = Xi[i];
-//        ngrp = 1;
-//        groupnum++;
-//      }
-//      Xg[i] = groupnum;
-//   }
    double junk1 = Xi[0];
    int junk = 1;
    for (int i=0; i<Nobs; i++){
@@ -3615,45 +3591,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    }
    SortNestedData (grpSize, Xi, Ls, Yp, Yn, Lsc, false);  //Sort by Xi->Ls->Yp
 
-   std::cout<<"ngrp = "<<ngrp<<std::endl;
    //push last group size;
-   //grpSize.push_back(ngrp);
-   //pyRes->nparms = 5 + grpSize.size();
    pyRes->nparms = 5 + ngrp;
    std::vector<bool> Spec(pyRes->nparms, false);
-
-   std::cout<<"Xi   , Yp,   Yn,   Ls,   Xg"<<std::endl;
-   for (int i=0; i<Nobs; i++){
-      std::cout<<Xi[i]<<", "<<Yp[i]<<", "<<Yn[i]<<", "<<Ls[i]<<", "<<Xg[i]<<std::endl;
-   }
-
-//   int Nobs = 0;
-//   for (int i=0; i<grpSize.size(); i++){
-//      Nobs += grpSize[i];
-//   }
 
    //create and initialize vectors needed
    pyRes->parms.resize(pyRes->nparms);
    for (int i=0; i<pyRes->nparms; i++){
      pyRes->parms[i] = BMDS_MISSING;
    }
-//   std::vector<bool> Spec(pyRes->nparms, false);
-//   std::vector<bool> iniP(pyRes->nparms, false);
-//   std::vector<VarList> varsum(3);
-//   std::vector<AnaList> anasum(3);
-//   std::vector<double> rlevel(5);
-//   std::vector<double> bmdl(5);
-//   std::vector<std::vector<double>> vcv(pyRes->nparms, std::vector<double>(pyRes->nparms));
-//   double sijfixed;
-//   std::vector<bool> SpBak;  //old values for spec
-//   std::vector<double> pBak;  //old values for parms[];
-//
-//
-//   std::cout<<"numGrps = "<<grpSize.size()<<std::endl;
-//   for(int i=0; i<grpSize.size(); i++){
-//      std::cout<<"i:"<<i<<", grpSize:"<<grpSize[i]<<std::endl;
-//   }
-//   std::cout<<"seed="<<pyAnal->seed<<std::endl;
   
   int knownParms = 0;
   //handle specified parms
@@ -3661,7 +3607,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     //set background to zero
     pyRes->parms[BGINDEX] = 0;
     Spec[BGINDEX] = true;
-//    iniP[BGINDEX] = true;  //Specified implies initialized
     knownParms++;
   }   
   if (pyAnal->ILC_type != 1){
@@ -3669,7 +3614,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     for (int i=PHISTART; i<pyRes->nparms; i++){
       pyRes->parms[i] = 0.0;
       Spec[i] = true;
-//      iniP[i] = true;
     }
     knownParms += ngrp;
   }
@@ -3678,7 +3622,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     for (int i=THETA1_INDEX; i<=THETA2_INDEX; i++){
        pyRes->parms[i] = 0.0;
        Spec[i] = true;
-//       iniP[i] = true;
     }
     knownParms += 2;  //theta1 and theta2
   }
@@ -3697,16 +3640,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
 
-  //Nlogist_fit(nparm, ngrp, Parms, EPS, &iter, &xlk);
   double EPS = 3.0e-8;
   int iter = 0;
   double xlk = 0.0;
- // int ret = Nlogist_fit(pyRes->nparms, ngrp, pyRes->parms, EPS, &iter, &xlk, Xg, Ls, Xi);
 ////////////////////////////////////////////////////
 // START NLOGIST_FIT
 // //////////////////////////////////////////////////
  
-  std::cout<<"Inside Nlogist_fit"<<std::endl;
   double sum1 = 0.0;
   double nij = 0.0;
   int index=0;
@@ -3716,7 +3656,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     index++;
   }
   double smean1 = sum1/nij;  //the average lsc in group 1
-  std::cout<<"average lsc in group 1:"<<smean1<<std::endl;
 
   sum1 = 0.0;
   nij = 0.0;
@@ -3733,7 +3672,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     if (x > xmax) xmax = x;
   }
   double smean = sum1/nij;  //overall average lsc
-  std::cout<<"overall average lsc:"<<smean<<std::endl;
 
   double sijfixed = smean;  //default to overall mean.  Not used if pyAnal->LSCType = 0 (do not use LSC) 
   if (pyAnal->LSC_type == 2){  //control group mean
@@ -3753,7 +3691,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    std::vector<double> tmpYp(Nobs); //incidence (positive dependent var)
    std::vector<double> tmpYn(Nobs); //negative dependent var
    std::vector<double> tmpy(2);
-   //std::vector<std::vector<double>> tmpvcv(2,std::vector<double>(2));
    Eigen::Matrix2d tmpvcv(2,2);
 
   index = 0;
@@ -3767,7 +3704,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 	tmpXi[j] = Xi[index];
 	index++;
      }
-     std::cout<<"j:"<<j<<", tmpYn:"<<tmpYn[j]<<", tmpYp:"<<tmpYp[j]<<", tmpXi[j]:"<<tmpXi[j]<<std::endl;
   }
   
   //compute initial estimates
@@ -3781,32 +3717,21 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   for (int i=0; i<ngrp; i++){
      x = tmpXi[i];
-     std::cout<<"i:"<<i<<", init x="<<x<<std::endl;
      W = log((tmpYp[i] - ymin*(tmpYp[i] + tmpYn[i]) + 0.5)/(tmpYn[i] + 0.5));
      if (x<=CloseToZero){
         x=Log_zero;
-	std::cout<<"x logzero for i="<<i<<std::endl;
      } else {
 	x = log(x);
-	std::cout<<"x logx for i="<<i<<std::endl;
      }
-     //tmpvcv[0][0] += 1.0;
-     //tmpvcv[0][1] += x;
-     //tmpvcv[1][1] += x*x;
      tmpvcv(0,0) += 1.0;
      tmpvcv(0,1) += x;
      tmpvcv(1,1) += x*x;
      tmpy[0] += W;
      tmpy[1] += W*x;
-//     std::cout<<"i:"<<i<<", x="<<x<<", W="<<W<<std::endl;
-//     std::cout<<"tmpvcv(0,0)="<<tmpvcv(0,0)<<", tmpvcv(0,1)="<<tmpvcv(0,1)<<", tmpvcv(1,1)="<<tmpvcv(1,1)<<std::endl;
-//     std::cout<<"tmpy[0]="<<tmpy[0]<<", tmpy[1]="<<tmpy[1]<<std::endl;
   }
-  //tmpvcv[1][0] = tmpvcv[0][1];
   tmpvcv(1,0) = tmpvcv(0,1);
   pyRes->parms[0] = ymin + 0.001;  //in case ymin=0
 
-  std::cout<<"det tmpvcv:"<<tmpvcv.determinant()<<std::endl; 
   if (tmpvcv.determinant() > 0){
     Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
     pyRes->parms[1] = invtmpvcv(0,0) * tmpy[0] + invtmpvcv(0,1) * tmpy[1];
@@ -3829,15 +3754,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //simple non-nested log-logistic model
   double gtol = 3e-8;
 
-//  std::cout<<std::endl;
-//  std::cout<<"b4 opt_nlogistic pass=1"<<std::endl;
-//  for (int i=0; i<pyRes->nparms; i++){
-//     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-//  }
-
-//  std::cout<<"DBL_MAX:"<<DBL_MAX<<std::endl;
   //This first pass has theta1 p[2] and theta2 p[3] fixed to zero
-  //double retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
   struct nestedObjData objData;
   objData.Ls = Ls;
   objData.Xi = Xi;
@@ -3853,7 +3770,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.sijfixed = sijfixed;
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
-//  objData.pass = 1;
   objData.tol = 1e-8;
   objData.optimizer = 3;
   objData.prior = pyAnal->prior;
@@ -3863,25 +3779,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   for (int i=PHISTART; i<pyRes->nparms; i++){
      objData.Spec[i] = true;
   }
-//  outputObjData(&objData);
 
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
-  std::cout<<"retVal:"<<retVal<<std::endl;
 
 
   //Now alpha p[0], beta p[1], and rho[4] contain starting estimates
   //Second, get initial values for Phi's
   int count = 0;
-  //for (int i=5; i<n; i++){
-  //  count += SpBak[i];
-  //}
   //Currently do not allow specification of Phi values, so this is always true
   if (count < ngrp){
     // leave theta1 and theta2 = 0.0;
     for (int i=5; i<pyRes->nparms; i++){
       //set back to original parms
-      //pyRes->parms[i] = pBak[i];
       //if (SpBak[i] == 0){
       pyRes->parms[i] = 0.01;
       //}
@@ -3890,19 +3800,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
       pyRes->parms[i] = pyRes->parms[i]/(1-pyRes->parms[i]);  //Phi --> Psi
     }
   
-    std::cout<<std::endl;
-    std::cout<<"b4 opt_nlogistic pass=2"<<std::endl;
-    for (int i=0; i<pyRes->nparms; i++){
-       std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-    }
 
-//    objData.pass = 2;
     objData.Spec = Spec;
     objData.Spec[THETA1_INDEX] = true;
     objData.Spec[THETA2_INDEX] = true;
     //pass 2 has thetas set to zero
 
-    //retVal = opt_nlogistic(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin, pyAnal->restricted, pass, xlk);
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
     //Transform parameters to "external" form
@@ -3937,7 +3840,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //ML fit and return log-likelihood value
-//  objData.pass = 3;
   objData.Spec = Spec;
   objData.optimizer=1;
 
@@ -3970,19 +3872,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
  
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
-
-
-  //temp DEBUG override of parm values for comparison with old code
-//  std::cout<<"Overriding parms values for DEBUG"<<std::endl;
-//  pyRes->parms[0]=0.084734;
-//  pyRes->parms[1]=-4.109652;
-//  pyRes->parms[2]=0.004761;
-//  pyRes->parms[3]=-0.055489;
-//  pyRes->parms[4]=1.000;
-//  pyRes->parms[5]=0.0;
-//  pyRes->parms[6]=0.0;
-//  pyRes->parms[7]=0.0;
-//  pyRes->parms[8]=0.0;
 
   std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double> (pyRes->nparms));
   Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData, vcv_tmp); 
@@ -4035,7 +3924,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //compute and output the analysis of deviance
-  //DTMS3ANOVA (nparm, Nobs, Spec, lkf, xlk, lkr, anasum, bounded);
 
   struct nested_AOD fullAnova;
   struct nested_AOD fittedAnova;
@@ -4057,9 +3945,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
       lkf += Yn[i] * log(1-W);
     }
   }
-//  W = varsum[0].S / (varsum[0].S + varsum[1].S);
   W = pdep / (pdep + ndep);
-//  double lkr = varsum[0].S * log(W) + varsum[1].S * log(1-W);
   double lkr = pdep * log(W) + ndep * log(1-W);  //reduced model likelihood
 
   double dev = 2*(lkf - pyRes->LL);
@@ -4116,398 +4002,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2*(1.0 + redAnova.df - fittedAnova.df);
 
   //Generate litter data results
-  //myGoodness (zOut, ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
-
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
 
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
-  //more goodness of fit calcs
-  //N_Goodness (ngrp, nparm, Parms, bounded, Nobs, Xi, Yp, Yn, Ls, Xg, SR);
-
-  //calculate confidence intervals at each dose level for graphical output
-  //std::vector<double> LL (ngrp);
-  //std::vector<double> UL (ngrp);
-  //std::vector<double> phat (ngrp);
-  //Nested_CI(ngrp, Nobs, Yp, Yn, Xg, 0.95, LL, phat, UL);
-
   //Compute BMD
-//  double back = pyRes->parms[0] + pyRes->parms[2] *sijfixed;
-//  double back1 = 1 - back;
-//  if (bmdparm.risk==1) back1 = 1;
-
-
    Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
    Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
    Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
-
-
-
-
-
-//  double ll = Nlogist_lk(pyRes->parms, Ls, Xi, Xg, Yp, Yn, smax, smin);
-
-//  std::cout<<"after Nlogist_lk"<<std::endl;
-//  for (int i=0; i<pyRes->nparms; i++){
-//     std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-//  }
-
-//   //stubbed results
-//   pyRes->bmdsRes.validResult = true;
-//   pyRes->bmdsRes.BMD = 12.95166613;
-//   pyRes->bmdsRes.BMDL = 9.643478831;
-//   pyRes->bmdsRes.BMDU = (double)BMDS_MISSING;
-//
-//   pyRes->bmdsRes.AIC = 546.9572409;
-//   pyRes->bmdsRes.chisq = 19.6087053;
-//   pyRes->combPVal = 0.994;
-//   //pyRes->df = 35;
-//   pyRes->model_df = 35;
-//   pyRes->total_df = 35;
-//
-//   pyRes->nparms = 9;
-//   pyRes->parms.push_back(0.084733516);
-//   pyRes->parms.push_back(-4.109651594);
-//   pyRes->parms.push_back(0.004761366);
-//   pyRes->parms.push_back(-0.055489253);
-//   pyRes->parms.push_back(1.0);
-//   pyRes->parms.push_back(0);
-//   pyRes->parms.push_back(0);
-//   pyRes->parms.push_back(0);
-//   pyRes->parms.push_back(0);
-//
-//   pyAnal->seed = 1687267999;
-//   //pyAnal->iterations = 1000;
-//   pyRes->LL = -269.478205;
-//   pyRes->obsChiSq = 19.6087053;
-//
-//   pyRes->boot.numRuns = 3;   
-//   pyRes->boot.pVal.push_back(0.994);
-//   pyRes->boot.pVal.push_back(0.997);
-//   pyRes->boot.pVal.push_back(0.991);
-//   pyRes->boot.pVal.push_back(0.994);
-//   pyRes->boot.perc50.push_back(38.79787451);
-//   pyRes->boot.perc50.push_back(38.19554318);
-//   pyRes->boot.perc50.push_back(37.75643018);
-//   pyRes->boot.perc50.push_back(38.26776644);
-//   pyRes->boot.perc90.push_back(51.1848655);
-//   pyRes->boot.perc90.push_back(50.4569082);
-//   pyRes->boot.perc90.push_back(50.3883043);
-//   pyRes->boot.perc90.push_back(50.6118335);
-//   pyRes->boot.perc95.push_back(54.69182);
-//   pyRes->boot.perc95.push_back(53.99859);
-//   pyRes->boot.perc95.push_back(54.18472);
-//   pyRes->boot.perc95.push_back(54.55846);
-//   pyRes->boot.perc99.push_back(60.479415);
-//   pyRes->boot.perc99.push_back(63.639965);
-//   pyRes->boot.perc99.push_back(61.778094);
-//   pyRes->boot.perc99.push_back(62.421371);
-//
-//   pyRes->SRs.push_back(-0.31484);
-//   pyRes->SRs.push_back(0.314837);
-//   pyRes->SRs.push_back(-0.31484);
-//   pyRes->SRs.push_back(0.314837);
-//   pyRes->SRs.push_back(-0.31484);
-//   pyRes->SRs.push_back(0.314837);
-//
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(0);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(25);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(50);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//   pyRes->litter.dose.push_back(100);
-//
-//   pyRes->litter.LSC.push_back(9);
-//   pyRes->litter.LSC.push_back(9);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(13);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(15);
-//   pyRes->litter.LSC.push_back(16);
-//   pyRes->litter.LSC.push_back(9);
-//   pyRes->litter.LSC.push_back(9);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(12);
-//   pyRes->litter.LSC.push_back(13);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(7);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(15);
-//   pyRes->litter.LSC.push_back(8);
-//   pyRes->litter.LSC.push_back(10);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(11);
-//   pyRes->litter.LSC.push_back(12);
-//   pyRes->litter.LSC.push_back(12);
-//   pyRes->litter.LSC.push_back(13);
-//   pyRes->litter.LSC.push_back(14);
-//   pyRes->litter.LSC.push_back(14);
-//
-//   pyRes->litter.estProb.push_back(0.127585814);
-//   pyRes->litter.estProb.push_back(0.127585814);
-//   pyRes->litter.estProb.push_back(0.13234718);
-//   pyRes->litter.estProb.push_back(0.13234718);
-//   pyRes->litter.estProb.push_back(0.137108547);
-//   pyRes->litter.estProb.push_back(0.14663128);
-//   pyRes->litter.estProb.push_back(0.151392646);
-//   pyRes->litter.estProb.push_back(0.151392646);
-//   pyRes->litter.estProb.push_back(0.156154013);
-//   pyRes->litter.estProb.push_back(0.160915379);
-//   pyRes->litter.estProb.push_back(0.301527034);
-//   pyRes->litter.estProb.push_back(0.301527034);
-//   pyRes->litter.estProb.push_back(0.297781775);
-//   pyRes->litter.estProb.push_back(0.297781775);
-//   pyRes->litter.estProb.push_back(0.294373053);
-//   pyRes->litter.estProb.push_back(0.291294677);
-//   pyRes->litter.estProb.push_back(0.288539894);
-//   pyRes->litter.estProb.push_back(0.286101463);
-//   pyRes->litter.estProb.push_back(0.286101463);
-//   pyRes->litter.estProb.push_back(0.286101463);
-//   pyRes->litter.estProb.push_back(0.433391608);
-//   pyRes->litter.estProb.push_back(0.410232266);
-//   pyRes->litter.estProb.push_back(0.410232266);
-//   pyRes->litter.estProb.push_back(0.40315061);
-//   pyRes->litter.estProb.push_back(0.40315061);
-//   pyRes->litter.estProb.push_back(0.40315061);
-//   pyRes->litter.estProb.push_back(0.40315061);
-//   pyRes->litter.estProb.push_back(0.38390157);
-//   pyRes->litter.estProb.push_back(0.38390157);
-//   pyRes->litter.estProb.push_back(0.378161814);
-//   pyRes->litter.estProb.push_back(0.572726279);
-//   pyRes->litter.estProb.push_back(0.553298381);
-//   pyRes->litter.estProb.push_back(0.543802864);
-//   pyRes->litter.estProb.push_back(0.543802864);
-//   pyRes->litter.estProb.push_back(0.534476942);
-//   pyRes->litter.estProb.push_back(0.534476942);
-//   pyRes->litter.estProb.push_back(0.52533783);
-//   pyRes->litter.estProb.push_back(0.516402011);
-//   pyRes->litter.estProb.push_back(0.516402011);
-//
-//   pyRes->litter.litterSize.push_back(9);
-//   pyRes->litter.litterSize.push_back(9);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(13);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(15);
-//   pyRes->litter.litterSize.push_back(16);
-//   pyRes->litter.litterSize.push_back(9);
-//   pyRes->litter.litterSize.push_back(9);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(12);
-//   pyRes->litter.litterSize.push_back(13);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(7);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(15);
-//   pyRes->litter.litterSize.push_back(8);
-//   pyRes->litter.litterSize.push_back(10);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(11);
-//   pyRes->litter.litterSize.push_back(12);
-//   pyRes->litter.litterSize.push_back(12);
-//   pyRes->litter.litterSize.push_back(13);
-//   pyRes->litter.litterSize.push_back(14);
-//   pyRes->litter.litterSize.push_back(14);   
-//
-//   pyRes->litter.expected.push_back(1.148272326);
-//   pyRes->litter.expected.push_back(1.148272326);
-//   pyRes->litter.expected.push_back(1.323471805);
-//   pyRes->litter.expected.push_back(1.323471805);
-//   pyRes->litter.expected.push_back(1.508194016);
-//   pyRes->litter.expected.push_back(1.906206638);
-//   pyRes->litter.expected.push_back(2.119497049);
-//   pyRes->litter.expected.push_back(2.119497049);
-//   pyRes->litter.expected.push_back(2.342310192);
-//   pyRes->litter.expected.push_back(2.574646069);
-//   pyRes->litter.expected.push_back(2.713743308);
-//   pyRes->litter.expected.push_back(2.713743308);
-//   pyRes->litter.expected.push_back(2.977817749);
-//   pyRes->litter.expected.push_back(2.977817749);
-//   pyRes->litter.expected.push_back(3.238103583);
-//   pyRes->litter.expected.push_back(3.495536119);
-//   pyRes->litter.expected.push_back(3.751018618);
-//   pyRes->litter.expected.push_back(4.005420479);
-//   pyRes->litter.expected.push_back(4.005420479);
-//   pyRes->litter.expected.push_back(4.005420479);
-//   pyRes->litter.expected.push_back(3.033741255);
-//   pyRes->litter.expected.push_back(4.102322662);
-//   pyRes->litter.expected.push_back(4.102322662);
-//   pyRes->litter.expected.push_back(4.434656714);
-//   pyRes->litter.expected.push_back(4.434656714);
-//   pyRes->litter.expected.push_back(4.434656714);
-//   pyRes->litter.expected.push_back(4.434656714);
-//   pyRes->litter.expected.push_back(5.374621982);
-//   pyRes->litter.expected.push_back(5.374621982);
-//   pyRes->litter.expected.push_back(5.672427209);
-//   pyRes->litter.expected.push_back(4.581810233);
-//   pyRes->litter.expected.push_back(5.532983808);
-//   pyRes->litter.expected.push_back(5.981831502);
-//   pyRes->litter.expected.push_back(5.981831502);
-//   pyRes->litter.expected.push_back(6.413723301);
-//   pyRes->litter.expected.push_back(6.413723301);
-//   pyRes->litter.expected.push_back(6.829391788);
-//   pyRes->litter.expected.push_back(7.229628148);
-//   pyRes->litter.expected.push_back(7.229628148);
-//
-//   pyRes->litter.observed.push_back(0);
-//   pyRes->litter.observed.push_back(1);
-//   pyRes->litter.observed.push_back(1);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(3);
-//   pyRes->litter.observed.push_back(3);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(1);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(1);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(3);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(3);
-//   pyRes->litter.observed.push_back(2);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(5);
-//   pyRes->litter.observed.push_back(4);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(8);
-//   pyRes->litter.observed.push_back(8);
-//   pyRes->litter.observed.push_back(7);
-//   pyRes->litter.observed.push_back(6);
-//   pyRes->litter.observed.push_back(6);
-//
-//   pyRes->litter.SR.push_back(-1.147257987);
-//   pyRes->litter.SR.push_back(-0.148141348);
-//   pyRes->litter.SR.push_back(-0.301860366);
-//   pyRes->litter.SR.push_back(0.631328744);
-//   pyRes->litter.SR.push_back(0.431109028);
-//   pyRes->litter.SR.push_back(0.857594396);
-//   pyRes->litter.SR.push_back(0.65653973);
-//   pyRes->litter.SR.push_back(-0.089101984);
-//   pyRes->litter.SR.push_back(-0.243481535);
-//   pyRes->litter.SR.push_back(-1.071325161);
-//   pyRes->litter.SR.push_back(-0.518421334);
-//   pyRes->litter.SR.push_back(1.660602955);
-//   pyRes->litter.SR.push_back(-0.676196332);
-//   pyRes->litter.SR.push_back(-1.367732493);
-//   pyRes->litter.SR.push_back(0.504037656);
-//   pyRes->litter.SR.push_back(-0.314836859);
-//   pyRes->litter.SR.push_back(1.376689417);
-//   pyRes->litter.SR.push_back(1.179530167);
-//   pyRes->litter.SR.push_back(-0.003205497);
-//   pyRes->litter.SR.push_back(-0.594573329);
-//   pyRes->litter.SR.push_back(-0.788462565);
-//   pyRes->litter.SR.push_back(0.577118305);
-//   pyRes->litter.SR.push_back(0.577118305);
-//   pyRes->litter.SR.push_back(-0.267167737);
-//   pyRes->litter.SR.push_back(-0.267167737);
-//   pyRes->litter.SR.push_back(0.347496039);
-//   pyRes->litter.SR.push_back(-0.267167737);
-//   pyRes->litter.SR.push_back(-0.755412682);
-//   pyRes->litter.SR.push_back(-0.205870559);
-//   pyRes->litter.SR.push_back(0.174415333);
-//   pyRes->litter.SR.push_back(0.298883377);
-//   pyRes->litter.SR.push_back(-0.975099884);
-//   pyRes->litter.SR.push_back(0.010998302);
-//   pyRes->litter.SR.push_back(0.010998302);
-//   pyRes->litter.SR.push_back(0.918022312);
-//   pyRes->litter.SR.push_back(0.918022312);
-//   pyRes->litter.SR.push_back(0.094758157);
-//   pyRes->litter.SR.push_back(-0.65761782);
-//   pyRes->litter.SR.push_back(-0.65761782);
-//
-//   pyRes->reduced.dose.push_back(0);
-//   pyRes->reduced.dose.push_back(25);
-//   pyRes->reduced.dose.push_back(50);
-//   pyRes->reduced.dose.push_back(100);
-//   pyRes->reduced.propAffect.push_back(0.14049587);
-//   pyRes->reduced.propAffect.push_back(0.31034482);
-//   pyRes->reduced.propAffect.push_back(0.38596491);
-//   pyRes->reduced.propAffect.push_back(0.53333333);
-//   pyRes->reduced.lowerConf.push_back(0.10100315);
-//   pyRes->reduced.lowerConf.push_back(0.23266263);
-//   pyRes->reduced.lowerConf.push_back(0.34156249);
-//   pyRes->reduced.lowerConf.push_back(0.46300766);
-//   pyRes->reduced.upperConf.push_back(0.19144442);
-//   pyRes->reduced.upperConf.push_back(0.39977302);
-//   pyRes->reduced.upperConf.push_back(0.43230026);
-//   pyRes->reduced.upperConf.push_back(0.60240216);
 
 }
 
@@ -4531,8 +4035,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   double urand;                 /* uniform random value [0,1]  */ 
   int SRsqCount;  	//tracks SR^2 >= SR^2 original
   int BSLoops = pyRes->boot.numRuns;	//number of times to repeat bootstrap method
-  std::cout<<"BSLoops:"<<BSLoops<<std::endl;
-//  int BSLoops = 3;	//number of times to repeat bootstrap method
   std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
   std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations, 0));
   std::vector<double> Yp_new(Nobs);	//pseudo-observed values
@@ -4550,18 +4052,9 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   //compute the # of obs in each group
   for (int i=0; i<Nobs; i++) grpSize[Xg[i]-1] += 1;
   //assumes PHI_START = 5
-  for (int i=0; i<pyRes->parms.size(); i++){
-    std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
-  }
   for (int i=0; i<ngrp; i++){
       phi[i] = pyRes->parms[5+i];
-//      std::cout<<"picking i:"<<i<<", phi:"<<phi[i]<<std::endl;
   }
-
-//  std::cout<<"phis were picked"<<std::endl;
-//  for (int i=0; i<ngrp; i++){
-//    std::cout<<"i:"<<i<<", phi:"<<phi[i]<<std::endl;
-//  }
 
   //compute the estimated probability and expected obs
   Nlogist_Predict(pyRes->parms, objData, Ep);
@@ -4571,13 +4064,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
     Ypp[i] = Ep[i] * Ysum[i];
     var[i] = Ysum[i] * Ep[i] *  (1-Ep[i])*(1.0+(Ysum[i]-1.0)*phi[Xg[i]-1]); 
   }
-
-//  //Add capability to tally # of observed at each value
-//  int max = 0;
-//  for (i=0; i<Nobs; i++){
-//    if (max < (int)YSum[i]) max = (int)YSum[i];
-//  }
-//  std::vector<int> obsCount(max);
 
   double gfit = pyRes->litter.chiSq;
   int df = pyRes->model_df;
@@ -4590,22 +4076,12 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   r = gsl_rng_alloc(type);
   gsl_rng_set(r, seed);
 
-//  for (int j=0; j<Nobs;j++){
-//    std::cout<<"j:"<<j<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
-//  }
-
-//  std::cout<<"starting BSLoops"<<std::endl;
   for (int l=0; l<BSLoops; l++){
     SRsqCount = 0;
-//    std::cout<<"Beginning loop:"<<l<<std::endl;
     for (int i=0; i<iterations; i++){
-//       std::cout<<"Starting iteration:"<<i<<std::endl;
-//       SR_newsqsum[l][i] = 0;  //Set SR squared sum to zero for new calcs
        for (int j=0; j<Nobs; j++){  //loop over each line in litter data
-//	 std::cout<<"starting observation:"<<j<<std::endl;
          Yp_new[j] = 0;  //reset pseudo-observed value to zero
 
-//         std::cout<<"j:"<<j<<", Ep[j]:"<<Ep[j]<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
 	 //find cut-off probability (cutpoint)
 	 if ((phi[Xg[j]-1] == 0) || (phi[Xg[j]-1] == 1)){
            cutpoint = Ep[j];
@@ -4618,18 +4094,13 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	     double tempvalue = Ep[j]*(1.0-Ep[j])/(Ep[j]*(1.0-Ep[j])*phi[Xg[j]-1]) - 1.0;
 	     a = Ep[j]*tempvalue;
 	     b = (1.0 - Ep[j])*tempvalue;
-//	     std::cout<<"calling gsl_ran_beta with r:"<<r<<", a:"<<a<<", b"<<b<<std::endl;
 	     cutpoint = gsl_ran_beta(r, a, b);
-//	     std::cout<<"finished gsl_ran_beta"<<std::endl;
 	   }
 	 }
-//	 std::cout<<"found cutpoint:"<<cutpoint<<std::endl;
 	 if (isnan(cutpoint)){
-//	   std::cout<<"calling cum_beta calcs"<<std::endl;
 	   cum_beta_comp_low = gsl_cdf_beta_P(cum_beta_step, a, b);  	//low end of cumulative scale
 	   cum_beta_comp_hi = gsl_cdf_beta_P(1.0-cum_beta_step, a, b); 	//high end of cumulative scale
 	   cum_beta = gsl_rng_uniform(r);			//random value to compare to cumulative scale
-//	   std::cout<<"finished cum_beta calcs"<<std::endl;
 
 	   if (cum_beta < cum_beta_comp_low) {	//if random value is less than low end
 	     cutpoint = 0;
@@ -4654,17 +4125,12 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	     }
 	   }
 	 }
-//	 std::cout<<"finished beta dist with cum_beta_comp:"<<cum_beta_comp<<std::endl;
-//         std::cout<<"j:"<<j<<", Ep[j]:"<<Ep[j]<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
 	 //calculate pseudo-observed value
 	 if (Ep[j] <= eps){  	//if est prob = 0, then bootstrap must produce zero responses for this observation
            Yp_new[j] = 0;
 	 } else if(phi[Xg[j]-1] != 1){
-//	   std::cout<<"j:"<<j<<", Ysum:"<<Ysum[j]<<std::endl;
            for (int k=0; k<Ysum[j]; k++){
-//	     std::cout<<"k:"<<k<<", finding random number"<<std::endl;
 	     urand = gsl_rng_uniform(r); 	//generate uniform random number
-//	     std::cout<<"urand:"<<urand<<std::endl;
 	     if (urand <= cutpoint) Yp_new[j]++;
 	   }
 	 } else {	//phi = 1 method
@@ -4675,7 +4141,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	     Yp_new[j] = 0;
 	   }
 	 } 
-//         std::cout<<"calculated pseudo-observed value"<<std::endl;
 
 	 //calculate scaled residual based on pseudo-observation Yp_new
 	 SR_new[j] = var[j] > 0 ? (Yp_new[j] - Ypp[j])/sqrt(var[j]) : 0;
@@ -4696,18 +4161,8 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 
   for (int l=0; l<BSLoops; l++){
     pyRes->boot.pVal[l] = pv[l];
-//    std::cout<<"l:"<<l<<", b4 sort"<<std::endl; 
-//    for (int i=0; i<SR_newsqsum[l].size(); i++){
-//      std::cout<< SR_newsqsum[l][i] << ", ";
-//    } 
-//    std::cout<<std::endl;
     //compute percentile values of sum of SR^2
     sort(SR_newsqsum[l].begin(), SR_newsqsum[l].end()); 
-//    std::cout<<"l:"<<l<<", after sort"<<std::endl; 
-//    for (int i=0; i<SR_newsqsum[l].size(); i++){
-//      std::cout<< SR_newsqsum[l][i] << ", ";
-//    } 
-//    std::cout<<std::endl;
     for (int k=0; k<percentiles.size(); k++){
       double temp = percentiles[k] * iterations;
       if ((ceilf(temp)==temp) && (floorf(temp)==temp)){
@@ -4725,10 +4180,8 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
     pavg += pv[l];
   }
 
-  std::cout<<"summed pavg:"<<pavg<<std::endl;
   //combined p-value
   pavg /= BSLoops;
-  std::cout<<"final pavg:"<<pavg<<std::endl;
   pyRes->boot.pVal[BSLoops] = pavg;
 
   //combined chi-square percentiles
@@ -4849,26 +4302,12 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
   int ngrp = objData->ngrp;
   std::vector<double> num(ngrp);
   std::vector<double> den(ngrp);
-//  std::cout<<"inside Nlogist_reduced"<<std::endl;
-//  std::cout<<"ngrp:"<<ngrp<<std::endl;
-//
-//  std::cout<<"b4 raoscott"<<std::endl;
-//  std::cout<<"num size:"<<num.size()<<std::endl;
-//  std::cout<<"den size:"<<den.size()<<std::endl;
   raoscott(objData, num, den);
 
-//  std::cout<<"raoscott return"<<std::endl;
-//  std::cout<<"num\tden"<<std::endl;
-//  for (int i=0; i<ngrp; i++){
-//    std::cout<<num[i]<<"\t"<<den[i]<<std::endl;
-//  }
   //Quantal_CI requires number pos and number neg
   //after this, den contains the number unaffected (transformed)
   for (int i=0; i<ngrp; i++) den[i] -= num[i];
   double conf = 1 - alpha;
-//  std::cout<<"b4 Quantal_CI"<<std::endl;
-//  std::cout<<"num size:"<<num.size()<<std::endl;
-//  std::cout<<"den size:"<<den.size()<<std::endl;
   Quantal_CI(num, den, conf, redData);
 
 }
@@ -4876,16 +4315,12 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
 void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, struct nestedReducedData *redData){
 
   double n, phat;
-  //double cc = RNORM(1.0 - (1.0  - conf)/2.0);
   double p = 1.0 - (1.0-conf)/2.0;
   double sigma = 1.0;
   double cc = gsl_cdf_gaussian_Pinv(p, sigma);
   double cc2 = cc*cc;
   int Nobs = Yp.size();
-//  std::cout<<"Nobs:"<<Nobs<<std::endl;
 
-//  std::cout<<"1st version of reduced data"<<std::endl;
-//  std::cout<<"n\tpAff\tLC\tUC"<<std::endl;
   for (int i=0; i<Nobs; i++){
     n = Yp[i] + Yn[i];
     redData->propAffect[i] = phat = Yp[i]/n;
@@ -4893,7 +4328,6 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
     redData->lowerConf[i] /= 2.0*(n+cc2);
     redData->upperConf[i] = (2*Yp[i] + cc2 + 1.0) + cc*sqrt(cc2 + (2.0-1.0/n)+4.0*phat*(Yn[i]-1.0));
     redData->upperConf[i] /= 2.0*(n+cc2);
-//    std::cout<<n<<"\t"<<redData->propAffect[i]<<"\t"<<redData->lowerConf[i]<<"\t"<<redData->upperConf[i]<<std::endl;
   }
 
 }
@@ -4953,29 +4387,12 @@ void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData
   int ngrp = objData->ngrp;
   int Nobs = Yp.size();
   int nparm = parms.size();
-//  std::vector<int> GrpSize(ngrp, 0);
   std::vector<double> Ep(Nobs);
   std::vector<double> phi(ngrp);  //phi parms for each group
   std::vector<double> Ysum(Nobs);
   std::vector<double> Ypp(Nobs);
   std::vector<double> Var(Nobs);
   std::vector<double> SR(Nobs);
-
-//  std::cout<<"inside Nlogist_GOF data:"<<std::endl;
-//  std::cout<<"Xi\tLs\tYp\tYn\tLsc\tEp"<<std::endl;
-//  for(int i=0; i<Ls.size(); i++){
-//    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Lsc[i]<<"\t"<<Ep[i]<<std::endl;
-//  }
-  //compute the GrpSize  
-//  std::cout<<"computing group size"<<std::endl;
-//  for (int i = 0; i<Nobs; i++) {
-//    GrpSize[Xg[i]-1] += 1;
-////    std::cout<<"i:"<<i<<", Xg[i]:"<<Xg[i]<<", grpSize[]:"<<GrpSize[Xg[i]]<<std::endl;
-//  }
-//  std::cout<<"final group size"<<std::endl;
-//  for (int i=0; i<GrpSize.size(); i++){
-//    std:cout<<"group:"<<i<<", grpSize:"<<GrpSize[i]<<std::endl;
-//  }
 
   //assumes PHI_START = 5
   for (int i=0; i<ngrp; i++){
@@ -4986,18 +4403,6 @@ void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData
   //Predict
   Nlogist_Predict(parms, objData, Ep);
 
-//  std::cout<<"b4 SortByLs"<<std::endl;
-//  std::cout<<"Xi\tLs\tYp\tYn\tEp"<<std::endl;
-//  for(int i=0; i<Ls.size(); i++){
-//    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Ep[i]<<std::endl;
-//  }
-//  //SortByLs
-//  SortByLs (GrpSize, Ls, Yp, Yn, Ep);
-//  std::cout<<"after SortByLs"<<std::endl;
-//  std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
-//  for(int i=0; i<Ls.size(); i++){
-//    std::cout<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Ep[i]<<std::endl;
-//  }
   //replace objData with sorted values
   objData->Ls = Ls;
   objData->Lsc = Lsc;
@@ -5036,11 +4441,6 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
   //sorts nested data by Xi -> Ls(or Lsc) -> Yp
 
   int ngrp = grpSize.size();
-//  std::cout<<"ngrp:"<<ngrp<<std::endl;
-//  std::cout<<"grpSize"<<std::endl;
-//  for (int i=0; i<ngrp; i++){
-//    std::cout<<"i:"<<i<<", grpSize:"<<grpSize[i]<<std::endl;
-//  }
   int Nobs = Xi.size();
 
   std::vector<double> origXi = Xi;
@@ -5059,12 +4459,6 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
   int grpStart = 0;
   for (int i=0; i<ngrp; i++){
     int thisGrpSize = grpSize[i];
-//    std::cout<<"thisGrpSize:"<<thisGrpSize<<std::endl;
-//    //first pull out subset of vectors
-//    std::vector<double> tmpLs(origLs.begin() + grpStart, origLs.begin()+grpStart+thisGrpSize);
-//    std::vector<double> tmpYp(origYp.begin() + grpStart, origYp.begin()+grpStart+thisGrpSize);
-//    std::vector<double> tmpYn(origYn.begin() + grpStart, origYn.begin()+grpStart+thisGrpSize);
-//    std::vector<double> tmpEp(origEp.begin() + grpStart, origEp.begin()+grpStart+thisGrpSize);   
 
     std::vector<std::vector<double>> sortV;
     for (int j=grpStart; j<grpStart+thisGrpSize; j++){
@@ -5076,14 +4470,6 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
       tmp.push_back(origLsc[j]);
       sortV.push_back(tmp);
     }
-//    std::cout<<"original vector for group:"<<i<<std::endl;
-//    std::cout<<std::endl;
-//    for (const auto& row : sortV){
-//      for (const auto& col : row){
-//        std::cout<< col << " " ;
-//      }
-//      std::cout<<std::endl;
-//    } 
     //first sort the grouped vector by the 3rd vector Yp
     //then sort the grouped vector by 2nd vector Ls or 5th vector Lsc
     //then sort the grouped vector by 1st vector Xi
@@ -5094,23 +4480,9 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
       std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[1] < b[1];});
     }
     std::sort(sortV.begin(), sortV.end());
-//    std::cout<<"sorted vector"<<std::endl;
-//    std::cout<<std::endl;
-//    for (const auto& row : sortV){
-//      for (const auto& col : row){
-//        std::cout<< col << " " ;
-//      }
-//      std::cout<<std::endl;
-//    } 
 
     //insert into new vector
-////    newLs.insert(newLs.end(), sortV[0].begin(), sortV[0].end());
-////    newYp.insert(newYp.end(), sortV[1].begin(), sortV[1].end());
-////    newYn.insert(newYn.end(), sortV[2].begin(), sortV[2].end());
-////    newEp.insert(newEp.end(), sortV[3].begin(), sortV[3].end());
-//    std::cout<<"sortV size i:"<<sortV.size()<<", j:"<<sortV[0].size()<<std::endl;
     for (int i=grpStart; i<grpStart + thisGrpSize; i++){
-//      std::cout<<"insertion point:"<<i<<std::endl;
       newXi[i] = sortV[i-grpStart][0];
       newLs[i] = sortV[i-grpStart][1];
       newYp[i] = sortV[i-grpStart][2];
@@ -5118,20 +4490,8 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
       newLsc[i] = sortV[i-grpStart][4];
     }
 
-//    std::cout<<"current full vector"<<std::endl;
-//    std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
-//    for (int i=0; i<newLs.size(); i++){
-//      std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
-//    }
-
     grpStart += grpSize[i]; //set grpStart index for next group
   } 
-
-//  std::cout<<"final full vector"<<std::endl;
-//  std::cout<<"Xi\tLs\tYp\tYn\tLsc"<<std::endl;
-//  for (int i=0; i<Nobs; i++){
-//    std::cout<<newXi[i]<<"\t"<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newLsc[i]<<std::endl;   
-//  }
 
   //replace original with sorted
   Xi = newXi;
@@ -5140,105 +4500,6 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
   Yn = newYn;
   Lsc = newLsc;
 }
-
-//void SortByLs(std::vector<int> &GrpSize, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Ep){
-//
-////  std::cout<<"inside sortByLs"<<std::endl;
-//  int ngrp = GrpSize.size();
-////  std::cout<<"ngrp:"<<ngrp<<std::endl;
-////  std::cout<<"GrpSize"<<std::endl;
-////  for (int i=0; i<ngrp; i++){
-////    std::cout<<"i:"<<i<<", grpSize:"<<GrpSize[i]<<std::endl;
-////  }
-//  int Nobs = Ls.size();
-//
-//  std::vector<double> origLs = Ls;
-//  std::vector<double> origYp = Yp;
-//  std::vector<double> origYn = Yn;
-//  std::vector<double> origEp = Ep;
-//
-//  std::vector<double> newLs(Nobs);
-//  std::vector<double> newYp(Nobs);
-//  std::vector<double> newYn(Nobs);
-//  std::vector<double> newEp(Nobs);
-//  
-//  //first pull out each dose group, then sort each dose group, then combine back
-//  int grpStart = 0;
-//  for (int i=0; i<ngrp; i++){
-//    int thisGrpSize = GrpSize[i];
-////    std::cout<<"thisGrpSize:"<<thisGrpSize<<std::endl;
-////    //first pull out subset of vectors
-////    std::vector<double> tmpLs(origLs.begin() + grpStart, origLs.begin()+grpStart+thisGrpSize);
-////    std::vector<double> tmpYp(origYp.begin() + grpStart, origYp.begin()+grpStart+thisGrpSize);
-////    std::vector<double> tmpYn(origYn.begin() + grpStart, origYn.begin()+grpStart+thisGrpSize);
-////    std::vector<double> tmpEp(origEp.begin() + grpStart, origEp.begin()+grpStart+thisGrpSize);   
-//
-//    std::vector<std::vector<double>> sortV;
-//    for (int j=grpStart; j<grpStart+thisGrpSize; j++){
-//      std::vector<double> tmp;
-//      tmp.push_back(origLs[j]);
-//      tmp.push_back(origYp[j]);
-//      tmp.push_back(origYn[j]);
-//      tmp.push_back(origEp[j]);
-//      sortV.push_back(tmp);
-//    }
-////    std::cout<<"original vector for group:"<<i<<std::endl;
-////    std::cout<<std::endl;
-////    for (const auto& row : sortV){
-////      for (const auto& col : row){
-////        std::cout<< col << " " ;
-////      }
-////      std::cout<<std::endl;
-////    } 
-//    //first sort the grouped vector by the 2nd vector Yp
-//    //then sort the grouped vector by 1st vector Ls
-//    std::sort(sortV.begin(), sortV.end(), [](const std::vector<double> &a, const std::vector<double> &b){ return a[1] < b[1];});
-//    std::sort(sortV.begin(), sortV.end());
-////    std::cout<<"sorted vector"<<std::endl;
-////    std::cout<<std::endl;
-////    for (const auto& row : sortV){
-////      for (const auto& col : row){
-////        std::cout<< col << " " ;
-////      }
-////      std::cout<<std::endl;
-////    } 
-//
-//    //insert into new vector
-//////    newLs.insert(newLs.end(), sortV[0].begin(), sortV[0].end());
-//////    newYp.insert(newYp.end(), sortV[1].begin(), sortV[1].end());
-//////    newYn.insert(newYn.end(), sortV[2].begin(), sortV[2].end());
-//////    newEp.insert(newEp.end(), sortV[3].begin(), sortV[3].end());
-////    std::cout<<"sortV size i:"<<sortV.size()<<", j:"<<sortV[0].size()<<std::endl;
-//    for (int i=grpStart; i<grpStart + thisGrpSize; i++){
-////      std::cout<<"insertion point:"<<i<<std::endl;
-//      newLs[i] = sortV[i-grpStart][0];
-//      newYp[i] = sortV[i-grpStart][1];
-//      newYn[i] = sortV[i-grpStart][2];
-//      newEp[i] = sortV[i-grpStart][3];
-//    }
-//
-////    std::cout<<"current full vector"<<std::endl;
-////    std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
-////    for (int i=0; i<newLs.size(); i++){
-////      std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
-////    }
-//
-//    grpStart += GrpSize[i]; //set grpStart index for next group
-//  } 
-//
-////  std::cout<<"final full vector"<<std::endl;
-////  std::cout<<"Ls\tYp\tYn\tEp"<<std::endl;
-////  for (int i=0; i<Nobs; i++){
-////    std::cout<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newEp[i]<<std::endl;   
-////  }
-//
-//  //replace original with sorted
-//  Ls = newLs;
-//  Yp = newYp;
-//  Yn = newYn;
-//  Ep = newEp;
-//}
-
 
 void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P){
 
@@ -5256,16 +4517,10 @@ void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *obj
     }
   }
 
-//  std::cout<<"P[i]"<<std::endl;
-//  for (int i=0; i<Nobs; i++){
-//    std::cout<<"i:"<<i<<", P:"<<P[i]<<std::endl;
-//  }
-
 }
 
 void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData, std::vector<std::vector<double>> &vcv){
 
-//  std::cout<<"inside Nlogist_vcv"<<std::endl;
   double tmp;
   int jvar;
 
@@ -5274,32 +4529,20 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
   double smax = objData->smax;
   objData->isBMDL = false;
 
-//  std::cout<<"smin:"<<smin<<std::endl;
-//  std::cout<<"smax:"<<smax<<std::endl;
   //Spec[1] == Spec[3]  always
   std::vector<double> ptemp = p;
   double junk1 = ptemp[0];
   double junk3 = ptemp[2];
-//  std::cout<<"b4 transform"<<std::endl;
-//  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
-//  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
   ptemp[0] = junk1+smin*junk3;
   ptemp[2] = junk1 + smax*junk3;
-//  std::cout<<"after transform"<<std::endl;
-//  std::cout<<"ptemp[0]:"<<ptemp[0]<<std::endl;
-//  std::cout<<"ptemp[2]:"<<ptemp[2]<<std::endl;
 
   //Get a value of h for each parameter
   double hrat = pow(1.0e-16, 0.333333);
   std::vector<double> h(p.size());
   std::vector<double> gradp(p.size());
   std::vector<double> gradm(p.size());
-  //std::vector<std::vector<double>> vcv(p.size(), std::vector<double> (p.size()));
-  //Eigen::MatrixXd vcv(p.size(),p.size());
 
-//  std::cout<<"Here1"<<std::endl;
   for (int i=0; i<ptemp.size(); i++){
-//     std::cout<<"i:"<<i<<", ptemp:"<<ptemp[i]<<std::endl;
      if (fabs(ptemp[i]) > 1.0e-7){
        h[i] = hrat * fabs(ptemp[i]);
        tmp = ptemp[i] + h[i];
@@ -5309,56 +4552,28 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
      }
   }
 
-//  for (int i=0; i<ptemp.size(); i++){
-//     std::cout<<"i:"<<i<<", h:"<<h[i]<<std::endl;
-//  }
-
   std::vector<double> saveParms = ptemp;
   int ivar = 0;
   int nvar = 0;
 
-//  std::cout<<"Here2"<<std::endl;
   for (int i=0; i<ptemp.size(); i++){
-//    std::cout<<"start of vcv loop i:"<<i<<std::endl;
     if (i>0) saveParms[i-1] = ptemp[i-1];
     if (!Spec[i]) nvar++;
     saveParms[i] = ptemp[i] + h[i];
-//    for(int i=0; i<saveParms.size();i++){
-//        std::cout<<"i:"<<i<<", saveParms:"<<saveParms[i]<<std::endl;
-//    }
-//    std::cout<<"calling Nlogist_gradp with i:"<<i<<std::endl;
     Nlogist_grad(saveParms, objData, gradp);
-//    for (int i=0; i<gradp.size(); i++){
-//      std::cout<<"i:"<<i<<", gradp:"<<gradp[i]<<std::endl;
-//    }
     saveParms[i] = ptemp[i] - h[i];
-//    std::cout<<"calling Nlogist_gradm with i:"<<i<<std::endl;
     Nlogist_grad(saveParms, objData, gradm);
     //Now compute the 2nd derivative
     jvar = 0;
     for (int j=0; j<ptemp.size(); j++){
-//      std::cout<<"start of loop j:"<<j<<std::endl;
       if (!Spec[j])
-      //vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
-//      std::cout<<"adding to ivar:"<<ivar<<", jvar:"<<jvar<<std::endl;
       vcv[ivar][jvar] = -(gradp[jvar] - gradm[jvar])/(2.0 * h[i]);
-//      std::cout<<"after add"<<std::endl;
       jvar++;
     }
     ivar++;
     nvar++;
-//    std::cout<<"end of loop i:"<<i<<std::endl;
-//    std::cout<<"ivar:"<<ivar<<", nvar:"<<nvar<<std::endl;
   }
 
-//  std::cout<<"vcv matrix"<<std::endl;
-//  for (int i=0; i<ptemp.size(); i++){
-//    for (int j=0; j<ptemp.size(); j++){
-//       std::cout<<"i:"<<i<<", j:"<<j<<", vcv:"<<vcv[i][j]<<std::endl;
-//    }
-//  }
-
-//  std::cout<<"end of Nlogist_vcv"<<std::endl;
 }
 
 // Computes the gradient of the nested logistic likelihood function with respect to the user form (external of the parameters.  This is
@@ -5372,17 +4587,6 @@ void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::ve
      pint[j] = pint[j] / (1-pint[j]);
   }
 
-  std::cout<<"inside Nlogist_grad phi->psi"<<std::endl;
-  for (int j=0; j<nparm; j++){
-     std::cout<<"j:"<<j<<", pint:"<<pint[j]<<std::endl;
-  }
-
-  //outputObjData(objData);
-
-  //no parmaters are pre-specified so all can vary.  nvar = nparm
-//  double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR)
-//  double ret = Nlogist_g(&pint, objData->Ls, objData->Xi, objData->Xg, objData->Yp, objDataYn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR)
-  std::cout<<"calling Nlogist_g"<<std::endl;
   Nlogist_g(pint, grad, objData);
 
   //Nlogist_g returns the gradient of the negative loglikelihood
@@ -5394,14 +4598,8 @@ void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::ve
 
 
 
-//double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk){
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
-//   std::cout<<"Inside opt_nlogistic"<<std::endl;
-//   std::cout<<"prior"<<std::endl;
-//   for (int i=0; i<objData->prior.size(); i++){
-//      std::cout<<"i:"<<i<<", val:"<<objData->prior[i]<<std::endl;
-//   }
    std::vector<bool>Spec = objData->Spec;
    int nparm_prior = objData->prior.size()/2;
 
@@ -5411,9 +4609,6 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    //will move these to header
    double slopeUpperBound = 18.0;
    int nparm = p.size();
-
-//   std::cout<<"nparm:"<<nparm<<std::endl;
-//   std::cout<<"objData.prior.size():"<<objData->prior.size()<<std::endl;
 
    std::vector<double> lb(nparm);
    std::vector<double> ub(nparm);
@@ -5425,14 +4620,12 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    ub[1] = objData->prior[nparm_prior+1]; //DBL_MAX;
    //theta1
    lb[2] = objData->prior[2];  //0.0;
-   //if (objData->pass == 1 || objData->pass == 2){
    if (Spec[2]){
      ub[2] = 0.0;
    } else {
      ub[2] = objData->prior[nparm_prior+2]; //1.0;
    }
    //theta2
-   //if (objData->pass == 1 || objData->pass == 2){
    if (Spec[3]){
      lb[3] = 0.0;
      ub[3] = 0.0;
@@ -5441,60 +4634,17 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
      ub[3] = objData->prior[nparm_prior+3];  //DBL_MAX;
    }
    //rho
-   //if (objData->restricted){
-   //  lb[4] = 1.0;
-   //} else {
-   //  lb[4] = 0.0;
-   //}
    lb[4] = objData->prior[4];  //0.0/1.0 (unrestricted/restricted)
    ub[4] = objData->prior[nparm_prior+4];  //slopeUpperBound;
    //phi(s)
    for (int i=5; i<nparm; i++){
      lb[i] = objData->prior[5];  //0.0;
-     //if (objData->pass == 1){
      if (Spec[i]){
        ub[i] = 0.0;
      } else {
        ub[i] = objData->prior[nparm_prior+5];  //DBL_MAX;
      }
    }
-//   //alpha
-//   lb[0] = 0.0;
-//   ub[0] = 1.0;
-//   //beta
-//   lb[1] = -1.0*DBL_MAX;
-//   ub[1] = DBL_MAX;
-//   //theta1
-//   lb[2] = 0.0;
-//   if (objData->pass == 1 || objData->pass == 2){
-//     ub[2] = 0.0;
-//   } else {
-//     ub[2] = 1.0;
-//   }
-//   //theta2
-//   if (objData->pass == 1 || objData->pass == 2){
-//     lb[3] = 0.0;
-//     ub[3] = 0.0;
-//   } else {
-//     lb[3] = -1.0*DBL_MAX;
-//     ub[3] = DBL_MAX;
-//   }
-//   //rho
-//   if (objData->restricted){
-//     lb[4] = 1.0;
-//   } else {
-//     lb[4] = 0.0;
-//   }
-//   ub[4] = slopeUpperBound;
-//   //phi(s)
-//   for (int i=5; i<nparm; i++){
-//     lb[i] = 0.0;
-//     if (objData->pass == 1){
-//       ub[i] = 0.0;
-//     } else {
-//       ub[i] = DBL_MAX;
-//     }
-//   }
    
    //Description of optimization problem
    //minimize -log-likelihood
@@ -5510,22 +4660,7 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    } else {
      opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
    }
-   //nlopt::opt opt(nlopt::LD_SLSQP, nparm);
-   //nlopt::opt opt(nlopt::LN_SBPLX, nparm);
-//   nlopt::opt opt(nlopt::LD_LBFGS, nparm);
-   //BMD opt
-   
-//   struct nestedObjData objData;
-//   objData.Ls = Ls;
-//   objData.Xi = Xi;
-//   objData.Xg = Xg;
-//   objData.Yp = Yp;
-//   objData.Yn = Yn;
-//   objData.smax = smax;
-//   objData.smin = smin; 
 
-
-   //if (pass == 3){
    if (Spec[0] == Spec[3]){
      //set inequality constraint alpha + Theta1*Sij>=0
      //inequality restraint not compatible with LD_LBFGS
@@ -5533,13 +4668,10 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
      opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
    } 
 
-   //opt.set_min_objective(objfunc_nlogistic_ll, &objData);
    opt.set_min_objective(objfunc_nlogistic_ll, objData);
 
    //opt.set_xtol_rel(1e-8);
-//   std::cout<<"tolerance:"<<objData->tol<<std::endl;
    opt.set_xtol_rel(objData->tol);
-   //opt.set_maxeval(1000000);
    opt.set_maxeval(10000);
    opt.set_lower_bounds(lb);
    opt.set_upper_bounds(ub);
@@ -5556,11 +4688,6 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    }
   
-//   std::cout<<"minf = "<<minf<<std::endl; 
-//   std::cout<<"parm after opt"<<std::endl;
-//   for(int i=0; i<nparm; i++){
-//     std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
-//   }
    objData->xlk = -1.0*minf; 
 
    return result;
@@ -5593,13 +4720,10 @@ double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &g
   
 
   if (!grad.empty()){
-    //Nlogist_g(p, Ls, Xi, Xg, Yp, Yn, smax, smin, grad, D, sijfixed, riskType, BMR);
     Nlogist_g(p, grad, objData);
   }
 
   //negative log-likelihood calc
-  //double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin);
-  //double loglike = Nlogist_lk(p, Ls, Xi, Xg, Yp, Yn, smax, smin, isBMDL, D, sijfixed, riskType, BMR);
   double loglike = Nlogist_lk(p, objData);
 
   return loglike;
@@ -5610,7 +4734,6 @@ double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &g
 double nestedInequalityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data){
   //alpha + theta1 *Rij > = 0
   nestedObjData *objData = reinterpret_cast<nestedObjData*>(data);
-  //std::vector<double> Ls = objData->Ls;
   double sijfixed = objData->sijfixed;
 
   if (!grad.empty()){
@@ -5627,7 +4750,6 @@ double nestedInequalityConstraint(const std::vector<double> &x, std::vector<doub
 }
 
 // Used to comput the log-likelihood for Nlogistic model
-//double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, bool isBMDL, double D, double sijfixed, int riskType, double BMR){
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
 
   std::vector<double> Yp = objData->Yp;
@@ -5641,13 +4763,7 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
 
 
    bool compgrad = false;
-//   std::cout<<"inside Nlogist_lk b4 Nlogist_probs"<<std::endl;
-   //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
    Nlogist_probs(probs, p, compgrad, gradij, objData);
-//   std::cout<<"inside Nlogist_lk after Nlogist_probs"<<std::endl;
-//   for(int i=0; i<Nobs; i++){
-//     std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
-//   } 
    
    double tm, tm1, tm2, tm3;
    int plus5, j;
@@ -5658,7 +4774,6 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
      tm3 = 0.0;
      plus5 = 5 + Xg[i];
      j = (int) Yp[i];
-     //if (probs[i] == 0.0 && j > 0){ //this should be changed for better floating point comparison
      if (probs[i] < CloseToZero && j > 0){ 
         tm1 -=40.0;
      } else {
@@ -5683,7 +4798,6 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
      }
      xlk += (tm1 + tm2 - tm3);
    }
-//   std::cout<<"returning:"<<(-1.0*xlk)<<" from Nlogist_lk"<<std::endl;
   
    //returns negative log likelihood
    return -1.0*xlk;
@@ -5691,7 +4805,6 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
 
 
 //Used to compute the gradients for Nlogist_model.  Parameters are in "internal" transformed form.
-//double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR){
 double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData){
 
   std::vector<double> Yp = objData->Yp;
@@ -5708,39 +4821,14 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
   std::vector<double> tmp_g(nparm);
   std::vector<double> dd(nparm);
 
-//  std::cout<<"parameter vector in  Nlogist_g"<<std::endl;
-//  for (int i=0; i<p.size(); i++){
-//    std::cout<<"i:"<<i<<", p:"<<p[i]<<std::endl;
-//  }
-
   bool compgrad = true;
-//  std::cout<<"b4 Nlogist_probs"<<std::endl;
-//  REMOVE THESE
-//  bool isBMDL = objData->isBMDL;
-//  double smax = objData->smax;
-//  double smin = objData->smin;
-//  std::vector<double> Ls = objData->Ls;
-//  std::vector<double> Xi = objData->Xi;
-//  double D = objData->tD;
-//  double sijfixed = objData->sijfixed;
-//  int riskType = objData->riskType;
-//  double BMR = objData->BMR;
-  //Nlogist_probs(probs, p, compgrad, gradij, isBMDL, smax, smin, Ls, Xi, D, sijfixed, riskType, BMR);
-//  std::cout<<"inside Nlogist_g b4 Nlogist_probs"<<std::endl;
   Nlogist_probs(probs, p, compgrad, gradij, objData);
-//  std::cout<<"inside Nlogist_g after Nlogist_probs"<<std::endl;
-//  for(int i=0; i<Nobs; i++){
-//    std::cout<<"i:"<<i<<", probs:"<<probs[i]<<std::endl;
-//  } 
-
 
   //initial tmp g[j]'s
   for (int i=0; i<nparm; i++){
     tmp_g[i] = 0.0;
   }
-//  std::cout<<"begin Nlogist_g loop"<<std::endl;
   for (int i=0; i<Nobs; i++){
-//    std::cout<<"i:"<<i<<std::endl;
     ex = probs[i];
 
     //compute first partial derivatives
@@ -5751,51 +4839,37 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
     }    
     plus5 = 4 + Xg[i];
     j = (int) Yp[i];
-    //std::cout<<"ex>0 loop"<<std::endl;
     if (ex > 0.0){
       for (int k=1; k<=j; k++){
         tm = ex + (k-1)*p[plus5];
 	tm1 += 1.0/tm;
 	tm1a += (1.0/tm)*(k-1);
-	//std::cout<<"k:"<<k<<", tm:"<<tm<<", tm1:"<<tm1<<", tm1a:"<<tm1a<<std::endl;
       }
     }
     j = (int) Yn[i];
-    //std::cout<<"ex<1 loop"<<std::endl;
     if (ex < 1.0){
       for (int k=1; k<=j; k++){
         tm = 1.0-ex+(k-1)*p[plus5];
 	tm2 += 1.0/tm;
 	tm2a += (1.0/tm)*(k-1);
-	//std::cout<<"k:"<<k<<", tm:"<<tm<<", tm2:"<<tm2<<", tm2a:"<<tm2a<<std::endl;
       }
     }
     j = (int) (Yn[i] + Yp[i]);
-    //std::cout<<"last loop"<<std::endl;
     for (int k=1; k<=j; k++){
       tm = 1.0+(k-1)*p[plus5];
       if (tm == 0.0) tm = 0.000001;
       tm3 += 1.0/tm;
       tm3a += (1.0/tm)*(k-1);
-      //std::cout<<"k:"<<k<<", tm:"<<tm<<", tm3:"<<tm3<<", tm3a:"<<tm3a<<std::endl;
     }
     tm12 = (tm1-tm2);
-//    std::cout<<"tm1:"<<tm1<<", tm2:"<<tm2<<std::endl;
     for (int j=0; j<5; j++){
-//      std::cout<<"i:"<<i<<", j:"<<j<<", gradij:"<<gradij[i][j]<<", tm12:"<<tm12<<std::endl;
       dd[j] = gradij[i][j]*tm12;
-//      std::cout<<"i:"<<i<<", j:"<<j<<", dd:"<<dd[j]<<std::endl;
     }
     dd[plus5] = (tm1a + tm2a - tm3a);
     for (int j=0; j<nparm; j++){
       tmp_g[j] -= dd[j];
-//      std::cout<<"i:"<<i<<", j:"<<j<<", tmp_g:"<<tmp_g[j]<<std::endl;
     }
   }
-//  std::cout<<"final tmp_g"<<std::endl;
-//  for (int j=0; j<nparm; j++){
-//    std::cout<<"j:"<<j<<", tmp_g:"<<tmp_g[j]<<std::endl;
-//  }
   //end of 1st partial derivative
   g = tmp_g;
   for (int j=0; j<nparm; j++){
@@ -5803,23 +4877,10 @@ double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObj
       g[j] = 0.0;
     }
   }
-  //int jvar = 0;
-  //for (int j=0; j<nparm; j++){
-  //  if (!Spec[j]){
-  //    g[jvar] = tmp_g[j];
-  //    jvar++; 
-  //  }
-  //}
-
-//  std::cout<<"Nlogist_g returning"<<std::endl;
-//  for (int k=0; k<nparm; k++){
-//     std::cout<<"k:"<<k<<", g:"<<g[k]<<std::endl;
-//  }
  
   return 0;
 }
 
-//void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi, double tD, double sijfixed, int riskType, double BMR){
 void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, struct nestedObjData *objData){
 
   bool isBMDL = objData->isBMDL;
@@ -5868,16 +4929,10 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
     smij = (Ls[i] - smin)/sdif;
 
     //enforce alpha+Theta1*Sij >= 0
-//    std::cout<<"Here !!!! pass:"<<objData->pass<<std::endl;
-//    std::cout<<"Spec[0]="<<Spec[0]<<std::endl;
-//    std::cout<<"Spec[2]="<<Spec[2]<<std::endl;
     if (Spec[0] == Spec[2]){
-//       std::cout<<"selected 1st option"<<std::endl;
        ex = spij * pint[0] + smij * pint[2];
-//       std::cout<<"spij:"<<spij<<", pint[0]:"<<pint[0]<<", smij:"<<smij<<", pint[2]:"<<pint[2]<<std::endl;
     } else {
        ex = pint[0] + Ls[i] * pint[2];
-//       std::cout<<"selected 2nd option"<<std::endl;
     }
     ex2 = 1.0 - ex;
     ex1 = 0.0;
@@ -5954,7 +5009,6 @@ void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, boo
 void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax,  
 		struct nestedObjData *objData){
 
-//  std::cout<<"inside Nlogist_BMD"<<std::endl;
   std::vector<double> p = pyRes->parms;
   int nparm = p.size();
   double BMR = pyAnal->BMR;
@@ -5977,13 +5031,11 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }  
 
   //this is always true since we don't allow specifying parameters
-  //if (Spec[0]==Spec[2]){
   junk1 = pint[0];
   junk3 = pint[2];
   pint[0] = junk1 + smin * junk3;
   pint[2] = junk1 + smax * junk3;
 
-  //Rlevel[1]?????
   double sdif = smax - smin;
 
   double spfixed = (smax - sijfixed)/sdif;
@@ -6011,13 +5063,8 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     BMD = exp((ck - pint[1] - pint[3]*sijfixed)/pint[4]);  
   }
 
-  std::cout<<"BMD: "<<BMD<<std::endl;
   pyRes->bmdsRes.BMD = BMD;
   pyRes->bmd = BMD;
-
-  //Is this needed????
-  //Predict(doses, lsc, 2, pa, pred);
-  
 
   //Search for BMDL
   double stepsize = 0.5;  //Start close to the BMD and work downwards
@@ -6035,19 +5082,14 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   objData->isBMDL = true;
-  //objData->optimizer = 3;
   objData->optimizer = 1;
   double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
-
-//  std::cout<<"1st fa:"<<fa<<std::endl;
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
   
   int trip =0;
-//  std::cout<<"xa:"<<xa<<std::endl;
   double tmp = fabs(fa-fb);
-//  std::cout<<"flatness:"<<tmp<<std::endl;
   while (fa<0.0 && xa > DBL_MIN && fabs(fa-fb)>DBL_EPSILON){
     xb = xa;
     fb = fa;
@@ -6056,29 +5098,19 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 
     fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
     trip++;
-//    std::cout<<"trip:"<<trip<<", with fa:"<<fa<<std::endl;
-//    std::cout<<"xa:"<<xa<<", tmp:"<<tmp<<std::endl;
   }
  
   double BMDL;
-//  std::cout<<"Final fa:"<<fa<<std::endl; 
   if (fa < 0.0){
-//    std::cout<<"Problem finding BMDL!!!"<<std::endl;
     BMDL = -1.0;
     return;
   } else {
-//    std::cout<<"BMDL between xa:"<<xa<<" and xb:"<<xb<<std::endl;
-//    std::cout<<"B4 zeroin_nested"<<std::endl;
     objData->optimizer = 1;
-//    outputObjData(objData);
 
     BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
-    //BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-8, objData);
-    std::cout<<"zeroin returned BMDL:"<<BMDL<<std::endl;
   }  
   pyRes->bmdsRes.BMDL = BMDL;
 
-//  std::cout<<"end Nlogist_BMD"<<std::endl;
 }
 
 //QCHISQ - inverse chi-square function
@@ -6123,24 +5155,15 @@ double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjD
 
   double fD;
   int junk;
-//
-//  //tD = D;
+
   objData->tD = D;
   objData->tol = gtol;
-//  //MAX_lk (nparm, p, gtol, &junk, &xlk);
-//  std::cout<<"inside BMDL_func nparm:"<<nparm<<std::endl; 
   std::vector<double> parms(p, p+nparm); 
-//  std::cout<<"inside BMDL_func B4 opt_nlogistic"<<std::endl;
-//  outputObjData(objData);
   double retVal = opt_nlogistic(parms, objData);
-//  std::cout<<"inside BMDL_func after opt_nlogistic"<<std::endl;
 
   //set result parms to return array
   p = &parms[0];
   fD = objData->BMD_lk - objData->xlk - objData->LR;
-  //std::cout<<"BMD_lk:"<<objData->BMD_lk<<std::endl;
-  //std::cout<<"xlk:"<<objData->xlk<<std::endl;  
-//  std::cout<<"fD:"<<fD<<std::endl;
   return fD;
 
 }
@@ -6217,23 +5240,10 @@ double zeroin_nested(double ax,double bx, double tol,
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
 
-//  std::cout<< std::fixed << std::showpoint;
-//  std::cout << std::setprecision(15); 
-//  std::cout<<"inside zeroin"<<std::endl;
-//  std::cout<<"ax="<<ax<<", bx="<<bx<<", tol="<<tol<<std::endl; 
-//  std::cout<<"nparm="<<nparm<<std::endl;
-//  int i;
-//  for (i=0;i<nparm;i++){
-//	  std::cout<<"i="<<i<<", Parms[i]="<<Parms[i]<<std::endl;
-//  }
 
   a = ax;  b = bx;
-//  printf("fa calc\n");
   fa = (*f)(nparm-1, Parms, a, ck, objData);
-//  printf("fb calc\n");
   fb = (*f)(nparm-1, Parms, b, ck, objData);
-//  printf("fa=%g\n", fa);
-//  printf("fb=%g\n", fb);
   c = a;   fc = fa;
   int pass = 1;
   for(;;)		/* Main iteration loop	*/
@@ -6246,10 +5256,6 @@ double zeroin_nested(double ax,double bx, double tol,
   					/* sion operations is delayed   */
  					/* until the last moment	*/
     double new_step;      		/* Step at this iteration       */
-//    std::cout<<std::endl;
-//    std::cout<<"start of loop with pass:"<<pass<<std::endl;
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     if( fabs(fc) < fabs(fb) )
     {                         		/* Swap data for b to be the 	*/
 	a = b;  b = c;  c = a;          /* best approximation		*/
@@ -6258,18 +5264,14 @@ double zeroin_nested(double ax,double bx, double tol,
     tol_act = 2*DBL_EPSILON*fabs(b) + tol/2;
     new_step = (c-b)/2;
 
-//    std::cout<<"tol_act="<<tol_act<<std::endl;
     if( fabs(new_step) <= tol_act || fb == (double)0 ){
-//      std::cout<<"returning b:"<<b<<std::endl;
       return b;				/* Acceptable approx. is found	*/
     }
 
-//    std::cout<<"continuing for another loop"<<std::endl;
     			/* Decide if the interpolation can be tried	*/
     if( fabs(prev_step) >= tol_act	/* If prev_step was large enough*/
 	&& fabs(fa) > fabs(fb) )	/* and was in true direction,	*/
     {					/* Interpolatiom may be tried	*/
-//	std::cout<<"trying interpolation"<<std::endl;
 	double t1,cb,t2;
 	cb = c-b;
 	if( a==c )			/* If we have only two distinct	*/
@@ -6300,7 +5302,6 @@ double zeroin_nested(double ax,double bx, double tol,
 
     if( fabs(new_step) < tol_act )	/* Adjust the step to be not less*/
       {
-//	std::cout<<"adjusting step"<<std::endl;
 	if( new_step > (double)0 )	/* than tolerance		*/
 	  new_step = tol_act;
 	else
@@ -6309,14 +5310,11 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-//	printf("2nd fb calc\n");
     fb = (*f)(nparm-1, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
-//    std::cout<<"a="<<a<<", b="<<b<<", c="<<c<<std::endl;
-//    std::cout<<"fa="<<fa<<", fb="<<fb<<std::endl;
     pass++;
   }
 
