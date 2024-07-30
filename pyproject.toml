@@ -39,8 +39,8 @@ dev = [
   "wheel~=0.43.0",
 ]
 docs = [
-  "Sphinx~=7.3.7",
-  "myst-nb~=1.1.0",
+  "Sphinx~=7.4.7",
+  "myst-nb~=1.1.1",
   "myst-parser~=3.0.1",
   "furo==2024.7.18",
   "sphinx_design==0.6.0",
