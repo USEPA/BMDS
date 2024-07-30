@@ -22,6 +22,7 @@ myst_enable_extensions = [
 ]
 
 # HTML settings
+html_favicon = "_static/img/logo.png"
 html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["css/style.css"]
