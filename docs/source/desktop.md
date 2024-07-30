@@ -15,7 +15,7 @@ bmds-desktop
 ```
 
 :::{tip}
-Make sure to [activate](installation#activating-an-environment) the environment prior to running this command, otherwise it won't be able to find the command.
+Make sure to [activate](./installation.md/#activating-an-environment) the environment prior to running this command, otherwise it won't be able to find the command.
 :::
 
 ## BMDS Desktop Startup Interface

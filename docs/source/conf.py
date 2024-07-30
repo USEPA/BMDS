@@ -11,6 +11,7 @@ templates_path = ["_templates"]
 exclude_patterns = []
 
 myst_links_external_new_tab = True
+myst_heading_anchors = 6
 myst_enable_extensions = [
     "attrs_inline",
     "colon_fence",
