@@ -5,11 +5,14 @@ You can use use RStudio to execute `pybmds` using the [reticulate](https://rstud
 ```R
 library(reticulate)
 
-# Use one of the commands below, depending on environment:
-# ... if using Python, the path to the virtual environment python executable
-use_python('~/dev/bmds-desktop/bin/python')
 # ... if using Anaconda, the environment name
 use_condaenv('bmds-desktop')
+
+# ... if using Python (Windows), the path to the virtual environment
+use_venv('C:\\Users\\USERNAME\\dev\\bmds-desktop')
+
+# ... if using Python (Mac/Linux), the path to the virtual environment
+use_venv('~/dev/bmds-desktop')
 ```
 
 Load `pybmds` and then execute a logistic model fit:
