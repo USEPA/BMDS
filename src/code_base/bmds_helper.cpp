@@ -4020,11 +4020,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
    Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
-   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
+   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
 
 }
 
-void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations){
+void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations, int BSLoops){
 
   int ngrp = objData->ngrp; 
   std::vector<double> Yp = objData->Yp;
@@ -4043,7 +4043,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   const gsl_rng_type * type;    // type for beta distribution
   double urand;                 /* uniform random value [0,1]  */ 
   int SRsqCount;  	//tracks SR^2 >= SR^2 original
-  int BSLoops = pyRes->boot.numRuns;	//number of times to repeat bootstrap method
+//  int BSLoops = pyRes->boot.numRuns;	//number of times to repeat bootstrap method
   std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
   std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations, 0));
   std::vector<double> Yp_new(Nobs);	//pseudo-observed values

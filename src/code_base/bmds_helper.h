@@ -150,7 +150,7 @@ struct dichotomous_GOF {
 };
 
 struct nestedBootstrap{
-  int numRuns;
+//  int numRuns;
   std::vector<double> pVal; //size = numRuns + 1
   std::vector<double> perc50;
   std::vector<double> perc90;
@@ -171,7 +171,7 @@ struct nestedLitterData{
 };
 
 struct nestedReducedData{
-  int numRows;
+//  int numRows;
   std::vector<double> dose; //size = numRows
   std::vector<double> propAffect;  //estimate of proportion affected
   std::vector<double> lowerConf;
@@ -342,7 +342,8 @@ struct python_nested_analysis{
   int prior_cols;
   double BMR;
   double alpha;
-  int iterations;
+  int numBootRuns; //number of bootstrap run
+  int iterations;  //number of iterations per run
   long seed;  // -9999 = automatic;  seed value otherwise
 };
 
@@ -541,7 +542,7 @@ void outputObjData(struct nestedObjData *objData);
 
 //void SRoI(int ngrp, std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD);
 
-void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations);
+void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations, int BSLoops);
 
 void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, const std::vector<int> &grpSize, double bmd);
 
