@@ -4883,6 +4883,21 @@ void runPythonNestedAnalysis(){
   struct nestedSRData srData;
   pyRes.srData = srData;
 
+  struct nestedBootstrap bootData;
+  int numBootRuns = 3;
+  pyRes.boot.numRuns = numBootRuns;
+  std::vector<double> pVal(numBootRuns+1);
+  std::vector<double> perc50(numBootRuns+1);
+  std::vector<double> perc90(numBootRuns+1);
+  std::vector<double> perc95(numBootRuns+1);
+  std::vector<double> perc99(numBootRuns+1);
+  bootData.pVal = pVal;
+  bootData.perc50 = perc50;
+  bootData.perc90 = perc90;
+  bootData.perc95 = perc95;
+  bootData.perc99 = perc99;
+  pyRes.boot = bootData;
+
   pythonBMDSNested(&pyAnal, &pyRes);
 
   printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
@@ -4936,6 +4951,11 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
    }
    std::cout<<"chiSq:"<<pyRes->litter.chiSq<<std::endl;
 
+   std:cout<<"----Bootstrap Data----"<<std::endl;
+   int numRuns = pyRes->boot.pVal.size();
+   for (int i=0; i<numRuns; i++){
+      std::cout<<"i:"<<i<<", pval:"<<pyRes->boot.pVal[i]<<", 50th:"<<pyRes->boot.perc50[i]<<", 90th:"<<pyRes->boot.perc90[i]<<", 95th:"<<pyRes->boot.perc95[i]<<", 99th:"<<pyRes->boot.perc99[i]<<std::endl;
+   }
 
 
 }

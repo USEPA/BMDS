@@ -3974,16 +3974,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
 
   //temp DEBUG override of parm values for comparison with old code
-  std::cout<<"Overriding parms values for DEBUG"<<std::endl;
-  pyRes->parms[0]=0.084734;
-  pyRes->parms[1]=-4.109652;
-  pyRes->parms[2]=0.004761;
-  pyRes->parms[3]=-0.055489;
-  pyRes->parms[4]=1.000;
-  pyRes->parms[5]=0.0;
-  pyRes->parms[6]=0.0;
-  pyRes->parms[7]=0.0;
-  pyRes->parms[8]=0.0;
+//  std::cout<<"Overriding parms values for DEBUG"<<std::endl;
+//  pyRes->parms[0]=0.084734;
+//  pyRes->parms[1]=-4.109652;
+//  pyRes->parms[2]=0.004761;
+//  pyRes->parms[3]=-0.055489;
+//  pyRes->parms[4]=1.000;
+//  pyRes->parms[5]=0.0;
+//  pyRes->parms[6]=0.0;
+//  pyRes->parms[7]=0.0;
+//  pyRes->parms[8]=0.0;
 
   std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double> (pyRes->nparms));
   Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData, vcv_tmp); 
@@ -4142,7 +4142,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
    Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
-//   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
+   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations);
 
 
 
@@ -4533,7 +4533,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   int SRsqCount;  	//tracks SR^2 >= SR^2 original
   int BSLoops = 3;	//number of times to repeat bootstrap method
   std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
-  std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations));
+  std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations, 0));
   std::vector<double> Yp_new(Nobs);	//pseudo-observed values
   std::vector<double> SR_new(Nobs);	//SR values based on new variables
   double cutpoint;	//cut-off probability for bootstrapping
@@ -4547,11 +4547,20 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 
 
   //compute the # of obs in each group
-  for (int i=0; i<Nobs; i++) grpSize[Xg[i]] += 1;
+  for (int i=0; i<Nobs; i++) grpSize[Xg[i]-1] += 1;
   //assumes PHI_START = 5
+  for (int i=0; i<pyRes->parms.size(); i++){
+    std::cout<<"i:"<<i<<", parm:"<<pyRes->parms[i]<<std::endl;
+  }
   for (int i=0; i<ngrp; i++){
       phi[i] = pyRes->parms[5+i];
+//      std::cout<<"picking i:"<<i<<", phi:"<<phi[i]<<std::endl;
   }
+
+//  std::cout<<"phis were picked"<<std::endl;
+//  for (int i=0; i<ngrp; i++){
+//    std::cout<<"i:"<<i<<", phi:"<<phi[i]<<std::endl;
+//  }
 
   //compute the estimated probability and expected obs
   Nlogist_Predict(pyRes->parms, objData, Ep);
@@ -4559,7 +4568,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   for (int i=0; i<Nobs; i++){
     Ysum[i] = Yp[i] + Yn[i];
     Ypp[i] = Ep[i] * Ysum[i];
-    var[i] = Ysum[i] * Ep[i] *  (1-Ep[i])*(1.0+(Ysum[i]-1.0)*phi[Xg[i]]); 
+    var[i] = Ysum[i] * Ep[i] *  (1-Ep[i])*(1.0+(Ysum[i]-1.0)*phi[Xg[i]-1]); 
   }
 
 //  //Add capability to tally # of observed at each value
@@ -4580,16 +4589,24 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   r = gsl_rng_alloc(type);
   gsl_rng_set(r, seed);
 
+//  for (int j=0; j<Nobs;j++){
+//    std::cout<<"j:"<<j<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
+//  }
+
+//  std::cout<<"starting BSLoops"<<std::endl;
   for (int l=0; l<BSLoops; l++){
     SRsqCount = 0;
-
+//    std::cout<<"Beginning loop:"<<l<<std::endl;
     for (int i=0; i<iterations; i++){
-       SR_newsqsum[l][i] = 0;  //Set SR squared sum to zero for new calcs
+//       std::cout<<"Starting iteration:"<<i<<std::endl;
+//       SR_newsqsum[l][i] = 0;  //Set SR squared sum to zero for new calcs
        for (int j=0; j<Nobs; j++){  //loop over each line in litter data
+//	 std::cout<<"starting observation:"<<j<<std::endl;
          Yp_new[j] = 0;  //reset pseudo-observed value to zero
 
+//         std::cout<<"j:"<<j<<", Ep[j]:"<<Ep[j]<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
 	 //find cut-off probability (cutpoint)
-	 if ((phi[Xg[j]] == 0) || (phi[Xg[j]] == 1)){
+	 if ((phi[Xg[j]-1] == 0) || (phi[Xg[j]-1] == 1)){
            cutpoint = Ep[j];
 	 } else {
 	   //find cut-off probability from beta distribution
@@ -4597,16 +4614,21 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	   if (Ep[j] <= eps){
 	     cutpoint = 0.0;
 	   } else {
-	     double tempvalue = Ep[j]*(1.0-Ep[j])/(Ep[j]*(1.0-Ep[j])*phi[Xg[j]]) - 1.0;
+	     double tempvalue = Ep[j]*(1.0-Ep[j])/(Ep[j]*(1.0-Ep[j])*phi[Xg[j]-1]) - 1.0;
 	     a = Ep[j]*tempvalue;
 	     b = (1.0 - Ep[j])*tempvalue;
+//	     std::cout<<"calling gsl_ran_beta with r:"<<r<<", a:"<<a<<", b"<<b<<std::endl;
 	     cutpoint = gsl_ran_beta(r, a, b);
+//	     std::cout<<"finished gsl_ran_beta"<<std::endl;
 	   }
 	 }
+//	 std::cout<<"found cutpoint:"<<cutpoint<<std::endl;
 	 if (isnan(cutpoint)){
+//	   std::cout<<"calling cum_beta calcs"<<std::endl;
 	   cum_beta_comp_low = gsl_cdf_beta_P(cum_beta_step, a, b);  	//low end of cumulative scale
 	   cum_beta_comp_hi = gsl_cdf_beta_P(1.0-cum_beta_step, a, b); 	//high end of cumulative scale
 	   cum_beta = gsl_rng_uniform(r);			//random value to compare to cumulative scale
+//	   std::cout<<"finished cum_beta calcs"<<std::endl;
 
 	   if (cum_beta < cum_beta_comp_low) {	//if random value is less than low end
 	     cutpoint = 0;
@@ -4631,13 +4653,17 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	     }
 	   }
 	 }
-
+//	 std::cout<<"finished beta dist with cum_beta_comp:"<<cum_beta_comp<<std::endl;
+//         std::cout<<"j:"<<j<<", Ep[j]:"<<Ep[j]<<", Xg:"<<Xg[j]<<", phi:"<<phi[Xg[j]-1]<<std::endl;
 	 //calculate pseudo-observed value
 	 if (Ep[j] <= eps){  	//if est prob = 0, then bootstrap must produce zero responses for this observation
            Yp_new[j] = 0;
-	 } else if(phi[Xg[j]] != 1){
-           for (int k=0; i<Ysum[j]; k++){
+	 } else if(phi[Xg[j]-1] != 1){
+//	   std::cout<<"j:"<<j<<", Ysum:"<<Ysum[j]<<std::endl;
+           for (int k=0; k<Ysum[j]; k++){
+//	     std::cout<<"k:"<<k<<", finding random number"<<std::endl;
 	     urand = gsl_rng_uniform(r); 	//generate uniform random number
+//	     std::cout<<"urand:"<<urand<<std::endl;
 	     if (urand <= cutpoint) Yp_new[j]++;
 	   }
 	 } else {	//phi = 1 method
@@ -4648,6 +4674,7 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
 	     Yp_new[j] = 0;
 	   }
 	 } 
+//         std::cout<<"calculated pseudo-observed value"<<std::endl;
 
 	 //calculate scaled residual based on pseudo-observation Yp_new
 	 SR_new[j] = var[j] > 0 ? (Yp_new[j] - Ypp[j])/sqrt(var[j]) : 0;
@@ -4697,8 +4724,11 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
     pavg += pv[l];
   }
 
+  std::cout<<"summed pavg:"<<pavg<<std::endl;
   //combined p-value
   pavg /= BSLoops;
+  std::cout<<"final pavg:"<<pavg<<std::endl;
+  pyRes->boot.pVal[BSLoops] = pavg;
 
   //combined chi-square percentiles
   //1st flatten the 2d vector
@@ -4722,10 +4752,10 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
       pctTemp[k] = (combSR[perloc-1] + combSR[perloc])/2.0;
     }
   }
-  pyRes->boot.perc50[BSLoops+1] = pctTemp[0];
-  pyRes->boot.perc90[BSLoops+1] = pctTemp[1];
-  pyRes->boot.perc95[BSLoops+1] = pctTemp[2];
-  pyRes->boot.perc99[BSLoops+1] = pctTemp[3];
+  pyRes->boot.perc50[BSLoops] = pctTemp[0];
+  pyRes->boot.perc90[BSLoops] = pctTemp[1];
+  pyRes->boot.perc95[BSLoops] = pctTemp[2];
+  pyRes->boot.perc99[BSLoops] = pctTemp[3];
 
   gsl_rng_free(r);  //free memory from random generator
 
@@ -4930,11 +4960,11 @@ void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData
   std::vector<double> Var(Nobs);
   std::vector<double> SR(Nobs);
 
-  std::cout<<"inside Nlogist_GOF data:"<<std::endl;
-  std::cout<<"Xi\tLs\tYp\tYn\tLsc\tEp"<<std::endl;
-  for(int i=0; i<Ls.size(); i++){
-    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Lsc[i]<<"\t"<<Ep[i]<<std::endl;
-  }
+//  std::cout<<"inside Nlogist_GOF data:"<<std::endl;
+//  std::cout<<"Xi\tLs\tYp\tYn\tLsc\tEp"<<std::endl;
+//  for(int i=0; i<Ls.size(); i++){
+//    std::cout<<Xi[i]<<"\t"<<Ls[i]<<"\t"<<Yp[i]<<"\t"<<Yn[i]<<"\t"<<Lsc[i]<<"\t"<<Ep[i]<<std::endl;
+//  }
   //compute the GrpSize  
 //  std::cout<<"computing group size"<<std::endl;
 //  for (int i = 0; i<Nobs; i++) {
@@ -5096,11 +5126,11 @@ void SortNestedData(const std::vector<int> &grpSize, std::vector<double> &Xi, st
     grpStart += grpSize[i]; //set grpStart index for next group
   } 
 
-  std::cout<<"final full vector"<<std::endl;
-  std::cout<<"Xi\tLs\tYp\tYn\tLsc"<<std::endl;
-  for (int i=0; i<Nobs; i++){
-    std::cout<<newXi[i]<<"\t"<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newLsc[i]<<std::endl;   
-  }
+//  std::cout<<"final full vector"<<std::endl;
+//  std::cout<<"Xi\tLs\tYp\tYn\tLsc"<<std::endl;
+//  for (int i=0; i<Nobs; i++){
+//    std::cout<<newXi[i]<<"\t"<<newLs[i]<<"\t"<<newYp[i]<<"\t"<<newYn[i]<<"\t"<<newLsc[i]<<std::endl;   
+//  }
 
   //replace original with sorted
   Xi = newXi;
