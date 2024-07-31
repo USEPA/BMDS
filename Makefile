@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build develop
+.PHONY: clean lint format test coverage build dist docs docs-serve docs-clean loc
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -40,3 +40,22 @@ build: ## Rebuild in development environment
 dist: ## Build wheel package for distribution
 	@python setup.py bdist_wheel
 	@ls -lh dist
+
+docs: ## Build documentation {html}
+	sphinx-build -W -b html docs/source docs/build/html
+	@echo "HTML: \"docs/build/html/index.html\""
+
+docs-serve: ## Realtime documentation preview
+	sphinx-autobuild -b html docs/source docs/build/html --port 5800
+
+docs-clean: ## Clean documentation
+	@$(MAKE) -C docs clean
+
+loc: ## Generate lines of code report
+	@cloc \
+		--exclude-dir=build,dist,venv \
+		--exclude-ext=json,yaml,svg,toml,ini \
+		--vcs=git \
+		--counted loc-files.txt \
+		--md \
+		.

@@ -1,18 +1,10 @@
-*.html
-*.docx
 *.o
-# *.tar.gz
 *.a
 *.la
 *.so
-*.Rproj.user
-*.tgz
-.Rproj.user
 .DS_Store
-*.o
 *.so
-.Rhistory
-build/
+
 create_dll_compile.bash
 
 # python
@@ -21,11 +13,18 @@ create_dll_compile.bash
 .ipynb_checkpoints/
 .mypy_cache/
 .pytest_cache/
+.ruff_cache/
 .vscode/
+build/
 dist/
 htmlcov/
 venv/
+wheelhouse/
 *.log
 *.py[cod]
-.coverage
+.coverage/
 .env
+
+# documentation outputs
+docs/source/recipes/output/*
+!docs/source/recipes/output/.gitkeep

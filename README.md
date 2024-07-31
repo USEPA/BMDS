@@ -1,8 +1,8 @@
 # BMDS
 
-TODO - describe!
+## Disclaimer
 
-Disclaimer: The United States Government project code is provided on an "as is" basis and the user assumes responsibility for its use. The United States Government has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the United States Government. The NIH or EPA seal and logo shall not be used in any manner to imply endorsement of any commercial product or activity by NIH or EPA or the United States Government.
+This software/application has been approved for release by the U.S. Environmental Protection Agency (USEPA). Although the software has been subjected to rigorous review, the USEPA reserves the right to update the software as needed pursuant to further analysis and review. No warranty, expressed or implied, is made by the USEPA or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. Furthermore, the software is released on condition that neither the USEPA nor the U.S. Government shall be held liable for any damages resulting from its authorized or unauthorized use.
 
 ## ToxicR
 
@@ -47,7 +47,8 @@ make dist     # build a portable python wheel for distribution
 
 Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.
 
-## C++ build and testing
+### C++ build and testing
+
 inside src/build directory
 
 ```bash

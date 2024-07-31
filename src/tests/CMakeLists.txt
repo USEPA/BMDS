@@ -53,6 +53,8 @@ ENDIF()
 
 add_executable(test_cpp src/test_cpp.cpp)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+
 IF(WIN32)
 	#Windows build
 	find_library(BMDS_LIB bmdscore HINTS ${CPP_BASE}/build/Release)

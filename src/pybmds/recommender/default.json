@@ -1,0 +1,184 @@
+{
+    "enabled": true,
+    "recommend_questionable": false,
+    "recommend_viable": true,
+    "sufficiently_close_bmdl": 3,
+    "rules": [
+        {
+            "rule_class": "gof",
+            "failure_bin": 1,
+            "threshold": 0.1,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "dof_zero",
+            "failure_bin": 1,
+            "threshold": null,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "high_bmd",
+            "failure_bin": 0,
+            "threshold": 1.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "warnings",
+            "failure_bin": 1,
+            "threshold": null,
+            "enabled_dichotomous": false,
+            "enabled_continuous": false,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "high_bmdl",
+            "failure_bin": 0,
+            "threshold": 1.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "roi_large",
+            "failure_bin": 1,
+            "threshold": 2.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "gof_cancer",
+            "failure_bin": 1,
+            "threshold": 0.05,
+            "enabled_dichotomous": false,
+            "enabled_continuous": false,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "aic_missing",
+            "failure_bin": 2,
+            "threshold": null,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "bmd_missing",
+            "failure_bin": 2,
+            "threshold": null,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "roi_missing",
+            "failure_bin": 2,
+            "threshold": null,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "bmdl_missing",
+            "failure_bin": 2,
+            "threshold": null,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "bmdu_missing",
+            "failure_bin": 1,
+            "threshold": null,
+            "enabled_dichotomous": false,
+            "enabled_continuous": false,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "low_bmd_fail",
+            "failure_bin": 1,
+            "threshold": 10.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "low_bmd_warn",
+            "failure_bin": 0,
+            "threshold": 3.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "variance_fit",
+            "failure_bin": 1,
+            "threshold": 0.05,
+            "enabled_dichotomous": false,
+            "enabled_continuous": true,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "low_bmdl_fail",
+            "failure_bin": 1,
+            "threshold": 10.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "low_bmdl_warn",
+            "failure_bin": 0,
+            "threshold": 3.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "variance_type",
+            "failure_bin": 1,
+            "threshold": 0.05,
+            "enabled_dichotomous": false,
+            "enabled_continuous": false,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "control_stdev_fit",
+            "failure_bin": 0,
+            "threshold": 1.5,
+            "enabled_dichotomous": false,
+            "enabled_continuous": true,
+            "enabled_nested": false
+        },
+        {
+            "rule_class": "bmd_bmdl_ratio_fail",
+            "failure_bin": 1,
+            "threshold": 20.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "bmd_bmdl_ratio_warn",
+            "failure_bin": 0,
+            "threshold": 3.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        },
+        {
+            "rule_class": "control_residual_high",
+            "failure_bin": 0,
+            "threshold": 2.0,
+            "enabled_dichotomous": true,
+            "enabled_continuous": true,
+            "enabled_nested": true
+        }
+    ]
+}

@@ -1,45 +1,101 @@
 [project]
 name = "pybmds"
-description = "A description of pybmds"
-requires-python = ">=3.11"
-readme = "README.md"
+license = {text = "MIT License"}
+description = "A Python interface for the USEPA Benchmark dose modeling software (BMDS)"
 authors = [
-    {name = "BMDS development team"},
+  {name = "BMDS development team"},
 ]
-dynamic = ["version"]
-dependencies = [
-    "typer >= 0.7.0",
-]
-
-license = {text = "MIT"}
+readme = "README.md"
+version = "24.1a2"
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3.11",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.11"
+dependencies = [
+  "matplotlib>=3.7",
+  "numpy",
+  "openpyxl",
+  "pandas>=2",
+  "pydantic>=2",
+  "python-docx",
+  "scipy",
+  "tabulate",
+  "tqdm",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["pybmds"]
-
-[tool.setuptools.dynamic]
-version = {attr = "pybmds.__version__"}
+[project.optional-dependencies]
+dev = [
+  "coverage~=7.5.1",
+  "mypy~=1.10.0",
+  "pybind11~=2.10.4",
+  "pytest-mpl~=0.17.0",
+  "pytest~=8.2.1",
+  "ruff~=0.4.4",
+  "setuptools~=67.7.2",
+  "wheel~=0.43.0",
+]
+docs = [
+  "Sphinx~=7.3.7",
+  "myst-nb~=1.1.0",
+  "myst-parser~=3.0.1",
+  "pydata-sphinx-theme~=0.15.2",
+  "sphinx-autobuild~=2024.4.16",
+]
 
 [project.scripts]
-pybmds = "pybmds.cli:app"
+"bmds-priors-report" = "bmds.cli.priors_report:main"
 
 [build-system]
 requires = [
-    "setuptools>=67.7.2",
-    "pybind11>=2.10.4",
+  "pybind11~=2.10.4",
+  "setuptools~=67.7.2",
 ]
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
-test-requires = "pytest"
+archs = ["auto64"]
+build = ["cp311-*", "cp312-*"]
+skip = [
+  "*-win32",
+  "*-win_arm64",
+  "*musllinux*",
+  "*i686",
+  "*-macosx_x86_64",
+  "*-macosx_universal2",
+]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+test-requires = ["pytest", "pytest-mpl"]
 test-command = "pytest {project}/tests"
+
+[tool.cibuildwheel.windows]
+before-build = "bash tools/windows_ci.sh"
+
+[tool.cibuildwheel.windows.environment]
+EIGEN_DIR="D:/a/bmds/bmds/deps/eigen"
+NLOPT_DIR="D:/a/bmds/bmds/deps/nlopt/src/api;D:/a/bmds/bmds/deps/nlopt/build/Release;D:/a/bmds/bmds/deps/nlopt/build"
+GSL_DIR="D:/a/bmds/bmds/deps/gsl/build/Release;D:/a/bmds/bmds/deps/gsl/build"
+
+[tool.cibuildwheel.linux]
+before-build = "tools/cibuildwheel-linux.sh"
+
+[tool.cibuildwheel.linux.environment]
+EIGEN_DIR="/usr/include/eigen3"
+NLOPT_DIR="/usr/local/lib64/"
+CMAKE_C_COMPILER="/opt/rh/gcc-toolset-12/root/usr/bin/gcc"
+CMAKE_CXX_COMPILER="/opt/rh/gcc-toolset-12/root/usr/bin/g++"
+
+[tool.cibuildwheel.macos]
+before-build = "tools/cibuildwheel-mac.sh"
+
+[tool.cibuildwheel.macos.environment]
+EIGEN_DIR="/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3"
+GSL_DIR="/opt/homebrew/Cellar/gsl/2.7.1"
+NLOPT_DIR="/opt/homebrew/Cellar/nlopt/2.7.1/include"
 
 [tool.coverage.run]
 include = [
@@ -48,6 +104,8 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = "tests/test_pybmds"
+addopts = "--mpl-baseline-path=tests/data/mpl"
+python_files = ["test_*.py"]
 
 [tool.ruff]
 line-length = 100
@@ -59,3 +117,7 @@ lint.isort.known-first-party = ["pybmds"]
 [tool.ruff.lint.per-file-ignores]
 "test_*.py" = ["S101", "S106"]
 "setup.py" = ["S603", "S607"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pybmds*"]
