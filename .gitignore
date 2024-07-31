@@ -2,6 +2,7 @@
 *.a
 *.la
 *.so
+.coverage
 .DS_Store
 *.so
 
@@ -10,6 +11,7 @@ create_dll_compile.bash
 # python
 *.egg-info/
 .cache/
+.coverage
 .ipynb_checkpoints/
 .mypy_cache/
 .pytest_cache/

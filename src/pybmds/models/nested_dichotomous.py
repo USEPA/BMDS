@@ -9,6 +9,7 @@ from ..types.nested_dichotomous import (
     NestedDichotomousModelSettings,
     NestedDichotomousResult,
 )
+from ..types.priors import ModelPriors, get_nested_dichotomous_prior
 from ..utils import multi_lstrip
 from .base import BmdModel, BmdModelSchema, InputModelSettings
 
@@ -32,7 +33,21 @@ class BmdModelNestedDichotomous(BmdModel):
         else:
             model_settings = NestedDichotomousModelSettings.model_validate(settings)
 
+        # get default values, may require further model customization
+        if not isinstance(model_settings.priors, ModelPriors):
+            prior_class = (
+                model_settings.priors
+                if isinstance(model_settings.priors, PriorClass)
+                else self.get_default_prior_class()
+            )
+            model_settings.priors = get_nested_dichotomous_prior(
+                self.bmd_model_class, prior_class=prior_class
+            )
+
         return model_settings
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.frequentist_restricted
 
     def to_cpp(self) -> NestedDichotomousAnalysis:
         structs = NestedDichotomousAnalysis.blank()
@@ -78,7 +93,8 @@ class BmdModelNestedDichotomous(BmdModel):
 
     def get_gof_pvalue(self): ...
 
-    def get_priors_list(self): ...
+    def get_priors_list(self) -> list[list]:
+        return self.settings.priors.priors_list(nphi=self.dataset.num_dose_groups)
 
     def model_settings_text(self) -> str:
         input_tbl = self.settings.tbl()
@@ -107,30 +123,70 @@ class NestedLogistic(BmdModelNestedDichotomous):
     bmd_model_class = NestedDichotomousModelChoices.logistic.value
 
     def get_param_names(self) -> list[str]:
-        return ["alpha", "beta", "theta1", "theta2", "rho"] + [
+        return ["g", "b", "theta1", "theta2", "rho"] + [
             f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        alpha = params["alpha"]
-        beta = params["beta"]
+        g = params["g"]
+        b = params["b"]
         theta1 = params["theta1"]
         theta2 = params["theta2"]
         rho = params["rho"]
         d = doses.copy()
         d[d < ZEROISH] = ZEROISH
         return (
-            alpha
+            g
             + theta1 * fixed_lsc
-            + (1 - alpha - theta1 * fixed_lsc)
-            / (1 + np.exp(-1 * beta - theta2 * fixed_lsc - rho * np.log(d)))
+            + (1 - g - theta1 * fixed_lsc)
+            / (1 + np.exp(-1 * b - theta2 * fixed_lsc - rho * np.log(d)))
         )
 
     def get_default_prior_class(self) -> PriorClass:
-        # TODO - change
-        return PriorClass.frequentist_unrestricted
+        return PriorClass.frequentist_restricted
+
+
+class Nctr(BmdModelNestedDichotomous):
+    bmd_model_class = NestedDichotomousModelChoices.nctr.value
+
+    def get_param_names(self) -> list[str]:
+        return ["g", "b", "theta1", "theta2", "rho"] + [
+            f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
+        ]
+
+    def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
+        # TODO - update formula as needed
+        g = params["g"]
+        b = params["b"]
+        theta1 = params["theta1"]
+        theta2 = params["theta2"]
+        rho = params["rho"]
+        d = doses.copy()
+        d[d < ZEROISH] = ZEROISH
+        return (
+            g
+            + theta1 * fixed_lsc
+            + (1 - g - theta1 * fixed_lsc)
+            / (1 + np.exp(-1 * b - theta2 * fixed_lsc - rho * np.log(d)))
+        )
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.frequentist_restricted
+
+    def get_model_settings(
+        self, dataset: NestedDichotomousDataset, settings: InputModelSettings
+    ) -> NestedDichotomousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        smax = max(1, max(dataset.litter_ns))
+        smin = max(1, min(dataset.litter_ns))
+        model_settings.priors.update("theta1", min_value=-1.0 / smax, max_value=-1.0 / smin)
+        model_settings.priors.update("theta2", min_value=-1.0 / smax, max_value=-1.0 / smin)
+
+        return model_settings
 
 
 bmd_model_map = {
     NestedDichotomousModelChoices.logistic.value.id: NestedLogistic,
+    NestedDichotomousModelChoices.nctr.value.id: Nctr,
 }

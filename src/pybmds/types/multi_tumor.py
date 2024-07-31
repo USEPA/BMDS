@@ -36,7 +36,7 @@ class MultitumorResult(BaseModel):
     ll: float
     ll_constant: float
     models: list[list[BmdModelDichotomousSchema]]  # all degrees for all datasets
-    selected_model_indexes: list[int]
+    selected_model_indexes: list[int | None]
     slope_factor: float
     valid_result: list[bool]
 
@@ -54,6 +54,7 @@ class MultitumorResult(BaseModel):
                 )
                 m.results = DichotomousResult.from_model(m)
                 j_models.append(m.serialize())
+
         return cls(
             bmd=result.BMD,
             bmdl=result.BMDL,
@@ -61,7 +62,7 @@ class MultitumorResult(BaseModel):
             ll=result.combined_LL,
             ll_constant=result.combined_LL_const,
             models=i_models,
-            selected_model_indexes=result.selectedModelIndex,
+            selected_model_indexes=[idx if idx >= 0 else None for idx in result.selectedModelIndex],
             slope_factor=result.slopeFactor,
             valid_result=result.validResult,
         )
@@ -72,7 +73,10 @@ class MultitumorResult(BaseModel):
             model_idx = self.selected_model_indexes[i]
             texts.append("\n" + dataset._get_dataset_name() + "\n" + "═" * 80)
             texts.append("\n" + dataset.tbl() + "\n")
-            texts.append(models[i][model_idx].text())
+            if model_idx is None:
+                texts.append("No model selected.")
+            else:
+                texts.append(models[i][model_idx].text())
         fitted = "\n".join(texts)
 
         return multi_lstrip(
