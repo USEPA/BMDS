@@ -4814,6 +4814,7 @@ void runPythonNestedAnalysis(){
   pyAnal.estBackground = true;
   pyAnal.BMR = 0.1;
   pyAnal.alpha = 0.05;
+  pyAnal.numBootRuns = 3;
   pyAnal.iterations = 1000;
   pyAnal.seed = BMDS_MISSING; 
   pyAnal.prior_cols = 2;
@@ -4866,7 +4867,7 @@ void runPythonNestedAnalysis(){
   std::vector<double> redPA(numDoseGroups);  //estimate of proportion affected
   std::vector<double> redLC(numDoseGroups);  //reduced data lower confidence limit
   std::vector<double> redUC(numDoseGroups);  //reduced data upper confidence limit
-  redData.numRows = numDoseGroups;
+  //redData.numRows = numDoseGroups;
   redData.dose = redDose; //size = numRows
   redData.propAffect = redPA;  //estimate of proportion affected
   redData.lowerConf = redLC;
@@ -4890,7 +4891,7 @@ void runPythonNestedAnalysis(){
   bootData.perc95 = perc95;
   bootData.perc99 = perc99;
   pyRes.boot = bootData;
-  pyRes.boot.numRuns = 3;
+  //pyRes.boot.numRuns = 3;
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
