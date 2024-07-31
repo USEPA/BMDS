@@ -2766,7 +2766,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    pyRes->bmdsRes.AIC = 546.9572409;
    pyRes->bmdsRes.chisq = 19.6087053;
    pyRes->combPVal = 0.994;
-   pyRes->df = 35;
+//   pyRes->df = 35;
 
    pyRes->nparms = 9;
    pyRes->parms.push_back(0.084733516);
@@ -2784,7 +2784,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    pyRes->LL = -269.478205;
    pyRes->obsChiSq = 19.6087053;
 
-   pyRes->boot.numRuns = 3;   
+//   pyRes->boot.numRuns = 3;   
    pyRes->boot.pVal.push_back(0.994);
    pyRes->boot.pVal.push_back(0.997);
    pyRes->boot.pVal.push_back(0.991);
