@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build dist docs docs-serve docs-clean loc
+.PHONY: clean lint format test coverage build dist docs docs-docx docs-serve docs-clean loc
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -44,6 +44,11 @@ dist: ## Build wheel package for distribution
 docs: ## Build documentation {html}
 	sphinx-build -W -b html docs/source docs/build/html
 	@echo "HTML: \"docs/build/html/index.html\""
+
+docs-docx: ## Build documentation {docx}
+	sphinx-build -W -b singlehtml docs/source docs/build/singlehtml
+	cd docs/build/singlehtml && pandoc -s index.html -o ../pybmds.docx
+	@echo "docx: \"docs/build/pybmds.docx\""
 
 docs-serve: ## Realtime documentation preview
 	sphinx-autobuild -b html docs/source docs/build/html --port 5800

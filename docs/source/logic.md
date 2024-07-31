@@ -5,15 +5,15 @@ A BMDS session in this software package has a set of automated rules for recomme
 1. USEPA BMDS technical guidance ([EPA 2012](https://www.epa.gov/risk/benchmark-dose-technical-guidance))
 2. [Wignall et al. 2014](http://dx.doi.org/10.1289/ehp.1307539)
 
-When configuration a session, a user selects which models and models recommendation is enabled. If enabled, recommendation logic has reasonable defaults, but it can also be manually configured to turn on/off individual checks and threshold values. Results are extracted from model outputs, and models are placed into one of three possible bins, depending on the results and the bin recommendation logic:
+When configuring a session, a user selects which models and model recommendations are enabled. If enabled, recommendation logic has reasonable defaults, but it can also be manually configured to turn on/off individual checks and threshold values. Results are extracted from model outputs, and models are placed into one of three possible bins, depending on the results and the bin recommendation logic:
 
 1. **Failure**: model did not successfully complete
 2. **Nonviable model**: model successfully completed, but there are serious issues
 3. **Viable model**: candidate for recommended model, but there may be warnings
 
-If at least one viable model exists, then it may be selected as a best fitting model. This would be consistent with what was done in the workflow diagram below:
+If at least one viable model exists, then it may be selected as a best fitting model. This would be consistent with the workflow diagram below:
 
-![_static/img/logic.png](../_static/img/logic.png)
+![Recommendation logic diagram](/_static/img/logic.png)
 
 **Model binning and recommendation. From [Wignall et al. 2014](http://dx.doi.org/10.1289/ehp.1307539).**
 

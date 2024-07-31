@@ -177,6 +177,11 @@ class Session:
             and self.recommender.results.recommended_model_index is not None
         )
 
+    @property
+    def recommended_model(self) -> BmdModel | None:
+        if self.has_recommended_model:
+            return self.models[self.recommender.results.recommended_model_index]
+
     def accept_recommendation(self):
         """Select the recommended model, if one exists."""
         if self.has_recommended_model:
