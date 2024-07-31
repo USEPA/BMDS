@@ -136,7 +136,7 @@ After creating an environment, you'll need to activate the environment. Activati
 You'll need to remember the environment name you created and then activate it:
 
 ```bash
-activate bmds-desktop
+conda activate bmds-desktop
 ```
 
 If successful, you should see the environment name in front of your terminal in parenthesis, e.g.:
