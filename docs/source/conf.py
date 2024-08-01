@@ -1,8 +1,7 @@
 project = "pybmds"
-copyright = "Public Domain"
-author = "U.S. EPA"
+copyright = "MIT License"
 
-extensions = ["myst_nb"]
+extensions = ["myst_nb", "sphinx_design"]
 souce_suffix = {
     ".md": "markdown",
     ".rst": "restructuredtext",
@@ -11,6 +10,8 @@ templates_path = ["_templates"]
 
 exclude_patterns = []
 
+myst_links_external_new_tab = True
+myst_heading_anchors = 6
 myst_enable_extensions = [
     "attrs_inline",
     "colon_fence",
@@ -21,31 +22,17 @@ myst_enable_extensions = [
 ]
 
 # HTML settings
-html_theme = "pydata_sphinx_theme"
+html_favicon = "_static/img/logo.png"
+html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["css/style.css"]
-html_sidebars = {"**": ["globaltoc.html"]}
 html_theme_options = {
-    "icon_links": [
-        {
-            "name": "GitHub",
-            "url": "https://github.com/USEPA/bmds-private",
-            "icon": "fa-brands fa-github",
-            "type": "fontawesome",
-        },
-        {
-            "name": "U.S. Environmental Protection Agency",
-            "url": "https://epa.gov/bmds",
-            "icon": "_static/img/epa_logo.png",
-            "type": "local",
-        },
-    ],
-    "use_edit_page_button": False,
-    "show_toc_level": 2,
-    "navbar_end": [
-        "theme-switcher.html",
-        "navbar-icon-links.html",
-    ],
+    "sidebar_hide_name": True,
+    "light_logo": "img/pybmds.png",
+    "dark_logo": "img/pybmds.png",
+    "source_repository": "https://github.com/USEPA/bmds",
+    "source_branch": "main",
+    "source_directory": "docs/",
 }
 
 # Latex / PDF settings

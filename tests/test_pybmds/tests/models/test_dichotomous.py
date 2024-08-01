@@ -189,7 +189,7 @@ def test_dichotomous_pvalue():
 class TestMultistageCancer:
     def test_settings(self, ddataset2):
         default = json.loads(
-            '{"prior_class": 1, "priors": [{"name": "g", "type": 0, "initial_value": -17.0, "stdev": 0.0, "min_value": -18.0, "max_value": 18.0}, {"name": "b1", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}, {"name": "bN", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}], "variance_priors": null, "beta_overrides": null}'
+            '{"prior_class": 1, "priors": [{"name": "g", "type": 0, "initial_value": -17.0, "stdev": 0.0, "min_value": -18.0, "max_value": 18.0}, {"name": "b1", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}, {"name": "bN", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}], "variance_priors": null, "overrides": null}'
         )
 
         # default MultistageCancer use cancer prior

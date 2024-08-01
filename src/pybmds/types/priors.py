@@ -11,6 +11,7 @@ from ..constants import (
     DichotomousModel,
     DistType,
     Dtype,
+    NestedDichotomousModel,
     PriorClass,
     PriorDistribution,
 )
@@ -33,7 +34,7 @@ class ModelPriors(BaseModel):
     prior_class: PriorClass  # if this is a predefined model class
     priors: list[Prior]  # priors for main model
     variance_priors: list[Prior] | None = None  # priors for variance model (continuous-only)
-    beta_overrides: dict[str, dict] | None = None  # beta term overrides
+    overrides: dict[str, dict] | None = None  # beta term overrides
 
     def report_tbl(self) -> str:
         """Generate a table of priors given this configuration.
@@ -76,9 +77,18 @@ class ModelPriors(BaseModel):
         # overrides instead of altering directly (the polynomial prior expansion is a special case)
         match = re.search(r"^b[2-9]$", name)
         if match:
-            if self.beta_overrides is None:
-                self.beta_overrides = {}
-            self.beta_overrides[match[0]] = kw
+            if self.overrides is None:
+                self.overrides = {}
+            self.overrides[match[0]] = kw
+            return
+
+        # If the term being adjusted is a phi term from a nested dichotomous model; save in the beta
+        # overrides instead of altering directly (the polynomial prior expansion is a special case)
+        match = re.search(r"^phi[1-9]$", name)
+        if match:
+            if self.overrides is None:
+                self.overrides = {}
+            self.overrides[match[0]] = kw
             return
 
         # otherwise set revisions directly
@@ -87,10 +97,15 @@ class ModelPriors(BaseModel):
             setattr(prior, k, v)
 
     def priors_list(
-        self, degree: int | None = None, dist_type: DistType | None = None
+        self,
+        degree: int | None = None,
+        dist_type: DistType | None = None,
+        nphi: int | None = None,
     ) -> list[list]:
         priors = []
         for prior in self.priors:
+            if nphi is not None and prior.name == "phi":
+                continue
             priors.append(prior.model_copy())
 
         if degree:
@@ -98,10 +113,20 @@ class ModelPriors(BaseModel):
 
         # copy degree N; > 2nd order poly
         if degree and degree >= 2:
-            overrides = self.beta_overrides or {}
+            overrides = self.overrides or {}
             for i in range(2, degree + 1):
                 prior = self.priors[2].model_copy()
                 for key, value in overrides.get(f"b{i}", {}).items():
+                    setattr(prior, key, value)
+                priors.append(prior)
+
+        # copy phi N times
+        if nphi:
+            overrides = self.overrides or {}
+            phi = self.get_prior("phi")
+            for i in range(1, nphi + 1):
+                prior = phi.model_copy()
+                for key, value in overrides.get(f"phi{i}", {}).items():
                     setattr(prior, key, value)
                 priors.append(prior)
 
@@ -113,7 +138,6 @@ class ModelPriors(BaseModel):
         if dist_type and dist_type is DistType.normal_ncv:
             for variance_prior in self.variance_priors:
                 priors.append(variance_prior)
-
         return [prior.numeric_list() for prior in priors]
 
     def to_c(self, degree: int | None = None, dist_type: DistType | None = None) -> np.ndarray:
@@ -132,8 +156,11 @@ _model_priors: dict[str, ModelPriors] = {}
 def _load_model_priors():
     # lazy load model priors from CSV file
     def set_param_type(df):
-        names = {"rho": True, "alpha": True, "log-alpha": True}
-        return df.assign(variance_param=df.name.map(names)).fillna(False)
+        df = df.assign(variance_param=False)
+        df.loc[
+            (df.data_class == "C") & (df.name.isin(["rho", "alpha", "log-alpha"])), "variance_param"
+        ] = True
+        return df
 
     def build_priors(df):
         priors = {}
@@ -169,6 +196,15 @@ def get_continuous_prior(model: ContinuousModel, prior_class: PriorClass) -> Mod
     if len(_model_priors) == 0:
         _load_model_priors()
     key = f"{Dtype.CONTINUOUS.value}-{model.id}-{prior_class}"
+    return _model_priors[key].model_copy(deep=True)
+
+
+def get_nested_dichotomous_prior(
+    model: NestedDichotomousModel, prior_class: PriorClass
+) -> ModelPriors:
+    if len(_model_priors) == 0:
+        _load_model_priors()
+    key = f"{Dtype.NESTED_DICHOTOMOUS.value}-{model.id}-{prior_class}"
     return _model_priors[key].model_copy(deep=True)
 
 

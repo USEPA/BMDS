@@ -232,6 +232,12 @@ class NestedDichotomousModelChoices(Enum):  # TODO - change - update params, mod
     logistic = NestedDichotomousModel(
         id=nested_model.nlogistic,
         verbose="Nested Logistic",
-        params=("alpha", "beta", "theta1", "theta2", "rho", "phi1", "phi2"),
+        params=("g", "b", "theta1", "theta2", "rho", "phi"),
+        model_form_str="P[dose] = ...",
+    )
+    nctr = NestedDichotomousModel(
+        id=nested_model.nctr,
+        verbose="NCTR",
+        params=("g", "b", "theta1", "theta2", "rho", "phi"),
         model_form_str="P[dose] = ...",
     )
