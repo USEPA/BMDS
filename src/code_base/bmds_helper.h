@@ -25,6 +25,8 @@
 #endif
 
 const double BMDS_EPS = 1.0e-6;
+const double CloseToZero = 1.0e-7;
+const double Log_zero = -22;  //e^(-22) ~ 2.7e-10
 const double BMDS_MISSING = -9999.0;
 const double BMDS_QNORM = 1.959964;  //bound for 95% confidence interval
 extern std::string BMDS_VERSION; 
@@ -148,7 +150,6 @@ struct dichotomous_GOF {
 };
 
 struct nestedBootstrap{
-  int numRuns;
   std::vector<double> pVal; //size = numRuns + 1
   std::vector<double> perc50;
   std::vector<double> perc90;
@@ -157,7 +158,6 @@ struct nestedBootstrap{
 };
 
 struct nestedLitterData{
-  int numRows;
   std::vector<double> dose; //size = numRows
   std::vector<double> LSC;
   std::vector<double> estProb;
@@ -165,14 +165,23 @@ struct nestedLitterData{
   std::vector<double> expected;
   std::vector<int> observed;
   std::vector<double> SR;
+  double chiSq;
 };
 
 struct nestedReducedData{
-  int numRows;
   std::vector<double> dose; //size = numRows
   std::vector<double> propAffect;  //estimate of proportion affected
   std::vector<double> lowerConf;
   std::vector<double> upperConf;
+};
+
+struct nestedSRData{
+  double minSR;
+  double avgSR;
+  double maxSR;
+  double minAbsSR;
+  double avgAbsSR;
+  double maxAbsSR;
 };
 
 struct python_dichotomous_analysis{
@@ -314,29 +323,38 @@ struct python_multitumor_result{
 };
 
 struct python_nested_analysis{
-  int model;  //model type in nest_model enum
+  enum nested_model model;  //model type in nest_model enum
   bool restricted;
   std::vector<double> doses;
   std::vector<double> litterSize;
   std::vector<double> incidence;   
   std::vector<double> lsc;  //litter specific covariate
-  int LSC_type;  // 1 = Overall Mean; control group mean otherwise
+  std::vector<double> prior;  //a column order matrix (parms x prior_cols)
+  int LSC_type;  // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
-  double background; // -9999 (BMDS_MISSING) = estimated; zero otherwise
+  bool estBackground; //if false, sets background to zero
+  int parms; //number of parameters in model
+  int prior_cols;
   double BMR;
   double alpha;
-  int iterations;
+  int numBootRuns; //number of bootstrap run
+  int iterations;  //number of iterations per run
   long seed;  // -9999 = automatic;  seed value otherwise
 };
 
 struct python_nested_result{
+  bool validResult;
   enum nested_model model;
   int nparms;
   std::vector<double> parms;
   std::vector<double> cov;
+  int dist_numE;  //number of entries in rows for the bmd dist
+  double    model_df;        // Used model degrees of freedom
+  double    total_df;        // Total degrees of freedom
   double max;
-  double df;
+  double bmd;
+  std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
   double fixedLSC;
   double LL;
   double obsChiSq;
@@ -349,7 +367,8 @@ struct python_nested_result{
   struct nestedBootstrap boot;
   //Nested Reduced DataRow
   struct nestedReducedData reduced;
-  bool validResult;
+  //Nested Scaled Residual Data
+  struct nestedSRData srData;
 };
 
 
@@ -367,6 +386,43 @@ struct msComboInEq{
   std::vector<std::vector<double>> doses;
   std::vector<std::vector<double>> Y;
   std::vector<std::vector<double>> n_group;
+};
+
+//for nested models
+struct nested_AOD{
+  double LL;
+  double dev;
+  double df;
+  double pv;
+};
+
+struct nestedObjData{
+  std::vector<double> Ls;  //Litter size
+  std::vector<double> Xi;  //Dose
+  std::vector<int> Xg;     //Dose group
+  std::vector<double> Yp;  //positive response
+  std::vector<double> Yn;  //negative response
+  std::vector<double> Lsc; //Litter specific covariate
+  std::vector<double> prior;
+  std::vector<bool> Spec;
+  int ngrp;
+  double smax;
+  double smin;
+  int LSC_type;
+  int ILC_type;
+  double isBMDL;
+  bool restricted;
+  //only used for BMDL
+  double ck;
+  double LR;
+  double xlk;     //tmp likelihood (for BMDL calc)
+  double BMD_lk;  //likelihood for BMD
+  double tD;  //initially holds BMD dose
+  double sijfixed;
+  int riskType;
+  double BMR;
+  double tol;  //tolerance for optimization
+  int optimizer; //1=LD_SLSQP, 2=???, 3=LD_LBFGS
 };
 
 #ifdef _WIN32
@@ -428,9 +484,13 @@ double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
 double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
+double zeroin_nested(double ax,double bx, double tol,
+	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
+	      double Parms[], double ck, struct nestedObjData *objData);	
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
-double BMDL_BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, bool isBMDL);
+double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
@@ -444,8 +504,48 @@ double dslog(double P);
 double round_to(double value, double precision = 1.0);
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
 
-void getNewParms2(std::vector<double> x);
-void getMoreParms2(std::vector<double> x);
+void probability_inrange(double *ex);
+
+double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
+
+double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
+
+void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, struct nestedObjData *objData);
+
+double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
+
+double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
+double nestedInequalityConstraint(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
+void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin, double smax, double sijfixed, double xmax, struct nestedObjData *objData);
+
+void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData, std::vector<std::vector<double>> &vcv);
+
+void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
+
+double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
+
+double QCHISQ(double p, int m);
+
+double CHISQ(double x, int m);
+
+void outputObjData(struct nestedObjData *objData);
+
+void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations, int BSLoops);
+
+void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, const std::vector<int> &grpSize, double bmd);
+
+void Nlogist_GOF(const std::vector<double> &parms, struct nestedObjData *objData, struct nestedLitterData *litterData, const std::vector<int> &grpSize);
+
+void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nestedReducedData *redData);
+
+void raoscott(struct nestedObjData *objData, std::vector<double> &num, std::vector<double> &den);
+
+void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, struct nestedReducedData *redData);
+
+void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P);
+
+void SortNestedData(const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
 

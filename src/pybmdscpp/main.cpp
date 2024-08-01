@@ -169,7 +169,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("pVal", &testsOfInterest::pVal);
     py::class_<nestedBootstrap>(m, "nestedBootstrap")
        .def(py::init<>())
-       .def_readwrite("numRuns", &nestedBootstrap::numRuns)
        .def_readwrite("pVal", &nestedBootstrap::pVal)
        .def_readwrite("perc50", &nestedBootstrap::perc50)
        .def_readwrite("perc90", &nestedBootstrap::perc90)
@@ -177,7 +176,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("perc99", &nestedBootstrap::perc99);
     py::class_<nestedLitterData>(m, "nestedLitterData")
        .def(py::init<>())
-       .def_readwrite("numRows", &nestedLitterData::numRows)
        .def_readwrite("dose", &nestedLitterData::dose)
        .def_readwrite("LSC", &nestedLitterData::LSC)
        .def_readwrite("estProb", &nestedLitterData::estProb)
@@ -187,11 +185,18 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("SR", &nestedLitterData::SR);
     py::class_<nestedReducedData>(m, "nestedReducedData")
        .def(py::init<>())
-       .def_readwrite("numRows", &nestedReducedData::numRows)
        .def_readwrite("dose", &nestedReducedData::dose)
        .def_readwrite("propAffect", &nestedReducedData::propAffect)
        .def_readwrite("lowerConf", &nestedReducedData::lowerConf)
        .def_readwrite("upperConf", &nestedReducedData::upperConf);
+    py::class_<nestedSRData>(m, "nestedSRData")
+       .def(py::init<>())
+       .def_readwrite("minSR", &nestedSRData::minSR)
+       .def_readwrite("avgSR", &nestedSRData::avgSR)
+       .def_readwrite("maxSR", &nestedSRData::maxSR)
+       .def_readwrite("minAbsSR", &nestedSRData::minAbsSR)
+       .def_readwrite("avgAbsSR", &nestedSRData::avgAbsSR)
+       .def_readwrite("maxAbsSR", &nestedSRData::maxAbsSR);
     py::class_<python_dichotomous_analysis>(m, "python_dichotomous_analysis")
        .def(py::init<>())
        .def_readwrite("model", &python_dichotomous_analysis::model)
@@ -316,22 +321,28 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("litterSize", &python_nested_analysis::litterSize)
        .def_readwrite("incidence", &python_nested_analysis::incidence)
        .def_readwrite("lsc", &python_nested_analysis::lsc)
+       .def_readwrite("prior", &python_nested_analysis::prior)
        .def_readwrite("LSC_type", &python_nested_analysis::LSC_type)
        .def_readwrite("ILC_type", &python_nested_analysis::ILC_type)
        .def_readwrite("BMD_type", &python_nested_analysis::BMD_type)
-       .def_readwrite("background", &python_nested_analysis::background)
+       .def_readwrite("estBackground", &python_nested_analysis::estBackground)
+       .def_readwrite("parms", &python_nested_analysis::parms)
+       .def_readwrite("prior_cols", &python_nested_analysis::prior_cols)
        .def_readwrite("BMR", &python_nested_analysis::BMR)
        .def_readwrite("alpha", &python_nested_analysis::alpha)
+       .def_readwrite("numBootRuns", &python_nested_analysis::numBootRuns)
        .def_readwrite("iterations", &python_nested_analysis::iterations)
        .def_readwrite("seed", &python_nested_analysis::seed);
     py::class_<python_nested_result>(m, "python_nested_result")
        .def(py::init<>())
+       .def_readwrite("validResult", &python_nested_result::model)
        .def_readwrite("model", &python_nested_result::model)
        .def_readwrite("nparms", &python_nested_result::nparms)
        .def_readwrite("parms", &python_nested_result::parms)
        .def_readwrite("cov", &python_nested_result::cov)
+       .def_readwrite("model_df", &python_nested_result::model_df)
        .def_readwrite("max", &python_nested_result::max)
-       .def_readwrite("df", &python_nested_result::df)
+       .def_readwrite("bmd", &python_nested_result::bmd)
        .def_readwrite("fixedLSC", &python_nested_result::fixedLSC)
        .def_readwrite("LL", &python_nested_result::LL)
        .def_readwrite("obsChiSq", &python_nested_result::obsChiSq)
@@ -340,7 +351,8 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("bmdsRes", &python_nested_result::bmdsRes)
        .def_readwrite("litter", &python_nested_result::litter)
        .def_readwrite("boot", &python_nested_result::boot)
-       .def_readwrite("reduced", &python_nested_result::reduced);
+       .def_readwrite("reduced", &python_nested_result::reduced)
+       .def_readwrite("srData", &python_nested_result::srData);
     // functions
     init_test1(m);
 

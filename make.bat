@@ -35,11 +35,11 @@ sphinx-autobuild -b html docs/source docs/build/html --port 5800
 goto :eof
 
 :lint
-ruff format . --check && ruff .
+ruff format . --check && ruff check .
 goto :eof
 
 :format
-ruff format . && ruff . --fix --show-fixes
+ruff format . && ruff check . --fix --show-fixes
 goto :eof
 
 :test
