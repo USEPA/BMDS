@@ -112,7 +112,10 @@ class CMakeBuild(build_ext):
         subprocess.run(["cmake", "--build", ".", *build_args], cwd=build_temp, check=True)
 
 
-setup(
-    ext_modules=[CMakeExtension("pybmds.bmdscore")],
-    cmdclass={"build_ext": CMakeBuild},
-)
+# if SKIP_BUILD exists, don't try to build the C++ code
+build_kw = {}
+if os.environ.get("SKIP_BUILD") is None:
+    build_kw.update(
+        ext_modules=[CMakeExtension("pybmds.bmdscore")], cmdclass={"build_ext": CMakeBuild}
+    )
+setup(**build_kw)
