@@ -26,6 +26,7 @@ void test();
 void printDichoModResult(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes, bool showResultsOverride);
 void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, bool showResultsOverride);
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
+std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted);
 
 bool showResultsOverride = true;
 
@@ -40,8 +41,8 @@ int main(void){
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
-//  runPythonNestedAnalysis();
-  runTestMultitumorModel();
+  runPythonNestedAnalysis();
+//  runTestMultitumorModel();
 
   return 0;
 
@@ -4450,6 +4451,38 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols){
 
 }
 
+std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted){
+
+  
+  std::vector<double> prG(prNLogisticG, prNLogisticG + prior_cols);
+  std::vector<double> prB(prNLogisticB, prNLogisticB + prior_cols);
+  std::vector<double> prT1(prNLogisticT1, prNLogisticT1 + prior_cols);
+  std::vector<double> prT2(prNLogisticT2, prNLogisticT2 + prior_cols);
+  std::vector<double> prURho(prUNLogisticRho, prUNLogisticRho + prior_cols);
+  std::vector<double> prRRho(prRNLogisticRho, prRNLogisticRho + prior_cols);
+  std::vector<double> prPhi(prNLogisticPhi, prNLogisticPhi + prior_cols);
+
+  std::vector<double> pr;
+
+  for (int i=0; i<prior_cols; i++){
+    pr.push_back(prG[i]);
+    pr.push_back(prB[i]);
+    pr.push_back(prT1[i]);
+    pr.push_back(prT2[i]);
+    if (restricted){
+      pr.push_back(prRRho[i]);
+    } else {
+      pr.push_back(prURho[i]);
+    }
+    for (int j=0; j<ngrp; j++){
+      pr.push_back(prPhi[i]);
+    }
+  }
+
+  return pr;
+
+}
+
 void runPythonNestedAnalysis(){
 
   bool showResultsOverride = true;
@@ -4620,16 +4653,88 @@ void runPythonNestedAnalysis(){
   pyAnal.LSC_type = 1;
   pyAnal.ILC_type = 1;
   pyAnal.BMD_type = 1; // 1 = extra; added otherwise
-  pyAnal.background = 1;
+  pyAnal.estBackground = true;
   pyAnal.BMR = 0.1;
   pyAnal.alpha = 0.05;
+  pyAnal.numBootRuns = 3;
   pyAnal.iterations = 1000;
   pyAnal.seed = BMDS_MISSING; 
+  pyAnal.prior_cols = 2;
 
+  int numDoseGroups = 4;
+
+  int Nobs = pyAnal.doses.size();
+  pyAnal.prior.resize(pyAnal.prior_cols*(5+numDoseGroups), 0.0);
+  pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, pyAnal.restricted);
 
   struct python_nested_result pyRes; 
+  pyAnal.parms = 5+numDoseGroups;
+  pyRes.model = pyAnal.model;
+  pyRes.nparms = pyAnal.parms;
+
+  struct BMDS_results bmdsRes;
+
+  //set all parms as unbounded initially
+  for (int i=0; i<pyAnal.parms; i++){
+     bmdsRes.bounded.push_back(false);
+     bmdsRes.stdErr.push_back(BMDS_MISSING);
+     bmdsRes.lowerConf.push_back(BMDS_MISSING);
+     bmdsRes.upperConf.push_back(BMDS_MISSING);
+  }
+  bmdsRes.BMD = -9999.0;
+  bmdsRes.BMDU = -9999.0;
+  bmdsRes.BMDL = -9999.0;
+  bmdsRes.AIC = -9999.0;
+  pyRes.bmdsRes = bmdsRes;
+
+  struct nestedLitterData litter;
+  std::vector<double> litterDose(Nobs);
+  std::vector<double> litterLSC(Nobs);
+  std::vector<double> litterEP(Nobs);
+  std::vector<double> litterSize(Nobs);
+  std::vector<double> litterEx(Nobs);
+  std::vector<int> litterObs(Nobs);
+  std::vector<double> litterSR(Nobs);
+  litter.dose = litterDose;
+  litter.LSC = litterLSC;
+  litter.estProb = litterEP;
+  litter.litterSize = litterSize;
+  litter.expected = litterEx;
+  litter.observed = litterObs;
+  litter.SR = litterSR;
+  pyRes.litter = litter;
+
+  struct nestedReducedData redData;
+  std::vector<double> redDose(numDoseGroups); //size = numRows
+  std::vector<double> redPA(numDoseGroups);  //estimate of proportion affected
+  std::vector<double> redLC(numDoseGroups);  //reduced data lower confidence limit
+  std::vector<double> redUC(numDoseGroups);  //reduced data upper confidence limit
+  redData.dose = redDose; //size = numRows
+  redData.propAffect = redPA;  //estimate of proportion affected
+  redData.lowerConf = redLC;
+  redData.upperConf = redUC;
+  pyRes.reduced = redData;
+
+  struct nestedSRData srData;
+  pyRes.srData = srData;
+
+  struct nestedBootstrap bootData;
+  int numBootRuns = 3;
+  std::vector<double> pVal(numBootRuns+1);
+  std::vector<double> perc50(numBootRuns+1);
+  std::vector<double> perc90(numBootRuns+1);
+  std::vector<double> perc95(numBootRuns+1);
+  std::vector<double> perc99(numBootRuns+1);
+  bootData.pVal = pVal;
+  bootData.perc50 = perc50;
+  bootData.perc90 = perc90;
+  bootData.perc95 = perc95;
+  bootData.perc99 = perc99;
+  pyRes.boot = bootData;
 
   pythonBMDSNested(&pyAnal, &pyRes);
+
+
 
   printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
 }
@@ -4641,25 +4746,46 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
    if (pyRes->bmdsRes.validResult || showResultsOverride){
       std::cout<<"Valid Result"<<std::endl;
       printf("\nBenchmark Dose\n");
-      //printf("max: %f\n",pyRes->max);
       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
-      printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
+      printf("LL: %f\n", pyRes->LL);
       printf("AIC: %f\n",pyRes->bmdsRes.AIC);
       printf("P-value: %f\n", pyRes->combPVal);
-      printf("DOF: %f\n", pyRes->df);
       printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
  
       printf("\nModel Parameters\n");
       printf("# of parms: %d\n", pyRes->nparms);
-      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
+      printf("DOF: %f\n", pyRes->model_df);
+//      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
       for (int i=0; i<pyRes->nparms; i++){
-         printf("%d, %.10f\n", i, pyRes->parms[i]);
-         //printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );
+         printf("%d, %.10f, %s, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i] );
       }
    } 
 //   printf("\ncov matrix\n");
 //   for (int i=0; i<pyAnal->parms*pyAnal->parms; i++){
 //     printf("%d, %f\n", i, pyRes->cov[i]);
 //   }
+
+   std::cout<<"----SROI Data----"<<std::endl;
+   std::cout<<"min SR:"<<pyRes->srData.minSR<<std::endl;
+   std::cout<<"min |SR|:"<<pyRes->srData.minAbsSR<<std::endl;
+   std::cout<<"avg SR:"<<pyRes->srData.avgSR<<std::endl;
+   std::cout<<"avg |SR|:"<<pyRes->srData.avgAbsSR<<std::endl;
+   std::cout<<"max SR:"<<pyRes->srData.maxSR<<std::endl;
+   std::cout<<"max |SR|:"<<pyRes->srData.maxAbsSR<<std::endl;
+
+   std::cout<<"----Litter Data----"<<std::endl;
+   std::cout<<"Dose\tLSC\tEstProb\t\tLS\tExp\tObs\tSR"<<std::endl;
+   for (int i=0; i<pyRes->litter.dose.size(); i++){
+     std::cout<<pyRes->litter.dose[i]<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
+   }
+   std::cout<<"chiSq:"<<pyRes->litter.chiSq<<std::endl;
+
+   std:cout<<"----Bootstrap Data----"<<std::endl;
+   int numRuns = pyRes->boot.pVal.size();
+   for (int i=0; i<numRuns; i++){
+      std::cout<<"i:"<<i<<", pval:"<<pyRes->boot.pVal[i]<<", 50th:"<<pyRes->boot.perc50[i]<<", 90th:"<<pyRes->boot.perc90[i]<<", 95th:"<<pyRes->boot.perc95[i]<<", 99th:"<<pyRes->boot.perc99[i]<<std::endl;
+   }
+
+
 }

@@ -139,3 +139,14 @@
   //MS cancer
   double prRFreqMultistageCancerG[] = {0, -17, 0, -18, 18};
   double prRFreqMultistageCancerB[] = {0, 0.1, 0, 0, 1e4};
+
+  //NLogistic
+  //Nlogistic only has min/max values
+  //initial values are determined programatically
+  double prNLogisticG[] = {0, 1};
+  double prNLogisticB[] = {-1*DBL_MAX, DBL_MAX};
+  double prNLogisticT1[] = {0, 1};
+  double prNLogisticT2[] = {-1*DBL_MAX, DBL_MAX};
+  double prUNLogisticRho[] = {0, 18};
+  double prRNLogisticRho[] = {1, 18};
+  double prNLogisticPhi[] = {0, DBL_MAX};
