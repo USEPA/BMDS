@@ -83,6 +83,7 @@ pyRes.model = pyAnal.model
 bmdsRes = bmdscore.BMDS_results()
 bmdsRes.stdErr = np.zeros(pyAnal.parms)
 boot = bmdscore.nestedBootstrap()
+# TODO: determine why memory needs to be allocated for these arrays
 boot.pVal = np.zeros(pyAnal.numBootRuns + 1)
 boot.perc50 = np.zeros(pyAnal.numBootRuns + 1)
 boot.perc90 = np.zeros(pyAnal.numBootRuns + 1)
