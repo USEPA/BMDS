@@ -3955,7 +3955,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double lkr = pdep * log(W) + ndep * log(1-W);  //reduced model likelihood
 
   double dev = 2*(lkf - pyRes->LL);
-//  int df = Nobs - pyRes->nparms-1 - numBounded;
   int df = pyRes->nparms - numBounded;
   double pv;
   if (dev < 0.0){
@@ -3973,7 +3972,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     if (Spec[i]) numSpec++;
   }
 
-  //fullAnova.df = pyRes->nparms - 1 - numSpec;
   fullAnova.df = pyRes->nparms - numSpec;
   fullAnova.LL = lkf;
 
@@ -4043,7 +4041,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
   const gsl_rng_type * type;    // type for beta distribution
   double urand;                 /* uniform random value [0,1]  */ 
   int SRsqCount;  	//tracks SR^2 >= SR^2 original
-//  int BSLoops = pyRes->boot.numRuns;	//number of times to repeat bootstrap method
   std::vector<double> percentiles = {0.50, 0.90, 0.95, 0.99};  //percentile values to calculate
   std::vector<std::vector<double>> SR_newsqsum (BSLoops, std::vector<double> (iterations, 0));
   std::vector<double> Yp_new(Nobs);	//pseudo-observed values
@@ -4685,7 +4682,6 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    opt.set_min_objective(objfunc_nlogistic_ll, objData);
 
-   //opt.set_xtol_rel(1e-8);
    opt.set_xtol_rel(objData->tol);
    opt.set_maxeval(10000);
    opt.set_lower_bounds(lb);
@@ -5087,7 +5083,6 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   double xb = BMD; 
   double xa = xb * stepsize;
   double tol = std::max(BMD*0.001, 0.0000001);
-//  std::cout<<"tol:"<<tol<<std::endl;
   double fb = DBL_MAX;
 
   std::vector<double> pa(nparm);

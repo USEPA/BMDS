@@ -150,7 +150,6 @@ struct dichotomous_GOF {
 };
 
 struct nestedBootstrap{
-//  int numRuns;
   std::vector<double> pVal; //size = numRuns + 1
   std::vector<double> perc50;
   std::vector<double> perc90;
@@ -159,7 +158,6 @@ struct nestedBootstrap{
 };
 
 struct nestedLitterData{
-  //int numRows;
   std::vector<double> dose; //size = numRows
   std::vector<double> LSC;
   std::vector<double> estProb;
@@ -171,7 +169,6 @@ struct nestedLitterData{
 };
 
 struct nestedReducedData{
-//  int numRows;
   std::vector<double> dose; //size = numRows
   std::vector<double> propAffect;  //estimate of proportion affected
   std::vector<double> lowerConf;
@@ -334,7 +331,6 @@ struct python_nested_analysis{
   std::vector<double> lsc;  //litter specific covariate
   std::vector<double> prior;  //a column order matrix (parms x prior_cols)
   int LSC_type;  // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
-//  bool useLSC;  //whether to use LSC
   int ILC_type;  // 1 = estimate intralitter; assume 0 otherwise
   int BMD_type;  // 1 = extra;  added otherwise
   bool estBackground; //if false, sets background to zero
@@ -359,7 +355,6 @@ struct python_nested_result{
   double max;
   double bmd;
   std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
-  //double df;
   double fixedLSC;
   double LL;
   double obsChiSq;
@@ -511,16 +506,12 @@ double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vect
 
 void probability_inrange(double *ex);
 
-//double Nlogist_lk(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, bool isBMDL, double D, double sijfixed, int riskType, double BMR);
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
 
-//double Nlogist_g(std::vector<double> p, std::vector<double> Ls, std::vector<double> Xi, std::vector<int> Xg, std::vector<double> Yp, std::vector<double> Yn, double smax, double smin, std::vector<double> &g, double D, double sijfixed, int riskType, double BMR);
 double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
 
-//void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, bool isBMDL, double smax, double smin, const std::vector<double> &Ls, const std::vector<double> &Xi, double D, double sijfixed, int riskType, double BMR);
 void Nlogist_probs(std::vector<double> &probs, const std::vector<double> &p, bool compgrad, std::vector<std::vector<double>> &gradij, struct nestedObjData *objData);
 
-//double opt_nlogistic(std::vector<double> &p, const std::vector<double> &Ls, const std::vector<double> &Xi, const std::vector<int> &Xg, const std::vector<double> &Yp, const std::vector<double> &Yn, double smax, double smin, bool isRestricted, int pass, double &xlk);
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
@@ -540,8 +531,6 @@ double CHISQ(double x, int m);
 
 void outputObjData(struct nestedObjData *objData);
 
-//void SRoI(int ngrp, std::vector<int> &Xg, std::vector<double> &Xi, std::vector<double> &LSC, std::vector<double> &SR, double meanLSC, double BMD);
-
 void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations, int BSLoops);
 
 void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR, const std::vector<int> &grpSize, double bmd);
@@ -556,7 +545,6 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
 
 void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P);
 
-//void SortByLs(std::vector<int> &GrpSize, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Ep);
 void SortNestedData(const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);

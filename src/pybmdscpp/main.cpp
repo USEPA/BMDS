@@ -169,7 +169,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("pVal", &testsOfInterest::pVal);
     py::class_<nestedBootstrap>(m, "nestedBootstrap")
        .def(py::init<>())
-//       .def_readwrite("numRuns", &nestedBootstrap::numRuns)
        .def_readwrite("pVal", &nestedBootstrap::pVal)
        .def_readwrite("perc50", &nestedBootstrap::perc50)
        .def_readwrite("perc90", &nestedBootstrap::perc90)
@@ -177,7 +176,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("perc99", &nestedBootstrap::perc99);
     py::class_<nestedLitterData>(m, "nestedLitterData")
        .def(py::init<>())
-//       .def_readwrite("numRows", &nestedLitterData::numRows)
        .def_readwrite("dose", &nestedLitterData::dose)
        .def_readwrite("LSC", &nestedLitterData::LSC)
        .def_readwrite("estProb", &nestedLitterData::estProb)
@@ -187,7 +185,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("SR", &nestedLitterData::SR);
     py::class_<nestedReducedData>(m, "nestedReducedData")
        .def(py::init<>())
-//       .def_readwrite("numRows", &nestedReducedData::numRows)
        .def_readwrite("dose", &nestedReducedData::dose)
        .def_readwrite("propAffect", &nestedReducedData::propAffect)
        .def_readwrite("lowerConf", &nestedReducedData::lowerConf)
@@ -344,7 +341,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("parms", &python_nested_result::parms)
        .def_readwrite("cov", &python_nested_result::cov)
        .def_readwrite("model_df", &python_nested_result::model_df)
-//       .def_readwrite("total_df", &python_nested_result::total_df)
        .def_readwrite("max", &python_nested_result::max)
        .def_readwrite("bmd", &python_nested_result::bmd)
        .def_readwrite("fixedLSC", &python_nested_result::fixedLSC)

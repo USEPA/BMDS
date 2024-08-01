@@ -4454,8 +4454,6 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols){
 std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted){
 
   
-//  std::cout<<"Inside getNestedPrior"<<std::endl;
-//  std::cout<<"prior_cols:"<<prior_cols<<std::endl;
   std::vector<double> prG(prNLogisticG, prNLogisticG + prior_cols);
   std::vector<double> prB(prNLogisticB, prNLogisticB + prior_cols);
   std::vector<double> prT1(prNLogisticT1, prNLogisticT1 + prior_cols);
@@ -4463,35 +4461,6 @@ std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted){
   std::vector<double> prURho(prUNLogisticRho, prUNLogisticRho + prior_cols);
   std::vector<double> prRRho(prRNLogisticRho, prRNLogisticRho + prior_cols);
   std::vector<double> prPhi(prNLogisticPhi, prNLogisticPhi + prior_cols);
-
-//  std::cout<<"G"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prG[i]<<std::endl;
-//  }
-//  std::cout<<"B"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prB[i]<<std::endl;
-//  }
-//  std::cout<<"T1"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prT1[i]<<std::endl;
-//  }
-//  std::cout<<"T2"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prT2[i]<<std::endl;
-//  }
-//  std::cout<<"URho"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prURho[i]<<std::endl;
-//  }
-//  std::cout<<"RRho"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prRRho[i]<<std::endl;
-//  }
-//  std::cout<<"Phi"<<std::endl;
-//  for(int i=0; i<2; i++){
-//     std::cout<<"i:"<<i<<", val:"<<prPhi[i]<<std::endl;
-//  }
 
   std::vector<double> pr;
 
@@ -4510,12 +4479,6 @@ std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted){
     }
   }
 
-//  std::cout<<"returning priors"<<std::endl;
-//  for (int i=0; i<pr.size(); i++){
-//     std::cout<<"i:"<<i<<", pr:"<<pr[i]<<std::endl;
-//  }
-//
-//  std::cout<<"returning pr with size:"<<pr.size()<<std::endl;
   return pr;
 
 }
@@ -4567,127 +4530,6 @@ void runPythonNestedAnalysis(){
   pyAnal.doses.push_back(100);
   pyAnal.doses.push_back(100);
 
-//  pyAnal.litterSize.push_back(16);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(15);
-//  pyAnal.litterSize.push_back(9);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(13);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(9);
-//  pyAnal.litterSize.push_back(9);
-//  pyAnal.litterSize.push_back(9);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(13);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(12);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(7);
-//  pyAnal.litterSize.push_back(15);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(8);
-//  pyAnal.litterSize.push_back(11);
-//  pyAnal.litterSize.push_back(14);
-//  pyAnal.litterSize.push_back(12);
-//  pyAnal.litterSize.push_back(13);
-//  pyAnal.litterSize.push_back(12);
-//  pyAnal.litterSize.push_back(10);
-//  pyAnal.litterSize.push_back(14);
-//
-//  pyAnal.incidence.push_back(1);
-//  pyAnal.incidence.push_back(3);
-//  pyAnal.incidence.push_back(1);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(0);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(3);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(1);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(3);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(1);
-//  pyAnal.incidence.push_back(3);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(2);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(5);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(6);
-//  pyAnal.incidence.push_back(8);
-//  pyAnal.incidence.push_back(7);
-//  pyAnal.incidence.push_back(8);
-//  pyAnal.incidence.push_back(4);
-//  pyAnal.incidence.push_back(6);
-//
-//  pyAnal.lsc.push_back(16);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(15);
-//  pyAnal.lsc.push_back(9);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(13);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(9);
-//  pyAnal.lsc.push_back(9);
-//  pyAnal.lsc.push_back(9);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(13);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(12);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(7);
-//  pyAnal.lsc.push_back(15);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(8);
-//  pyAnal.lsc.push_back(11);
-//  pyAnal.lsc.push_back(14);
-//  pyAnal.lsc.push_back(12);
-//  pyAnal.lsc.push_back(13);
-//  pyAnal.lsc.push_back(12);
-//  pyAnal.lsc.push_back(10);
-//  pyAnal.lsc.push_back(14);
-
-  //original order
   pyAnal.litterSize.push_back(16);
   pyAnal.litterSize.push_back(9);
   pyAnal.litterSize.push_back(15);
@@ -4867,7 +4709,6 @@ void runPythonNestedAnalysis(){
   std::vector<double> redPA(numDoseGroups);  //estimate of proportion affected
   std::vector<double> redLC(numDoseGroups);  //reduced data lower confidence limit
   std::vector<double> redUC(numDoseGroups);  //reduced data upper confidence limit
-  //redData.numRows = numDoseGroups;
   redData.dose = redDose; //size = numRows
   redData.propAffect = redPA;  //estimate of proportion affected
   redData.lowerConf = redLC;
@@ -4879,7 +4720,6 @@ void runPythonNestedAnalysis(){
 
   struct nestedBootstrap bootData;
   int numBootRuns = 3;
-  //pyRes.boot.numRuns = numBootRuns;
   std::vector<double> pVal(numBootRuns+1);
   std::vector<double> perc50(numBootRuns+1);
   std::vector<double> perc90(numBootRuns+1);
@@ -4891,7 +4731,6 @@ void runPythonNestedAnalysis(){
   bootData.perc95 = perc95;
   bootData.perc99 = perc99;
   pyRes.boot = bootData;
-  //pyRes.boot.numRuns = 3;
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
@@ -4907,14 +4746,11 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
    if (pyRes->bmdsRes.validResult || showResultsOverride){
       std::cout<<"Valid Result"<<std::endl;
       printf("\nBenchmark Dose\n");
-      //printf("max: %f\n",pyRes->max);
       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
       printf("LL: %f\n", pyRes->LL);
-//      printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
       printf("AIC: %f\n",pyRes->bmdsRes.AIC);
       printf("P-value: %f\n", pyRes->combPVal);
-      //printf("DOF: %f\n", pyRes->df);
       printf("Chi^2: %f\n", pyRes->bmdsRes.chisq);
  
       printf("\nModel Parameters\n");
@@ -4922,10 +4758,7 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
       printf("DOF: %f\n", pyRes->model_df);
 //      printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
       for (int i=0; i<pyRes->nparms; i++){
-         //printf("%d, %.10f\n", i, pyRes->parms[i]);
-         //printf("%d, %.10f, %s, %f, %f, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i], pyRes->bmdsRes.lowerConf[i], pyRes->bmdsRes.upperConf[i] );
          printf("%d, %.10f, %s, %f\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false", pyRes->bmdsRes.stdErr[i] );
-         //printf("%d, %.10f, %s\n", i, pyRes->parms[i], pyRes->bmdsRes.bounded[i] ? "true" : "false" );
       }
    } 
 //   printf("\ncov matrix\n");
@@ -4944,7 +4777,6 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
    std::cout<<"----Litter Data----"<<std::endl;
    std::cout<<"Dose\tLSC\tEstProb\t\tLS\tExp\tObs\tSR"<<std::endl;
    for (int i=0; i<pyRes->litter.dose.size(); i++){
-//     std::cout<<pyRes->litter.dose<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
      std::cout<<pyRes->litter.dose[i]<<"\t"<<pyRes->litter.LSC[i]<<"\t"<<pyRes->litter.estProb[i]<<"\t"<<pyRes->litter.litterSize[i]<<"\t"<<pyRes->litter.expected[i]<<"\t"<<pyRes->litter.observed[i]<<"\t"<<pyRes->litter.SR[i]<<std::endl;
    }
    std::cout<<"chiSq:"<<pyRes->litter.chiSq<<std::endl;

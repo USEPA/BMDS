@@ -141,13 +141,6 @@
   double prRFreqMultistageCancerB[] = {0, 0.1, 0, 0, 1e4};
 
   //NLogistic
-  //double prNLogisticG[] = {0, 0, 0, 0, 1};
-  //double prNlogisticB[] = {0, 0, 0, -18, 18};
-  //double prNlogisticT1[] = {0, 0, 0, 0 1};
-  //double prNlogisticT2[] = {0, 0, 0 -18, 18};
-  //double prUNlogisticRho[] = {0, 0, 0, 0, 18};
-  //double prRNlogisticRho[] = {0, 0, 0, 1, 18};
-  //double prNlogisticPhi[] = {0, 0, 0, 0, 18};
   //Nlogistic only has min/max values
   //initial values are determined programatically
   double prNLogisticG[] = {0, 1};
