@@ -6,7 +6,7 @@ authors = [
   {name = "BMDS development team"},
 ]
 readme = "README.md"
-version = "24.1a2"
+dynamic = ["version"]
 classifiers = [
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
@@ -118,6 +118,9 @@ lint.isort.known-first-party = ["pybmds"]
 [tool.ruff.lint.per-file-ignores]
 "test_*.py" = ["S101", "S106"]
 "setup.py" = ["S603", "S607"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pybmds.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

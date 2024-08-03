@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from . import bmdscore, constants, plotting
+from . import __version__, bmdscore, constants, plotting
 from .constants import BMDS_BLANK_VALUE, MAXIMUM_POLYNOMIAL_ORDER, Dtype, Models, PriorClass
 from .datasets.base import DatasetSchemaBase, DatasetType
 from .models import continuous as c3
@@ -32,7 +32,6 @@ from .reporting.styling import (
 )
 from .selected import SelectedModel
 from .types import session as schema
-from .version import __version__
 
 logger = logging.getLogger(__name__)
 
