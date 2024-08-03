@@ -69,6 +69,7 @@ class BmdModelNestedDichotomous(BmdModel):
 
     def execute(self) -> NestedDichotomousResult:
         self.structs = self.to_cpp()
+        raise NotImplementedError("TODO - fix pybmds nested dichotomous binding")
         self.structs.execute()
         self.results = NestedDichotomousResult.from_model(self)
         return self.results
