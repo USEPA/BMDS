@@ -4393,7 +4393,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   double stepsize = 0.5;  //Start close to the BMD and work downwards
   double xb = BMD; 
   double xa = xb * stepsize;
-  double tol = std::max(BMD*0.001, 0.0000001);
+  double tol = max(BMD*0.001, 0.0000001);
   double fb = DBL_MAX;
 
   std::vector<double> pa(nparm);
