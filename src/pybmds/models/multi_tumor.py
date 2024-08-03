@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from pydantic import BaseModel
 
-from .. import bmdscore, plotting, reporting
+from .. import __version__, bmdscore, plotting, reporting
 from ..constants import NUM_PRIOR_COLS
 from ..datasets.dichotomous import DichotomousDataset, DichotomousDatasetSchema
 from ..reporting.footnotes import TableFootnote
@@ -23,7 +23,6 @@ from ..types.dichotomous import DichotomousModelSettings
 from ..types.multi_tumor import MultitumorAnalysis, MultitumorResult, MultitumorSettings
 from ..types.priors import multistage_cancer_prior
 from ..types.session import VersionSchema
-from ..version import __version__
 from .dichotomous import MultistageCancer
 
 
