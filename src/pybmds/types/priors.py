@@ -144,6 +144,11 @@ class ModelPriors(BaseModel):
         priors = self.priors_list(degree, dist_type)
         return np.array(priors, dtype=np.float64).flatten("F")
 
+    def to_c_nd(self, n_phi: int) -> np.ndarray:
+        # Nested dichotomous output C struct only has two columns instead of all 5
+        priors = self.priors_list(nphi=n_phi)
+        return np.array(priors, dtype=np.float64)[:, 3:].flatten("F")
+
     @property
     def is_bayesian(self) -> bool:
         return self.prior_class.is_bayesian

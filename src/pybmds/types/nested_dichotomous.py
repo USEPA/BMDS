@@ -37,11 +37,6 @@ class IntralitterCorrelation(IntEnum):
         return "ilc+" if self == self.Estimate else "ilc-"
 
 
-class Background(IntEnum):
-    Zero = 0
-    Estimate = 1
-
-
 _bmr_text_map = {
     RiskType.ExtraRisk: "{:.0%} Extra Risk",
     RiskType.AddedRisk: "{:.0%} Added Risk",
@@ -54,10 +49,11 @@ class NestedDichotomousModelSettings(BaseModel):
     alpha: float = Field(default=0.05, gt=0, lt=1)
     litter_specific_covariate: LitterSpecificCovariate = LitterSpecificCovariate.OverallMean
     intralitter_correlation: IntralitterCorrelation = IntralitterCorrelation.Estimate
-    background: Background = Background.Estimate
+    estimate_background: bool = True
     restricted: bool = True
     bootstrap_iterations: int = Field(default=1000, gt=10, lt=10000)
     bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1000))  # noqa: S311
+    bootstrap_n: int = Field(default=3, ge=1, le=10)
     name: str = ""  # override model name
     priors: PriorClass | ModelPriors | None = None  # if None; default used
 
@@ -85,10 +81,11 @@ class NestedDichotomousModelSettings(BaseModel):
             ["Confidence Level (one sided)", self.confidence_level],
             ["Litter Specific Covariate", camel_to_title(self.litter_specific_covariate.name)],
             ["Intralitter Correlation", self.intralitter_correlation.name],
-            ["Background", self.background.name],
+            ["Estimate Background", self.estimate_background],
             ["Model Restriction", self.restriction_text],
+            ["Bootstrap Runs", self.bootstrap_n],
             ["Bootstrap Iterations", self.bootstrap_iterations],
-            ["Bootstrap Key", self.bootstrap_seed],
+            ["Bootstrap Seed", self.bootstrap_seed],
         ]
 
     def tbl(self, degree_required: bool = False) -> str:

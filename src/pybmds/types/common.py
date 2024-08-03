@@ -75,7 +75,7 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
         if attr.startswith("__"):
             continue
         elif "bmdscore" in value.__class__.__module__:
-            if isinstance(value, bmdscore.cont_model):
+            if isinstance(value, bmdscore.cont_model | bmdscore.nested_model):
                 lines.append(f"{indent}{attr}: {value}")
             else:
                 inspect_cpp_obj(lines, value, depth)

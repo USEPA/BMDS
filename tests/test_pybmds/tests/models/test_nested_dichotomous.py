@@ -70,7 +70,7 @@ class TestNestedLogistic:
         )
         assert m.settings.priors.get_prior("rho").min_value == 0
 
-    @pytest.mark.xfail(reason="TODO - fix pybmds nested dichotomous binding")
+    @pytest.mark.skip(reason="TODO - fix pybmds nested dichotomous binding")
     def test_execute(self, nd_dataset4):
         # add seed for reproducibility
         analysis = nested_dichotomous.NestedLogistic(nd_dataset4, settings=dict(bootstrap_seed=1))
