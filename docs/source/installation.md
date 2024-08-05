@@ -334,9 +334,32 @@ To fix, [activate](activate-venv) your Python virtual environment after successf
 
 After [activating your environment](activate-venv), you can upgrade to the latest version:
 
+:::{admonition} NOTE - this will not work until we officially release!
+:class: caution
+
+The content below below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
+
+---
+
 ```bash
 python -m pip install --upgrade bmds-ui
 ```
+:::
+
+:::{admonition} NOTE - for internal EPA testing
+:class: tip
+
+Use this guide instead until we are cleared for release.
+
+---
+
+While connected to the EPA VPN, install the packages:
+
+```bash
+python -m pip install --upgrade bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
+```
+
+:::
 
 (multiple-versions)=
 ### Installing Multiple Versions of BMDS Desktop
