@@ -347,7 +347,6 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("LL", &python_nested_result::LL)
        .def_readwrite("obsChiSq", &python_nested_result::obsChiSq)
        .def_readwrite("combPVal", &python_nested_result::combPVal)
-       .def_readwrite("SRs", &python_nested_result::SRs)
        .def_readwrite("bmdsRes", &python_nested_result::bmdsRes)
        .def_readwrite("litter", &python_nested_result::litter)
        .def_readwrite("boot", &python_nested_result::boot)
