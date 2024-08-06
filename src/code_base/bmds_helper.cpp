@@ -2911,7 +2911,26 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    for (int i=0; i<pyRes->nparms; i++){
      pyRes->parms[i] = BMDS_MISSING;
    }
-  
+   pyRes->bmdsRes.stdErr.resize(pyRes->nparms, BMDS_MISSING);
+   pyRes->bmdsRes.bounded.resize(pyRes->nparms, false);
+   pyRes->litter.dose.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.LSC.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.estProb.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.litterSize.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.expected.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.observed.resize(Nobs, static_cast<int>(BMDS_MISSING));
+   pyRes->litter.SR.resize(Nobs, BMDS_MISSING);
+   pyRes->boot.pVal.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc50.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc90.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc95.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc99.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->reduced.dose.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.propAffect.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.lowerConf.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.upperConf.resize(ngrp, BMDS_MISSING);
+
+
   int knownParms = 0;
   //handle specified parms
   if (!pyAnal->estBackground){
