@@ -4488,7 +4488,7 @@ void runPythonNestedAnalysis(){
   bool showResultsOverride = true;
   struct python_nested_analysis pyAnal;
   pyAnal.model = nlogistic; 
-  pyAnal.restricted = true;
+  bool isRestricted = true;
 
   pyAnal.doses.push_back(0);
   pyAnal.doses.push_back(0);
@@ -4665,7 +4665,7 @@ void runPythonNestedAnalysis(){
 
   int Nobs = pyAnal.doses.size();
   pyAnal.prior.resize(pyAnal.prior_cols*(5+numDoseGroups), 0.0);
-  pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, pyAnal.restricted);
+  pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
 
   struct python_nested_result pyRes; 
   pyAnal.parms = 5+numDoseGroups;

@@ -316,7 +316,6 @@ PYBIND11_MODULE(bmdscore, m) {
     py::class_<python_nested_analysis>(m, "python_nested_analysis")
        .def(py::init<>())
        .def_readwrite("model", &python_nested_analysis::model)
-       .def_readwrite("restricted", &python_nested_analysis::restricted)
        .def_readwrite("doses", &python_nested_analysis::doses)
        .def_readwrite("litterSize", &python_nested_analysis::litterSize)
        .def_readwrite("incidence", &python_nested_analysis::incidence)

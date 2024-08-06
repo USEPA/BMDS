@@ -29,7 +29,7 @@ def getNLogisticPrior(ngrp, prior_cols, restricted):
 
 pyAnal = bmdscore.python_nested_analysis()
 pyAnal.model = bmdscore.nested_model.nlogistic
-pyAnal.restricted = True
+isRestricted = True
 
 # fmt: off
 pyAnal.doses = np.array(
@@ -75,7 +75,7 @@ ngrp = len(np.unique(pyAnal.doses))
 Nobs = len(pyAnal.doses)
 
 pyAnal.parms = 5 + ngrp
-pyAnal.prior = getNLogisticPrior(ngrp, pyAnal.prior_cols, pyAnal.restricted)
+pyAnal.prior = getNLogisticPrior(ngrp, pyAnal.prior_cols, isRestricted)
 
 pyRes = bmdscore.python_nested_result()
 pyRes.nparms = pyAnal.parms

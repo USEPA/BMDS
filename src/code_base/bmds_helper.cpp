@@ -3073,7 +3073,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
-  if (pyAnal->restricted && pyRes->parms[4] < 1.000){
+  if (pyRes->parms[4] < pyAnal->prior[4]){  
     pyRes->parms[4] = 1.0001;
   }
 
@@ -3098,7 +3098,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.ILC_type = pyAnal->ILC_type;
   objData.smax = smax;
   objData.smin = smin;
-  objData.restricted = pyAnal->restricted;
   objData.isBMDL = false;
   objData.sijfixed = sijfixed;
   objData.riskType = pyAnal->BMD_type;

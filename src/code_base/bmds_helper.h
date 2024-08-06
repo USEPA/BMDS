@@ -324,7 +324,6 @@ struct python_multitumor_result{
 
 struct python_nested_analysis{
   enum nested_model model;  //model type in nest_model enum
-  bool restricted;
   std::vector<double> doses;
   std::vector<double> litterSize;
   std::vector<double> incidence;   
@@ -408,7 +407,6 @@ struct nestedObjData{
   int LSC_type;
   int ILC_type;
   double isBMDL;
-  bool restricted;
   //only used for BMDL
   double ck;
   double LR;
