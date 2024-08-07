@@ -70,37 +70,10 @@ class BmdModelNestedDichotomous(BmdModel):
         structs.analysis.iterations = self.settings.bootstrap_iterations
         structs.analysis.seed = self.settings.bootstrap_seed
 
-        structs.result.nparms = structs.analysis.parms
-        structs.result.model = structs.analysis.model
-        structs.result.bmdsRes.stdErr = np.zeros(structs.analysis.parms)
-
-        boot_runs = structs.analysis.numBootRuns
-        structs.result.boot.pVal = np.zeros(boot_runs + 1)
-        structs.result.boot.perc50 = np.zeros(boot_runs + 1)
-        structs.result.boot.perc90 = np.zeros(boot_runs + 1)
-        structs.result.boot.perc95 = np.zeros(boot_runs + 1)
-        structs.result.boot.perc99 = np.zeros(boot_runs + 1)
-
-        n_obs = len(structs.analysis.doses)
-        structs.result.litter.dose = np.zeros(n_obs)
-        structs.result.litter.LSC = np.zeros(n_obs)
-        structs.result.litter.estProb = np.zeros(n_obs)
-        structs.result.litter.litterSize = np.zeros(n_obs)
-        structs.result.litter.expected = np.zeros(n_obs)
-        structs.result.litter.observed = np.zeros(n_obs, np.int16)
-        structs.result.litter.SR = np.zeros(n_obs)
-
-        n_groups = len(set(structs.analysis.doses))
-        structs.result.reduced.dose = np.zeros(n_groups)
-        structs.result.reduced.propAffect = np.zeros(n_groups)
-        structs.result.reduced.lowerConf = np.zeros(n_groups)
-        structs.result.reduced.upperConf = np.zeros(n_groups)
-
         return structs
 
     def execute(self) -> NestedDichotomousResult:
         self.structs = self.to_cpp()
-        raise NotImplementedError("TODO - fix pybmds nested dichotomous binding")
         self.structs.execute()
         self.results = NestedDichotomousResult.from_model(self)
         return self.results
