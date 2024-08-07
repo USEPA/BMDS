@@ -50,7 +50,6 @@ class NestedDichotomousModelSettings(BaseModel):
     litter_specific_covariate: LitterSpecificCovariate = LitterSpecificCovariate.OverallMean
     intralitter_correlation: IntralitterCorrelation = IntralitterCorrelation.Estimate
     estimate_background: bool = True
-    restricted: bool = True
     bootstrap_iterations: int = Field(default=1000, gt=10, lt=10000)
     bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1000))  # noqa: S311
     bootstrap_n: int = Field(default=3, ge=1, le=10)
@@ -68,10 +67,6 @@ class NestedDichotomousModelSettings(BaseModel):
         return 1.0 - self.alpha
 
     @property
-    def restriction_text(self) -> str:
-        return "Restricted" if self.restricted else "Unrestricted"
-
-    @property
     def modeling_approach(self) -> str:
         return "MLE"
 
@@ -82,7 +77,6 @@ class NestedDichotomousModelSettings(BaseModel):
             ["Litter Specific Covariate", camel_to_title(self.litter_specific_covariate.name)],
             ["Intralitter Correlation", self.intralitter_correlation.name],
             ["Estimate Background", self.estimate_background],
-            ["Model Restriction", self.restriction_text],
             ["Bootstrap Runs", self.bootstrap_n],
             ["Bootstrap Iterations", self.bootstrap_iterations],
             ["Bootstrap Seed", self.bootstrap_seed],

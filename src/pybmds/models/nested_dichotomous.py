@@ -53,7 +53,6 @@ class BmdModelNestedDichotomous(BmdModel):
     def to_cpp(self) -> NestedDichotomousAnalysis:
         structs = NestedDichotomousAnalysis.blank()
         structs.analysis.model = self.model_class
-        structs.analysis.restricted = self.settings.restricted
         structs.analysis.doses = self.dataset.doses
         structs.analysis.litterSize = self.dataset.litter_ns
         structs.analysis.incidence = self.dataset.incidences
