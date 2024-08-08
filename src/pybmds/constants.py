@@ -89,55 +89,55 @@ class DichotomousModel(BmdModelSchema):
 
 class DichotomousModelChoices(Enum):
     hill = DichotomousModel(
-        id=dich_model.d_hill,
+        id=dich_model.d_hill.value,
         verbose="Hill",
         params=("g", "v", "a", "b"),
         model_form_str="P[dose] = g + (v - v * g) / (1 + exp(-a - b * Log(dose)))",
     )
     gamma = DichotomousModel(
-        id=dich_model.d_gamma,
+        id=dich_model.d_gamma.value,
         verbose="Gamma",
         params=("g", "a", "b"),
         model_form_str="P[dose]= g + (1 - g) * CumGamma(b * dose, a)",
     )
     logistic = DichotomousModel(
-        id=dich_model.d_logistic,
+        id=dich_model.d_logistic.value,
         verbose="Logistic",
         params=("a", "b"),
         model_form_str="P[dose] = 1 / [1 + exp(-a - b * dose)]",
     )
     loglogistic = DichotomousModel(
-        id=dich_model.d_loglogistic,
+        id=dich_model.d_loglogistic.value,
         verbose="LogLogistic",
         params=("g", "a", "b"),
         model_form_str="P[dose] = g + (1 - g)/(1 + exp(-a - b * Log(dose)))",
     )
     logprobit = DichotomousModel(
-        id=dich_model.d_logprobit,
+        id=dich_model.d_logprobit.value,
         verbose="LogProbit",
         params=("g", "a", "b"),
         model_form_str="P[dose] = g + (1 - g) * CumNorm(a + b * Log(Dose))",
     )
     multistage = DichotomousModel(
-        id=dich_model.d_multistage,
+        id=dich_model.d_multistage.value,
         verbose="Multistage",
         params=("g", "b1", "bN"),
         model_form_str="P[dose] = g + (1 - g) * (1 - exp(-b1 * dose^1 - b2 * dose^2 - ...))",
     )
     probit = DichotomousModel(
-        id=dich_model.d_probit,
+        id=dich_model.d_probit.value,
         verbose="Probit",
         params=("a", "b"),
         model_form_str="P[dose] = CumNorm(a + b * Dose)",
     )
     qlinear = DichotomousModel(
-        id=dich_model.d_qlinear,
+        id=dich_model.d_qlinear.value,
         verbose="Quantal Linear",
         params=("g", "b"),
         model_form_str="P[dose] = g + (1 - g) * (1 - exp(-b * dose)",
     )
     weibull = DichotomousModel(
-        id=dich_model.d_weibull,
+        id=dich_model.d_weibull.value,
         verbose="Weibull",
         params=("g", "a", "b"),
         model_form_str="P[dose] = g + (1 - g) * (1 - exp(-b * dose^a))",
@@ -151,35 +151,35 @@ class ContinuousModel(BmdModelSchema):
 
 class ContinuousModelChoices(Enum):
     power = ContinuousModel(
-        id=cont_model.power,
+        id=cont_model.power.value,
         verbose="Power",
         params=("g", "v", "n"),
         variance_params=("rho", "alpha"),
         model_form_str="P[dose] = g + v * dose ^ n",
     )
     hill = ContinuousModel(
-        id=cont_model.hill,
+        id=cont_model.hill.value,
         verbose="Hill",
         params=("g", "v", "k", "n"),
         variance_params=("rho", "alpha"),
         model_form_str="P[dose] = g + v * dose ^ n / (k ^ n + dose ^ n)",
     )
     polynomial = ContinuousModel(
-        id=cont_model.polynomial,
+        id=cont_model.polynomial.value,
         verbose="Polynomial",
         params=("g", "b1", "bN"),
         variance_params=("rho", "alpha"),
         model_form_str="P[dose] = g + b1*dose + b2*dose^2 + b3*dose^3...",
     )
     exp_m3 = ContinuousModel(
-        id=cont_model.exp_3,
+        id=cont_model.exp_3.value,
         verbose="Exponential 3",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * exp(±1 * (b * dose) ^ d)",
     )
     exp_m5 = ContinuousModel(
-        id=cont_model.exp_5,
+        id=cont_model.exp_5.value,
         verbose="Exponential 5",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
@@ -223,20 +223,16 @@ class PriorClass(IntEnum):
 class NestedDichotomousModel(BmdModelSchema):
     params: tuple[str, ...]
 
-    @property
-    def num_params(self):
-        return len(self.params)
-
 
 class NestedDichotomousModelChoices(Enum):  # TODO - change - update params, model_form_str
     logistic = NestedDichotomousModel(
-        id=nested_model.nlogistic,
+        id=nested_model.nlogistic.value,
         verbose="Nested Logistic",
         params=("g", "b", "theta1", "theta2", "rho", "phi"),
         model_form_str="P[dose] = ...",
     )
     nctr = NestedDichotomousModel(
-        id=nested_model.nctr,
+        id=nested_model.nctr.value,
         verbose="NCTR",
         params=("g", "b", "theta1", "theta2", "rho", "phi"),
         model_form_str="P[dose] = ...",
