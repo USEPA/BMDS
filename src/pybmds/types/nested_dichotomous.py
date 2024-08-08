@@ -1,6 +1,5 @@
 from enum import IntEnum
 from random import randrange
-from textwrap import dedent
 from typing import NamedTuple, Self
 
 import numpy as np
@@ -9,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
 from ..utils import camel_to_title, multi_lstrip, pretty_table
-from .common import NumpyFloatArray, clean_array, inspect_cpp_obj, residual_of_interest
+from .common import NumpyFloatArray, clean_array, inspect_cpp_obj
 from .priors import ModelPriors, PriorClass
 
 
@@ -108,17 +107,6 @@ class NestedDichotomousAnalysis(NamedTuple):
     def execute(self):
         bmdscore.pythonBMDSNested(self.analysis, self.result)
 
-    def __str__(self):
-        return dedent(
-            f"""
-            Analysis:
-            {self.analysis}
-
-            Result:
-            {self.result}
-            """
-        )
-
     def __str__(self) -> str:
         lines = []
         inspect_cpp_obj(lines, self.analysis, depth=0)
@@ -145,7 +133,7 @@ class BmdResult(BaseModel):
             bic_equiv=data.BIC_equiv,
             bmd=data.BMD,
             bmdl=data.BMDL,
-            bmdu=data.BMDU,
+            bmdu=constants.BMDS_BLANK_VALUE,  # TODO - add BMDU when calculated in bmdscore
             bounded=data.bounded,
             chi_squared=data.chisq,
             lower_ci=data.lowerConf,
@@ -201,7 +189,6 @@ class LitterResult(BaseModel):
     expected: list[float]
     litter_size: list[float]
     observed: list[int]
-    roi: float
 
     @classmethod
     def from_model(cls, data: bmdscore.nestedLitterData, bmd: float) -> Self:
@@ -213,24 +200,19 @@ class LitterResult(BaseModel):
             expected=data.expected,
             litter_size=data.litterSize,
             observed=data.observed,
-            roi=residual_of_interest(bmd, data.dose, data.SR),
         )
 
     def tbl(self) -> str:
-        headers = (
-            "Dose|Lit. Spec. Cov.|Est. Prob.|Litter Size|Expected|Observed|Scaled Residual".split(
-                "|"
-            )
-        )
+        headers = "Dose|LSC|Est. Prob.|Litter N|Expected|Observed|Scaled Residual".split("|")
         data = list(
             zip(
                 self.dose,
                 self.lsc,
                 self.estimated_probabilities,
+                self.litter_size,
                 self.expected,
                 self.observed,
-                self.litter_size,
-                self.observed,
+                self.scaled_residuals,
                 strict=True,
             )
         )
@@ -279,6 +261,17 @@ class ScaledResidual(BaseModel):
             avg_abs=data.avgAbsSR,
             max_abs=data.maxAbsSR,
         )
+
+    def tbl(self) -> str:
+        data = [
+            ["Minimum scaled residual for dose group nearest BMD", self.min],
+            ["Minimum ABS(scaled residual) for dose group nearest BMD", self.min_abs],
+            ["Average scaled residual for dose group nearest BMD", self.avg],
+            ["Average ABS(scaled residual) for dose group nearest BMD", self.avg_abs],
+            ["Maximum scaled residual for dose group nearest BMD", self.max],
+            ["Maximum ABS(scaled residual) for dose group nearest BMD", self.max_abs],
+        ]
+        return pretty_table(data, "")
 
 
 class NestedDichotomousResult(BaseModel):
@@ -339,7 +332,7 @@ class NestedDichotomousResult(BaseModel):
         {self.bootstrap.tbl()}
 
         Scaled Residuals:
-        {self.scaled_residuals_tbl()}
+        {self.scaled_residuals.tbl()}
 
         Litter Data:
         {self.litter.tbl()}
@@ -350,25 +343,13 @@ class NestedDichotomousResult(BaseModel):
         data = [
             ["BMD", self.summary.bmd],
             ["BMDL", self.summary.bmdl],
-            ["BMDU", self.summary.bmdu],
+            # ["BMDU", self.summary.bmdu],  TODO - add BMDU when calculated in bmdscore
             ["AIC", self.summary.aic],
             ["P-Value", self.combined_pvalue],
             ["d.f.", self.dof],
             ["Chi²", self.summary.chi_squared],
             ["Log-Likelihood", self.ll],
         ]
-        return pretty_table(data, "")
-
-    def scaled_residuals_tbl(self) -> str:
-        col1 = [
-            "Minimum scaled residual for dose group nearest BMD",
-            "Minimum ABS(scaled residual) for dose group nearest BMD",
-            "Average scaled residual for dose group nearest BMD",
-            "Average ABS(scaled residual) for dose group nearest BMD",
-            "Maximum scaled residual for dose group nearest BMD",
-            "Maximum ABS(scaled residual) for dose group nearest BMD",
-        ]
-        data = list(zip(col1, self.scaled_residuals, strict=True))
         return pretty_table(data, "")
 
     def parameter_tbl(self) -> str:
@@ -413,7 +394,7 @@ class NestedDichotomousResult(BaseModel):
             case "pvalue":
                 return self.combined_pvalue
             case "roi":
-                return self.litter.roi
+                return constants.BMDS_BLANK_VALUE  # TODO - change
             case "roi_control":
                 return self.litter.scaled_residuals[0]  # TODO - change
             case "n_params":
