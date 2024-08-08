@@ -4423,7 +4423,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 
   objData->isBMDL = true;
   objData->optimizer = 1;
-  double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
+  double fa = BMDL_func(pa, xa, tol, objData);
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
@@ -4436,7 +4436,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     for (int i=0; i<nparm; i++) pb[i] = pa[i];
     xa *= stepsize;
 
-    fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
+    fa = BMDL_func(pa, xa, tol, objData);
     trip++;
   }
  
@@ -4447,7 +4447,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   } else {
     objData->optimizer = 1;
 
-    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
+    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
   }  
   pyRes->bmdsRes.BMDL = BMDL;
 
@@ -4491,18 +4491,18 @@ void outputObjData(struct nestedObjData *objData){
 //BMDL_func - used to compare the values of functions BMDL_f (the X^2 value) at the point D,
 //   given the parm p[] and the number of parm.  Input parameters are in the "internal" form.
 //   This routine is called by zeroin()
-double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData){
+double BMDL_func(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData){
 
   double fD;
   int junk;
 
   objData->tD = D;
   objData->tol = gtol;
-  std::vector<double> parms(p, p+nparm); 
-  double retVal = opt_nlogistic(parms, objData);
+  //std::vector<double> parms = p; 
+  double retVal = opt_nlogistic(p, objData);
 
   //set result parms to return array
-  p = &parms[0];
+  //p = parms;
   fD = objData->BMD_lk - objData->xlk - objData->LR;
   return fD;
 
@@ -4564,8 +4564,8 @@ double round_to(double value, double precision ){
  */
 
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
-	      double Parms[], double ck, struct nestedObjData *objData)		
+	      double (*f)(std::vector<double> &, double, double, struct nestedObjData*),
+	      std::vector<double> &Parms, double ck, struct nestedObjData *objData)		
      /* ax        Left border | of the range */
      /* bx        Right border | the root is sought*/
      /* f	  Function under investigation */
@@ -4580,10 +4580,11 @@ double zeroin_nested(double ax,double bx, double tol,
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
 
+  int nparm = Parms.size();
 
   a = ax;  b = bx;
-  fa = (*f)(nparm, Parms, a, ck, objData);
-  fb = (*f)(nparm, Parms, b, ck, objData);
+  fa = (*f)(Parms, a, ck, objData);
+  fb = (*f)(Parms, b, ck, objData);
   c = a;   fc = fa;
   int pass = 1;
   for(;;)		/* Main iteration loop	*/
@@ -4650,7 +4651,7 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-    fb = (*f)(nparm, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
+    fb = (*f)(Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/

@@ -480,8 +480,8 @@ double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
-	      double Parms[], double ck, struct nestedObjData *objData);	
+	      double (*f)(std::vector<double> &, double, double, struct nestedObjData*),
+	      std::vector<double> &Parms, double ck, struct nestedObjData *objData);	
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
@@ -518,7 +518,7 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
 
 void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
-double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
+double BMDL_func(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
 
