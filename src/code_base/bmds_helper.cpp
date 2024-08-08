@@ -2859,7 +2859,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    int PHISTART = 5; //location of first PHI parameter in parms vector
    int THETA1_INDEX = 2; //location of THETA1 parameter in parms vector 
    int THETA2_INDEX = 3; //location of THETA2 parameter in parms vector
-   bool validResult = false;
+   pyRes->validResult = false;
  
    //set seed from time clock if default seed=0 is specified
    if (pyAnal->seed == BMDS_MISSING){
@@ -3116,6 +3116,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
 
+  if (retVal < 0) return; //return with validResult = false
 
   //Now alpha p[0], beta p[1], and rho[4] contain starting estimates
   //Second, get initial values for Phi's
@@ -3145,6 +3146,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
+    if (retVal < 0) return;  //return with validResult = false;
     //Transform parameters to "external" form
     for (int i=5; i<pyRes->nparms; i++){
       pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
@@ -3203,7 +3205,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //TODO:  check retVal to make sure convergence was achieved
-  //if (retVal == 1){
+  if (retVal > 0) pyRes->validResult = true;
  
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
@@ -4018,12 +4020,15 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    nlopt::result result = nlopt::FAILURE;
 
-   while (fail){
+   int attempts = 0;
+   int maxAttempts = 10000;
+   while (fail && attempts<maxAttempts){
      try{
        result = opt.optimize(p, minf);
        fail = false;
      } catch (std::exception &e){
        std::cout << "nlogistic opt failed: " << e.what() << std::endl;
+       attempts++;
      }
 
    }
@@ -4442,7 +4447,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
  
   double BMDL;
   if (fa < 0.0){
-    BMDL = -1.0;
+    BMDL = BMDS_MISSING;
     return;
   } else {
     objData->optimizer = 1;
@@ -4587,6 +4592,7 @@ double zeroin_nested(double ax,double bx, double tol,
   fb = (*f)(Parms, b, ck, objData);
   c = a;   fc = fa;
   int pass = 1;
+  int maxPass = 10000;
   for(;;)		/* Main iteration loop	*/
   {
     double prev_step = b-a;		/* Distance from the last but one*/
@@ -4657,6 +4663,7 @@ double zeroin_nested(double ax,double bx, double tol,
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
     pass++;
+    if (pass > maxPass) return BMDS_MISSING;
   }
 
 }
