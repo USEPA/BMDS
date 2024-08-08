@@ -334,7 +334,7 @@ PYBIND11_MODULE(bmdscore, m) {
        .def_readwrite("seed", &python_nested_analysis::seed);
     py::class_<python_nested_result>(m, "python_nested_result")
        .def(py::init<>())
-       .def_readwrite("validResult", &python_nested_result::model)
+       .def_readwrite("validResult", &python_nested_result::validResult)
        .def_readwrite("model", &python_nested_result::model)
        .def_readwrite("nparms", &python_nested_result::nparms)
        .def_readwrite("parms", &python_nested_result::parms)
