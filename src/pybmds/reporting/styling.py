@@ -16,6 +16,10 @@ from ..plotting import close_figure
 from ..reporting.footnotes import TableFootnote
 from ..utils import citation, ff, four_decimal_formatter
 
+if TYPE_CHECKING:
+    from ..models.base import BmdModel
+    from ..session import Session
+
 
 def add_continuous_dataset_footnotes(model: BmdModel, footnotes: TableFootnote):
     if model and model.has_results:
@@ -88,11 +92,6 @@ def add_mpl_figure(document, fig, size_in_inches: float):
         document.add_picture(f, width=Inches(size_in_inches))
     fig.clf()
     close_figure(fig)
-
-
-if TYPE_CHECKING:
-    from .models.base import BmdModel
-    from .session import Session
 
 
 def write_citation(report: Report, header_level: int):
