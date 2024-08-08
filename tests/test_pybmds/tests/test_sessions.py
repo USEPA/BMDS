@@ -82,7 +82,6 @@ class TestSession:
         d2 = session2.serialize().model_dump()
         assert d1 == d2
 
-    @pytest.mark.skip(reason="TODO - fix pybmds nested dichotomous binding")
     def test_nested_dichotomous(self, nd_dataset4, rewrite_data_files, data_path):
         session = pybmds.Session(dataset=nd_dataset4)
         session.add_default_models()

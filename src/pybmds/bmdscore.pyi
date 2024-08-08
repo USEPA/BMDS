@@ -394,13 +394,11 @@ class python_nested_analysis:
     parms: int
     prior: list[float]
     prior_cols: int
-    restricted: bool
     seed: int
     def __init__(self) -> None: ...
 
 class python_nested_result:
     LL: float
-    SRs: list[float]
     bmd: float
     bmdsRes: BMDS_results
     boot: nestedBootstrap
@@ -416,7 +414,7 @@ class python_nested_result:
     parms: list[float]
     reduced: nestedReducedData
     srData: nestedSRData
-    validResult: nested_model
+    validResult: bool
     def __init__(self) -> None: ...
 
 class test_struct:

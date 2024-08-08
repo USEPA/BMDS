@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
 from ..utils import camel_to_title, multi_lstrip, pretty_table
-from .common import NumpyFloatArray, clean_array, residual_of_interest
+from .common import NumpyFloatArray, clean_array, inspect_cpp_obj, residual_of_interest
 from .priors import ModelPriors, PriorClass
 
 
@@ -119,6 +119,12 @@ class NestedDichotomousAnalysis(NamedTuple):
             """
         )
 
+    def __str__(self) -> str:
+        lines = []
+        inspect_cpp_obj(lines, self.analysis, depth=0)
+        inspect_cpp_obj(lines, self.result, depth=0)
+        return "\n".join(lines)
+
 
 class BmdResult(BaseModel):
     aic: float
@@ -149,7 +155,6 @@ class BmdResult(BaseModel):
 
 
 class BootstrapRuns(BaseModel):
-    n_runs: int
     p_value: list[float]
     p50: list[float]
     p90: list[float]
@@ -159,7 +164,6 @@ class BootstrapRuns(BaseModel):
     @classmethod
     def from_model(cls, data: bmdscore.nestedBootstrap) -> Self:
         return cls(
-            n_runs=data.numRuns,
             p_value=data.pVal,
             p50=data.perc50,
             p90=data.perc90,
@@ -257,12 +261,32 @@ class Plotting(BaseModel):
         )
 
 
+class ScaledResidual(BaseModel):
+    min: float
+    avg: float
+    max: float
+    min_abs: float
+    avg_abs: float
+    max_abs: float
+
+    @classmethod
+    def from_model(cls, data: bmdscore.nestedSRData) -> Self:
+        return cls(
+            min=data.minSR,
+            avg=data.avgSR,
+            max=data.maxSR,
+            min_abs=data.minAbsSR,
+            avg_abs=data.avgAbsSR,
+            max_abs=data.maxAbsSR,
+        )
+
+
 class NestedDichotomousResult(BaseModel):
-    ll: float
-    scaled_residuals: list[float]
     summary: BmdResult
+    scaled_residuals: ScaledResidual
     bootstrap: BootstrapRuns
     combined_pvalue: float
+    ll: float
     cov: list[float]
     dof: float
     fixed_lsc: float
@@ -282,13 +306,13 @@ class NestedDichotomousResult(BaseModel):
             name: value for name, value in zip(model.get_param_names(), result.parms, strict=True)
         }
         return cls(
-            ll=result.LL,
-            scaled_residuals=result.SRs,
             summary=BmdResult.from_model(result.bmdsRes),
+            scaled_residuals=ScaledResidual.from_model(result.srData),
             bootstrap=BootstrapRuns.from_model(result.boot),
             combined_pvalue=result.combPVal,
+            ll=result.LL,
             cov=result.cov,
-            dof=result.df,
+            dof=result.model_df,
             fixed_lsc=result.fixedLSC,
             litter=LitterResult.from_model(result.litter, result.bmdsRes.BMD),
             max=result.max,
@@ -297,7 +321,7 @@ class NestedDichotomousResult(BaseModel):
             parameters=list(params_d.values()),
             reduced=ReducedResult.from_model(result.reduced),
             plotting=Plotting.from_model(model, params_d, result.fixedLSC),
-            has_completed=result.bmdsRes.validResult,
+            has_completed=result.validResult,
         )
 
     def text(
