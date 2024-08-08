@@ -4582,8 +4582,8 @@ double zeroin_nested(double ax,double bx, double tol,
 
 
   a = ax;  b = bx;
-  fa = (*f)(nparm-1, Parms, a, ck, objData);
-  fb = (*f)(nparm-1, Parms, b, ck, objData);
+  fa = (*f)(nparm, Parms, a, ck, objData);
+  fb = (*f)(nparm, Parms, b, ck, objData);
   c = a;   fc = fa;
   int pass = 1;
   for(;;)		/* Main iteration loop	*/
@@ -4650,7 +4650,7 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-    fb = (*f)(nparm-1, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
+    fb = (*f)(nparm, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
