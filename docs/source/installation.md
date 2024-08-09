@@ -251,11 +251,20 @@ To use BMDS Desktop, [open a terminal](open-terminal) and then [activate](activa
 bmds-desktop
 ```
 
-Check the version:
+If this works, you're good to go! However, if you'd rather not use the command line, now might be a good time to create a [desktop shortcut](desktop-shortcut) instead. After the shortcut is created, you may not need to use the terminal for future work.
+
+(desktop-shortcut)=
+### The BMDS Desktop Manager
+
+Starting the application may be difficult for users who do not frequently use the terminal. Therefore, we've created the BMDS Desktop Manager that allows you to start BMDS Desktop (or upgrade it) by double clicking an icon on your Desktop. To create the shortcut:
 
 ```bash
-bmds-desktop --version
+bmds-desktop --create-shortcut
 ```
+
+This creates the file wherever you currently are located in your terminal. You can move this file where you'd like using Windows Explorer or Mac Finder. We recommend creating a shortcut and putting the shortcut on your Desktop for easy access; you can even rename the shortcut "BMDS Desktop Manager" if you'd prefer.
+
+To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
 
 (faq)=
 ## Frequently Asked Questions (FAQ)
