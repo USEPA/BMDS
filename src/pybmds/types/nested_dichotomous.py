@@ -114,34 +114,6 @@ class NestedDichotomousAnalysis(NamedTuple):
         return "\n".join(lines)
 
 
-class BmdResult(BaseModel):
-    aic: float
-    bic_equiv: float
-    bmd: float
-    bmdl: float
-    bmdu: float
-    bounded: list[bool]
-    chi_squared: float
-    lower_ci: list[float]
-    std_err: list[float]
-    upper_ci: list[float]
-
-    @classmethod
-    def from_model(cls, data: bmdscore.BMDS_results) -> Self:
-        return cls(
-            aic=data.AIC,
-            bic_equiv=data.BIC_equiv,
-            bmd=data.BMD,
-            bmdl=data.BMDL,
-            bmdu=constants.BMDS_BLANK_VALUE,  # TODO - add BMDU when calculated in bmdscore
-            bounded=data.bounded,
-            chi_squared=data.chisq,
-            lower_ci=data.lowerConf,
-            std_err=data.stdErr,
-            upper_ci=data.upperConf,
-        )
-
-
 class BootstrapRuns(BaseModel):
     p_value: list[float]
     p50: list[float]
@@ -264,18 +236,27 @@ class ScaledResidual(BaseModel):
 
     def tbl(self) -> str:
         data = [
-            ["Minimum scaled residual for dose group nearest BMD", self.min],
-            ["Minimum ABS(scaled residual) for dose group nearest BMD", self.min_abs],
-            ["Average scaled residual for dose group nearest BMD", self.avg],
-            ["Average ABS(scaled residual) for dose group nearest BMD", self.avg_abs],
-            ["Maximum scaled residual for dose group nearest BMD", self.max],
-            ["Maximum ABS(scaled residual) for dose group nearest BMD", self.max_abs],
+            ["Minimum scaled residual", self.min],
+            ["Minimum ABS(scaled residual)", self.min_abs],
+            ["Average scaled residual", self.avg],
+            ["Average ABS(scaled residual)", self.avg_abs],
+            ["Maximum scaled residual", self.max],
+            ["Maximum ABS(scaled residual)", self.max_abs],
         ]
         return pretty_table(data, "")
 
 
 class NestedDichotomousResult(BaseModel):
-    summary: BmdResult
+    bmd: float
+    bmdl: float
+    bmdu: float
+    aic: float
+    bic_equiv: float
+    chi_squared: float
+    bounded: list[bool]
+    lower_ci: list[float]
+    std_err: list[float]
+    upper_ci: list[float]
     scaled_residuals: ScaledResidual
     bootstrap: BootstrapRuns
     combined_pvalue: float
@@ -299,7 +280,16 @@ class NestedDichotomousResult(BaseModel):
             name: value for name, value in zip(model.get_param_names(), result.parms, strict=True)
         }
         return cls(
-            summary=BmdResult.from_model(result.bmdsRes),
+            bmd=result.bmdsRes.BMD,
+            bmdl=result.bmdsRes.BMDL,
+            bmdu=constants.BMDS_BLANK_VALUE,  # TODO - add BMDU when calculated in bmdscore
+            aic=result.bmdsRes.AIC,
+            bic_equiv=result.bmdsRes.BIC_equiv,
+            bounded=result.bmdsRes.bounded,
+            chi_squared=result.bmdsRes.chisq,
+            lower_ci=result.bmdsRes.lowerConf,
+            std_err=result.bmdsRes.stdErr,
+            upper_ci=result.bmdsRes.upperConf,
             scaled_residuals=ScaledResidual.from_model(result.srData),
             bootstrap=BootstrapRuns.from_model(result.boot),
             combined_pvalue=result.combPVal,
@@ -331,7 +321,7 @@ class NestedDichotomousResult(BaseModel):
         Bootstrap Runs:
         {self.bootstrap.tbl()}
 
-        Scaled Residuals:
+        Scaled Residuals (for dose group nearest the BMD):
         {self.scaled_residuals.tbl()}
 
         Litter Data:
@@ -341,13 +331,13 @@ class NestedDichotomousResult(BaseModel):
 
     def tbl(self) -> str:
         data = [
-            ["BMD", self.summary.bmd],
-            ["BMDL", self.summary.bmdl],
-            # ["BMDU", self.summary.bmdu],  TODO - add BMDU when calculated in bmdscore
-            ["AIC", self.summary.aic],
+            ["BMD", self.bmd],
+            ["BMDL", self.bmdl],
+            # ["BMDU", self.bmdu],  TODO - add BMDU when calculated in bmdscore
+            ["AIC", self.aic],
             ["P-Value", self.combined_pvalue],
             ["d.f.", self.dof],
-            ["Chi²", self.summary.chi_squared],
+            ["Chi²", self.chi_squared],
             ["Log-Likelihood", self.ll],
         ]
         return pretty_table(data, "")
@@ -373,22 +363,22 @@ class NestedDichotomousResult(BaseModel):
     def update_record(self, d: dict) -> None:
         """Update data record for a tabular-friendly export"""
         d.update(
-            bmd=self.summary.bmd,
-            bmdl=self.summary.bmdl,
-            bmdu=self.summary.bmdu,
+            bmd=self.bmd,
+            bmdl=self.bmdl,
+            bmdu=self.bmdu,
         )
 
     def get_parameter(self, parameter: str) -> float:
         """Get parameter value by name"""
         match parameter:
             case "bmd":
-                return self.summary.bmd
+                return self.bmd
             case "bmdl":
-                return self.summary.bmdl
+                return self.bmdl
             case "bmdu":
-                return self.summary.bmdu
+                return self.bmdu
             case "aic":
-                return self.summary.aic
+                return self.aic
             case "dof":
                 return self.dof
             case "pvalue":

@@ -428,11 +428,11 @@ def write_nd_frequentist_table(report: Report, session: Session):
             )
         if selected_index == idx:
             footnotes.add_footnote(tbl.cell(row, 0).paragraphs[0], session.selected.notes)
-        write_cell(tbl.cell(row, 1), model.results.summary.bmdl, body)
-        write_cell(tbl.cell(row, 2), model.results.summary.bmd, body)
-        write_cell(tbl.cell(row, 3), model.results.summary.bmdu, body)
+        write_cell(tbl.cell(row, 1), model.results.bmdl, body)
+        write_cell(tbl.cell(row, 2), model.results.bmd, body)
+        write_cell(tbl.cell(row, 3), model.results.bmdu, body)
         write_cell(tbl.cell(row, 4), model.results.combined_pvalue, body)
-        write_cell(tbl.cell(row, 5), model.results.summary.aic, body)
+        write_cell(tbl.cell(row, 5), model.results.aic, body)
 
         cell = tbl.cell(row, 6)
         if recommendations:

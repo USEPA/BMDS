@@ -81,10 +81,10 @@ class BmdModelNestedDichotomous(BmdModel):
     def _plot_bmr_lines(self, ax, axlines: bool):
         plotting.add_bmr_lines(
             ax,
-            self.results.summary.bmd,
+            self.results.bmd,
             self.results.plotting.bmd_y,
-            self.results.summary.bmdl,
-            self.results.summary.bmdu,
+            self.results.bmdl,
+            self.results.bmdu,
             axlines=axlines,
         )
 
