@@ -162,6 +162,11 @@ class LitterResult(BaseModel):
     litter_size: list[float]
     observed: list[int]
 
+    def mean_abs_control_residual(self) -> float:
+        arr = np.array([self.dose, self.scaled_residuals])
+        slice = arr[0] == arr[0].min()
+        return np.abs(arr[1, slice]).mean()
+
     @classmethod
     def from_model(cls, data: bmdscore.nestedLitterData, bmd: float) -> Self:
         return cls(
@@ -384,9 +389,9 @@ class NestedDichotomousResult(BaseModel):
             case "pvalue":
                 return self.combined_pvalue
             case "roi":
-                return constants.BMDS_BLANK_VALUE  # TODO - change
+                return self.scaled_residuals.avg_abs
             case "roi_control":
-                return self.litter.scaled_residuals[0]  # TODO - change
+                return self.litter.mean_abs_control_residual()
             case "n_params":
                 return len(self.parameters)
             case _:  # pragma: no cover
