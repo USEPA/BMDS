@@ -3007,7 +3007,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   if (pyAnal->LSC_type == 2){  //control group mean
      sijfixed = smean1;
   }
-
+  pyRes->fixedLSC = sijfixed;
 
 
   //compute default starting values for all unfixed parameters
@@ -3342,6 +3342,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
 
 
+  std::vector<double> GXi(ngrp);
+  for (int j=0; j<Nobs; j++){
+    for (int i=0; i<ngrp; i++){
+      if (Xg[j] == i+1){
+        GXi[i] = Xi[j];
+      }
+    }
+  }
+
+  objData.GXi = GXi;
+
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
   //Compute BMD
@@ -3569,21 +3580,13 @@ void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, st
   std::vector<double> Yp = objData->Yp;
   std::vector<double> Yn = objData->Yn;
   std::vector<double> Ls = objData->Ls;
+  std::vector<double> GXi = objData->GXi;
 
   //Need to sort data by Lsc
   SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
 
   double meanLSC = objData->sijfixed;
   int Nobs = Xi.size();
-  std::vector<double> GXi(ngrp);
-
-  for (int j=0; j<Nobs; j++){
-    for (int i=0; i<ngrp; i++){
-      if (Xg[j] == i+1){
-        GXi[i] = Xi[j];
-      }
-    } 
-  }
 
   //choose dose group closest to BMD
   double diff = DBL_MAX;
@@ -3642,6 +3645,7 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
   std::vector<double> den(ngrp);
   raoscott(objData, num, den);
 
+  redData->dose = objData->GXi;
   //Quantal_CI requires number pos and number neg
   //after this, den contains the number unaffected (transformed)
   for (int i=0; i<ngrp; i++) den[i] -= num[i];

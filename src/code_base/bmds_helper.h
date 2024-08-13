@@ -400,6 +400,7 @@ struct nestedObjData{
   std::vector<double> Yn;  //negative response
   std::vector<double> Lsc; //Litter specific covariate
   std::vector<double> prior;
+  std::vector<double> GXi; //doses at each dose group
   std::vector<bool> Spec;
   int ngrp;
   double smax;
