@@ -162,20 +162,7 @@ class Nctr(BmdModelNestedDichotomous):
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        # TODO - update formula as needed
-        g = params["g"]
-        b = params["b"]
-        theta1 = params["theta1"]
-        theta2 = params["theta2"]
-        rho = params["rho"]
-        d = doses.copy()
-        d[d < ZEROISH] = ZEROISH
-        return (
-            g
-            + theta1 * fixed_lsc
-            + (1 - g - theta1 * fixed_lsc)
-            / (1 + np.exp(-1 * b - theta2 * fixed_lsc - rho * np.log(d)))
-        )
+        raise NotImplementedError("TODO - update formula")
 
     def get_default_prior_class(self) -> PriorClass:
         return PriorClass.frequentist_restricted

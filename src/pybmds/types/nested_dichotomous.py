@@ -367,11 +367,7 @@ class NestedDichotomousResult(BaseModel):
 
     def update_record(self, d: dict) -> None:
         """Update data record for a tabular-friendly export"""
-        d.update(
-            bmd=self.bmd,
-            bmdl=self.bmdl,
-            bmdu=self.bmdu,
-        )
+        d.update(bmd=self.bmd, bmdl=self.bmdl, bmdu=self.bmdu)
 
     def get_parameter(self, parameter: str) -> float:
         """Get parameter value by name"""

@@ -71,9 +71,20 @@ class TestNestedLogistic:
     def test_execute(self, nd_dataset4):
         # add seed for reproducibility
         analysis = nested_dichotomous.NestedLogistic(nd_dataset4, settings=dict(bootstrap_seed=1))
-        analysis.execute()
+        result = analysis.execute()
+        assert result.has_completed is True
+        assert result.bmd > 0
         text = analysis.text()
         assert len(text) > 0
+
+    def test_execute_bad_dataset(self, nd_dataset4_failure):
+        # add seed for reproducibility
+        analysis = nested_dichotomous.NestedLogistic(
+            nd_dataset4_failure, settings=dict(bootstrap_seed=1)
+        )
+        result = analysis.execute()
+        assert result.has_completed is False
+        assert result.bmd == 0  # TODO - change to pybmds.constants.BMDS_BLANK_VALUE
 
 
 class TestNctr:
