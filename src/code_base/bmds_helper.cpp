@@ -4031,7 +4031,6 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
        result = opt.optimize(p, minf);
        fail = false;
      } catch (std::exception &e){
-       std::cout << "nlogistic opt failed: " << e.what() << std::endl;
        attempts++;
      }
 
