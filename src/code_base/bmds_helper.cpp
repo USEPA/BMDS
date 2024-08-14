@@ -2860,7 +2860,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    int THETA1_INDEX = 2; //location of THETA1 parameter in parms vector 
    int THETA2_INDEX = 3; //location of THETA2 parameter in parms vector
    pyRes->validResult = false;
- 
+   pyRes->bmd = BMDS_MISSING;
+   pyRes->bmdsRes.BMD = BMDS_MISSING;
+   pyRes->bmdsRes.BMDL = BMDS_MISSING;
+   pyRes->bmdsRes.BMDU = BMDS_MISSING;
+
    //set seed from time clock if default seed=0 is specified
    if (pyAnal->seed == BMDS_MISSING){
      pyAnal->seed = time (NULL);
