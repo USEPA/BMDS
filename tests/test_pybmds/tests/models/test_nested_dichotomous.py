@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from pybmds.constants import PriorClass
+from pybmds.constants import BMDS_BLANK_VALUE, PriorClass
 from pybmds.models import nested_dichotomous
 
 
@@ -84,7 +84,7 @@ class TestNestedLogistic:
         )
         result = analysis.execute()
         assert result.has_completed is False
-        assert result.bmd == 0  # TODO - change to pybmds.constants.BMDS_BLANK_VALUE
+        assert result.bmd == BMDS_BLANK_VALUE
 
 
 class TestNctr:
