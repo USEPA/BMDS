@@ -42,8 +42,8 @@ class NumpyIntArray(PydanticNumpyArray):
     def validate(cls, v):
         try:
             return np.asarray(v, dtype="int")
-        except TypeError:
-            raise ValueError("invalid np.ndarray format")
+        except TypeError as err:
+            raise ValueError("invalid np.ndarray format") from err
 
 
 class NumpyFloatArray(PydanticNumpyArray):
@@ -52,8 +52,8 @@ class NumpyFloatArray(PydanticNumpyArray):
     def validate(cls, v):
         try:
             return np.asarray(v, dtype="float")
-        except TypeError:
-            raise ValueError("invalid np.ndarray format")
+        except TypeError as err:
+            raise ValueError("invalid np.ndarray format") from err
 
 
 def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):

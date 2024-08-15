@@ -229,8 +229,8 @@ class Session:
     def from_serialized(cls, data: dict) -> Session:
         try:
             dtype = data["dataset"]["dtype"]
-        except KeyError:
-            raise ValueError("Invalid JSON format")
+        except KeyError as err:
+            raise ValueError("Invalid JSON format") from err
 
         dataset = DatasetSchemaBase.get_subclass(dtype).model_validate(data["dataset"])
         model_base_class = BmdModelSchema.get_subclass(dtype)
