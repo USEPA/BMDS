@@ -34,7 +34,7 @@ dev = [
   "pybind11~=2.10.4",
   "pytest-mpl~=0.17.0",
   "pytest~=8.2.1",
-  "ruff~=0.4.4",
+  "ruff~=0.5.7",
   "setuptools~=67.7.2",
   "wheel~=0.43.0",
 ]
