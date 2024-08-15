@@ -545,7 +545,6 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    nlopt::result result = nlopt::FAILURE;
    try{
      result = opt.optimize(x, minf);
-//     std::cout << "found minimum at f(" << x[0] << ") = " << std::setprecision(10) << minf << std::endl;
    } catch (std::exception &e){
      std::cout << "nlopt failed: " << e.what() << std::endl;
    }
@@ -2845,7 +2844,7 @@ double PROBABILITY_INRANGE(double ex){
 
 void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes){
 
-
+   std::cout << "CHECK 1" << std::endl;
    //////////////////////////////
    // Parm vector indexes
    // 0 = alpha (intercept or background)
@@ -2905,6 +2904,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
      grpSize[Xg[i]-1] += 1;
    }
    SortNestedData (grpSize, Xi, Ls, Yp, Yn, Lsc, false);  //Sort by Xi->Ls->Yp
+   std::cout << "CHECK 2" << std::endl;
 
    //push last group size;
    pyRes->nparms = 5 + ngrp;
@@ -2935,6 +2935,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    pyRes->reduced.upperConf.resize(ngrp, BMDS_MISSING);
 
 
+  std::cout << "CHECK 3" << std::endl;
   int knownParms = 0;
   //handle specified parms
   if (!pyAnal->estBackground){
@@ -2974,6 +2975,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
 
+  std::cout << "CHECK 4" << std::endl;
   double EPS = 3.0e-8;
   int iter = 0;
   double xlk = 0.0;
@@ -3020,7 +3022,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //Get the starting values in stages
   //First, get starting values for alpha, beta, and rho
 
-
+   std::cout << "CHECK 6" << std::endl;
    std::vector<double> tmpXi(Nobs); //doses (independent data var)
    std::vector<double> tmpYp(Nobs); //incidence (positive dependent var)
    std::vector<double> tmpYn(Nobs); //negative dependent var
@@ -3066,6 +3068,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   tmpvcv(1,0) = tmpvcv(0,1);
   pyRes->parms[0] = ymin + 0.001;  //in case ymin=0
 
+  std::cout << "CHECK 7" << std::endl;
   if (!Spec[0] && !Spec[1]){
     if (tmpvcv.determinant() > 0){
       Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
@@ -3118,6 +3121,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   std::vector<double> pBak = pyRes->parms;
 
+  std::cout << "CHECK 8" << std::endl;
   double retVal = opt_nlogistic(pyRes->parms, &objData);
 
   if (retVal < 0) return; //return with validResult = false
@@ -3167,6 +3171,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //Fit the model
+  std::cout << "CHECK 9" << std::endl;
 
   //Transform the parameters to the "internal" form
   for (int i=5; i<pyRes->nparms; i++){
@@ -3211,6 +3216,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //TODO:  check retVal to make sure convergence was achieved
   if (retVal > 0) pyRes->validResult = true;
  
+  std::cout << "CHECK 10" << std::endl;
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
 
@@ -3251,7 +3257,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
-
+  std::cout << "CHECK 11" << std::endl;
   Eigen::MatrixXd inv_vcv(pyRes->nparms,pyRes->nparms);
   if (red_vcv.determinant() > 0){
     inv_vcv = red_vcv.inverse();
@@ -3302,6 +3308,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
+  std::cout << "CHECK 12" << std::endl;
   int numSpec = 0;
   for (int i=0; i<Spec.size(); i++){
     if (Spec[i]) numSpec++;
@@ -3345,7 +3352,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
 
-
+  std::cout << "CHECK 13" << std::endl;
   std::vector<double> GXi(ngrp);
   for (int j=0; j<Nobs; j++){
     for (int i=0; i<ngrp; i++){
@@ -3357,15 +3364,20 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   objData.GXi = GXi;
 
+  std::cout << "CHECK 14" << std::endl;
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
   //Compute BMD
+   std::cout << "CHECK 15" << std::endl;
    Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
+   std::cout << "CHECK 16" << std::endl;
    Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
+   
+   std::cout << "CHECK 17" << std::endl;
    Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
-
+   std::cout << "CHECK 18" << std::endl;
 }
 
 void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations, int BSLoops){

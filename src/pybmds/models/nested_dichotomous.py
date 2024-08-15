@@ -70,6 +70,9 @@ class BmdModelNestedDichotomous(BmdModel):
         structs.analysis.iterations = self.settings.bootstrap_iterations
         structs.analysis.seed = self.settings.bootstrap_seed
 
+        structs.result.nparms = structs.analysis.parms
+        structs.result.model = structs.analysis.model
+
         return structs
 
     def execute(self) -> NestedDichotomousResult:

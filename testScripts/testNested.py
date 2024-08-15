@@ -1,7 +1,8 @@
 import sys
 
-import bmdscore
 import numpy as np
+
+from pybmds import bmdscore
 
 
 def getNLogisticPrior(ngrp, prior_cols, restricted):
@@ -77,21 +78,13 @@ Nobs = len(pyAnal.doses)
 pyAnal.parms = 5 + ngrp
 pyAnal.prior = getNLogisticPrior(ngrp, pyAnal.prior_cols, isRestricted)
 
-pyRes = bmdscore.python_nested_result()
-pyRes.nparms = pyAnal.parms
-pyRes.model = pyAnal.model
-bmdsRes = bmdscore.BMDS_results()
-boot = bmdscore.nestedBootstrap()
-litter = bmdscore.nestedLitterData()
-reduced = bmdscore.nestedReducedData()
-srData = bmdscore.nestedSRData()
-pyRes.bmdsRes = bmdsRes
-pyRes.boot = boot
-pyRes.litter = litter
-pyRes.reduced = reduced
-pyRes.srData = srData
+for i in range(10):
+    print(i)
 
-bmdscore.pythonBMDSNested(pyAnal, pyRes)
+    pyRes = bmdscore.python_nested_result()
+    pyRes.nparms = pyAnal.parms
+    pyRes.model = pyAnal.model
 
-
-print(pyRes.bmdsRes.BMD)  # noqa: T201
+    bmdscore.pythonBMDSNested(pyAnal, pyRes)
+    print(pyRes.bmdsRes.BMD)  # noqa: T201
+    # print(pyRes.srData)

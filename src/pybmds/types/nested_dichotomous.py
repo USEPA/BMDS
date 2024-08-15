@@ -105,7 +105,9 @@ class NestedDichotomousAnalysis(NamedTuple):
         return cls(bmdscore.python_nested_analysis(), bmdscore.python_nested_result())
 
     def execute(self):
+        print("BEFORE")
         bmdscore.pythonBMDSNested(self.analysis, self.result)
+        print("AFTER")
 
     def __str__(self) -> str:
         lines = []
@@ -169,6 +171,7 @@ class LitterResult(BaseModel):
 
     @classmethod
     def from_model(cls, data: bmdscore.nestedLitterData, bmd: float) -> Self:
+        print("LR")
         return cls(
             lsc=data.LSC,
             scaled_residuals=data.SR,
@@ -205,6 +208,7 @@ class Plotting(BaseModel):
 
     @classmethod
     def from_model(cls, model, params: dict, fixed_lsc: float) -> Self:
+        print("PLOT")
         summary = model.structs.result.bmdsRes
         xs = np.array([summary.BMDL, summary.BMD, summary.BMDU])
         dr_x = model.dataset.dose_linspace
@@ -230,6 +234,8 @@ class ScaledResidual(BaseModel):
 
     @classmethod
     def from_model(cls, data: bmdscore.nestedSRData) -> Self:
+        print(data)
+        print("SR")
         return cls(
             min=data.minSR,
             avg=data.avgSR,
@@ -280,11 +286,15 @@ class NestedDichotomousResult(BaseModel):
 
     @classmethod
     def from_model(cls, model) -> Self:
+        print("NDR")
         result: bmdscore.python_nested_result = model.structs.result
         params_d = {
             name: value for name, value in zip(model.get_param_names(), result.parms, strict=True)
         }
-        return cls(
+        print("z1")
+        print(result.bmdsRes.BMD)
+        print("z1a")
+        d = dict(
             bmd=result.bmdsRes.BMD,
             bmdl=result.bmdsRes.BMDL,
             bmdu=constants.BMDS_BLANK_VALUE,  # TODO - add BMDU when calculated in bmdscore
@@ -295,22 +305,43 @@ class NestedDichotomousResult(BaseModel):
             lower_ci=result.bmdsRes.lowerConf,
             std_err=result.bmdsRes.stdErr,
             upper_ci=result.bmdsRes.upperConf,
-            scaled_residuals=ScaledResidual.from_model(result.srData),
-            bootstrap=BootstrapRuns.from_model(result.boot),
             combined_pvalue=result.combPVal,
             ll=result.LL,
             cov=result.cov,
             dof=result.model_df,
             fixed_lsc=result.fixedLSC,
-            litter=LitterResult.from_model(result.litter, result.bmdsRes.BMD),
             max=result.max,
             obs_chi_sq=result.obsChiSq,
+            has_completed=result.validResult,
             parameter_names=list(params_d.keys()),
             parameters=list(params_d.values()),
-            reduced=ReducedResult.from_model(result.reduced),
-            plotting=Plotting.from_model(model, params_d, result.fixedLSC),
-            has_completed=result.validResult,
         )
+        print("z2")
+        print("Trying to access result.srData")
+        print(result.srData)
+        print("Accessed result.srData")
+
+        d.update(
+            scaled_residuals=ScaledResidual.from_model(result.srData),
+        )
+        print("z2a")
+        d.update(
+            bootstrap=BootstrapRuns.from_model(result.boot),
+        )
+        print("z2b")
+        d.update(
+            litter=LitterResult.from_model(result.litter, result.bmdsRes.BMD),
+        )
+        print("z2c")
+        d.update(
+            reduced=ReducedResult.from_model(result.reduced),
+        )
+        print("z2d")
+        d.update(
+            plotting=Plotting.from_model(model, params_d, result.fixedLSC),
+        )
+        print("z3")
+        return cls(**d)
 
     def text(
         self, dataset: NestedDichotomousDataset, settings: NestedDichotomousModelSettings
