@@ -117,12 +117,12 @@ python_files = ["test_*.py"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "RUF"]
+lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "ERA", "NPY", "RUF"]
 lint.ignore = ["E501"]
 lint.isort.known-first-party = ["pybmds"]
 
 [tool.ruff.lint.per-file-ignores]
-"test_*.py" = ["S101", "S106"]
+"test_*.py" = ["S101", "ERA001"]
 "setup.py" = ["S603", "S607"]
 
 [tool.setuptools.dynamic]
