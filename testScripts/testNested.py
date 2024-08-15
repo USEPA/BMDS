@@ -29,7 +29,7 @@ def getNLogisticPrior(ngrp, prior_cols, restricted):
 
 pyAnal = bmdscore.python_nested_analysis()
 pyAnal.model = bmdscore.nested_model.nlogistic
-pyAnal.restricted = True
+isRestricted = True
 
 # fmt: off
 pyAnal.doses = np.array(
@@ -75,33 +75,15 @@ ngrp = len(np.unique(pyAnal.doses))
 Nobs = len(pyAnal.doses)
 
 pyAnal.parms = 5 + ngrp
-pyAnal.prior = getNLogisticPrior(ngrp, pyAnal.prior_cols, pyAnal.restricted)
+pyAnal.prior = getNLogisticPrior(ngrp, pyAnal.prior_cols, isRestricted)
 
 pyRes = bmdscore.python_nested_result()
 pyRes.nparms = pyAnal.parms
 pyRes.model = pyAnal.model
 bmdsRes = bmdscore.BMDS_results()
-bmdsRes.stdErr = np.zeros(pyAnal.parms)
 boot = bmdscore.nestedBootstrap()
-# TODO: determine why memory needs to be allocated for these arrays
-boot.pVal = np.zeros(pyAnal.numBootRuns + 1)
-boot.perc50 = np.zeros(pyAnal.numBootRuns + 1)
-boot.perc90 = np.zeros(pyAnal.numBootRuns + 1)
-boot.perc95 = np.zeros(pyAnal.numBootRuns + 1)
-boot.perc99 = np.zeros(pyAnal.numBootRuns + 1)
 litter = bmdscore.nestedLitterData()
-litter.dose = np.zeros(Nobs)
-litter.LSC = np.zeros(Nobs)
-litter.estProb = np.zeros(Nobs)
-litter.litterSize = np.zeros(Nobs)
-litter.expected = np.zeros(Nobs)
-litter.observed = np.zeros(Nobs, np.int16)
-litter.SR = np.zeros(Nobs)
 reduced = bmdscore.nestedReducedData()
-reduced.dose = np.zeros(ngrp)
-reduced.propAffect = np.zeros(ngrp)
-reduced.lowerConf = np.zeros(ngrp)
-reduced.upperConf = np.zeros(ngrp)
 srData = bmdscore.nestedSRData()
 pyRes.bmdsRes = bmdsRes
 pyRes.boot = boot

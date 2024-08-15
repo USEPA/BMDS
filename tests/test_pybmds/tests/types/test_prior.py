@@ -26,6 +26,20 @@ def mock_prior():
     )
 
 
+@pytest.fixture
+def mock_nested_dichotomous_prior():
+    t = PriorDistribution.Uniform
+    return ModelPriors(
+        prior_class=PriorClass.frequentist_restricted,
+        priors=[
+            Prior(name="a", type=t, initial_value=0, stdev=0, min_value=1, max_value=4),
+            Prior(name="b", type=t, initial_value=0, stdev=0, min_value=2, max_value=5),
+            Prior(name="phi", type=t, initial_value=0, stdev=0, min_value=3, max_value=6),
+        ],
+        variance_priors=[],
+    )
+
+
 class TestModelPriors:
     def test_get_prior(self, mock_prior):
         assert mock_prior.get_prior("a").name == "a"
@@ -74,6 +88,12 @@ class TestModelPriors:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0]
         )
         # fmt: on
+
+    def test_to_c_nd(self, mock_nested_dichotomous_prior):
+        prior = mock_nested_dichotomous_prior
+        assert np.allclose(prior.to_c_nd(n_phi=1), [1, 2, 3, 4, 5, 6])
+        assert np.allclose(prior.to_c_nd(n_phi=2), [1, 2, 3, 3, 4, 5, 6, 6])
+        assert np.allclose(prior.to_c_nd(n_phi=3), [1, 2, 3, 3, 3, 4, 5, 6, 6, 6])
 
     def test_multistage_update(self, ddataset):
         m = Multistage(dataset=ddataset, settings=dict(degree=8))
@@ -180,3 +200,8 @@ class TestModelPriors:
         # assert that full JSON validation and parsing works as expected
         initial = m.settings.priors.model_dump_json()
         assert ModelPriors.model_validate_json(initial).model_dump_json() == initial
+
+    def test_nested_dichotomous_update(self, mock_nested_dichotomous_prior):
+        prior = mock_nested_dichotomous_prior
+        prior.update("phi1", min_value=-10, max_value=10)
+        assert np.allclose(prior.to_c_nd(n_phi=2), [1, 2, -10, 3, 4, 5, 10, 6])

@@ -1,7 +1,7 @@
 import numpy as np
 from pydantic import Field
 
-from .. import plotting
+from .. import bmdscore, plotting
 from ..constants import ZEROISH, NestedDichotomousModel, NestedDichotomousModelChoices, PriorClass
 from ..datasets import NestedDichotomousDataset
 from ..types.nested_dichotomous import (
@@ -16,6 +16,7 @@ from .base import BmdModel, BmdModelSchema, InputModelSettings
 
 class BmdModelNestedDichotomous(BmdModel):
     bmd_model_class: NestedDichotomousModel
+    model_class: bmdscore.nested_model
 
     def name(self) -> str:
         return (
@@ -51,25 +52,28 @@ class BmdModelNestedDichotomous(BmdModel):
 
     def to_cpp(self) -> NestedDichotomousAnalysis:
         structs = NestedDichotomousAnalysis.blank()
-        structs.analysis.model = self.bmd_model_class.id
-        structs.analysis.restricted = self.settings.restricted
+        structs.analysis.model = self.model_class
         structs.analysis.doses = self.dataset.doses
         structs.analysis.litterSize = self.dataset.litter_ns
         structs.analysis.incidence = self.dataset.incidences
         structs.analysis.lsc = self.dataset.litter_covariates
+        structs.analysis.prior = self.settings.priors.to_c_nd(self.dataset.num_dose_groups)
         structs.analysis.LSC_type = self.settings.litter_specific_covariate.value
         structs.analysis.ILC_type = self.settings.intralitter_correlation.value
         structs.analysis.BMD_type = self.settings.bmr_type.value
-        structs.analysis.background = self.settings.background.value
+        structs.analysis.estBackground = self.settings.estimate_background
+        structs.analysis.parms = len(self.get_param_names())
+        structs.analysis.prior_cols = 2
         structs.analysis.BMR = self.settings.bmr
         structs.analysis.alpha = self.settings.alpha
+        structs.analysis.numBootRuns = self.settings.bootstrap_n
         structs.analysis.iterations = self.settings.bootstrap_iterations
         structs.analysis.seed = self.settings.bootstrap_seed
+
         return structs
 
     def execute(self) -> NestedDichotomousResult:
         self.structs = self.to_cpp()
-        raise NotImplementedError("TODO - fix pybmds nested dichotomous binding")
         self.structs.execute()
         self.results = NestedDichotomousResult.from_model(self)
         return self.results
@@ -77,10 +81,10 @@ class BmdModelNestedDichotomous(BmdModel):
     def _plot_bmr_lines(self, ax, axlines: bool):
         plotting.add_bmr_lines(
             ax,
-            self.results.summary.bmd,
+            self.results.bmd,
             self.results.plotting.bmd_y,
-            self.results.summary.bmdl,
-            self.results.summary.bmdu,
+            self.results.bmdl,
+            self.results.bmdu,
             axlines=axlines,
         )
 
@@ -122,6 +126,7 @@ class BmdModelNestedDichotomousSchema(BmdModelSchema):
 
 class NestedLogistic(BmdModelNestedDichotomous):
     bmd_model_class = NestedDichotomousModelChoices.logistic.value
+    model_class = bmdscore.nested_model.nlogistic
 
     def get_param_names(self) -> list[str]:
         return ["g", "b", "theta1", "theta2", "rho"] + [
@@ -149,6 +154,7 @@ class NestedLogistic(BmdModelNestedDichotomous):
 
 class Nctr(BmdModelNestedDichotomous):
     bmd_model_class = NestedDichotomousModelChoices.nctr.value
+    model_class = bmdscore.nested_model.nctr
 
     def get_param_names(self) -> list[str]:
         return ["g", "b", "theta1", "theta2", "rho"] + [
@@ -156,20 +162,7 @@ class Nctr(BmdModelNestedDichotomous):
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        # TODO - update formula as needed
-        g = params["g"]
-        b = params["b"]
-        theta1 = params["theta1"]
-        theta2 = params["theta2"]
-        rho = params["rho"]
-        d = doses.copy()
-        d[d < ZEROISH] = ZEROISH
-        return (
-            g
-            + theta1 * fixed_lsc
-            + (1 - g - theta1 * fixed_lsc)
-            / (1 + np.exp(-1 * b - theta2 * fixed_lsc - rho * np.log(d)))
-        )
+        raise NotImplementedError("TODO - update formula")
 
     def get_default_prior_class(self) -> PriorClass:
         return PriorClass.frequentist_restricted

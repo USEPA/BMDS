@@ -324,7 +324,6 @@ struct python_multitumor_result{
 
 struct python_nested_analysis{
   enum nested_model model;  //model type in nest_model enum
-  bool restricted;
   std::vector<double> doses;
   std::vector<double> litterSize;
   std::vector<double> incidence;   
@@ -351,15 +350,12 @@ struct python_nested_result{
   std::vector<double> cov;
   int dist_numE;  //number of entries in rows for the bmd dist
   double    model_df;        // Used model degrees of freedom
-  double    total_df;        // Total degrees of freedom
   double max;
   double bmd;
-  std::vector<double> bmd_dist;        // bmd distribution (dist_numE x 2) matrix
   double fixedLSC;
   double LL;
   double obsChiSq;
   double combPVal;
-  std::vector<double> SRs;
   struct BMDS_results bmdsRes;
   //NestedLitterDataRow
   struct nestedLitterData litter;
@@ -404,6 +400,7 @@ struct nestedObjData{
   std::vector<double> Yn;  //negative response
   std::vector<double> Lsc; //Litter specific covariate
   std::vector<double> prior;
+  std::vector<double> GXi; //doses at each dose group
   std::vector<bool> Spec;
   int ngrp;
   double smax;
@@ -411,7 +408,6 @@ struct nestedObjData{
   int LSC_type;
   int ILC_type;
   double isBMDL;
-  bool restricted;
   //only used for BMDL
   double ck;
   double LR;
@@ -485,8 +481,8 @@ double zeroin(double ax,double bx, double tol,
               double (*f)(int, double [], double, double), int nparm,
               double Parms[], double ck);
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
-	      double Parms[], double ck, struct nestedObjData *objData);	
+	      double (*f)(std::vector<double> &, double, double, struct nestedObjData*),
+	      std::vector<double> &Parms, double ck, struct nestedObjData *objData);	
 double BMD_func(int n, double p[], double x, double ck);
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
 double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
@@ -523,7 +519,7 @@ void Nlogist_vcv(std::vector<double> &p, std::vector<bool> &bounded, struct nest
 
 void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
-double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData);
+double BMDL_func(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
 

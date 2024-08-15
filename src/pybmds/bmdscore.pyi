@@ -193,7 +193,6 @@ class distribution:
     def value(self) -> int: ...
 
 class nestedBootstrap:
-    numRuns: int
     pVal: list[float]
     perc50: list[float]
     perc90: list[float]
@@ -208,16 +207,23 @@ class nestedLitterData:
     estProb: list[float]
     expected: list[float]
     litterSize: list[float]
-    numRows: int
     observed: list[int]
     def __init__(self) -> None: ...
 
 class nestedReducedData:
     dose: list[float]
     lowerConf: list[float]
-    numRows: int
     propAffect: list[float]
     upperConf: list[float]
+    def __init__(self) -> None: ...
+
+class nestedSRData:
+    avgAbsSR: float
+    avgSR: float
+    maxAbsSR: float
+    maxSR: float
+    minAbsSR: float
+    minSR: float
     def __init__(self) -> None: ...
 
 class nested_model:
@@ -377,33 +383,38 @@ class python_nested_analysis:
     ILC_type: int
     LSC_type: int
     alpha: float
-    background: float
     doses: list[float]
+    estBackground: bool
     incidence: list[float]
     iterations: int
     litterSize: list[float]
     lsc: list[float]
-    model: int
-    restricted: bool
+    model: nested_model
+    numBootRuns: int
+    parms: int
+    prior: list[float]
+    prior_cols: int
     seed: int
     def __init__(self) -> None: ...
 
 class python_nested_result:
     LL: float
-    SRs: list[float]
+    bmd: float
     bmdsRes: BMDS_results
     boot: nestedBootstrap
     combPVal: float
     cov: list[float]
-    df: float
     fixedLSC: float
     litter: nestedLitterData
     max: float
     model: nested_model
+    model_df: float
     nparms: int
     obsChiSq: float
     parms: list[float]
     reduced: nestedReducedData
+    srData: nestedSRData
+    validResult: bool
     def __init__(self) -> None: ...
 
 class test_struct:
