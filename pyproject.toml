@@ -118,7 +118,7 @@ python_files = ["test_*.py"]
 line-length = 100
 target-version = "py311"
 lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "RUF"]
-lint.ignore = ["E501", "B904", "B007"]
+lint.ignore = ["E501", "B904"]
 lint.isort.known-first-party = ["pybmds"]
 
 [tool.ruff.lint.per-file-ignores]

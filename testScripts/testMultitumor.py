@@ -9,7 +9,7 @@ def getMultitumorPrior(degree, prior_cols):
     pr = []
     for i in range(prior_cols):
         pr.append(prG[i])
-        for j in range(degree):
+        for _ in range(degree):
             pr.append(prB[i])
     return pr
 
