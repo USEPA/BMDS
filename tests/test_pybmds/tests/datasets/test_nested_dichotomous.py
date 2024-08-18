@@ -118,6 +118,15 @@ class TestNestedDichotomousDataset:
         # check serialization equality
         assert ds1.serialize().model_dump() == ds2.serialize().model_dump()
 
+    def test_rows(self):
+        ds = pybmds.NestedDichotomousDataset(
+            doses=dummy3, litter_ns=dummy3, incidences=dummy3, litter_covariates=dummy3
+        )
+        rows = ds.rows(extras={"a": "test"})
+        assert len(rows) == 3
+        assert rows[0]["a"] == "test"
+        assert rows[0]["dose"] == 1
+
 
 class TestNestedDichotomousSchema:
     def test_schema(self, nd_dataset):

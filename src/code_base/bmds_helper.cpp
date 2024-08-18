@@ -2859,8 +2859,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    int PHISTART = 5; //location of first PHI parameter in parms vector
    int THETA1_INDEX = 2; //location of THETA1 parameter in parms vector 
    int THETA2_INDEX = 3; //location of THETA2 parameter in parms vector
-   bool validResult = false;
- 
+   pyRes->validResult = false;
+   pyRes->bmd = BMDS_MISSING;
+   pyRes->bmdsRes.BMD = BMDS_MISSING;
+   pyRes->bmdsRes.BMDL = BMDS_MISSING;
+   pyRes->bmdsRes.BMDU = BMDS_MISSING;
+
    //set seed from time clock if default seed=0 is specified
    if (pyAnal->seed == BMDS_MISSING){
      pyAnal->seed = time (NULL);
@@ -2911,7 +2915,26 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
    for (int i=0; i<pyRes->nparms; i++){
      pyRes->parms[i] = BMDS_MISSING;
    }
-  
+   pyRes->bmdsRes.stdErr.resize(pyRes->nparms, BMDS_MISSING);
+   pyRes->bmdsRes.bounded.resize(pyRes->nparms, false);
+   pyRes->litter.dose.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.LSC.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.estProb.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.litterSize.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.expected.resize(Nobs, BMDS_MISSING);
+   pyRes->litter.observed.resize(Nobs, static_cast<int>(BMDS_MISSING));
+   pyRes->litter.SR.resize(Nobs, BMDS_MISSING);
+   pyRes->boot.pVal.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc50.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc90.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc95.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->boot.perc99.resize(pyAnal->numBootRuns+1, BMDS_MISSING);
+   pyRes->reduced.dose.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.propAffect.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.lowerConf.resize(ngrp, BMDS_MISSING);
+   pyRes->reduced.upperConf.resize(ngrp, BMDS_MISSING);
+
+
   int knownParms = 0;
   //handle specified parms
   if (!pyAnal->estBackground){
@@ -2988,7 +3011,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   if (pyAnal->LSC_type == 2){  //control group mean
      sijfixed = smean1;
   }
-
+  pyRes->fixedLSC = sijfixed;
 
 
   //compute default starting values for all unfixed parameters
@@ -3054,7 +3077,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
-  if (pyAnal->restricted && pyRes->parms[4] < 1.000){
+  if (pyRes->parms[4] < pyAnal->prior[4]){  
     pyRes->parms[4] = 1.0001;
   }
 
@@ -3079,7 +3102,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.ILC_type = pyAnal->ILC_type;
   objData.smax = smax;
   objData.smin = smin;
-  objData.restricted = pyAnal->restricted;
   objData.isBMDL = false;
   objData.sijfixed = sijfixed;
   objData.riskType = pyAnal->BMD_type;
@@ -3098,6 +3120,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   double retVal = opt_nlogistic(pyRes->parms, &objData);
 
+  if (retVal < 0) return; //return with validResult = false
 
   //Now alpha p[0], beta p[1], and rho[4] contain starting estimates
   //Second, get initial values for Phi's
@@ -3127,6 +3150,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
+    if (retVal < 0) return;  //return with validResult = false;
     //Transform parameters to "external" form
     for (int i=5; i<pyRes->nparms; i++){
       pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
@@ -3185,7 +3209,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //TODO:  check retVal to make sure convergence was achieved
-  //if (retVal == 1){
+  if (retVal > 0) pyRes->validResult = true;
  
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
@@ -3321,6 +3345,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
 
+
+  std::vector<double> GXi(ngrp);
+  for (int j=0; j<Nobs; j++){
+    for (int i=0; i<ngrp; i++){
+      if (Xg[j] == i+1){
+        GXi[i] = Xi[j];
+      }
+    }
+  }
+
+  objData.GXi = GXi;
 
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
@@ -3513,7 +3548,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
     }
   }
   sort(combSR.begin(), combSR.end());
-  pyRes->boot.pVal[BSLoops+1] = pavg;
   for (int k=0; k<percentiles.size(); k++){
     double temp = percentiles[k] * BSLoops*iterations;
     if ((ceilf(temp)==temp) && (floorf(temp)==temp)){
@@ -3549,21 +3583,13 @@ void Nlogist_SRoI(struct nestedObjData *objData, struct nestedSRData *srData, st
   std::vector<double> Yp = objData->Yp;
   std::vector<double> Yn = objData->Yn;
   std::vector<double> Ls = objData->Ls;
+  std::vector<double> GXi = objData->GXi;
 
   //Need to sort data by Lsc
   SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
 
   double meanLSC = objData->sijfixed;
   int Nobs = Xi.size();
-  std::vector<double> GXi(ngrp);
-
-  for (int j=0; j<Nobs; j++){
-    for (int i=0; i<ngrp; i++){
-      if (Xg[j] == i+1){
-        GXi[i] = Xi[j];
-      }
-    } 
-  }
 
   //choose dose group closest to BMD
   double diff = DBL_MAX;
@@ -3622,6 +3648,7 @@ void  Nlogist_reduced(double alpha, struct nestedObjData *objData, struct nested
   std::vector<double> den(ngrp);
   raoscott(objData, num, den);
 
+  redData->dose = objData->GXi;
   //Quantal_CI requires number pos and number neg
   //after this, den contains the number unaffected (transformed)
   for (int i=0; i<ngrp; i++) den[i] -= num[i];
@@ -4000,12 +4027,14 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 
    nlopt::result result = nlopt::FAILURE;
 
-   while (fail){
+   int attempts = 0;
+   int maxAttempts = 10000;
+   while (fail && attempts<maxAttempts){
      try{
        result = opt.optimize(p, minf);
        fail = false;
      } catch (std::exception &e){
-       std::cout << "nlogistic opt failed: " << e.what() << std::endl;
+       attempts++;
      }
 
    }
@@ -4405,7 +4434,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
 
   objData->isBMDL = true;
   objData->optimizer = 1;
-  double fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
+  double fa = BMDL_func(pa, xa, tol, objData);
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
@@ -4418,18 +4447,18 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     for (int i=0; i<nparm; i++) pb[i] = pa[i];
     xa *= stepsize;
 
-    fa = BMDL_func(nparm, &pa[0], xa, tol, objData);
+    fa = BMDL_func(pa, xa, tol, objData);
     trip++;
   }
  
   double BMDL;
   if (fa < 0.0){
-    BMDL = -1.0;
+    BMDL = BMDS_MISSING;
     return;
   } else {
     objData->optimizer = 1;
 
-    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, nparm, &pb[0], 1.0e-14, objData);
+    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
   }  
   pyRes->bmdsRes.BMDL = BMDL;
 
@@ -4473,18 +4502,18 @@ void outputObjData(struct nestedObjData *objData){
 //BMDL_func - used to compare the values of functions BMDL_f (the X^2 value) at the point D,
 //   given the parm p[] and the number of parm.  Input parameters are in the "internal" form.
 //   This routine is called by zeroin()
-double BMDL_func(int nparm, double p[], double D, double gtol, struct nestedObjData *objData){
+double BMDL_func(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData){
 
   double fD;
   int junk;
 
   objData->tD = D;
   objData->tol = gtol;
-  std::vector<double> parms(p, p+nparm); 
-  double retVal = opt_nlogistic(parms, objData);
+  //std::vector<double> parms = p; 
+  double retVal = opt_nlogistic(p, objData);
 
   //set result parms to return array
-  p = &parms[0];
+  //p = parms;
   fD = objData->BMD_lk - objData->xlk - objData->LR;
   return fD;
 
@@ -4546,8 +4575,8 @@ double round_to(double value, double precision ){
  */
 
 double zeroin_nested(double ax,double bx, double tol,
-	      double (*f)(int, double [], double, double, struct nestedObjData*), int nparm,
-	      double Parms[], double ck, struct nestedObjData *objData)		
+	      double (*f)(std::vector<double> &, double, double, struct nestedObjData*),
+	      std::vector<double> &Parms, double ck, struct nestedObjData *objData)		
      /* ax        Left border | of the range */
      /* bx        Right border | the root is sought*/
      /* f	  Function under investigation */
@@ -4562,12 +4591,14 @@ double zeroin_nested(double ax,double bx, double tol,
   double fb;				/* f(b)				*/
   double fc;				/* f(c)				*/
 
+  int nparm = Parms.size();
 
   a = ax;  b = bx;
-  fa = (*f)(nparm-1, Parms, a, ck, objData);
-  fb = (*f)(nparm-1, Parms, b, ck, objData);
+  fa = (*f)(Parms, a, ck, objData);
+  fb = (*f)(Parms, b, ck, objData);
   c = a;   fc = fa;
   int pass = 1;
+  int maxPass = 10000;
   for(;;)		/* Main iteration loop	*/
   {
     double prev_step = b-a;		/* Distance from the last but one*/
@@ -4632,12 +4663,13 @@ double zeroin_nested(double ax,double bx, double tol,
 
     a = b;  fa = fb;			/* Save the previous approx.	*/
     b += new_step;
-    fb = (*f)(nparm-1, Parms, b, ck, objData);	/* Do step to a new approxim.	*/
+    fb = (*f)(Parms, b, ck, objData);	/* Do step to a new approxim.	*/
     if( (fb > 0 && fc > 0) || (fb < 0 && fc < 0) )
     {                 			/* Adjust c for it to have a sign*/
       c = a;  fc = fa;                  /* opposite to that of b	*/
     }
     pass++;
+    if (pass > maxPass) return BMDS_MISSING;
   }
 
 }

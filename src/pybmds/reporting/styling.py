@@ -16,6 +16,10 @@ from ..plotting import close_figure
 from ..reporting.footnotes import TableFootnote
 from ..utils import citation, ff, four_decimal_formatter
 
+if TYPE_CHECKING:
+    from ..models.base import BmdModel
+    from ..session import Session
+
 
 def add_continuous_dataset_footnotes(model: BmdModel, footnotes: TableFootnote):
     if model and model.has_results:
@@ -88,11 +92,6 @@ def add_mpl_figure(document, fig, size_in_inches: float):
         document.add_picture(f, width=Inches(size_in_inches))
     fig.clf()
     close_figure(fig)
-
-
-if TYPE_CHECKING:
-    from .models.base import BmdModel
-    from .session import Session
 
 
 def write_citation(report: Report, header_level: int):
@@ -402,15 +401,14 @@ def write_nd_frequentist_table(report: Report, session: Session):
     body = report.styles.tbl_body
 
     footnotes = TableFootnote()
-    tbl = report.document.add_table(len(session.models) + 1, 7, style=styles.table)
+    tbl = report.document.add_table(len(session.models) + 1, 6, style=styles.table)
 
     write_cell(tbl.cell(0, 0), "Model", style=hdr)
     write_cell(tbl.cell(0, 1), "BMDL", style=hdr)
     write_cell(tbl.cell(0, 2), "BMD", style=hdr)
-    write_cell(tbl.cell(0, 3), "BMDU", style=hdr)
-    write_pvalue_header(tbl.cell(0, 4), style=hdr)
-    write_cell(tbl.cell(0, 5), "AIC", style=hdr)
-    write_cell(tbl.cell(0, 6), "Recommendation and Notes", style=hdr)
+    write_pvalue_header(tbl.cell(0, 3), style=hdr)
+    write_cell(tbl.cell(0, 4), "AIC", style=hdr)
+    write_cell(tbl.cell(0, 5), "Recommendation and Notes", style=hdr)
 
     # write body
     recommended_index = (
@@ -429,13 +427,12 @@ def write_nd_frequentist_table(report: Report, session: Session):
             )
         if selected_index == idx:
             footnotes.add_footnote(tbl.cell(row, 0).paragraphs[0], session.selected.notes)
-        write_cell(tbl.cell(row, 1), model.results.summary.bmdl, body)
-        write_cell(tbl.cell(row, 2), model.results.summary.bmd, body)
-        write_cell(tbl.cell(row, 3), model.results.summary.bmdu, body)
-        write_cell(tbl.cell(row, 4), model.results.combined_pvalue, body)
-        write_cell(tbl.cell(row, 5), model.results.summary.aic, body)
+        write_cell(tbl.cell(row, 1), model.results.bmdl, body)
+        write_cell(tbl.cell(row, 2), model.results.bmd, body)
+        write_cell(tbl.cell(row, 3), model.results.combined_pvalue, body)
+        write_cell(tbl.cell(row, 4), model.results.aic, body)
 
-        cell = tbl.cell(row, 6)
+        cell = tbl.cell(row, 5)
         if recommendations:
             p = cell.paragraphs[0]
             p.style = body
@@ -446,7 +443,7 @@ def write_nd_frequentist_table(report: Report, session: Session):
             write_cell(tbl.cell(row, 6), "-", body)
 
     # set column width
-    widths = np.array([2, 0.7, 0.7, 0.7, 0.7, 0.7, 1.75])
+    widths = np.array([1.7, 0.9, 0.9, 0.9, 0.9, 2])
     widths = widths / (widths.sum() / styles.portrait_width)
     for width, col in zip(widths, tbl.columns, strict=True):
         set_column_width(col, width)

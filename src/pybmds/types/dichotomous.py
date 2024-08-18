@@ -104,6 +104,7 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
@@ -284,12 +285,11 @@ class DichotomousParameters(BaseModel):
     def tbl(self) -> str:
         headers = "Variable|Estimate|On Bound|Std Error".split("|")
         data = []
-        n_models = len(self.names)
         for name, value, bounded, se in zip(
             self.names,
             self.values,
             self.bounded,
-            self.se[:n_models],  # TODO - change
+            self.se,
             strict=True,
         ):
             data.append(
