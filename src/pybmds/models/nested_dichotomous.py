@@ -51,26 +51,12 @@ class BmdModelNestedDichotomous(BmdModel):
         return PriorClass.frequentist_restricted
 
     def to_cpp(self) -> NestedDichotomousAnalysis:
-        structs = NestedDichotomousAnalysis.blank()
-        structs.analysis.model = self.model_class
-        structs.analysis.doses = self.dataset.doses
-        structs.analysis.litterSize = self.dataset.litter_ns
-        structs.analysis.incidence = self.dataset.incidences
-        structs.analysis.lsc = self.dataset.litter_covariates
-        structs.analysis.prior = self.settings.priors.to_c_nd(self.dataset.num_dose_groups)
-        structs.analysis.LSC_type = self.settings.litter_specific_covariate.value
-        structs.analysis.ILC_type = self.settings.intralitter_correlation.value
-        structs.analysis.BMD_type = self.settings.bmr_type.value
-        structs.analysis.estBackground = self.settings.estimate_background
-        structs.analysis.parms = len(self.get_param_names())
-        structs.analysis.prior_cols = 2
-        structs.analysis.BMR = self.settings.bmr
-        structs.analysis.alpha = self.settings.alpha
-        structs.analysis.numBootRuns = self.settings.bootstrap_n
-        structs.analysis.iterations = self.settings.bootstrap_iterations
-        structs.analysis.seed = self.settings.bootstrap_seed
-
-        return structs
+        return NestedDichotomousAnalysis.create(
+            model_class=self.model_class,
+            nparms=len(self.get_param_names()),
+            dataset=self.dataset,
+            settings=self.settings,
+        )
 
     def execute(self) -> NestedDichotomousResult:
         self.structs = self.to_cpp()
