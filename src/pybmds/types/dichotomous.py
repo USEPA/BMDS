@@ -104,6 +104,7 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property

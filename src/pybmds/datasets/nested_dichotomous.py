@@ -23,9 +23,9 @@ class NestedDichotomousDataset(DatasetBase):
     def __init__(
         self,
         doses: list[float],
-        litter_ns: list[int],
+        litter_ns: list[float],
         incidences: list[float],
-        litter_covariates: list[int],
+        litter_covariates: list[float],
         **metadata,
     ):
         self.doses = doses

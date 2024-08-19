@@ -101,8 +101,42 @@ class NestedDichotomousAnalysis(NamedTuple):
     result: bmdscore.python_nested_result
 
     @classmethod
-    def blank(cls):
-        return cls(bmdscore.python_nested_analysis(), bmdscore.python_nested_result())
+    def create(
+        cls,
+        model_class: bmdscore.nested_model,
+        nparms: int,
+        dataset: NestedDichotomousDataset,
+        settings: NestedDichotomousModelSettings,
+    ) -> Self:
+        analysis = bmdscore.python_nested_analysis()
+        analysis.model = model_class
+        analysis.doses = dataset.doses
+        analysis.litterSize = dataset.litter_ns
+        analysis.incidence = dataset.incidences
+        analysis.lsc = dataset.litter_covariates
+        analysis.prior = settings.priors.to_c_nd(n_phi=dataset.num_dose_groups)
+        analysis.LSC_type = settings.litter_specific_covariate.value
+        analysis.ILC_type = settings.intralitter_correlation.value
+        analysis.BMD_type = settings.bmr_type.value
+        analysis.estBackground = settings.estimate_background
+        analysis.parms = nparms
+        analysis.prior_cols = 2
+        analysis.BMR = settings.bmr
+        analysis.alpha = settings.alpha
+        analysis.numBootRuns = settings.bootstrap_n
+        analysis.iterations = settings.bootstrap_iterations
+        analysis.seed = settings.bootstrap_seed
+
+        result = bmdscore.python_nested_result()
+        result.nparms = analysis.parms
+        result.model = analysis.model
+        result.bmdsRes = bmdscore.BMDS_results()
+        result.boot = bmdscore.nestedBootstrap()
+        result.litter = bmdscore.nestedLitterData()
+        result.reduced = bmdscore.nestedReducedData()
+        result.srData = bmdscore.nestedSRData()
+
+        return cls(analysis, result)
 
     def execute(self):
         bmdscore.pythonBMDSNested(self.analysis, self.result)

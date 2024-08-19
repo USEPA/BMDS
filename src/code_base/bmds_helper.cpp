@@ -3548,7 +3548,6 @@ void Nlogist_Bootstrap(struct nestedObjData *objData, struct python_nested_resul
     }
   }
   sort(combSR.begin(), combSR.end());
-  pyRes->boot.pVal[BSLoops+1] = pavg;
   for (int k=0; k<percentiles.size(); k++){
     double temp = percentiles[k] * BSLoops*iterations;
     if ((ceilf(temp)==temp) && (floorf(temp)==temp)){
