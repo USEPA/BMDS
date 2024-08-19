@@ -85,7 +85,7 @@ class DichotomousDataset(DatasetBase):
         29.750000 14 35
         """
         rows = ["Dose Incidence NEGATIVE_RESPONSE"]
-        for i, v in enumerate(self.doses):
+        for i, _ in enumerate(self.doses):
             if i >= self.num_dose_groups:
                 continue
             rows.append("%f %d %d" % (self.doses[i], self.incidences[i], self.remainings[i]))

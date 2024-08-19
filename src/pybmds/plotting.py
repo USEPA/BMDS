@@ -64,14 +64,13 @@ def add_bmr_lines(
             y=bmd_y,
             xmin=0,
             xmax=(bmd - xmin) / xrange,
-            # label="BMD/BMDL",
+            label="BMD/BMDL",
             **AXLINE_FORMAT,
         )
         ax.axvline(
             x=bmd,
             ymin=0,
             ymax=(bmd_y - ymin) / yrange,
-            # label="BMD/BMDL",
             **AXLINE_FORMAT,
         )
         if bmdl > 0:
@@ -79,7 +78,6 @@ def add_bmr_lines(
                 x=bmdl,
                 ymin=0,
                 ymax=(bmd_y - ymin) / yrange,
-                label="BMD/BMDL",
                 **AXLINE_FORMAT,
             )
     else:

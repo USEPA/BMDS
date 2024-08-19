@@ -34,7 +34,7 @@ dev = [
   "pybind11~=2.10.4",
   "pytest-mpl~=0.17.0",
   "pytest~=8.2.1",
-  "ruff~=0.4.4",
+  "ruff~=0.5.7",
   "setuptools~=67.7.2",
   "wheel~=0.43.0",
 ]
@@ -115,14 +115,14 @@ addopts = "--mpl-baseline-path=tests/data/mpl"
 python_files = ["test_*.py"]
 
 [tool.ruff]
+exclude = ["docs/source"]
 line-length = 100
-target-version = "py311"
-lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "RUF"]
-lint.ignore = ["E501", "B904", "B007", "S308", "S113", "S314"]
+lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "ERA", "NPY", "RUF", "PTH"]
+lint.ignore = ["E501"]
 lint.isort.known-first-party = ["pybmds"]
 
 [tool.ruff.lint.per-file-ignores]
-"test_*.py" = ["S101", "S106"]
+"test_*.py" = ["S101", "ERA001"]
 "setup.py" = ["S603", "S607"]
 
 [tool.setuptools.dynamic]

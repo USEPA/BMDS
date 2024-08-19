@@ -1,6 +1,3 @@
-# /usr/bin/env python
-
-# from pybmds import bmdscore
 import bmdscore
 import numpy as np
 
@@ -15,8 +12,6 @@ pyAnal.BMR = 0.1
 pyAnal.BMD_type = 1  # 1 = extra ; added otherwise
 pyAnal.alpha = 0.05
 pyAnal.degree = 3  # for multistage only
-# pyAnal.samples =
-# pyAnal.burnin =
 pyAnal.parms = 3
 pyAnal.prior_cols = 5
 
