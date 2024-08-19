@@ -48,7 +48,7 @@ If you delete a project, it will delete the project from the startup interface, 
 
 ## BMDS Desktop Application
 
-After at least one project has been created, you're can run the Desktop Application creating a project, you can "Start" the project, which will create a new tab in your browser window and open BMDS Desktop. It may take a a few seconds to startup the first time being used. You can only run one BMDS Desktop project at a time.
+After at least one project has been created, you can run the Desktop Application creating a project, you can "Start" the project, which will create a new tab in your browser window and open BMDS Desktop. It may take a a few seconds to startup the first time being used. You can only run one BMDS Desktop project at a time.
 
 ```{figure} _static/img/bmds-desktop.jpg
 :alt: Screenshot of BMDS Desktop Application
