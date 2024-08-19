@@ -149,7 +149,7 @@ class DatasetSchemaBase(BaseModel, abc.ABC):
         try:
             return _dataset_schema_map[dtype]
         except KeyError:
-            raise ValueError(f"Unknown dtype: {dtype}")
+            raise ValueError(f"Unknown dtype: {dtype}") from None
 
     @abc.abstractmethod
     def deserialize(self) -> DatasetBase: ...

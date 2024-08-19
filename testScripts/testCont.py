@@ -1,14 +1,9 @@
-# /usr/bin/env python
-
 import bmdscore
 import numpy as np
-
-# from pybmds import bmdscore
 
 pyAnal = bmdscore.python_continuous_analysis()
 pyAnal.model = bmdscore.cont_model.exp_5
 # isIncreasing needed if detectAdvDir is set to false
-# pyAnal.isIncreasing
 pyAnal.n = 5
 pyAnal.doses = np.array([0, 62.5, 125, 250, 500])
 pyAnal.Y = np.array([24.3, 27, 31.4, 39.3, 54.2])

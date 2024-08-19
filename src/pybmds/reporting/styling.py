@@ -149,7 +149,7 @@ def write_dataset_table(
                 write_cell(tbl.cell(i + 1, 3), stdev, styles.tbl_body)
 
             width = styles.portrait_width / 4
-            for i, col in enumerate(tbl.columns):
+            for col in tbl.columns:
                 set_column_width(col, width)
 
         else:
@@ -187,7 +187,7 @@ def write_dataset_table(
                 write_cell(tbl.cell(i + 1, 2), inc, styles.tbl_body)
 
             width = styles.portrait_width / 3
-            for i, col in enumerate(tbl.columns):
+            for col in tbl.columns:
                 set_column_width(col, width)
 
         else:
@@ -275,7 +275,7 @@ def write_dataset_table(
                 write_cell(tbl.cell(i, j), text, styles.tbl_body)
 
         width = styles.portrait_width / 4
-        for i, col in enumerate(tbl.columns):
+        for col in tbl.columns:
             set_column_width(col, width)
 
     else:

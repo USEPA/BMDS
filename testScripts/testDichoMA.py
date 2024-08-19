@@ -1,7 +1,3 @@
-# /usr/bin/env python
-
-# from pybmds import bmdscore
-# from pybmds import bmdscore
 import bmdscore
 import numpy as np
 
@@ -33,7 +29,6 @@ priorList.append(p7)
 priorList.append(p8)
 priorList.append(p9)
 pyMA.priors = priorList
-# pyMA.priors=np.asarray(priorList)
 
 pyAnal = bmdscore.python_dichotomous_analysis()
 pyAnal.BMD_type = 1

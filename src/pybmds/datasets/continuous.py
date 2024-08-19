@@ -119,7 +119,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         Return the dataset representation in BMDS .(d) file.
         """
         rows = ["Dose NumAnimals Response Stdev"]
-        for i, v in enumerate(self.doses):
+        for i, _ in enumerate(self.doses):
             if i >= self.num_dose_groups:
                 continue
             rows.append("%f %d %f %f" % (self.doses[i], self.ns[i], self.means[i], self.stdevs[i]))

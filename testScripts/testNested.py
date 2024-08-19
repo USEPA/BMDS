@@ -22,7 +22,7 @@ def getNLogisticPrior(ngrp, prior_cols, restricted):
             pr.append(prRR[i])
         else:
             pr.append(prUR[i])
-        for j in range(ngrp):
+        for _ in range(ngrp):
             pr.append(prP[i])
     return pr
 
