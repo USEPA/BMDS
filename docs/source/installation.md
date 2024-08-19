@@ -1,16 +1,20 @@
 # Installation
 
-We recommend installing `bmds-ui` on your computer; this makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting. This guide describes the basics from how to install python, to setting up an environment, to installing the specific packages.
+We recommend installing `bmds-ui` on your computer; this makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting.
+
+This guide describes the basics for a user new to Python, from how to install Python, to setting up an environment, to installing the specific packages.
 
 
 :::{note}
-This guide documents a standard installation processes for packages in the Python ecosystem. If you have a colleague or friend that uses Python, they can likely help! If you do not and need support, please [contact us](https://ecomments.epa.gov/bmds).
+This guide documents a standard installation process for packages in the Python ecosystem. If you know someone who uses Python, they can likely help! If you need support, please [contact us](https://ecomments.epa.gov/bmds).
 :::
 
 (part-1)=
 ## Part 1 - Install Python
 
-First, install Python. Ideally, use the most recent version available; the minimum support version is version 3.11 (released in 2022). You can install it from [python.org](https://python.org)[^disclaimer], [Anaconda](https://www.anaconda.com/)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
+If possible, use the most recent version available; the minimum support version is version 3.11 (released in 2022).
+
+You can install Python from [python.org](https://python.org)[^disclaimer], [Anaconda](https://www.anaconda.com/)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
 
 During installation, ensure Python is added to your path (this is an option on some Windows installers).
 
@@ -20,11 +24,12 @@ After installing, open a terminal.
 :::{admonition} Which terminal should I use?
 :class: info
 
-If you installed Anaconda or one or other `conda` applications, you can start a terminal from your start menu with that environment active.
+On Windows:
+* If you installed Anaconda or other applications which have a `conda` command (e.g., Miniconda, Miniforge, etc.), in the Start Menu, search for the Anaconda Prompt - it may be called something like "Anaconda prompt" or "Miniconda prompt".
+* If you installed Python from python.org, in the Start menu search for and run the "Command Prompt". Make sure to use the "Command Prompt" instead of "Powershell".
 
-If you installed Python directly on Windows, use Windows Terminal (it should be built-in to recent Windows versions). The terminal allows you to run different shells; use the "Command Prompt" instead of "Powershell".
-
-If you installed Python directly on a Mac, you can use the built-in Terminal, or any other application you're comfortable with.
+On Mac/Linux:
+* You can use the built-in Terminal, or any other application you're comfortable with.
 :::
 
 In the terminal, confirm that Python is available:
@@ -33,21 +38,23 @@ In the terminal, confirm that Python is available:
 python --version
 ```
 
-This should return a version, for example `Python 3.12.4`.  If you see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
+This should return a version, for example `Python 3.12.5`.  If you see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
 
 
 (part-2)=
 ## Part 2 - Create an Environment
 
-With Python installed and available in your terminal, you can now install BMDS Desktop and `pybmds`. However, we recommend creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments), and installing inside the environment. Virtual environments are essentially copies of Python, but each one can have different packages with different versions, and you can have multiple environments on the same computer.
+We recommend creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments) for BMDS Desktop and pybmds.
 
-Using virtual environments instead of installing in the "root" Python environment is advantageous for a few reasons:
+Virtual environments are essentially copies of Python, but you can have multiple environments on the same computer. In addition, each environment can contain different packages with different versions of those packages.
 
-1. With some computers and enterprise setups, it may be not be possible to install packages in the "root" Python environment without administrative rights
-2. If packages are installed, they may not easily be found by the "root" Python
-3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects
+Using virtual environments instead of installing in the "root" Python environment has several advantages:
 
-Creating python virtual environments are simple, but depend on if you installed Python or Anaconda:
+1. With some computers and enterprise setups, it may be not be possible to install packages in the "root" Python environment without administrative rights.
+2. If packages are installed, they may not easily be found by the "root" Python.
+3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects.
+
+Python virtual environments are simple to create, but the steps are specific depending on whethe you installed Python or Anaconda:
 
 ::::{tab-set}
 
@@ -55,7 +62,7 @@ Creating python virtual environments are simple, but depend on if you installed 
 
 There is one decision you'll need to make when creating an environment:
 
-1. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or make another one).
+1. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create a new one).
 
 An example setup is below:
 
@@ -65,7 +72,7 @@ An example setup is below:
 conda create --name bmds-desktop python=3.12
 ```
 
-This creates an environment (by default in a path in your home directory).  Anaconda handles finding environments on your filesystem for you (this simplifies the process versus Python below).
+This creates an environment (by default in a path in your home directory).  Anaconda manages switching or moving among environments.
 
 :::
 
@@ -73,8 +80,8 @@ This creates an environment (by default in a path in your home directory).  Anac
 
 There are two decisions you'll need to make when creating a virtual environment:
 
-1. The location of the environment on your computer. You will want to put this environment in a place you in your home folder, but ideally a location that is not set up with cloud syncing software such as OneDrive. In the example below, we make a new `dev` folder in your home directory, but you use other locations.
-2. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or make another one).
+1. The location of the environment on your computer. You will want to put this environment in your home folder, but ideally not in folders managed by cloud-syncing software such as OneDrive or Dropbox. Environments create many small files that do not need to be backed up, and backing up will hinder the performance of your cloud sync application and may slow down your computer. In the example below, we make a new `dev` folder in your home directory, but you can use other locations.
+2. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create another one).
 
 An example setup is below. First, navigate to the folder we want to create the environment in (where `USERNAME` is your username):
 
@@ -98,8 +105,8 @@ The instructions above create a virtual environment here: `C:\Users\USERNAME\dev
 
 There are two decisions you'll need to make when creating a virtual environment:
 
-1. The location of the environment on your computer. You will want to put this environment in a place you in your home folder, but ideally a location that is not set up with cloud syncing software such as OneDrive. In the example below, we make a new `dev` folder in your home directory, but you use other locations.
-2. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or make another one).
+1. The location of the environment on your computer. You will want to put this environment in your home folder, but ideally not in folders managed by cloud-syncing software such as OneDrive or Dropbox. Environments create many small files that do not need to be backed up, and backing up will hinder the performance of your cloud sync application and may slow down your computer. In the example below, we make a new `dev` folder in your home directory, but you can use other locations.
+2. The environment name. You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create another one)
 
 An example setup is below:
 
@@ -127,7 +134,7 @@ The instructions above create a virtual environment here: `~/dev/bmds-desktop`.
 (activate-venv)=
 ### Activating an environment
 
-After creating an environment, you'll need to activate the environment. Activating the environment means that instead of looking at the global python environment, you look at the contents within the environment.
+After creating an environment, you'll need to activate the environment. Activating the environment means that, instead of looking at the global python environment and anything that may be installed there, your system looks at the contents within the environment you specified.
 
 ::::{tab-set}
 
@@ -189,7 +196,7 @@ If successful, you should see the environment name in front of your terminal in 
 
 :::{tip}
 
-You'll need to activate the environment **every time** you want to run BMDS Desktop. It may be helpful to keep these instructions handy, or even create a document on your computer with specific instructions for how to access with your particular setup.
+You'll need to activate the environment **every time** you want to run BMDS Desktop from your terminal. It may be helpful to keep these instructions handy, or even create a document on your computer with specific instructions for how to access your particular setup.
 
 :::
 
@@ -197,7 +204,7 @@ You'll need to activate the environment **every time** you want to run BMDS Desk
 (part-3)=
 ## Part 3 - Install BMDS Desktop and pybmds
 
-With Python installed and a virtual environment created, we're ready to install BMDS Desktop and `pybmds`.  You'll need to activate [your environment](activate-venv), and then install the packages using Python's package installer, [pip](https://pip.pypa.io/), which is included with Python.
+With Python installed and a virtual environment created, you're ready to install BMDS Desktop and `pybmds`.  You'll need to [activate your environment](activate-venv), and then install the packages using Python's package installer, [pip](https://pip.pypa.io/), which is included with Python.
 
 (internal-epa)=
 :::{admonition} NOTE - for internal EPA testing
@@ -223,7 +230,7 @@ The content below below will not work until we are cleared for public release; p
 
 ---
 
-To install **BMDS Desktop** (which includes `pybmds`):
+To install **BMDS Desktop**, which includes `pybmds`:
 
 ```bash
 python -m pip install bmds-ui
@@ -235,23 +242,11 @@ You can install a specific version of `bmds-ui` by specifying the version number
 python -m pip install bmds-ui==24.1
 ```
 
-If no version is specified, it will install the latest.
+If no version is specified, `pip` will install the latest version.
 
 :::
 
-After installation, we're ready to use.
-
-
-(part-4)=
-## Part 4 - Using BMDS Desktop and pybmds
-
-To use BMDS Desktop, [open a terminal](open-terminal) and then [activate](activate-venv) an environment. Then, you can start the application the application:
-
-```bash
-bmds-desktop
-```
-
-If this works, you're good to go! However, if you'd rather not use the command line, now might be a good time to create a [desktop shortcut](desktop-shortcut) instead. After the shortcut is created, you may not need to use the terminal for future work.
+After installation, you're ready to use BMDS Desktop and `pybmds`.
 
 (desktop-shortcut)=
 ### The BMDS Desktop Manager
@@ -266,6 +261,85 @@ This creates the file wherever you currently are located in your terminal. You c
 
 To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
 
+(part-4)=
+## Part 4 - Starting BMDS Desktop
+
+To use BMDS Desktop, [open a terminal](open-terminal) and [activate](activate-venv) an environment. Then start the application:
+
+```bash
+bmds-desktop
+```
+
+:::{tip}
+
+If you'd rather not use the command line, consider creating a shortcut to the [BMDS Desktop Manager](desktop-shortcut) instead. After the shortcut is created, you may not need to use the terminal for future work, and you can double-click the shortcut file to start the application.
+
+:::
+
+The `pybmds` package is available in this environment, so you can start a Python interpreter in this environment and you can begin scripting.
+
+### A complete example
+
+The complete startup after installation can be summarized below, assuming you followed the guide above.
+
+
+::::{tab-set}
+
+:::{tab-item} Anaconda
+
+Assuming you installed a conda version of Python on Windows, using the defaults in the guide above, the entire sequence would look like this:
+
+
+1. In the Windows Start Menu Search field, enter "Anaconda Prompt" and start the application
+2. In the Prompt, enter
+
+```batch
+conda activate bmds-desktop
+```
+
+You should see the following prompt:
+
+```batch
+(bmds-desktop) C:\Users\USERNAME>
+```
+
+3. At the prompt, enter:
+
+```batch
+bmds-desktop
+```
+
+:::
+
+:::{tab-item} Python
+
+Assuming you installed a python.org version of Python on Windows, using the defaults in the guide above, the entire sequence would look like this:
+
+1. In the Windows Taskbar's Search field, enter "Command Prompt"
+2. In the Command Prompt's terminal window, enter (changing `USERNAME` to your username):
+
+```batch
+cd C:\Users\USERNAME\dev
+bmds-desktop\Scripts\activate
+```
+
+You should see the following prompt:
+
+```batch
+(bmds-desktop) C:\Users\USERNAME\dev>
+```
+
+3. At the prompt, enter:
+
+```batch
+bmds-desktop
+```
+
+:::
+
+::::
+
+
 (faq)=
 ## Frequently Asked Questions (FAQ)
 
@@ -273,7 +347,7 @@ To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
 - [Installation Issues](installation-issues)
     - [Adding Python to my Path (Windows)](path-windows)
     - [Adding Python to my Path (Mac)](path-mac)
-    - [I got an error: "Syntax Error"](syntax-error)
+    - [I got an error: `Syntax Error`](syntax-error)
     - [I got an error: `Running Scripts is Disabled on your System` (Windows)](psh-no-scripts)
     - [I got an error: `bmds-desktop: path not found`](path-not-found)
 - [Upgrading BMDS Desktop](upgrading-bmds-desktop)
@@ -285,13 +359,16 @@ To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
 (python-fundamentals)=
 ### Python Fundamentals
 
-**Python** is a programming language commonly used for many different software products, from data science to websites. The `pybmds` and `bmds-ui` packages are written in the Python language and you must hav ea version of Python installed on your computer to use these packages.
+**Python** is a programming language commonly used for many different software products, from data science to websites. The `pybmds` and `bmds-ui` packages are written in the Python language and you must have a version of Python installed on your computer to use these packages.
 
-A Python **package** is essentially a folder of code that you can download that allows you to extend the Python programming language to perform a specific operation. In the context of BMDS, we have developed two packages, `pybmds`, which allows you to execute dose-response models using python, and `bmds-ui` which builds a user-interface for dose-response modeling. The `BMDS Desktop` application, as well as [BMDS Online](https://bmdsonline.epa.gov) use the `bmds-ui` package.
+A Python **package** is essentially a folder of code you download that enables you to extend the Python programming language to perform a specific predefined operations in that package. In the context of BMDS, we have developed two packages:
 
-The **pip** tool which is commonly built into Python allows a user to install Python packages from the internet. Packages are most commonly stored on the [pypi.org](https://pypi.org) website.
+* `pybmds`, which allows you to execute dose-response models in Python scripts, and
+* `bmds-ui` which builds a user-interface for dose-response modeling. The BMDS Desktop application and [BMDS Online](https://bmdsonline.epa.gov) use the same package, configured differently.
 
-A Python **virtual environment** makes it easy to setup multiple Python projects on your computer at the same time. By using a virtual environment, you can have multiple versions of these software on your computer at the same time, making it easy to switch between projects. Environments also make it easier for your computer to find Python packages associated with a particular application.
+The **pip** tool which is built into Python, allows a user to install Python packages from the internet. Packages are available to all Python users on [pypi.org](https://pypi.org) (this is Python's equivalent to R's [CRAN](https://cran.r-project.org/)).
+
+A Python **virtual environment** makes it easy to set up multiple Python projects on your computer at the same time, making it easy to switch between projects. Environments also make it easier for your computer to find Python packages associated with a particular application.
 
 (installation-issues)=
 ### Installation issues
@@ -299,44 +376,73 @@ A Python **virtual environment** makes it easy to setup multiple Python projects
 (path-windows)=
 #### Adding Python to my Path (Windows)
 
-Variations of this error may include: `python` is not recognized as an internal or external command, operable program or batch file.
+Variations of this error may include: `python is not recognized as an internal or external command, operable program or batch file.`
 
-First, you'll need to find where Python was installed on your computer. Open up Windows Explorer and search for `python.exe`. Copy the complete path of where it was installed (up to the directory, not including the executable). Next, we'll add that location to your default Path.
+To troubleshoot this error (instructions assume Windows 11):
 
-On the Start Menu, search for "environment" and then click the "Edit the system environment variables". This should open the "System Properties" dialog. Select "Environment Variables", and under the "User Variables" section, there should be a variable named Path. Edit the Path, and add the folder that contains the Python path for the Python installation above.  You should be able to update "User Variables" without administrative rights.
+1. Locate where Python was installed on your computer. Open Windows Explorer and search for `python.exe`.
+2. Copy the complete path of where `python.exe` is found (up to the directory only; do not include the filename). You will add this folder location to your default Path.
+3.	In the Start Menu, search for "environment" and then click the "Edit environment variables for your account" item. The system should open the "Environment Variables" dialog. This will enable you to update the Path variable *without* needing administrative rights.
+    ```{figure} _static/img/windows-edit-enviro-1.jpg
+    :alt: Screenshot of how to find the "Edit environment variables for your account" icon
+    ```
+4.	Under the "User variables for USERNAME" section, locate the variable named Path.
+    ```{figure} _static/img/windows-edit-enviro-2.jpg
+    :alt: Screenshot of User Environment Variables
+    ```
+5.	Select the Path variable and then the Edit button to display the "Edit environment variable" dialog.
+6.	In the "Edit environment variable" dialog, select New to create a new line in the display. Click inside the new line to select it and paste the folder path you copied from Step 2 above.
+    ```{figure} _static/img/windows-edit-enviro-3.jpg
+    :alt: Screenshot of adding a new directory to the Path User environment variable
+    ```
+7.	Shut down the Command Prompt window and restart it.
+8.	At the reopened Command Prompt window, enter the command `python --version` and the Python version number should now appear! Continue with the installation.
 
-After adding the location, restart your terminal. If you type the command `python --version` the version of Python should now appear! You are ready to continue installation.
 
 (path-mac)=
 #### Adding Python to my Path (Mac)
 
-First, you'll need to find where Python was installed on your computer. Open Finder, and then search for `python` on your mac; you may want to change the "Kind" to "Executable".  Next, create or edit a special file named `.zprofile` at the root of your home folder. You'll want to add a line at the bottom of the file:
+1.	To find where Python was installed on your macOS, open Finder, and search for "python". In the search bar, you may want to change the "Kind" to "Executable" to limit results.
+2.	With the file displayed in the search results, highlight the file and press Command + I to open the Get Info window.
+3.	In the Get Info window, triple-click the file path beside "Where" to select it. Then press Command (⌘)+C to copy the file or folder path.
+4.	In a new Finder window, navigate to the root of your home folder under Users. You will need to add a path to a special file named ".zprofile". So-called *dot-files* are typically hidden in the standard Finder view. Press the keyboard shortcut Shift + Command + . (period) to toggle the display of any dot-files in the folder.
+5.	Use TextEdit to open the .zprofile file if it exists or use TextEdit to create a new text file and save it as .zprofile in the root of your home folder.
+6.	In either case, add the following line to the bottom of the .zprofile file:
 
-```bash
-export PATH="$PATH:/path/to/python/"
-```
+    ```bash
+    export PATH="$PATH:/path/to/python/"
+    ```
 
-Where `/path/to/python` is the python directory which contains the Python executable.
+    where /path/to/python is the python directory containing the Python executable. You can paste the path you copied in Step 3.
+
+7.	Restart your terminal and enter the command `python --version` and the Python version number should now appear! Continue with the installation.
+
 
 (syntax-error)=
-#### I got an error: "Syntax Error"
+#### I got an error: `Syntax Error`
 
-You may see a Syntax error message if you've started a session of Python to interactively type commands. From this view, you could can write Python scripts and execute functions in `pybmds` or the standard library, but it's not where you'll want to for the installation guide; you'll need to be in a terminal shell in a location where python can be executed.
+You may see a Syntax Error message if you've started the Python interpreter and then typed installation commands not written in the Python language.
 
-To exit and return to your terminal, type `exit()` and press return.
+From within the Python interpreter, you can write Python scripts using `pybmds`. However, it's it's not where you want to be for the installation guide. For installing BMDS Desktop, you need to be in a terminal in a location where Python can be executed. The good news is, if you're inside a Python interpreter, you're in the correct place for installation, but you'll need to exit the interpreter.
+
+To exit the interactive Python interpreter and return to your terminal, type `exit()` and press Enter.
 
 (psh-no-scripts)=
 #### I got an error: `Running Scripts is Disabled on your System` (Windows)
 
-Windows has two built-in command line shells - Command Prompt (cmd) and PowerShell. We recommend using the Command Prompt for installation, not PowerShell.  If you see this error, you're running PowerShell. Follow the guide on [opening terminals](open-terminal) above.
+Windows has two built-in command line shells - Command Prompt and PowerShell. We recommend using the Command Prompt, not PowerShell.
+
+If you see this error, you're likely running PowerShell.
+
+Follow the guide on [opening terminals](open-terminal) above.
 
 (path-not-found)=
 #### I got an error: `bmds-desktop: path not found`
 
-Variations may include: 'bmds-desktop' is not recognized as an internal or external command,
-operable program or batch file.
+Variations may include: `'bmds-desktop' is not recognized as an internal or external command,
+operable program or batch file`.
 
-To fix, [activate](activate-venv) your Python virtual environment after successfully install BMDS Desktop.
+To fix, [activate](activate-venv) your Python virtual environment after successfully installing BMDS Desktop.
 
 (upgrading-bmds-desktop)=
 ### Upgrading BMDS Desktop
@@ -373,18 +479,22 @@ python -m pip install --upgrade bmds-ui --index-url https://gitlab.epa.gov/api/v
 (multiple-versions)=
 ### Installing Multiple Versions of BMDS Desktop
 
-It is possible to install multiple version of BMDS Desktop on your computer if you'd like to run different versions for different projects. Follow the [environment guide](part-2) above, and create a new environment for each version.  Then, active the environment. You cannot have multiple versions installed in the same environment.
+It is possible to install multiple versions of BMDS Desktop on your computer. You can even run different version of BMDS Desktop for different projects. For example, you may start an assessment using one version of BMDS Desktop and continue using that version for consistency, but may want to use a newer version for a different assessment. You can install the same version of BMDS Desktop in multiple separate environments, with each dedicated to a specific assessment project. That way, all datasets and results are clustered in their own isolated, reproducible environment.
+
+Follow the [environment guide](part-2) above and create a new environment for each version.  Then, activate the environment.
+
+You cannot install multiple versions of BMDS Desktop in the same environment.
 
 (uninstalling-bmds-desktop)=
 ### Uninstalling BMDS Desktop
 
-After [activating your environment](activate-venv), you can uninstall:
+After [activating your environment](activate-venv), you can uninstall BMDS Desktop with the following command:
 
 ```bash
 python -m pip uninstall bmds-desktop
 ```
 
-You can remove the environment if you'd like as well.
+You can also remove the environment:
 
 ::::{tab-set}
 
@@ -409,13 +519,17 @@ Open the path to your virtual environment using Windows Explorer and delete the 
 (writing-pybmds-code)=
 ### Writing pybmds Code
 
-You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can generally use any approach for writing code you're familiar with. However, if you're new to the Python ecosystem, we generally recommend using [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer] for writing and executing code.
+You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can generally use any approach for writing code you're familiar with.
+
+However, if you're new to the Python ecosystem, we generally recommend using [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer] for writing and executing code.
 
 If you'd prefer to not write any code, then install `bmds-ui` and start BMDS Desktop.
 
 (using-r)=
 ### Writing `pybmds` Code in R
 
-You can use use RStudio to execute `pybmds` using the [reticulate](https://rstudio.github.io/reticulate/) package; you'll still need to follow the guide above to install the software on your computer in a Python environment. See the [using R](recipes/using-r.md) recipe for an example.
+You can use use RStudio to execute `pybmds` using the [reticulate](https://rstudio.github.io/reticulate/) package; you'll still need to follow the guide above to install the software on your computer in a Python environment.
+
+See the [using R](recipes/using-r.md) recipe for an example.
 
 [^disclaimer]: Mention of or referral to commercial products or services, and/or links to non-EPA sites does not imply official EPA endorsement of or responsibility for the opinions, ideas, data, or products presented at those locations, or guarantee the validity of the information provided.
