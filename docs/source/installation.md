@@ -1,6 +1,6 @@
 # Installation
 
-We recommend installing `bmds-ui` on your computer, which makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting. This guide describes the basics from how to install python, to setting up an environment, to installing the specific packages.
+We recommend installing `bmds-ui` on your computer; this makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting. This guide describes the basics from how to install python, to setting up an environment, to installing the specific packages.
 
 
 :::{note}
@@ -20,7 +20,7 @@ After installing, open a terminal.
 :::{admonition} Which terminal should I use?
 :class: info
 
-If you installed Anaconda or one or other `conda` applications you can start a terminal from your start menu with that environment active.
+If you installed Anaconda or one or other `conda` applications, you can start a terminal from your start menu with that environment active.
 
 If you installed Python directly on Windows, use Windows Terminal (it should be built-in to recent Windows versions). The terminal allows you to run different shells; use the "Command Prompt" instead of "Powershell".
 
@@ -33,7 +33,7 @@ In the terminal, confirm that Python is available:
 python --version
 ```
 
-This should return a version, for example `Python 3.12.4`.  If see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
+This should return a version, for example `Python 3.12.4`.  If you see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
 
 
 (part-2)=
@@ -41,11 +41,11 @@ This should return a version, for example `Python 3.12.4`.  If see a python vers
 
 With Python installed and available in your terminal, you can now install BMDS Desktop and `pybmds`. However, we recommend creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments), and installing inside the environment. Virtual environments are essentially copies of Python, but each one can have different packages with different versions, and you can have multiple environments on the same computer.
 
-Using virtual environments instead of installing in the "root" Python is advantageous for a few reasons:
+Using virtual environments instead of installing in the "root" Python environment is advantageous for a few reasons:
 
 1. With some computers and enterprise setups, it may be not be possible to install packages in the "root" Python environment without administrative rights
 2. If packages are installed, they may not easily be found by the "root" Python
-3. When using virtual environments, you can install multiple versions of the BMDS Desktop software, in case you'd like to use different versions for different projects
+3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects
 
 Creating python virtual environments are simple, but depend on if you installed Python or Anaconda:
 
@@ -127,7 +127,7 @@ The instructions above create a virtual environment here: `~/dev/bmds-desktop`.
 (activate-venv)=
 ### Activating an environment
 
-After creating an environment, you'll need to activate the environment. Activating the environment means that instead of looking at the global python and anything that may be installed, your look at the contents within the environment.
+After creating an environment, you'll need to activate the environment. Activating the environment means that instead of looking at the global python environment, you look at the contents within the environment.
 
 ::::{tab-set}
 
