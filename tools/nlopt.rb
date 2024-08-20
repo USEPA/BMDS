@@ -1,3 +1,4 @@
+# Vendor version 2.7.1 of nlopt; do not rename file.
 # https://github.com/Homebrew/homebrew-core/blob/7061c51a7ac2945fc7602ab6df0e7ff31b1fb49c/Formula/n/nlopt.rb
 # https://stackoverflow.com/questions/3987683/homebrew-install-specific-version-of-formula/9832084#9832084
 class Nlopt < Formula
