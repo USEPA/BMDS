@@ -35,11 +35,11 @@ py.test
 py.test -k test_my_special_test_name
 ```
 
-There is a built in Makefile command, ``make dev`` that creates a tmux application which auto-update the documentation; check out the ``Makefile`` for a list of other built-in actions.
+There is a built-in Makefile, ``make``, that runs many common utility methods for developing the application. For example, you can run tests by running `make test`, run code formatting using `make format`, or build documentation using `make docs`. For more details or other built-in actions, view the `Makefile` (or the `make.bat` file for Windows).
 
 ## Priors Report
 
-The `pybmds` package includes Bayesian priors and frequentist parameter initialization settings that have been tuned to help improve model fit performance. To generate a report of the settings in all permutations, run the command:
+The `pybmds` package includes Bayesian priors and frequentist parameter initialization settings that have been tuned to help improve model fit performance. To generate a report of the settings in all permutations, run the following command:
 
 ```bash
 bmds-priors-report priors_report.md
