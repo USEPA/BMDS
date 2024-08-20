@@ -1,4 +1,4 @@
-__version__ = "24.1a3"
+__version__ = "24.1a4"
 
 from .batch import BatchResponse, BatchSession  # noqa: F401
 from .constants import DistType as ContinuousDistType  # noqa: F401
