@@ -106,7 +106,7 @@ class TestSession:
         session = pybmds.Session(dataset=ddataset2)
         version = session.dll_version()
         assert isinstance(version, str)
-        assert int(version.split(".")[0]) >= 2021  # assume dll in format "YYYY.MM..."
+        assert int(version.split(".")[0]) >= 24  # assume dll in format "YY.MM..."
 
 
 class TestSessionPlot:
