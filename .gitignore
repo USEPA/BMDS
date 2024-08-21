@@ -26,6 +26,7 @@ wheelhouse/
 *.py[cod]
 .coverage/
 .env
+env-bmds-desktop/
 
 # documentation outputs
 docs/source/recipes/output/*
