@@ -257,9 +257,24 @@ Starting the application may be difficult for users who do not frequently use th
 bmds-desktop --create-shortcut
 ```
 
-This creates the file wherever you currently are located in your terminal. You can move this file where you'd like using Windows Explorer or Mac Finder. We recommend creating a shortcut and putting the shortcut on your Desktop for easy access; you can even rename the shortcut "BMDS Desktop Manager" if you'd prefer.
+This command creates the shortcut file at the location in the terminal window.
 
-To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
+The following confirmation message is displayed:
+
+    BMDS Desktop Manager Created:
+    -----------------------------
+    C:\Users\USER\dev\bmds-desktop-bmds-desktop-manager.bat
+
+    Opening this file will start BMDS Desktop.
+    You can move this file or create a shortcut to it.
+
+    Would you like to open the folder to view "bmds-desktop-manager.bat"? (y/n)
+
+Typing `y` and pressing Enter will open a new Finder or File Manager window displaying the folder containing the batch file.
+
+We recommend creating a shortcut to the desktop manager file and putting the shortcut on your Desktop for easy access; you can even rename the shortcut "BMDS Desktop Manager" if you'd prefer.
+
+To start the BMDS Desktop, double-click the BMDS Desktop Manager shortcut icon.
 
 (part-4)=
 ## Part 4 - Starting BMDS Desktop
