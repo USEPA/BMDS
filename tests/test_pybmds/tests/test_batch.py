@@ -93,15 +93,15 @@ class TestMultitumorBatch:
         session.execute()
         batch = MultitumorBatch(sessions=[session])
 
-        # check serialization/deserialization # TODO - not implemented
-        # data = batch.serialize()
-        # batch2 = batch.deserialize(data)
-        # assert len(batch2.session) == len(batch.session)
+        # check serialization/deserialization
+        data = batch.serialize()
+        batch2 = batch.deserialize(data)
+        assert len(batch2.session) == len(batch.session)
 
         # check exports
-        # excel = batch.to_excel() # TODO - not implemented
+        excel = batch.to_excel()
         docx = batch.to_docx()
 
         if rewrite_data_files:
-            # (data_path / "reports/batch-multitumor.xlsx").write_bytes(excel.getvalue())
+            (data_path / "reports/batch-multitumor.xlsx").write_bytes(excel.getvalue())
             docx.save(data_path / "reports/batch-multitumor.docx")

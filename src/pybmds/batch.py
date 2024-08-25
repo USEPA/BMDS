@@ -204,7 +204,7 @@ class BatchSession(BatchBase):
         """
         sessions_data = json.loads(data)
         sessions = [Session.from_serialized(session) for session in sessions_data]
-        return BatchSession(sessions=sessions)
+        return cls(sessions=sessions)
 
     @classmethod
     def load(cls, archive: Path) -> Self:
@@ -271,3 +271,52 @@ class MultitumorBatch(BatchBase):
             write_citation(report, header_level=header_level)
 
         return report.document
+
+    def serialize(self) -> str:
+        return json.dumps([session.to_dict() for session in self.session])
+
+    @classmethod
+    def deserialize(cls, data: str) -> Self:
+        sessions_data = json.loads(data)
+        sessions = [Multitumor.from_serialized(session) for session in sessions_data]
+        return cls(sessions=sessions)
+
+    def df_summary(self) -> pd.DataFrame:
+        dfs = [
+            session.to_df(
+                extras=dict(session_index=idx),
+                clean=False,
+            )
+            for idx, session in enumerate(self.session)
+        ]
+        return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
+
+    def df_dataset(self) -> pd.DataFrame:
+        dfs = [
+            session.datasets_df(
+                extras=dict(session_index=idx),
+            )
+            for idx, session in enumerate(self.session)
+        ]
+        return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
+
+    def df_params(self) -> pd.DataFrame:
+        dfs = [
+            session.params_df(
+                extras=dict(session_index=idx),
+            )
+            for idx, session in enumerate(self.session)
+        ]
+        return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
+
+    def to_excel(self, path: Path | None = None) -> Path | BytesIO:
+        f: Path | BytesIO = path or BytesIO()
+        with pd.ExcelWriter(f) as writer:
+            data = {
+                "summary": self.df_summary(),
+                "datasets": self.df_dataset(),
+                "parameters": self.df_params(),
+            }
+            for name, df in data.items():
+                df.to_excel(writer, sheet_name=name, index=False)
+        return f
