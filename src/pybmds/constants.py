@@ -224,16 +224,16 @@ class NestedDichotomousModel(BmdModelSchema):
     params: tuple[str, ...]
 
 
-class NestedDichotomousModelChoices(Enum):  # TODO - change - update params, model_form_str
+class NestedDichotomousModelChoices(Enum):
     logistic = NestedDichotomousModel(
         id=nested_model.nlogistic.value,
         verbose="Nested Logistic",
-        params=("g", "b", "theta1", "theta2", "rho", "phi"),
-        model_form_str="P[dose] = ...",
+        params=("a", "b", "theta1", "theta2", "rho", "phi"),
+        model_form_str="P[dose] = a + θ₁ * r + (1 - a - θ₁ * r) / (1 + e^[-b - θ₂ * r - p * ln(dose)])",
     )
     nctr = NestedDichotomousModel(
         id=nested_model.nctr.value,
         verbose="NCTR",
-        params=("g", "b", "theta1", "theta2", "rho", "phi"),
-        model_form_str="P[dose] = ...",
+        params=("a", "b", "theta1", "theta2", "rho", "phi"),
+        model_form_str="P[dose] =  1 - e^[-(a + θ₁ * (r - rm)) - (b + θ₂ * (r - rm)) * dose^p]",
     )
