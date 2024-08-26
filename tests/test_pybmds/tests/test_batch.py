@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pybmds
 from pybmds.batch import BatchResponse, BatchSession, MultitumorBatch
-from pybmds.models.multi_tumor import Multitumor  # TODO - move to sessions?
 from pybmds.session import Session
 
 
@@ -87,7 +86,7 @@ class TestBatchSession:
 
 class TestMultitumorBatch:
     def test_exports(self, mt_datasets, rewrite_data_files, data_path):
-        session = Multitumor(
+        session = pybmds.Multitumor(
             mt_datasets, degrees=[0] * len(mt_datasets), id=1, name="test", description="hello"
         )
         session.execute()
