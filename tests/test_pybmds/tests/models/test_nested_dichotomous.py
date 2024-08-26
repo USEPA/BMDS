@@ -11,11 +11,11 @@ class TestNestedLogistic:
 
         model = nested_dichotomous.NestedLogistic(nd_dataset)
         names = model.get_param_names()
-        assert names == ["g", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3"]
+        assert names == ["a", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3"]
 
         model = nested_dichotomous.NestedLogistic(nd_dataset4)
         names = model.get_param_names()
-        assert names == ["g", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3", "phi4"]
+        assert names == ["a", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3", "phi4"]
 
     def test_model_priors(self, nd_dataset):
         m = nested_dichotomous.NestedLogistic(dataset=nd_dataset)
@@ -24,7 +24,7 @@ class TestNestedLogistic:
         ╒═════════════╤═══════════╤════════╤════════╕
         │ Parameter   │   Initial │    Min │    Max │
         ╞═════════════╪═══════════╪════════╪════════╡
-        │ g           │         0 │  0     │  1     │
+        │ a           │         0 │  0     │  1     │
         │ b           │         0 │ -1e+06 │  1e+06 │
         │ theta1      │         0 │  0     │  1     │
         │ theta2      │         0 │ -1e+06 │  1e+06 │
@@ -38,14 +38,14 @@ class TestNestedLogistic:
         assert m.priors_tbl() == expected.strip()
 
         # check overrides
-        m.settings.priors.update("g", min_value=1, max_value=2)
+        m.settings.priors.update("a", min_value=1, max_value=2)
         m.settings.priors.update("phi2", min_value=5, max_value=6)
         expected = dedent(
             """
         ╒═════════════╤═══════════╤════════╤════════╕
         │ Parameter   │   Initial │    Min │    Max │
         ╞═════════════╪═══════════╪════════╪════════╡
-        │ g           │         0 │  1     │  2     │
+        │ a           │         0 │  1     │  2     │
         │ b           │         0 │ -1e+06 │  1e+06 │
         │ theta1      │         0 │  0     │  1     │
         │ theta2      │         0 │ -1e+06 │  1e+06 │
@@ -94,11 +94,11 @@ class TestNctr:
 
         model = nested_dichotomous.Nctr(nd_dataset)
         names = model.get_param_names()
-        assert names == ["g", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3"]
+        assert names == ["a", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3"]
 
         model = nested_dichotomous.Nctr(nd_dataset4)
         names = model.get_param_names()
-        assert names == ["g", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3", "phi4"]
+        assert names == ["a", "b", "theta1", "theta2", "rho", "phi1", "phi2", "phi3", "phi4"]
 
     def test_model_priors(self, nd_dataset):
         m = nested_dichotomous.Nctr(dataset=nd_dataset)
@@ -107,7 +107,7 @@ class TestNctr:
         ╒═════════════╤═══════════╤═════════╤════════════╕
         │ Parameter   │   Initial │     Min │        Max │
         ╞═════════════╪═══════════╪═════════╪════════════╡
-        │ g           │         0 │  0      │  18        │
+        │ a           │         0 │  0      │  18        │
         │ b           │         0 │  0      │ -18        │
         │ theta1      │         0 │ -0.0625 │  -0.142857 │
         │ theta2      │         0 │ -0.0625 │  -0.142857 │
@@ -121,14 +121,14 @@ class TestNctr:
         assert m.priors_tbl() == expected.strip()
 
         # check overrides
-        m.settings.priors.update("g", min_value=1, max_value=2)
+        m.settings.priors.update("a", min_value=1, max_value=2)
         m.settings.priors.update("phi2", min_value=5, max_value=6)
         expected = dedent(
             """
         ╒═════════════╤═══════════╤═════════╤════════════╕
         │ Parameter   │   Initial │     Min │        Max │
         ╞═════════════╪═══════════╪═════════╪════════════╡
-        │ g           │         0 │  1      │   2        │
+        │ a           │         0 │  1      │   2        │
         │ b           │         0 │  0      │ -18        │
         │ theta1      │         0 │ -0.0625 │  -0.142857 │
         │ theta2      │         0 │ -0.0625 │  -0.142857 │
