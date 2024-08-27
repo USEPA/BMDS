@@ -24,10 +24,9 @@ endif
 #MAKEFLAGS = -j4
 
 
-POLYK        = $(wildcard polyK/*.cpp)
 MAIN         = $(wildcard *.cpp)
 MAIN_CODE    = $(wildcard code_base/*.cpp)
-OBJECTS      = $(MAIN:.cpp=.o) $(MAIN_CODE:.cpp=.o) $(POLYK:.cpp=.o)
+OBJECTS      = $(MAIN:.cpp=.o) $(MAIN_CODE:.cpp=.o)
 
 
 
