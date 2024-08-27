@@ -1,11 +1,12 @@
 [project]
 name = "pybmds"
 license = {text = "MIT License"}
-description = "A Python interface for the USEPA Benchmark dose modeling software (BMDS)"
 authors = [
   {name = "BMDS development team"},
+  {name = "Andy Shapiro", email = "shapiro.andy@epa.gov"},
 ]
 readme = "README.md"
+description = "U.S. EPA Dose Response Modeling Software"
 dynamic = ["version"]
 classifiers = [
   "Intended Audience :: Science/Research",
