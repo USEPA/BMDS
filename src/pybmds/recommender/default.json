@@ -53,14 +53,6 @@
             "enabled_nested": true
         },
         {
-            "rule_class": "gof_cancer",
-            "failure_bin": 1,
-            "threshold": 0.05,
-            "enabled_dichotomous": false,
-            "enabled_continuous": false,
-            "enabled_nested": false
-        },
-        {
             "rule_class": "aic_missing",
             "failure_bin": 2,
             "threshold": null,
