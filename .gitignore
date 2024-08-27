@@ -6,8 +6,6 @@
 .DS_Store
 *.so
 
-create_dll_compile.bash
-
 # python
 *.egg-info/
 .cache/
