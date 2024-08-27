@@ -1,8 +1,10 @@
+import json
+
 import pytest
 from pydantic import ValidationError
 
 import pybmds
-from pybmds.recommender.recommender import Recommender, RecommenderSettings
+from pybmds.recommender.recommender import Recommender, RecommenderSettings, default_rules_text
 
 
 class TestRecommenderSettings:
@@ -20,11 +22,28 @@ class TestRecommenderSettings:
             RecommenderSettings.model_validate(settings2)
         assert "Rule list must be complete" in str(err)
 
+    def test_optional_rule(self):
+        rules = json.loads(default_rules_text())
+        RecommenderSettings.model_validate(rules)
+        assert "gof_cancer" not in {rule["rule_class"] for rule in rules["rules"]}
+
+        rules["rules"].append(
+            {
+                "rule_class": "gof_cancer",
+                "failure_bin": 1,
+                "threshold": 0.05,
+                "enabled_dichotomous": False,
+                "enabled_continuous": False,
+                "enabled_nested": False,
+            }
+        )
+        RecommenderSettings.model_validate(rules)
+
 
 class TestRecommender:
     def test_df(self):
         df = Recommender().settings.to_df()
-        assert df.shape == (22, 6)
+        assert df.shape == (21, 6)
 
 
 class TestSessionRecommender:

@@ -55,9 +55,9 @@ class RecommenderSettings(BaseModel):
     @field_validator("rules")
     @classmethod
     def rules_all_classes(cls, rules):
-        rule_classes = set(rule.rule_class for rule in rules)
-        all_rule_classes = set(RuleClass.__members__)
-        missing = all_rule_classes - rule_classes
+        required_rules = set(RuleClass.__members__) - {RuleClass.gof_cancer}
+        rules_set = set(rule.rule_class for rule in rules)
+        missing = required_rules - rules_set
         if missing:
             raise ValueError(f"Rule list must be complete; missing {missing}")
         return rules
