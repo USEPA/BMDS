@@ -1,6 +1,6 @@
 <p align="center" style="margin-top: 40px; margin-bottom: 40px;">
-  <img src="_static/img/pybmds.png" width="210px" style="margin-right: 10px">
-  <img src="_static/img/bmds-desktop-logo.png" width="210px">
+  <img src="_static/img/bmds-desktop-identifier.png" width="210px" style="margin-right: 10px">
+  <img src="_static/img/pybmds-identifier.png" width="210px">
 </p>
 
 **BMDS Desktop** is an application for running dose-response modeling using a Graphical User Interface (GUI) on a local system, if running BMDS Online is not technically possible or feasible. The **bmds-ui** Python package installs BMDS Desktop; it can also be used to deploy the application online, such as the U.S. EPA's [BMDS Online](https://bmdsonline.epa.gov).
