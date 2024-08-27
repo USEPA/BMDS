@@ -235,7 +235,6 @@ def nd_dataset4():
 
 @pytest.fixture
 def nd_dataset4_failure():
-    # TODO - add a test to assert graceful failure, right now it hangs when trying to fit
     # fmt: off
     return pybmds.NestedDichotomousDataset(
         id=123,

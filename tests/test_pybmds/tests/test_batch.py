@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pybmds
 from pybmds.batch import BatchResponse, BatchSession, MultitumorBatch
-from pybmds.models.multi_tumor import Multitumor  # TODO - move to sessions?
 from pybmds.session import Session
 
 
@@ -87,21 +86,21 @@ class TestBatchSession:
 
 class TestMultitumorBatch:
     def test_exports(self, mt_datasets, rewrite_data_files, data_path):
-        session = Multitumor(
+        session = pybmds.Multitumor(
             mt_datasets, degrees=[0] * len(mt_datasets), id=1, name="test", description="hello"
         )
         session.execute()
         batch = MultitumorBatch(sessions=[session])
 
-        # check serialization/deserialization # TODO - not implemented
-        # data = batch.serialize()
-        # batch2 = batch.deserialize(data)
-        # assert len(batch2.session) == len(batch.session)
+        # check serialization/deserialization
+        data = batch.serialize()
+        batch2 = batch.deserialize(data)
+        assert len(batch2.session) == len(batch.session)
 
         # check exports
-        # excel = batch.to_excel() # TODO - not implemented
+        excel = batch.to_excel()
         docx = batch.to_docx()
 
         if rewrite_data_files:
-            # (data_path / "reports/batch-multitumor.xlsx").write_bytes(excel.getvalue())
+            (data_path / "reports/batch-multitumor.xlsx").write_bytes(excel.getvalue())
             docx.save(data_path / "reports/batch-multitumor.docx")
