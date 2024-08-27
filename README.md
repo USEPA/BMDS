@@ -2,7 +2,7 @@
 
 EPA's Benchmark Dose Software (BMDS) collects and provides easy access to numerous mathematical models that help risk assessors estimate the quantitative relationship between a chemical dose and the test subject’s response.  A specific focus of BMDS is estimating a statistical benchmark dose (BMD). The BMD is a chemical dose or concentration that produces a predetermined change in the response rate of an adverse effect, such as weight loss or tumor incidence. The BMD is a range, rather than a fixed number. For example, the benchmark dose (lower confidence limit) (BMDL) can be regarded as a dose where the observable physical effect is less than the predetermined benchmark response (BMR).
 
-![An example dose response plot an and curve fit](tests/data/mpl/test_dichotomous_plot.png)
+![An example dose response plot an and curve fit](tests/test_pybmds/data/mpl/test_dichotomous_plot.png)
 
 Additional information, documentation, and technical guidance for BMDS is available at [https://www.epa.gov/bmds](https://www.epa.gov/bmds).
 
