@@ -2,14 +2,15 @@ import numpy as np
 import pytest
 
 import pybmds
-from pybmds.models.multi_tumor import Multitumor
 
 
 class TestMultitumor:
     def test_execute(self, mt_datasets, rewrite_data_files, data_path):
         # Check base case where all datasets can be modeled
         degrees = [3, 0, 0]
-        session = Multitumor(mt_datasets, degrees=degrees, id=1, name="test", description="hello")
+        session = pybmds.Multitumor(
+            mt_datasets, degrees=degrees, id=1, name="test", description="hello"
+        )
         session.execute()
 
         # check text report
@@ -52,7 +53,7 @@ class TestMultitumor:
                 incidences=[1, 68, 78, 88, 98],
             ),
         ]
-        session = Multitumor(datasets)
+        session = pybmds.Multitumor(datasets)
         session.execute()
         assert session.results.selected_model_indexes == [0, None]
         assert np.isclose(session.results.bmd, 37.69, atol=0.01)
@@ -78,7 +79,7 @@ class TestMultitumor:
                 incidences=[1, 68, 78, 88, 98],
             )
         ]
-        session = Multitumor(datasets)
+        session = pybmds.Multitumor(datasets)
         session.execute()
 
         assert session.results.selected_model_indexes == [None]

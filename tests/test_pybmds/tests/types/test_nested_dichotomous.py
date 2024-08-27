@@ -37,7 +37,7 @@ class TestNestedDichotomousAnalysis:
 
         results = analysis.results
         assert isinstance(results, NestedDichotomousResult)
-        rows = results.parameter_rows(extras={"a": "test"})
+        rows = results.parameter_rows(extras={"zzz": "test"})
         assert len(rows) == len(results.parameter_names)
-        assert rows[0]["a"] == "test"
-        assert rows[0]["name"] == "g"
+        assert rows[0]["zzz"] == "test"
+        assert rows[0]["name"] == "a"

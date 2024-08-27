@@ -115,12 +115,12 @@ class NestedLogistic(BmdModelNestedDichotomous):
     model_class = bmdscore.nested_model.nlogistic
 
     def get_param_names(self) -> list[str]:
-        return ["g", "b", "theta1", "theta2", "rho"] + [
+        return ["a", "b", "theta1", "theta2", "rho"] + [
             f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        g = params["g"]
+        a = params["a"]
         b = params["b"]
         theta1 = params["theta1"]
         theta2 = params["theta2"]
@@ -128,9 +128,9 @@ class NestedLogistic(BmdModelNestedDichotomous):
         d = doses.copy()
         d[d < ZEROISH] = ZEROISH
         return (
-            g
+            a
             + theta1 * fixed_lsc
-            + (1 - g - theta1 * fixed_lsc)
+            + (1 - a - theta1 * fixed_lsc)
             / (1 + np.exp(-1 * b - theta2 * fixed_lsc - rho * np.log(d)))
         )
 
@@ -143,7 +143,7 @@ class Nctr(BmdModelNestedDichotomous):
     model_class = bmdscore.nested_model.nctr
 
     def get_param_names(self) -> list[str]:
-        return ["g", "b", "theta1", "theta2", "rho"] + [
+        return ["a", "b", "theta1", "theta2", "rho"] + [
             f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
         ]
 

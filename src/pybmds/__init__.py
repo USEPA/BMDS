@@ -9,6 +9,7 @@ from .datasets import (  # noqa: F401
     DichotomousDataset,
     NestedDichotomousDataset,
 )
+from .models.multi_tumor import Multitumor  # noqa: F401
 from .session import Session  # noqa: F401
 from .types.continuous import ContinuousRiskType  # noqa: F401
 from .types.dichotomous import DichotomousRiskType  # noqa: F401
