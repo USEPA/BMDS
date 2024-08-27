@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
+"""
+BMDS Desktop installation script. Running this script should install BMDS Desktop and then
+allow a user to create a shortcut to start the application (or update it) in the future.
+"""
 
-# https://github.com/pyprojectx/pyprojectx/commit/85aedaaa9b3e7f0fe0633299c58c66867f15a2af
-# vendor https://github.com/pyprojectx/pyprojectx
+# vendor https://github.com/pyprojectx/pyprojectx; commit hash: 85aedaaa9b3e7f0fe0633299c58c66867f15a2af
+
+import platform  # noqa: I001
+import shutil
+
 # fmt: off
-
-# <VENDOR pyprojectx>
-
+# --- START VENDOR pyprojectx ---
 ##################################################################################
 # Pyprojectx wrapper script                                                      #
 # https://github.com/pyprojectx/pyprojectx                                       #
@@ -206,15 +211,12 @@ def ensure_pyprojectx(options):
         subprocess.run([*pip_cmd, options.pyprojectx_package], stdout=out, check=True) # noqa: S603
     return pyprojectx_script
 
-
-# </VENDOR pyprojectx>
+# --- END VENDOR pyprojectx ---
 # fmt: on
-
 
 pyproject_data = """
 [tool.pyprojectx]
 main = [
-    "--index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple",
     "bmds-ui",
 ]
 
@@ -222,19 +224,51 @@ main = [
 create-shortcut = { cmd = "python -m bmds_ui --create-shortcut" }
 """
 
-pyproject_path = Path("./env-bmds-desktop")
-toml_path = pyproject_path.joinpath("pyproject.toml")
 
-if __name__ == "__main__":
-    pyproject_path.mkdir(parents=True, exist_ok=True)
+def get_install_path() -> Path:
+    app_home = Path.home()
+    match platform.system():
+        case "Windows":
+            app_home = app_home / "AppData" / "Local" / "bmds-desktop"
+        case "Darwin":
+            app_home = app_home / "Library" / "Application Support" / "bmds-desktop"
+        case "Linux" | _:
+            config = Path(os.environ.get("XDG_DATA_HOME", "~/.local/share")).expanduser().resolve()
+            app_home = config / "bmds-desktop"
+
+    return app_home
+
+
+def uninstall():
+    install_path = get_install_path()
+    print(f'{CYAN}removing "{install_path}{RESET}"', file=sys.stderr)  # noqa: T201
+    shutil.rmtree(install_path)
+    print(f"{CYAN}removal complete{RESET}", file=sys.stderr)  # noqa: T201
+
+
+def install():
+    install_path = get_install_path()
+    install_path.mkdir(parents=True, exist_ok=True)
+    toml_path = install_path.joinpath("pyproject.toml")
     toml_path.write_text(pyproject_data)
+    additional_commands = sys.argv[1:] if len(sys.argv) > 1 else ["create-shortcut"]
     run(
         [
             "--install-dir",
-            pyproject_path.as_posix(),
+            install_path.as_posix(),
             "--toml",
             toml_path.as_posix(),
-            "create-shortcut",
+            *additional_commands,
         ]
-        + sys.argv[1:]
     )
+
+
+def main():
+    if len(sys.argv) == 2 and sys.argv[1] == "--uninstall":
+        uninstall()
+        sys.exit()
+    install()
+
+
+if __name__ == "__main__":
+    main()
