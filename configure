@@ -3517,7 +3517,7 @@ printf "%s\n" "using NLopt via local cmake build on ${machine} " >&6; }
     nlopt_libs="-L./nlopt/lib -lnlopt"
 fi
 
-SUBDIR_SOURCES="$(cd src/ && ls {code_base,polyK}/*.cpp | tr '\n' ' ')"
+SUBDIR_SOURCES="$(cd src/ && ls {code_base}/*.cpp | tr '\n' ' ')"
 SRC_SOURCES="$( cd src/ && ls *.cpp | tr '\n' ' ')"
 
 
