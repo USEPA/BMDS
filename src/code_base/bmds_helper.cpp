@@ -2985,7 +2985,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double nij = 0.0;
   int index=0;
   while (Xg[index] == 1){
-    sum1 += Ls[index];
+    sum1 += Lsc[index];
     nij +=1.0;
     index++;
   }
@@ -2993,16 +2993,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   sum1 = 0.0;
   nij = 0.0;
-  double smax = Ls[0];
-  double smin = Ls[0];
+  double smax = Lsc[0];
+  double smin = Lsc[0];
   double xmax = 0.0;
   double x = 0.0;
   for (int i=0; i<Nobs; i++){
     x = Xi[i];
-    sum1 += Ls[i];
+    sum1 += Lsc[i];
     nij += 1.0;
-    if (Ls[i] > smax) smax = Ls[i];
-    if (Ls[i] < smin) smin = Ls[i];
+    if (Ls[i] > smax) smax = Lsc[i];
+    if (Ls[i] < smin) smin = Lsc[i];
     if (x > xmax) xmax = x;
   }
   double smean = sum1/nij;  //overall average lsc
