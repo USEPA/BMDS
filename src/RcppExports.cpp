@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppEigen.h>
+#include <RcppGSL.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -39,6 +40,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type options(optionsSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type dist_type(dist_typeSEXP);
     rcpp_result_gen = Rcpp::wrap(run_continuous_single(model, Y, X, prior, options, dist_type));
+    return rcpp_result_gen;
+END_RCPP
+}
+// run_dlgamma
+double run_dlgamma(double x);
+RcppExport SEXP _ToxicR_run_dlgamma(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_dlgamma(x));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -140,6 +152,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ToxicR_run_single_dichotomous", (DL_FUNC) &_ToxicR_run_single_dichotomous, 5},
     {"_ToxicR_run_continuous_single", (DL_FUNC) &_ToxicR_run_continuous_single, 6},
+    {"_ToxicR_run_dlgamma", (DL_FUNC) &_ToxicR_run_dlgamma, 1},
     {"_ToxicR_run_continuous_ma_laplace", (DL_FUNC) &_ToxicR_run_continuous_ma_laplace, 6},
     {"_ToxicR_run_continuous_ma_mcmc", (DL_FUNC) &_ToxicR_run_continuous_ma_mcmc, 6},
     {"_ToxicR_run_ma_dichotomous", (DL_FUNC) &_ToxicR_run_ma_dichotomous, 7},

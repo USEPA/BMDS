@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "bmds_entry.h"
+#include "bmds_helper.h"
 
 #include  <statmod.h>
 
@@ -346,4 +347,10 @@ List run_continuous_single(IntegerVector model,
     ////////////////////////////////////
     return rV; 
     
+}
+
+// [[Rcpp::export]]
+double run_dlgamma(double x) 
+{
+  return DLgamma(x);
 }

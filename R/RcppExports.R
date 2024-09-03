@@ -9,6 +9,10 @@
     .Call(`_ToxicR_run_continuous_single`, model, Y, X, prior, options, dist_type)
 }
 
+run_dlgamma <- function(x) {
+    .Call(`_ToxicR_run_dlgamma`, x)
+}
+
 .run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X, options) {
     .Call(`_ToxicR_run_continuous_ma_laplace`, model_priors, model_type, dist_type, Y, X, options)
 }
