@@ -53,7 +53,7 @@ Using virtual environments instead of installing in the "root" Python environmen
 2. If packages are installed, they may not easily be found by the "root" Python.
 3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects.
 
-Python virtual environments are simple to create, but the steps are specific depending on whethe you installed Python or Anaconda:
+Python virtual environments are simple to create, but the steps are specific depending on whether you installed Python or Anaconda:
 
 ::::{tab-set}
 
