@@ -354,3 +354,108 @@ double run_dlgamma(double x)
 {
   return DLgamma(x);
 }
+
+// copied ToxicR function to format output, just changed to expect this input struct
+List python_convert_dichotomous_fit_to_list(python_dichotomous_model_result *result){
+  NumericVector  parms(result->nparms); 
+  NumericMatrix  covM(result->nparms,result->nparms); 
+  
+  for (int i = 0; i < result->nparms; i++){
+    parms[i] = result->parms[i]; 
+    for (int j = 0; j < result->nparms; j++){
+      covM(i,j) = result->cov[i + j*result->nparms]; 
+    }
+  } 
+  char str[160]; 
+
+  switch(result->model){
+  
+  case dich_model::d_hill: 
+    sprintf(str,"Model:  %s", "Hill"); 
+    break; 
+  case dich_model::d_gamma: 
+    sprintf(str,"Model:  %s", "Gamma"); 
+    break;
+  case dich_model::d_logistic:
+    sprintf(str,"Model:  %s", "Logistic"); 
+    break;	
+  case dich_model::d_loglogistic: 
+    sprintf(str,"Model:  %s", "Log-Logistic"); 
+  break; 
+  case dich_model::d_logprobit: 
+    sprintf(str,"Model:  %s", "Log-Probit");
+  break; 
+  case dich_model::d_multistage: 
+    sprintf(str,"Model:  %s", "Multistage");
+  break;
+  case dich_model::d_qlinear: 
+    sprintf(str,"Model:  %s", "Quantal-Linear");
+  break; 
+  case dich_model::d_probit: 
+    sprintf(str,"Model:  %s", "Probit");
+  break; 
+  case dich_model::d_weibull:
+    sprintf(str,"Model: %s", "Weibull");
+  break; 
+  default: 
+    sprintf(str,"Model:  %s", "Danger");
+  break;  
+  }
+  double maximum = result->max; 
+  NumericMatrix bmd_distribution(result->dist_numE , 2);
+
+  for (int i = 0; i < result->dist_numE; i++){
+    bmd_distribution(i,0) = result->bmd_dist[i]; 
+    bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
+  } 
+  
+  List rV = List::create(Named("full_model")                = str,
+                         Named("parameters")                = parms, 
+                         Named("covariance")                = covM, 
+                         Named("bmd_dist")                  = bmd_distribution,
+                         Named("bmd")                       = result->bmd,
+                         Named("maximum")                   = maximum,
+                         Named("gof_p_value")               = result->gof_p_value,
+                         Named("gof_chi_sqr_statistic")     = result->gof_chi_sqr_statistic);  
+ 
+ 
+  rV.attr("class") = "BMDdich_fit_maximized"; 
+  return rV; 
+  
+}
+
+// [[Rcpp::depends(RcppGSL)]]
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::export]]
+List run_bmds_dichotomous_analysis(NumericVector model,
+                            Eigen::MatrixXd data, Eigen::MatrixXd pr,
+                            NumericVector options1, IntegerVector options2)
+{
+  
+  // setup for analysis in pybmds is done in a python function, so I copied from what toxicR does above.
+  // not sure if it's right
+  python_dichotomous_analysis Anal; 
+  Anal.BMD_type =  (options1[0]==1)?eExtraRisk:eAddedRisk;
+  Anal.BMR      =  options1[0]; 
+  Anal.alpha    =  options1[1];
+  Anal.parms    = pr.rows(); 
+  Anal.model    = (dich_model)model[0]; 
+  Anal.Y        = std::vector<double>(data.rows()) ; 
+  Anal.n_group  = std::vector<double>(data.rows()) ; 
+  Anal.doses    = std::vector<double>(data.rows()) ; 
+  Anal.prior    = std::vector<double>(pr.cols()*pr.rows()) ;
+  Anal.prior_cols = pr.cols(); 
+  Anal.n          = data.rows(); 
+  Anal.degree =   pr.rows()-1; 
+
+  python_dichotomous_model_result res;
+  res.parms = std::vector<double>(pr.rows()) ;
+  res.cov   = std::vector<double>(pr.cols()*pr.rows()); 
+  res.dist_numE = 200; 
+  res.bmd_dist = std::vector<double>(res.dist_numE*2);
+    
+  pythonBMDSDicho(&Anal, &res);
+
+  List rV = python_convert_dichotomous_fit_to_list(&res);
+  return rV;
+}

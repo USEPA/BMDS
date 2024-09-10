@@ -13,6 +13,10 @@ run_dlgamma <- function(x) {
     .Call(`_ToxicR_run_dlgamma`, x)
 }
 
+run_dichotomous_analysis <- function(model, data, pr, options1, options2) {
+    .Call(`_ToxicR_run_dichotomous_analysis`, model, data, pr, options1, options2)
+}
+
 .run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X, options) {
     .Call(`_ToxicR_run_continuous_ma_laplace`, model_priors, model_type, dist_type, Y, X, options)
 }
