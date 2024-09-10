@@ -3148,9 +3148,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     objData.Spec[THETA2_INDEX] = true;
     //pass 2 has thetas set to zero
 
+    //allow to continue even if retVal < 0
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
-    if (retVal < 0) return;  //return with validResult = false;
     //Transform parameters to "external" form
     for (int i=5; i<pyRes->nparms; i++){
       pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
@@ -3183,7 +3183,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   //ML fit and return log-likelihood value
   objData.Spec = Spec;
-  objData.optimizer=1;
+//  objData.optimizer=1;
+  objData.optimizer = 3;
 
   for (int i=0; i<pyRes->nparms; i++){
     if (Spec[i]){
@@ -3191,6 +3192,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
+  if (pyRes->parms[4] <= pyAnal->prior[4]){  
+    pyRes->parms[4] = 1.0001;
+  }
+  objData.tol = 1e-12;
   retVal = opt_nlogistic(pyRes->parms, &objData);
   objData.BMD_lk = objData.xlk;  //save BMD likelihood
   pyRes->LL = objData.xlk;
@@ -3209,7 +3214,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //TODO:  check retVal to make sure convergence was achieved
-  if (retVal > 0) pyRes->validResult = true;
+  if (retVal > 0) {
+	  pyRes->validResult = true;
+	  pyRes->bmdsRes.validResult = true;
+  }
  
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
@@ -3255,10 +3263,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Eigen::MatrixXd inv_vcv(pyRes->nparms,pyRes->nparms);
   if (red_vcv.determinant() > 0){
     inv_vcv = red_vcv.inverse();
+    int j=0;
     for(int i=0; i<pyRes->nparms; i++){
-       if (!pyRes->bmdsRes.bounded[i]){
-         pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(i,i));
+       if (!pyRes->bmdsRes.bounded[i] && inv_vcv(j,j) > 0){
+         pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(j,j));
+	 j++;
        } else {
+	 if (inv_vcv(j,j) < 0){
+           j++;
+	 }
 	 pyRes->bmdsRes.stdErr[i] = BMDS_MISSING;
        }
     }
@@ -3341,6 +3354,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2*(1.0 + redAnova.df - fittedAnova.df);
 
   pyRes->model_df = fittedAnova.df;
+
   //Generate litter data results
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
@@ -3360,11 +3374,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
   //Compute BMD
-   Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
+  Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
-   Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
-   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
+  Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
+
+  Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
 
 }
 
@@ -3960,6 +3975,8 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    double slopeUpperBound = 18.0;
    int nparm = p.size();
 
+   std::vector<double> pbak = p;
+
    std::vector<double> lb(nparm);
    std::vector<double> ub(nparm);
    //alpha
@@ -4003,41 +4020,91 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    //	alpha + theta1*rij < 1
 
    nlopt::opt opt;
-   if (objData->optimizer == 1){
-	opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
-   } else if (objData->optimizer == 3){
-     opt= nlopt::opt(nlopt::LD_LBFGS, nparm);
-   } else {
-     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
-   }
+
+  nlopt::opt opt1(nlopt::LN_SBPLX, nparm);
+  nlopt::opt opt2(nlopt::LN_BOBYQA, nparm);
+  nlopt::opt opt3(nlopt::LD_LBFGS, nparm);
+  nlopt::opt opt4(nlopt::LN_COBYLA, nparm);
+  nlopt::opt opt5(nlopt::LD_SLSQP, nparm);
+
 
    if (Spec[0] == Spec[3]){
      //set inequality constraint alpha + Theta1*Sij>=0
      //inequality restraint not compatible with LD_LBFGS
-     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
-     opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
+     //opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
+//     opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
    } 
 
-   opt.set_min_objective(objfunc_nlogistic_ll, objData);
+  int opt_iter;
+  int result;
+  // look at 5 optimization algorithms :-)
+  int start_iter = 1; //0; //(OPTIM_USE_SUBPLX & flags)?0:1;
+  for (opt_iter = start_iter; opt_iter <= 4; opt_iter++){
+	  std::cout<<"starting loop with opt_iter:"<<opt_iter<<std::endl;
+	  switch(opt_iter){
+    case  0:
+      opt = opt1;
+      //opt_ptr->set_maxeval(1200);
+      break;
+    case  1:
+      opt = opt2 ;
+      //opt_ptr->set_maxeval(5000);
+      break;
+    case 2:
+      opt = opt3;
+      //opt_ptr->set_maxeval(5000);
+      break;
+    case 3:
+      opt = opt4;
+      //opt_ptr->set_maxeval(5000);
+    default :
+      opt = opt5;
+      //opt_ptr->set_maxeval(5000);
+    break;
+    }
 
-   opt.set_xtol_rel(objData->tol);
-   opt.set_maxeval(10000);
-   opt.set_lower_bounds(lb);
-   opt.set_upper_bounds(ub);
+    opt.set_min_objective(objfunc_nlogistic_ll, objData);
 
-   nlopt::result result = nlopt::FAILURE;
+    //opt.set_xtol_rel(objData->tol);
+    //opt.set_ftol_rel(objData->tol);
+    opt.set_xtol_rel(1e-16);
+    opt.set_maxeval(10000);
+    opt.set_lower_bounds(lb);
+    opt.set_upper_bounds(ub);
 
-   int attempts = 0;
-   int maxAttempts = 10000;
-   while (fail && attempts<maxAttempts){
+    std::cout<<"attempting opt_iter:"<<opt_iter<<std::endl;
+   for (int i=0; i<nparm; i++){
+     if (p[i] > ub[i] || p[i] < lb[i] || std::isnan(p[i])){
+        p[i] = pbak[i];
+     }
+   }
+    nlopt::result result = nlopt::FAILURE;
+
      try{
        result = opt.optimize(p, minf);
-       fail = false;
-     } catch (std::exception &e){
-       attempts++;
-     }
+       std::cout<<"result: "<<result<<", opt_iter:"<<opt_iter<<std::endl;
+       if (opt_iter >= 1
+            && result > 0
+            //&& result < 5) {
+            && result <= 5) {
+            std::cout<<"triggering end clause"<<std::endl;
+            opt_iter = 10;  // if it made it here it will break the loop
+      }
 
-   }
+     } catch (const std::invalid_argument &exc) {
+             std::cout<<"opt_iter:"<<opt_iter<<", error: invalid arg: " << exc.what()<<std::endl;
+     } catch (nlopt::roundoff_limited &exec) {
+         std::cout<<"opt_iter:"<<opt_iter<<", error: roundoff_limited"<<std::endl;
+     } catch (nlopt::forced_stop &exec) {
+             std::cout<<"opt_iter:"<<opt_iter<<", error: forced_stop"<<std::endl;
+     } catch (const std::exception &exc) {
+             std::cout<<"opt_iter:"<<opt_iter<<", general error: " << exc.what()<<std::endl;
+     } catch(...){
+        std::cout<<" default error:" << std::endl;
+     } 
+
+
+  }
   
    objData->xlk = -1.0*minf; 
 

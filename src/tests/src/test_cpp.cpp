@@ -42,7 +42,7 @@ int main(void){
 //  runPythonContAnalysis();
 //  runPythonMultitumorAnalysis();
   runPythonNestedAnalysis();
-//  runTestMultitumorModel();
+////  runTestMultitumorModel();
 
   return 0;
 
@@ -4039,32 +4039,51 @@ void runPythonMultitumorAnalysis(){
   double BMR = 0.1;
   double alpha = 0.05;
 
-  //data
-  std::vector<double> doses1 = {0,50,100,150,200};
-  std::vector<double> Y1 = {0,5,30,65,90};
+  //data 1st test
+//  std::vector<double> doses1 = {0,50,100,150,200};
+//  std::vector<double> Y1 = {0,5,30,65,90};
+//  std::vector<double> n_group1 = {100,100,100,100,100};
+//  std::vector<double> doses2 = {0,50,100,150,200};
+//  std::vector<double> Y2 = {5,10,33,67,93};
+//  std::vector<double> n_group2 = {100,100,100,100,100};
+//  std::vector<double> doses3 = {0,50,100,150,200};
+//  std::vector<double> Y3 = {1,68,78,88,98};
+//  std::vector<double> n_group3 = {100,100,100,100,100};
+
+
+  //data test one recommended model 
+//  std::vector<double> doses1 = {0,25,75,125,200};
+//  std::vector<double> Y1 = {0,0,1,7,11};
+//  std::vector<double> n_group1 = {20,20,20,20,20};
+//  std::vector<double> doses2 = {0,50,100,200,400};
+//  std::vector<double> Y2 = {1,68,78,88,98};
+//  std::vector<double> n_group2 = {100,100,100,100,100};
+
+
+  //data test no recommended model 
+  std::vector<double> doses1 = {0,50,100,200,400};
+  std::vector<double> Y1 = {1,68,78,88,98};
   std::vector<double> n_group1 = {100,100,100,100,100};
-  std::vector<double> doses2 = {0,50,100,150,200};
-  std::vector<double> Y2 = {5,10,33,67,93};
-  std::vector<double> n_group2 = {100,100,100,100,100};
-  std::vector<double> doses3 = {0,50,100,150,200};
-  std::vector<double> Y3 = {1,68,78,88,98};
-  std::vector<double> n_group3 = {100,100,100,100,100};
 
   std::vector<std::vector<double>> doses; 
   std::vector<std::vector<double>> Y; 
   std::vector<std::vector<double>> n_group;
   doses.push_back(doses1);
-  doses.push_back(doses2);
-  doses.push_back(doses3);
+//  doses.push_back(doses2);
+//  doses.push_back(doses3);
   Y.push_back(Y1);
-  Y.push_back(Y2);
-  Y.push_back(Y3);
+//  Y.push_back(Y2);
+//  Y.push_back(Y3);
   n_group.push_back(n_group1);
-  n_group.push_back(n_group2);
-  n_group.push_back(n_group3); 
+//  n_group.push_back(n_group2);
+//  n_group.push_back(n_group3); 
 
-  std::vector<int> n = {5,5,5};
-  std::vector<int> degree = {0,0,0};
+//  std::vector<int> n = {5,5,5};
+//  std::vector<int> degree = {0,0,0};
+//  std::vector<int> n = {5,5};
+//  std::vector<int> degree = {0,0};
+  std::vector<int> n(doses.size(), 5);
+  std::vector<int> degree(doses.size(), 0);
 /////////////////////////////////////////////////
 ////END USER INPUT
 ////////////////////////////////////////////////////
@@ -4082,7 +4101,6 @@ void runPythonMultitumorAnalysis(){
   anal.BMR = BMR;
   anal.BMD_type = BMD_type;
   anal.alpha = alpha;
-  anal.prior_cols = prCols;
 
   struct python_multitumor_result res;
   res.ndatasets = numDatasets;
@@ -4156,25 +4174,30 @@ void runPythonMultitumorAnalysis(){
 
 
   //individual model results
-  for (int dataset=0; dataset<numDatasets; dataset++){
-    std::cout<<"dataset:"<<dataset<<std::endl;
-    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
-        std::cout<<" model:"<<mod<<std::endl;
-        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
-    }
-  }
+//  for (int dataset=0; dataset<numDatasets; dataset++){
+//    std::cout<<"dataset:"<<dataset<<std::endl;
+//    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
+//        std::cout<<" model:"<<mod<<std::endl;
+//        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
+//    }
+//  }
 
   std::cout<<"Selected model Indexes:  ";
   for (auto elem : res.selectedModelIndex) {
         std::cout << elem << ", ";
   }
 
-  std::cout<<"BMD:  "<<res.BMD<<std::endl;
-  std::cout<<"BMDL: "<<res.BMDL<<std::endl;
-  std::cout<<"BMDU: "<<res.BMDU<<std::endl;
-  std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
-  std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
-  std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
+  std::cout<<std::endl;
+  //if (res.valid){
+    std::cout<<"BMD:  "<<res.BMD<<std::endl;
+    std::cout<<"BMDL: "<<res.BMDL<<std::endl;
+    std::cout<<"BMDU: "<<res.BMDU<<std::endl;
+    std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
+    std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
+    std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
+  //} else {
+  //  std::cout<<"Multitumor analysis failed"<<std::endl;
+  //}
   
 }
 
@@ -4233,7 +4256,6 @@ void runTestMultitumorModel(){
   anal.BMR = BMR;
   anal.BMD_type = BMD_type;
   anal.alpha = alpha;
-  anal.prior_cols = prCols;
 
   struct python_multitumor_result res;
   res.ndatasets = numDatasets;
@@ -4490,168 +4512,45 @@ void runPythonNestedAnalysis(){
   pyAnal.model = nlogistic; 
   bool isRestricted = true;
 
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(0);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(25);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(50);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
-  pyAnal.doses.push_back(100);
+  //nested.dax
+//  std::vector<double> D = {0,0,0,0,0,0,0,0,0,0,25,25,25,25,25,25,25,25,25,25,50,50,50,50,50,50,50,50,50,50,100,100,100,100,100,100,100,100,100};
+//  std::vector<double> LS = {16,9,15,14,13,9,10,14,10,11,14,9,14,9,13,12,10,10,11,14,11,11,14,11,10,11,10,15,7,14,11,14,12,13,12,14,11,8,10};
+//  std::vector<double> I = {1,1,2,3,3,0,2,2,1,2,4,5,6,2,6,3,1,2,4,3,4,5,5,4,5,4,5,6,2,4,6,6,8,7,8,6,6,5,4};
+//  std::vector<double> LSC = {16,9,15,14,13,9,10,14,10,11,14,9,14,9,13,12,10,10,11,14,11,11,14,11,10,11,10,15,7,14,11,14,12,13,12,14,11,8,10};
 
-  pyAnal.litterSize.push_back(16);
-  pyAnal.litterSize.push_back(9);
-  pyAnal.litterSize.push_back(15);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(13);
-  pyAnal.litterSize.push_back(9);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(9);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(9);
-  pyAnal.litterSize.push_back(13);
-  pyAnal.litterSize.push_back(12);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(10);
-  pyAnal.litterSize.push_back(15);
-  pyAnal.litterSize.push_back(7);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(12);
-  pyAnal.litterSize.push_back(13);
-  pyAnal.litterSize.push_back(12);
-  pyAnal.litterSize.push_back(14);
-  pyAnal.litterSize.push_back(11);
-  pyAnal.litterSize.push_back(8);
-  pyAnal.litterSize.push_back(10);
+  //testing dataset id:1
+//  std::vector<double> D = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,300,1200,1200,1200,1200,1200,1200,1200,1200,1200};
+//  std::vector<double> LS = {1,3,3,5,5,5,6,7,7,8,8,8,8,8,9,9,10,10,10,10,11,3,6,6,6,7,7,8,8,8,8,9,9,9,9,9,10,10,11,11,12,2,4,5,5,7,7,7,8,8,8,9,9,9,9,10,10,10,11,11,11,11,12,16,2,3,5,7,9,9,10,10,10};
+//  std::vector<double> I = {1,0,2,0,3,1,0,0,0,0,0,1,1,2,0,0,1,0,0,0,11,2,6,4,0,4,1,0,1,1,0,0,0,0,1,0,0,2,0,0,0,2,4,3,5,0,1,2,8,0,0,0,1,1,1,1,1,0,0,1,0,1,0,12,2,1,0,1,1,9,2,4,1};
+//  std::vector<double> LSC = {1.0,3.0,3.0,5.0,5.0,5.0,6.0,7.0,7.0,8.0,8.0,8.0,8.0,8.0,9.0,9.0,10.0,10.0,10.0,10.0,11.0,3.0,6.0,6.0,6.0,7.0,7.0,8.0,8.0,8.0,8.0,9.0,9.0,9.0,9.0,9.0,10.0,10.0,11.0,11.0,12.0,2.0,4.0,5.0,5.0,7.0,7.0,7.0,8.0,8.0,8.0,9.0,9.0,9.0,9.0,10.0,10.0,10.0,11.0,11.0,11.0,11.0,12.0,16.0,2.0,3.0,5.0,7.0,9.0,9.0,10.0,10.0,10.0};
 
-  pyAnal.incidence.push_back(1);
-  pyAnal.incidence.push_back(1);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(3);
-  pyAnal.incidence.push_back(3);
-  pyAnal.incidence.push_back(0);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(1);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(3);
-  pyAnal.incidence.push_back(1);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(3);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(2);
-  pyAnal.incidence.push_back(4);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(8);
-  pyAnal.incidence.push_back(7);
-  pyAnal.incidence.push_back(8);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(6);
-  pyAnal.incidence.push_back(5);
-  pyAnal.incidence.push_back(4);
+  //testing dataset id:2
+//  std::vector<double> D = {0,0,0,0,0,0,0,0,0,0,25,25,25,25,25,25,25,25,25,25,50,50,50,50,50,50,50,50,50,50,100,100,100,100,100,100,100,100,100};
+//  std::vector<double> LS = {16,9,15,14,13,9,10,14,10,11,14,9,14,9,13,12,10,10,11,14,11,11,14,11,10,11,10,15,7,14,11,14,12,13,12,14,11,8,10};
+//  std::vector<double> I = {1,1,2,3,3,0,2,2,1,2,4,5,6,2,6,3,1,2,4,3,4,5,5,4,5,4,5,6,2,4,6,6,8,7,8,6,6,5,4};
+//  std::vector<double> LSC = {1,1,2,3,3,0,2,2,1,2,4,5,6,2,6,3,1,2,4,3,4,5,5,4,5,4,5,6,2,4,6,6,8,7,8,6,6,5,4};
 
-  pyAnal.lsc.push_back(16);
-  pyAnal.lsc.push_back(9);
-  pyAnal.lsc.push_back(15);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(13);
-  pyAnal.lsc.push_back(9);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(9);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(9);
-  pyAnal.lsc.push_back(13);
-  pyAnal.lsc.push_back(12);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(10);
-  pyAnal.lsc.push_back(15);
-  pyAnal.lsc.push_back(7);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(12);
-  pyAnal.lsc.push_back(13);
-  pyAnal.lsc.push_back(12);
-  pyAnal.lsc.push_back(14);
-  pyAnal.lsc.push_back(11);
-  pyAnal.lsc.push_back(8);
-  pyAnal.lsc.push_back(10);
+  //testing dataset id:10
+//  std::vector<double> D = {0,0,0,0,0,0,0,0,0,0,25,25,25,25,25,25,25,25,25,25,50,50,50,50,50,50,50,50,50,50,100,100,100,100,100,100,100,100,100};
+//  std::vector<double> LS = {16,9,15,14,13,9,10,14,10,11,14,9,14,9,13,12,10,10,11,14,11,11,14,11,10,11,10,15,7,14,11,14,12,13,12,14,11,8,10
+//};
+//  std::vector<double> I = {1,1,2,3,3,0,2,2,1,2,4,5,6,2,6,3,1,2,4,3,4,5,5,4,5,4,5,6,2,4,6,6,8,7,8,6,6,5,4};
+//  std::vector<double> LSC = {16.0,9.0,15.0,14.0,13.0,9.0,10.0,14.0,10.0,11.0,14.0,9.0,14.0,9.0,13.0,12.0,10.0,10.0,11.0,14.0,11.0,11.0,14.0,11.0,10.0,11.0,10.0,15.0,7.0,14.0,11.0,14.0,12.0,13.0,12.0,14.0,11.0,8.0,10.0};
 
-  pyAnal.LSC_type = 1;
-  pyAnal.ILC_type = 1;
+  //testing dataset id:3
+  std::vector<double> D = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,500,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
+  std::vector<double> LS = {6,6,5,6,2,7,5,6,6,6,6,5,5,1,3,3,6,2,8,2,4,7,5,7,5,6,4,2,8,4,4,7,4,6,8,3,5,7,6,2,7,7,7,5,6,8,4,8,2,1,5,6,2,7,1,3,5,2,4,8,5,8,5,8,7,4,5,7,3,3,3,7,6,7,7,7,7,6,6,6,6,6,6,8,7,5,5,6,5,6,6,6,6,7,7,6,9,8,6,5,4,5,6,7,6,7,1,2,6,4,3,5,7,5,4,5,6,7,4,6,5,1,6,3,4};
+  std::vector<double> I = {0,2,2,0,0,3,0,2,1,0,1,1,0,0,0,1,0,2,1,1,0,0,1,1,1,1,0,0,1,2,0,3,0,2,1,0,1,0,0,0,1,2,3,1,0,1,0,0,0,0,0,3,0,0,0,1,0,1,0,2,0,3,4,0,2,1,1,2,0,1,3,1,2,0,1,1,3,2,4,2,3,4,0,5,1,1,3,2,5,0,2,5,6,3,5,5,6,7,3,1,4,4,0,6,0,7,1,2,6,4,3,4,5,5,3,5,5,7,2,4,3,1,5,1,4};
+  std::vector<double> LSC = {6.0,13.0,6.0,7.0,11.0,12.0,14.0,12.0,9.0,9.0,11.0,7.0,9.0,13.0,4.0,13.0,9.0,6.0,9.0,5.0,6.0,7.0,11.0,9.0,14.0,7.0,4.0,2.0,13.0,12.0,7.0,7.0,9.0,9.0,8.0,14.0,9.0,7.0,9.0,9.0,10.0,7.0,11.0,5.0,10.0,10.0,8.0,14.0,10.0,13.0,10.0,14.0,14.0,8.0,6.0,3.0,10.0,9.0,10.0,9.0,14.0,8.0,14.0,13.0,10.0,14.0,6.0,12.0,9.0,7.0,14.0,11.0,14.0,9.0,7.0,11.0,10.0,14.0,10.0,8.0,13.0,11.0,10.0,13.0,7.0,6.0,14.0,6.0,7.0,14.0,8.0,12.0,6.0,10.0,13.0,12.0,10.0,11.0,8.0,6.0,5.0,14.0,14.0,13.0,12.0,9.0,4.0,13.0,6.0,12.0,3.0,7.0,7.0,10.0,14.0,11.0,14.0,7.0,4.0,8.0,10.0,13.0,7.0,10.0,4.0};
+
+
+  pyAnal.doses = D;
+  pyAnal.litterSize = LS;
+  pyAnal.incidence = I;
+  pyAnal.lsc = LSC;
+
+  pyAnal.LSC_type = 1; // 1 = Overall Mean; 2 = control group mean; 0 = do not use LSC
+  pyAnal.ILC_type = 1; // 1 = estimate intralitter; assume 0 otherwise
   pyAnal.BMD_type = 1; // 1 = extra; added otherwise
   pyAnal.estBackground = true;
   pyAnal.BMR = 0.1;
@@ -4744,7 +4643,7 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
 
    printf("tlink pyRes.validResult = %s\n", pyRes->bmdsRes.validResult ? "valid" : "invalid");
    if (pyRes->bmdsRes.validResult || showResultsOverride){
-      std::cout<<"Valid Result"<<std::endl;
+      //std::cout<<"Valid Result"<<std::endl;
       printf("\nBenchmark Dose\n");
       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
