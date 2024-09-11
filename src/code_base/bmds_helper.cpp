@@ -3107,7 +3107,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
   objData.tol = 1e-8;
-  objData.optimizer = 3;
+//  objData.optimizer = 3;
   objData.prior = pyAnal->prior;
   objData.Spec = Spec;
   objData.Spec[THETA1_INDEX] = true;
@@ -3184,7 +3184,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   //ML fit and return log-likelihood value
   objData.Spec = Spec;
 //  objData.optimizer=1;
-  objData.optimizer = 3;
+//  objData.optimizer = 3;
 
   for (int i=0; i<pyRes->nparms; i++){
     if (Spec[i]){
@@ -4019,13 +4019,13 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    //	alpha + theta1*rij >=0
    //	alpha + theta1*rij < 1
 
-   nlopt::opt opt;
+//   nlopt::opt opt;
 
-  nlopt::opt opt1(nlopt::LN_SBPLX, nparm);
-  nlopt::opt opt2(nlopt::LN_BOBYQA, nparm);
-  nlopt::opt opt3(nlopt::LD_LBFGS, nparm);
-  nlopt::opt opt4(nlopt::LN_COBYLA, nparm);
-  nlopt::opt opt5(nlopt::LD_SLSQP, nparm);
+//  nlopt::opt opt1(nlopt::LN_SBPLX, nparm);
+//  nlopt::opt opt2(nlopt::LN_BOBYQA, nparm);
+//  nlopt::opt opt3(nlopt::LD_LBFGS, nparm);
+//  nlopt::opt opt4(nlopt::LN_COBYLA, nparm);
+//  nlopt::opt opt5(nlopt::LD_SLSQP, nparm);
 
 
    if (Spec[0] == Spec[3]){
@@ -4035,76 +4035,163 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
 //     opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
    } 
 
-  int opt_iter;
+//  int opt_iter;
   int result;
-  // look at 5 optimization algorithms :-)
-  int start_iter = 1; //0; //(OPTIM_USE_SUBPLX & flags)?0:1;
-  for (opt_iter = start_iter; opt_iter <= 4; opt_iter++){
-	  std::cout<<"starting loop with opt_iter:"<<opt_iter<<std::endl;
-	  switch(opt_iter){
-    case  0:
-      opt = opt1;
-      //opt_ptr->set_maxeval(1200);
-      break;
-    case  1:
-      opt = opt2 ;
-      //opt_ptr->set_maxeval(5000);
-      break;
-    case 2:
-      opt = opt3;
-      //opt_ptr->set_maxeval(5000);
-      break;
-    case 3:
-      opt = opt4;
-      //opt_ptr->set_maxeval(5000);
-    default :
-      opt = opt5;
-      //opt_ptr->set_maxeval(5000);
-    break;
-    }
 
-    opt.set_min_objective(objfunc_nlogistic_ll, objData);
+  nlopt::opt opt(nlopt::LN_AUGLAG, nparm);
+  
+  nlopt::opt local_opt(nlopt::LD_LBFGS, nparm);
+  nlopt::opt local_opt2(nlopt::LN_SBPLX, nparm);
 
-    //opt.set_xtol_rel(objData->tol);
-    //opt.set_ftol_rel(objData->tol);
-    opt.set_xtol_rel(1e-16);
-    opt.set_maxeval(10000);
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
+  local_opt.set_xtol_abs(1e-3);
+  local_opt.set_initial_step(1e-4);
+  local_opt.set_maxeval(10000);
 
-    std::cout<<"attempting opt_iter:"<<opt_iter<<std::endl;
-   for (int i=0; i<nparm; i++){
-     if (p[i] > ub[i] || p[i] < lb[i] || std::isnan(p[i])){
-        p[i] = pbak[i];
+  local_opt2.set_xtol_abs(1e-3);
+  local_opt2.set_initial_step(1e-4);
+  local_opt2.set_maxeval(10000);
+
+  local_opt.set_lower_bounds(lb);
+  local_opt2.set_lower_bounds(lb);
+  local_opt.set_upper_bounds(ub);
+  local_opt2.set_upper_bounds(ub);
+
+  bool good_opt = false;
+  int opt_iter = 0;
+
+//  opt.set_ftol_rel(1e-3);
+
+  std::vector<double> init(nparm);
+  for (int i = 0; i < nparm; i++) init[i] = 1e-4;
+  opt.set_initial_step(init);
+  local_opt.set_initial_step(init);
+
+  opt.set_min_objective(objfunc_nlogistic_ll, objData);
+  while( opt_iter < 2 &&  !good_opt){
+     opt_iter++;
+     if (opt_iter == 0)
+             opt.set_local_optimizer((const nlopt::opt) local_opt);
+     else
+             opt.set_local_optimizer((const nlopt::opt) local_opt2);
+ 
+     opt.set_lower_bounds(lb);
+     opt.set_upper_bounds(ub);
+     opt.set_xtol_abs(1e-4);
+     opt.set_maxeval(20000);
+     // Ensure that starting values are within bounds
+     for (int i = 0; i < nparm; i++) {
+       double temp = p[i];
+       if (temp < lb[i]) temp = lb[i];
+       else if (temp > ub[i]) temp = ub[i];
+       p[i] = temp;
+     } // end for
+
+     try {
+                        result = opt.optimize(p, minf);
+                        good_opt = true; //optimization succeded
+     }catch (nlopt::roundoff_limited &exec) {
+                        good_opt = false;
+//cerr << "Round Off Limited" << endl;
+     }catch (nlopt::forced_stop &exec) {
+                        good_opt = false;
+//cerr << "Forced Stop" << endl;
+     }catch (const std::invalid_argument &exc) {
+          //file << "\tline " << __LINE__ << ": invalid arg, opt_iter= " << opt_iter << endl;
+          //flush(file);
+//cerr << "Invalid Argument" << endl;
+                        good_opt = false;
+     }catch (const std::exception &exc) {
+                        good_opt = false;
+//cerr << "Std Exeption" << endl;
+     }catch (...) {
+                        good_opt = false;
+//cerr << "default exception" << endl;
      }
-   }
-    nlopt::result result = nlopt::FAILURE;
 
-     try{
-       result = opt.optimize(p, minf);
-       std::cout<<"result: "<<result<<", opt_iter:"<<opt_iter<<std::endl;
-       if (opt_iter >= 1
-            && result > 0
-            //&& result < 5) {
-            && result <= 5) {
-            std::cout<<"triggering end clause"<<std::endl;
-            opt_iter = 10;  // if it made it here it will break the loop
-      }
+     if (result > 5) { // Either 5 =
+        good_opt = false;
+     }
 
-     } catch (const std::invalid_argument &exc) {
-             std::cout<<"opt_iter:"<<opt_iter<<", error: invalid arg: " << exc.what()<<std::endl;
-     } catch (nlopt::roundoff_limited &exec) {
-         std::cout<<"opt_iter:"<<opt_iter<<", error: roundoff_limited"<<std::endl;
-     } catch (nlopt::forced_stop &exec) {
-             std::cout<<"opt_iter:"<<opt_iter<<", error: forced_stop"<<std::endl;
-     } catch (const std::exception &exc) {
-             std::cout<<"opt_iter:"<<opt_iter<<", general error: " << exc.what()<<std::endl;
-     } catch(...){
-        std::cout<<" default error:" << std::endl;
-     } 
-
+        //file.close();
 
   }
+
+
+//  // look at 5 optimization algorithms :-)
+//  int start_iter = 1; //0; //(OPTIM_USE_SUBPLX & flags)?0:1;
+//  for (opt_iter = start_iter; opt_iter <= 4; opt_iter++){
+//    std::cout<<"starting loop with opt_iter:"<<opt_iter<<std::endl;
+//    switch(opt_iter){
+//    case  0:
+//      std::cout<<"using 1:LN_SBPLX"<<std::endl;
+//      opt = opt1;
+//      //opt_ptr->set_maxeval(1200);
+//      break;
+//    case  1:
+//      std::cout<<"using 2:LN_BOBYQA"<<std::endl;
+//      opt = opt2 ;
+//      //opt_ptr->set_maxeval(5000);
+//      break;
+//    case 2:
+//      std::cout<<"using 3:LN_LBFGS"<<std::endl;
+//      opt = opt3;
+//      //opt_ptr->set_maxeval(5000);
+//      break;
+//    case 3:
+//      std::cout<<"using 4:LN_COBYLA"<<std::endl;
+//      opt = opt4;
+//      //opt_ptr->set_maxeval(5000);
+//      break;
+//    case 4:
+//    default :
+//      std::cout<<"using 5:LN_SLSQP"<<std::endl;
+//      opt = opt5;
+//      //opt_ptr->set_maxeval(5000);
+//    break;
+//    }
+//
+//    opt.set_min_objective(objfunc_nlogistic_ll, objData);
+//
+//    opt.set_xtol_rel(objData->tol);
+//    //opt.set_ftol_rel(objData->tol);
+//    //opt.set_xtol_rel(1e-16);
+//    opt.set_maxeval(10000);
+//    opt.set_lower_bounds(lb);
+//    opt.set_upper_bounds(ub);
+//
+//    std::cout<<"attempting opt_iter:"<<opt_iter<<std::endl;
+//   for (int i=0; i<nparm; i++){
+//     if (p[i] > ub[i] || p[i] < lb[i] || std::isnan(p[i])){
+//        p[i] = pbak[i];
+//     }
+//   }
+//    nlopt::result result = nlopt::FAILURE;
+//
+//     try{
+//       result = opt.optimize(p, minf);
+//       std::cout<<"result: "<<result<<", opt_iter:"<<opt_iter<<std::endl;
+//       if (opt_iter >= 1
+//            && result > 0
+//            //&& result < 5) {
+//            && result <= 5) {
+//            std::cout<<"triggering end clause"<<std::endl;
+//            opt_iter = 10;  // if it made it here it will break the loop
+//      }
+//
+//     } catch (const std::invalid_argument &exc) {
+//             std::cout<<"opt_iter:"<<opt_iter<<", error: invalid arg: " << exc.what()<<std::endl;
+//     } catch (nlopt::roundoff_limited &exec) {
+//         std::cout<<"opt_iter:"<<opt_iter<<", error: roundoff_limited"<<std::endl;
+//     } catch (nlopt::forced_stop &exec) {
+//             std::cout<<"opt_iter:"<<opt_iter<<", error: forced_stop"<<std::endl;
+//     } catch (const std::exception &exc) {
+//             std::cout<<"opt_iter:"<<opt_iter<<", general error: " << exc.what()<<std::endl;
+//     } catch(...){
+//        std::cout<<" default error:" << std::endl;
+//     } 
+//
+//
+//  }
   
    objData->xlk = -1.0*minf; 
 
@@ -4500,7 +4587,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   objData->isBMDL = true;
-  objData->optimizer = 1;
+//  objData->optimizer = 1;
   double fa = BMDL_func(pa, xa, tol, objData);
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
@@ -4523,7 +4610,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     BMDL = BMDS_MISSING;
     return;
   } else {
-    objData->optimizer = 1;
+//    objData->optimizer = 1;
 
     BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
   }  
