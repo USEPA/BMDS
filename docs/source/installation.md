@@ -49,7 +49,7 @@ Virtual environments are essentially copies of Python, but you can have multiple
 
 Using virtual environments instead of installing in the "root" Python environment has several advantages:
 
-1. With some computers and enterprise setups, it may be not be possible to install packages in the "root" Python environment without administrative rights.
+1. With some computers and enterprise setups, it may not be possible to install packages in the "root" Python environment without administrative rights.
 2. If packages are installed, they may not easily be found by the "root" Python.
 3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects.
 
@@ -225,7 +225,7 @@ python -m pip install bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects
 :::{admonition} NOTE - this will not work until we officially release!
 :class: caution
 
-The content below below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
+The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
 
 ---
 
@@ -456,7 +456,7 @@ To troubleshoot this error (instructions assume Windows 11):
 
 You may see a Syntax Error message if you've started the Python interpreter and then typed installation commands not written in the Python language.
 
-From within the Python interpreter, you can write Python scripts using `pybmds`. However, it's it's not where you want to be for the installation guide. For installing BMDS Desktop, you need to be in a terminal in a location where Python can be executed. The good news is, if you're inside a Python interpreter, you're in the correct place for installation, but you'll need to exit the interpreter.
+From within the Python interpreter, you can write Python scripts using `pybmds`. However, it's not where you want to be for the installation guide. For installing BMDS Desktop, you need to be in a terminal in a location where Python can be executed. The good news is, if you're inside a Python interpreter, you're in the correct place for installation, but you'll need to exit the interpreter.
 
 To exit the interactive Python interpreter and return to your terminal, type `exit()` and press Enter.
 
@@ -485,7 +485,7 @@ After [activating your environment](activate-venv), you can upgrade to the lates
 :::{admonition} NOTE - this will not work until we officially release!
 :class: caution
 
-The content below below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
+The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
 
 ---
 
@@ -552,9 +552,9 @@ Open the path to your virtual environment using Windows Explorer and delete the 
 (writing-pybmds-code)=
 ### Writing pybmds Code
 
-You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can generally use any approach for writing code you're familiar with.
+You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can use any approach for writing code you may already be familiar with.
 
-However, if you're new to the Python ecosystem, we generally recommend using [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer] for writing and executing code.
+If you are new to the Python ecosystem, you can use one of the following commonly used development environments - [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer].
 
 If you'd prefer to not write any code, then install `bmds-ui` and start BMDS Desktop.
 

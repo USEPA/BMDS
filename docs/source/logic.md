@@ -5,7 +5,7 @@ A BMDS session has a set of automated rules for recommending a best-fitting mode
 1. USEPA BMDS technical guidance ([EPA 2012](https://www.epa.gov/risk/benchmark-dose-technical-guidance))
 2. [Wignall et al. 2014](http://dx.doi.org/10.1289/ehp.1307539)
 
-When configuring a session, a user selects which models and model recommendations are enabled. If enabled, the recommendation logic has reasonable defaults, but you can also be manually configure the logic by to turning on/off individual checks and threshold values. Results are extracted from model outputs, and models are placed into one of three possible bins, depending on the results and the bin recommendation logic:
+When configuring a session, a user selects which models and model recommendations are enabled. If enabled, the recommendation logic has reasonable defaults, but you can also manually configure the logic by to turning on/off individual checks and threshold values. Results are extracted from model outputs, and models are placed into one of three possible bins, depending on the results and the bin recommendation logic:
 
 1. **Failure**: model did not successfully complete
 2. **Nonviable model**: model successfully completed, but there are serious issues
