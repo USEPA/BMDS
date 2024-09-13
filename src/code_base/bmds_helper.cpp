@@ -4271,19 +4271,19 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
    Nlogist_probs(probs, p, compgrad, gradij, objData);
    
    double tm, tm1, tm2, tm3;
-   int plus5, j;
+   int plus4, j;
    double xlk = 0.0;   
    for (int i=0; i<Nobs; i++){
      tm1 = 0.0;
      tm2 = 0.0;
      tm3 = 0.0;
-     plus5 = 5 + Xg[i];
+     plus4 = 4 + Xg[i];
      j = (int) Yp[i];
      if (probs[i] < CloseToZero && j > 0){ 
         tm1 -=40.0;
      } else {
        for (int k=1; k<=j; k++){
-          tm = probs[i] + (k-1)*p[plus5];
+          tm = probs[i] + (k-1)*p[plus4];
 	  tm1 += log(tm);
        }
      }
@@ -4292,13 +4292,13 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
        tm2 -=40.0;
      } else {
        for (int k=1; k<=j; k++){
-         tm = 1.0 - probs[i] + (k-1)*p[plus5];
+         tm = 1.0 - probs[i] + (k-1)*p[plus4];
 	 tm2 += log(tm);
        }
      }
      j = (int) (Yn[i] + Yp[i]);
      for (int k=1; k<=j; k++){
-       tm = 1.0 + (k-1)*p[plus5];
+       tm = 1.0 + (k-1)*p[plus4];
        tm3 += log(tm);
      }
      xlk += (tm1 + tm2 - tm3);
