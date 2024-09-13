@@ -3269,7 +3269,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
          pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(j,j));
 	 j++;
        } else {
-	 if (inv_vcv(j,j) < 0){
+         if (j< (inv_vcv.rows()-1) &&inv_vcv(j,j) < 0){
            j++;
 	 }
 	 pyRes->bmdsRes.stdErr[i] = BMDS_MISSING;
