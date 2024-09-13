@@ -13,7 +13,7 @@ This guide documents a standard installation process for packages in the Python 
 
 You can install Python from [python.org](https://www.python.org/downloads/)[^disclaimer], [Anaconda](https://www.anaconda.com/download)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution (e.g., Anaconda, Miniconda, Miniforge, etc.) may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
 
-* If installing Python from [python.org](https://www.python.org/downloads/)[^disclaimer], make sure that Python is added to your path (this is an option on Windows installers). If possible, use the most recent version available; the minimum support version is version 3.11.0 (released in 2022).
+* If installing Python from [python.org](https://www.python.org/downloads/)[^disclaimer], make sure that Python is added to your path (this is an option on Windows installers). If possible, use the most recent version available; the minimum supported version is 3.11.0 (released in 2022).
 * If installing a Conda distribution, make sure it is relatively recent version (released within the last 3 years).
 
 (open-terminal)=
@@ -310,8 +310,7 @@ The `pybmds` package is available in this environment, so you can start a Python
 
 ### A complete example
 
-The complete startup after installation can be summarized below, assuming you followed the guide above.
-
+The complete startup after installation on Windows can be summarized below, assuming you followed the guide above.
 
 ::::{tab-set}
 
