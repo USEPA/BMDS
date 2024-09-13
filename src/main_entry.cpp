@@ -350,82 +350,7 @@ List run_continuous_single(IntegerVector model,
 }
 
 // [[Rcpp::export]]
-double run_dlgamma(double x) 
-{
-  return DLgamma(x);
-}
-
-// copied ToxicR function to format output, just changed to expect this input struct
-List python_convert_dichotomous_fit_to_list(python_dichotomous_model_result *result){
-  NumericVector  parms(result->nparms); 
-  NumericMatrix  covM(result->nparms,result->nparms); 
-  
-  for (int i = 0; i < result->nparms; i++){
-    parms[i] = result->parms[i]; 
-    for (int j = 0; j < result->nparms; j++){
-      covM(i,j) = result->cov[i + j*result->nparms]; 
-    }
-  } 
-  char str[160]; 
-
-  switch(result->model){
-  
-  case dich_model::d_hill: 
-    sprintf(str,"Model:  %s", "Hill"); 
-    break; 
-  case dich_model::d_gamma: 
-    sprintf(str,"Model:  %s", "Gamma"); 
-    break;
-  case dich_model::d_logistic:
-    sprintf(str,"Model:  %s", "Logistic"); 
-    break;	
-  case dich_model::d_loglogistic: 
-    sprintf(str,"Model:  %s", "Log-Logistic"); 
-  break; 
-  case dich_model::d_logprobit: 
-    sprintf(str,"Model:  %s", "Log-Probit");
-  break; 
-  case dich_model::d_multistage: 
-    sprintf(str,"Model:  %s", "Multistage");
-  break;
-  case dich_model::d_qlinear: 
-    sprintf(str,"Model:  %s", "Quantal-Linear");
-  break; 
-  case dich_model::d_probit: 
-    sprintf(str,"Model:  %s", "Probit");
-  break; 
-  case dich_model::d_weibull:
-    sprintf(str,"Model: %s", "Weibull");
-  break; 
-  default: 
-    sprintf(str,"Model:  %s", "Danger");
-  break;  
-  }
-  double maximum = result->max; 
-  NumericMatrix bmd_distribution(result->dist_numE , 2);
-
-  for (int i = 0; i < result->dist_numE; i++){
-    bmd_distribution(i,0) = result->bmd_dist[i]; 
-    bmd_distribution(i,1) = result->bmd_dist[i+result->dist_numE];  
-  } 
-  
-  List rV = List::create(Named("full_model")                = str,
-                         Named("parameters")                = parms, 
-                         Named("covariance")                = covM, 
-                         Named("bmd_dist")                  = bmd_distribution,
-                         Named("bmd")                       = result->bmd,
-                         Named("maximum")                   = maximum,
-                         Named("gof_p_value")               = result->gof_p_value,
-                         Named("gof_chi_sqr_statistic")     = result->gof_chi_sqr_statistic);  
- 
- 
-  rV.attr("class") = "BMDdich_fit_maximized"; 
-  return rV; 
-  
-}
-
-// [[Rcpp::export]]
-python_continuous_model_result run_bmds_dichotomous_analysis(NumericVector D, NumericVector Y,NumericVector N,int BMD_type, double BMR, double alpha, int parms, int model, int n, NumericVector prior, int prior_cols, int degree)
+List run_bmds_dichotomous_analysis(NumericVector D, NumericVector Y,NumericVector N, int BMD_type, double BMR, double alpha, int parms, int model, int n, NumericVector prior, int prior_cols, int degree)
 {
   python_dichotomous_analysis Anal; 
   Anal.BMD_type =  BMD_type;
@@ -433,10 +358,10 @@ python_continuous_model_result run_bmds_dichotomous_analysis(NumericVector D, Nu
   Anal.alpha    =  alpha;
   Anal.parms    = parms; 
   Anal.model    = model; 
-  Anal.Y        = std::vector<double>(Y) ; 
-  Anal.n_group  = std::vector<double>(N) ; 
-  Anal.doses    = std::vector<double>(D) ; 
-  Anal.prior    = std::vector<double>(prior) ;
+  Anal.Y        = as<std::vector<double> >(Y) ; 
+  Anal.n_group  = as<std::vector<double> >(N) ; 
+  Anal.doses    = as<std::vector<double> >(D) ; 
+  Anal.prior    = as<std::vector<double> >(prior) ;
   Anal.prior_cols = prior_cols; 
   Anal.n          = n; 
   Anal.degree =   degree; 
@@ -449,5 +374,6 @@ python_continuous_model_result run_bmds_dichotomous_analysis(NumericVector D, Nu
     
   pythonBMDSDicho(&Anal, &res);
 
-  return res;
+  return List::create(Named("bmd")      = res.bmd,
+                      Named("bmd_dist") = res.bmd_dist);
 }

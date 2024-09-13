@@ -9,12 +9,8 @@
     .Call(`_ToxicR_run_continuous_single`, model, Y, X, prior, options, dist_type)
 }
 
-run_dlgamma <- function(x) {
-    .Call(`_ToxicR_run_dlgamma`, x)
-}
-
-run_bmds_dichotomous_analysis <- function(model, data, pr, options1, options2) {
-    .Call(`_ToxicR_run_bmds_dichotomous_analysis`, model, data, pr, options1, options2)
+run_bmds_dichotomous_analysis <- function(D, Y, N, BMD_type, BMR, alpha, parms, model, n, prior, prior_cols, degree) {
+    .Call(`_ToxicR_run_bmds_dichotomous_analysis`, D, Y, N, BMD_type, BMR, alpha, parms, model, n, prior, prior_cols, degree)
 }
 
 .run_continuous_ma_laplace <- function(model_priors, model_type, dist_type, Y, X, options) {
