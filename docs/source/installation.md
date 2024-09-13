@@ -11,34 +11,50 @@ This guide documents a standard installation process for packages in the Python 
 (part-1)=
 ## Part 1 - Install Python
 
-If possible, use the most recent version available; the minimum support version is version 3.11 (released in 2022).
+You can install Python from [python.org](https://www.python.org/downloads/)[^disclaimer], [Anaconda](https://www.anaconda.com/download)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution (e.g., Anaconda, Miniconda, Miniforge, etc.) may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
 
-You can install Python from [python.org](https://python.org)[^disclaimer], [Anaconda](https://www.anaconda.com/)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
-
-During installation, ensure Python is added to your path (this is an option on some Windows installers).
+* If installing Python from [python.org](https://www.python.org/downloads/)[^disclaimer], make sure that Python is added to your path (this is an option on Windows installers). If possible, use the most recent version available; the minimum support version is version 3.11.0 (released in 2022).
+* If installing a Conda distribution, make sure it is relatively recent version (released within the last 3 years).
 
 (open-terminal)=
-After installing, open a terminal.
+After installing, open a terminal to check that either `python` or `conda` is available from your terminal.  Follow the appropriate guide below, depending on your method of installing (click the tab below).
 
-:::{admonition} Which terminal should I use?
-:class: info
+::::{tab-set}
+:::{tab-item} Anaconda
+
+If you installed Anaconda style distribution (e.g., Anaconda, Miniconda, Miniforge, etc.), in the Start Menu, search for the Anaconda Prompt - it may be called something like "Anaconda Prompt", "Miniconda Prompt", or "Miniforge Prompt". Select this item to open the terminal.
+
+In the terminal, confirm that `conda` is available:
+
+```bash
+conda --version
+```
+
+This should return a version, for example `conda 24.7.1`. Conda can install different versions of Python, and you should be able to install a version that is compatible with `pybmds` and BMDS Desktop as long as your conda installation is not too old.
+
+If you see a conda version after typing this command, you’re ready for the next step! Otherwise, check the [FAQ](faq) for possible solutions.
+
+:::
+:::{tab-item} Python
 
 On Windows:
-* If you installed Anaconda or other applications which have a `conda` command (e.g., Miniconda, Miniforge, etc.), in the Start Menu, search for the Anaconda Prompt - it may be called something like "Anaconda prompt" or "Miniconda prompt".
-* If you installed Python from python.org, in the Start menu search for and run the "Command Prompt". Make sure to use the "Command Prompt" instead of "Powershell".
+* In the Start menu search for and run the "Command Prompt". Make sure to use the "Command Prompt" instead of "Powershell".
 
 On Mac/Linux:
 * You can use the built-in Terminal, or any other application you're comfortable with.
-:::
 
-In the terminal, confirm that Python is available:
+In the terminal, confirm that `python` is available:
 
 ```bash
 python --version
 ```
 
-This should return a version, for example `Python 3.12.5`.  If you see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
+This should return a version, for example `Python 3.12.6`. The minimum supported version of Python for `pybmds` and BMDS Desktop is Python 3.11.0; anything more recent than this should work.
 
+If you see a Python version after typing this command, you’re ready for the next step! Otherwise, check the [FAQ](faq) for possible solutions.
+
+:::
+::::
 
 (part-2)=
 ## Part 2 - Create an Environment
