@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore
 from ..models.dichotomous import BmdModelDichotomousSchema
 from ..utils import multi_lstrip, pretty_table
+from .common import inspect_cpp_obj
 from .dichotomous import (
     DichotomousAnalysisCPPStructs,
     DichotomousResult,
@@ -18,6 +19,12 @@ class MultitumorAnalysis(NamedTuple):
 
     def execute(self):
         bmdscore.pythonBMDSMultitumor(self.analysis, self.result)
+
+    def __str__(self) -> str:
+        lines = []
+        inspect_cpp_obj(lines, self.analysis, depth=0)
+        inspect_cpp_obj(lines, self.result, depth=0)
+        return "\n".join(lines)
 
 
 class MultitumorSettings(BaseModel):

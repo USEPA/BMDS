@@ -74,6 +74,13 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
     for attr, value in inspect.getmembers(obj):
         if attr.startswith("__"):
             continue
+        elif attr == "models" and "multitumor" in obj.__class__.__name__:
+            lines.append(f"{indent}{attr}:")
+            for model_list in value:
+                indent_x2 = "  " * (depth + 1) + "- "
+                lines.append(f"{indent_x2}[]:")
+                for model in model_list:
+                    inspect_cpp_obj(lines, model, depth + 2)
         elif "bmdscore" in value.__class__.__module__:
             if isinstance(value, bmdscore.cont_model | bmdscore.nested_model):
                 lines.append(f"{indent}{attr}: {value}")

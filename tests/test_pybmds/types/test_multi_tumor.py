@@ -1,7 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from pybmds.types.multi_tumor import MultitumorSettings
+import pybmds
+from pybmds.types.multi_tumor import MultitumorAnalysis, MultitumorSettings
 
 
 class TestMultitumorSettings:
@@ -11,3 +12,12 @@ class TestMultitumorSettings:
     def test_no_extra(self):
         with pytest.raises(ValidationError):
             MultitumorSettings(degrees=[0, 0], foo=123)
+
+
+class TestMultitumorAnalysis:
+    def test_str(self, mt_datasets):
+        session = pybmds.Multitumor(mt_datasets, degrees=[1, 1, 1])
+        session.execute()
+        assert isinstance(session.structs, MultitumorAnalysis)
+        assert len(str(session.structs)) > 0
+        assert str(session.structs).startswith("- python_multitumor_analysis")
