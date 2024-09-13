@@ -109,7 +109,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
  
   if (fitter == 1){ #MLE fit
     bounds = .bmd_default_frequentist_settings(model_type,degree)
-    temp = run_bmds_dichotomous_analysis(dmodel,DATA,bounds,o1,o2); 
+    temp = .run_continuous_single(dmodel,DATA,bounds,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     temp_me = temp$bmd_dist
    
@@ -131,7 +131,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   if (fitter == 2){ #laplace fit
     
     # replace original function call with new bmds function call
-    temp = run_bmds_dichotomous_analysis(dmodel,DATA,prior$priors,o1,o2); 
+    temp = .run_continuous_single(dmodel,DATA,prior$priors,o1,o2); 
     #class(temp$bmd_dist) <- "BMD_CDF"
     te <- splinefun(temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),2],temp$bmd_dist[!is.infinite(temp$bmd_dist[,1]),1],method="hyman")
     temp$bmd     <- c(temp$bmd,te(alpha),te(1-alpha))
@@ -142,7 +142,7 @@ single_dichotomous_fit <- function(D,Y,N,model_type, fit_type = "laplace",
   }
   if (fitter ==3){
     
-    temp = run_bmds_dichotomous_analysis(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
+    temp = .run_continuous_single(dmodel,DATA[,2:3,drop=F],DATA[,1,drop=F],prior$priors,
                                        c(BMR, alpha,samples,burnin))
     #class(temp$fitted_model$bmd_dist) <- "BMD_CDF"
     temp$bmd_dist <- cbind(quantile(temp$mcmc_result$BMD_samples,seq(0.005,0.995,0.005)),seq(0.005,0.995,0.005))

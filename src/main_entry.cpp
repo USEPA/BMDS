@@ -424,38 +424,30 @@ List python_convert_dichotomous_fit_to_list(python_dichotomous_model_result *res
   
 }
 
-// [[Rcpp::depends(RcppGSL)]]
-// [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::export]]
-List run_bmds_dichotomous_analysis(NumericVector model,
-                            Eigen::MatrixXd data, Eigen::MatrixXd pr,
-                            NumericVector options1, IntegerVector options2)
+python_continuous_model_result run_bmds_dichotomous_analysis(NumericVector D, NumericVector Y,NumericVector N,int BMD_type, double BMR, double alpha, int parms, int model, int n, NumericVector prior, int prior_cols, int degree)
 {
-  
-  // setup for analysis in pybmds is done in a python function, so I copied from what toxicR does above.
-  // not sure if it's right
   python_dichotomous_analysis Anal; 
-  Anal.BMD_type =  (options1[0]==1)?eExtraRisk:eAddedRisk;
-  Anal.BMR      =  options1[0]; 
-  Anal.alpha    =  options1[1];
-  Anal.parms    = pr.rows(); 
-  Anal.model    = (dich_model)model[0]; 
-  Anal.Y        = std::vector<double>(data.rows()) ; 
-  Anal.n_group  = std::vector<double>(data.rows()) ; 
-  Anal.doses    = std::vector<double>(data.rows()) ; 
-  Anal.prior    = std::vector<double>(pr.cols()*pr.rows()) ;
-  Anal.prior_cols = pr.cols(); 
-  Anal.n          = data.rows(); 
-  Anal.degree =   pr.rows()-1; 
+  Anal.BMD_type =  BMD_type;
+  Anal.BMR      =  BMR; 
+  Anal.alpha    =  alpha;
+  Anal.parms    = parms; 
+  Anal.model    = model; 
+  Anal.Y        = std::vector<double>(Y) ; 
+  Anal.n_group  = std::vector<double>(N) ; 
+  Anal.doses    = std::vector<double>(D) ; 
+  Anal.prior    = std::vector<double>(prior) ;
+  Anal.prior_cols = prior_cols; 
+  Anal.n          = n; 
+  Anal.degree =   degree; 
 
   python_dichotomous_model_result res;
-  res.parms = std::vector<double>(pr.rows()) ;
-  res.cov   = std::vector<double>(pr.cols()*pr.rows()); 
+  res.parms = std::vector<double>();
+  res.cov   = std::vector<double>(); 
   res.dist_numE = 200; 
   res.bmd_dist = std::vector<double>(res.dist_numE*2);
     
   pythonBMDSDicho(&Anal, &res);
 
-  List rV = python_convert_dichotomous_fit_to_list(&res);
-  return rV;
+  return res;
 }
