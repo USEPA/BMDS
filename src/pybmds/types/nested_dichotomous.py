@@ -336,7 +336,6 @@ class NestedDichotomousResult(BaseModel):
             dof=result.model_df,
             fixed_lsc=result.fixedLSC,
             litter=LitterResult.from_model(result.litter, result.bmdsRes.BMD),
-            obs_chi_sq=result.obsChiSq,
             parameter_names=list(params_d.keys()),
             parameters=list(params_d.values()),
             reduced=ReducedResult.from_model(result.reduced),
