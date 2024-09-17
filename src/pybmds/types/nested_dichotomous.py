@@ -304,7 +304,6 @@ class NestedDichotomousResult(BaseModel):
     dof: float
     fixed_lsc: float
     litter: LitterResult
-    max: float
     obs_chi_sq: float
     parameter_names: list[str]
     parameters: list[float]
@@ -337,7 +336,6 @@ class NestedDichotomousResult(BaseModel):
             dof=result.model_df,
             fixed_lsc=result.fixedLSC,
             litter=LitterResult.from_model(result.litter, result.bmdsRes.BMD),
-            max=result.max,
             obs_chi_sq=result.obsChiSq,
             parameter_names=list(params_d.keys()),
             parameters=list(params_d.values()),
