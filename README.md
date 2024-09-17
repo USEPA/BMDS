@@ -1,67 +1,17 @@
 # BMDS
 
+EPA's Benchmark Dose Software (BMDS) collects and provides easy access to numerous mathematical models that help risk assessors estimate the quantitative relationship between a chemical dose and the test subject’s response.  A specific focus of BMDS is estimating a statistical benchmark dose (BMD). The BMD is a chemical dose or concentration that produces a predetermined change in the response rate of an adverse effect, such as weight loss or tumor incidence. The BMD is a range, rather than a fixed number. For example, the benchmark dose (lower confidence limit) (BMDL) can be regarded as a dose where the observable physical effect is less than the predetermined benchmark response (BMR).
+
+![An example dose response plot an and curve fit](tests/test_pybmds/data/mpl/test_dichotomous_plot.png)
+
+Additional information, documentation, and technical guidance for BMDS is available at [https://www.epa.gov/bmds](https://www.epa.gov/bmds).
+
+This repository contains a low-level C++ library, `bmdscore`, and the `pybmds` Python package for interfacing with `bmdscore` with higher level utilities such as plotting and reporting.
+
+## Credits
+
+The authors would like to thank Dr. Matt Wheeler of NIH/NIEHS for his contributions to many of the `bmdscore` algorithms, and his continued collaboration with the [ToxicR](https://github.com/NIEHS/ToxicR) software.
+
 ## Disclaimer
 
-This software/application has been approved for release by the U.S. Environmental Protection Agency (USEPA). Although the software has been subjected to rigorous review, the USEPA reserves the right to update the software as needed pursuant to further analysis and review. No warranty, expressed or implied, is made by the USEPA or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. Furthermore, the software is released on condition that neither the USEPA nor the U.S. Government shall be held liable for any damages resulting from its authorized or unauthorized use.
-
-## ToxicR
-
-TODO
-
-## pybmds
-
-### Developer setup
-
-Make sure you have python 3.11 or higher available on your path.
-
-```bash
-# clone project
-git clone git@github.com:USEPA/bmds.git
-cd bmds
-
-# create virtual environment and activate
-python -m venv venv --prompt pybmds
-source venv/bin/activate  # or venv\Scripts\activate on windows.
-
-# install packages
-python -m pip install -U pip
-python -m pip install -r requirements_dev.txt
-
-# build
-make build     # recompile source for development of pybmds package
-
-# test local install
-pybmds hello
-
-# code formatting
-make lint      # identify formatting errors
-make format    # fix formatting errors when possible
-
-# testing
-make test      # run tests
-make coverage  # show test coverage
-
-# distribution
-make dist     # build a portable python wheel for distribution
-```
-
-Github actions are setup to execute whenever code is pushed to check code formatting and successful tests. In addition, when code is pushed to the `main` branch, a wheel artifact is created and stored on github.
-
-### C++ build and testing
-
-inside src/build directory
-
-```bash
-# build c++ code
-cmake ..
-make
-
-# run all tests
-make run_tests
-
-# generate coverage report
-make coverage
-
-#run all tests and generate coverage report
-make run_tests_with_coverage
-```
+The United States Environmental Protection Agency (EPA) GitHub project code is provided on an "as is" basis and the user assumes responsibility for its use.  EPA has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information.  Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by EPA.  The EPA seal and logo shall not be used in any manner to imply endorsement of any commercial product or activity by EPA or the United States Government.

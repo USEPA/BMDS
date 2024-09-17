@@ -2,8 +2,7 @@
 
 We recommend installing `bmds-ui` on your computer; this makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting.
 
-This guide describes the basics for a user new to Python, from how to install Python, to setting up an environment, to installing the specific packages.
-
+This guide describes the basics for a user new to Python, from how to install Python, to setting up an environment, to installing the specific packages. A [simplified installer script](simplified-installer) is also available which reduces the amount of scripting required for installation.
 
 :::{note}
 This guide documents a standard installation process for packages in the Python ecosystem. If you know someone who uses Python, they can likely help! If you need support, please [contact us](https://ecomments.epa.gov/bmds).
@@ -257,9 +256,24 @@ Starting the application may be difficult for users who do not frequently use th
 bmds-desktop --create-shortcut
 ```
 
-This creates the file wherever you currently are located in your terminal. You can move this file where you'd like using Windows Explorer or Mac Finder. We recommend creating a shortcut and putting the shortcut on your Desktop for easy access; you can even rename the shortcut "BMDS Desktop Manager" if you'd prefer.
+This command creates the shortcut file at the location in the terminal window.
 
-To start the BMDS Desktop, double-click the BMDS Desktop Manager icon.
+The following confirmation message is displayed:
+
+    BMDS Desktop Manager Created:
+    -----------------------------
+    C:\Users\USER\dev\bmds-desktop-bmds-desktop-manager.bat
+
+    Opening this file will start BMDS Desktop.
+    You can move this file or create a shortcut to it.
+
+    Would you like to open the folder to view "bmds-desktop-manager.bat"? (y/n)
+
+Typing `y` and pressing Enter will open a new Finder or File Manager window displaying the folder containing the batch file.
+
+We recommend creating a shortcut to the desktop manager file and putting the shortcut on your Desktop for easy access; you can even rename the shortcut "BMDS Desktop Manager" if you'd prefer.
+
+To start the BMDS Desktop, double-click the BMDS Desktop Manager shortcut icon.
 
 (part-4)=
 ## Part 4 - Starting BMDS Desktop
@@ -339,6 +353,25 @@ bmds-desktop
 
 ::::
 
+(simplified-installer)=
+## Simplified installer
+
+The simplified installer (experimental) may simplify the installation process by automating the installation process and using reasonable defaults.  If you wish to have multiple versions of BMDS Desktop installed at the same time on your computer, the simplified installer script may be too simple and you may need to follow the detailed guide.
+
+1. Install Python and open your terminal, following [Part 1](part-1) of the guide below. Install the most recent version available from [https://python.org](https://python.org).
+2. Download the <a href="_static/install-bmds-desktop.py" download>installation script</a>. Move the downloaded file to the same location that is open in your terminal. Then, run the command:
+    ```
+    python install-bmds-desktop.py
+    ```
+3. The script will install BMDS Desktop, and then will create a BMDS Desktop Manager file. Create a shortcut to the [BMDS Desktop Manager](desktop-shortcut) so you can open BMDS Desktop in the future or update to a more recent version.
+
+After running the installation script and creating a shortcut to the BMDS Desktop Manager, you shouldn't need to open your terminal in the future to update or run BMDS Desktop.
+
+To uninstall, open your terminal and navigate to the installation script as described above, but run the command below:
+
+```
+python install-bmds-desktop.py --uninstall
+```
 
 (faq)=
 ## Frequently Asked Questions (FAQ)
