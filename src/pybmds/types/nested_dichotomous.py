@@ -304,7 +304,6 @@ class NestedDichotomousResult(BaseModel):
     dof: float
     fixed_lsc: float
     litter: LitterResult
-    obs_chi_sq: float
     parameter_names: list[str]
     parameters: list[float]
     reduced: ReducedResult
