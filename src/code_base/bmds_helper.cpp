@@ -3107,7 +3107,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
   objData.tol = 1e-8;
-//  objData.optimizer = 3;
   objData.prior = pyAnal->prior;
   objData.Spec = Spec;
   objData.Spec[THETA1_INDEX] = true;
@@ -3183,8 +3182,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   //ML fit and return log-likelihood value
   objData.Spec = Spec;
-//  objData.optimizer=1;
-//  objData.optimizer = 3;
 
   for (int i=0; i<pyRes->nparms; i++){
     if (Spec[i]){
@@ -4495,7 +4492,6 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   objData->isBMDL = true;
-//  objData->optimizer = 1;
   double fa = BMDL_func(pa, xa, tol, objData);
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
