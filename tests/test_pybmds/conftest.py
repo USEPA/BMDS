@@ -234,39 +234,6 @@ def nd_dataset4():
 
 
 @pytest.fixture
-def nd_dataset4_failure():
-    # fmt: off
-    return pybmds.NestedDichotomousDataset(
-        id=123,
-        doses=[
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            25, 25, 25, 25, 25, 25, 25,
-            50, 50, 50, 50, 50, 50,
-            100, 100, 100, 100, 100,
-        ],
-        litter_ns=[
-            16, 9, 15, 14, 13, 9, 10, 14, 10, 11, 14,
-            9, 14, 9, 13, 12, 10, 10,
-            11, 14, 11, 11, 14, 11,
-            10, 11, 10, 15, 7,
-        ],
-        incidences=[
-            1, 1, 2, 3, 3, 0, 2, 2, 1, 2, 4,
-            5, 6, 2, 6, 3, 1, 2,
-            4, 3, 4, 5, 5, 4,
-            5, 4, 5, 6, 2,
-        ],
-        litter_covariates=[
-            16, 9, 15, 14, 13, 9, 10, 14, 10, 11, 14,
-            9, 14, 9, 13, 12, 10, 10,
-            11, 14, 11, 11, 14, 11,
-            10, 11, 10, 15, 7,
-        ]
-    )
-    # fmt: on
-
-
-@pytest.fixture
 def mt_datasets():
     ds1 = pybmds.DichotomousDataset(
         doses=[0, 50, 100, 150, 200],
