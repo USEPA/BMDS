@@ -143,10 +143,11 @@
   //NLogistic
   //Nlogistic only has min/max values
   //initial values are determined programatically
+
   double prNLogisticG[] = {0, 1};
-  double prNLogisticB[] = {-1*DBL_MAX, DBL_MAX};
+  double prNLogisticB[] = {-18, 18};
   double prNLogisticT1[] = {0, 1};
-  double prNLogisticT2[] = {-1*DBL_MAX, DBL_MAX};
+  double prNLogisticT2[] = {-18, 18};
   double prUNLogisticRho[] = {0, 18};
-  double prRNLogisticRho[] = {1, 18};
-  double prNLogisticPhi[] = {0, DBL_MAX};
+  double prRNLogisticRho[] = {1.0, 18};
+  double prNLogisticPhi[] = {0, 1e8};
