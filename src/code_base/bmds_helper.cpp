@@ -2985,7 +2985,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   double nij = 0.0;
   int index=0;
   while (Xg[index] == 1){
-    sum1 += Ls[index];
+    sum1 += Lsc[index];
     nij +=1.0;
     index++;
   }
@@ -2993,16 +2993,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   sum1 = 0.0;
   nij = 0.0;
-  double smax = Ls[0];
-  double smin = Ls[0];
+  double smax = Lsc[0];
+  double smin = Lsc[0];
   double xmax = 0.0;
   double x = 0.0;
   for (int i=0; i<Nobs; i++){
     x = Xi[i];
-    sum1 += Ls[i];
+    sum1 += Lsc[i];
     nij += 1.0;
-    if (Ls[i] > smax) smax = Ls[i];
-    if (Ls[i] < smin) smin = Ls[i];
+    if (Ls[i] > smax) smax = Lsc[i];
+    if (Ls[i] < smin) smin = Lsc[i];
     if (x > xmax) xmax = x;
   }
   double smean = sum1/nij;  //overall average lsc
@@ -3107,7 +3107,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   objData.riskType = pyAnal->BMD_type;
   objData.BMR = pyAnal->BMR;
   objData.tol = 1e-8;
-  objData.optimizer = 3;
   objData.prior = pyAnal->prior;
   objData.Spec = Spec;
   objData.Spec[THETA1_INDEX] = true;
@@ -3148,9 +3147,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     objData.Spec[THETA2_INDEX] = true;
     //pass 2 has thetas set to zero
 
+    //allow to continue even if retVal < 0
     retVal = opt_nlogistic(pyRes->parms, &objData);
 
-    if (retVal < 0) return;  //return with validResult = false;
     //Transform parameters to "external" form
     for (int i=5; i<pyRes->nparms; i++){
       pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
@@ -3183,7 +3182,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
 
   //ML fit and return log-likelihood value
   objData.Spec = Spec;
-  objData.optimizer=1;
 
   for (int i=0; i<pyRes->nparms; i++){
     if (Spec[i]){
@@ -3191,6 +3189,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
     }
   }
 
+  if (pyRes->parms[4] <= pyAnal->prior[4]){  
+    pyRes->parms[4] = 1.0001;
+  }
+  objData.tol = 1e-12;
   retVal = opt_nlogistic(pyRes->parms, &objData);
   objData.BMD_lk = objData.xlk;  //save BMD likelihood
   pyRes->LL = objData.xlk;
@@ -3209,7 +3211,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   }
 
   //TODO:  check retVal to make sure convergence was achieved
-  if (retVal > 0) pyRes->validResult = true;
+  if (retVal > 0) {
+	  pyRes->validResult = true;
+	  pyRes->bmdsRes.validResult = true;
+  }
  
   //compute Hessian
   Eigen::MatrixXd vcv(pyRes->nparms,pyRes->nparms);
@@ -3255,10 +3260,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Eigen::MatrixXd inv_vcv(pyRes->nparms,pyRes->nparms);
   if (red_vcv.determinant() > 0){
     inv_vcv = red_vcv.inverse();
+    int j=0;
     for(int i=0; i<pyRes->nparms; i++){
-       if (!pyRes->bmdsRes.bounded[i]){
-         pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(i,i));
+       if (!pyRes->bmdsRes.bounded[i] && inv_vcv(j,j) > 0){
+         pyRes->bmdsRes.stdErr[i] = sqrt(inv_vcv(j,j));
+	 j++;
        } else {
+         if (j< (inv_vcv.rows()-1) &&inv_vcv(j,j) < 0){
+           j++;
+	 }
 	 pyRes->bmdsRes.stdErr[i] = BMDS_MISSING;
        }
     }
@@ -3341,6 +3351,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2*(1.0 + redAnova.df - fittedAnova.df);
 
   pyRes->model_df = fittedAnova.df;
+
   //Generate litter data results
   Nlogist_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
@@ -3360,11 +3371,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(struct python_nested_analysis *py
   Nlogist_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
   //Compute BMD
-   Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
+  Nlogist_BMD (pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
 
-   Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
 
-   Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
+  Nlogist_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
+
+  Nlogist_Bootstrap(&objData, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
 
 }
 
@@ -3960,6 +3972,8 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
    double slopeUpperBound = 18.0;
    int nparm = p.size();
 
+   std::vector<double> pbak = p;
+
    std::vector<double> lb(nparm);
    std::vector<double> ub(nparm);
    //alpha
@@ -3996,48 +4010,93 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData){
      }
    }
    
+
+  int result;
+
+  nlopt::opt opt(nlopt::LN_AUGLAG, nparm);
+  
+  nlopt::opt local_opt(nlopt::LD_LBFGS, nparm);
+  nlopt::opt local_opt2(nlopt::LN_SBPLX, nparm);
+
+  local_opt.set_xtol_abs(1e-3);
+  local_opt.set_initial_step(1e-4);
+  local_opt.set_maxeval(10000);
+
+  local_opt2.set_xtol_abs(1e-3);
+  local_opt2.set_initial_step(1e-4);
+  local_opt2.set_maxeval(10000);
+
+  local_opt.set_lower_bounds(lb);
+  local_opt2.set_lower_bounds(lb);
+  local_opt.set_upper_bounds(ub);
+  local_opt2.set_upper_bounds(ub);
+
    //Description of optimization problem
    //minimize -log-likelihood
    //inequality constraints
    //	alpha + theta1*rij >=0
    //	alpha + theta1*rij < 1
 
-   nlopt::opt opt;
-   if (objData->optimizer == 1){
-	opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
-   } else if (objData->optimizer == 3){
-     opt= nlopt::opt(nlopt::LD_LBFGS, nparm);
-   } else {
-     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
-   }
-
    if (Spec[0] == Spec[3]){
      //set inequality constraint alpha + Theta1*Sij>=0
      //inequality restraint not compatible with LD_LBFGS
-     opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
+     //opt= nlopt::opt(nlopt::LD_SLSQP, nparm);
      opt.add_inequality_constraint(nestedInequalityConstraint, &objData, 1e-8); 
    } 
+  bool good_opt = false;
+  int opt_iter = 0;
 
-   opt.set_min_objective(objfunc_nlogistic_ll, objData);
+  std::vector<double> init(nparm);
+  for (int i = 0; i < nparm; i++) init[i] = 1e-4;
+  opt.set_initial_step(init);
+  local_opt.set_initial_step(init);
 
-   opt.set_xtol_rel(objData->tol);
-   opt.set_maxeval(10000);
-   opt.set_lower_bounds(lb);
-   opt.set_upper_bounds(ub);
+  opt.set_min_objective(objfunc_nlogistic_ll, objData);
+  while( opt_iter < 2 &&  !good_opt){
+     opt_iter++;
+     if (opt_iter == 0)
+             opt.set_local_optimizer((const nlopt::opt) local_opt);
+     else
+             opt.set_local_optimizer((const nlopt::opt) local_opt2);
+ 
+     opt.set_lower_bounds(lb);
+     opt.set_upper_bounds(ub);
+     opt.set_xtol_abs(1e-4);
+     opt.set_maxeval(20000);
+     // Ensure that starting values are within bounds
+     for (int i = 0; i < nparm; i++) {
+       double temp = p[i];
+       if (temp < lb[i]) temp = lb[i];
+       else if (temp > ub[i]) temp = ub[i];
+       p[i] = temp;
+     } // end for
 
-   nlopt::result result = nlopt::FAILURE;
-
-   int attempts = 0;
-   int maxAttempts = 10000;
-   while (fail && attempts<maxAttempts){
-     try{
-       result = opt.optimize(p, minf);
-       fail = false;
-     } catch (std::exception &e){
-       attempts++;
+     try {
+        result = opt.optimize(p, minf);
+        good_opt = true; //optimization succeded
+     }catch (nlopt::roundoff_limited &exec) {
+        good_opt = false;
+	std::cout<<"Round Off Limited"<<std::endl;
+     }catch (nlopt::forced_stop &exec) {
+        good_opt = false;
+	std::cout<<"Forced Stop"<<std::endl;
+     }catch (const std::invalid_argument &exc) {
+	  std::cout<<"Invalid Argument"<<std::endl;
+        good_opt = false;
+     }catch (const std::exception &exc) {
+	std::cout<<"Std Exception"<<std::endl;
+        good_opt = false;
+     }catch (...) {
+	std::cout<<"Default Exception"<<std::endl;
+        good_opt = false;
      }
 
-   }
+     if (result > 5) { // Either 5 =
+        good_opt = false;
+     }
+
+
+  }
   
    objData->xlk = -1.0*minf; 
 
@@ -4117,19 +4176,19 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
    Nlogist_probs(probs, p, compgrad, gradij, objData);
    
    double tm, tm1, tm2, tm3;
-   int plus5, j;
+   int plus4, j;
    double xlk = 0.0;   
    for (int i=0; i<Nobs; i++){
      tm1 = 0.0;
      tm2 = 0.0;
      tm3 = 0.0;
-     plus5 = 5 + Xg[i];
+     plus4 = 4 + Xg[i];
      j = (int) Yp[i];
      if (probs[i] < CloseToZero && j > 0){ 
         tm1 -=40.0;
      } else {
        for (int k=1; k<=j; k++){
-          tm = probs[i] + (k-1)*p[plus5];
+          tm = probs[i] + (k-1)*p[plus4];
 	  tm1 += log(tm);
        }
      }
@@ -4138,13 +4197,13 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData){
        tm2 -=40.0;
      } else {
        for (int k=1; k<=j; k++){
-         tm = 1.0 - probs[i] + (k-1)*p[plus5];
+         tm = 1.0 - probs[i] + (k-1)*p[plus4];
 	 tm2 += log(tm);
        }
      }
      j = (int) (Yn[i] + Yp[i]);
      for (int k=1; k<=j; k++){
-       tm = 1.0 + (k-1)*p[plus5];
+       tm = 1.0 + (k-1)*p[plus4];
        tm3 += log(tm);
      }
      xlk += (tm1 + tm2 - tm3);
@@ -4433,7 +4492,6 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   }
 
   objData->isBMDL = true;
-  objData->optimizer = 1;
   double fa = BMDL_func(pa, xa, tol, objData);
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
@@ -4456,7 +4514,7 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     BMDL = BMDS_MISSING;
     return;
   } else {
-    objData->optimizer = 1;
+//    objData->optimizer = 1;
 
     BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
   }  
