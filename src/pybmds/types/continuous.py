@@ -383,24 +383,19 @@ class ContinuousGof(BaseModel):
     def from_model(cls, model) -> Self:
         gof = model.structs.result.gof
         summary = model.structs.result.bmdsRes
-        # only keep indexes where the num ob obsMean + obsSD == 0;
-        # needed for continuous individual datasets where individual items are collapsed into groups
-        mask = np.flatnonzero(np.vstack([gof.obsMean, gof.obsSD]).sum(axis=0))
         return ContinuousGof(
-            dose=np.array(gof.dose)[mask],
-            size=np.array(gof.size)[mask],
-            est_mean=np.array(gof.estMean)[mask],
-            calc_mean=np.array(gof.calcMean)[mask],
-            obs_mean=np.array(gof.obsMean)[mask],
-            est_sd=np.array(gof.estSD)[mask],
-            calc_sd=np.array(gof.calcSD)[mask],
-            obs_sd=np.array(gof.obsSD)[mask],
-            residual=np.array(gof.res)[mask],
-            eb_lower=np.array(gof.ebLower)[mask],
-            eb_upper=np.array(gof.ebUpper)[mask],
-            roi=residual_of_interest(
-                summary.BMD, model.dataset.doses, np.array(gof.res)[mask].tolist()
-            ),
+            dose=np.array(gof.dose),
+            size=np.array(gof.size),
+            est_mean=np.array(gof.estMean),
+            calc_mean=np.array(gof.calcMean),
+            obs_mean=np.array(gof.obsMean),
+            est_sd=np.array(gof.estSD),
+            calc_sd=np.array(gof.calcSD),
+            obs_sd=np.array(gof.obsSD),
+            residual=np.array(gof.res),
+            eb_lower=np.array(gof.ebLower),
+            eb_upper=np.array(gof.ebUpper),
+            roi=residual_of_interest(summary.BMD, model.dataset.doses, np.array(gof.res).tolist()),
         )
 
     def get_tbl_data_means(self, disttype: constants.DistType):
