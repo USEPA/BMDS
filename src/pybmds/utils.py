@@ -59,7 +59,8 @@ def citation() -> str:
     executed = datetime.now().strftime("%B %d, %Y")
     version = get_version()
     url = "https://pypi.org/project/pybmds/"
-    return f"pybmds. (Version {version.python}; Model Library Version {version.dll}) [Python package]. Available from {url}. Executed on {executed}."
+    year = "20" + version.python[:2]
+    return f"U.S. Environmental Protection Agency. ({year}). pybmds ({version.python}; bmdscore {version.dll}) [Software]. Available from {url}. Executed on {executed}."
 
 
 @dataclass
