@@ -8,7 +8,7 @@ BMDS Desktop is identical to [BMDS Online](https://bmdsonline.epa.gov), with a f
 * Database files (projects) are single files containing all analyses
 * Within a project, analyses can be labelled and organized
 
-Follow the [installation](installation.md) guide for to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#the-bmds-desktop-manager) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
+Follow the [installation](installation.md) guide to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#the-bmds-desktop-manager) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
 
 ```{figure} _static/img/bmds-desktop-manager.jpg
 :alt: BMDS Desktop Manager
@@ -43,10 +43,10 @@ BMDS Desktop Project Creation. Create a new project by specifying a path and a d
 ```
 
 :::{important}
-Creating a new project creates an accompanying database file at the with the path and filename specified if it does not already exist. Database files should have the `.db` extension. BMDS Desktop also creates other files with different extensions in that directory- `.db-shm` and `.db-wal`. **Do not delete those files.** They allow multiple users to work with the same project concurrently.
+Creating a new project creates an accompanying database file at the path and filename specified if it does not already exist. Database files should have the `.db` extension. BMDS Desktop also creates other files with different extensions in that directory- `.db-shm` and `.db-wal`. **Do not delete those files -** they allow multiple users to work with the same project concurrently.
 :::
 
-You can also update a database's location, in th e event that you moved the database to a new directory. Updating the database refreshes the path/location so BMDS Desktop can find it again; the updating process does not change the file's contents.
+You can also update a database's location, in the event that you moved the database to a new directory. Updating the database refreshes the path/location so BMDS Desktop can find it again; the updating process does not change the file's contents.
 
 Deleting a project from the BMDS Desktop Startup Interface deletes its entry in the list of recent databases, but does not delete the database itself. To fully delete the database files, navigate to that project in your system's file manager and manually delete.
 

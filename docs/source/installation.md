@@ -11,34 +11,50 @@ This guide documents a standard installation process for packages in the Python 
 (part-1)=
 ## Part 1 - Install Python
 
-If possible, use the most recent version available; the minimum support version is version 3.11 (released in 2022).
+You can install Python from [python.org](https://www.python.org/downloads/)[^disclaimer], [Anaconda](https://www.anaconda.com/download)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution (e.g., Anaconda, Miniconda, Miniforge, etc.) may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
 
-You can install Python from [python.org](https://python.org)[^disclaimer], [Anaconda](https://www.anaconda.com/)[^disclaimer], or anywhere else you or your organization prefers. In general, using an Anaconda style distribution may make things simpler as environment management is more tightly integrated into the software (described [below](part-2)).
-
-During installation, ensure Python is added to your path (this is an option on some Windows installers).
+* If installing Python from [python.org](https://www.python.org/downloads/)[^disclaimer], make sure that Python is added to your path (this is an option on Windows installers). If possible, use the most recent version available; the minimum supported version is 3.11.0 (released in 2022).
+* If installing a Conda distribution, make sure it is relatively recent version (released within the last 3 years).
 
 (open-terminal)=
-After installing, open a terminal.
+After installing, open a terminal to check that either `python` or `conda` is available from your terminal.  Follow the appropriate guide below, depending on your method of installing (click the tab below).
 
-:::{admonition} Which terminal should I use?
-:class: info
+::::{tab-set}
+:::{tab-item} Anaconda
+
+If you installed Anaconda style distribution (e.g., Anaconda, Miniconda, Miniforge, etc.), in the Start Menu, search for the Anaconda Prompt - it may be called something like "Anaconda Prompt", "Miniconda Prompt", or "Miniforge Prompt". Select this item to open the terminal.
+
+In the terminal, confirm that `conda` is available:
+
+```bash
+conda --version
+```
+
+This should return a version, for example `conda 24.7.1`. Conda can install different versions of Python, and you should be able to install a version that is compatible with `pybmds` and BMDS Desktop as long as your conda installation is not too old.
+
+If you see a conda version after typing this command, you’re ready for the next step! Otherwise, check the [FAQ](faq) for possible solutions.
+
+:::
+:::{tab-item} Python
 
 On Windows:
-* If you installed Anaconda or other applications which have a `conda` command (e.g., Miniconda, Miniforge, etc.), in the Start Menu, search for the Anaconda Prompt - it may be called something like "Anaconda prompt" or "Miniconda prompt".
-* If you installed Python from python.org, in the Start menu search for and run the "Command Prompt". Make sure to use the "Command Prompt" instead of "Powershell".
+* In the Start menu search for and run the "Command Prompt". Make sure to use the "Command Prompt" instead of "Powershell".
 
 On Mac/Linux:
 * You can use the built-in Terminal, or any other application you're comfortable with.
-:::
 
-In the terminal, confirm that Python is available:
+In the terminal, confirm that `python` is available:
 
 ```bash
 python --version
 ```
 
-This should return a version, for example `Python 3.12.5`.  If you see a python version after typing this command, you're ready for the next step!  Otherwise, check the [FAQ](faq) for possible solutions.
+This should return a version, for example `Python 3.12.6`. The minimum supported version of Python for `pybmds` and BMDS Desktop is Python 3.11.0; anything more recent than this should work.
 
+If you see a Python version after typing this command, you’re ready for the next step! Otherwise, check the [FAQ](faq) for possible solutions.
+
+:::
+::::
 
 (part-2)=
 ## Part 2 - Create an Environment
@@ -49,11 +65,11 @@ Virtual environments are essentially copies of Python, but you can have multiple
 
 Using virtual environments instead of installing in the "root" Python environment has several advantages:
 
-1. With some computers and enterprise setups, it may be not be possible to install packages in the "root" Python environment without administrative rights.
+1. With some computers and enterprise setups, it may not be possible to install packages in the "root" Python environment without administrative rights.
 2. If packages are installed, they may not easily be found by the "root" Python.
 3. When using virtual environments, you can install multiple versions of the BMDS Desktop software in case you'd like to use different versions for different projects.
 
-Python virtual environments are simple to create, but the steps are specific depending on whethe you installed Python or Anaconda:
+Python virtual environments are simple to create, but the steps are specific depending on whether you installed Python or Anaconda:
 
 ::::{tab-set}
 
@@ -225,7 +241,7 @@ python -m pip install bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects
 :::{admonition} NOTE - this will not work until we officially release!
 :class: caution
 
-The content below below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
+The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
 
 ---
 
@@ -294,8 +310,7 @@ The `pybmds` package is available in this environment, so you can start a Python
 
 ### A complete example
 
-The complete startup after installation can be summarized below, assuming you followed the guide above.
-
+The complete startup after installation on Windows can be summarized below, assuming you followed the guide above.
 
 ::::{tab-set}
 
@@ -456,7 +471,7 @@ To troubleshoot this error (instructions assume Windows 11):
 
 You may see a Syntax Error message if you've started the Python interpreter and then typed installation commands not written in the Python language.
 
-From within the Python interpreter, you can write Python scripts using `pybmds`. However, it's it's not where you want to be for the installation guide. For installing BMDS Desktop, you need to be in a terminal in a location where Python can be executed. The good news is, if you're inside a Python interpreter, you're in the correct place for installation, but you'll need to exit the interpreter.
+From within the Python interpreter, you can write Python scripts using `pybmds`. However, it's not where you want to be for the installation guide. For installing BMDS Desktop, you need to be in a terminal in a location where Python can be executed. The good news is, if you're inside a Python interpreter, you're in the correct place for installation, but you'll need to exit the interpreter.
 
 To exit the interactive Python interpreter and return to your terminal, type `exit()` and press Enter.
 
@@ -485,7 +500,7 @@ After [activating your environment](activate-venv), you can upgrade to the lates
 :::{admonition} NOTE - this will not work until we officially release!
 :class: caution
 
-The content below below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
+The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
 
 ---
 
@@ -552,9 +567,9 @@ Open the path to your virtual environment using Windows Explorer and delete the 
 (writing-pybmds-code)=
 ### Writing pybmds Code
 
-You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can generally use any approach for writing code you're familiar with.
+You have many options for running the `pybmds` software. The package is a standard Python package which means if you're familiar with Python, you can use any approach for writing code you may already be familiar with.
 
-However, if you're new to the Python ecosystem, we generally recommend using [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer] for writing and executing code.
+If you are new to the Python ecosystem, you can use one of the following commonly used development environments - [jupyterlab](https://jupyter.org/)[^disclaimer], Microsoft [Visual Studio Code](https://code.visualstudio.com/)[^disclaimer], or Posit [Positron](https://github.com/posit-dev/positron)[^disclaimer].
 
 If you'd prefer to not write any code, then install `bmds-ui` and start BMDS Desktop.
 
