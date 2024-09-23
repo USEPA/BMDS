@@ -350,11 +350,9 @@ struct python_nested_result{
   std::vector<double> cov;
   int dist_numE;  //number of entries in rows for the bmd dist
   double    model_df;        // Used model degrees of freedom
-  double max;
   double bmd;
   double fixedLSC;
   double LL;
-  double obsChiSq;
   double combPVal;
   struct BMDS_results bmdsRes;
   //NestedLitterDataRow
