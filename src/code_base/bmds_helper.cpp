@@ -1103,14 +1103,13 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
 
      iIndex = 1;
      for (int k=0; k<nT; k++){
-	for (int j=0; j<=degree[k]; j++){
-	   if (j==0){
-	      grad[iIndex]=0;
-           } else {
+	iIndex++;
+	grad[iIndex] = D;
+	for (int j=2; j<=degree[k]; j++){
+	      iIndex++;
 	      grad[iIndex] = pow(D,j);
-	   }
-	   iIndex +=1;
 	}
+	iIndex++;
 
      }
    }
@@ -1119,7 +1118,6 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
    sum = log(1.0 - bmr);
    iIndex = x.size() - 1;
    double sum3 = 0.0;
-
    for (int l=nT-1; l>=0; l--){
      sum2 = 0.0;
      for (int k=degree[l]; k>0; k--){
@@ -1163,9 +1161,9 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
          }
          if (sum < 0) sum = 0.0;
          double P = 1.0 - exp(-1.0*sum);
-         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
-         int iIndex = iTop-1;
-         for(int j=degree[l]-1; j>=0; j--){
+         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
+         int iIndex = iTop;
+         for(int j=degree[l]; j>=0; j--){
            grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));
            iIndex = iIndex-1;
          }
