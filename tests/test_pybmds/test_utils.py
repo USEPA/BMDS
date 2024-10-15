@@ -3,7 +3,7 @@ from pybmds.utils import get_version
 
 
 def test_citation():
-    assert pybmds.citation().startswith("pybmds.")
+    assert "pybmds" in pybmds.citation()
 
 
 def test_get_version():

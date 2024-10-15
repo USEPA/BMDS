@@ -3,9 +3,9 @@
   <img src="_static/img/pybmds-identifier.png" width="210px">
 </p>
 
-**BMDS Desktop** is an application for running dose-response modeling using a Graphical User Interface (GUI) on a local system, if running BMDS Online is not technically possible or feasible. The **bmds-ui** Python package installs BMDS Desktop; it can also be used to deploy the application online, such as the U.S. EPA's [BMDS Online](https://bmdsonline.epa.gov).
+The U.S. EPA [BMDS Online](https://bmdsonline.epa.gov) is a web application which allows users to execute the Benchmark Dose Modeling Software using a using a Graphical User Interface (GUI) on your web browser, no installation required.  If you'd prefer to run the software on your computer, **BMDS Desktop** is the same application running locally. The Python package **bmds-ui** installs BMDS Desktop.
 
-**pybmds** is a Python package for executing U.S. EPA's Benchmark Dose Modeling Software (BMDS) in a scripting environment. The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and cancer (including multitumor modeling). It is the underlying execution engine for BMDS Desktop and BMDS Online.
+The Python package **pybmds** allows execution of dose-response models in a scripting environment. The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and cancer (including multitumor modeling). It is the underlying execution engine for BMDS Online and BMDS Desktop.
 
 **Highlights:**
 
