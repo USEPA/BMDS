@@ -9,7 +9,6 @@
 #include <ctime>
 //#include <cmath>
 #include <nlopt.hpp>
-#include <functional>
 #include "bmds_helper.h"
 #include "analysis_of_deviance.h"
 
@@ -4477,12 +4476,36 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
   pyRes->bmd = BMD;
 
   //Search for BMDL
+  objData->isBMDL = true;
   double stepsize = 0.5;  //Start close to the BMD and work downwards
   double xb = BMD; 
   double xa = xb * stepsize;
   double tol = max(BMD*0.001, 0.0000001);
   double fb = DBL_MAX;
 
+  pyRes->bmdsRes.BMDL = calcNlogisticCLs(xa, xb, pint, objData, true);
+
+  //Search for BMDU
+
+  objData->isBMDL = true;
+  stepsize = 0.5;  //Start close to the BMD and work upwards
+  xb = BMD; 
+  xa = xb * (1.0 + stepsize);
+  tol = max(BMD*0.001, 0.0000001);
+  fb = DBL_MAX;
+
+  pyRes->bmdsRes.BMDU = calcNlogisticCLs(xa, xb, pint, objData, false);
+}
+
+
+double calcNlogisticCLs(double xa, double xb, std::vector<double> &pint, struct nestedObjData *objData, bool isLower){
+
+  double stepsize = 0.5;  //Start close to the BMD and work upwards
+  double tol = max(xb*0.001, 0.0000001);
+  double fb = DBL_MAX;
+
+
+  int nparm = pint.size();
   std::vector<double> pa(nparm);
   std::vector<double> pb(nparm);
 
@@ -4490,12 +4513,12 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     pa[i] = pb[i] = pint[i];
   }
 
-  objData->isBMDL = true;
   double fa = BMDL_func(pa, xa, tol, objData);
+  if (!isLower) fa*=-1;
 
   //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
   //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
-  
+
   int trip =0;
   double tmp = fabs(fa-fb);
   while (fa<0.0 && xa > DBL_MIN && fabs(fa-fb)>DBL_EPSILON){
@@ -4505,65 +4528,18 @@ void Nlogist_BMD(struct python_nested_analysis *pyAnal, struct python_nested_res
     xa *= stepsize;
 
     fa = BMDL_func(pa, xa, tol, objData);
+    if (!isLower) fa*=-1;
     trip++;
   }
- 
-  double BMDL;
+
+  double val;  //either BMDL or BMDU
   if (fa < 0.0){
-    BMDL = BMDS_MISSING;
-    return;
+    val = BMDS_MISSING;
   } else {
-//    objData->optimizer = 1;
-
-    BMDL = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
-  }  
-  pyRes->bmdsRes.BMDL = BMDL;
-
-
-  //BMDU test
-
-  objData->isBMDL = true;
-  stepsize = 0.5;  //Start close to the BMD and work upwards
-  xb = BMD; 
-  xa = xb * (1.0 + stepsize);
-  tol = max(BMD*0.001, 0.0000001);
-  fb = DBL_MAX;
-
-  //std::vector<double> pa(nparm);
-  //std::vector<double> pb(nparm);
-
-  for (int i=0; i<nparm; i++){
-    pa[i] = pb[i] = pint[i];
+    val = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
   }
 
-  fa = BMDL_func(pa, xa, tol, objData);
-
-  //Look for a value of xa on the other side of the BMDL.  We know we're there when fa > 0.
-  //Stop if xa gets too small, or the profile likelihood gets flat (fabs(fa - fb) too small).
-  
-  trip =0;
-  tmp = fabs(fa-fb);
-  while (fa>0.0 && xa > DBL_MIN && fabs(fa-fb)>DBL_EPSILON){
-    xb = xa;
-    fb = fa;
-    for (int i=0; i<nparm; i++) pb[i] = pa[i];
-    xa *= stepsize;
-
-    fa = BMDL_func(pa, xa, tol, objData);
-    trip++;
-  }
- 
-  double BMDU;
-  if (fa > 0.0){
-    BMDU = BMDS_MISSING;
-    return;
-  } else {
-//    objData->optimizer = 1;
-
-    BMDU = zeroin_nested(xa, xb, 1.0e-10, BMDL_func, pb, 1.0e-14, objData);
-
-    pyRes->bmdsRes.BMDU = BMDU;
-  }
+  return val;
 }
 
 //QCHISQ - inverse chi-square function
