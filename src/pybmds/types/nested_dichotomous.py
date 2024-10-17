@@ -319,7 +319,7 @@ class NestedDichotomousResult(BaseModel):
         return cls(
             bmd=result.bmdsRes.BMD,
             bmdl=result.bmdsRes.BMDL,
-            bmdu=constants.BMDS_BLANK_VALUE,  # TODO - add BMDU when calculated in bmdscore
+            bmdu=result.bmdsRes.BMDU,
             aic=result.bmdsRes.AIC,
             bic_equiv=result.bmdsRes.BIC_equiv,
             bounded=result.bmdsRes.bounded,
@@ -368,7 +368,7 @@ class NestedDichotomousResult(BaseModel):
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],
-            # ["BMDU", self.bmdu],  TODO - add BMDU when calculated in bmdscore
+            ["BMDU", self.bmdu],
             ["AIC", self.aic],
             ["P-Value", self.combined_pvalue],
             ["d.f.", self.dof],
@@ -400,7 +400,7 @@ class NestedDichotomousResult(BaseModel):
         d.update(
             bmd=self.bmd,
             bmdl=self.bmdl,
-            # bmdu=self.bmdu,  TODO - add BMDU when calculated in bmdscore
+            bmdu=self.bmdu,
             aic=self.aic,
             p_value=self.combined_pvalue,
             loglikelihood=self.ll,
