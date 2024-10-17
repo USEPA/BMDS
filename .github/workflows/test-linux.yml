@@ -60,6 +60,7 @@ jobs:
           coverage run -m pytest
           echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
           coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+          coverage html -d coverage -i
       - name: Build documentation
         run: |
           make docs
@@ -67,11 +68,18 @@ jobs:
             make docs-docx
             rm -rf docs/build/singlehtml
           fi
-      - uses: actions/upload-artifact@v4
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v4
         with:
           name: docs
-          path: |
-            ./docs/build/
+          path: docs/build/
+          retention-days: 14
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 14
 
   bmdscore:
     runs-on: ubuntu-22.04

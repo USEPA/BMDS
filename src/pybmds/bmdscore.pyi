@@ -406,11 +406,9 @@ class python_nested_result:
     cov: list[float]
     fixedLSC: float
     litter: nestedLitterData
-    max: float
     model: nested_model
     model_df: float
     nparms: int
-    obsChiSq: float
     parms: list[float]
     reduced: nestedReducedData
     srData: nestedSRData
