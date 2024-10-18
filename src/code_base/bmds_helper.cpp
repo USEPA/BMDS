@@ -2335,6 +2335,39 @@ void convertFromPythonDichoAnalysis(struct dichotomous_analysis *anal, struct py
       anal->prior[i] = pyAnal->prior[i];
     }
   }
+
+  //modify priors for logit transformation
+  //this includes background parms for all dichotomous models
+  //as well as v parm for dichotomous Hill model
+  //pyAnal priors are on logistic scale [0,1]
+  //anal priors are expected to be on real scale (-inf, inf)
+  //
+  //This affects the min/max values only
+  //the initial, mean, and std dev values are on real scale
+  double val;
+  int index;
+  //background parameter
+  if (pyAnal->prior.size() >0){
+     //min
+     index = anal->parms*3; 
+     val = anal->prior[index]; 
+     anal->prior[index] = log(val/(1-val));
+     //max
+     index += anal->parms;
+     val = anal->prior[index]; 
+     anal->prior[index] = log(val/(1-val));
+  }
+
+  // v parameter for dichotomous hill
+  if (pyAnal->model == d_hill){
+     index = anal->parms*3+1;
+     val = anal->prior[index];
+     anal->prior[index] = log(val/(1-val));
+     index+= anal->parms;
+     val = anal->prior[index];
+     anal->prior[index] = log(val/(1-val));
+  }
+  
 }
 
 void convertFromPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes){
