@@ -8,7 +8,7 @@ BMDS Desktop is identical to [BMDS Online](https://bmdsonline.epa.gov), with a f
 * Database files (projects) are single files containing all analyses
 * Within a project, analyses can be labelled and organized
 
-Follow the [installation](installation.md) guide to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#the-bmds-desktop-manager) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
+Follow the [installation](installation.md) guide to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#create-the-bmds-desktop-manager-shortcut) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
 
 ```{figure} _static/img/bmds-desktop-manager.jpg
 :alt: BMDS Desktop Manager
