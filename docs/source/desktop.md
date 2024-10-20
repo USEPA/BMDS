@@ -4,11 +4,11 @@ BMDS Desktop is a graphical user interface to execute dose-response modeling on 
 
 BMDS Desktop is identical to [BMDS Online](https://bmdsonline.epa.gov), with a few additional features:
 
-* Analyses (dose response analyses) and data storage is fully offline
+* Analyses (dose response analyses) and data storage are fully offline
 * Database files (projects) are single files containing all analyses
 * Within a project, analyses can be labelled and organized
 
-Follow the [installation](installation.md) guide to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#the-bmds-desktop-manager) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
+Follow the [installation](installation.md) guide to install the software. Make sure to create the [BMDS Desktop Manager](./installation.md#create-the-bmds-desktop-manager-shortcut) shortcut. To start BMDS Desktop, double-click the shortcut and then enter option `1` to start the application:
 
 ```{figure} _static/img/bmds-desktop-manager.jpg
 :alt: BMDS Desktop Manager
@@ -29,7 +29,7 @@ The BMDS Desktop Startup Interface is the gateway to create a BMDS project and s
 ```{figure} _static/img/desktop-startup.jpg
 :alt: Screenshot of BMDS Desktop Startup
 
-BMDS Desktop Startup Interface. On startup, you see a list existing projects that have been run with BMDS Desktop; you can create new projects from this screen as well. Navigate the interface using your keyboard or mouse.
+BMDS Desktop Startup Interface. On startup, you see a list of existing projects that have been run with BMDS Desktop. You can create new projects from this screen as well. Navigate the interface using your keyboard or mouse.
 ```
 
 Each project in BMDS Desktop contains all of that project's analyses stored in a single file. You can create a single project and store all of your analyses in a single file, or multiple projects - one project per chemical, for example.
@@ -43,7 +43,7 @@ BMDS Desktop Project Creation. Create a new project by specifying a path and a d
 ```
 
 :::{important}
-Creating a new project creates an accompanying database file at the path and filename specified if it does not already exist. Database files should have the `.db` extension. BMDS Desktop also creates other files with different extensions in that directory- `.db-shm` and `.db-wal`. **Do not delete those files -** they allow multiple users to work with the same project concurrently.
+Creating a new project creates an accompanying database file at the path and filename specified if it does not already exist. Database files should have the `.db` extension. BMDS Desktop also creates other files with different extensions in that directory, such as `.db-shm` and `.db-wal`. **Do not delete those files -** they allow multiple users to work with the same project concurrently.
 :::
 
 You can also update a database's location, in the event that you moved the database to a new directory. Updating the database refreshes the path/location so BMDS Desktop can find it again; the updating process does not change the file's contents.
@@ -52,8 +52,7 @@ Deleting a project from the BMDS Desktop Startup Interface deletes its entry in 
 
 ## BMDS Desktop Application
 
-After at least one project has been created, press the "Start"
- button to run the project. Starting a project will open a new BMDS Desktop tab in your default browser. For a new project, initial startup may take up to a minute for the browser tab to appear.
+After at least one project has been created, select the "Start" button to run the project. Starting a project will open a new BMDS Desktop tab in your default browser. For a new project, initial startup may take up to a minute before the browser tab appears.
 
 You can run only one BMDS Desktop project at a time.
 
