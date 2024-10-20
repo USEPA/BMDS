@@ -401,14 +401,15 @@ def write_nd_frequentist_table(report: Report, session: Session):
     body = report.styles.tbl_body
 
     footnotes = TableFootnote()
-    tbl = report.document.add_table(len(session.models) + 1, 6, style=styles.table)
+    tbl = report.document.add_table(len(session.models) + 1, 7, style=styles.table)
 
     write_cell(tbl.cell(0, 0), "Model", style=hdr)
     write_cell(tbl.cell(0, 1), "BMDL", style=hdr)
     write_cell(tbl.cell(0, 2), "BMD", style=hdr)
-    write_pvalue_header(tbl.cell(0, 3), style=hdr)
-    write_cell(tbl.cell(0, 4), "AIC", style=hdr)
-    write_cell(tbl.cell(0, 5), "Recommendation and Notes", style=hdr)
+    write_cell(tbl.cell(0, 3), "BMDU", style=hdr)
+    write_pvalue_header(tbl.cell(0, 4), style=hdr)
+    write_cell(tbl.cell(0, 5), "AIC", style=hdr)
+    write_cell(tbl.cell(0, 6), "Recommendation and Notes", style=hdr)
 
     # write body
     recommended_index = (
@@ -429,10 +430,11 @@ def write_nd_frequentist_table(report: Report, session: Session):
             footnotes.add_footnote(tbl.cell(row, 0).paragraphs[0], session.selected.notes)
         write_cell(tbl.cell(row, 1), model.results.bmdl, body)
         write_cell(tbl.cell(row, 2), model.results.bmd, body)
-        write_cell(tbl.cell(row, 3), model.results.combined_pvalue, body)
-        write_cell(tbl.cell(row, 4), model.results.aic, body)
+        write_cell(tbl.cell(row, 3), model.results.bmd, body)
+        write_cell(tbl.cell(row, 4), model.results.combined_pvalue, body)
+        write_cell(tbl.cell(row, 5), model.results.aic, body)
 
-        cell = tbl.cell(row, 5)
+        cell = tbl.cell(row, 6)
         if recommendations:
             p = cell.paragraphs[0]
             p.style = body
@@ -440,10 +442,10 @@ def write_nd_frequentist_table(report: Report, session: Session):
             run.bold = True
             p.add_run(recommendations.notes_text(idx))
         else:
-            write_cell(tbl.cell(row, 6), "-", body)
+            write_cell(cell, "-", body)
 
     # set column width
-    widths = np.array([1.7, 0.9, 0.9, 0.9, 0.9, 2])
+    widths = np.array([1.5, 0.9, 0.9, 0.9, 0.9, 0.9, 2])
     widths = widths / (widths.sum() / styles.portrait_width)
     for width, col in zip(widths, tbl.columns, strict=True):
         set_column_width(col, width)
