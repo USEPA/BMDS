@@ -1161,7 +1161,8 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
          }
          if (sum < 0) sum = 0.0;
          double P = 1.0 - exp(-1.0*sum);
-         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
+         //resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
+         resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
          int iIndex = iTop;
          for(int j=degree[l]; j>=0; j--){
            grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));

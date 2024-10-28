@@ -4071,6 +4071,30 @@ void runPythonMultitumorAnalysis(){
 //  n_group.push_back(n_group2);
 //  n_group.push_back(n_group3); 
 
+  //online test
+  std::vector<double> doses1 = {0,50,100,200,400};
+  std::vector<double> Y1 = {0,1,2,10,19};
+  std::vector<double> n_group1 = {20,20,20,20,20};
+  std::vector<double> doses2 = {0,50,100,200,400};
+  std::vector<double> Y2 = {0,1,2,4,11};
+  std::vector<double> n_group2 = {20,20,20,20,20};
+  std::vector<double> doses3 = {0,50,100,200,400};
+  std::vector<double> Y3 = {0,2,2,6,9};
+  std::vector<double> n_group3 = {20,20,20,20,20};
+  std::vector<int> n = {5,5,5};
+  //std::vector<int> degree = {0,0,0};
+  std::vector<int> degree = {2,2,2};
+  doses.push_back(doses1);
+  doses.push_back(doses2);
+  doses.push_back(doses3);
+  Y.push_back(Y1);
+  Y.push_back(Y2);
+  Y.push_back(Y3);
+  n_group.push_back(n_group1);
+  n_group.push_back(n_group2);
+  n_group.push_back(n_group3);
+
+
 
   //data test one recommended model 
 //  std::vector<double> doses1 = {0,25,75,125,200};
@@ -4100,20 +4124,20 @@ void runPythonMultitumorAnalysis(){
 //  n_group.push_back(n_group1);
 
   //data test one recommended model 
-  std::vector<double> doses1 = {0,50,100,150,200};
-  std::vector<double> Y1 = {0,5,30,65,90};
-  std::vector<double> n_group1 = {100,100,100,100,100};
-  std::vector<double> doses2 = {0,50,100,200,400};
-  std::vector<double> Y2 = {1,68,78,88,98};
-  std::vector<double> n_group2 = {100,100,100,100,100};
-  std::vector<int> n = {5,5};
-  std::vector<int> degree = {0,0};
-  doses.push_back(doses1);
-  doses.push_back(doses2);
-  Y.push_back(Y1);
-  Y.push_back(Y2);
-  n_group.push_back(n_group1);
-  n_group.push_back(n_group2);
+//  std::vector<double> doses1 = {0,50,100,150,200};
+//  std::vector<double> Y1 = {0,5,30,65,90};
+//  std::vector<double> n_group1 = {100,100,100,100,100};
+//  std::vector<double> doses2 = {0,50,100,200,400};
+//  std::vector<double> Y2 = {1,68,78,88,98};
+//  std::vector<double> n_group2 = {100,100,100,100,100};
+//  std::vector<int> n = {5,5};
+//  std::vector<int> degree = {0,0};
+//  doses.push_back(doses1);
+//  doses.push_back(doses2);
+//  Y.push_back(Y1);
+//  Y.push_back(Y2);
+//  n_group.push_back(n_group1);
+//  n_group.push_back(n_group2);
 
   //data test no recommended model 
 //  std::vector<double> doses1 = {0,50,100,200,400};
