@@ -31,22 +31,22 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "coverage~=7.5.1",
-  "mypy~=1.10.0",
+  "coverage~=7.6.4",
+  "mypy~=1.13.0",
   "pybind11~=2.10.4",
   "pytest-mpl~=0.17.0",
-  "pytest~=8.2.1",
-  "ruff~=0.5.7",
-  "setuptools~=67.7.2",
-  "wheel~=0.43.0",
+  "pytest~=8.3.3",
+  "ruff~=0.7.1",
+  "setuptools~=75.3.0",
+  "wheel~=0.44.0",
 ]
 docs = [
-  "Sphinx~=7.4.7",
-  "myst-nb~=1.1.1",
-  "myst-parser~=3.0.1",
-  "furo==2024.7.18",
-  "sphinx_design==0.6.0",
-  "sphinx-autobuild~=2024.4.16",
+  "Sphinx~=8.1.3",
+  "myst-nb~=1.1.2",
+  "myst-parser~=4.0.0",
+  "furo==2024.8.6",
+  "sphinx_design~=0.6.1",
+  "sphinx-autobuild~=2024.10.3",
 ]
 
 [project.scripts]
@@ -55,7 +55,7 @@ docs = [
 [build-system]
 requires = [
   "pybind11~=2.10.4",
-  "setuptools~=67.7.2",
+  "setuptools~=75.3.0",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -102,8 +102,8 @@ NLOPT_DIR="/opt/homebrew/Cellar/nlopt/2.7.1/include"
 
 [tool.coverage.report]
 exclude_also = [
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
 ]
 fail_under=96.7
 precision=1
@@ -125,6 +125,7 @@ lint.ignore = ["E501"]
 lint.isort.known-first-party = ["pybmds"]
 
 [tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["I001", "E402", "F401", "T201", "T203"]
 "test_*.py" = ["S101", "ERA001"]
 "setup.py" = ["S603", "S607"]
 
