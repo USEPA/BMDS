@@ -73,7 +73,23 @@ file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 # Set up such that XCode organizes the files
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES} )
 
-include(pybind11.cmake)
+include(FetchContent)
+
+# pybind11 cmake
+set(FETCHCONTENT_QUIET FALSE)
+
+FetchContent_Declare(
+  pybind11
+  URL https://github.com/pybind/pybind11/archive/refs/tags/v2.10.4.tar.gz
+)
+
+FetchContent_GetProperties(pybind11)
+
+if(NOT pybind11_POPULATED)
+  FetchContent_Populate(pybind11)
+  add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+endif()
+
 pybind11_add_module(bmdscore
 	${SOURCE_FILES}
 	${HEADER_FILES}
