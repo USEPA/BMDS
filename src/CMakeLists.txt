@@ -197,4 +197,3 @@ add_custom_target(run_tests_with_coverage
 	WORKING_DIRECTORY ./  #${PROJECT_BINARY_DIR}
 	COMMENT "Running test, generating coverage data, and generating HTML report"
 )
-

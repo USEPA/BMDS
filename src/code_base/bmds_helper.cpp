@@ -2288,11 +2288,6 @@ string BMDS_ENTRY_API __stdcall version(){
 }
 
 
-int BMDS_ENTRY_API __stdcall add2(int i, int j) {
-    return i + j;
-}
-
-
 void convertToPythonDichoRes(struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes){
   
   pyRes->model = res->model;
