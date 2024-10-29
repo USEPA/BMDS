@@ -63,11 +63,11 @@ find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 project(bmdscore)
 
-include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${NLOPT_DIR} ${GSL_DIR})
+include_directories("${CMAKE_SOURCE_DIR}/src/bmdscore" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${NLOPT_DIR} ${GSL_DIR})
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
-file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/code_base/*.cpp")
-file (GLOB HEADER_FILES "src/include/*.h" "src/code_base/*.h" ${EIGEN_DIR})
+file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/bmdscore/*.cpp")
+file (GLOB HEADER_FILES "src/include/*.h" "src/bmdscore/*.h" ${EIGEN_DIR})
 file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 
 # Set up such that XCode organizes the files

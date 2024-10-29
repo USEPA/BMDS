@@ -1,6 +1,6 @@
-noinst_LTLIBRARIES = libBMDS.la 
+noinst_LTLIBRARIES = libBMDS.la
 
-AM_CPPFLAGS= -I$(top_srcdir)/code_base -I$(top_srcdir)/include  -I$(EIGEN_INCLUDE)
+AM_CPPFLAGS= -I$(top_srcdir)/bmdscore -I$(top_srcdir)/include  -I$(EIGEN_INCLUDE)
 AM_CPPFLAGS+=  -O3 -funroll-loops -std=c++11
 AM_CPPFLAGS+= @OPENMP_CFLAGS@ -Wno-ignored-attributes -DEIGEN_NO_DEBUG -march=native
 
