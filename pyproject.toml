@@ -33,7 +33,7 @@ dependencies = [
 dev = [
   "coverage~=7.6.4",
   "mypy~=1.13.0",
-  "pybind11~=2.13.6",
+  "pybind11==2.13.6",
   "pytest-mpl~=0.17.0",
   "pytest~=8.3.3",
   "ruff~=0.7.1",
@@ -54,7 +54,7 @@ docs = [
 
 [build-system]
 requires = [
-  "pybind11~=2.13.6",
+  "pybind11==2.13.6",
   "setuptools~=75.3.0",
 ]
 build-backend = "setuptools.build_meta"
