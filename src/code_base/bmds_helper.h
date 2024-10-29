@@ -551,10 +551,6 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, 
 
 string BMDS_ENTRY_API __stdcall version();
 
-int BMDS_ENTRY_API __stdcall add2(int i, int j);
-
-void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
-
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDichoMA(struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes);

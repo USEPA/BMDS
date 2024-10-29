@@ -102,8 +102,8 @@ NLOPT_DIR="/opt/homebrew/Cellar/nlopt/2.7.1/include"
 
 [tool.coverage.report]
 exclude_also = [
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
 ]
 fail_under=96.7
 precision=1
