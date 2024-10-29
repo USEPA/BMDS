@@ -31,6 +31,8 @@ IF(WIN32)
   add_compile_definitions(RBMDS_EXPORTS)
 ENDIF()
 
+project(bmdscore)
+
 # Find libraries
 IF(WIN32)
   find_library(GSL_LIB gsl REQUIRED HINTS ${GSL_DIR})
