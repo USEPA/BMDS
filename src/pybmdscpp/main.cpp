@@ -4,13 +4,12 @@
 #include "bmds_helper.h"
 #include "cmodeldefs.h"
 
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
-
 namespace py = pybind11;
 
 PYBIND11_MODULE(bmdscore, m) {
-   m.doc() = "bmdscore c++ interface";
+   m.doc() = "bmdscore C++ interface";
+   
+   m.def("version",  &version, "bmdscore version number");
    
    py::enum_<dich_model>(m, "dich_model", py::arithmetic(), "Dichotomous model enumeration")
       .value("d_hill", d_hill, "dichotomous hill model enum")
@@ -329,4 +328,44 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("boot", &python_nested_result::boot)
       .def_readwrite("reduced", &python_nested_result::reduced)
       .def_readwrite("srData", &python_nested_result::srData);  
+         
+   m.def(
+      "pythonBMDSDicho", 
+      &pythonBMDSDicho, 
+      "Entry point to run BMDS dichotomous models", 
+      py::arg("python_dichotomous_analysis"), 
+      py::arg("python_dichotomous_model_result")
+   );
+   
+   m.def(
+      "pythonBMDSDichoMA", 
+      &pythonBMDSDichoMA, 
+      "Entry point to run BMDS dichotomous MA", 
+      py::arg("python_dichotomousMA_analysis"), 
+      py::arg("python_dichotomousMA_result")
+   );
+   
+   m.def(
+      "pythonBMDSCont", 
+      &pythonBMDSCont, 
+      "Entry point to run BMDS continuous models", 
+      py::arg("python_continuous_analysis"), 
+      py::arg("python_continuous_model_result")
+   );
+   
+   m.def(
+      "pythonBMDSMultitumor", 
+      &pythonBMDSMultitumor, 
+      "Entry point to run Multitumor analysis", 
+      py::arg("python_multitumor_analysis"), 
+      py::arg("python_multitumor_result")
+   );
+   
+   m.def(
+      "pythonBMDSNested", 
+      &pythonBMDSNested, 
+      "Entry point to run Nested analysis", 
+      py::arg("python_nested_analysis"), 
+      py::arg("python_nested_result")
+   );
 }

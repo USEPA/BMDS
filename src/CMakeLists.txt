@@ -31,9 +31,7 @@ IF(WIN32)
   add_compile_definitions(RBMDS_EXPORTS)
 ENDIF()
 
-project(bmdscore VERSION 0.1.0)
-
-#Find libraries
+# Find libraries
 IF(WIN32)
   find_library(GSL_LIB gsl REQUIRED HINTS ${GSL_DIR})
 ELSE()
@@ -41,8 +39,7 @@ ELSE()
 ENDIF()
 find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
-
-#lib dirs
+# lib dirs
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
 # Include dir
@@ -93,8 +90,6 @@ set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/normal_POLYNOMIAL_NC.cpp
         ${PROJECT_SOURCE_DIR}/normal_POWER_NC.cpp
         ${PROJECT_SOURCE_DIR}/normalModels.cpp
-#       ${PROJECT_SOURCE_DIR}/pch.cpp
-#       ${PROJECT_SOURCE_DIR}/pch.h
         ${PROJECT_SOURCE_DIR}/stdafx.cpp
         ${PROJECT_SOURCE_DIR}/stdafx.h
         ${PROJECT_SOURCE_DIR}/targetver.h
@@ -155,16 +150,16 @@ ENDIF(WIN32)
 # Include directories
 target_include_directories(bmdscore PRIVATE include)
 
-#Add the executable target for the tests
+# Add the executable target for the tests
 add_executable(unit_tests ./unitTests/test_main.cpp ./unitTests/unit_tests.cpp ./unitTests/integration_tests.cpp ./unitTests/test_func.cpp)
 
-#Link the library to the test executable
+# Link the library to the test executable
 target_link_libraries(unit_tests bmdscore)
 
-#ENable code coverage analysis
+# Enable code coverage analysis
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
 
-#Add a custom target for generating coverage report
+# Add a custom target for generating coverage report
 add_custom_target(coverage
 	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
 
@@ -179,7 +174,7 @@ add_custom_target(coverage
 
 )
 
-#Add a custom target for executing tests and generating coverage report
+# Add a custom target for executing tests and generating coverage report
 add_custom_target(run_tests
 	COMMAND ./unit_tests
 	DEPENDS unit_tests
@@ -187,7 +182,7 @@ add_custom_target(run_tests
 	COMMENT "Running tests and generating code coverage data"
 )
 
-#Add a custom target for executing tests, generating coverage data, and generating HTML report
+# Add a custom target for executing tests, generating coverage data, and generating HTML report
 add_custom_target(run_tests_with_coverage
 	COMMAND ./unit_tests
 	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
