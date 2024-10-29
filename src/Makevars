@@ -1,15 +1,15 @@
 DISTRO = $(shell uname)
 
 ifeq ($(DISTRO), Linux)
-	PKG_CPPFLAGS =  -I"./include" -I"./code_base"   -ftree-vectorize -Os -march=native
+	PKG_CPPFLAGS =  -I"./include" -I"./bmdscore"   -ftree-vectorize -Os -march=native
 	PKG_CPPFLAGS +=  $(shell pkg-config --cflags nlopt gsl) -DR_COMPILATION -Wno-ignored-attributes  -flto -fopenmp
 	PKG_LIBS     =   $(shell pkg-config --libs nlopt gsl)
 else
-	PKG_CPPFLAGS =  -I"./code_base" -I"./include"   -ftree-vectorize -Os -fopenmp
+	PKG_CPPFLAGS =  -I"./bmdscore" -I"./include"   -ftree-vectorize -Os -fopenmp
 	PKG_CPPFLAGS +=  -DR_COMPILATION -Wno-ignored-attributes  -DNDEBUG $(shell pkg-config --cflags nlopt gsl) #-fopenmp
 	PKG_LIBS     = -lomp  $(shell pkg-config --libs nlopt gsl)
 endif
 
 MAIN         = $(wildcard *.cpp)
-MAIN_CODE    = $(wildcard code_base/*.cpp)
+MAIN_CODE    = $(wildcard bmdscore/*.cpp)
 OBJECTS      = $(MAIN:.cpp=.o) $(MAIN_CODE:.cpp=.o)
