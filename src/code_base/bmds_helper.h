@@ -304,7 +304,7 @@ struct python_multitumor_analysis{
 
 struct python_multitumor_result{
   int ndatasets; //number of models for each
-  std::vector<bool> validResult;
+  bool validResult;  //true if BMD and slope factor were both calculated for multitumor model
   std::vector<int> nmodels; //# of models per dataset (size ndatasets)
   std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
   std::vector<int> selectedModelIndex;

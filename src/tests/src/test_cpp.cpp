@@ -4082,8 +4082,8 @@ void runPythonMultitumorAnalysis(){
   std::vector<double> Y3 = {0,2,2,6,9};
   std::vector<double> n_group3 = {20,20,20,20,20};
   std::vector<int> n = {5,5,5};
-  //std::vector<int> degree = {0,0,0};
-  std::vector<int> degree = {2,2,2};
+  std::vector<int> degree = {0,0,0};
+  //std::vector<int> degree = {2,2,2};
   doses.push_back(doses1);
   doses.push_back(doses2);
   doses.push_back(doses3);
@@ -4139,30 +4139,18 @@ void runPythonMultitumorAnalysis(){
 //  n_group.push_back(n_group1);
 //  n_group.push_back(n_group2);
 
-  //data test no recommended model 
+//  //data test no recommended model 
 //  std::vector<double> doses1 = {0,50,100,200,400};
 //  std::vector<double> Y1 = {1,68,78,88,98};
 //  std::vector<double> n_group1 = {100,100,100,100,100};
-//
-//  std::vector<std::vector<double>> doses; 
-//  std::vector<std::vector<double>> Y; 
-//  std::vector<std::vector<double>> n_group;
+//  std::vector<int> n = {5};
+//  std::vector<int> degree = {0};
 //  doses.push_back(doses1);
-////  doses.push_back(doses2);
-////  doses.push_back(doses3);
 //  Y.push_back(Y1);
-////  Y.push_back(Y2);
-////  Y.push_back(Y3);
 //  n_group.push_back(n_group1);
-////  n_group.push_back(n_group2);
-////  n_group.push_back(n_group3); 
+  
 
-////  std::vector<int> n = {5,5,5};
-////  std::vector<int> degree = {0,0,0};
-////  std::vector<int> n = {5,5};
-////  std::vector<int> degree = {0,0};
-//  std::vector<int> n(doses.size(), 5);
-//  std::vector<int> degree(doses.size(), 0);
+
 /////////////////////////////////////////////////
 ////END USER INPUT
 ////////////////////////////////////////////////////
@@ -4267,16 +4255,16 @@ void runPythonMultitumorAnalysis(){
   }
 
   std::cout<<std::endl;
-  //if (res.valid){
+  if (res.validResult){
     std::cout<<"BMD:  "<<res.BMD<<std::endl;
     std::cout<<"BMDL: "<<res.BMDL<<std::endl;
     std::cout<<"BMDU: "<<res.BMDU<<std::endl;
     std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
     std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
     std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
-  //} else {
-  //  std::cout<<"Multitumor analysis failed"<<std::endl;
-  //}
+  } else {
+    std::cout<<"Multitumor analysis failed"<<std::endl;
+  }
   
 }
 

@@ -882,11 +882,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
    is_zero = 0;
 
-   //pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
-   //BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
    multitumorCLs(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
-
-   //pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
 
 }
 
@@ -2471,11 +2467,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    anal.BMR = pyAnal->BMR;
    anal.alpha = pyAnal->alpha;
    anal.prior_cols = pyAnal->prior_cols;
-   pyRes->validResult.clear();
+   pyRes->validResult = false;
+   bool validModel = false; // is a valid model selected for multitumor to run
    for (int dataset=0; dataset<pyAnal->ndatasets; dataset++){
      int selIndex = pyRes->selectedModelIndex[dataset];
      if (selIndex >= 0){
-        pyRes->validResult.push_back(true);
+	validModel = true;
         std::vector<python_dichotomous_analysis> modGroup;
         std::vector<python_dichotomous_model_result> modResGroup;
         struct python_dichotomous_analysis modAnal;
@@ -2495,12 +2492,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
         modResGroup.push_back(modRes);
 	res.models.push_back(modResGroup);
 
-     } else {
-	pyRes->validResult.push_back(false);
-     }
+     } 
    }
    anal.ndatasets = anal.nmodels.size();
    res.ndatasets = anal.ndatasets;
+
+   if (!validModel){
+      std::cout<<"No valid models available for multitumor analysis"<<std::endl;
+      return;
+   }
 
    //run MSCombo
    runMultitumorModel(&anal, &res);  
@@ -2511,6 +2511,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    pyRes->slopeFactor = res.slopeFactor;
    pyRes->combined_LL = res.combined_LL;
    pyRes->combined_LL_const = res.combined_LL_const;
+   pyRes->validResult = true;
 }  
 
 
@@ -2668,7 +2669,6 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
    Multistage_ComboBMD(pyAnal, pyRes);
 
    pyRes->setSlopeFactor(pyAnal->BMR);
-
 }
 
 
