@@ -2601,7 +2601,7 @@ int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analMode
 	return 1;
       } else {
 	//neither fit - refer to SWG
-	return -1;
+	return BMDS_MISSING;
       }
       //return 1;
 
@@ -2622,7 +2622,7 @@ int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analMode
          if(adequateFit[analModels.size()-1]){
             return analModels.size()-1; //use k-1 model
 	 } else {
-            return -1;  //no model selected
+            return BMDS_MISSING;  //no model selected
 	 }
       }
    }
