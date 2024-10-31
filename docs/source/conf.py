@@ -26,6 +26,7 @@ html_favicon = "_static/img/logo.png"
 html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["css/style.css"]
+html_js_files = ["js/site.js"]
 html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "img/pybmds-identifier.png",

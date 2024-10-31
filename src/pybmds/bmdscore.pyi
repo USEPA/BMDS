@@ -406,11 +406,9 @@ class python_nested_result:
     cov: list[float]
     fixedLSC: float
     litter: nestedLitterData
-    max: float
     model: nested_model
     model_df: float
     nparms: int
-    obsChiSq: float
     parms: list[float]
     reduced: nestedReducedData
     srData: nestedSRData
@@ -430,7 +428,6 @@ class testsOfInterest:
     pVal: list[float]
     def __init__(self) -> None: ...
 
-def add2(i: int, j: int) -> int: ...
 def pythonBMDSCont(
     python_continuous_analysis: python_continuous_analysis,
     python_continuous_model_result: python_continuous_model_result,

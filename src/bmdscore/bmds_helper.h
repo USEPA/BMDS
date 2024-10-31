@@ -538,6 +538,8 @@ void Quantal_CI(std::vector<double> &Yp, std::vector<double> &Yn, double conf, s
 
 void Nlogist_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P);
 
+double calcNlogisticCLs(double xa, double xb, std::vector<double> &pint, struct nestedObjData *objData, bool isLower);
+
 void SortNestedData(const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls, std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(struct dichotomous_analysis *anal, struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod);
@@ -547,10 +549,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(struct continuous_analysis *an
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(struct dichotomousMA_analysis *MA, struct dichotomous_analysis *DA,  struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
 string BMDS_ENTRY_API __stdcall version();
-
-int BMDS_ENTRY_API __stdcall add2(int i, int j);
-
-void BMDS_ENTRY_API __stdcall testFun(struct test_struct *t);
 
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes);
 

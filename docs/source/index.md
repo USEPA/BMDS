@@ -3,13 +3,15 @@
   <img src="_static/img/pybmds-identifier.png" width="210px">
 </p>
 
-**BMDS Desktop** is an application for running dose-response modeling using a Graphical User Interface (GUI) on a local system, if running BMDS Online is not technically possible or feasible. The **bmds-ui** Python package installs BMDS Desktop; it can also be used to deploy the application online, such as the U.S. EPA's [BMDS Online](https://bmdsonline.epa.gov).
+The U.S. EPA [BMDS Online](https://bmdsonline.epa.gov) is a web application that enables users to execute the Benchmark Dose Modeling Software using a Graphical User Interface (GUI) on your web browser, no installation required.
 
-**pybmds** is a Python package for executing U.S. EPA's Benchmark Dose Modeling Software (BMDS) in a scripting environment. The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and cancer (including multitumor modeling). It is the underlying execution engine for BMDS Desktop and BMDS Online.
+If you'd prefer to run the software on your computer, **BMDS Desktop** is the same application running locally. The Python package **bmds-ui** installs BMDS Desktop.
+
+The Python package **pybmds** enables execution of dose-response models in a scripting environment. The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and cancer (including multitumor modeling). `pybmds` is the underlying execution engine for BMDS Online and BMDS Desktop.
 
 **Highlights:**
 
-* Dose response modeling for multiple dataset types (continuous, dichotomous, nested dichotomous, cancer, multitumor)
+* Dose-response modeling for multiple dataset types (continuous, dichotomous, nested dichotomous, cancer, multitumor)
 * Plotting and summary table capabilities
 * Model recommendation logic
 * Reporting in Microsoft Excel and Microsoft Word reports
@@ -28,7 +30,7 @@ pip install bmds-ui
 The above command will not work until we are cleared for public release; please follow the detailed [installation guide](./installation.md). This message will be removed prior to official release.
 :::
 
-**If you are new to installing Python packages** and wish to use `pybmds` or BMDS Desktop for multiple projects, then please follow the detailed [installation guide](./installation.md). The installation guide makes it easy to configure your computer including adding a shortcut to start and update the application. It also describes possible issues and solutions that may arise during installation.
+**If you are new to installing Python packages** and wish to BMDS Desktop or `pybmds`, then please follow the detailed [installation guide](./installation.md). The installation guide makes it easy to configure your computer, and describes possible issues and solutions that may arise during installation.
 
 
 An example dose-response modeling session using `pybmds`:

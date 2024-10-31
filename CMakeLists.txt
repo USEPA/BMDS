@@ -63,17 +63,33 @@ find_library(NLOPT_LIB NAMES NLopt nlopt libnlopt  REQUIRED HINTS ${NLOPT_DIR})
 
 project(bmdscore)
 
-include_directories("${CMAKE_SOURCE_DIR}/src/code_base" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${NLOPT_DIR} ${GSL_DIR})
+include_directories("${CMAKE_SOURCE_DIR}/src/bmdscore" "${CMAKE_SOURCE_DIR}/src/include" ${EIGEN_DIR} ${NLOPT_DIR}/../include ${NLOPT_DIR} ${GSL_DIR})
 link_directories(${GSL_LIB_DIR} ${NLOPT_LIB_DIR})
 
-file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/code_base/*.cpp")
-file (GLOB HEADER_FILES "src/include/*.h" "src/code_base/*.h" ${EIGEN_DIR})
+file (GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/bmdscore/*.cpp")
+file (GLOB HEADER_FILES "src/include/*.h" "src/bmdscore/*.h" ${EIGEN_DIR})
 file (GLOB PYTHON_FILES "src/pybmdscpp/*.cpp" "src/pybmdscpp/*.h")
 
 # Set up such that XCode organizes the files
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES} ${HEADER_FILES} ${PYTHON_FILES} )
 
-include(pybind11.cmake)
+include(FetchContent)
+
+# pybind11 cmake
+set(FETCHCONTENT_QUIET FALSE)
+
+FetchContent_Declare(
+  pybind11
+  URL https://github.com/pybind/pybind11/archive/refs/tags/v2.10.4.tar.gz
+)
+
+FetchContent_GetProperties(pybind11)
+
+if(NOT pybind11_POPULATED)
+  FetchContent_Populate(pybind11)
+  add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+endif()
+
 pybind11_add_module(bmdscore
 	${SOURCE_FILES}
 	${HEADER_FILES}

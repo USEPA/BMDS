@@ -4714,6 +4714,7 @@ void printNestedModResult(struct python_nested_analysis *pyAnal, struct python_n
       printf("\nBenchmark Dose\n");
       printf("BMD: %f\n",pyRes->bmdsRes.BMD);
       printf("BMDL: %f\n",pyRes->bmdsRes.BMDL);
+      printf("BMDU: %f\n",pyRes->bmdsRes.BMDU);
       printf("LL: %f\n", pyRes->LL);
       printf("AIC: %f\n",pyRes->bmdsRes.AIC);
       printf("P-value: %f\n", pyRes->combPVal);
