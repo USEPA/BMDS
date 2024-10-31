@@ -466,7 +466,6 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    for (int i=0; i<nT; i++){
       std::vector<double> theParms;
       for (int j=0; j<=degree[i]; j++){
-      //for (int j=0; j<=maxDegree; j++){
 	 theParms.push_back(xParms[count]);
 	 count++;
       }
@@ -1001,7 +1000,6 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
          }
          if (sum < 0) sum = 0.0;
          double P = 1.0 - exp(-1.0*sum);
-         //resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(1.0-P);
          resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
          int iIndex = iTop;
          for(int j=degree[l]; j>=0; j--){
