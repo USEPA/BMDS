@@ -62,6 +62,15 @@ make coverage
 make run_tests_with_coverage
 ```
 
+Code formatting is also enforced in the C++ codebase. To run the formatter, use the following command:
+
+```bash
+pip install clang-format==19.1.3
+make format-cpp
+```
+
+A specific version of clang-format is pinned for reproducibility on all platforms.
+
 ## Build and testing `bmds-ui` (BMDS Desktop)
 
 See [documentation](https://github.com/USEPA/BMDS-UI/blob/main/docs/development.md) in the BMDS-UI repository.
