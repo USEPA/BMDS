@@ -1,5 +1,6 @@
-import bmdscore
 import numpy as np
+
+import bmdscore
 
 pyAnal = bmdscore.python_dichotomous_analysis()
 pyAnal.model = bmdscore.dich_model.d_weibull

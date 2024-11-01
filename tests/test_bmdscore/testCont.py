@@ -1,5 +1,6 @@
-import bmdscore
 import numpy as np
+
+import bmdscore
 
 pyAnal = bmdscore.python_continuous_analysis()
 pyAnal.model = bmdscore.cont_model.exp_5
