@@ -308,7 +308,7 @@ Eigen::MatrixXd statModel<LL, PR>::varMatrix(Eigen::MatrixXd theta) {
 //                              It is currently unused.
 //          void    *data     : Extra data needed. In this case, it is a statModel<LL,PR> object,
 //							   which is used to compute the negative
-//penalized likelihood
+// penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood(unsigned n, const double *b, double *grad, void *data) {

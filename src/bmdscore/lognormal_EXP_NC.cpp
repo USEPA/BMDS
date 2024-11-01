@@ -34,7 +34,7 @@ using namespace std;
 // output:
 //  PROFILE_INEQUALITY - One of the parameters can be made equal to the others as a function
 //						 of the fixed BMD. The optimizer thus optimizes a
-//smaller problem
+// smaller problem
 //  PROFILE_EQUALITY   - The BMD is  a function of multiple parameters and can not be disentangled
 //                       An equality constraint is used here.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -381,7 +381,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra(
   //	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
   //	double ct_off = gsl_cdf_lognormal_Pinv(sdata->isIncreasing ? NOT_ADVERSE_P :
   //																TAIL_PROB,
-  //mu_zero, std_zero);
+  // mu_zero, std_zero);
   /////////////////////////////////////////////////////////////////////////////////////
   double returnV = 0.0;
   double temp;
@@ -426,7 +426,7 @@ std::vector<double> lognormalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra_clean(
   //	double mu_zero = temp_mean(0, 0); double std_zero = sqrt(temp_var(0, 0));
   //	double ct_off = gsl_cdf_lognormal_Pinv(isIncreasing ? NOT_ADVERSE_P :
   //											TAIL_PROB,
-  //mu_zero, std_zero);
+  // mu_zero, std_zero);
   /////////////////////////////////////////////////////////////////////////////////////
   //	double returnV = 0.0;
   double temp;
@@ -453,8 +453,8 @@ std::vector<double> lognormalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra_clean(
 // Functions: lognormalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing)
 //			  lognormalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing) 			  lognormalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing)
+// bool isIncreasing) 			  lognormalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd
+// theta, double BMRF, bool isIncreasing)
 //            lognormalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool
 //            isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
@@ -536,7 +536,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_point_bound(
 // Function:  double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double
 // BMRF, bool isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model
@@ -575,8 +575,8 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra_bound(
 // Functions: lognormalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing)
 //			  lognormalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing) 			  lognormalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing)
+// bool isIncreasing) 			  lognormalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd
+// theta, double BMRF, bool isIncreasing)
 //            lognormalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool
 //            isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
@@ -730,7 +730,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_extra(
 // Function:  double lognormalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double
 // BMRF, bool isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model

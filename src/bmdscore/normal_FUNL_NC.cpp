@@ -45,7 +45,7 @@ int normalFUNL_BMD_NC::type_of_profile(contbmd TYPE) {
 // output:
 //  PROFILE_INEQUALITY - One of the parameters can be made equal to the others as a function
 //						 of the fixed BMD. The optimizer thus optimizes a
-//smaller problem
+// smaller problem
 //  PROFILE_EQUALITY   - The BMD is  a function of multiple parameters and can not be disentangled
 //                       An equality constraint is used here.
 //////////////////////////////////////////////////////////////////////////
@@ -483,7 +483,8 @@ std::vector<double> normalFUNL_BMD_NC::bmd_start_hybrid_extra_clean(
 
 // Functions: normalFUNL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 //			  normalFUNL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool
-//isIncreasing) 			  normalFUNL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
+// isIncreasing) 			  normalFUNL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta,
+// double BMRF, bool isIncreasing)
 //            normalFUNL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
 // code
@@ -558,7 +559,7 @@ double normalFUNL_BMD_NC::bmd_point_bound(
 // Function:  double normalFUNL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model
@@ -605,7 +606,8 @@ double normalFUNL_BMD_NC::bmd_hybrid_extra_bound(
 
 // Functions: normalFUNL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 //			  normalFUNL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool
-//isIncreasing) 			  normalFUNL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
+// isIncreasing) 			  normalFUNL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta,
+// double BMRF, bool isIncreasing)
 //            normalFUNL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
 // code
@@ -732,7 +734,7 @@ double normalFUNL_BMD_NC::bmd_extra(Eigen::MatrixXd theta, double BMRF, bool isI
 // Function:  double normalFUNL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model

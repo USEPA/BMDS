@@ -167,7 +167,7 @@ int main(void) {
 ////    anal.alpha = 0.05;
 ////    anal.BMR = 1.0;
 ////    anal.BMD_type = 2; //1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra,
-///7 = hybrid_added
+/// 7 = hybrid_added
 //
 //
 //    runCompleteContAnalysis_new(&anal, inData[i].numRows, modelType, restricted, detectAdvDir);
@@ -195,7 +195,7 @@ int main(void) {
 ////    anal.alpha = 0.05;
 ////    anal.BMR = 1.0;
 ////    anal.BMD_type = 2; //1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra,
-///7 = hybrid_added
+/// 7 = hybrid_added
 ////
 ////
 ////    runCompleteContAnalysis_new(&anal, inData[i].numRows, modelType, restricted, detectAdvDir);
@@ -406,10 +406,10 @@ void runOldDichoAnalysis() {
   enum dich_model model = d_weibull;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                       // d_logprobit=5, d_multistage=6,d_probit=7,
                                       // d_qlinear=8,d_weibull=9
-  int modelType = 1;       // 1 = frequentist, 2 = bayesian
-  bool restricted = true;  // only used for frequentist models
-  int BMD_type = 1;        // 1 = extra ; added otherwise
-  int degree = 3;          // for multistage only
+  int modelType = 1;                  // 1 = frequentist, 2 = bayesian
+  bool restricted = true;             // only used for frequentist models
+  int BMD_type = 1;                   // 1 = extra ; added otherwise
+  int degree = 3;                     // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
   ///////////////////////////////
@@ -960,10 +960,10 @@ void runPythonDichoAnalysis() {
   enum dich_model model = d_multistage;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                          // d_logprobit=5, d_multistage=6,d_probit=7,
                                          // d_qlinear=8,d_weibull=9
-  int modelType = 1;       // 1 = frequentist, 2 = bayesian
-  bool restricted = true;  // only used for frequentist models
-  int BMD_type = 1;        // 1 = extra ; added otherwise
-  int degree = 3;          // for multistage only
+  int modelType = 1;                     // 1 = frequentist, 2 = bayesian
+  bool restricted = true;                // only used for frequentist models
+  int BMD_type = 1;                      // 1 = extra ; added otherwise
+  int degree = 3;                        // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
   ///////////////////////////////
@@ -1469,7 +1469,7 @@ void runDichoMA() {
   ////  double prLogProb[15] = {1,1,2,0,0,0.693147,2,1,0.5,-20,-8,1e-4,20,8,40}; //d_logprobit
   ////  double prMulti[20] = {1,2,2,2,0,0,0,0,2,0.5,1,1,-20,1e-4,1e-4,1e-4,20,100,1e6,1e6};
   /////d_multistage /  double prProb[10] = {1,2,0,0.1,2,1,-8,0,8,40}; //d_probit /  double
-  ///prQLin[10] = {1,2,0,0.5,2,1,-20,0,20,100}; //d_qlinear /  double prWeib[15] =
+  /// prQLin[10] = {1,2,0,0.5,2,1,-20,0,20,100}; //d_qlinear /  double prWeib[15] =
   ///{1,2,2,0,0.693147,0,2,0.424264,1,-20,1e-4,1e-4,20,18,20}; //d_weibull
   //
   //  //double *pr[numModels] = {prHill,prGamma};
@@ -1719,7 +1719,7 @@ void runDichoMA() {
   ////  printf("\nBMD Dist:\n");
   ////  for (int i=0; i<ma_res.dist_numE; i++){
   ////    printf("i:%d, perc:%f, dist:%f\n", i, ma_res.bmd_dist[i+ma_res.dist_numE],
-  ///ma_res.bmd_dist[i]); /  } /  struct dichotomous_model_result indRes;
+  /// ma_res.bmd_dist[i]); /  } /  struct dichotomous_model_result indRes;
   //
   ////  printf("individual BMD Dist:\n");
   ////  for (int j=0; j<numModels; j++){
@@ -1727,7 +1727,7 @@ void runDichoMA() {
   ////    printf("\nModel %d\n", j);
   ////    for (int i=0; i<indRes.dist_numE; i++){
   ////      printf("i:%d, perc:%f, dist:%f\n", i, indRes.bmd_dist[i+indRes.dist_numE],
-  ///indRes.bmd_dist[i]); /    } /  }
+  /// indRes.bmd_dist[i]); /    } /  }
   //
   //
   //  printf("\nBenchmark Dose\n");
@@ -1757,7 +1757,7 @@ void runDichoMA() {
   ////  printf("\nMA - Individual Models\n");
   ////  for(int i=0; i<numModels; i++){
   ////    printf("i:%d, model:%d, post prob:%f, BMD:%f, BMDL:%f,
-  ///BMDU:%f\n",i,ma_res.models[i]->model,ma_res.post_probs[i],bmdsRes.BMD[i],bmdsRes.BMDL[i],bmdsRes.BMDU[i]);
+  /// BMDU:%f\n",i,ma_res.models[i]->model,ma_res.post_probs[i],bmdsRes.BMD[i],bmdsRes.BMDL[i],bmdsRes.BMDU[i]);
   ////  }
   //
   ////  printf("model priors2\n");
@@ -2113,7 +2113,7 @@ void runOldContAnalysis() {
   double alpha = 0.05;
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
-                     // hybrid_added   from src/include/cmodeldefs.h
+                      // hybrid_added   from src/include/cmodeldefs.h
   ////////////////////////////////////////////////
   // cont data - suff stat: dose, Y, N, SD
   // cont data - individual: dose, response
@@ -3198,7 +3198,7 @@ void runPythonContAnalysis() {
   double alpha = 0.05;
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
-                     // hybrid_added   from src/include/cmodeldefs.h
+                      // hybrid_added   from src/include/cmodeldefs.h
   ////////////////////////////////////////////////
   // cont data - suff stat: dose, Y, N, SD
   // cont data - individual: dose, response
@@ -4116,9 +4116,9 @@ void runPythonMultitumorAnalysis() {
   enum dich_model model = d_multistage;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                          // d_logprobit=5, d_multistage=6,d_probit=7,
                                          // d_qlinear=8,d_weibull=9
-  int modelType = 1;       // 1 = frequentist, 2 = bayesian
-  bool restricted = true;  // only used for frequentist models
-  int BMD_type = 1;        // 1 = extra ; added otherwise
+  int modelType = 1;                     // 1 = frequentist, 2 = bayesian
+  bool restricted = true;                // only used for frequentist models
+  int BMD_type = 1;                      // 1 = extra ; added otherwise
   double BMR = 0.1;
   double alpha = 0.05;
   std::vector<std::vector<double>> doses;
@@ -4336,9 +4336,9 @@ void runTestMultitumorModel() {
   enum dich_model model = d_multistage;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
                                          // d_logprobit=5, d_multistage=6,d_probit=7,
                                          // d_qlinear=8,d_weibull=9
-  int modelType = 1;       // 1 = frequentist, 2 = bayesian
-  bool restricted = true;  // only used for frequentist models
-  int BMD_type = 1;        // 1 = extra ; added otherwise
+  int modelType = 1;                     // 1 = frequentist, 2 = bayesian
+  bool restricted = true;                // only used for frequentist models
+  int BMD_type = 1;                      // 1 = extra ; added otherwise
   double BMR = 0.1;
   double alpha = 0.05;
 

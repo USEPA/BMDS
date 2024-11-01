@@ -233,7 +233,7 @@ double cBMDModel<LL, PR>::returnBMD(
 //                              It is currently unused.
 //          void    *data     : Extra data needed. In this case, it is a statModel<LL,PR> object,
 //							   which is used to compute the negative
-//penalized likelihood
+// penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double cequality_constraint(unsigned n, const double *b, double *grad, void *data) {
@@ -400,7 +400,7 @@ optimizationResult cfindMAX_W_EQUALITY(
 //                              It is currently unused.
 //          void    *data     : Extra data needed. In this case, it is a statModel<LL,PR> object,
 //							   which is used to compute the negative
-//penalized likelihood
+// penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood_contbound(unsigned n, const double *b, double *grad, void *data) {
@@ -608,7 +608,8 @@ optimizationResult cfindMAX_W_BOUND(
 ///////////////////////////////////////////////////////////////////////////////
 // Function profile_BMDNC(dBMDModel<LL, PR>  *M,
 //						 bool isExtra,		// true if it is false if it
-//is added 						 double BMR, 		                 double BMDchange, 						 double totalChange, 						 bool robust) Purpose: This function
+// is added 						 double BMR, double BMDchange,
+// double totalChange, 						 bool robust) Purpose: This function
 // iteratively changes the BMD by a BMDchange%
 //          until a total change in the penalized likelihood is found.
 // Input  : dBMDModel<LL, PR>  *M - Dichotomous BMD model

@@ -8,7 +8,7 @@
 // Changes:
 //        Date: 11/06/2018 - Added code in the profile function to stop
 //							the upper bound calculation when it is 5
-//times greater 					        than the maximum administered dose.
+// times greater 					        than the maximum administered dose.
 //
 
 #pragma once
@@ -196,7 +196,7 @@ struct inequalityInfo : public optimInfo<A, B> {
 //                              It is currently unused.
 //          void    *data     : Extra data needed. In this case, it is a statModel<LL,PR> object,
 //							   which is used to compute the negative
-//penalized likelihood
+// penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double DICHOTOMOUS_BMD_neg_pen_likelihood(unsigned n, const double *b, double *grad, void *data) {
@@ -244,7 +244,7 @@ double DICHOTOMOUS_BMD_neg_pen_likelihood(unsigned n, const double *b, double *g
 //                              It is currently unused.
 //          void    *data     : Extra data needed. In this case, it is a statModel<LL,PR> object,
 //							   which is used to compute the negative
-//penalized likelihood
+// penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double equality_constraint(unsigned n, const double *b, double *grad, void *data) {
@@ -279,7 +279,9 @@ double inequality_constraint(unsigned n, const double *b, double *grad, void *da
 ////////////////////////////////////////////////////////////
 // Function: inequality_constraint_general(unsigned n,
 //											const double
-//*b, 											double *grad, 										    void *data) Purpose: Many BMR calculations require functions of parameters to be
+//*b, 											double
+//*grad, 										    void
+//*data) Purpose: Many BMR calculations require functions of parameters to be
 // greater than zero
 //         this sets up this requirement (e.g. log(f(k)) where f(k) is a function of a vector
 //         of k parameters).
@@ -656,7 +658,8 @@ optimizationResult findMAX(
 ///////////////////////////////////////////////////////////////////////////////
 // Function fit_profileLogic(dBMDModel<LL, PR>  *M,
 //						 bool isExtra,		// true if it is false if it
-//is added 						 double BMR, 		                 double BMDchange, 						 double totalChange) Purpose: This function fits a the
+// is added 						 double BMR, double BMDchange,
+// double totalChange) Purpose: This function fits a the
 // profile likelihood using standard logic Input  : dBMDModel<LL, PR>  *M - Dichotomous BMD model
 //		   bool isExtra          - true if it is extra risk
 //          double BMD			 - current BMD at the MAP
@@ -666,7 +669,7 @@ optimizationResult findMAX(
 //  Output: Returns a list of vectors.  The first item is the fit information.
 //                                      The second item is the parameter optimization values.
 //									   The third item is the
-//list of parameter optimization values including the
+// list of parameter optimization values including the
 //                                      fixed parameter value.
 //                                      On an error there is only one item in the list indicating
 //                                      the return code.
@@ -755,7 +758,8 @@ std::list<Eigen::MatrixXd> fit_profileLogic(
 ///////////////////////////////////////////////////////////////////////////////
 // Function profile_BMDNC(dBMDModel<LL, PR>  *M,
 //						 bool isExtra,		// true if it is false if it
-//is added 						 double BMR, 		                 double BMDchange, 						 double totalChange, 						 bool robust) Purpose: This function
+// is added 						 double BMR, double BMDchange,
+// double totalChange, 						 bool robust) Purpose: This function
 // iteratively changes the BMD by a BMDchange%
 //          until a total change in the penalized likelihood is found.
 // Input  : dBMDModel<LL, PR>  *M - Dichotomous BMD model

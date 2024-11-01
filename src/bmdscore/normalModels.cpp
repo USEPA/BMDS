@@ -35,7 +35,7 @@
 // output:
 //  PROFILE_INEQUALITY - One of the parameters can be made equal to the others as a function
 //						 of the fixed BMD. The optimizer thus optimizes a
-//smaller problem
+// smaller problem
 //  PROFILE_EQUALITY   - The BMD is  a function of multiple parameters and can not be disentangled
 //                       An equality constraint is used here.
 //////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ int normalLLModel::type_of_profile(contbmd TYPE) {
 // output:
 //  PROFILE_INEQUALITY - One of the parameters can be made equal to the others as a function
 //						 of the fixed BMD. The optimizer thus optimizes a
-//smaller problem
+// smaller problem
 //  PROFILE_EQUALITY   - The BMD is  a function of multiple parameters and can not be disentangled
 //                       An equality constraint is used here.
 //////////////////////////////////////////////////////////////////////////

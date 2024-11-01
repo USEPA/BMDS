@@ -503,8 +503,8 @@ std::vector<double> normalEXPONENTIAL_BMD_NC::bmd_start_hybrid_extra_clean(
 // Functions: normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing)
 //			  normalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing) 			  normalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool
-//isIncreasing)
+// bool isIncreasing) 			  normalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd
+// theta, double BMRF, bool isIncreasing)
 //            normalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool
 //            isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
@@ -587,7 +587,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_point_bound(
 // Function:  double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF,
 // bool isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model
@@ -633,8 +633,8 @@ double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra_bound(
 // Functions: normalEXPONENTIAL_BMD_NC::bmd_absolute(Eigen::MatrixXd theta, double BMRF, bool
 // isIncreasing)
 //			  normalEXPONENTIAL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF,
-//bool isIncreasing) 			  normalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd theta, double BMRF, bool
-//isIncreasing)
+// bool isIncreasing) 			  normalEXPONENTIAL_BMD_NC::bmd_reldev(Eigen::MatrixXd
+// theta, double BMRF, bool isIncreasing)
 //            normalEXPONENTIAL_BMD_NC::bmd_point(Eigen::MatrixXd theta, double BMRF, bool
 //            isIncreasing)
 // Purpose :  return the BMD given the parameter values theta and the BMRF. Note they are  call the
@@ -772,7 +772,7 @@ double normalEXPONENTIAL_BMD_NC::bmd_extra(Eigen::MatrixXd theta, double BMRF, b
 // Function:  double normalEXPONENTIAL_BMD_NC::bmd_hybrid_extra(Eigen::MatrixXd theta, double BMRF,
 // bool isIncreasing,,double BPROB) Variables: theta - matrix of theta values for the model
 //			  BMRF  - This is a value between 0 and 1 that describes the increased
-//probability over BPROB
+// probability over BPROB
 //            isIncreasing - is the function an Increasing function or decreasing function?
 //            BPROB - Background probability at dose 0 considered adverse
 // Purpose:   Compute the Hybrid BMD version of the hill model
