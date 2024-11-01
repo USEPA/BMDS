@@ -8,7 +8,7 @@ ExternalProject_Add(
         pybind11
         PREFIX .
         GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-        GIT_TAG "80dc998efced8ceb2be59756668a7e90e8bef917" # v2.10.4
+        GIT_TAG "a2e59f0e7065404b44dfe92a28aca47ba1378dc4" # v2.13.6
         SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/pybind11"
         # Override default steps with no action, we just want the clone step.
         UPDATE_COMMAND ""
@@ -80,7 +80,7 @@ set(FETCHCONTENT_QUIET FALSE)
 
 FetchContent_Declare(
   pybind11
-  URL https://github.com/pybind/pybind11/archive/refs/tags/v2.10.4.tar.gz
+  URL https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz
 )
 
 FetchContent_GetProperties(pybind11)

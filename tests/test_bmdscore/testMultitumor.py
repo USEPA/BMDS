@@ -1,5 +1,6 @@
-import bmdscore
 import numpy as np
+
+import bmdscore
 
 
 def getMultitumorPrior(degree, prior_cols):

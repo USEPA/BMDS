@@ -72,7 +72,7 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
     depth += 1
     indent = "  " * depth + "- "
     for attr, value in inspect.getmembers(obj):
-        if attr.startswith("__"):
+        if attr.startswith("__") or attr.startswith("_pybind11"):
             continue
         elif attr == "models" and "multitumor" in obj.__class__.__name__:
             lines.append(f"{indent}{attr}:")

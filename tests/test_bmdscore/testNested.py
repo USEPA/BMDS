@@ -1,7 +1,8 @@
 import sys
 
-import bmdscore
 import numpy as np
+
+import bmdscore
 
 
 def getNLogisticPrior(ngrp, prior_cols, restricted):
