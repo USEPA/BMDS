@@ -88,11 +88,11 @@ jobs:
       - name: Install dependencies
         run: |
           source ./tools/linux_ci_setup.sh
-    - name: Run clang-format
-      run: |
-        apt-get install -y clang-format
-        make format-cpp
-        git diff --exit-code --compact-summary || { echo "Code formatting failed; run 'make format-cpp'"; exit 1; }
+      - name: Run clang-format
+        run: |
+          apt-get install -y clang-format
+          make format-cpp
+          git diff --exit-code --compact-summary || { echo "Code formatting failed; run 'make format-cpp'"; exit 1; }
       - name: Build bmdscore
         run: |
           source ./tools/linux_ci_env.sh
