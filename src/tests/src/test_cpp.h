@@ -1,6 +1,3 @@
 #include "bmds_helper.h"
 
-
-enum model_type {dichotomous, continuous};
-
-
+enum model_type { dichotomous, continuous };
