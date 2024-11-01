@@ -373,7 +373,7 @@ class python_multitumor_result:
     nmodels: list[int]
     selectedModelIndex: list[int]
     slopeFactor: float
-    validResult: list[bool]
+    validResult: bool
     def __init__(self) -> None: ...
     def setSlopeFactor(self, arg0: float) -> None: ...
 

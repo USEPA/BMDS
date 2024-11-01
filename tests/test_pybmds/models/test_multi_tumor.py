@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import pybmds
 
@@ -57,6 +56,7 @@ class TestMultitumor:
         session.execute()
         assert session.results.selected_model_indexes == [0, None]
         assert np.isclose(session.results.bmd, 37.69, atol=0.01)
+        assert session.results.valid_result is True
 
         # check we can build reports w/ none
         text = session.text()
@@ -68,10 +68,8 @@ class TestMultitumor:
             df.to_excel(data_path / "reports/multitumor-no-selection.xlsx", index=False)
             docx.save(data_path / "reports/multitumor-no-selection.docx")
 
-    @pytest.mark.skip(reason="currently segfaults; we need to fix at lower level")
     def test_all_no_recommend(self):
         # Check case all datasets have no model recommendation
-        # TODO - REMOVE pytest.mark.skip; assert that recommended_model is None for some cases
         datasets = [
             pybmds.DichotomousDataset(
                 doses=[0, 50, 100, 200, 400],
@@ -83,3 +81,4 @@ class TestMultitumor:
         session.execute()
 
         assert session.results.selected_model_indexes == [None]
+        assert session.results.valid_result is False
