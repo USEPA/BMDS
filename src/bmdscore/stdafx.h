@@ -14,8 +14,6 @@
 #define _USE_MATH_DEFINES
 
 #ifndef R_COMPILATION
-#  pragma message("Not R_COMPILATION in stdafx.h")
-
 #  if defined WIN32 || defined _WINDOWS
 #    include <math.h>
 #    include <tchar.h>
