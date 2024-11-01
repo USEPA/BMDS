@@ -22,6 +22,9 @@
  */
 #ifndef __ANALYSIS_OF_DEVIANCE
 #define __ANALYSIS_OF_DEVIANCE
+#include <Eigen/Dense>
+
+#include "bmdStruct.h"
 
 void log_normal_AOD_fits(
     Eigen::MatrixXd Y, Eigen::MatrixXd X, bool bSuffStat, continuous_deviance *CD
