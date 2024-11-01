@@ -231,7 +231,7 @@ class Multitumor:
         self.structs.execute()
         for i, models in enumerate(self.structs.result.models):
             for j, model in enumerate(models):
-                if model.bmdsRes.BMD > 0:
+                if model.bmdsRes.validResult:
                     bmr = self.structs.analysis.models[i][j].BMR
                     model.bmdsRes.setSlopeFactor(bmr)
         self.results = MultitumorResult.from_model(self)

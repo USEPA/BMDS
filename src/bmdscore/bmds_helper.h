@@ -304,7 +304,7 @@ struct python_multitumor_analysis{
 
 struct python_multitumor_result{
   int ndatasets; //number of models for each
-  std::vector<bool> validResult;
+  bool validResult;  //true if BMD and slope factor were both calculated for multitumor model
   std::vector<int> nmodels; //# of models per dataset (size ndatasets)
   std::vector<std::vector<python_dichotomous_model_result>> models;  //Individual model fits for each dataset nmodels[i]*ndatasets
   std::vector<int> selectedModelIndex;
@@ -482,9 +482,8 @@ double zeroin_nested(double ax,double bx, double tol,
 	      double (*f)(std::vector<double> &, double, double, struct nestedObjData*),
 	      std::vector<double> &Parms, double ck, struct nestedObjData *objData);	
 double BMD_func(int n, double p[], double x, double ck);
-double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL);
-double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
-double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
+double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, std::vector<double> fixedParm, bool isBMDL);
+void multitumorCLs(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero);
 void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes);
 double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);

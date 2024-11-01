@@ -12,6 +12,7 @@
 //#include "test_cpp.h"
 #include <string>
 #include <iostream>
+#include <iomanip>
 
 void runOldDichoAnalysis();
 void runOldContAnalysis();
@@ -29,6 +30,8 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols);
 std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted);
 void Nlogist_probs_test();
 void Nlogist_lk_test();
+void runTestMTInequalityConstraint();
+void runTestMTEqualityConstraint();
 
 bool showResultsOverride = true;
 
@@ -42,12 +45,12 @@ int main(void){
 //  runPythonDichoAnalysis();
 //  runPythonDichoMA();
 //  runPythonContAnalysis();
-//  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+  runPythonMultitumorAnalysis();
+//  runPythonNestedAnalysis();
 //  Nlogist_probs_test();
 //  Nlogist_lk_test();
 ////  runTestMultitumorModel();
-
+//  runTestMTEqualityConstraint();
   return 0;
 
 }
@@ -4042,6 +4045,9 @@ void runPythonMultitumorAnalysis(){
   int BMD_type = 1;        // 1 = extra ; added otherwise
   double BMR = 0.1;
   double alpha = 0.05;
+  std::vector<std::vector<double>> doses; 
+  std::vector<std::vector<double>> Y; 
+  std::vector<std::vector<double>> n_group;
 
   //data 1st test
 //  std::vector<double> doses1 = {0,50,100,150,200};
@@ -4053,6 +4059,41 @@ void runPythonMultitumorAnalysis(){
 //  std::vector<double> doses3 = {0,50,100,150,200};
 //  std::vector<double> Y3 = {1,68,78,88,98};
 //  std::vector<double> n_group3 = {100,100,100,100,100};
+//  std::vector<int> n = {5,5,5};
+//  std::vector<int> degree = {0,0,0};
+//  doses.push_back(doses1);
+//  doses.push_back(doses2);
+//  doses.push_back(doses3);
+//  Y.push_back(Y1);
+//  Y.push_back(Y2);
+//  Y.push_back(Y3);
+//  n_group.push_back(n_group1);
+//  n_group.push_back(n_group2);
+//  n_group.push_back(n_group3); 
+
+  //online test
+  std::vector<double> doses1 = {0,50,100,200,400};
+  std::vector<double> Y1 = {0,1,2,10,19};
+  std::vector<double> n_group1 = {20,20,20,20,20};
+  std::vector<double> doses2 = {0,50,100,200,400};
+  std::vector<double> Y2 = {0,1,2,4,11};
+  std::vector<double> n_group2 = {20,20,20,20,20};
+  std::vector<double> doses3 = {0,50,100,200,400};
+  std::vector<double> Y3 = {0,2,2,6,9};
+  std::vector<double> n_group3 = {20,20,20,20,20};
+  std::vector<int> n = {5,5,5};
+  std::vector<int> degree = {0,0,0};
+  //std::vector<int> degree = {2,2,2};
+  doses.push_back(doses1);
+  doses.push_back(doses2);
+  doses.push_back(doses3);
+  Y.push_back(Y1);
+  Y.push_back(Y2);
+  Y.push_back(Y3);
+  n_group.push_back(n_group1);
+  n_group.push_back(n_group2);
+  n_group.push_back(n_group3);
+
 
 
   //data test one recommended model 
@@ -4062,32 +4103,54 @@ void runPythonMultitumorAnalysis(){
 //  std::vector<double> doses2 = {0,50,100,200,400};
 //  std::vector<double> Y2 = {1,68,78,88,98};
 //  std::vector<double> n_group2 = {100,100,100,100,100};
-
-
-  //data test no recommended model 
-  std::vector<double> doses1 = {0,50,100,200,400};
-  std::vector<double> Y1 = {1,68,78,88,98};
-  std::vector<double> n_group1 = {100,100,100,100,100};
-
-  std::vector<std::vector<double>> doses; 
-  std::vector<std::vector<double>> Y; 
-  std::vector<std::vector<double>> n_group;
-  doses.push_back(doses1);
-//  doses.push_back(doses2);
-//  doses.push_back(doses3);
-  Y.push_back(Y1);
-//  Y.push_back(Y2);
-//  Y.push_back(Y3);
-  n_group.push_back(n_group1);
-//  n_group.push_back(n_group2);
-//  n_group.push_back(n_group3); 
-
-//  std::vector<int> n = {5,5,5};
-//  std::vector<int> degree = {0,0,0};
 //  std::vector<int> n = {5,5};
 //  std::vector<int> degree = {0,0};
-  std::vector<int> n(doses.size(), 5);
-  std::vector<int> degree(doses.size(), 0);
+//  doses.push_back(doses1);
+//  doses.push_back(doses2);
+//  Y.push_back(Y1);
+//  Y.push_back(Y2);
+//  n_group.push_back(n_group1);
+//  n_group.push_back(n_group2);
+
+
+  //data test one dataset
+//  std::vector<double> doses1 = {0,50,100,150,200};
+//  std::vector<double> Y1 = {0,5,30,65,90};
+//  std::vector<double> n_group1 = {100,100,100,100,100};
+//  std::vector<int> n = {5};
+//  std::vector<int> degree = {0};
+//  doses.push_back(doses1);
+//  Y.push_back(Y1);
+//  n_group.push_back(n_group1);
+
+  //data test one recommended model 
+//  std::vector<double> doses1 = {0,50,100,150,200};
+//  std::vector<double> Y1 = {0,5,30,65,90};
+//  std::vector<double> n_group1 = {100,100,100,100,100};
+//  std::vector<double> doses2 = {0,50,100,200,400};
+//  std::vector<double> Y2 = {1,68,78,88,98};
+//  std::vector<double> n_group2 = {100,100,100,100,100};
+//  std::vector<int> n = {5,5};
+//  std::vector<int> degree = {0,0};
+//  doses.push_back(doses1);
+//  doses.push_back(doses2);
+//  Y.push_back(Y1);
+//  Y.push_back(Y2);
+//  n_group.push_back(n_group1);
+//  n_group.push_back(n_group2);
+
+//  //data test no recommended model 
+//  std::vector<double> doses1 = {0,50,100,200,400};
+//  std::vector<double> Y1 = {1,68,78,88,98};
+//  std::vector<double> n_group1 = {100,100,100,100,100};
+//  std::vector<int> n = {5};
+//  std::vector<int> degree = {0};
+//  doses.push_back(doses1);
+//  Y.push_back(Y1);
+//  n_group.push_back(n_group1);
+  
+
+
 /////////////////////////////////////////////////
 ////END USER INPUT
 ////////////////////////////////////////////////////
@@ -4192,16 +4255,16 @@ void runPythonMultitumorAnalysis(){
   }
 
   std::cout<<std::endl;
-  //if (res.valid){
+  if (res.validResult){
     std::cout<<"BMD:  "<<res.BMD<<std::endl;
     std::cout<<"BMDL: "<<res.BMDL<<std::endl;
     std::cout<<"BMDU: "<<res.BMDU<<std::endl;
     std::cout<<"slope factor: "<<res.slopeFactor<<std::endl;
     std::cout<<"combined LL: "<<res.combined_LL<<std::endl;
     std::cout<<"combined LL constant: "<<res.combined_LL_const<<std::endl;
-  //} else {
-  //  std::cout<<"Multitumor analysis failed"<<std::endl;
-  //}
+  } else {
+    std::cout<<"Multitumor analysis failed"<<std::endl;
+  }
   
 }
 
@@ -4815,3 +4878,113 @@ void Nlogist_lk_test(){
 //        
 //}
 
+
+void runTestMTInequalityConstraint(){
+
+  //USER INPUT
+  //double target = 565.17482044575650;
+  //double target = -104.341181352210455;
+  double target = -103.61387669479440;
+
+  const std::vector<double> x = {-2.8269246586783039,1.3081031558978955E-021,0.69271407326031031 ,1.1269537527262939E-021,-0.0000000000000000,0.54665428796084770,0.16803414281323573,-0.0000000000000000,0.40754846974911302,2.0785118843572268};
+  //const std::vector<double> x = {-2.8269246587415990,6.5404535862508677E-022,0.69271208814523166,5.6347646693637056E-022,-0.0000000000000000,0.54665480790790499,0.16803682933352726,1.9124921929208785E-021,0.40755047235337671,2.0785001207417775};
+
+  std::vector<int> degree = {2,2,2};
+  //data
+  std::vector<double> doses1 = {0,50,100,200,400};
+  std::vector<double> Y1 = {0,1,2,10,19};
+  std::vector<double> n_group1 = {20,20,20,20,20};
+  std::vector<double> doses2 = {0,50,100,200,400};
+  std::vector<double> Y2 = {0,1,2,4,11};
+  std::vector<double> n_group2 = {20,20,20,20,20};
+  std::vector<double> doses3 = {0,50,100,200,400};
+  std::vector<double> Y3 = {0,2,2,6,9};
+  std::vector<double> n_group3 = {20,20,20,20,20};
+
+  std::vector<std::vector<double>> doses;
+  std::vector<std::vector<double>> Y;
+  std::vector<std::vector<double>> n_group;
+  doses.push_back(doses1);
+  doses.push_back(doses2);
+  doses.push_back(doses3);
+  Y.push_back(Y1);
+  Y.push_back(Y2);
+  Y.push_back(Y3);
+  n_group.push_back(n_group1);
+  n_group.push_back(n_group2);
+  n_group.push_back(n_group3);
+  int nT = doses.size();
+
+  //END USER INPUT
+
+  double maxDose = 0;
+  for (int i=0; i<nT; i++){
+    double tmpMax = *std::max_element(doses[i].begin(), doses[i].end());
+    if (tmpMax > maxDose) maxDose = tmpMax;
+  }
+  std::vector<double> grad(x.size());
+   std::vector<int> nObs;
+   struct msComboInEq ineq1;
+   ineq1.nT = nT;
+   ineq1.target = target;
+
+   for(int i=0; i<nT; i++){
+     std::vector<double> scaledDose = doses[i];
+     nObs.push_back(scaledDose.size());
+     std::cout<<"dataset "<<i<<std::endl;
+     for (int j=0; j<scaledDose.size(); j++){
+       scaledDose[j] /= maxDose;
+       std::cout<<"j:"<<j<<", dose:"<<scaledDose[j]<<std::endl;
+     } 
+     ineq1.doses.push_back(scaledDose);
+     ineq1.Y.push_back(Y[i]);
+     ineq1.n_group.push_back(n_group[i]);
+   }
+   ineq1.nObs = nObs;
+   ineq1.degree = degree;
+   for (int i=0; i<nT; i++){
+     std::cout<<"i:"<<i<<", nObs:"<<nObs[i]<<std::endl;
+   }
+   std::cout<<"target:"<<target<<std::endl;
+
+
+   std::cout << std::setprecision(15);
+   double ineqVal = myInequalityConstraint1(x, grad, &ineq1);
+   std::cout<<"ineqVal = "<<ineqVal<<std::endl;
+
+   std::cout<<"ineq grad:"<<std::endl;
+   for (int i=0; i<grad.size(); i++){
+      std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+   }
+}
+
+
+void runTestMTEqualityConstraint(){
+
+//  //USER INPUT
+
+  const std::vector<double> x = {-2.8269246586783039,1.3081031558978955E-021,0.69271407326031031 ,1.1269537527262939E-021,-0.0000000000000000,0.54665428796084770,0.16803414281323573,-0.0000000000000000,0.40754846974911302,2.0785118843572268};
+  //const std::vector<double> x = {-2.8269246587415990,6.5404535862508677E-022,0.69271208814523166,5.6347646693637056E-022,-0.0000000000000000,0.54665480790790499,0.16803682933352726,1.9124921929208785E-021,0.40755047235337671,2.0785001207417775};
+
+  std::vector<int> degree = {2,2,2};
+  int nT = degree.size(); 
+  double bmr = 0.1;
+  std::vector<double> grad(x.size());
+
+  //END USER INPUT
+
+   
+   struct msComboEq eq1;
+   eq1.bmr = bmr;
+   eq1.nT = nT;
+   eq1.degree = degree;
+
+   std::cout << std::setprecision(18);
+   double ineqVal = myEqualityConstraint(x, grad, &eq1);
+   std::cout<<"eqVal = "<<ineqVal<<std::endl;
+
+   std::cout<<"eq grad:"<<std::endl;
+   for (int i=0; i<grad.size(); i++){
+      std::cout<<"i:"<<i<<", grad:"<<grad[i]<<std::endl;
+   }
+}

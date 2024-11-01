@@ -9,6 +9,8 @@ int run_all_unitTests(){
 	std::cout<<"Running unit tests"<<std::endl;
 	objfunc_test();
 	Nlogist_probs_test();
+        multitumor_ineq_constraint_test();
+        multitumor_eq_constraint_test();
 	return 0;
 }
 
@@ -84,5 +86,102 @@ void Nlogist_lk_test(){
 	double lk = Nlogist_lk(p, &objData);
 
 	essentiallyEqual(lk, exp_lk, 1.5e-6);
+
+}
+
+void multitumor_ineq_constraint_test(){
+
+
+  const std::vector<double> x = {-2.8269246586783039,1.3081031558978955E-021,0.69271407326031031 ,1.1269537527262939E-021,-0.0000000000000000,0.54665428796084770,0.16803414281323573,-0.0000000000000000,0.40754846974911302,2.0785118843572268};
+
+  double target = -103.61387669479440;
+  std::vector<int> degree = {2,2,2};
+  std::vector<double> doses1 = {0,50,100,200,400};
+  std::vector<double> Y1 = {0,1,2,10,19};
+  std::vector<double> n_group1 = {20,20,20,20,20};
+  std::vector<double> doses2 = {0,50,100,200,400};
+  std::vector<double> Y2 = {0,1,2,4,11};
+  std::vector<double> n_group2 = {20,20,20,20,20};
+  std::vector<double> doses3 = {0,50,100,200,400};
+  std::vector<double> Y3 = {0,2,2,6,9};
+  std::vector<double> n_group3 = {20,20,20,20,20};
+
+  std::vector<std::vector<double>> doses;
+  std::vector<std::vector<double>> Y;
+  std::vector<std::vector<double>> n_group;
+  doses.push_back(doses1);
+  doses.push_back(doses2);
+  doses.push_back(doses3);
+  Y.push_back(Y1);
+  Y.push_back(Y2);
+  Y.push_back(Y3);
+  n_group.push_back(n_group1);
+  n_group.push_back(n_group2);
+  n_group.push_back(n_group3);
+  int nT = doses.size();
+ 
+  //expected values come from BMDS-Model-Averaging repo results
+  double expVal = 2.8421709430404E-013;
+  const std::vector<double> expGrad = {0.0,-24.8065931556362,-3.08579588297736,-2.267848203526,-34.4556907297259,-3.08561840026068,-0.182575711582335,-37.6923046554479,-3.08575327396336,-0.18268740294875};
+
+
+  double maxDose = 0;
+  for (int i=0; i<nT; i++){
+    double tmpMax = *std::max_element(doses[i].begin(), doses[i].end());
+    if (tmpMax > maxDose) maxDose = tmpMax;
+  }
+  std::vector<double> grad(x.size());
+  std::vector<int> nObs;
+  struct msComboInEq ineq1;
+  ineq1.nT = nT;
+  ineq1.target = target;
+
+  for(int i=0; i<nT; i++){
+    std::vector<double> scaledDose = doses[i];
+    nObs.push_back(scaledDose.size());
+    for (int j=0; j<scaledDose.size(); j++){
+      scaledDose[j] /= maxDose;
+    }
+    ineq1.doses.push_back(scaledDose);
+    ineq1.Y.push_back(Y[i]);
+    ineq1.n_group.push_back(n_group[i]);
+  }
+  ineq1.nObs = nObs;
+  ineq1.degree = degree;
+
+  double ineqVal = myInequalityConstraint1(x, grad, &ineq1);
+  essentiallyEqual(ineqVal, expVal, 1e-18);
+
+  for(int i=0; i<grad.size(); i++){
+    essentiallyEqual(grad[i], expGrad[i], 1e-6);
+  }
+
+}
+
+void multitumor_eq_constraint_test(){
+
+  const std::vector<double> x = {-2.8269246586783039,1.3081031558978955E-021,0.69271407326031031 ,1.1269537527262939E-021,-0.0000000000000000,0.54665428796084770,0.16803414281323573,-0.0000000000000000,0.40754846974911302,2.0785118843572268};
+
+  std::vector<int> degree = {2,2,2};
+  int nT = degree.size();
+  double bmr = 0.1;
+  std::vector<double> grad(x.size());
+
+  //expected values come from BMDS-Model-Averaging repo results
+  double expVal = 6.38378239159465011e-16;
+  const std::vector<double> expGrad = {0.113232419144430163,0.0,0.0591946176867892276,0.0035040027630851402,0.0,0.0591946176867892276,0.0035040027630851402,0.0,0.0591946176867892276,0.0035040027630851402};
+
+   struct msComboEq eq1;
+   eq1.bmr = bmr;
+   eq1.nT = nT;
+   eq1.degree = degree;
+
+   double eqVal = myEqualityConstraint(x, grad, &eq1);
+
+  essentiallyEqual(eqVal, expVal, 1e-18);
+
+  for(int i=0; i<grad.size(); i++){
+    essentiallyEqual(grad[i], expGrad[i], 1e-6);
+  }
 
 }

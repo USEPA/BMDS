@@ -443,7 +443,7 @@ double BMD_func(int n, double p[], double x, double ck)
 
 
 double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target, double maxDose, std::vector<double> xParms, bool isBMDL){
- 
+
    int nT = pyRes->selectedModelIndex.size(); 
    double bmr = pyAnal->BMR;
    std::vector<int> degree;
@@ -457,6 +457,9 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
    int iOffset = 0;
    x[0] = log(bmd);
 
+   //get max degree for loop
+   int maxDegree = *max_element(degree.begin(), degree.end());
+
    std::vector<std::vector<double>> tmp2;
    //restructure to group like terms together
    int count = 0;
@@ -469,7 +472,6 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
       tmp2.push_back(theParms);
    }
 
-   int maxDegree = *max_element(degree.begin(), degree.end());
    count = 1;
    for (int j=0; j<=maxDegree; j++){
       for (int i=0; i<nT; i++){
@@ -502,7 +504,6 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
      ub[i] = 1e4; //beta max value
    }
 
-   
 //   //constraint data
    struct msComboEq eq1;
    eq1.bmr = bmr;
@@ -552,57 +553,40 @@ double getclmt(python_multitumor_analysis *pyAnal, python_multitumor_result *pyR
 
    val = x[0];
 
-
    return val;
 
 }
 
 
 /*****************************************************************
- *  Added by CVL 7/2007 - start block
- * BMDL_combofunc -- returns the lower confidence limit, BMDL.
- *  external: Spec[]
- *  input:
- *   nparm is the number of parameters for Model B
- *   Anparm is the number of parameters for Model A
- *   xlk is the log-likelihood of the fitted model
- *   Dose is the BMD or upper dose limit
- *   pBak[] is the vector of fitted parameters for Model B
- *   pABak[] is the vector of fitted parameters for Model A
- *   D is a lower dose limit
- *   gtol is a small positive number (tolerance)
- *  output: lower confidence limit
+ * multitumorCLs -- returns the lower & upper confidence limits (BMDL & BMDU).
  *****************************************************************/
 //TODO: combine with BMDU_combofunc
-double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero)
+void multitumorCLs(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero)
 { 	/* ck and LR are calculated in Multistage_ComboBMD() */
 
-  int optite, nresm, *bind, CBnparm;
-  int which, temprisk, lnParmMax;
-  double fD, bmdl,  target, xmax, xlk2, xlk3, crisk;
+  int lnParmMax;
+  double bmdl, bmdu,  target, xmax;
   int i, j, nCall, k, nParmMax, ii = 0;
   double scale;
 
   std::vector<double> adxmax;
   int nParms;
-  fD = bmdl =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
-  optite = -5;
-  nCall = 1;
-
-  temprisk = 1;  //based on bmdparm.risk set to zero in original Multistage_ComboBMD
+  bmdl =  bmdu = target = xmax = 0.0;
 
   adxmax.resize(pyRes->ndatasets, 0.0);
 
 
 
-  CBnparm = lnParmMax = 0;
+  lnParmMax = 0;
+  nParms = 0;
   for(i = 0; i < pyRes->ndatasets; i++)
   {
       int selModelIndex = pyRes->selectedModelIndex[i];
       struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
       struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
       xmax = mod.doses[0];
-      CBnparm = CBnparm + modRes.nparms;
+      nParms += modRes.nparms;
 		
       if(modRes.nparms > lnParmMax){
          lnParmMax = modRes.nparms;
@@ -615,7 +599,6 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       }
       adxmax[i] = xmax;
   }
-  CBnparm = CBnparm + 1;
 
   /** rescale all doses to be: 0 <= Dose <= 1 **/
   xmax = adxmax[0];
@@ -626,33 +609,27 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   scale = xmax;
 
   nParmMax = (int)lnParmMax;
-  nParms = pyRes->ndatasets*nParmMax;
   std::vector<double> pdParms(nParms, 0.0);
   std::vector<double> pdParmsBak(nParms, 0.0);
   std::vector<double> pdParms2(nParms, 0.0);
   std::vector<double> pdVals(nParms, 0.0);
   std::vector<int> piSpec2(nParms, 0.0);
 
-  k = -1;
-  for(j=0; j<nParmMax; j++)
-    {
-      for(i=pyAnal->ndatasets-1; i>=0; i--)
-	{
+  k=-1;
+  for (j=0; j<nParmMax; j++){
+     for (i=pyAnal->ndatasets-1; i>=0; i--){
+       if (j<pyRes->models[i][0].nparms){
           k++;
-          if(j<pyRes->models[i][0].nparms)
-          {
-            pdParms[k] = pyRes->models[i][0].parms[j];
-            piSpec2[k] = 0.0;  //no user specified values
- 	  }
-	}
-    }
+	   pdParms[k] = pyRes->models[i][0].parms[j];
+       }
+     }
+  }
+
 
   i = 0;
   j=0;
 
   Dose = Dose/scale;
-
-  which = 4;          /* Want a combined  lower confidence limit */
 
   target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
   
@@ -664,13 +641,11 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
       {
           int iParms = pyRes->models[i][0].nparms;
 
-          k++;
           if (j <iParms){
+            k++;
             pdParmsBak[k] = pyRes->models[i][0].parms[j];
             pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
-          } else {
-            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
-          }
+          } 
       }
     }
 //  /* One more step for the background terms */
@@ -679,11 +654,11 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   }
   i = 0;
 
-    double retVal;
 
-    //bmdl calc
    
-    bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+  bmdl = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, true);
+
+  bmdu = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, false);
 
   pdParms2 = pdParms;
   int nT = 0;
@@ -697,9 +672,9 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
   {
      for (int i=0; i<pyRes->ndatasets; i++)
      {
-	  k++;
           if (j < pyRes->models[i][0].nparms)
 	  {
+	    k++;
 	    ppdParms[i][j] = pdParms2[k];
 	    if(k < pyAnal->ndatasets)
             {                
@@ -711,149 +686,15 @@ double BMDL_combofunc(struct python_multitumor_analysis *pyAnal, struct python_m
 
   int flag = 1;
   bmdl = exp(bmdl)*scale;
-  
-  xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
-  return bmdl;
-}
-
-
-double BMDU_combofunc(struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose, double D, double LR, double gtol, int *is_zero) {
-
-  int optite, nresm, *bind, CBnparm;
-  int which, temprisk, lnParmMax;
-  double fD, bmdu,  target, xmax, xlk2, xlk3, crisk;
-  int i, j, nCall, k, nParmMax, ii = 0;
-  double scale;
-
-  std::vector<double> adxmax;
-  int nParms;
-  fD = bmdu =  target = xmax = xlk2 = xlk3 = crisk = 0.0;
-  optite = -5;
-  nCall = 1;
-
-  temprisk = 1;  //based on bmdparm.risk set to zero in original Multistage_ComboBMD
-
-
-  /* Get the degree of polynomial */
-  adxmax.resize(pyRes->ndatasets, 0.0);
-
-  CBnparm = lnParmMax = 0;
-  for(i = 0; i < pyRes->ndatasets; i++)
-  {
-      int selModelIndex = pyRes->selectedModelIndex[i];
-      struct python_dichotomous_analysis mod = pyAnal->models[i][selModelIndex];
-      struct python_dichotomous_model_result modRes = pyRes->models[i][selModelIndex];
-      xmax = mod.doses[0];
-      CBnparm = CBnparm + modRes.nparms;
-		
-      if(modRes.nparms > lnParmMax){
-         lnParmMax = modRes.nparms;
-      }
-
-      for(j=0; j<mod.n; j++){
-         if(mod.doses[j] > xmax){
-            xmax = mod.doses[j];
-         }
-      }
-      adxmax[i] = xmax;
-  }
-  CBnparm = CBnparm + 1;
-
-  /** rescale all doses to be: 0 <= Dose <= 1 **/
-  xmax = adxmax[0];
-  for(i=0;i<pyRes->ndatasets; i++)
-    {
-      if(adxmax[i] > xmax) xmax = adxmax[i];
-    }
-  scale = xmax;
-
-  nParmMax = (int)lnParmMax;
-  nParms = pyRes->ndatasets*nParmMax;
-  std::vector<double> pdParms(nParms, 0.0);
-  std::vector<double> pdParmsBak(nParms, 0.0);
-  std::vector<double> pdParms2(nParms, 0.0);
-  std::vector<double> pdVals(nParms, 0.0);
-  std::vector<int> piSpec2(nParms, 0.0);
-
-  k = -1;
-  for(j=0; j<nParmMax; j++)
-    {
-      for(i=pyAnal->ndatasets-1; i>=0; i--)
-	{
-          k++;
-          if(j<pyRes->models[i][0].nparms)
-          {
-            pdParms[k] = pyRes->models[i][0].parms[j];
-            piSpec2[k] = 0.0;  //no user specified values
- 	  }
-	}
-    }
-
-  i = 0;
-  j=0;
-
-  Dose = Dose/scale;
-
-  which = 5;          /* Want a combined  upper confidence limit */
-
-  target = (pyRes->combined_LL - LR);  /* The value we want the likelihood */
-
-  k = -1;
-
-  for(j=0; j<nParmMax; j++)
-    {
-      for(i = pyRes->ndatasets-1; i>=0; i--)
-      {
-          int iParms = pyRes->models[i][0].nparms;
-
-          k++;
-          if (j <iParms){
-            pdParmsBak[k] = pyRes->models[i][0].parms[j];
-            pdParms[k] = pyRes->models[i][0].parms[j]*(pow(scale,(j)));
-          } else {
-            pdParmsBak[k] = pdParms[k] = BMDS_MISSING;
-          }
-      }
-    }
-  for(i=0; i<pyRes->ndatasets; i++){
-      pdParms[i] = -log(1.0 - pdParms[i]);
-  }
-  i = 0;
-
-    double retVal;
-
-    bmdu = getclmt(pyAnal, pyRes, Dose, target, xmax, pdParms, false);
-
-  pdParms2 = pdParms;
-  int nT = 0;
-  for(int i=0; i<pyRes->ndatasets; i++){
-      nT++;
-  }
-  std::vector<std::vector<double>> ppdParms(nT, std::vector<double> (nParmMax, BMDS_MISSING));
-
-  k = -1;
-  for (int j=0; j<nParmMax; j++)
-  {
-     for (int i=0; i<pyRes->ndatasets; i++)
-     {
-	  k++;
-          if (j < pyRes->models[i][0].nparms)
-	  {
-	    ppdParms[i][j] = pdParms2[k];
-	    if(k < pyAnal->ndatasets)
-            {                
-	      ppdParms[i][j] = 1-exp(-pdParms2[k]);
-	    }
-	  }
-     }
-  }
-
-  int flag = 1; 
   bmdu = exp(bmdu)*scale;
-  
-  xlk3 = ComboMaxLike2(flag,bmdu,&crisk, ppdParms, pyAnal, pyRes);
-  return bmdu;
+ 
+  pyRes->BMDL = bmdl;
+  pyRes->BMDU = bmdu; 
+  //xlk3 = ComboMaxLike2(flag,bmdl,&crisk, ppdParms, pyAnal, pyRes);
+
 }
+
+
 
 
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes){
@@ -1040,9 +881,7 @@ void Multistage_ComboBMD (struct python_multitumor_analysis *pyAnal, struct pyth
 
    is_zero = 0;
 
-   pyRes->BMDL = BMDL_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
-
-   pyRes->BMDU = BMDU_combofunc(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
+   multitumorCLs(pyAnal, pyRes, xb, xa, LR, tol, &is_zero);
 
 }
 
@@ -1103,14 +942,13 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
 
      iIndex = 1;
      for (int k=0; k<nT; k++){
-	for (int j=0; j<=degree[k]; j++){
-	   if (j==0){
-	      grad[iIndex]=0;
-           } else {
+	iIndex++;
+	grad[iIndex] = D;
+	for (int j=2; j<=degree[k]; j++){
+	      iIndex++;
 	      grad[iIndex] = pow(D,j);
-	   }
-	   iIndex +=1;
 	}
+	iIndex++;
 
      }
    }
@@ -1119,7 +957,6 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
    sum = log(1.0 - bmr);
    iIndex = x.size() - 1;
    double sum3 = 0.0;
-
    for (int l=nT-1; l>=0; l--){
      sum2 = 0.0;
      for (int k=degree[l]; k>0; k--){
@@ -1164,8 +1001,8 @@ double myInequalityConstraint1(const std::vector<double> &x, std::vector<double>
          if (sum < 0) sum = 0.0;
          double P = 1.0 - exp(-1.0*sum);
          resid = (Y[m][k]*dslog(P) - (n_group[m][k]-Y[m][k])*dslog(1.0-P))*(P-1.0);
-         int iIndex = iTop-1;
-         for(int j=degree[l]-1; j>=0; j--){
+         int iIndex = iTop;
+         for(int j=degree[l]; j>=0; j--){
            grad[iIndex] = grad[iIndex] + resid*(pow(doses[m][k],j));
            iIndex = iIndex-1;
          }
@@ -2623,11 +2460,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    anal.BMR = pyAnal->BMR;
    anal.alpha = pyAnal->alpha;
    anal.prior_cols = pyAnal->prior_cols;
-   pyRes->validResult.clear();
+   pyRes->validResult = false;
+   bool validModel = false; // is a valid model selected for multitumor to run
    for (int dataset=0; dataset<pyAnal->ndatasets; dataset++){
      int selIndex = pyRes->selectedModelIndex[dataset];
      if (selIndex >= 0){
-        pyRes->validResult.push_back(true);
+	validModel = true;
         std::vector<python_dichotomous_analysis> modGroup;
         std::vector<python_dichotomous_model_result> modResGroup;
         struct python_dichotomous_analysis modAnal;
@@ -2647,12 +2485,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
         modResGroup.push_back(modRes);
 	res.models.push_back(modResGroup);
 
-     } else {
-	pyRes->validResult.push_back(false);
-     }
+     } 
    }
    anal.ndatasets = anal.nmodels.size();
    res.ndatasets = anal.ndatasets;
+
+   if (!validModel){
+      std::cout<<"No valid models available for multitumor analysis"<<std::endl;
+      return;
+   }
 
    //run MSCombo
    runMultitumorModel(&anal, &res);  
@@ -2663,6 +2504,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(struct python_multitumor_anal
    pyRes->slopeFactor = res.slopeFactor;
    pyRes->combined_LL = res.combined_LL;
    pyRes->combined_LL_const = res.combined_LL_const;
+   pyRes->validResult = true;
 }  
 
 
@@ -2757,7 +2599,7 @@ int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analMode
 	return 1;
       } else {
 	//neither fit - refer to SWG
-	return -1;
+	return BMDS_MISSING;
       }
       //return 1;
 
@@ -2778,7 +2620,7 @@ int selectBestMultitumorModel(std::vector<python_dichotomous_analysis> &analMode
          if(adequateFit[analModels.size()-1]){
             return analModels.size()-1; //use k-1 model
 	 } else {
-            return -1;  //no model selected
+            return BMDS_MISSING;  //no model selected
 	 }
       }
    }
@@ -2820,7 +2662,6 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(struct python_multitumor_analys
    Multistage_ComboBMD(pyAnal, pyRes);
 
    pyRes->setSlopeFactor(pyAnal->BMR);
-
 }
 
 

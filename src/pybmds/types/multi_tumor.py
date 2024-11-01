@@ -45,7 +45,7 @@ class MultitumorResult(BaseModel):
     models: list[list[BmdModelDichotomousSchema]]  # all degrees for all datasets
     selected_model_indexes: list[int | None]
     slope_factor: float
-    valid_result: list[bool]
+    valid_result: bool
 
     @classmethod
     def from_model(cls, model) -> Self:
