@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+IndentWidth: 2
+UseTab: Never
+ColumnLimit: 100
+IndentPPDirectives: AfterHash
+AlignAfterOpenBracket: BlockIndent

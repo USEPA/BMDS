@@ -1,4 +1,4 @@
-.PHONY: clean lint format test coverage build dist docs docs-docx docs-serve docs-clean loc
+.PHONY: clean lint format format-cpp test coverage build dist docs docs-docx docs-serve docs-clean loc
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -23,6 +23,9 @@ lint:  ## Check for python formatting issues
 
 format:  ## Modify python code where possible
 	@ruff format . && ruff check . --fix --show-fixes
+
+format-cpp: ## Format C++ code
+	@find src -name "*.cpp" -o -name "*.h" | xargs clang-format -i
 
 test: ## Run unit tests
 	@py.test
