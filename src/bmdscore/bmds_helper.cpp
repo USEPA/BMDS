@@ -3269,8 +3269,8 @@ void Nlogist_Bootstrap(
                 Ep[j] * (1.0 - Ep[j]) / (Ep[j] * (1.0 - Ep[j]) * phi[Xg[j] - 1]) - 1.0;
             a = Ep[j] * tempvalue;
             b = (1.0 - Ep[j]) * tempvalue;
-	    validatePositiveInput(a);
-	    validatePositiveInput(b);
+            validatePositiveInput(a);
+            validatePositiveInput(b);
             cutpoint = gsl_ran_beta(r, a, b);
           }
         }
@@ -3291,8 +3291,8 @@ void Nlogist_Bootstrap(
             while (x <= 1.0 && cum_beta > cum_beta_comp) {
               cutpoint = x;
               x += cum_beta_step;
-	      validatePositiveInput(a);
-	      validatePositiveInput(b);
+              validatePositiveInput(a);
+              validatePositiveInput(b);
               cum_beta_comp = gsl_cdf_beta_P(x, a, b);
             }
           } else {  // random value is closer to high end
@@ -3302,8 +3302,8 @@ void Nlogist_Bootstrap(
             while (x >= 0.0 && cum_beta < cum_beta_comp) {
               x -= cum_beta_step;
               cutpoint = x;
-	      validatePositiveInput(a);
-	      validatePositiveInput(b);
+              validatePositiveInput(a);
+              validatePositiveInput(b);
               cum_beta_comp = gsl_cdf_beta_P(x, a, b);
             }
           }
