@@ -497,6 +497,8 @@ double dslog(double P);
 double round_to(double value, double precision = 1.0);
 double ComboMaxLike2(int flag, double dose, double *crisk, std::vector<std::vector<double>> p, python_multitumor_analysis *pyAnal, python_multitumor_result *pyres);
 
+void validatePositiveInput(double &val);
+
 void probability_inrange(double *ex);
 
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
