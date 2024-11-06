@@ -3391,9 +3391,9 @@ void Nlogist_Bootstrap(
 
   gsl_rng_free(r);  // free memory from random generator
 }
-             
-void validatePositiveInput(double &val){
-  if (val < 0){
+
+void validatePositiveInput(double &val) {
+  if (val < 0) {
     val = BMDS_EPS;
   }
 }
