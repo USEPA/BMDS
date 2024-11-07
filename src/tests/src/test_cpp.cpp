@@ -4419,7 +4419,7 @@ void runPythonMultitumorAnalysis() {
 //  std::vector<double> n_group2 = {50,50,50,50,50};
 //  std::vector<double> doses3 = {0, 100, 200, 400, 800};
 //  std::vector<double> Y3 = {0,1,5,11,19};
-//  std::vector<double> n_group3 = {25,25,25,25,25};
+//  std::vector<double> n_group3 = {50,50,50,50,50};
 //  std::vector<double> doses4 = {0, 100, 200, 400, 800};
 //  std::vector<double> Y4 = {0,1,11,2,22};
 //  std::vector<double> n_group4 = {50,50,50,50,50};
@@ -4469,8 +4469,14 @@ void runPythonMultitumorAnalysis() {
 //  std::vector<double> doses8 = {0, 100, 200, 400, 800};
 //  std::vector<double> Y8 = {0,1,4,21,45};
 //  std::vector<double> n_group8 = {50,50,50,50,50};
-//  std::vector<int> n = {5,5,5,5,4,5,5,5};
-//  std::vector<int> degree = {0, 0, 0, 0, 0, 0, 0, 0};
+//  std::vector<double> doses9 = {0, 100, 200, 400, 800};
+//  std::vector<double> Y9 = {0,1,8,32,45};
+//  std::vector<double> n_group9 = {50,50,50,50,50};
+//  std::vector<double> doses10 = {0, 100, 200, 400, 800};
+//  std::vector<double> Y10 = {0,0,5,29,49};
+//  std::vector<double> n_group10 = {50,50,50,50,50};
+//  std::vector<int> n = {5,5,5,5,4,5,5,5,5,5,5};
+//  std::vector<int> degree = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 //  doses.push_back(doses1);
 //  doses.push_back(doses2);
 //  doses.push_back(doses3);
@@ -4479,6 +4485,8 @@ void runPythonMultitumorAnalysis() {
 //  doses.push_back(doses6);
 //  doses.push_back(doses7);
 //  doses.push_back(doses8);
+//  doses.push_back(doses9);
+//  doses.push_back(doses10);
 //  Y.push_back(Y1);
 //  Y.push_back(Y2);
 //  Y.push_back(Y3);
@@ -4487,6 +4495,8 @@ void runPythonMultitumorAnalysis() {
 //  Y.push_back(Y6);
 //  Y.push_back(Y7);
 //  Y.push_back(Y8);
+//  Y.push_back(Y9);
+//  Y.push_back(Y10);
 //  n_group.push_back(n_group1);
 //  n_group.push_back(n_group2);
 //  n_group.push_back(n_group3);
@@ -4495,6 +4505,8 @@ void runPythonMultitumorAnalysis() {
 //  n_group.push_back(n_group6);
 //  n_group.push_back(n_group7);
 //  n_group.push_back(n_group8);
+//  n_group.push_back(n_group9);
+//  n_group.push_back(n_group10);
 
   /////////////////////////////////////////////////
   ////END USER INPUT
@@ -4591,6 +4603,16 @@ void runPythonMultitumorAnalysis() {
   std::cout << "Selected model Indexes:  ";
   for (auto elem : res.selectedModelIndex) {
     std::cout << elem << ", ";
+  }
+
+  std::cout << "Selected model degrees:  ";
+  for (int i=0; i<res.selectedModelIndex.size(); i++){
+    int ind = res.selectedModelIndex[i];	 
+    if (ind >= 0){ 
+       std::cout << anal.models[i][ind].degree << ", ";
+    } else {
+       std::cout<<"-1, ";
+    }
   }
 
   std::cout << std::endl;

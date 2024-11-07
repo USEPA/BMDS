@@ -511,6 +511,12 @@ double getclmt(
     ub[i] = 1e4;  // beta max value
   }
 
+  if (isBMDL){
+    ub[0] = log(Dose);
+  } else {
+    lb[0] = log(Dose);
+  }
+
   //   //constraint data
   struct msComboEq eq1;
   eq1.bmr = bmr;
@@ -677,7 +683,6 @@ void multitumorCLs(
       }
     }
   }
-
   int flag = 1;
   bmdl = exp(bmdl) * scale;
   bmdu = exp(bmdu) * scale;
@@ -974,7 +979,7 @@ double myInequalityConstraint1(
       grad[i] = 0.0;
     }
     for (int l = 0; l < nT; l++) {
-      m = m - 1;
+      m=l;
       double iTop = degree[l] + iOffset;
       double iBottom = iOffset;
       for (int k = 0; k < nObs[l]; k++) {
@@ -999,7 +1004,7 @@ double myInequalityConstraint1(
   iOffset = 1;
   m = nT;
   for (int l = 0; l < nT; l++) {
-    m = m - 1;
+    m = l;
     double iTop = degree[l] + iOffset;
     double iBottom = iOffset;
     for (int k = 0; k < nObs[l]; k++) {
