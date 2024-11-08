@@ -540,6 +540,8 @@ double ComboMaxLike2(
     python_multitumor_analysis *pyAnal, python_multitumor_result *pyres
 );
 
+void validatePositiveInput(double &val);
+
 void probability_inrange(double *ex);
 
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
