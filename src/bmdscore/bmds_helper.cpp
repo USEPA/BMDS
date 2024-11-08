@@ -511,7 +511,7 @@ double getclmt(
     ub[i] = 1e4;  // beta max value
   }
 
-  if (isBMDL){
+  if (isBMDL) {
     ub[0] = log(Dose);
   } else {
     lb[0] = log(Dose);
@@ -979,7 +979,7 @@ double myInequalityConstraint1(
       grad[i] = 0.0;
     }
     for (int l = 0; l < nT; l++) {
-      m=l;
+      m = l;
       double iTop = degree[l] + iOffset;
       double iBottom = iOffset;
       for (int k = 0; k < nObs[l]; k++) {
