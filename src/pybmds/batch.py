@@ -29,7 +29,7 @@ class BatchSession(BatchBase):
     def __init__(self, sessions: list[Session] | None = None):
         if sessions is None:
             sessions = []
-        self.session: list[Session] = sessions
+        self.sessions: list[Session] = sessions
         self.errors = []
 
     def df_summary(self) -> pd.DataFrame:
@@ -43,13 +43,13 @@ class BatchSession(BatchBase):
                 ),
                 clean=False,
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
     def df_dataset(self) -> pd.DataFrame:
         data: list[dict] = []
-        for idx, session in enumerate(self.session):
+        for idx, session in enumerate(self.sessions):
             data.extend(
                 session.dataset.rows(
                     extras=dict(
@@ -64,7 +64,7 @@ class BatchSession(BatchBase):
 
     def df_params(self) -> pd.DataFrame:
         data: list[dict] = []
-        for idx, session in enumerate(self.session):
+        for idx, session in enumerate(self.sessions):
             for model_index, model in enumerate(session.models):
                 if model.has_results:
                     data.extend(
@@ -122,7 +122,7 @@ class BatchSession(BatchBase):
         if report is None:
             report = Report.build_default()
 
-        for session in self.session:
+        for session in self.sessions:
             session.to_docx(
                 report,
                 header_level=header_level,
@@ -133,7 +133,7 @@ class BatchSession(BatchBase):
                 session_inputs_table=session_inputs_table,
             )
 
-        if citation and len(self.session) > 0:
+        if citation and len(self.sessions) > 0:
             write_citation(report, header_level=header_level)
 
         return report.document
@@ -144,7 +144,7 @@ class BatchSession(BatchBase):
         Returns:
             str: A JSON string
         """
-        return json.dumps([session.to_dict() for session in self.session])
+        return json.dumps([session.to_dict() for session in self.sessions])
 
     @classmethod
     def execute(
@@ -187,9 +187,9 @@ class BatchSession(BatchBase):
             if result.success:
                 if isinstance(result.content, list):
                     for item in result.content:
-                        batch.session.append(Session.from_serialized(item))
+                        batch.sessions.append(Session.from_serialized(item))
                 else:
-                    batch.session.append(Session.from_serialized(result.content))
+                    batch.sessions.append(Session.from_serialized(result.content))
             else:
                 batch.errors.append(result.content)
 
@@ -237,7 +237,7 @@ class MultitumorBatch(BatchBase):
     def __init__(self, sessions: list[Multitumor] | None = None):
         if sessions is None:
             sessions = []
-        self.session: list[Multitumor] = sessions
+        self.sessions: list[Multitumor] = sessions
         self.errors = []
 
     def to_docx(
@@ -260,20 +260,20 @@ class MultitumorBatch(BatchBase):
         if report is None:
             report = Report.build_default()
 
-        for session in self.session:
+        for session in self.sessions:
             session.to_docx(
                 report,
                 header_level=header_level,
                 citation=False,
             )
 
-        if citation and len(self.session) > 0:
+        if citation and len(self.sessions) > 0:
             write_citation(report, header_level=header_level)
 
         return report.document
 
     def serialize(self) -> str:
-        return json.dumps([session.to_dict() for session in self.session])
+        return json.dumps([session.to_dict() for session in self.sessions])
 
     @classmethod
     def deserialize(cls, data: str) -> Self:
@@ -287,7 +287,7 @@ class MultitumorBatch(BatchBase):
                 extras=dict(session_index=idx),
                 clean=False,
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
@@ -296,7 +296,7 @@ class MultitumorBatch(BatchBase):
             session.datasets_df(
                 extras=dict(session_index=idx),
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
@@ -305,7 +305,7 @@ class MultitumorBatch(BatchBase):
             session.params_df(
                 extras=dict(session_index=idx),
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
