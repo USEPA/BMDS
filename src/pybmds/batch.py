@@ -10,7 +10,7 @@ from typing import NamedTuple, Self
 import pandas as pd
 from tqdm import tqdm
 
-from .datasets.base import DatasetBase
+from .datasets.base import DatasetType
 from .models.multi_tumor import Multitumor
 from .reporting.styling import Report, write_citation
 from .session import Session
@@ -148,12 +148,15 @@ class BatchSession(BatchBase):
 
     @classmethod
     def execute(
-        cls, datasets: list[DatasetBase], runner: Callable, nprocs: int | None = None
+        cls,
+        datasets: list[DatasetType],
+        runner: Callable[[DatasetType], BatchResponse],
+        nprocs: int | None = None,
     ) -> Self:
         """Execute sessions using multiple processors.
 
         Args:
-            datasets (list[DatasetBase]): The datasets to execute
+            datasets (list[DatasetType]): The datasets to execute
             runner (Callable[dataset] -> BatchResponse): The method which executes a session
             nprocs (Optional[int]): the number of processors to use; defaults to N-1. If 1 is
                 specified; the batch session is called linearly without a process pool
