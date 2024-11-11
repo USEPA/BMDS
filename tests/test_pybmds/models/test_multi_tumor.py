@@ -31,7 +31,7 @@ class TestMultitumor:
         df = session.datasets_df()
 
         # docx
-        docx = session.to_docx()
+        docx = session.to_docx(all_models=True, bmd_cdf_table=True)
 
         if rewrite_data_files:
             (data_path / "reports/multitumor.txt").write_text(text)
