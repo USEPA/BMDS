@@ -90,6 +90,34 @@ make docs-clean #  Clean documentation
 
 Using the `make serve` command is recommended for editing documentation; it updates the preview in realtime files are saved.
 
+### Versioning
+
+We use [calendar versioning](https://calver.org/) to document releases, where:
+
+* `major` is the year of the release (ex: 28 for a 2028 release)
+* `minor` is incremented for each release of the calendar year, starting at 1
+* `aN` is the alpha release for testing, where N starts at 1
+* `dev` is any upcoming pre-release currently under development.
+
+As an example, let's say we're staring on the first release of 2028:
+
+* Create `28.1a1.dev`
+* Iterate until we're ready for an alpha release
+    * Update the version to `28.1a1`, and git tag the release `28.1a1`
+    * Immediately change the `main` branch to `28.1.a2.dev`
+* Begin testing of `28.1.a1`
+    * If changes are needed, iterate on `28.1.a2.dev` until it can be released
+    * If changes are not needed, release a `28.1` by changing the version and minting a tag
+
+The [packaging](https://packaging.pypa.io/en/stable/index.html) package implements [PEP440](https://peps.python.org/pep-0440/), and can be used to check candidate versions:
+
+```python
+from packaging.version import parse
+
+parse('28.1a1.dev')._version
+# _Version(epoch=0, release=(28, 1), dev=('dev', 0), pre=('a', 1), post=None, local=None)
+```
+
 ### Priors Report
 
 The `pybmds` package includes Bayesian priors and frequentist parameter initialization settings that have been tuned to help improve model fit performance. To generate a report of the settings in all permutations, run the following command:
@@ -97,3 +125,5 @@ The `pybmds` package includes Bayesian priors and frequentist parameter initiali
 ```bash
 bmds-priors-report priors_report.md
 ```
+
+
