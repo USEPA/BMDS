@@ -10,6 +10,7 @@ from typing import NamedTuple, Self
 import pandas as pd
 from tqdm import tqdm
 
+from .constants import Dtype
 from .datasets.base import DatasetType
 from .models.multi_tumor import Multitumor
 from .reporting.styling import Report, write_citation
@@ -23,6 +24,19 @@ class BatchResponse(NamedTuple):
 
 class BatchBase:
     pass
+
+
+def _make_zip(data: str, archive: Path):
+    with zipfile.ZipFile(
+        archive, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+    ) as zf:
+        zf.writestr("data.json", data=data)
+
+
+def _load_zip(archive: Path) -> str:
+    with zipfile.ZipFile(archive) as zf:
+        with zf.open("data.json") as f:
+            return f.read()
 
 
 class BatchSession(BatchBase):
@@ -67,8 +81,13 @@ class BatchSession(BatchBase):
         for idx, session in enumerate(self.sessions):
             for model_index, model in enumerate(session.models):
                 if model.has_results:
+                    func = (
+                        model.results.parameter_rows
+                        if session.dataset.dtype is Dtype.NESTED_DICHOTOMOUS
+                        else model.results.parameters.rows
+                    )
                     data.extend(
-                        model.results.parameters.rows(
+                        func(
                             extras=dict(
                                 session_index=idx,
                                 session_id=session.id,
@@ -219,10 +238,7 @@ class BatchSession(BatchBase):
         Returns:
             BatchSession: An instance of this session
         """
-        with zipfile.ZipFile(archive) as zf:
-            with zf.open("data.json") as f:
-                data = f.read()
-        return BatchSession.deserialize(data)
+        return BatchSession.deserialize(_load_zip(archive))
 
     def save(self, archive: Path):
         """Save Session to a compressed zipfile
@@ -230,10 +246,7 @@ class BatchSession(BatchBase):
         Args:
             fn (Path): The zipfile path
         """
-        with zipfile.ZipFile(
-            archive, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-        ) as zf:
-            zf.writestr("data.json", data=self.serialize())
+        return _make_zip(self.serialize(), archive)
 
 
 class MultitumorBatch(BatchBase):
@@ -277,6 +290,28 @@ class MultitumorBatch(BatchBase):
 
     def serialize(self) -> str:
         return json.dumps([session.to_dict() for session in self.sessions])
+
+    @classmethod
+    def execute(cls, datasets: list[dict], runner: Callable, nprocs: int | None = None) -> Self:
+        """Execute sessions using multiple processors.
+
+        Args:
+            datasets (list[dict]): The datasets to execute
+            runner (Callable[dict] -> Multitumor): The method which executes a session.
+            nprocs (Optional[int]): the number of processors to use; defaults to N-1. If 1 is
+                specified; the batch session is called sequentially
+
+        Returns:
+            A MultitumorBatch with sessions executed.
+        """
+        if nprocs is None:
+            nprocs = max(os.cpu_count() - 1, 1)
+
+        if nprocs > 1:
+            raise NotImplementedError("Not implemented (yet)")
+
+        sessions = [runner(dataset) for dataset in tqdm(datasets, desc="Executing...")]
+        return cls(sessions=sessions)
 
     @classmethod
     def deserialize(cls, data: str) -> Self:
@@ -323,3 +358,23 @@ class MultitumorBatch(BatchBase):
             for name, df in data.items():
                 df.to_excel(writer, sheet_name=name, index=False)
         return f
+
+    @classmethod
+    def load(cls, archive: Path) -> Self:
+        """Load a Session from a compressed zipfile
+
+        Args:
+            fn (Path): The zipfile path
+
+        Returns:
+            MultitumorBatch: An instance of this session
+        """
+        return cls.deserialize(_load_zip(archive))
+
+    def save(self, archive: Path):
+        """Save Session to a compressed zipfile
+
+        Args:
+            fn (Path): The zipfile path
+        """
+        return _make_zip(self.serialize(), archive)
