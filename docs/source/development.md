@@ -90,32 +90,32 @@ make docs-clean #  Clean documentation
 
 Using the `make serve` command is recommended for editing documentation; it updates the preview in realtime files are saved.
 
-### Versioning
+## Versioning
 
-We use [calendar versioning](https://calver.org/) to document releases, where:
+We use [calendar versioning](https://calver.org/) for `pybmds`, where:
 
-* `major` is the year of the release (ex: 28 for a 2028 release)
-* `minor` is incremented for each release of the calendar year, starting at 1
-* `aN` is the alpha release for testing, where N starts at 1
+* `major` is the year of the release (ex: `28` for a 2028 release)
+* `minor` is incremented for each release of the calendar year, starting at `1`
+* `aN` is the alpha release for testing, where N starts at `1`
 * `dev` is any upcoming pre-release currently under development.
 
-As an example, let's say we're staring on the first release of 2028:
+As an example, consider the scenario where we're beginning development our first release in 2028:
 
-* Create `28.1a1.dev`
+* In `pybmds.__init__`, set `__version__ = "28.1a1.dev"`
 * Iterate until we're ready for an alpha release
     * Update the version to `28.1a1`, and git tag the release `28.1a1`
-    * Immediately change the `main` branch to `28.1.a2.dev`
-* Begin testing of `28.1.a1`
-    * If changes are needed, iterate on `28.1.a2.dev` until it can be released
+    * Immediately change the `main` branch to `28.1a2.dev`
+* Begin testing of `28.1a1`
+    * If changes are needed, iterate on `28.1a2.dev`
     * If changes are not needed, release a `28.1` by changing the version and minting a tag
 
 The [packaging](https://packaging.pypa.io/en/stable/index.html) package implements [PEP440](https://peps.python.org/pep-0440/), and can be used to check candidate versions:
 
 ```python
-from packaging.version import parse
+from packaging.version import Version
 
-parse('28.1a1.dev')._version
-# _Version(epoch=0, release=(28, 1), dev=('dev', 0), pre=('a', 1), post=None, local=None)
+Version('28.1a1.dev')
+# _Version(release=(28, 1), pre=('a', 1), dev=('dev', 0))
 ```
 
 ### Priors Report
