@@ -1,6 +1,8 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+
 import pybmds
 from pybmds.batch import BatchResponse, BatchSession, MultitumorBatch
 from pybmds.session import Session
@@ -17,10 +19,10 @@ def _batch_run(ds):
 class TestBatchSession:
     def test_execute(self, ddataset2):
         batch = BatchSession.execute([ddataset2], _batch_run, nprocs=1)
-        assert len(batch.session) == 1
+        assert len(batch.sessions) == 1
 
         batch = BatchSession.execute([ddataset2, ddataset2], _batch_run, nprocs=2)
-        assert len(batch.session) == 2
+        assert len(batch.sessions) == 2
 
     def test_exports_dichotomous(self, ddataset2, rewrite_data_files, data_path):
         datasets = [ddataset2]
@@ -29,17 +31,17 @@ class TestBatchSession:
             session = Session(dataset=dataset)
             session.add_default_models()
             session.execute_and_recommend()
-            batch.session.append(session)
+            batch.sessions.append(session)
 
             session = Session(dataset=dataset)
             session.add_default_bayesian_models()
             session.execute()
-            batch.session.append(session)
+            batch.sessions.append(session)
 
         # check serialization/deserialization
         data = batch.serialize()
         batch2 = batch.deserialize(data)
-        assert len(batch2.session) == len(batch.session)
+        assert len(batch2.sessions) == len(batch.sessions)
 
         # check zip
         zf = Path(tempfile.NamedTemporaryFile().name)
@@ -49,7 +51,7 @@ class TestBatchSession:
             assert zf.exists()
             # unsave
             batch3 = BatchSession.load(zf)
-            assert len(batch3.session) == 2
+            assert len(batch3.sessions) == 2
         finally:
             zf.unlink()
 
@@ -68,12 +70,12 @@ class TestBatchSession:
             session = pybmds.Session(dataset=dataset)
             session.add_model(pybmds.Models.Power)
             session.execute_and_recommend()
-            batch.session.append(session)
+            batch.sessions.append(session)
 
         # check serialization/deserialization
         data = batch.serialize()
         batch2 = batch.deserialize(data)
-        assert len(batch2.session) == len(batch.session)
+        assert len(batch2.sessions) == len(batch.sessions)
 
         # check exports
         excel = batch.to_excel()
@@ -95,12 +97,36 @@ class TestMultitumorBatch:
         # check serialization/deserialization
         data = batch.serialize()
         batch2 = batch.deserialize(data)
-        assert len(batch2.session) == len(batch.session)
+        assert len(batch2.sessions) == len(batch.sessions)
 
         # check exports
         excel = batch.to_excel()
         docx = batch.to_docx()
 
+        # check load/save
+        zf = Path(tempfile.NamedTemporaryFile().name)
+        try:
+            # save
+            batch.save(zf)
+            assert zf.exists()
+            # load
+            batch2 = MultitumorBatch.load(zf)
+            assert len(batch2.sessions) == 1
+        finally:
+            zf.unlink()
+
         if rewrite_data_files:
             (data_path / "reports/batch-multitumor.xlsx").write_bytes(excel.getvalue())
             docx.save(data_path / "reports/batch-multitumor.docx")
+
+    def test_execute(self, mt_datasets):
+        def _batch_run(ds):
+            sess = pybmds.Multitumor(datasets=ds["datasets"])
+            sess.execute()
+            return sess
+
+        batch = MultitumorBatch.execute([{"datasets": mt_datasets}], _batch_run, nprocs=1)
+        assert len(batch.sessions) == 1
+
+        with pytest.raises(NotImplementedError):
+            MultitumorBatch.execute([{"datasets": mt_datasets}], _batch_run, nprocs=2)

@@ -10,7 +10,8 @@ from typing import NamedTuple, Self
 import pandas as pd
 from tqdm import tqdm
 
-from .datasets.base import DatasetBase
+from .constants import Dtype
+from .datasets.base import DatasetType
 from .models.multi_tumor import Multitumor
 from .reporting.styling import Report, write_citation
 from .session import Session
@@ -25,11 +26,24 @@ class BatchBase:
     pass
 
 
+def _make_zip(data: str, archive: Path):
+    with zipfile.ZipFile(
+        archive, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+    ) as zf:
+        zf.writestr("data.json", data=data)
+
+
+def _load_zip(archive: Path) -> str:
+    with zipfile.ZipFile(archive) as zf:
+        with zf.open("data.json") as f:
+            return f.read()
+
+
 class BatchSession(BatchBase):
     def __init__(self, sessions: list[Session] | None = None):
         if sessions is None:
             sessions = []
-        self.session: list[Session] = sessions
+        self.sessions: list[Session] = sessions
         self.errors = []
 
     def df_summary(self) -> pd.DataFrame:
@@ -43,13 +57,13 @@ class BatchSession(BatchBase):
                 ),
                 clean=False,
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
     def df_dataset(self) -> pd.DataFrame:
         data: list[dict] = []
-        for idx, session in enumerate(self.session):
+        for idx, session in enumerate(self.sessions):
             data.extend(
                 session.dataset.rows(
                     extras=dict(
@@ -64,11 +78,16 @@ class BatchSession(BatchBase):
 
     def df_params(self) -> pd.DataFrame:
         data: list[dict] = []
-        for idx, session in enumerate(self.session):
+        for idx, session in enumerate(self.sessions):
             for model_index, model in enumerate(session.models):
                 if model.has_results:
+                    func = (
+                        model.results.parameter_rows
+                        if session.dataset.dtype is Dtype.NESTED_DICHOTOMOUS
+                        else model.results.parameters.rows
+                    )
                     data.extend(
-                        model.results.parameters.rows(
+                        func(
                             extras=dict(
                                 session_index=idx,
                                 session_id=session.id,
@@ -122,7 +141,7 @@ class BatchSession(BatchBase):
         if report is None:
             report = Report.build_default()
 
-        for session in self.session:
+        for session in self.sessions:
             session.to_docx(
                 report,
                 header_level=header_level,
@@ -133,7 +152,7 @@ class BatchSession(BatchBase):
                 session_inputs_table=session_inputs_table,
             )
 
-        if citation and len(self.session) > 0:
+        if citation and len(self.sessions) > 0:
             write_citation(report, header_level=header_level)
 
         return report.document
@@ -144,16 +163,19 @@ class BatchSession(BatchBase):
         Returns:
             str: A JSON string
         """
-        return json.dumps([session.to_dict() for session in self.session])
+        return json.dumps([session.to_dict() for session in self.sessions])
 
     @classmethod
     def execute(
-        cls, datasets: list[DatasetBase], runner: Callable, nprocs: int | None = None
+        cls,
+        datasets: list[DatasetType],
+        runner: Callable[[DatasetType], BatchResponse],
+        nprocs: int | None = None,
     ) -> Self:
         """Execute sessions using multiple processors.
 
         Args:
-            datasets (list[DatasetBase]): The datasets to execute
+            datasets (list[DatasetType]): The datasets to execute
             runner (Callable[dataset] -> BatchResponse): The method which executes a session
             nprocs (Optional[int]): the number of processors to use; defaults to N-1. If 1 is
                 specified; the batch session is called linearly without a process pool
@@ -187,9 +209,9 @@ class BatchSession(BatchBase):
             if result.success:
                 if isinstance(result.content, list):
                     for item in result.content:
-                        batch.session.append(Session.from_serialized(item))
+                        batch.sessions.append(Session.from_serialized(item))
                 else:
-                    batch.session.append(Session.from_serialized(result.content))
+                    batch.sessions.append(Session.from_serialized(result.content))
             else:
                 batch.errors.append(result.content)
 
@@ -216,10 +238,7 @@ class BatchSession(BatchBase):
         Returns:
             BatchSession: An instance of this session
         """
-        with zipfile.ZipFile(archive) as zf:
-            with zf.open("data.json") as f:
-                data = f.read()
-        return BatchSession.deserialize(data)
+        return BatchSession.deserialize(_load_zip(archive))
 
     def save(self, archive: Path):
         """Save Session to a compressed zipfile
@@ -227,17 +246,14 @@ class BatchSession(BatchBase):
         Args:
             fn (Path): The zipfile path
         """
-        with zipfile.ZipFile(
-            archive, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-        ) as zf:
-            zf.writestr("data.json", data=self.serialize())
+        return _make_zip(self.serialize(), archive)
 
 
 class MultitumorBatch(BatchBase):
     def __init__(self, sessions: list[Multitumor] | None = None):
         if sessions is None:
             sessions = []
-        self.session: list[Multitumor] = sessions
+        self.sessions: list[Multitumor] = sessions
         self.errors = []
 
     def to_docx(
@@ -260,20 +276,42 @@ class MultitumorBatch(BatchBase):
         if report is None:
             report = Report.build_default()
 
-        for session in self.session:
+        for session in self.sessions:
             session.to_docx(
                 report,
                 header_level=header_level,
                 citation=False,
             )
 
-        if citation and len(self.session) > 0:
+        if citation and len(self.sessions) > 0:
             write_citation(report, header_level=header_level)
 
         return report.document
 
     def serialize(self) -> str:
-        return json.dumps([session.to_dict() for session in self.session])
+        return json.dumps([session.to_dict() for session in self.sessions])
+
+    @classmethod
+    def execute(cls, datasets: list[dict], runner: Callable, nprocs: int | None = None) -> Self:
+        """Execute sessions using multiple processors.
+
+        Args:
+            datasets (list[dict]): The datasets to execute
+            runner (Callable[dict] -> Multitumor): The method which executes a session.
+            nprocs (Optional[int]): the number of processors to use; defaults to N-1. If 1 is
+                specified; the batch session is called sequentially
+
+        Returns:
+            A MultitumorBatch with sessions executed.
+        """
+        if nprocs is None:
+            nprocs = max(os.cpu_count() - 1, 1)
+
+        if nprocs > 1:
+            raise NotImplementedError("Not implemented (yet)")
+
+        sessions = [runner(dataset) for dataset in tqdm(datasets, desc="Executing...")]
+        return cls(sessions=sessions)
 
     @classmethod
     def deserialize(cls, data: str) -> Self:
@@ -287,7 +325,7 @@ class MultitumorBatch(BatchBase):
                 extras=dict(session_index=idx),
                 clean=False,
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
@@ -296,7 +334,7 @@ class MultitumorBatch(BatchBase):
             session.datasets_df(
                 extras=dict(session_index=idx),
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
@@ -305,7 +343,7 @@ class MultitumorBatch(BatchBase):
             session.params_df(
                 extras=dict(session_index=idx),
             )
-            for idx, session in enumerate(self.session)
+            for idx, session in enumerate(self.sessions)
         ]
         return pd.concat(dfs).dropna(axis=1, how="all").fillna("")
 
@@ -320,3 +358,23 @@ class MultitumorBatch(BatchBase):
             for name, df in data.items():
                 df.to_excel(writer, sheet_name=name, index=False)
         return f
+
+    @classmethod
+    def load(cls, archive: Path) -> Self:
+        """Load a Session from a compressed zipfile
+
+        Args:
+            fn (Path): The zipfile path
+
+        Returns:
+            MultitumorBatch: An instance of this session
+        """
+        return cls.deserialize(_load_zip(archive))
+
+    def save(self, archive: Path):
+        """Save Session to a compressed zipfile
+
+        Args:
+            fn (Path): The zipfile path
+        """
+        return _make_zip(self.serialize(), archive)
