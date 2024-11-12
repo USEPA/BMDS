@@ -25,9 +25,9 @@ class TestNestedLogistic:
         │ Parameter   │   Initial │    Min │    Max │
         ╞═════════════╪═══════════╪════════╪════════╡
         │ a           │         0 │  0     │  1     │
-        │ b           │         0 │ -1e+06 │  1e+06 │
+        │ b           │         0 │ -18    │  18    │
         │ theta1      │         0 │  0     │  1     │
-        │ theta2      │         0 │ -1e+06 │  1e+06 │
+        │ theta2      │         0 │ -18    │  18    │
         │ rho         │         0 │  1     │ 18     │
         │ phi1        │         0 │  0     │  1e+06 │
         │ phi2        │         0 │  0     │  1e+06 │
@@ -46,9 +46,9 @@ class TestNestedLogistic:
         │ Parameter   │   Initial │    Min │    Max │
         ╞═════════════╪═══════════╪════════╪════════╡
         │ a           │         0 │  1     │  2     │
-        │ b           │         0 │ -1e+06 │  1e+06 │
+        │ b           │         0 │ -18    │  18    │
         │ theta1      │         0 │  0     │  1     │
-        │ theta2      │         0 │ -1e+06 │  1e+06 │
+        │ theta2      │         0 │ -18    │  18    │
         │ rho         │         0 │  1     │ 18     │
         │ phi1        │         0 │  0     │  1e+06 │
         │ phi2        │         0 │  5     │  6     │
