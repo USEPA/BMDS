@@ -125,5 +125,3 @@ The `pybmds` package includes Bayesian priors and frequentist parameter initiali
 ```bash
 bmds-priors-report priors_report.md
 ```
-
-
