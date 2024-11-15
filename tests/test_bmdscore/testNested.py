@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 
 import bmdscore
@@ -7,12 +5,12 @@ import bmdscore
 
 def getNLogisticPrior(ngrp, prior_cols, restricted):
     prG = np.array([0, 1])
-    prB = np.array([-1 * sys.float_info.max, sys.float_info.max])
+    prB = np.array([-18, 18])
     prT1 = np.array([0, 1])
-    prT2 = np.array([-1 * sys.float_info.max, sys.float_info.max])
+    prT2 = np.array([-18, 18])
     prUR = np.array([0, 18])
     prRR = np.array([1, 18])
-    prP = np.array([0, sys.float_info.max])
+    prP = np.array([0, 18])
     pr = []
     for i in range(prior_cols):
         pr.append(prG[i])
