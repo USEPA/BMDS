@@ -405,7 +405,6 @@ class NestedDichotomousResult(BaseModel):
             p_value=self.combined_pvalue,
             loglikelihood=self.ll,
             dof=self.dof,
-            fixed_lsc=self.fixed_lsc,
         )
 
     def get_parameter(self, parameter: str) -> float:
