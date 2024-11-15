@@ -177,7 +177,9 @@ class Multitumor:
             ds_settings = []
             degree_i = self.degrees[i]
             degrees_i = (
-                range(degree_i, degree_i + 1) if degree_i > 0 else range(1, dataset.num_dose_groups)
+                range(degree_i, degree_i + 1)
+                if degree_i > 0
+                else range(1, min(dataset.num_dose_groups, 9))  # max of 8 if degree is 0 (auto)
             )
             for degree in degrees_i:
                 model_settings = self.settings.model_copy(
