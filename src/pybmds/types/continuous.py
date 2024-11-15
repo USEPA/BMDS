@@ -100,7 +100,8 @@ class ContinuousModelSettings(BaseModel):
 
         return pretty_table(data, "")
 
-    def docx_table_data(self) -> list:
+    def docx_table_data(self, session) -> list:
+        # todo - change to make this a session method that takes a list of models, and returns correctly
         data = [
             ["Setting", "Value"],
             ["BMR", self.bmr_text],

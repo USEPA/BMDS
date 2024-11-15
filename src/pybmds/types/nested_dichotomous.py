@@ -84,7 +84,8 @@ class NestedDichotomousModelSettings(BaseModel):
     def tbl(self, degree_required: bool = False) -> str:
         return pretty_table(self._tbl_rows(), "")
 
-    def docx_table_data(self) -> list:
+    def docx_table_data(self, session) -> list:
+        # todo - change to make this a session method that takes a list of models, and returns correctly
         rows = self._tbl_rows()
         rows.insert(0, ["Setting", "Value"])
         return rows

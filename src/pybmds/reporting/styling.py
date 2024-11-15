@@ -310,7 +310,8 @@ def write_inputs_table(report: Report, session: Session):
     if hasattr(session.models[0].settings, "degree"):
         degrees = [model.settings.degree for model in session.models]
         model_index = degrees.index(max(degrees))
-    rows = session.models[model_index].settings.docx_table_data()
+    # todo - change to make this a session method that takes a list of models, and returns correctly
+    rows = session.models[model_index].settings.docx_table_data(session)
     tbl = report.document.add_table(len(rows), 2, style=styles.table)
     for idx, (key, value) in enumerate(rows):
         write_cell(tbl.cell(idx, 0), key, style=hdr)

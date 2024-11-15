@@ -102,9 +102,17 @@ def write_docx_inputs_table(report: Report, session):
     hdr = report.styles.tbl_header
     body = report.styles.tbl_body
 
-    rows = session.models[0][0].settings.docx_table_data()
+    settings = session.models[0][0].settings
+    rows = {
+        "Setting": "Value",
+        "BMR": settings.bmr_text,
+        "Confidence Level (one sided)": settings.confidence_level,
+        "Maximum Degree": ", ".join(
+            [str(max([model.settings.degree for model in models])) for models in session.models]
+        ),
+    }
     tbl = report.document.add_table(len(rows), 2, style=styles.table)
-    for idx, (key, value) in enumerate(rows):
+    for idx, (key, value) in enumerate(rows.items()):
         write_cell(tbl.cell(idx, 0), key, style=hdr)
         write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
 
@@ -492,6 +500,9 @@ class Multitumor:
         report.document.add_paragraph("Maximum Likelihood Approach", h2)
         write_docx_frequentist_table(report, self)
         report.document.add_paragraph(add_mpl_figure(report.document, self.plot(), 6))
+
+        # TODO - add mscombo report?
+
         report.document.add_paragraph("Individual Model Results", h2)
 
         for dataset, selected_idx, models in zip(
