@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .. import bmdscore
 from ..models.dichotomous import BmdModelDichotomousSchema
-from ..utils import multi_lstrip, pretty_table
+from ..utils import get_version, multi_lstrip, pretty_table
 from .common import inspect_cpp_obj
 from .dichotomous import (
     DichotomousAnalysisCPPStructs,
@@ -94,6 +94,12 @@ class MultitumorResult(BaseModel):
         {fitted}
         """
         )
+
+    def ms_combo_text(self) -> str:
+        title = "Multitumor MS Combo Model".center(30) + "\n══════════════════════════════"
+        version = get_version()
+        version = f"Version: pybmds {version.python} (bmdscore {version.dll})"
+        return "\n\n".join([title, version, self.tbl()]) + "\n"
 
     def tbl(self) -> str:
         data = [

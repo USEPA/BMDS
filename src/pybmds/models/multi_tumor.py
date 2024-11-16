@@ -463,6 +463,7 @@ class Multitumor:
         dataset_format_long: bool = True,
         all_models: bool = False,
         bmd_cdf_table: bool = False,
+        **kw,
     ):
         """Return a Document object with the session executed
 
@@ -499,8 +500,7 @@ class Multitumor:
         report.document.add_paragraph("Maximum Likelihood Approach", h2)
         write_docx_frequentist_table(report, self)
         report.document.add_paragraph(add_mpl_figure(report.document, self.plot(), 6))
-
-        # TODO - add mscombo report?
+        report.document.add_paragraph(self.results.ms_combo_text(), report.styles.fixed_width)
 
         report.document.add_paragraph("Individual Model Results", h2)
 
