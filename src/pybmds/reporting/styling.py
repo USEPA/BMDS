@@ -306,8 +306,9 @@ def write_inputs_table(report: Report, session: Session):
     hdr = report.styles.tbl_header
     body = report.styles.tbl_body
 
+    results = session.models[0].results if len(session.models) > 0 else None
     settings = [model.settings for model in session.models]
-    content = session.models[0].settings.__class__.docx_table_data(settings)
+    content = session.models[0].settings.docx_table_data(settings, results)
     tbl = report.document.add_table(len(content), 2, style=styles.table)
     for idx, (key, value) in enumerate(content.items()):
         write_cell(tbl.cell(idx, 0), key, style=hdr)

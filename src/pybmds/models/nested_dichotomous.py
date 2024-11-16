@@ -88,7 +88,7 @@ class BmdModelNestedDichotomous(BmdModel):
         return self.settings.priors.priors_list(nphi=self.dataset.num_dose_groups)
 
     def model_settings_text(self) -> str:
-        input_tbl = self.settings.tbl()
+        input_tbl = self.settings.tbl(self.results)
         return multi_lstrip(
             f"""
         Input Summary:

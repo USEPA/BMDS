@@ -70,7 +70,7 @@ class DichotomousModelSettings(BaseModel):
         return pretty_table(data, "")
 
     @classmethod
-    def docx_table_data(cls, settings: list[Self]) -> dict:
+    def docx_table_data(cls, settings: list[Self], results) -> dict:
         data = {
             "Setting": "Value",
             "BMR": unique_items(settings, "bmr_text"),
