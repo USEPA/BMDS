@@ -23,6 +23,7 @@ from ..types.dichotomous import DichotomousModelSettings
 from ..types.multi_tumor import MultitumorAnalysis, MultitumorResult, MultitumorSettings
 from ..types.priors import multistage_cancer_prior
 from ..types.session import VersionSchema
+from ..utils import unique_items
 from .dichotomous import MultistageCancer
 
 
@@ -102,14 +103,12 @@ def write_docx_inputs_table(report: Report, session):
     hdr = report.styles.tbl_header
     body = report.styles.tbl_body
 
-    settings = session.models[0][0].settings
+    settings = [models[len(models) - 1].settings for models in session.models]
     rows = {
         "Setting": "Value",
-        "BMR": settings.bmr_text,
-        "Confidence Level (one sided)": settings.confidence_level,
-        "Maximum Degree": ", ".join(
-            [str(max([model.settings.degree for model in models])) for models in session.models]
-        ),
+        "BMR": unique_items(settings, "bmr_text"),
+        "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+        "Maximum Degree": unique_items(settings, "degree"),
     }
     tbl = report.document.add_table(len(rows), 2, style=styles.table)
     for idx, (key, value) in enumerate(rows.items()):

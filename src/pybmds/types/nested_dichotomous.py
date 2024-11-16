@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
-from ..utils import camel_to_title, multi_lstrip, pretty_table
+from ..utils import camel_to_title, multi_lstrip, pretty_table, unique_items
 from .common import NumpyFloatArray, clean_array, inspect_cpp_obj
 from .priors import ModelPriors, PriorClass
 
@@ -84,11 +84,18 @@ class NestedDichotomousModelSettings(BaseModel):
     def tbl(self, degree_required: bool = False) -> str:
         return pretty_table(self._tbl_rows(), "")
 
-    def docx_table_data(self, session) -> list:
-        # todo - change to make this a session method that takes a list of models, and returns correctly
-        rows = self._tbl_rows()
-        rows.insert(0, ["Setting", "Value"])
-        return rows
+    @classmethod
+    def docx_table_data(cls, settings: list[Self]) -> dict:
+        data = {
+            "Setting": "Value",
+            "BMR": unique_items(settings, "bmr_text"),
+            "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+            "Estimate Background": unique_items(settings, "estimate_background"),
+            "Bootstrap Runs": unique_items(settings, "bootstrap_n"),
+            "Bootstrap Seed": unique_items(settings, "bootstrap_seed"),
+            "Bootstrap Iterations": unique_items(settings, "bootstrap_iterations"),
+        }
+        return data
 
     def update_record(self, d: dict) -> None:
         """Update data record for a tabular-friendly export"""

@@ -306,14 +306,10 @@ def write_inputs_table(report: Report, session: Session):
     hdr = report.styles.tbl_header
     body = report.styles.tbl_body
 
-    model_index = 0
-    if hasattr(session.models[0].settings, "degree"):
-        degrees = [model.settings.degree for model in session.models]
-        model_index = degrees.index(max(degrees))
-    # todo - change to make this a session method that takes a list of models, and returns correctly
-    rows = session.models[model_index].settings.docx_table_data(session)
-    tbl = report.document.add_table(len(rows), 2, style=styles.table)
-    for idx, (key, value) in enumerate(rows):
+    settings = [model.settings for model in session.models]
+    content = session.models[0].settings.__class__.docx_table_data(settings)
+    tbl = report.document.add_table(len(content), 2, style=styles.table)
+    for idx, (key, value) in enumerate(content.items()):
         write_cell(tbl.cell(idx, 0), key, style=hdr)
         write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
 

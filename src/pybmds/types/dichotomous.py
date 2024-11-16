@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..constants import BOOL_YES_NO, DichotomousModelChoices
 from ..datasets import DichotomousDataset
-from ..utils import multi_lstrip, pretty_table
+from ..utils import multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     NumpyFloatArray,
@@ -69,14 +69,20 @@ class DichotomousModelSettings(BaseModel):
 
         return pretty_table(data, "")
 
-    def docx_table_data(self, session) -> list:
-        # todo - change to make this a session method that takes a list of models, and returns correctly
-        return [
-            ["Setting", "Value"],
-            ["BMR", self.bmr_text],
-            ["Confidence Level (one sided)", self.confidence_level],
-            ["Maximum Multistage Degree", self.degree],
-        ]
+    @classmethod
+    def docx_table_data(cls, settings: list[Self]) -> dict:
+        data = {
+            "Setting": "Value",
+            "BMR": unique_items(settings, "bmr_text"),
+            "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+            "Maximum Multistage Degree": str(max(setting.degree for setting in settings)),
+        }
+        if settings[0].priors.is_bayesian:
+            data.update(
+                Samples=unique_items(settings, "samples"),
+                **{"Burn-in": unique_items(settings, "burnin")},
+            )
+        return data
 
     def update_record(self, d: dict) -> None:
         """Update data record for a tabular-friendly export"""

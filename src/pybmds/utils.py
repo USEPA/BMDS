@@ -78,3 +78,7 @@ def get_version():
 
 def camel_to_title(txt: str) -> str:
     return re.sub(r"(?<=\w)([A-Z])", r" \1", txt)
+
+
+def unique_items(settings: list, getter: str) -> str:
+    return ", ".join(sorted(list(set(str(getattr(setting, getter)) for setting in settings))))
