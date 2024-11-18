@@ -277,11 +277,7 @@ class MultitumorBatch(BatchBase):
             report = Report.build_default()
 
         for session in self.sessions:
-            session.to_docx(
-                report,
-                header_level=header_level,
-                citation=False,
-            )
+            session.to_docx(report, header_level=header_level, citation=False, **kw)
 
         if citation and len(self.sessions) > 0:
             write_citation(report, header_level=header_level)

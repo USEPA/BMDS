@@ -88,7 +88,7 @@ class BmdModelNestedDichotomous(BmdModel):
         return self.settings.priors.priors_list(nphi=self.dataset.num_dose_groups)
 
     def model_settings_text(self) -> str:
-        input_tbl = self.settings.tbl()
+        input_tbl = self.settings.tbl(self.results)
         return multi_lstrip(
             f"""
         Input Summary:
@@ -142,13 +142,16 @@ class Nctr(BmdModelNestedDichotomous):
     bmd_model_class = NestedDichotomousModelChoices.nctr.value
     model_class = bmdscore.nested_model.nctr
 
+    def execute(self) -> NestedDichotomousResult:
+        raise NotImplementedError("TODO - future release")
+
     def get_param_names(self) -> list[str]:
         return ["a", "b", "theta1", "theta2", "rho"] + [
             f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        raise NotImplementedError("TODO - update formula")
+        raise NotImplementedError("TODO - future release")
 
     def get_default_prior_class(self) -> PriorClass:
         return PriorClass.frequentist_restricted

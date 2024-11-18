@@ -23,6 +23,7 @@ from ..types.dichotomous import DichotomousModelSettings
 from ..types.multi_tumor import MultitumorAnalysis, MultitumorResult, MultitumorSettings
 from ..types.priors import multistage_cancer_prior
 from ..types.session import VersionSchema
+from ..utils import unique_items
 from .dichotomous import MultistageCancer
 
 
@@ -102,9 +103,15 @@ def write_docx_inputs_table(report: Report, session):
     hdr = report.styles.tbl_header
     body = report.styles.tbl_body
 
-    rows = session.models[0][0].settings.docx_table_data()
+    settings = [models[len(models) - 1].settings for models in session.models]
+    rows = {
+        "Setting": "Value",
+        "BMR": unique_items(settings, "bmr_text"),
+        "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+        "Maximum Degree": unique_items(settings, "degree"),
+    }
     tbl = report.document.add_table(len(rows), 2, style=styles.table)
-    for idx, (key, value) in enumerate(rows):
+    for idx, (key, value) in enumerate(rows.items()):
         write_cell(tbl.cell(idx, 0), key, style=hdr)
         write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
 
@@ -177,7 +184,9 @@ class Multitumor:
             ds_settings = []
             degree_i = self.degrees[i]
             degrees_i = (
-                range(degree_i, degree_i + 1) if degree_i > 0 else range(1, dataset.num_dose_groups)
+                range(degree_i, degree_i + 1)
+                if degree_i > 0
+                else range(1, min(dataset.num_dose_groups, 9))  # max of 8 if degree is 0 (auto)
             )
             for degree in degrees_i:
                 model_settings = self.settings.model_copy(
@@ -454,6 +463,7 @@ class Multitumor:
         dataset_format_long: bool = True,
         all_models: bool = False,
         bmd_cdf_table: bool = False,
+        **kw,
     ):
         """Return a Document object with the session executed
 
@@ -490,6 +500,8 @@ class Multitumor:
         report.document.add_paragraph("Maximum Likelihood Approach", h2)
         write_docx_frequentist_table(report, self)
         report.document.add_paragraph(add_mpl_figure(report.document, self.plot(), 6))
+        report.document.add_paragraph(self.results.ms_combo_text(), report.styles.fixed_width)
+
         report.document.add_paragraph("Individual Model Results", h2)
 
         for dataset, selected_idx, models in zip(

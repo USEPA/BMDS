@@ -15,7 +15,7 @@
 #include "bmds_helper.h"
 
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
-std::string BMDS_VERSION = "24.1a4";
+std::string BMDS_VERSION = "24.1a6";
 
 double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses) {
   std::vector<double> diff;

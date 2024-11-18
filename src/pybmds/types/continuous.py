@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..constants import BOOL_YES_NO, ContinuousModelChoices, Dtype
 from ..datasets.continuous import ContinuousDatasets
-from ..utils import multi_lstrip, pretty_table
+from ..utils import multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     CONTINUOUS_TEST_FOOTNOTES,
@@ -100,17 +100,18 @@ class ContinuousModelSettings(BaseModel):
 
         return pretty_table(data, "")
 
-    def docx_table_data(self) -> list:
-        data = [
-            ["Setting", "Value"],
-            ["BMR", self.bmr_text],
-            ["Distribution", self.distribution],
-            ["Adverse Direction", self.direction],
-            ["Maximum Polynomial Degree", self.degree],
-            ["Confidence Level (one sided)", self.confidence_level],
-        ]
-        if self.is_hybrid:
-            data.append(["Tail Probability", self.tail_prob])
+    @classmethod
+    def docx_table_data(cls, settings: list[Self], results) -> dict:
+        data = {
+            "Setting": "Value",
+            "BMR": unique_items(settings, "bmr_text"),
+            "Distribution": unique_items(settings, "distribution"),
+            "Adverse Direction": unique_items(settings, "direction"),
+            "Maximum Polynomial Degree": str(max(setting.degree for setting in settings)),
+            "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+        }
+        if settings[0].is_hybrid:
+            data["Tail Probability"] = unique_items(settings, "tail_prob")
         return data
 
     def update_record(self, d: dict) -> None:

@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
-from ..utils import camel_to_title, multi_lstrip, pretty_table
+from ..utils import camel_to_title, multi_lstrip, pretty_table, unique_items
 from .common import NumpyFloatArray, clean_array, inspect_cpp_obj
 from .priors import ModelPriors, PriorClass
 
@@ -22,6 +22,13 @@ class LitterSpecificCovariate(IntEnum):
     OverallMean = 1
     ControlGroupMean = 2
 
+    def label(self, fixed_lsc: float | None) -> str:
+        text = camel_to_title(self.name)
+        if self == self.Unused:
+            return text
+        lsc = f" ({fixed_lsc:.3f})" if fixed_lsc else ""
+        return f"{text}{lsc}"
+
     @property
     def text(self) -> str:
         return "lsc-" if self == self.Unused else "lsc+"
@@ -30,6 +37,10 @@ class LitterSpecificCovariate(IntEnum):
 class IntralitterCorrelation(IntEnum):
     Zero = 0
     Estimate = 1
+
+    @property
+    def label(self) -> str:
+        return camel_to_title(self.name)
 
     @property
     def text(self) -> str:
@@ -69,25 +80,47 @@ class NestedDichotomousModelSettings(BaseModel):
     def modeling_approach(self) -> str:
         return "MLE"
 
-    def _tbl_rows(self) -> list:
-        return [
-            ["BMR", self.bmr_text],
-            ["Confidence Level (one sided)", self.confidence_level],
-            ["Litter Specific Covariate", camel_to_title(self.litter_specific_covariate.name)],
-            ["Intralitter Correlation", self.intralitter_correlation.name],
-            ["Estimate Background", self.estimate_background],
-            ["Bootstrap Runs", self.bootstrap_n],
-            ["Bootstrap Iterations", self.bootstrap_iterations],
-            ["Bootstrap Seed", self.bootstrap_seed],
+    def tbl(self, results=None) -> str:
+        fixed_lsc = results.fixed_lsc if results else None
+        return pretty_table(
+            [
+                ["BMR", self.bmr_text],
+                ["Confidence Level (one sided)", self.confidence_level],
+                ["Litter Specific Covariate", self.litter_specific_covariate.label(fixed_lsc)],
+                ["Intralitter Correlation", self.intralitter_correlation.label],
+                ["Estimate Background", self.estimate_background],
+                ["Bootstrap Runs", self.bootstrap_n],
+                ["Bootstrap Iterations", self.bootstrap_iterations],
+                ["Bootstrap Seed", self.bootstrap_seed],
+            ],
+            "",
+        )
+
+    @classmethod
+    def docx_table_data(cls, settings: list[Self], results) -> dict:
+        fixed_lsc = results.fixed_lsc if results else None
+        lsc = [
+            setting.litter_specific_covariate.label(fixed_lsc)
+            for setting in settings
+            if setting.litter_specific_covariate != LitterSpecificCovariate.Unused
         ]
-
-    def tbl(self, degree_required: bool = False) -> str:
-        return pretty_table(self._tbl_rows(), "")
-
-    def docx_table_data(self) -> list:
-        rows = self._tbl_rows()
-        rows.insert(0, ["Setting", "Value"])
-        return rows
+        ilc = [
+            setting.intralitter_correlation.label
+            for setting in settings
+            if setting.intralitter_correlation != IntralitterCorrelation.Zero
+        ]
+        data = {
+            "Setting": "Value",
+            "BMR": unique_items(settings, "bmr_text"),
+            "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
+            "Litter Specific Covariate": ", ".join(sorted(set(lsc))),
+            "Intralitter Correlation": ", ".join(sorted(set(ilc))),
+            "Estimate Background": unique_items(settings, "estimate_background"),
+            "Bootstrap Runs": unique_items(settings, "bootstrap_n"),
+            "Bootstrap Seed": unique_items(settings, "bootstrap_seed"),
+            "Bootstrap Iterations": unique_items(settings, "bootstrap_iterations"),
+        }
+        return data
 
     def update_record(self, d: dict) -> None:
         """Update data record for a tabular-friendly export"""
