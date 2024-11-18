@@ -80,7 +80,7 @@ class NestedDichotomousModelSettings(BaseModel):
     def modeling_approach(self) -> str:
         return "MLE"
 
-    def tbl(self, results) -> str:
+    def tbl(self, results=None) -> str:
         fixed_lsc = results.fixed_lsc if results else None
         return pretty_table(
             [
