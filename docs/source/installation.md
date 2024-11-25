@@ -224,30 +224,6 @@ You'll need to activate the environment **every time** you want to run BMDS Desk
 
 With Python installed and a virtual environment created, you're ready to install BMDS Desktop and `pybmds`.  You'll need to [activate your environment](activate-venv), and then install the packages using Python's package installer, [pip](https://pip.pypa.io/), which is included with Python.
 
-(internal-epa)=
-:::{admonition} NOTE - for internal EPA testing
-:class: tip
-
-This portion of the guide should be used as we develop pre-release versions. Recommended for EPA staff. Please check the FAQ below with any questions, or reach out to [Andy Shapiro](mailto:shapiro.andy@epa.gov) for any feedback.  If anything is missing from the guide or anything is confusing, please let us know! This will be removed when we can officially release.
-
----
-
-While connected to the EPA VPN install the packages:
-
-```bash
-python -m pip install pybmds --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
-python -m pip install bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
-```
-
-:::
-
-:::{admonition} NOTE - this will not work until we officially release!
-:class: caution
-
-The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
-
----
-
 To install **BMDS Desktop**, which includes `pybmds`:
 
 ```bash
@@ -261,8 +237,6 @@ python -m pip install bmds-ui==24.1
 ```
 
 If no version is specified, `pip` will install the latest version.
-
-:::
 
 After installation, you're ready to use BMDS Desktop and `pybmds`.
 
@@ -502,32 +476,9 @@ To fix, [activate](activate-venv) your Python virtual environment after successf
 
 After [activating your environment](activate-venv), you can upgrade to the latest version:
 
-:::{admonition} NOTE - this will not work until we officially release!
-:class: caution
-
-The content below will not work until we are cleared for public release; please follow the [EPA installation guide](internal-epa). This message will be removed prior to official release.
-
----
-
 ```bash
 python -m pip install --upgrade bmds-ui
 ```
-:::
-
-:::{admonition} NOTE - for internal EPA testing
-:class: tip
-
-Use this guide instead until we are cleared for release.
-
----
-
-While connected to the EPA VPN, install the packages:
-
-```bash
-python -m pip install --upgrade bmds-ui --index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple
-```
-
-:::
 
 (multiple-versions)=
 ### Installing Multiple Versions of BMDS Desktop
