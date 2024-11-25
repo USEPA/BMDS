@@ -4,6 +4,7 @@ license = {text = "MIT License"}
 authors = [
   {name = "BMDS development team"},
   {name = "Andy Shapiro", email = "shapiro.andy@epa.gov"},
+  {name = "Cody Simmons", email = "simmons.cody@epa.gov"},
 ]
 readme = "README.md"
 description = "U.S. EPA Dose Response Modeling Software"
