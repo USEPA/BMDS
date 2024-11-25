@@ -29,6 +29,12 @@ dependencies = [
   "tqdm",
 ]
 
+[project.urls]
+"Source" = "https://github.com/USEPA/BMDS"
+"Changes" = "https://github.com/USEPA/BMDS/blob/main/docs/source/history.md"
+"Issue Tracker" = "https://github.com/USEPA/BMDS/issues"
+"Documentation" = "https://pypi.org/project/pybmds/"
+
 [project.optional-dependencies]
 dev = [
   "coverage~=7.6.4",
