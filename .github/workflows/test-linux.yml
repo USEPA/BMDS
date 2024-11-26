@@ -1,7 +1,7 @@
 name: Test Linux
 
 on:
-  # pull_request: TODO - uncomment this line
+  pull_request:
   push:
     branches:
       - main
