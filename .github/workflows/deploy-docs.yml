@@ -1,7 +1,6 @@
 name: Deploy Documentation
 
 on:
-  pull_request:  # TODO - remove this line
   schedule:
     - cron: '30 3 1 */1 *'  # At 03:30 on the 1st of every month
   push:
@@ -10,7 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-docs:
+  build:
+    name: Build Documentation
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -35,14 +35,14 @@ jobs:
         with:
           path: docs/build/html
 
-  deploy-pages:
-    name: Deploy documentation to GitHub Pages
-    needs: build-docs
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
     runs-on: ubuntu-22.04
     permissions:
       contents: read
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
