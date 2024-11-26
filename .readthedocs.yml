@@ -20,12 +20,6 @@ build:
     pre_install:
       # environment variables configured in readthedocs web admin
       # variables the same as those in `tools/linux_ci_setup.sh`
-      - ls -laht
-      - ls -laht /usr/lib/
-      - ls -laht /usr/include/eigen3
-      - ls -laht /usr/bin/
-      - ls -laht /usr/lib/x86_64-linux-gnu/
-      - ls -laht /usr/include/
       - env
 sphinx:
   configuration: docs/source/conf.py
