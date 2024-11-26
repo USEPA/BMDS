@@ -76,7 +76,7 @@ jobs:
           path: docs/build/html
           retention-days: 14
       - name: Upload Pages
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/build/html
       # - name: Upload Coverage Report
