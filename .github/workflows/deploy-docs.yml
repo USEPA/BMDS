@@ -1,0 +1,54 @@
+name: Deploy Documentation
+
+on:
+  pull_request:  # TODO - remove this line
+  schedule:
+    - cron: '30 3 1 */1 *'  # At 03:30 on the 1st of every month
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          source ./tools/linux_ci_setup.sh
+      - name: Build pybmds
+        run: |
+          source ./tools/linux_ci_env.sh
+          python -m pip install -U pip wheel
+          python -m pip install -e ".[docs]"
+      - name: Build documentation
+        run: |
+          make docs
+      - name: Upload Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+
+  deploy-pages:
+    name: Deploy documentation to GitHub Pages
+    needs: build-docs
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
