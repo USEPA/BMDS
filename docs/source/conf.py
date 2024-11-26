@@ -1,7 +1,7 @@
 project = "pybmds"
 copyright = "MIT License"
 
-extensions = ["myst_nb", "sphinx_design"]
+extensions = ["sphinx.ext.githubpages", "myst_nb", "sphinx_design"]
 souce_suffix = {
     ".md": "markdown",
     ".rst": "restructuredtext",

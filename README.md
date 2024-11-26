@@ -1,8 +1,34 @@
 # BMDS
 
+<table>
+<tbody>
+<tr>
+    <td>Package</td><td>
+
+[![version](https://img.shields.io/pypi/v/pybmds.svg?label=pybmds%20version&maxAge=3600)](https://pypi.org/project/pybmds/)
+[![version](https://img.shields.io/pypi/v/bmds-ui.svg?label=bmds-ui%20version&maxAge=3600)](https://pypi.org/project/bmds-ui/)
+    </td>
+</tr>
+<tr>
+    <td>Documentation</td><td>
+
+[![Docs Badge](https://img.shields.io/badge/Latest-online-brightgreen)](https://usepa.github.io/BMDS) [![Read The Docs](https://img.shields.io/badge/Versioned-online-brightgreen)](https://pybmds.readthedocs.io/)
+    </td>
+</tr>
+<tr>
+    <td>Website</td><td>
+
+[![Site Badge](https://img.shields.io/badge/BMDS-online-purple)](https://epa.gov/bmds) [![Site Badge](https://img.shields.io/badge/BMDS&nbsp;Online-online-purple)](https://bmdsonline.epa.gov)
+    </td>
+</tr>
+
+</tbody>
+</table>
+
+
 EPA's Benchmark Dose Software (BMDS) collects and provides easy access to numerous mathematical models that help risk assessors estimate the quantitative relationship between a chemical dose and the test subject’s response.  A specific focus of BMDS is estimating a statistical benchmark dose (BMD). The BMD is a chemical dose or concentration that produces a predetermined change in the response rate of an adverse effect, such as weight loss or tumor incidence. The BMD is a range, rather than a fixed number. For example, the benchmark dose (lower confidence limit) (BMDL) can be regarded as a dose where the observable physical effect is less than the predetermined benchmark response (BMR).
 
-![An example dose response plot an and curve fit](tests/test_pybmds/data/mpl/test_dichotomous_plot.png)
+![An example dose response plot an and curve fit](https://github.com/USEPA/BMDS/raw/e89f79388dc3021604e1230ac75e721c12c6bf61/tests/test_pybmds/data/mpl/test_dichotomous_plot.png)
 
 Additional information, documentation, and technical guidance for BMDS is available at [https://www.epa.gov/bmds](https://www.epa.gov/bmds).
 
