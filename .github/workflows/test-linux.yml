@@ -110,3 +110,23 @@ jobs:
           name: cpp-coverage
           path: |
             ./src/build/coverage/*
+
+  docs:
+    name: Deploy documentation to GitHub Pages
+    needs: pybmds
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: docss
