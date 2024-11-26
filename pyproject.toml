@@ -2,8 +2,9 @@
 name = "pybmds"
 license = {text = "MIT License"}
 authors = [
-  {name = "BMDS development team"},
+  {name = "BMDS Development Team"},
   {name = "Andy Shapiro", email = "shapiro.andy@epa.gov"},
+  {name = "Cody Simmons", email = "simmons.cody@epa.gov"},
 ]
 readme = "README.md"
 description = "U.S. EPA Dose Response Modeling Software"
@@ -28,6 +29,12 @@ dependencies = [
   "tabulate",
   "tqdm",
 ]
+
+[project.urls]
+"Source" = "https://github.com/USEPA/BMDS"
+"Changes" = "https://github.com/USEPA/BMDS/blob/main/docs/source/history.md"
+"Issue Tracker" = "https://github.com/USEPA/BMDS/issues"
+"Documentation" = "https://usepa.github.io/BMDS/"
 
 [project.optional-dependencies]
 dev = [

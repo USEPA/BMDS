@@ -17,18 +17,11 @@ The Python package **pybmds** enables execution of dose-response models in a scr
 * Reporting in Microsoft Excel and Microsoft Word reports
 * Batch execution for multiple datasets or option set configuration
 
-
 **If you are experienced with installing Python packages**, then enter the following command to install **BMDS Desktop** (which includes `pybmds`):
 
 ```bash
 pip install bmds-ui
 ```
-
-:::{admonition} NOTE - this will not work until we officially release!
-:class: caution
-
-The above command will not work until we are cleared for public release; please follow the detailed [installation guide](./installation.md). This message will be removed prior to official release.
-:::
 
 **If you are new to installing Python packages** and wish to BMDS Desktop or `pybmds`, then please follow the detailed [installation guide](./installation.md). The installation guide makes it easy to configure your computer, and describes possible issues and solutions that may arise during installation.
 
