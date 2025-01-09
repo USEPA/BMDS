@@ -15,7 +15,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 
 from ... import plotting
-from ...reporting.styling import Report, add_mpl_figure, write_setting_p
+from ...reporting.styling import Report, add_mpl_figure, df_to_table, write_setting_p
 from ..dichotomous import DichotomousDataset
 
 
@@ -163,21 +163,50 @@ class RaoScott:
             report = Report.build_default()
 
         h1 = report.styles.get_header_style(header_level)
-        h2 = report.styles.get_header_style(header_level + 1)
+        h2 = report.styles.get_header_style(header_level)
 
         if show_title:
             report.document.add_paragraph("Rao Scott Adjustment", h1)
 
         report.document.add_paragraph("Summary", h2)
         write_setting_p(report, "Species: ", self.species.name.title())
-
-        report.document.add_paragraph("TODO - table")
-        report.document.add_paragraph("TODO - figure")
+        report.document.add_paragraph(df_to_table(report, self.summary_df()))
         report.document.add_paragraph(
             add_mpl_figure(report.document, self.figure(figsize=(8, 4)), 6.5)
         )
-
+        report.document.add_paragraph("Rao Scott Adjustment Parameters", h2)
+        report.document.add_paragraph(df_to_table(report, self.parameter_df()))
+        report.document.add_paragraph(
+            "Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity Studies. Risk Anal. 2017 May;37(5):905-917. PMID: 27567129. DOI: 10.1111/risa.12667."
+        )
         return report.document
+
+    def summary_df(self) -> pd.DataFrame:
+        return self.df[
+            [
+                "dose",
+                "n",
+                "incidence",
+                "fraction_affected",
+                "design_ls",
+                "design_o",
+                "design_avg",
+                "n_adjusted",
+                "incidence_adjusted",
+            ]
+        ].rename(
+            columns={
+                "dose": "Dose",
+                "n": "N",
+                "incidence": "Incidence",
+                "fraction_affected": "Fraction Affected",
+                "design_ls": "Design Effect (LS)",
+                "design_o": "Design Effect (OR)",
+                "design_avg": "Design Effect (Average)",
+                "n_adjusted": "N (Rao Scott Adjusted)",
+                "incidence_adjusted": "Incidence (Rao Scott Adjusted)",
+            }
+        )
 
     def to_excel(self) -> BytesIO:
         """Returns an Excel report with worksheets summarizing the adjustment.
@@ -187,6 +216,6 @@ class RaoScott:
         """
         f = BytesIO()
         with pd.ExcelWriter(f) as writer:
-            for name, df in [("data", self.df)]:
+            for name, df in [("data", self.summary_df()), ("parameters", self.parameter_df())]:
                 df.to_excel(writer, sheet_name=name, index=False)
         return f
