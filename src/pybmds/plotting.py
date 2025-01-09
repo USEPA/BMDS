@@ -39,10 +39,10 @@ FAILURE_MESSAGE_FORMAT = dict(
 )
 
 
-def create_empty_figure(figsize: tuple[float, float] | None = None):
+def create_empty_figure(rows: int = 1, cols: int = 1, figsize: tuple[float, float] | None = None):
     plt.style.use("seaborn-v0_8-darkgrid")
     mpl.rcParams.update({"font.size": 10})
-    fig, ax = plt.subplots(figsize=figsize or PLOT_FIGSIZE, dpi=DPI)
+    fig, _ = plt.subplots(rows, cols, figsize=figsize or PLOT_FIGSIZE, dpi=DPI)
     return fig
 
 

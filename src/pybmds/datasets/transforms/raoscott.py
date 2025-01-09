@@ -12,8 +12,10 @@ from typing import ClassVar, NamedTuple
 
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 
-from ...reporting.styling import Report, write_setting_p
+from ... import plotting
+from ...reporting.styling import Report, add_mpl_figure, write_setting_p
 from ..dichotomous import DichotomousDataset
 
 
@@ -73,6 +75,77 @@ class RaoScott:
         df["n_adjusted"] = df.n / df.design_avg
         return df
 
+    def figure(self, figsize: tuple[float, float] | None = None) -> Figure:
+        fig = plotting.create_empty_figure(rows=1, cols=2, figsize=figsize)
+        ax1, ax2 = fig.axes
+
+        # N
+        ax1.set_title("Original N vs Adjusted N")
+        ax1.set_xlabel("Dose")
+        ax1.set_ylabel("N")
+        ax1.margins(plotting.PLOT_MARGINS)
+        ax1.plot(
+            self.df.dose,
+            self.df.n,
+            "o-",
+            color="FireBrick",
+            label="Original N",
+            markersize=8,
+            markeredgewidth=1,
+            markeredgecolor="white",
+        )
+        ax1.plot(
+            self.df.dose,
+            self.df.n_adjusted,
+            "^-",
+            color="LightSalmon",
+            label="Adjusted N",
+            markersize=8,
+            markeredgewidth=1,
+            markeredgecolor="white",
+        )
+        legend = ax1.legend(**plotting.LEGEND_OPTS)
+        for handle in legend.legend_handles:
+            handle.set_markersize(8)
+
+        # Incidence
+        ax2.set_title("Original Incidence vs Adjusted Incidence")
+        ax2.set_xlabel("Dose")
+        ax2.set_ylabel("Incidence")
+        ax2.margins(plotting.PLOT_MARGINS)
+        ax2.plot(
+            self.df.dose,
+            self.df.incidence,
+            "o-",
+            color="MidnightBlue",
+            label="Original Incidence",
+            markersize=8,
+            markeredgewidth=1,
+            markeredgecolor="white",
+        )
+        ax2.plot(
+            self.df.dose,
+            self.df.incidence_adjusted,
+            "^-",
+            color="LightSkyBlue",
+            label="Adjusted Incidence",
+            markersize=8,
+            markeredgewidth=1,
+            markeredgecolor="white",
+        )
+        legend = ax2.legend(**plotting.LEGEND_OPTS)
+        for handle in legend.legend_handles:
+            handle.set_markersize(8)
+
+        fig.tight_layout()
+        return fig
+
+    def parameter_df(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            data=[(*k, *v) for k, v in self.adjustment_parameters.items()],
+            columns="Species|Regression Method|A|b|sigma".split("|"),
+        )
+
     def to_docx(
         self,
         report: Report | None = None,
@@ -100,6 +173,9 @@ class RaoScott:
 
         report.document.add_paragraph("TODO - table")
         report.document.add_paragraph("TODO - figure")
+        report.document.add_paragraph(
+            add_mpl_figure(report.document, self.figure(figsize=(8, 4)), 6.5)
+        )
 
         return report.document
 
