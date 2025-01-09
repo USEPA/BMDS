@@ -63,14 +63,14 @@ class RaoScott:
         df["fraction_affected"] = df.incidence / df.n
 
         p = self.adjustment_parameters[(self.species, Regression.least_square)]
-        df["ls_design"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
+        df["design_ls"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
 
         p = self.adjustment_parameters[(self.species, Regression.orthogonal)]
-        df["o_design"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
+        df["design_o"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
 
-        df["avg_design"] = df[["ls_design", "o_design"]].mean(axis=1)
-        df["scaled_incidence"] = df.incidence / df.avg_design
-        df["scaled_n"] = df.n / df.avg_design
+        df["design_avg"] = df[["design_ls", "design_o"]].mean(axis=1)
+        df["incidence_adjusted"] = df.incidence / df.design_avg
+        df["n_adjusted"] = df.n / df.design_avg
         return df
 
     def to_docx(

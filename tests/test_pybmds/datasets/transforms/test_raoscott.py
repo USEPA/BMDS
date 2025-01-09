@@ -19,19 +19,19 @@ class TestRaoScott:
         analysis = RaoScott(dataset=dataset, species=Species.rat)
 
         assert np.allclose(
-            analysis.df.scaled_n,
+            analysis.df.n_adjusted,
             [284.16, 119.16, 198.92, 119.45, 105.98, 72.36, 39.15],
             atol=0.01,
         )
         assert np.allclose(
-            analysis.df.scaled_incidence,
+            analysis.df.incidence_adjusted,
             [6.65, 3.39, 1.71, 3.8, 6.16, 11.91, 13.44],
             atol=0.01,
         )
 
         assert np.allclose(
             analysis.df.incidence / analysis.df.n,
-            analysis.df.scaled_incidence / analysis.df.scaled_n,
+            analysis.df.incidence_adjusted / analysis.df.n_adjusted,
         )
 
     def test_reporting(self, dataset, data_path, rewrite_data_files):
