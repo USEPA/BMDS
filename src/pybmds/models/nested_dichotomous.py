@@ -93,6 +93,9 @@ class BmdModelNestedDichotomous(BmdModel):
             f"""
         Input Summary:
         {input_tbl}
+
+        Parameter Settings:
+        {self.priors_tbl()}
         """
         )
 
