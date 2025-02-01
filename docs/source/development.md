@@ -39,7 +39,7 @@ py.test
 py.test -k test_my_special_test_name
 ```
 
-There is a built-in Makefile, ``make``, that runs many common utility methods for developing the application. You can run tests by running `make test`, run code formatting using `make format`, or build documentation using `make docs`. For more details on other built-in actions, view the `Makefile` (or the `make.bat` file for Windows).
+You can run tests by running `poe test`, run code formatting using `poe format`, or build documentation using `poe docs`. For more details on other built-in actions, view the `poe` commands by simply typing `poe`.
 
 Github Actions are in place to execute whenever a pull-request is submitted to check code formatting and successful tests. When code is merged into the `main` branch, a wheel artifact is created and stored on github. We use [cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to build wheel packages in Windows, macOS, and Linux using Github Actions.
 
@@ -65,8 +65,7 @@ make run_tests_with_coverage
 Code formatting is also enforced in the C++ codebase. To run the formatter, use the following command:
 
 ```bash
-pip install clang-format==19.1.3
-make format-cpp
+poe format-cpp
 ```
 
 A specific version of clang-format is pinned for reproducibility on all platforms.
@@ -79,16 +78,15 @@ See [documentation](https://github.com/USEPA/BMDS-UI/blob/main/docs/development.
 
 Documentation is generated using [Sphinx](https://www.sphinx-doc.org/). Narrative text is written in Markdown; any examples of using `pybmds` are written in jupyter notebooks and are executing when building documentation; the returned notebook with any output (such as figures or output tables) are rendered directly in the documentation.
 
-To build documentation, there are a few different commands available in the `make` file:
+To build documentation, there are a few different commands available:
 
 ```bash
-make docs       #  Build documentation {html}
-make docs-docx  #  Build documentation {docx}
-make docs-serve #  Realtime documentation preview
-make docs-clean #  Clean documentation
+poe docs       #  Build documentation {html}
+poe docs-docx  #  Build documentation {docx}
+poe docs-serve #  Realtime documentation preview
 ```
 
-Using the `make serve` command is recommended for editing documentation; it updates the preview in realtime files are saved.
+Using the `poe docs-serve` command is recommended for editing documentation; it updates the preview in realtime files are saved.
 
 ## Versioning
 
