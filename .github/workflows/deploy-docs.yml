@@ -29,7 +29,7 @@ jobs:
           python -m pip install -e ".[docs]"
       - name: Build documentation
         run: |
-          make docs
+          poe docs
       - name: Upload Pages
         uses: actions/upload-pages-artifact@v3
         with:
