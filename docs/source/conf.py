@@ -31,9 +31,9 @@ html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "img/pybmds-identifier.png",
     "dark_logo": "img/pybmds-identifier.png",
-    "source_repository": "https://github.com/USEPA/bmds",
+    "source_repository": "https://github.com/USEPA/BMDS",
     "source_branch": "main",
-    "source_directory": "docs/",
+    "source_directory": "docs/source/",
 }
 
 # Latex / PDF settings
