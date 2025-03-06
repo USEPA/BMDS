@@ -171,7 +171,7 @@ class QuantalLinear(BmdModelDichotomous):
     def dr_curve(self, doses, params) -> np.ndarray:
         g = params[0]
         b = params[1]
-        return g + (1 - g) * 1 - np.exp(-b * doses)
+        return g + (1 - g) * (1 - np.exp(-b * doses))
 
     def get_default_prior_class(self) -> PriorClass:
         return PriorClass.frequentist_unrestricted
