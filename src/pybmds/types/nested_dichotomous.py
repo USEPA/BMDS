@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
 from ..utils import camel_to_title, multi_lstrip, pretty_table, unique_items
-from .common import NumpyFloatArray, clean_array, inspect_cpp_obj
+from .common import BOUND_FOOTNOTE, NumpyFloatArray, clean_array, inspect_cpp_obj
 from .priors import ModelPriors, PriorClass
 
 
@@ -411,8 +411,27 @@ class NestedDichotomousResult(BaseModel):
         return pretty_table(data, "")
 
     def parameter_tbl(self) -> str:
-        data = list(zip(self.parameter_names, self.parameters, strict=True))
-        return pretty_table(data, "")
+        headers = "Variable|Estimate|On Bound|Std Error".split("|")
+        data = []
+        for name, value, bounded, se in zip(
+            self.parameter_names,
+            self.parameters,
+            self.bounded,
+            self.std_err,
+            strict=True,
+        ):
+            data.append(
+                (
+                    name,
+                    value,
+                    constants.BOOL_YES_NO[bounded],
+                    "Not Reported" if bounded or se == constants.BMDS_BLANK_VALUE else f"{se:g}",
+                )
+            )
+        text = pretty_table(data, headers)
+        if any(self.bounded):
+            text += BOUND_FOOTNOTE
+        return text
 
     def parameter_rows(self, extras: dict) -> list[dict]:
         rows = []
