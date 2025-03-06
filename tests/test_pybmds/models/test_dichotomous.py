@@ -6,7 +6,7 @@ import pytest
 import pybmds
 from pybmds.constants import BMDS_BLANK_VALUE, PriorClass, PriorDistribution
 from pybmds.models import dichotomous
-from pybmds.models.dichotomous import Multistage
+from pybmds.models.dichotomous import Multistage, QuantalLinear
 from pybmds.models.multi_tumor import MultistageCancer
 from pybmds.types.dichotomous import DichotomousModelSettings, DichotomousRiskType
 from pybmds.types.priors import ModelPriors, Prior
@@ -227,3 +227,11 @@ class TestMultistageCancer:
         model = MultistageCancer(ddataset2, settings=dict(bmr=0.2, priors=custom))
         assert model.settings.bmr == 0.2
         assert model.settings.priors.model_dump() == custom.model_dump()
+
+
+class TestQuantalLinear:
+    def test_dr_curve(self, ddataset):
+        # check that the background param if nonzero has a y value > 0 at zero dose
+        model = QuantalLinear(dataset=ddataset)
+        ys = model.dr_curve(doses=np.array([0]), params=(0.15, 0.2))
+        assert np.allclose(ys, [0.15])

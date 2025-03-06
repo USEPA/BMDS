@@ -38,6 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "poethepoet~=0.32.2",
   "coverage~=7.6.4",
   "mypy~=1.13.0",
   "pybind11==2.13.6",
@@ -46,6 +47,7 @@ dev = [
   "ruff~=0.7.1",
   "setuptools~=75.3.0",
   "wheel~=0.44.0",
+  "clang-format==19.1.3",
 ]
 docs = [
   "Sphinx~=8.1.3",
@@ -142,3 +144,80 @@ version = {attr = "pybmds.__version__"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["pybmds*"]
+
+[tool.poe.tasks.sync-dev]
+help = "Sync dev environment after code checkout"
+sequence = [
+  {cmd = 'uv pip install -e ".[dev,docs]"'},
+]
+
+[tool.poe.tasks.test]
+help = "Run Python tests"
+cmd = "py.test"
+
+[tool.poe.tasks.format]
+help = "Format Python code"
+sequence = [
+  {cmd = "ruff format ."},
+  {cmd = "ruff check . --fix --show-fixes"},
+]
+
+[tool.poe.tasks.format-cpp]
+help = "Format C++ code"
+sequence = [
+  {shell = 'find src -name "*.cpp" -o -name "*.h" | xargs clang-format -i'},
+]
+
+[tool.poe.tasks.lint]
+help = "Check Python formatting issues"
+sequence = [
+  {cmd = "ruff format . --check"},
+  {cmd = "ruff check ."},
+]
+
+[tool.poe.tasks.build]
+help = "Build Python package"
+sequence = [
+  {cmd ="python setup.py develop"},
+  {cmd ="stubgen -p pybmds.bmdscore -o src/"},
+  {cmd ="ruff format src/pybmds/bmdscore.pyi"},
+]
+
+[tool.poe.tasks.dist]
+help = "Build wheel package for distribution"
+sequence = [
+  {cmd ="python setup.py bdist_wheel"},
+]
+
+[tool.poe.tasks.coverage]
+help = "Run Python coverage and create HTML report"
+sequence = [
+  {cmd = "coverage run -m pytest"},
+  {cmd = "coverage html -d coverage_html -i"},
+]
+
+[tool.poe.tasks.loc]
+help = "Generate lines of code report"
+cmd = """cloc \
+		--exclude-dir=build,dist,venv \
+		--exclude-ext=json,yaml,svg,toml,ini \
+		--vcs=git \
+		--counted loc-files.txt \
+		--md \
+		.
+"""
+
+[tool.poe.tasks.docs]
+help = "Build html documentation"
+cmd = "sphinx-build -W -b html docs/source docs/build/html"
+
+[tool.poe.tasks.docs-docx]
+help = "Build docx documentation"
+sequence = [
+  {cmd = "sphinx-build -W -b singlehtml docs/source docs/build/singlehtml"},
+  {shell = "cd docs/build/singlehtml && pandoc -s index.html -o ../pybmds.docx"},
+]
+
+[tool.poe.tasks.docs-serve]
+help = "Preview html documentation"
+cmd = "sphinx-autobuild -b html docs/source docs/build/html --port 5800"

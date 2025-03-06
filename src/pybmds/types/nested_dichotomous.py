@@ -60,8 +60,8 @@ class NestedDichotomousModelSettings(BaseModel):
     litter_specific_covariate: LitterSpecificCovariate = LitterSpecificCovariate.OverallMean
     intralitter_correlation: IntralitterCorrelation = IntralitterCorrelation.Estimate
     estimate_background: bool = True
-    bootstrap_iterations: int = Field(default=1000, gt=10, lt=10000)
-    bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1000))  # noqa: S311
+    bootstrap_iterations: int = Field(default=1000, ge=10, le=1_000_000)
+    bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1_000), ge=0, le=1_000)  # noqa: S311
     bootstrap_n: int = Field(default=3, ge=1, le=10)
     name: str = ""  # override model name
     priors: PriorClass | ModelPriors | None = None  # if None; default used
