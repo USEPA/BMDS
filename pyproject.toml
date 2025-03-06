@@ -152,11 +152,11 @@ sequence = [
 ]
 
 [tool.poe.tasks.test]
-help = "Run python tests"
+help = "Run Python tests"
 cmd = "py.test"
 
 [tool.poe.tasks.format]
-help = "Fix python formatting issues where possible"
+help = "Format Python code"
 sequence = [
   {cmd = "ruff format ."},
   {cmd = "ruff check . --fix --show-fixes"},
@@ -169,14 +169,14 @@ sequence = [
 ]
 
 [tool.poe.tasks.lint]
-help = "Check python formatting issues"
+help = "Check Python formatting issues"
 sequence = [
   {cmd = "ruff format . --check"},
   {cmd = "ruff check ."},
 ]
 
 [tool.poe.tasks.build]
-help = "Build package"
+help = "Build Python package"
 sequence = [
   {cmd ="python setup.py develop"},
   {cmd ="stubgen -p pybmds.bmdscore -o src/"},
@@ -190,7 +190,7 @@ sequence = [
 ]
 
 [tool.poe.tasks.coverage]
-help = "Run python coverage and create HTML report"
+help = "Run Python coverage and create HTML report"
 sequence = [
   {cmd = "coverage run -m pytest"},
   {cmd = "coverage html -d coverage_html -i"},
@@ -208,16 +208,16 @@ cmd = """cloc \
 """
 
 [tool.poe.tasks.docs]
-help = "Build documentation {html}"
+help = "Build html documentation"
 cmd = "sphinx-build -W -b html docs/source docs/build/html"
 
 [tool.poe.tasks.docs-docx]
-help = "Build documentation {docx}"
+help = "Build docx documentation"
 sequence = [
   {cmd = "sphinx-build -W -b singlehtml docs/source docs/build/singlehtml"},
   {shell = "cd docs/build/singlehtml && pandoc -s index.html -o ../pybmds.docx"},
 ]
 
 [tool.poe.tasks.docs-serve]
-help = "Realtime documentation preview"
+help = "Preview html documentation"
 cmd = "sphinx-autobuild -b html docs/source docs/build/html --port 5800"
