@@ -2,8 +2,7 @@
 Rao Scott Adjustment, original citation:
 
 Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity
-Studies. Risk Anal. 2017 May;37(5):905-917.
-PMID: 27567129. DOI: 10.1111/risa.12667.
+Studies. Risk Anal. 2017 May;37(5):905-917. doi: 10.1111/risa.12667. PMID: 27567129.
 """
 
 from enum import StrEnum
@@ -182,31 +181,18 @@ class RaoScott:
         return report.document
 
     def summary_df(self) -> pd.DataFrame:
-        return self.df[
-            [
-                "dose",
-                "n",
-                "incidence",
-                "fraction_affected",
-                "design_ls",
-                "design_o",
-                "design_avg",
-                "n_adjusted",
-                "incidence_adjusted",
-            ]
-        ].rename(
-            columns={
-                "dose": "Dose",
-                "n": "N",
-                "incidence": "Incidence",
-                "fraction_affected": "Fraction Affected",
-                "design_ls": "Design Effect (LS)",
-                "design_o": "Design Effect (OR)",
-                "design_avg": "Design Effect (Average)",
-                "n_adjusted": "N (Rao Scott Adjusted)",
-                "incidence_adjusted": "Incidence (Rao Scott Adjusted)",
-            }
-        )
+        mapping = {
+            "dose": "Dose",
+            "n": "N",
+            "incidence": "Incidence",
+            "fraction_affected": "Fraction Affected",
+            "design_ls": "Design Effect (LS)",
+            "design_o": "Design Effect (OR)",
+            "design_avg": "Design Effect (Average)",
+            "n_adjusted": "N (Rao Scott Adjusted)",
+            "incidence_adjusted": "Incidence (Rao Scott Adjusted)",
+        }
+        return self.df[list(mapping.keys())].rename(columns=mapping)
 
     def to_excel(self) -> BytesIO:
         """Returns an Excel report with worksheets summarizing the adjustment.

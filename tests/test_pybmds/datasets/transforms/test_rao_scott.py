@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pybmds.datasets import DichotomousDataset
-from pybmds.datasets.transforms.raoscott import RaoScott, Species
+from pybmds.datasets.transforms.rao_scott import RaoScott, Species
 
 
 @pytest.fixture
