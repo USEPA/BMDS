@@ -214,11 +214,9 @@ def ensure_pyprojectx(options):
 # --- END VENDOR pyprojectx ---
 # fmt: on
 
-# TODO - remove gitlab URL
 pyproject_data = """
 [tool.pyprojectx]
 main = [
-    "--index-url https://gitlab.epa.gov/api/v4/projects/1508/packages/pypi/simple",
     "bmds-ui",
 ]
 
