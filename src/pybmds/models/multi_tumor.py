@@ -13,8 +13,8 @@ from ..reporting.footnotes import TableFootnote
 from ..reporting.styling import (
     Report,
     add_mpl_figure,
+    df_to_table,
     set_column_width,
-    write_bmd_cdf_table,
     write_cell,
     write_citation,
     write_pvalue_header,
@@ -138,7 +138,7 @@ def write_docx_model(
         report.document.add_paragraph(model.text(), styles.fixed_width)
         if bmd_cdf_table:
             report.document.add_paragraph("CDF:", styles.tbl_body)
-            write_bmd_cdf_table(report, model.results.fit)
+            df_to_table(report, model.cdf())
 
 
 class Multitumor:

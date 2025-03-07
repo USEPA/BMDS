@@ -20,10 +20,10 @@ from .models.base import BmdModel, BmdModelAveraging, BmdModelAveragingSchema, B
 from .recommender import Recommender, RecommenderSettings
 from .reporting.styling import (
     Report,
+    df_to_table,
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
-    write_bmd_cdf_table,
     write_citation,
     write_dataset_metadata,
     write_dataset_table,
@@ -363,9 +363,9 @@ class Session:
             report.document.add_paragraph("Bayesian Summary", h2)
             write_bayesian_table(report, self)
             plot_dr(report, self)
-            if bmd_cdf_table:
+            if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
-                write_bmd_cdf_table(report, self.model_average.results.bmd_dist)
+                df_to_table(report, self.model_average.cdf())
             if all_models:
                 report.document.add_paragraph("Individual Model Results", h2)
                 write_models(report, self, bmd_cdf_table, header_level + 2)

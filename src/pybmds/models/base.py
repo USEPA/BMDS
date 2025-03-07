@@ -4,6 +4,8 @@ import abc
 import logging
 from typing import TYPE_CHECKING, NamedTuple, Self
 
+import numpy as np
+import pandas as pd
 from pydantic import BaseModel
 
 from .. import plotting
@@ -21,6 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 InputModelSettings = dict | BaseModel | None
+
+
+def cdf_df(arr: np.ndarray) -> pd.DataFrame:
+    df = pd.DataFrame(data=arr.T, columns=["BMD", "Percentile"])
+    df["Percentile"] = df.Percentile * 100
+    return df[["Percentile", "BMD"]]
 
 
 class BmdModel(abc.ABC):
@@ -184,6 +192,11 @@ class BmdModel(abc.ABC):
         ax.legend(**plotting.LEGEND_OPTS)
         return fig
 
+    def cdf(self) -> pd.DataFrame:
+        if not self.has_results:
+            raise ValueError("Cannot create if results are unavailable")
+        return cdf_df(self.results.fit.bmd_dist)
+
     @abc.abstractmethod
     def get_param_names(self) -> list[str]: ...
 
@@ -251,6 +264,11 @@ class BmdModelAveraging(abc.ABC):
 
     def to_dict(self) -> dict:
         return self.serialize.model_dump()
+
+    def cdf(self) -> pd.DataFrame:
+        if not self.has_results:
+            raise ValueError("Cannot create if results are unavailable")
+        return cdf_df(self.results.bmd_dist)
 
 
 class BmdModelAveragingSchema(BaseModel):

@@ -31,7 +31,7 @@ def ff(value) -> str:
     elif np.isclose(value, int(value)):
         return str(int(value))
     else:
-        return f"{value:.4f}".rstrip("0")
+        return f"{value:.3f}".rstrip("0")
 
 
 def four_decimal_formatter(value: float) -> str:
