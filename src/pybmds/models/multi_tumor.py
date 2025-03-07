@@ -138,7 +138,7 @@ def write_docx_model(
         report.document.add_paragraph(model.text(), styles.fixed_width)
         if bmd_cdf_table:
             report.document.add_paragraph("CDF:", styles.tbl_body)
-            write_bmd_cdf_table(report, model)
+            write_bmd_cdf_table(report, model.results.fit)
 
 
 class Multitumor:
