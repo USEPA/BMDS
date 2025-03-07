@@ -50,7 +50,7 @@ def cdf_plot(
     if bmdl or bmdu:
         if bmdl:
             label = "BMDL, BMDU" if bmdu else "BMDL"
-            ax.plot([bmdl, bmdl], [0, alpha], label="BMDL, BMDU", **plotting.CDF_DASHED)
+            ax.plot([bmdl, bmdl], [0, alpha], label=label, **plotting.CDF_DASHED)
         if bmdu:
             label = None if bmdl else "BMDU"
             ax.plot([bmdu, bmdu], [0, 1 - alpha], label=label, **plotting.CDF_DASHED)
