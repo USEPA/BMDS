@@ -20,6 +20,7 @@ from .models.base import BmdModel, BmdModelAveraging, BmdModelAveragingSchema, B
 from .recommender import Recommender, RecommenderSettings
 from .reporting.styling import (
     Report,
+    add_mpl_figure,
     df_to_table,
     plot_dr,
     write_base_frequentist_table,
@@ -365,6 +366,8 @@ class Session:
             plot_dr(report, self)
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
+                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel())
+                report.document.add_paragraph(add_mpl_figure(report.document, fig, 6))
                 df_to_table(report, self.model_average.cdf())
             if all_models:
                 report.document.add_paragraph("Individual Model Results", h2)
