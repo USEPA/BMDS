@@ -4,6 +4,9 @@ import abc
 import logging
 from typing import TYPE_CHECKING, NamedTuple, Self
 
+import numpy as np
+import pandas as pd
+from matplotlib.figure import Figure
 from pydantic import BaseModel
 
 from .. import plotting
@@ -21,6 +24,40 @@ logger = logging.getLogger(__name__)
 
 
 InputModelSettings = dict | BaseModel | None
+
+
+def cdf_df(arr: np.ndarray) -> pd.DataFrame:
+    df = pd.DataFrame(data=arr.T, columns=["BMD", "Percentile"])
+    df["Percentile"] = df.Percentile * 100
+    return df[["Percentile", "BMD"]]
+
+
+def cdf_plot(
+    cdf: pd.DataFrame,
+    alpha: float,
+    bmd: float,
+    bmdl: float | None,
+    bmdu: float | None,
+    xlabel: str,
+    figsize: tuple[float, float] | None = None,
+) -> Figure:
+    fig = plotting.create_empty_figure(figsize=figsize)
+    ax = fig.gca()
+    ax.set_title("BMD Cumulative Distribution Function (CDF)")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Cumulative Probability")
+    ax.plot(cdf.BMD, cdf.Percentile / 100, label="Model Probability", **plotting.LINE_FORMAT)
+    if bmdl or bmdu:
+        if bmdl:
+            label = "BMDL, BMDU" if bmdu else "BMDL"
+            ax.plot([bmdl, bmdl], [0, alpha], label=label, **plotting.CDF_DASHED)
+        if bmdu:
+            label = None if bmdl else "BMDU"
+            ax.plot([bmdu, bmdu], [0, 1 - alpha], label=label, **plotting.CDF_DASHED)
+    if bmd:
+        ax.plot([bmd, bmd], [0, 0.5], label="BMD", **plotting.CDF_SOLID)
+    ax.legend(**plotting.LEGEND_OPTS)
+    return fig
 
 
 class BmdModel(abc.ABC):
@@ -145,44 +182,23 @@ class BmdModel(abc.ABC):
         fig.tight_layout()
         return fig
 
-    def cdf_plot(self, figsize: tuple[float, float] | None = None):
+    def cdf_plot(self, figsize: tuple[float, float] | None = None) -> Figure:
         if not self.has_results:
             raise ValueError("Cannot plot if results are unavailable")
-        fig = plotting.create_empty_figure(figsize=figsize)
-        ax = fig.gca()
-        ax.set_title("BMD Cumulative Distribution Function (CDF)")
-        ax.set_xlabel(self.dataset.get_xlabel())
-        ax.set_ylabel("Cumulative Probability")
-        ax.plot(
-            self.results.fit.bmd_dist[0],
-            self.results.fit.bmd_dist[1],
-            label="Model Probability",
-            **plotting.LINE_FORMAT,
+        return cdf_plot(
+            cdf=self.cdf(),
+            alpha=self.settings.alpha,
+            bmd=self.results.bmd,
+            bmdl=self.results.bmdl,
+            bmdu=self.results.bmdu,
+            xlabel=self.dataset.get_xlabel(),
+            figsize=figsize,
         )
-        if self.results.bmdl or self.results.bmdu:
-            if self.results.bmdl:
-                ax.plot(
-                    [self.results.bmdl, self.results.bmdl],
-                    [0, self.settings.alpha],
-                    label="BMDL, BMDU",
-                    **plotting.CDF_DASHED,
-                )
-            if self.results.bmdu:
-                ax.plot(
-                    [self.results.bmdu, self.results.bmdu],
-                    [0, 1 - self.settings.alpha],
-                    label=None if self.results.bmdl else "BMDL, BMDU",
-                    **plotting.CDF_DASHED,
-                )
-        if self.results.bmd:
-            ax.plot(
-                [self.results.bmd, self.results.bmd],
-                [0, 0.5],
-                label="BMD",
-                **plotting.CDF_SOLID,
-            )
-        ax.legend(**plotting.LEGEND_OPTS)
-        return fig
+
+    def cdf(self) -> pd.DataFrame:
+        if not self.has_results:
+            raise ValueError("Cannot create if results are unavailable")
+        return cdf_df(self.results.fit.bmd_dist)
 
     @abc.abstractmethod
     def get_param_names(self) -> list[str]: ...
@@ -251,6 +267,24 @@ class BmdModelAveraging(abc.ABC):
 
     def to_dict(self) -> dict:
         return self.serialize.model_dump()
+
+    def cdf_plot(self, xlabel: str, figsize: tuple[float, float] | None = None) -> Figure:
+        if not self.has_results:
+            raise ValueError("Cannot plot if results are unavailable")
+        return cdf_plot(
+            cdf=self.cdf(),
+            alpha=self.settings.alpha,
+            bmd=self.results.bmd,
+            bmdl=self.results.bmdl,
+            bmdu=self.results.bmdu,
+            xlabel=xlabel,
+            figsize=figsize,
+        )
+
+    def cdf(self) -> pd.DataFrame:
+        if not self.has_results:
+            raise ValueError("Cannot create if results are unavailable")
+        return cdf_df(self.results.bmd_dist)
 
 
 class BmdModelAveragingSchema(BaseModel):
