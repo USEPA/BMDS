@@ -15,10 +15,16 @@ class TestBaseDatasetFunctionality:
         ds = pybmds.DichotomousDataset(
             doses=[0, 1.96, 5.69, 29.75], ns=[75, 49, 50, 49], incidences=[5, 1, 3, 14]
         )
-        xs = ds.dose_linspace
+        xs = ds.dose_linspace()
         assert xs.min() == pybmds.constants.ZEROISH
         assert xs.max() == 29.75
         assert xs.size == 100
+
+        # add extra values
+        xs = ds.dose_linspace(extra_values=[25, 50], n=10)
+        assert xs.min() == pybmds.constants.ZEROISH
+        assert xs.max() == 50
+        assert xs.size == 10
 
     def test_reporting_metadata(self):
         ds = pybmds.DichotomousDataset(

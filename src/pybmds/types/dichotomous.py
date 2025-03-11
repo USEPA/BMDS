@@ -386,7 +386,8 @@ class DichotomousPlotting(BaseModel):
         result = model.structs.result
         summary = result.bmdsRes
         xs = np.array([summary.BMDL, summary.BMD, summary.BMDU])
-        dr_x = model.dataset.dose_linspace
+        extra_values = [summary.BMD] if summary.BMD >= 0 else []
+        dr_x = model.dataset.dose_linspace(extra_values=extra_values)
         dr_y = clean_array(model.dr_curve(dr_x, params))
         critical_ys = clean_array(model.dr_curve(xs, params))
         critical_ys[critical_ys <= 0] = constants.BMDS_BLANK_VALUE
