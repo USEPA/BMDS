@@ -159,6 +159,13 @@ class BmdModel(abc.ABC):
             self.results.plotting.dr_y,
             **plotting.LINE_FORMAT,
         )
+
+        # if the BMD is greater than the current plot domain, extend to 105% of BMD
+        xlim = ax.get_xlim()
+        bmd = self.results.get_parameter("bmd")
+        if bmd > xlim[1]:
+            ax.set_xlim(xlim[0], bmd * 1.05)
+
         self._plot_bmr_lines(ax, axlines=axlines)
         slope_factor = getattr(self.results, "slope_factor", None)
         if draw_slope := slope_factor and slope_factor > 0:
