@@ -1,3 +1,4 @@
+from copy import deepcopy
 from textwrap import dedent
 
 import numpy as np
@@ -32,9 +33,9 @@ def mock_nested_dichotomous_prior():
     return ModelPriors(
         prior_class=PriorClass.frequentist_restricted,
         priors=[
-            Prior(name="a", type=t, initial_value=0, stdev=0, min_value=1, max_value=4),
-            Prior(name="b", type=t, initial_value=0, stdev=0, min_value=2, max_value=5),
-            Prior(name="phi", type=t, initial_value=0, stdev=0, min_value=3, max_value=6),
+            Prior(name="a", type=t, initial_value=2, stdev=0, min_value=1, max_value=4),
+            Prior(name="b", type=t, initial_value=3, stdev=0, min_value=2, max_value=5),
+            Prior(name="phi", type=t, initial_value=4, stdev=0, min_value=3, max_value=6),
         ],
         variance_priors=[],
     )
@@ -117,7 +118,7 @@ class TestModelPriors:
         assert m.priors_tbl() == expected.strip()
         m = Multistage(dataset=ddataset, settings=dict(degree=8))
         m.settings.priors.update("g", min_value=-0.1, initial_value=0.05, max_value=0.1)
-        m.settings.priors.update("b1", min_value=1, max_value=10)
+        m.settings.priors.update("b1", max_value=10)
         m.settings.priors.update("b2", max_value=2)
         m.settings.priors.update("b3", max_value=3)
         m.settings.priors.update("b4", max_value=4)
@@ -131,7 +132,7 @@ class TestModelPriors:
             │ Parameter   │   Initial │   Min │   Max │
             ╞═════════════╪═══════════╪═══════╪═══════╡
             │ g           │      0.05 │  -0.1 │   0.1 │
-            │ b1          │      0    │   1   │  10   │
+            │ b1          │      0    │   0   │  10   │
             │ b2          │      0    │   0   │   2   │
             │ b3          │      0    │   0   │   3   │
             │ b4          │      0    │   0   │   4   │
@@ -205,3 +206,19 @@ class TestModelPriors:
         prior = mock_nested_dichotomous_prior
         prior.update("phi1", min_value=-10, max_value=10)
         assert np.allclose(prior.to_c_nd(n_phi=2), [1, 2, -10, 3, 4, 5, 10, 6])
+
+    def test_priors_list_validation(self, mock_prior):
+        # valid if fixed
+        priors = deepcopy(mock_prior)
+        priors.update("a", min_value=1, initial_value=1, max_value=1)
+        assert len(priors.priors_list()) > 0
+
+        for settings, message in [
+            (dict(min_value=1, max_value=0), "Min value > Max Value"),
+            (dict(min_value=1, initial_value=0), "Initial Value < Min Value"),
+            (dict(max_value=1, initial_value=2), "Initial Value > Max Value"),
+        ]:
+            priors = deepcopy(mock_prior)
+            priors.update("a", **settings)
+            with pytest.raises(ValueError, match=message):
+                priors.priors_list()
