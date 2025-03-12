@@ -214,7 +214,7 @@ class TestModelPriors:
         assert len(priors.priors_list()) > 0
 
         for settings, message in [
-            (dict(min_value=1, max_value=0), "Min value > Max Value"),
+            (dict(min_value=1, max_value=0), "Min Value > Max Value"),
             (dict(min_value=1, initial_value=0), "Initial Value < Min Value"),
             (dict(max_value=1, initial_value=2), "Initial Value > Max Value"),
         ]:

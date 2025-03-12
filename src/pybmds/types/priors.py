@@ -142,7 +142,7 @@ class ModelPriors(BaseModel):
         # check values
         for prior in priors:
             if prior.min_value > prior.max_value:
-                raise ValueError(f"Min value > Max Value ({prior})")
+                raise ValueError(f"Min Value > Max Value ({prior})")
             elif prior.initial_value < prior.min_value:
                 raise ValueError(f"Initial Value < Min Value ({prior})")
             elif prior.initial_value > prior.max_value:
