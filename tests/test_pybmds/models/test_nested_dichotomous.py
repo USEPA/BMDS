@@ -28,7 +28,7 @@ class TestNestedLogistic:
         │ b           │         0 │   -18 │ 18     │
         │ theta1      │         0 │     0 │  1     │
         │ theta2      │         0 │   -18 │ 18     │
-        │ rho         │         0 │     1 │ 18     │
+        │ rho         │         1 │     1 │ 18     │
         │ phi1        │         0 │     0 │  1e+06 │
         │ phi2        │         0 │     0 │  1e+06 │
         │ phi3        │         0 │     0 │  1e+06 │
@@ -38,20 +38,20 @@ class TestNestedLogistic:
         assert m.priors_tbl() == expected.strip()
 
         # check overrides
-        m.settings.priors.update("a", min_value=1, max_value=2)
-        m.settings.priors.update("phi2", min_value=5, max_value=6)
+        m.settings.priors.update("a", initial_value=1, min_value=1, max_value=2)
+        m.settings.priors.update("phi2", initial_value=5, min_value=5, max_value=6)
         expected = dedent(
             """
         ╒═════════════╤═══════════╤═══════╤════════╕
         │ Parameter   │   Initial │   Min │    Max │
         ╞═════════════╪═══════════╪═══════╪════════╡
-        │ a           │         0 │     1 │  2     │
+        │ a           │         1 │     1 │  2     │
         │ b           │         0 │   -18 │ 18     │
         │ theta1      │         0 │     0 │  1     │
         │ theta2      │         0 │   -18 │ 18     │
-        │ rho         │         0 │     1 │ 18     │
+        │ rho         │         1 │     1 │ 18     │
         │ phi1        │         0 │     0 │  1e+06 │
-        │ phi2        │         0 │     5 │  6     │
+        │ phi2        │         5 │     5 │  6     │
         │ phi3        │         0 │     0 │  1e+06 │
         ╘═════════════╧═══════════╧═══════╧════════╛
         """
@@ -95,39 +95,39 @@ class TestNctr:
         m = nested_dichotomous.Nctr(dataset=nd_dataset)
         expected = dedent(
             """
-        ╒═════════════╤═══════════╤═════════╤════════════╕
-        │ Parameter   │   Initial │     Min │        Max │
-        ╞═════════════╪═══════════╪═════════╪════════════╡
-        │ a           │         0 │  0      │  18        │
-        │ b           │         0 │  0      │ -18        │
-        │ theta1      │         0 │ -0.0625 │  -0.142857 │
-        │ theta2      │         0 │ -0.0625 │  -0.142857 │
-        │ rho         │         0 │  1      │  18        │
-        │ phi1        │         0 │  0      │  18        │
-        │ phi2        │         0 │  0      │  18        │
-        │ phi3        │         0 │  0      │  18        │
-        ╘═════════════╧═══════════╧═════════╧════════════╛
+        ╒═════════════╤═══════════╤═══════════╤═════════╕
+        │ Parameter   │   Initial │       Min │     Max │
+        ╞═════════════╪═══════════╪═══════════╪═════════╡
+        │ a           │  0        │  0        │ 18      │
+        │ b           │  0        │  0        │ 18      │
+        │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
+        │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
+        │ rho         │  1        │  1        │ 18      │
+        │ phi1        │  0        │  0        │ 18      │
+        │ phi2        │  0        │  0        │ 18      │
+        │ phi3        │  0        │  0        │ 18      │
+        ╘═════════════╧═══════════╧═══════════╧═════════╛
         """
         )
         assert m.priors_tbl() == expected.strip()
 
         # check overrides
-        m.settings.priors.update("a", min_value=1, max_value=2)
-        m.settings.priors.update("phi2", min_value=5, max_value=6)
+        m.settings.priors.update("a", initial_value=1, min_value=1, max_value=2)
+        m.settings.priors.update("phi2", initial_value=5, min_value=5, max_value=6)
         expected = dedent(
             """
-        ╒═════════════╤═══════════╤═════════╤════════════╕
-        │ Parameter   │   Initial │     Min │        Max │
-        ╞═════════════╪═══════════╪═════════╪════════════╡
-        │ a           │         0 │  1      │   2        │
-        │ b           │         0 │  0      │ -18        │
-        │ theta1      │         0 │ -0.0625 │  -0.142857 │
-        │ theta2      │         0 │ -0.0625 │  -0.142857 │
-        │ rho         │         0 │  1      │  18        │
-        │ phi1        │         0 │  0      │  18        │
-        │ phi2        │         0 │  5      │   6        │
-        │ phi3        │         0 │  0      │  18        │
-        ╘═════════════╧═══════════╧═════════╧════════════╛
+        ╒═════════════╤═══════════╤═══════════╤═════════╕
+        │ Parameter   │   Initial │       Min │     Max │
+        ╞═════════════╪═══════════╪═══════════╪═════════╡
+        │ a           │  1        │  1        │  2      │
+        │ b           │  0        │  0        │ 18      │
+        │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
+        │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
+        │ rho         │  1        │  1        │ 18      │
+        │ phi1        │  0        │  0        │ 18      │
+        │ phi2        │  5        │  5        │  6      │
+        │ phi3        │  0        │  0        │ 18      │
+        ╘═════════════╧═══════════╧═══════════╧═════════╛
         """
         )
         assert m.priors_tbl() == expected.strip()
