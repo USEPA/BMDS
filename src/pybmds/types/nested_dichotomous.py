@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..datasets import NestedDichotomousDataset
 from ..utils import camel_to_title, multi_lstrip, pretty_table, unique_items
-from .common import NumpyFloatArray, clean_array, inspect_cpp_obj
+from .common import BOUND_FOOTNOTE, NumpyFloatArray, clean_array, inspect_cpp_obj
 from .priors import ModelPriors, PriorClass
 
 
@@ -60,8 +60,8 @@ class NestedDichotomousModelSettings(BaseModel):
     litter_specific_covariate: LitterSpecificCovariate = LitterSpecificCovariate.OverallMean
     intralitter_correlation: IntralitterCorrelation = IntralitterCorrelation.Estimate
     estimate_background: bool = True
-    bootstrap_iterations: int = Field(default=1000, gt=10, lt=10000)
-    bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1000))  # noqa: S311
+    bootstrap_iterations: int = Field(default=1000, ge=10, le=1_000_000)
+    bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1_000), ge=0, le=1_000)  # noqa: S311
     bootstrap_n: int = Field(default=3, ge=1, le=10)
     name: str = ""  # override model name
     priors: PriorClass | ModelPriors | None = None  # if None; default used
@@ -274,7 +274,8 @@ class Plotting(BaseModel):
     def from_model(cls, model, params: dict, fixed_lsc: float) -> Self:
         summary = model.structs.result.bmdsRes
         xs = np.array([summary.BMDL, summary.BMD, summary.BMDU])
-        dr_x = model.dataset.dose_linspace
+        extra_values = [summary.BMD] if summary.BMD >= 0 else []
+        dr_x = model.dataset.dose_linspace(extra_values=extra_values)
         dr_y = clean_array(model.dr_curve(dr_x, params, fixed_lsc))
         critical_ys = clean_array(model.dr_curve(xs, params, fixed_lsc))
         critical_ys[critical_ys <= 0] = constants.BMDS_BLANK_VALUE
@@ -411,8 +412,27 @@ class NestedDichotomousResult(BaseModel):
         return pretty_table(data, "")
 
     def parameter_tbl(self) -> str:
-        data = list(zip(self.parameter_names, self.parameters, strict=True))
-        return pretty_table(data, "")
+        headers = "Variable|Estimate|On Bound|Std Error".split("|")
+        data = []
+        for name, value, bounded, se in zip(
+            self.parameter_names,
+            self.parameters,
+            self.bounded,
+            self.std_err,
+            strict=True,
+        ):
+            data.append(
+                (
+                    name,
+                    value,
+                    constants.BOOL_YES_NO[bounded],
+                    "Not Reported" if bounded or se == constants.BMDS_BLANK_VALUE else f"{se:g}",
+                )
+            )
+        text = pretty_table(data, headers)
+        if any(self.bounded):
+            text += BOUND_FOOTNOTE
+        return text
 
     def parameter_rows(self, extras: dict) -> list[dict]:
         rows = []

@@ -540,12 +540,7 @@ def write_model(
     report.document.add_paragraph(model.text(), styles.fixed_width)
     if bmd_cdf_table:
         report.document.add_paragraph("CDF:", styles.tbl_body)
-        write_bmd_cdf_table(report, model)
-
-
-def write_bmd_cdf_table(report: Report, model: BmdModel):
-    df = pd.DataFrame(data=model.results.fit.bmd_dist.T, columns=["BMD", "Cumulative Probability"])
-    df_to_table(report, df[["Cumulative Probability", "BMD"]])
+        df_to_table(report, model.cdf())
 
 
 def write_setting_p(report: Report, title: str, value: str):

@@ -74,12 +74,21 @@ class DatasetBase(abc.ABC):
     def to_dict(self):
         return self.serialize().model_dump()
 
-    @property
-    def dose_linspace(self) -> np.ndarray:
-        if not hasattr(self, "_dose_linspace"):
-            self._dose_linspace = np.linspace(np.min(self.doses), np.max(self.doses), 100)
-            self._dose_linspace[self._dose_linspace == 0] = ZEROISH
-        return self._dose_linspace
+    def dose_linspace(self, extra_values: list | None = None, n: int = 100) -> np.ndarray:
+        """Return a numpy array of size n between the minimum dose and maximum dose.
+
+        Args:
+            extra_values (list | None, optional): Any extra values that should be in the domain
+            n (int, optional): Size of array; defaults to 100.
+
+        Returns:
+            np.ndarray: A 1D numpy array between the zeroish min dose and the maximum dose
+        """
+        values = extra_values or []
+        values.extend(self.doses)
+        xs = np.linspace(np.min(values), np.max(values), n)
+        xs[xs == 0] = ZEROISH
+        return xs
 
     def _get_dose_units_text(self) -> str:
         if self.metadata.dose_units:
