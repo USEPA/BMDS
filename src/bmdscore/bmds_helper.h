@@ -563,7 +563,6 @@ void NCTR_probs(
     std::vector<std::vector<double>> &gradij, struct nestedObjData *objData
 );
 
-
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
 double opt_nctr(std::vector<double> &p, struct nestedObjData *data);
 
@@ -593,7 +592,6 @@ void NCTR_vcv(
     std::vector<std::vector<double>> &vcv
 );
 
-
 void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
 void NCTR_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
@@ -608,8 +606,8 @@ double CHISQ(double x, int m);
 void outputObjData(struct nestedObjData *objData);
 
 void Nested_Bootstrap(
-    struct nestedObjData *objData, struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, long seed, int iterations,
-    int BSLoops
+    struct nestedObjData *objData, struct python_nested_analysis *pyAnal,
+    struct python_nested_result *pyRes, long seed, int iterations, int BSLoops
 );
 
 void Nested_SRoI(
@@ -622,9 +620,7 @@ void Nested_GOF(
     struct nestedLitterData *litterData, const std::vector<int> &grpSize
 );
 
-void Nested_reduced(
-    double alpha, struct nestedObjData *objData, struct nestedReducedData *redData
-);
+void Nested_reduced(double alpha, struct nestedObjData *objData, struct nestedReducedData *redData);
 
 void raoscott(struct nestedObjData *objData, std::vector<double> &num, std::vector<double> &den);
 
@@ -646,7 +642,6 @@ double calcNlogisticCLs(
 double calcNCTRCLs(
     double xa, double xb, std::vector<double> &pint, struct nestedObjData *objData, bool isLower
 );
-
 
 void SortNestedData(
     const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls,

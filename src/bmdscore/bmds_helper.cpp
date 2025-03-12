@@ -2825,14 +2825,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   double smean = sum1 / nij;  // overall average lsc
 
   double sijfixed = 0;
-  if (pyAnal->model == nlogistic){
-    if(pyAnal->LSC_type == 2){ //control group mean
+  if (pyAnal->model == nlogistic) {
+    if (pyAnal->LSC_type == 2) {  // control group mean
       sijfixed = smean1;
     } else {
       sijfixed = smean;
     }
-  } else { //nctr
-    if(pyAnal->LSC_type == 2){ //control group mean
+  } else {                        // nctr
+    if (pyAnal->LSC_type == 2) {  // control group mean
       sijfixed = smean1 - smean;
     } else {
       sijfixed = 0;
@@ -2866,25 +2866,22 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     }
   }
 
-
-
   struct nestedObjData objData;
   objData.model = pyAnal->model;
   double W = 0.0;
   Eigen::MatrixXd vcv(pyRes->nparms, pyRes->nparms);
   std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double>(pyRes->nparms));
 
-  if (pyAnal->model == nlogistic){  
-
-    //START NLOGIST CODE HERE
-    // compute initial estimates
+  if (pyAnal->model == nlogistic) {
+    // START NLOGIST CODE HERE
+    //  compute initial estimates
     double ymin = 1.0;
     for (int i = 0; i < ngrp; i++) {
       W = tmpYp[i] / (tmpYp[i] + tmpYn[i]);
       probability_inrange(&W);
       if (W < ymin) ymin = W;
     }
-  
+
     for (int i = 0; i < ngrp; i++) {
       x = tmpXi[i];
       W = log((tmpYp[i] - ymin * (tmpYp[i] + tmpYn[i]) + 0.5) / (tmpYn[i] + 0.5));
@@ -2901,7 +2898,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     }
     tmpvcv(1, 0) = tmpvcv(0, 1);
     pyRes->parms[0] = ymin + 0.001;  // in case ymin=0
-  
+
     if (!Spec[0] && !Spec[1]) {
       if (tmpvcv.determinant() > 0) {
         Eigen::Matrix2d invtmpvcv = tmpvcv.inverse();
@@ -2912,19 +2909,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
         pyRes->parms[4] = 1.001;
       }
     }
-  
+
     if (pyRes->parms[4] < pyAnal->prior[4]) {
       pyRes->parms[4] = 1.0001;
     }
-  
+
     // setup log-logistic model
     for (int i = 5; i < pyRes->nparms; i++) {
       pyRes->parms[i] = 0.0;
     }
     pyRes->parms[2] = pyRes->parms[3] = 0.0;
-  
+
     // simple non-nested log-logistic model
-  
+
     // This first pass has theta1 p[2] and theta2 p[3] fixed to zero
     objData.Ls = Ls;
     objData.Xi = Xi;
@@ -2949,13 +2946,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     for (int i = PHISTART; i < pyRes->nparms; i++) {
       objData.Spec[i] = true;
     }
-  
+
     std::vector<double> pBak = pyRes->parms;
-  
+
     double retVal = opt_nlogistic(pyRes->parms, &objData);
-  
+
     if (retVal < 0) return;  // return with validResult = false
-  
+
     // Now alpha p[0], beta p[1], and rho[4] contain starting estimates
     // Second, get initial values for Phi's
     int count = 0;
@@ -2975,37 +2972,37 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       for (int i = 5; i < pyRes->nparms; i++) {
         pyRes->parms[i] = pyRes->parms[i] / (1 - pyRes->parms[i]);  // Phi --> Psi
       }
-  
+
       objData.Spec = Spec;
       objData.Spec[THETA1_INDEX] = true;
       objData.Spec[THETA2_INDEX] = true;
       // pass 2 has thetas set to zero
-  
+
       // allow to continue even if retVal < 0
       retVal = opt_nlogistic(pyRes->parms, &objData);
-  
+
       // Transform parameters to "external" form
       for (int i = 5; i < pyRes->nparms; i++) {
         pyRes->parms[i] = pyRes->parms[i] / (1 + pyRes->parms[i]);  // Psi --> Phi
       }
-  
+
       // When theta1 ==0, internal and external forms for alpha are the same,
       // so we do not need to back transform p[0]
     }
-  
+
     // Finally, get starting values for Thetas
     for (int i = 2; i <= 3; i++) {
       // if not set
       pyRes->parms[i] = 0.0;
     }
-  
+
     // Fit the model
-  
+
     // Transform the parameters to the "internal" form
     for (int i = 5; i < pyRes->nparms; i++) {
       pyRes->parms[i] = pyRes->parms[i] / (1 - pyRes->parms[i]);  // Phi --> Psi
     }
-  
+
     double junk3;
     if (Spec[0] == Spec[2]) {
       junk1 = pyRes->parms[0];
@@ -3013,29 +3010,29 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       pyRes->parms[0] = junk1 + smin * junk3;
       pyRes->parms[2] = junk1 + smax * junk3;
     }
-  
+
     // ML fit and return log-likelihood value
     objData.Spec = Spec;
-  
+
     for (int i = 0; i < pyRes->nparms; i++) {
       if (Spec[i]) {
         pyRes->parms[i] = 0.0;
       }
     }
-  
-//    if (pyRes->parms[4] <= pyAnal->prior[4]) {
-      pyRes->parms[4] = 1.0001;
-//    }
+
+    //    if (pyRes->parms[4] <= pyAnal->prior[4]) {
+    pyRes->parms[4] = 1.0001;
+    //    }
     objData.tol = 1e-12;
     retVal = opt_nlogistic(pyRes->parms, &objData);
     objData.BMD_lk = objData.xlk;  // save BMD likelihood
     pyRes->LL = objData.xlk;
-  
+
     // Transform the parameters to the "external" form
     for (int i = 5; i < pyRes->nparms; i++) {
       pyRes->parms[i] = pyRes->parms[i] / (1 + pyRes->parms[i]);
     }
-  
+
     double sdif = smax - smin;
     if (Spec[0] == Spec[2]) {
       junk1 = pyRes->parms[0];
@@ -3043,38 +3040,37 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       pyRes->parms[0] = (smax * junk1 - smin * junk3) / sdif;
       pyRes->parms[2] = (junk3 - junk1) / sdif;
     }
-  
+
     // TODO:  check retVal to make sure convergence was achieved
     if (retVal > 0) {
       pyRes->validResult = true;
       pyRes->bmdsRes.validResult = true;
     }
-    ///END NLOGIST_FIT
+    /// END NLOGIST_FIT
 
     // compute Hessian
     Nlogist_vcv(pyRes->parms, pyRes->bmdsRes.bounded, &objData, vcv_tmp);
 
-  } else if (pyAnal->model == nctr){
-
-    //smax and smin defined differently for nctr
+  } else if (pyAnal->model == nctr) {
+    // smax and smin defined differently for nctr
 
     smax = smax - smean;
-    smin = smin - smean;   //note: smin is negative
-//    if(pyAnal->LSC_type == 1){
-//      sijfixed = smean1-smean;
-//    } else {
-//      sijfixed = 0;
-//    }
+    smin = smin - smean;  // note: smin is negative
+    //    if(pyAnal->LSC_type == 1){
+    //      sijfixed = smean1-smean;
+    //    } else {
+    //      sijfixed = 0;
+    //    }
     double tmp1 = 0.0;
     double tmp2 = 0.0;
     double ymin = 1.0;
-    if(!Spec[4]) {
+    if (!Spec[4]) {
       pyRes->parms[4] = 1.001;
     } else {
       pyRes->parms[4] = 0.0;
     }
-    for (int i=0; i<ngrp; i++){
-      W = tmpYp[i]/(tmpYp[i]+tmpYn[i]);
+    for (int i = 0; i < ngrp; i++) {
+      W = tmpYp[i] / (tmpYp[i] + tmpYn[i]);
       probability_inrange(&W);
       if (ymin > W) {
         ymin = W;
@@ -3084,25 +3080,24 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       tmp2 += W;
     }
 
-    pyRes->parms[0] = ymin + 0.001;  //in case ymin = 0
-    pyRes->parms[1] = tmp2/tmp1;
-
+    pyRes->parms[0] = ymin + 0.001;  // in case ymin = 0
+    pyRes->parms[1] = tmp2 / tmp1;
 
     // setup nctr model
     for (int i = 5; i < pyRes->nparms; i++) {
-       Spec[i] = true;
-       pyRes->parms[i] = 0.0;
+      Spec[i] = true;
+      pyRes->parms[i] = 0.0;
     }
     Spec[2] = true;
     Spec[3] = true;
     pyRes->parms[2] = 0.0;
     pyRes->parms[3] = 0.0;
 
-//    //this seems to be unset.  Try tmp setting to zero.  May need to change
-//    pyRes->parms[4] = 0.0;
+    //    //this seems to be unset.  Try tmp setting to zero.  May need to change
+    //    pyRes->parms[4] = 0.0;
 
-    //scale starting values by max dose level
-    pyRes->parms[1] = pyRes->parms[1]*pow(xmax, pyRes->parms[4]);
+    // scale starting values by max dose level
+    pyRes->parms[1] = pyRes->parms[1] * pow(xmax, pyRes->parms[4]);
 
     objData.Ls = Ls;
     objData.Xi = Xi;
@@ -3123,21 +3118,21 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     objData.tol = 1e-8;
     objData.prior = pyAnal->prior;
     objData.Spec = Spec;
-    
+
     std::vector<double> pBak = pyRes->parms;
 
     double retVal = opt_nctr(pyRes->parms, &objData);
-    
-    if (retVal < 0) return; //return with validResult = false
 
-    //Unscale parameter estimates by max dose level
-    pyRes->parms[1] = pyRes->parms[1]/pow(xmax, pyRes->parms[4]);
+    if (retVal < 0) return;  // return with validResult = false
+
+    // Unscale parameter estimates by max dose level
+    pyRes->parms[1] = pyRes->parms[1] / pow(xmax, pyRes->parms[4]);
 
     // Now alpha p[0], beta p[1], and rho[4] contain starting estimates
     // Second, get initial values for Phi's
     int count = 0;
     for (int i = PHISTART; i < pyRes->nparms; i++) {
-      Spec[i] = false;  //this would only be true if we begin allowing user specified values
+      Spec[i] = false;  // this would only be true if we begin allowing user specified values
       if (Spec[i]) count++;
     }
 
@@ -3146,8 +3141,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       // leave theta1 and theta2 = 0.0;
       for (int i = 5; i < pyRes->nparms; i++) {
         // set back to original parms
-        //pyRes->parms[i] = pBak[i];
-        //if (Spec[i] == 0){
+        // pyRes->parms[i] = pBak[i];
+        // if (Spec[i] == 0){
         pyRes->parms[i] = 0.01;
         //}
       }
@@ -3160,14 +3155,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       objData.Spec[THETA2_INDEX] = true;
       // pass 2 has thetas set to zero
 
-      //scale starting values by max dose level
-      pyRes->parms[1] = pyRes->parms[1]*pow(xmax, pyRes->parms[4]);
+      // scale starting values by max dose level
+      pyRes->parms[1] = pyRes->parms[1] * pow(xmax, pyRes->parms[4]);
 
       // allow to continue even if retVal < 0
       retVal = opt_nctr(pyRes->parms, &objData);
-      
-      //Unscale parameter estimates by max dose level
-      pyRes->parms[1] = pyRes->parms[1]/pow(xmax, pyRes->parms[4]);
+
+      // Unscale parameter estimates by max dose level
+      pyRes->parms[1] = pyRes->parms[1] / pow(xmax, pyRes->parms[4]);
 
       // Transform parameters to "external" form
       for (int i = 5; i < pyRes->nparms; i++) {
@@ -3178,7 +3173,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       // so we do not need to back transform p[0]
     }
 
-    // Find strating values for theta1 and theta2 but also make sure they stay within the constraint.
+    // Find strating values for theta1 and theta2 but also make sure they stay within the
+    // constraint.
     objData.Spec[THETA1_INDEX] = false;
     objData.Spec[THETA2_INDEX] = false;
     double meanX = 0.0;
@@ -3189,65 +3185,66 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     std::vector<double> newLsc(Nobs, 0.0);
     std::vector<double> newX(Nobs, 0.0);
     std::vector<double> newY(Nobs, 0.0);
-    
-    for (int i=0; i<Nobs; i++){
 
+    for (int i = 0; i < Nobs; i++) {
       newLsc[i] = Lsc[i] - smean;
       newX[i] = pow(Xi[i], pyRes->parms[4]);
-      if (newLsc[i] == 0){
+      if (newLsc[i] == 0) {
         newLsc[i] = 1e-8;
       }
-      if (Yn[i] > 0){
-        newY[i] = (-1*log(1-Yp[i]/(Yp[i]+Yn[i])) - pyRes->parms[0]-pyRes->parms[1]*newX[i])/newLsc[i];
+      if (Yn[i] > 0) {
+        newY[i] =
+            (-1 * log(1 - Yp[i] / (Yp[i] + Yn[i])) - pyRes->parms[0] - pyRes->parms[1] * newX[i]) /
+            newLsc[i];
       } else {
-	newY[i] = (-1*log(1e-8)-pyRes->parms[0]-pyRes->parms[1]*newX[i])/newLsc[i];
+        newY[i] = (-1 * log(1e-8) - pyRes->parms[0] - pyRes->parms[1] * newX[i]) / newLsc[i];
       }
       meanX += newX[i];
       meanY += newY[i];
-      sumXY += newX[i]*newY[i];
-      sumX2 += pow(newX[i],2);
+      sumXY += newX[i] * newY[i];
+      sumX2 += pow(newX[i], 2);
     }
-    meanX = meanX/Nobs;
-    meanY = meanY/Nobs;
-    pyRes->parms[3] = (sumXY - Nobs*meanX*meanY)/(sumX2 - Nobs*pow(meanX,2));
-    pyRes->parms[2] = meanY - pyRes->parms[3]*meanX;
-    if (pyRes->parms[2] < (-1*pyRes->parms[0]/smax)){
-      pyRes->parms[2] = (-1*pyRes->parms[0]/smax) + 1e-8;
+    meanX = meanX / Nobs;
+    meanY = meanY / Nobs;
+    pyRes->parms[3] = (sumXY - Nobs * meanX * meanY) / (sumX2 - Nobs * pow(meanX, 2));
+    pyRes->parms[2] = meanY - pyRes->parms[3] * meanX;
+    if (pyRes->parms[2] < (-1 * pyRes->parms[0] / smax)) {
+      pyRes->parms[2] = (-1 * pyRes->parms[0] / smax) + 1e-8;
     }
-    if (pyRes->parms[3] < (-1*pyRes->parms[1]/smax)){
-      pyRes->parms[3] = (-1*pyRes->parms[1]/smax) + 1e-8;
+    if (pyRes->parms[3] < (-1 * pyRes->parms[1] / smax)) {
+      pyRes->parms[3] = (-1 * pyRes->parms[1] / smax) + 1e-8;
     }
 
-    //Transform the parameters to the internal form
-    for (int i=5;i<pyRes->nparms;i++){
-      pyRes->parms[i]=pyRes->parms[i]/(1-pyRes->parms[i]);
+    // Transform the parameters to the internal form
+    for (int i = 5; i < pyRes->nparms; i++) {
+      pyRes->parms[i] = pyRes->parms[i] / (1 - pyRes->parms[i]);
     }
-    for (int i=2;i<4;i++){
-      if(pyRes->parms[i-2]>0){
-        pyRes->parms[i] = pyRes->parms[i]/pyRes->parms[i-2];
+    for (int i = 2; i < 4; i++) {
+      if (pyRes->parms[i - 2] > 0) {
+        pyRes->parms[i] = pyRes->parms[i] / pyRes->parms[i - 2];
       } else {
-	pyRes->parms[i] = 0;
+        pyRes->parms[i] = 0;
       }
     }
 
-    //objData.Ls = newLs; 
+    // objData.Ls = newLs;
 
-    //Scale starting values by max dose level
-    pyRes->parms[1] = pyRes->parms[1]*pow(xmax, pyRes->parms[4]);
+    // Scale starting values by max dose level
+    pyRes->parms[1] = pyRes->parms[1] * pow(xmax, pyRes->parms[4]);
 
     retVal = opt_nctr(pyRes->parms, &objData);
 
     objData.BMD_lk = objData.xlk;  // save BMD likelihood
     pyRes->LL = objData.xlk;
 
-    pyRes->parms[1] = pyRes->parms[1]/pow(xmax, pyRes->parms[4]);
+    pyRes->parms[1] = pyRes->parms[1] / pow(xmax, pyRes->parms[4]);
 
-    //Transform the parameters to the external form
-    for (int i=5; i<pyRes->nparms;i++){
-      pyRes->parms[i] = pyRes->parms[i]/(1+pyRes->parms[i]);  //Psi --> Phi
+    // Transform the parameters to the external form
+    for (int i = 5; i < pyRes->nparms; i++) {
+      pyRes->parms[i] = pyRes->parms[i] / (1 + pyRes->parms[i]);  // Psi --> Phi
     }
-    for (int i=2; i<4; i++){
-      pyRes->parms[i] = pyRes->parms[i]*pyRes->parms[i-2];    //(theta/alpha) -> theta;
+    for (int i = 2; i < 4; i++) {
+      pyRes->parms[i] = pyRes->parms[i] * pyRes->parms[i - 2];  //(theta/alpha) -> theta;
     }
 
     // compute Hessian
@@ -3260,12 +3257,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     }
 
   } else {
-    std::cout << "Invalid nested dichotomous model choice" <<std::endl;
+    std::cout << "Invalid nested dichotomous model choice" << std::endl;
   }
 
-
-
-  //BACK TO COMMON CODE
+  // BACK TO COMMON CODE
 
   for (int i = 0; i < pyRes->nparms; i++) {
     vcv.row(i) = Eigen::VectorXd::Map(&vcv_tmp[i][0], vcv_tmp[i].size());
@@ -3289,7 +3284,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     }
   }
 
-  
   Eigen::MatrixXd red_vcv(pyRes->nparms - numBounded, pyRes->nparms - numBounded);
   int jvar = 0;
   int ivar = 0;
@@ -3401,8 +3395,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   pyRes->model_df = fittedAnova.df;
 
   // Generate litter data results
-  
-  //THIS SHOULD BE SAME FOR NCTR
+
+  // THIS SHOULD BE SAME FOR NCTR
   Nested_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
 
@@ -3417,17 +3411,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 
   objData.GXi = GXi;
 
-  //THIS SHOULD ALSO BE SAME FOR NCTR
+  // THIS SHOULD ALSO BE SAME FOR NCTR
   Nested_reduced(pyAnal->alpha, &objData, &pyRes->reduced);
 
   // Compute BMD
-  //FORK HERE FOR NCTR_BMD
-  if (pyAnal->model == nlogistic){
+  // FORK HERE FOR NCTR_BMD
+  if (pyAnal->model == nlogistic) {
     Nlogist_BMD(pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
-  } else if (pyAnal->model == nctr){
+  } else if (pyAnal->model == nctr) {
     Nctr_BMD(pyAnal, pyRes, smin, smax, sijfixed, xmax, &objData);
   } else {
-    std::cout << "Invalid nested dichotomous model choice" <<std::endl;
+    std::cout << "Invalid nested dichotomous model choice" << std::endl;
   }
 
   Nested_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
@@ -3436,8 +3430,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 }
 
 void Nested_Bootstrap(
-    struct nestedObjData *objData, struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, long seed, int iterations,
-    int BSLoops
+    struct nestedObjData *objData, struct python_nested_analysis *pyAnal,
+    struct python_nested_result *pyRes, long seed, int iterations, int BSLoops
 ) {
   int ngrp = objData->ngrp;
   std::vector<double> Yp = objData->Yp;
@@ -3478,12 +3472,12 @@ void Nested_Bootstrap(
   }
 
   // compute the estimated probability and expected obs
-  if (pyAnal->model == nlogistic){
+  if (pyAnal->model == nlogistic) {
     Nlogist_Predict(pyRes->parms, objData, Ep);
-  } else if (pyAnal->model == nctr){
+  } else if (pyAnal->model == nctr) {
     NCTR_Predict(pyRes->parms, objData, Ep);
   } else {
-    std::cout<<"Incorrect model selection for Nested_Bootstrap"<<std::endl;
+    std::cout << "Incorrect model selection for Nested_Bootstrap" << std::endl;
   }
 
   for (int i = 0; i < Nobs; i++) {
@@ -3683,12 +3677,12 @@ void Nested_SRoI(
   SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
 
   double meanLSC = 0;
-  if (model == nlogistic){
+  if (model == nlogistic) {
     meanLSC = objData->sijfixed;
-  } else if (model == nctr){
-    meanLSC = objData->smean; 
+  } else if (model == nctr) {
+    meanLSC = objData->smean;
   } else {
-    std::cout<<"Invalid model choice in Nested_SRoI"<<std::endl;
+    std::cout << "Invalid model choice in Nested_SRoI" << std::endl;
   }
   int Nobs = Xi.size();
 
@@ -3840,7 +3834,6 @@ void Nested_GOF(
   std::vector<double> Var(Nobs);
   std::vector<double> SR(Nobs);
 
-
   SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
 
   // assumes PHI_START = 5
@@ -3849,12 +3842,12 @@ void Nested_GOF(
   }
 
   // Predict
-  if (model == nlogistic){
+  if (model == nlogistic) {
     Nlogist_Predict(parms, objData, Ep);
-  } else if (model == nctr){
+  } else if (model == nctr) {
     NCTR_Predict(parms, objData, Ep);
   } else {
-    std::cout<<"Error in Nested_GOF: invalid model specification"<<std::endl;
+    std::cout << "Error in Nested_GOF: invalid model specification" << std::endl;
   }
 
   // replace objData with sorted values
@@ -3894,12 +3887,11 @@ void SortNestedData(
     std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc
 ) {
   // sorts nested data by Xi -> Ls(or Lsc) -> Yp
-        std::cout<<std::boolalpha;
-
+  std::cout << std::boolalpha;
 
   int ngrp = grpSize.size();
   int Nobs = Xi.size();
-  
+
   std::vector<double> origXi = Xi;
   std::vector<double> origLs = Ls;
   std::vector<double> origYp = Yp;
@@ -3964,7 +3956,6 @@ void SortNestedData(
   Yp = newYp;
   Yn = newYn;
   Lsc = newLsc;
-
 }
 
 void Nlogist_Predict(
@@ -3986,19 +3977,21 @@ void Nlogist_Predict(
   }
 }
 
-void NCTR_Predict(const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P){
+void NCTR_Predict(
+    const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P
+) {
   std::vector<double> Xi = objData->Xi;
   std::vector<double> Lsc = objData->Lsc;
   double smean = objData->smean;
 
   double bkg;
   int Nobs = Xi.size();
-  for (int i=0; i < Nobs; i++) {
-    bkg = parms[0] + parms[2]*(Lsc[i]-smean);
+  for (int i = 0; i < Nobs; i++) {
+    bkg = parms[0] + parms[2] * (Lsc[i] - smean);
     if (Xi[i] <= 0.0) {
-      P[i] = 1 - exp (-1*bkg);
+      P[i] = 1 - exp(-1 * bkg);
     } else {
-      P[i] = 1 - exp (-1*bkg - (parms[1]+parms[3]*(Lsc[i]-smean))*pow(Xi[i],parms[4]));
+      P[i] = 1 - exp(-1 * bkg - (parms[1] + parms[3] * (Lsc[i] - smean)) * pow(Xi[i], parms[4]));
     }
   }
 }
@@ -4017,12 +4010,12 @@ void NCTR_vcv(
 
   std::vector<double> ptemp = p;
 
-//  if (Spec[0] == Spec[2]) {
-//    double junk1 = ptemp[0];
-//    double junk3 = ptemp[2];
-//    ptemp[0] = junk1 + smin * junk3;
-//    ptemp[2] = junk1 + smax * junk3;
-//  }
+  //  if (Spec[0] == Spec[2]) {
+  //    double junk1 = ptemp[0];
+  //    double junk3 = ptemp[2];
+  //    ptemp[0] = junk1 + smin * junk3;
+  //    ptemp[2] = junk1 + smax * junk3;
+  //  }
 
   // Get a value of h for each parameter
   double hrat = pow(1.0e-16, 0.333333);
@@ -4065,7 +4058,6 @@ void NCTR_vcv(
     nvar++;
   }
 }
-
 
 void Nlogist_vcv(
     std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData,
@@ -4154,9 +4146,7 @@ void Nlogist_grad(
 // Computes the gradient of the NCTR likelihood function with respect to the user form
 // (external of the parameters.  This is to be used in NCTR_vcv to compute a finite difference
 // approximation to the hessian of the likelihood function.
-void NCTR_grad(
-    std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad
-) {
+void NCTR_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad) {
   int nparm = p.size();
   std::vector<double> pint = p;
   // transform the parameters to "internal" form
@@ -4313,9 +4303,7 @@ double opt_nlogistic(std::vector<double> &p, struct nestedObjData *objData) {
   return result;
 }
 
-
 double opt_nctr(std::vector<double> &p, struct nestedObjData *objData) {
-
   std::vector<bool> Spec = objData->Spec;
   int nparm_prior = objData->prior.size() / 2;
 
@@ -4324,7 +4312,7 @@ double opt_nctr(std::vector<double> &p, struct nestedObjData *objData) {
   double smax = objData->smax;
   int Nobs = Xi.size();
   double xmax = 0;
-  for (int i=0; i<Nobs; i++){
+  for (int i = 0; i < Nobs; i++) {
     if (Xi[i] > xmax) xmax = Xi[i];
   }
 
@@ -4337,51 +4325,51 @@ double opt_nctr(std::vector<double> &p, struct nestedObjData *objData) {
   std::vector<double> ub(nparm);
   // alpha
   lb[0] = objData->prior[0];            // 0.0;
-  ub[0] = objData->prior[nparm_prior];  //DBL_MAX;
+  ub[0] = objData->prior[nparm_prior];  // DBL_MAX;
   // beta
-  lb[1] = objData->prior[1];                //0;
+  lb[1] = objData->prior[1];                // 0;
   ub[1] = objData->prior[nparm_prior + 1];  // DBL_MAX;
   // theta1
-//  lb[2] = -1/objData->smax;
-//  ub[2] = -1/objData->smin;
-//  lb[2] = objData->prior[2];
-//  ub[2] = objData->prior[nparm_prior + 2];
+  //  lb[2] = -1/objData->smax;
+  //  ub[2] = -1/objData->smin;
+  //  lb[2] = objData->prior[2];
+  //  ub[2] = objData->prior[nparm_prior + 2];
 
   if (Spec[2]) {
     lb[2] = 0.0;
     ub[2] = 0.0;
   } else {
-    lb[2] = -1/smax;
-    ub[2] = -1/smin;
+    lb[2] = -1 / smax;
+    ub[2] = -1 / smin;
   }
 
   if (Spec[3]) {
     lb[3] = 0.0;
     ub[3] = 0.0;
   } else {
-    lb[3] = -1/smax;
-    ub[3] = -1/smin;
+    lb[3] = -1 / smax;
+    ub[3] = -1 / smin;
   }
 
-//  lb[2] = objData->prior[2];  // 0.0;
-//  if (Spec[2]) {
-//    ub[2] = 0.0;
-//  } else {
-//    ub[2] = objData->prior[nparm_prior + 2];  // 1.0;
-//  }
-//  // theta2
-////  lb[3] = -1/objData->smax;
-////  ub[3] = -1/objData->smin;
-////  lb[3] = objData->prior[3];
-////  ub[3] = objData->prior[nparm_prior + 3];
-//
-//  if (Spec[3]) {
-//    lb[3] = 0.0;
-//    ub[3] = 0.0;
-//  } else {
-//    lb[3] = objData->prior[3];                //-1.0*DBL_MAX;
-//    ub[3] = objData->prior[nparm_prior + 3];  // DBL_MAX;
-//  }
+  //  lb[2] = objData->prior[2];  // 0.0;
+  //  if (Spec[2]) {
+  //    ub[2] = 0.0;
+  //  } else {
+  //    ub[2] = objData->prior[nparm_prior + 2];  // 1.0;
+  //  }
+  //  // theta2
+  ////  lb[3] = -1/objData->smax;
+  ////  ub[3] = -1/objData->smin;
+  ////  lb[3] = objData->prior[3];
+  ////  ub[3] = objData->prior[nparm_prior + 3];
+  //
+  //  if (Spec[3]) {
+  //    lb[3] = 0.0;
+  //    ub[3] = 0.0;
+  //  } else {
+  //    lb[3] = objData->prior[3];                //-1.0*DBL_MAX;
+  //    ub[3] = objData->prior[nparm_prior + 3];  // DBL_MAX;
+  //  }
   // rho
   lb[4] = objData->prior[4];                // 0.0/1.0 (unrestricted/restricted)
   ub[4] = objData->prior[nparm_prior + 4];  // slopeUpperBound;
@@ -4486,7 +4474,6 @@ double opt_nctr(std::vector<double> &p, struct nestedObjData *objData) {
   return result;
 }
 
-
 void probability_inrange(double *ex) {
   if (*ex < 1.0e-7) *ex = 1.0e-7;
   if (*ex > 0.9999999) *ex = 0.9999999;
@@ -4573,7 +4560,7 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
   int nparms = p.size();
   std::vector<double> probs(Nobs);
   std::vector<std::vector<double>> gradij(Nobs, std::vector<double>(5));
-  
+
   bool compgrad = false;
   NCTR_probs(probs, p, compgrad, gradij, objData);
 
@@ -4591,11 +4578,11 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
     } else {
       for (int k = 1; k <= j; k++) {
         tm = probs[i] + (k - 1) * p[plus4];
-	if (tm < CloseToZero){
-          tm1 += std::numeric_limits<double>::max(); 
-	} else {
+        if (tm < CloseToZero) {
+          tm1 += std::numeric_limits<double>::max();
+        } else {
           tm1 += log(tm);
-	}
+        }
       }
     }
     j = (int)Yn[i];
@@ -4604,17 +4591,17 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
     } else {
       for (int k = 1; k <= j; k++) {
         tm = 1.0 - probs[i] + (k - 1) * p[plus4];
-	if (tm < CloseToZero){
+        if (tm < CloseToZero) {
           tm2 += std::numeric_limits<double>::max();
-	} else {
+        } else {
           tm2 += log(tm);
-	}
+        }
       }
     }
     j = (int)(Yn[i] + Yp[i]);
     for (int k = 1; k <= j; k++) {
       tm = 1.0 + (k - 1) * p[plus4];
-      if (tm < CloseToZero){
+      if (tm < CloseToZero) {
         tm3 += std::numeric_limits<double>::max();
       } else {
         tm3 += log(tm);
@@ -4626,7 +4613,6 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
   // returns negative log likelihood
   return -1.0 * xlk;
 }
-
 
 // Used to comput the log-likelihood for Nlogistic model
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData) {
@@ -4756,7 +4742,6 @@ double NCTR_g(std::vector<double> p, std::vector<double> &g, struct nestedObjDat
   return 0;
 }
 
-
 // Used to compute the gradients for Nlogist_model.  Parameters are in "internal" transformed form.
 double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData) {
   std::vector<double> Yp = objData->Yp;
@@ -4853,18 +4838,18 @@ void NCTR_probs(
   double spij, smij, ex, ex1, ex2, ex3, ex4, dd2, pwx, lamb, ck;
   double xmax = 0;
   double sdif = smax - smin;
-//  double spfixed = (smax - sijfixed) / sdif;
-//  double snfixed = (sijfixed - smin) / sdif;
+  //  double spfixed = (smax - sijfixed) / sdif;
+  //  double snfixed = (sijfixed - smin) / sdif;
   int nparms = p.size();
   int Nobs = Xi.size();
 
-  for (int i=0; i<Nobs; i++){
+  for (int i = 0; i < Nobs; i++) {
     if (Xi[i] > xmax) xmax = Xi[i];
   }
-  for (int i=0; i<Nobs; i++){
-    Xi[i]/=xmax;
+  for (int i = 0; i < Nobs; i++) {
+    Xi[i] /= xmax;
   }
-  //std::vector<double> pint(pyRes->nparms);
+  // std::vector<double> pint(pyRes->nparms);
   std::vector<double> pint;
   for (int i = 0; i < nparms; i++) {
     pint.push_back(p[i]);
@@ -4872,71 +4857,73 @@ void NCTR_probs(
   }
 
   std::vector<double> sij;
-  for (int i=0; i< Lsc.size(); i++){
+  for (int i = 0; i < Lsc.size(); i++) {
     sij.push_back(Lsc[i] - smean);
   }
 
   if (isBMDL) {
-
-    if (riskType = 1) { //Extra
-      pint[1] = -log(1-BMR)/(1+pint[3]*sijfixed)/pow(tD, pint[4]);
-    } else { //Added
-      pint[1] = -log(1-BMR*exp(pint[0]*(1+pint[2]*sijfixed)))/(1+pint[3]*sijfixed)/pow(tD, pint[4]);
+    if (riskType = 1) {  // Extra
+      pint[1] = -log(1 - BMR) / (1 + pint[3] * sijfixed) / pow(tD, pint[4]);
+    } else {  // Added
+      pint[1] = -log(1 - BMR * exp(pint[0] * (1 + pint[2] * sijfixed))) / (1 + pint[3] * sijfixed) /
+                pow(tD, pint[4]);
     }
   }
 
-  
   for (int i = 0; i < Nobs; i++) {
-    if (Xi[i] > 0){
+    if (Xi[i] > 0) {
       pwx = pow(Xi[i], pint[4]);
     } else {
       pwx = 0.0;
     }
-    ex1 = pint[0]*(1+pint[2]*sij[i]);
-    ex2 = pint[1]*(1+pint[3]*sij[i]);
-    ex = 1.0 - exp(-1.0*(ex1+(ex2*pwx)));
+    ex1 = pint[0] * (1 + pint[2] * sij[i]);
+    ex2 = pint[1] * (1 + pint[3] * sij[i]);
+    ex = 1.0 - exp(-1.0 * (ex1 + (ex2 * pwx)));
 
     probability_inrange(&ex);
     probs[i] = ex;
 
     if (compgrad) {
       lamb = 0.0;
-      if (riskType == 1){ //Extra
-        ck = -1.0*log(1-BMR);
-      } else {  //Added
-	ck = -1.0*log((1.0-BMR*lamb));
+      if (riskType == 1) {  // Extra
+        ck = -1.0 * log(1 - BMR);
+      } else {  // Added
+        ck = -1.0 * log((1.0 - BMR * lamb));
       }
 
       if (isBMDL) {
-	  ex3 = (1.0 - ex);
-	  ex4 = pow(tD, -pint[4])*(lamb*BMR*(1+pint[1]*sijfixed)/(1-lamb*BMR));
-          gradij[i][1] = (ex3*(1+pint[3]*sij[i])*pwx);
-	  gradij[i][0] = (ex3*(1+pint[2]*sij[i])+gradij[i][1]*ex4);
-	  gradij[i][2] = (ex3*pint[0]*sij[i] + gradij[i][1]*ex4*pint[0]*sijfixed);
-	  gradij[i][3] = (ex3*pint[1]*sij[i]*pwx - gradij[i][1]*ck*pow(tD,-pint[4])*sijfixed/(1+pint[3]*sijfixed)/(1+pint[3]*sijfixed));
-	  if (Xi[i] > 0.0){
-	    gradij[i][4] = (ex3*ex2*log(Xi[i])*pwx - gradij[i][1]*ck/(1+pint[3]*sijfixed)*log(tD)*pow(tD, -pint[4]));
-	  } else {
-	    gradij[i][4] = 0.0-gradij[i][1]*ck/(1+pint[3]*sijfixed) * log(tD)*pow(tD, -pint[4]);
-	  }
+        ex3 = (1.0 - ex);
+        ex4 = pow(tD, -pint[4]) * (lamb * BMR * (1 + pint[1] * sijfixed) / (1 - lamb * BMR));
+        gradij[i][1] = (ex3 * (1 + pint[3] * sij[i]) * pwx);
+        gradij[i][0] = (ex3 * (1 + pint[2] * sij[i]) + gradij[i][1] * ex4);
+        gradij[i][2] = (ex3 * pint[0] * sij[i] + gradij[i][1] * ex4 * pint[0] * sijfixed);
+        gradij[i][3] =
+            (ex3 * pint[1] * sij[i] * pwx - gradij[i][1] * ck * pow(tD, -pint[4]) * sijfixed /
+                                                (1 + pint[3] * sijfixed) /
+                                                (1 + pint[3] * sijfixed));
+        if (Xi[i] > 0.0) {
+          gradij[i][4] =
+              (ex3 * ex2 * log(Xi[i]) * pwx -
+               gradij[i][1] * ck / (1 + pint[3] * sijfixed) * log(tD) * pow(tD, -pint[4]));
+        } else {
+          gradij[i][4] =
+              0.0 - gradij[i][1] * ck / (1 + pint[3] * sijfixed) * log(tD) * pow(tD, -pint[4]);
+        }
       } else {
-
-        ex3 = (1.0-ex);
-	gradij[i][0] = ex3*(1+pint[2]*sij[i]);
-	gradij[i][1] = ex3*(1+pint[3]*sij[i])*pwx;
-	gradij[i][2] = ex3*sij[i]*pint[0];
-	gradij[i][3] = ex3*sij[i]*pint[1]*pwx;
-	if (Xi[i] > 0){
-          gradij[i][4] = ex3*ex2*log(Xi[i])*pwx;
-	} else {
+        ex3 = (1.0 - ex);
+        gradij[i][0] = ex3 * (1 + pint[2] * sij[i]);
+        gradij[i][1] = ex3 * (1 + pint[3] * sij[i]) * pwx;
+        gradij[i][2] = ex3 * sij[i] * pint[0];
+        gradij[i][3] = ex3 * sij[i] * pint[1] * pwx;
+        if (Xi[i] > 0) {
+          gradij[i][4] = ex3 * ex2 * log(Xi[i]) * pwx;
+        } else {
           gradij[i][4] = 0.0;
-	}
+        }
       }
     }
   }
-
 }
-
 
 void Nlogist_probs(
     std::vector<double> &probs, const std::vector<double> &p, bool compgrad,
@@ -5092,49 +5079,49 @@ void Nctr_BMD(
     pint[i] = pint[i] / (1 - pint[i]);  // Phi->Psi
   }
 
-//  if (Spec[0] == Spec[2]) {
-//    junk1 = pint[0];
-//    junk3 = pint[2];
-//    pint[0] = junk1 + smin * junk3;
-//    pint[2] = junk1 + smax * junk3;
-//  }
+  //  if (Spec[0] == Spec[2]) {
+  //    junk1 = pint[0];
+  //    junk3 = pint[2];
+  //    pint[0] = junk1 + smin * junk3;
+  //    pint[2] = junk1 + smax * junk3;
+  //  }
 
-  for (int i=2; i<4; i++){
-    if( pint[i-2]>0){
-      pint[i] = pint[i]/pint[i-2];
+  for (int i = 2; i < 4; i++) {
+    if (pint[i - 2] > 0) {
+      pint[i] = pint[i] / pint[i - 2];
     } else {
       pint[i] = 0;
     }
   }
 
-//  double sdif = smax - smin;
-//
-//  double spfixed = (smax - sijfixed) / sdif;
-//  double snfixed = (sijfixed - smin) / sdif;
+  //  double sdif = smax - smin;
+  //
+  //  double spfixed = (smax - sijfixed) / sdif;
+  //  double snfixed = (sijfixed - smin) / sdif;
 
-  double lamb = exp(pint[0]*(1+pint[2]*sijfixed));
+  double lamb = exp(pint[0] * (1 + pint[2] * sijfixed));
   if (riskType == 1) {
     // extra risk
-    ck = -1.0*log(1.0-BMR);
+    ck = -1.0 * log(1.0 - BMR);
   } else {
     // added risk
-    ck = -1.0*log(1.0-BMR*lamb);
+    ck = -1.0 * log(1.0 - BMR * lamb);
   }
   objData->ck = ck;
 
   double BMD;
-//  if (pint[4] <= (ck - pint[1] - pint[3] * sijfixed) / 250) {
-//    // Power parameter is essentially zero.  BMD is set to 100  * max(Dose)
-//    BMD = 100 * xmax;
-//  } else {
-//    BMD = exp((ck - pint[1] - pint[3] * sijfixed) / pint[4]);
-//  }
-  if (pint[4] <= (log(ck/pint[1]*(1+pint[3]*sijfixed)))/log(std::numeric_limits<double>::max())){
+  //  if (pint[4] <= (ck - pint[1] - pint[3] * sijfixed) / 250) {
+  //    // Power parameter is essentially zero.  BMD is set to 100  * max(Dose)
+  //    BMD = 100 * xmax;
+  //  } else {
+  //    BMD = exp((ck - pint[1] - pint[3] * sijfixed) / pint[4]);
+  //  }
+  if (pint[4] <=
+      (log(ck / pint[1] * (1 + pint[3] * sijfixed))) / log(std::numeric_limits<double>::max())) {
     BMD = 100 * xmax;
   } else {
-    BMD = pow(ck/(pint[1]*(1+pint[3]*sijfixed)), 1/pint[4]);
+    BMD = pow(ck / (pint[1] * (1 + pint[3] * sijfixed)), 1 / pint[4]);
   }
-
 
   pyRes->bmdsRes.BMD = BMD;
   pyRes->bmd = BMD;
@@ -5366,7 +5353,9 @@ void outputObjData(struct nestedObjData *objData) {
 // BMDL_func - used to compare the values of functions BMDL_f (the X^2 value) at the point D,
 //    given the parm p[] and the number of parm.  Input parameters are in the "internal" form.
 //    This routine is called by zeroin()
-double BMDL_func_nlog(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData) {
+double BMDL_func_nlog(
+    std::vector<double> &p, double D, double gtol, struct nestedObjData *objData
+) {
   double fD;
   int junk;
 
@@ -5381,7 +5370,9 @@ double BMDL_func_nlog(std::vector<double> &p, double D, double gtol, struct nest
   return fD;
 }
 
-double BMDL_func_nctr(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData) {
+double BMDL_func_nctr(
+    std::vector<double> &p, double D, double gtol, struct nestedObjData *objData
+) {
   double fD;
   int junk;
 
@@ -5395,7 +5386,6 @@ double BMDL_func_nctr(std::vector<double> &p, double D, double gtol, struct nest
   fD = objData->BMD_lk - objData->xlk - objData->LR;
   return fD;
 }
-
 
 double round_to(double value, double precision) {
   double res = std::round(value / precision) * precision;

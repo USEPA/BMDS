@@ -273,11 +273,10 @@ double prUNLogisticRho[] = {0, 18};
 double prRNLogisticRho[] = {1.0, 18};
 double prNLogisticPhi[] = {0, 1e8};
 
-
-double prNctrG[] = {0, std::numeric_limits< double >::max()};   //0,max_double
-double prNctrB[] = {0, std::numeric_limits< double >::max()};  //0, max_double
-double prNctrT1[] = {-18, 18};  //-1/smax, -1/smin set programmatically
-double prNctrT2[] = {-18, 18}; //-1/smax, -1/smin set programmatically
-double prUNctrRho[] = {0, 18}; 
+double prNctrG[] = {0, std::numeric_limits<double>::max()};  // 0,max_double
+double prNctrB[] = {0, std::numeric_limits<double>::max()};  // 0, max_double
+double prNctrT1[] = {-18, 18};                               //-1/smax, -1/smin set programmatically
+double prNctrT2[] = {-18, 18};                               //-1/smax, -1/smin set programmatically
+double prUNctrRho[] = {0, 18};
 double prRNctrRho[] = {1.0, 18};
-double prNctrPhi[] = {0, 1e8}; //0, max_double
+double prNctrPhi[] = {0, 1e8};  // 0, max_double
