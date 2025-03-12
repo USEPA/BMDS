@@ -165,8 +165,12 @@ class Nctr(BmdModelNestedDichotomous):
 
         smax = max(1, max(dataset.litter_ns))
         smin = max(1, min(dataset.litter_ns))
-        model_settings.priors.update("theta1", min_value=-1.0 / smax, max_value=-1.0 / smin)
-        model_settings.priors.update("theta2", min_value=-1.0 / smax, max_value=-1.0 / smin)
+        model_settings.priors.update(
+            "theta1", initial_value=-1.0 / smin, min_value=-1.0 / smin, max_value=-1.0 / smax
+        )
+        model_settings.priors.update(
+            "theta2", initial_value=-1.0 / smin, min_value=-1.0 / smin, max_value=-1.0 / smax
+        )
 
         return model_settings
 
