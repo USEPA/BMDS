@@ -33,7 +33,8 @@ void printNestedModResult(
     bool showResultsOverride
 );
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
-std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted);
+std::vector<double> getNlogisticPrior(int ngrp, int prior_cols, bool restricted);
+std::vector<double> getNctrPrior(int ngrp, int prior_cols, bool restricted);
 void Nlogist_probs_test();
 void Nlogist_lk_test();
 void runTestMTInequalityConstraint();
@@ -4888,7 +4889,7 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols) {
   return pr;
 }
 
-std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted) {
+std::vector<double> getNlogisticPrior(int ngrp, int prior_cols, bool restricted) {
   std::vector<double> prG(prNLogisticG, prNLogisticG + prior_cols);
   std::vector<double> prB(prNLogisticB, prNLogisticB + prior_cols);
   std::vector<double> prT1(prNLogisticT1, prNLogisticT1 + prior_cols);
@@ -4917,24 +4918,59 @@ std::vector<double> getNestedPrior(int ngrp, int prior_cols, bool restricted) {
   return pr;
 }
 
+
+std::vector<double> getNctrPrior(int ngrp, int prior_cols, bool restricted) {
+  std::vector<double> prG(prNctrG, prNctrG + prior_cols);
+  std::vector<double> prB(prNctrB, prNctrB + prior_cols);
+
+  //T1 and T2 get initialized based on smin/smax from data
+  std::vector<double> prT1(prNctrT1, prNctrT1 + prior_cols);
+  std::vector<double> prT2(prNctrT2, prNctrT2 + prior_cols);
+  std::vector<double> prURho(prUNctrRho, prUNctrRho + prior_cols);
+  std::vector<double> prRRho(prRNctrRho, prRNctrRho + prior_cols);
+  std::vector<double> prPhi(prNctrPhi, prNctrPhi + prior_cols);
+
+  std::vector<double> pr;
+
+  for (int i = 0; i < prior_cols; i++) {
+    pr.push_back(prG[i]);
+    pr.push_back(prB[i]);
+    pr.push_back(prT1[i]);
+    pr.push_back(prT2[i]);
+//    pr.push_back(-9999);
+//    pr.push_back(-9999);
+    if (restricted) {
+      pr.push_back(prRRho[i]);
+    } else {
+      pr.push_back(prURho[i]);
+    }
+    for (int j = 0; j < ngrp; j++) {
+      pr.push_back(prPhi[i]);
+    }
+  }
+
+  return pr;
+}
+
 void runPythonNestedAnalysis() {
   bool showResultsOverride = true;
   struct python_nested_analysis pyAnal;
-  pyAnal.model = nlogistic;
+  //pyAnal.model = nlogistic;
+  pyAnal.model = nctr;
   bool isRestricted = true;
 
   // nested.dax
-  std::vector<double> D = {0,  0,  0,  0,  0,   0,   0,   0,   0,   0,   25,  25,  25,
-                           25, 25, 25, 25, 25,  25,  25,  50,  50,  50,  50,  50,  50,
-                           50, 50, 50, 50, 100, 100, 100, 100, 100, 100, 100, 100, 100};
-  std::vector<double> LS = {16, 9,  15, 14, 13, 9,  10, 14, 10, 11, 14, 9,  14,
-                            9,  13, 12, 10, 10, 11, 14, 11, 11, 14, 11, 10, 11,
-                            10, 15, 7,  14, 11, 14, 12, 13, 12, 14, 11, 8,  10};
-  std::vector<double> I = {1, 1, 2, 3, 3, 0, 2, 2, 1, 2, 4, 5, 6, 2, 6, 3, 1, 2, 4, 3,
-                           4, 5, 5, 4, 5, 4, 5, 6, 2, 4, 6, 6, 8, 7, 8, 6, 6, 5, 4};
-  std::vector<double> LSC = {16, 9,  15, 14, 13, 9,  10, 14, 10, 11, 14, 9,  14,
-                             9,  13, 12, 10, 10, 11, 14, 11, 11, 14, 11, 10, 11,
-                             10, 15, 7,  14, 11, 14, 12, 13, 12, 14, 11, 8,  10};
+//  std::vector<double> D = {0,  0,  0,  0,  0,   0,   0,   0,   0,   0,   25,  25,  25,
+//                           25, 25, 25, 25, 25,  25,  25,  50,  50,  50,  50,  50,  50,
+//                           50, 50, 50, 50, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+//  std::vector<double> LS = {16, 9,  15, 14, 13, 9,  10, 14, 10, 11, 14, 9,  14,
+//                            9,  13, 12, 10, 10, 11, 14, 11, 11, 14, 11, 10, 11,
+//                            10, 15, 7,  14, 11, 14, 12, 13, 12, 14, 11, 8,  10};
+//  std::vector<double> I = {1, 1, 2, 3, 3, 0, 2, 2, 1, 2, 4, 5, 6, 2, 6, 3, 1, 2, 4, 3,
+//                           4, 5, 5, 4, 5, 4, 5, 6, 2, 4, 6, 6, 8, 7, 8, 6, 6, 5, 4};
+//  std::vector<double> LSC = {16, 9,  15, 14, 13, 9,  10, 14, 10, 11, 14, 9,  14,
+//                             9,  13, 12, 10, 10, 11, 14, 11, 11, 14, 11, 10, 11,
+//                             10, 15, 7,  14, 11, 14, 12, 13, 12, 14, 11, 8,  10};
 
   //  //  testing dataset id:1
   //  std::vector<double> D = {0,    0,    0,    0,    0,    0,    0,    0,   0,   0,   0,   0,   0,
@@ -4971,43 +5007,43 @@ void runPythonNestedAnalysis() {
   //  std::vector<double> LSC = {1, 1, 2, 3, 3, 0, 2, 2, 1, 2, 4, 5, 6, 2, 6, 3, 1, 2, 4, 3,
   //                             4, 5, 5, 4, 5, 4, 5, 6, 2, 4, 6, 6, 8, 7, 8, 6, 6, 5, 4};
   //
-  //  // testing dataset id:3
-  //  std::vector<double> D = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-  //                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-  //                           0,    500,  500,  500,  500,  500,  500,  500,  500,  500,  500, 500,
-  //                           500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500, 500,
-  //                           500,  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
-  //                           1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
-  //                           1000, 1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000, 2000,
-  //                           2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
-  //                           2000, 2000, 2000, 2000, 2000, 2000, 2000, 5000, 5000, 5000, 5000,
-  //                           5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000,
-  //                           5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000};
-  //  std::vector<double> LS = {6, 6, 5, 6, 2, 7, 5, 6, 6, 6, 6, 5, 5, 1, 3, 3, 6, 2, 8, 2, 4,
-  //                            7, 5, 7, 5, 6, 4, 2, 8, 4, 4, 7, 4, 6, 8, 3, 5, 7, 6, 2, 7, 7,
-  //                            7, 5, 6, 8, 4, 8, 2, 1, 5, 6, 2, 7, 1, 3, 5, 2, 4, 8, 5, 8, 5,
-  //                            8, 7, 4, 5, 7, 3, 3, 3, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 8,
-  //                            7, 5, 5, 6, 5, 6, 6, 6, 6, 7, 7, 6, 9, 8, 6, 5, 4, 5, 6, 7, 6,
-  //                            7, 1, 2, 6, 4, 3, 5, 7, 5, 4, 5, 6, 7, 4, 6, 5, 1, 6, 3, 4};
-  //  std::vector<double> I = {0, 2, 2, 0, 0, 3, 0, 2, 1, 0, 1, 1, 0, 0, 0, 1, 0, 2, 1, 1, 0,
-  //                           0, 1, 1, 1, 1, 0, 0, 1, 2, 0, 3, 0, 2, 1, 0, 1, 0, 0, 0, 1, 2,
-  //                           3, 1, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 2, 0, 3, 4,
-  //                           0, 2, 1, 1, 2, 0, 1, 3, 1, 2, 0, 1, 1, 3, 2, 4, 2, 3, 4, 0, 5,
-  //                           1, 1, 3, 2, 5, 0, 2, 5, 6, 3, 5, 5, 6, 7, 3, 1, 4, 4, 0, 6, 0,
-  //                           7, 1, 2, 6, 4, 3, 4, 5, 5, 3, 5, 5, 7, 2, 4, 3, 1, 5, 1, 4};
-  //  std::vector<double> LSC =
-  //  {6.0,  13.0, 6.0,  7.0,  11.0, 12.0, 14.0, 12.0, 9.0,  9.0,  11.0, 7.0,
-  //                             9.0,  13.0, 4.0,  13.0, 9.0,  6.0,  9.0,  5.0,  6.0,  7.0,  11.0, 9.0,
-  //                             14.0, 7.0,  4.0,  2.0,  13.0, 12.0, 7.0,  7.0,  9.0,  9.0,  8.0,  14.0,
-  //                             9.0,  7.0,  9.0,  9.0,  10.0, 7.0,  11.0, 5.0,  10.0, 10.0, 8.0,  14.0,
-  //                             10.0, 13.0, 10.0, 14.0, 14.0, 8.0,  6.0,  3.0,  10.0, 9.0,  10.0, 9.0,
-  //                             14.0, 8.0,  14.0, 13.0, 10.0, 14.0, 6.0,  12.0, 9.0,  7.0,  14.0, 11.0,
-  //                             14.0, 9.0,  7.0,  11.0, 10.0, 14.0, 10.0, 8.0,  13.0, 11.0, 10.0, 13.0,
-  //                             7.0,  6.0,  14.0, 6.0,  7.0,  14.0, 8.0,  12.0, 6.0,  10.0, 13.0, 12.0,
-  //                             10.0, 11.0, 8.0,  6.0,  5.0,  14.0, 14.0, 13.0, 12.0, 9.0,  4.0,  13.0,
-  //                             6.0,  12.0, 3.0,  7.0,  7.0,  10.0, 14.0, 11.0, 14.0, 7.0,  4.0,  8.0,
-  //                             10.0, 13.0, 7.0,  10.0, 4.0};
-  //
+    // testing dataset id:3
+    std::vector<double> D = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                             0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                             0,    500,  500,  500,  500,  500,  500,  500,  500,  500,  500, 500,
+                             500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500, 500,
+                             500,  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+                             1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+                             1000, 1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000, 2000,
+                             2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
+                             2000, 2000, 2000, 2000, 2000, 2000, 2000, 5000, 5000, 5000, 5000,
+                             5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000,
+                             5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000};
+    std::vector<double> LS = {6, 6, 5, 6, 2, 7, 5, 6, 6, 6, 6, 5, 5, 1, 3, 3, 6, 2, 8, 2, 4,
+                              7, 5, 7, 5, 6, 4, 2, 8, 4, 4, 7, 4, 6, 8, 3, 5, 7, 6, 2, 7, 7,
+                              7, 5, 6, 8, 4, 8, 2, 1, 5, 6, 2, 7, 1, 3, 5, 2, 4, 8, 5, 8, 5,
+                              8, 7, 4, 5, 7, 3, 3, 3, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 8,
+                              7, 5, 5, 6, 5, 6, 6, 6, 6, 7, 7, 6, 9, 8, 6, 5, 4, 5, 6, 7, 6,
+                              7, 1, 2, 6, 4, 3, 5, 7, 5, 4, 5, 6, 7, 4, 6, 5, 1, 6, 3, 4};
+    std::vector<double> I = {0, 2, 2, 0, 0, 3, 0, 2, 1, 0, 1, 1, 0, 0, 0, 1, 0, 2, 1, 1, 0,
+                             0, 1, 1, 1, 1, 0, 0, 1, 2, 0, 3, 0, 2, 1, 0, 1, 0, 0, 0, 1, 2,
+                             3, 1, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 2, 0, 3, 4,
+                             0, 2, 1, 1, 2, 0, 1, 3, 1, 2, 0, 1, 1, 3, 2, 4, 2, 3, 4, 0, 5,
+                             1, 1, 3, 2, 5, 0, 2, 5, 6, 3, 5, 5, 6, 7, 3, 1, 4, 4, 0, 6, 0,
+                             7, 1, 2, 6, 4, 3, 4, 5, 5, 3, 5, 5, 7, 2, 4, 3, 1, 5, 1, 4};
+    std::vector<double> LSC =
+    {6.0,  13.0, 6.0,  7.0,  11.0, 12.0, 14.0, 12.0, 9.0,  9.0,  11.0, 7.0,
+                               9.0,  13.0, 4.0,  13.0, 9.0,  6.0,  9.0,  5.0,  6.0,  7.0,  11.0, 9.0,
+                               14.0, 7.0,  4.0,  2.0,  13.0, 12.0, 7.0,  7.0,  9.0,  9.0,  8.0,  14.0,
+                               9.0,  7.0,  9.0,  9.0,  10.0, 7.0,  11.0, 5.0,  10.0, 10.0, 8.0,  14.0,
+                               10.0, 13.0, 10.0, 14.0, 14.0, 8.0,  6.0,  3.0,  10.0, 9.0,  10.0, 9.0,
+                               14.0, 8.0,  14.0, 13.0, 10.0, 14.0, 6.0,  12.0, 9.0,  7.0,  14.0, 11.0,
+                               14.0, 9.0,  7.0,  11.0, 10.0, 14.0, 10.0, 8.0,  13.0, 11.0, 10.0, 13.0,
+                               7.0,  6.0,  14.0, 6.0,  7.0,  14.0, 8.0,  12.0, 6.0,  10.0, 13.0, 12.0,
+                               10.0, 11.0, 8.0,  6.0,  5.0,  14.0, 14.0, 13.0, 12.0, 9.0,  4.0,  13.0,
+                               6.0,  12.0, 3.0,  7.0,  7.0,  10.0, 14.0, 11.0, 14.0, 7.0,  4.0,  8.0,
+                               10.0, 13.0, 7.0,  10.0, 4.0};
+  
   //  // testing dataset id:4
   //  std::vector<double> D = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
   //                           1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -5187,7 +5223,11 @@ void runPythonNestedAnalysis() {
 
   int Nobs = pyAnal.doses.size();
   pyAnal.prior.resize(pyAnal.prior_cols * (5 + numDoseGroups), 0.0);
-  pyAnal.prior = getNestedPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
+  if (pyAnal.model == nlogistic){
+    pyAnal.prior = getNlogisticPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
+  } else {
+    pyAnal.prior = getNctrPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
+  }
 
   struct python_nested_result pyRes;
   pyAnal.parms = 5 + numDoseGroups;

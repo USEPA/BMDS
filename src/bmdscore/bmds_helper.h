@@ -397,6 +397,7 @@ struct nestedObjData {
   int ngrp;
   double smax;
   double smin;
+  double smean;
   int LSC_type;
   int ILC_type;
   double isBMDL;
@@ -411,6 +412,7 @@ struct nestedObjData {
   double BMR;
   double tol;     // tolerance for optimization
   int optimizer;  // 1=LD_SLSQP, 2=???, 3=LD_LBFGS
+  enum nested_model model;
 };
 
 #ifdef _WIN32
@@ -545,17 +547,28 @@ void validatePositiveInput(double &val);
 void probability_inrange(double *ex);
 
 double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
+double NCTR_lk(std::vector<double> p, struct nestedObjData *objData);
 
 double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
+
+double NCTR_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
 
 void Nlogist_probs(
     std::vector<double> &probs, const std::vector<double> &p, bool compgrad,
     std::vector<std::vector<double>> &gradij, struct nestedObjData *objData
 );
 
+void NCTR_probs(
+    std::vector<double> &probs, const std::vector<double> &p, bool compgrad,
+    std::vector<std::vector<double>> &gradij, struct nestedObjData *objData
+);
+
+
 double opt_nlogistic(std::vector<double> &p, struct nestedObjData *data);
+double opt_nctr(std::vector<double> &p, struct nestedObjData *data);
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
+double objfunc_nctr_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
 double nestedInequalityConstraint(
     const std::vector<double> &x, std::vector<double> &grad, void *data
 );
@@ -565,14 +578,28 @@ void Nlogist_BMD(
     double smax, double sijfixed, double xmax, struct nestedObjData *objData
 );
 
+void Nctr_BMD(
+    struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin,
+    double smax, double sijfixed, double xmax, struct nestedObjData *objData
+);
+
 void Nlogist_vcv(
     std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData,
     std::vector<std::vector<double>> &vcv
 );
 
+void NCTR_vcv(
+    std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData,
+    std::vector<std::vector<double>> &vcv
+);
+
+
 void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
-double BMDL_func(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
+void NCTR_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
+
+double BMDL_func_nlog(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
+double BMDL_func_nctr(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
 
@@ -580,22 +607,22 @@ double CHISQ(double x, int m);
 
 void outputObjData(struct nestedObjData *objData);
 
-void Nlogist_Bootstrap(
-    struct nestedObjData *objData, struct python_nested_result *pyRes, long seed, int iterations,
+void Nested_Bootstrap(
+    struct nestedObjData *objData, struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, long seed, int iterations,
     int BSLoops
 );
 
-void Nlogist_SRoI(
+void Nested_SRoI(
     struct nestedObjData *objData, struct nestedSRData *srData, std::vector<double> &SR,
     const std::vector<int> &grpSize, double bmd
 );
 
-void Nlogist_GOF(
+void Nested_GOF(
     const std::vector<double> &parms, struct nestedObjData *objData,
     struct nestedLitterData *litterData, const std::vector<int> &grpSize
 );
 
-void Nlogist_reduced(
+void Nested_reduced(
     double alpha, struct nestedObjData *objData, struct nestedReducedData *redData
 );
 
@@ -609,9 +636,17 @@ void Nlogist_Predict(
     const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P
 );
 
+void NCTR_Predict(
+    const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P
+);
+
 double calcNlogisticCLs(
     double xa, double xb, std::vector<double> &pint, struct nestedObjData *objData, bool isLower
 );
+double calcNCTRCLs(
+    double xa, double xb, std::vector<double> &pint, struct nestedObjData *objData, bool isLower
+);
+
 
 void SortNestedData(
     const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls,
