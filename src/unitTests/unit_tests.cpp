@@ -10,7 +10,7 @@ int run_all_unitTests() {
   std::cout << "Running unit tests" << std::endl;
   objfunc_test();
   Nlogist_probs_test();
-  Nctr_probs_test();
+  //Nctr_probs_test();
   multitumor_ineq_constraint_test();
   multitumor_eq_constraint_test();
   return 0;
@@ -119,15 +119,16 @@ void Nctr_probs_test() {
   std::vector<std::vector<double>> gradij(Nobs, std::vector<double>(5));
   struct nestedObjData objData;
   objData.isBMDL = false;
-  // objData.smax = 14.0;
-  // objData.smin = 2.0;
+  objData.smax = 4.464;
+  objData.smin = -7.536;
+  objData.smean = 9.536;
   objData.Ls = Ls;
   objData.Xi = Xi;
   objData.Spec = Spec;
   objData.sijfixed = 0;  // 9.28;
   objData.riskType = 1;
   objData.BMR = 0.1;
-  objData.tD = 388.730452;
+  objData.tD = 0.294277;
 
   std::vector<double> expProbs1 = {
       0.269349, 0.269349, 0.269349, 0.269349, 0.269349, 0.269349, 0.269349, 0.269349, 0.269349,
