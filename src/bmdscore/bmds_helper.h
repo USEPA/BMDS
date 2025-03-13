@@ -427,11 +427,9 @@ extern "C" {
 void cleanDouble(double *val);
 
 void rescale_dichoParms(int model, double *parms);
-
 void rescale_contParms(struct continuous_analysis *CA, double *parms);
 
 void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results *bmdsRes);
-
 void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes);
 
 void bmdsConvertSStat(
@@ -446,7 +444,6 @@ void calc_contAOD(
     struct continuous_analysis *CA, struct continuous_analysis *GOFanal,
     struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod
 );
-
 void calc_dichoAOD(
     struct dichotomous_analysis *DA, struct dichotomous_model_result *res,
     struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD, struct dichotomous_aod *aod
@@ -456,12 +453,10 @@ void collect_dicho_bmd_values(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct BMDS_results *BMDres, double estParmCount
 );
-
 void collect_dichoMA_bmd_values(
     struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res,
     struct BMDSMA_results *BMDres, double alpha
 );
-
 void collect_cont_bmd_values(
     struct continuous_analysis *anal, struct continuous_model_result *res,
     struct BMDS_results *BMDres
@@ -471,22 +466,18 @@ void clean_dicho_results(
     struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
     struct dicho_AOD *aod
 );
-
 void clean_cont_results(
     struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
     struct continuous_GOF *gof
 );
-
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
 void convertFromPythonDichoAnalysis(
     struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal
 );
-
 void convertToPythonDichoRes(
     struct dichotomous_model_result *res, struct python_dichotomous_model_result *pyRes
 );
-
 void convertFromPythonDichoRes(
     struct dichotomous_model_result *res, struct python_dichotomous_model_result *ret
 );
@@ -494,7 +485,6 @@ void convertFromPythonDichoRes(
 void selectMultitumorModel(
     struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes
 );
-
 int selectBestMultitumorModel(
     std::vector<python_dichotomous_analysis> &analModels,
     std::vector<python_dichotomous_model_result> &resModels
@@ -505,7 +495,9 @@ void BMDS_ENTRY_API __stdcall runMultitumorModel(
 );
 
 double DLgamma(double x);
+
 double LogLik_Constant(std::vector<double> Y, std::vector<double> n_group);
+
 double zeroin(
     double ax, double bx, double tol, double (*f)(int, double[], double, double), int nparm,
     double Parms[], double ck
@@ -515,18 +507,23 @@ double zeroin_nested(
     double (*f)(std::vector<double> &, double, double, struct nestedObjData *),
     std::vector<double> &Parms, double ck, struct nestedObjData *objData
 );
+
 double BMD_func(int n, double p[], double x, double ck);
+
 double getclmt(
     python_multitumor_analysis *pyAnal, python_multitumor_result *pyRes, double Dose, double target,
     double maxDose, std::vector<double> xParms, std::vector<double> fixedParm, bool isBMDL
 );
+
 void multitumorCLs(
     struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes, double Dose,
     double D, double LR, double gtol, int *is_zero
 );
+
 void Multistage_ComboBMD(
     struct python_multitumor_analysis *pyAnal, struct python_multitumor_result *pyRes
 );
+
 double objfunc_bmdl(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc_bmdu(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 double objfunc2(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
@@ -534,9 +531,12 @@ double myEqualityConstraint(const std::vector<double> &x, std::vector<double> &g
 double myInequalityConstraint1(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double myInequalityConstraint2(const std::vector<double> &x, std::vector<double> &grad, void *data);
 double myInequalityConstraint3(const std::vector<double> &x, std::vector<double> &grad, void *data);
+
 double slog(double X);
 double dslog(double P);
+
 double round_to(double value, double precision = 1.0);
+
 double ComboMaxLike2(
     int flag, double dose, double *crisk, std::vector<std::vector<double>> p,
     python_multitumor_analysis *pyAnal, python_multitumor_result *pyres
@@ -550,14 +550,12 @@ double Nlogist_lk(std::vector<double> p, struct nestedObjData *objData);
 double NCTR_lk(std::vector<double> p, struct nestedObjData *objData);
 
 double Nlogist_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
-
 double NCTR_g(std::vector<double> p, std::vector<double> &g, struct nestedObjData *objData);
 
 void Nlogist_probs(
     std::vector<double> &probs, const std::vector<double> &p, bool compgrad,
     std::vector<std::vector<double>> &gradij, struct nestedObjData *objData
 );
-
 void NCTR_probs(
     std::vector<double> &probs, const std::vector<double> &p, bool compgrad,
     std::vector<std::vector<double>> &gradij, struct nestedObjData *objData
@@ -568,6 +566,7 @@ double opt_nctr(std::vector<double> &p, struct nestedObjData *data);
 
 double objfunc_nlogistic_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
 double objfunc_nctr_ll(const std::vector<double> &p, std::vector<double> &grad, void *data);
+
 double nestedInequalityConstraint(
     const std::vector<double> &x, std::vector<double> &grad, void *data
 );
@@ -576,7 +575,6 @@ void Nlogist_BMD(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin,
     double smax, double sijfixed, double xmax, struct nestedObjData *objData
 );
-
 void Nctr_BMD(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes, double smin,
     double smax, double sijfixed, double xmax, struct nestedObjData *objData
@@ -586,21 +584,18 @@ void Nlogist_vcv(
     std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData,
     std::vector<std::vector<double>> &vcv
 );
-
 void NCTR_vcv(
     std::vector<double> &p, std::vector<bool> &bounded, struct nestedObjData *objData,
     std::vector<std::vector<double>> &vcv
 );
 
 void Nlogist_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
-
 void NCTR_grad(std::vector<double> &p, struct nestedObjData *objData, std::vector<double> &grad);
 
 double BMDL_func_nlog(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
 double BMDL_func_nctr(std::vector<double> &p, double D, double gtol, struct nestedObjData *objData);
 
 double QCHISQ(double p, int m);
-
 double CHISQ(double x, int m);
 
 void outputObjData(struct nestedObjData *objData);
@@ -631,7 +626,6 @@ void Quantal_CI(
 void Nlogist_Predict(
     const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P
 );
-
 void NCTR_Predict(
     const std::vector<double> &parms, struct nestedObjData *objData, std::vector<double> &P
 );

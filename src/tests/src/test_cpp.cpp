@@ -5223,8 +5223,10 @@ void runPythonNestedAnalysis() {
   pyAnal.prior.resize(pyAnal.prior_cols * (5 + numDoseGroups), 0.0);
   if (pyAnal.model == nlogistic) {
     pyAnal.prior = getNlogisticPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
-  } else {
+  } else if (pyAnal.model == nctr) {
     pyAnal.prior = getNctrPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
+  } else {
+    std::cout<<"Incorrect model selected for testing"<<std::endl;
   }
 
   struct python_nested_result pyRes;

@@ -2873,7 +2873,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   std::vector<std::vector<double>> vcv_tmp(pyRes->nparms, std::vector<double>(pyRes->nparms));
 
   if (pyAnal->model == nlogistic) {
-    // START NLOGIST CODE HERE
     //  compute initial estimates
     double ymin = 1.0;
     for (int i = 0; i < ngrp; i++) {
