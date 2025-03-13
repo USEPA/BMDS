@@ -28,7 +28,7 @@ class TestNestedLogistic:
         │ b           │         0 │   -18 │ 18     │
         │ theta1      │         0 │     0 │  1     │
         │ theta2      │         0 │   -18 │ 18     │
-        │ rho         │         0 │     1 │ 18     │
+        │ rho         │         1 │     1 │ 18     │
         │ phi1        │         0 │     0 │  1e+06 │
         │ phi2        │         0 │     0 │  1e+06 │
         │ phi3        │         0 │     0 │  1e+06 │
@@ -38,20 +38,20 @@ class TestNestedLogistic:
         assert m.priors_tbl() == expected.strip()
 
         # check overrides
-        m.settings.priors.update("a", min_value=1, max_value=2)
-        m.settings.priors.update("phi2", min_value=5, max_value=6)
+        m.settings.priors.update("a", initial_value=1, min_value=1, max_value=2)
+        m.settings.priors.update("phi2", initial_value=5, min_value=5, max_value=6)
         expected = dedent(
             """
         ╒═════════════╤═══════════╤═══════╤════════╕
         │ Parameter   │   Initial │   Min │    Max │
         ╞═════════════╪═══════════╪═══════╪════════╡
-        │ a           │         0 │     1 │  2     │
+        │ a           │         1 │     1 │  2     │
         │ b           │         0 │   -18 │ 18     │
         │ theta1      │         0 │     0 │  1     │
         │ theta2      │         0 │   -18 │ 18     │
-        │ rho         │         0 │     1 │ 18     │
+        │ rho         │         1 │     1 │ 18     │
         │ phi1        │         0 │     0 │  1e+06 │
-        │ phi2        │         0 │     5 │  6     │
+        │ phi2        │         5 │     5 │  6     │
         │ phi3        │         0 │     0 │  1e+06 │
         ╘═════════════╧═══════════╧═══════╧════════╛
         """
@@ -102,7 +102,7 @@ class TestNctr:
         │ b           │  0        │  0        │ 18      │
         │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
-        │ rho         │  0        │  1        │ 18      │
+        │ rho         │  1        │  1        │ 18      │
         │ phi1        │  0        │  0        │  1e+08  │
         │ phi2        │  0        │  0        │  1e+08  │
         │ phi3        │  0        │  0        │  1e+08  │
@@ -123,7 +123,7 @@ class TestNctr:
         │ b           │  0        │  0        │ 18      │
         │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
-        │ rho         │  0        │  1        │ 18      │
+        │ rho         │  1        │  1        │ 18      │
         │ phi1        │  0        │  0        │  1e+08  │
         │ phi2        │  5        │  5        │  6      │
         │ phi3        │  0        │  0        │  1e+08  │

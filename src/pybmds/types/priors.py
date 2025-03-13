@@ -138,6 +138,16 @@ class ModelPriors(BaseModel):
         if dist_type and dist_type is DistType.normal_ncv:
             for variance_prior in self.variance_priors:
                 priors.append(variance_prior)
+
+        # check values
+        for prior in priors:
+            if prior.min_value > prior.max_value:
+                raise ValueError(f"Min Value > Max Value ({prior})")
+            elif prior.initial_value < prior.min_value:
+                raise ValueError(f"Initial Value < Min Value ({prior})")
+            elif prior.initial_value > prior.max_value:
+                raise ValueError(f"Initial Value > Max Value ({prior})")
+
         return [prior.numeric_list() for prior in priors]
 
     def to_c(self, degree: int | None = None, dist_type: DistType | None = None) -> np.ndarray:

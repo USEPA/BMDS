@@ -1,5 +1,5 @@
 """
-Rao Scott Adjustment, original citation:
+Rao-Scott Transformation, original citation:
 
 Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity
 Studies. Risk Anal. 2017 May;37(5):905-917. doi: 10.1111/risa.12667. PMID: 27567129.
@@ -165,7 +165,7 @@ class RaoScott:
         h2 = report.styles.get_header_style(header_level)
 
         if show_title:
-            report.document.add_paragraph("Rao Scott Adjustment", h1)
+            report.document.add_paragraph("Rao-Scott Transformation", h1)
 
         report.document.add_paragraph("Summary", h2)
         write_setting_p(report, "Species: ", self.species.name.title())
@@ -173,8 +173,10 @@ class RaoScott:
         report.document.add_paragraph(
             add_mpl_figure(report.document, self.figure(figsize=(8, 4)), 6.5)
         )
-        report.document.add_paragraph("Rao Scott Adjustment Parameters", h2)
-        report.document.add_paragraph(df_to_table(report, self.parameter_df()))
+        report.document.add_paragraph("Rao-Scott Transformation Parameters", h2)
+        report.document.add_paragraph(
+            df_to_table(report, self.parameter_df().query(f"Species == '{self.species}'"))
+        )
         report.document.add_paragraph(
             "Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity Studies. Risk Anal. 2017 May;37(5):905-917. PMID: 27567129. DOI: 10.1111/risa.12667."
         )
@@ -189,8 +191,8 @@ class RaoScott:
             "design_ls": "Design Effect (LS)",
             "design_o": "Design Effect (OR)",
             "design_avg": "Design Effect (Average)",
-            "n_adjusted": "N (Rao Scott Adjusted)",
-            "incidence_adjusted": "Incidence (Rao Scott Adjusted)",
+            "n_adjusted": "N (Rao-Scott Transformed)",
+            "incidence_adjusted": "Incidence (Rao-Scott Transformed)",
         }
         return self.df[list(mapping.keys())].rename(columns=mapping)
 
