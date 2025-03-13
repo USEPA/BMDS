@@ -10,7 +10,7 @@ int run_all_unitTests() {
   std::cout << "Running unit tests" << std::endl;
   objfunc_test();
   Nlogist_probs_test();
-  //Nctr_probs_test();
+  // Nctr_probs_test();
   multitumor_ineq_constraint_test();
   multitumor_eq_constraint_test();
   return 0;
