@@ -76,6 +76,7 @@ class Session:
         },
         Dtype.NESTED_DICHOTOMOUS: {
             Models.NestedLogistic: nd3.NestedLogistic,
+            Models.NCTR: nd3.Nctr,
         },
     }
 

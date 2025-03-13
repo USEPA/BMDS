@@ -47,9 +47,6 @@ class BmdModelNestedDichotomous(BmdModel):
 
         return model_settings
 
-    def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.frequentist_restricted
-
     def to_cpp(self) -> NestedDichotomousAnalysis:
         return NestedDichotomousAnalysis.create(
             model_class=self.model_class,
@@ -144,16 +141,22 @@ class Nctr(BmdModelNestedDichotomous):
     bmd_model_class = NestedDichotomousModelChoices.nctr.value
     model_class = bmdscore.nested_model.nctr
 
-    def execute(self) -> NestedDichotomousResult:
-        raise NotImplementedError("TODO - future release")
-
     def get_param_names(self) -> list[str]:
         return ["a", "b", "theta1", "theta2", "rho"] + [
             f"phi{i}" for i in range(1, self.dataset.num_dose_groups + 1)
         ]
 
     def dr_curve(self, doses: np.ndarray, params: dict, fixed_lsc: float) -> np.ndarray:
-        raise NotImplementedError("TODO - future release")
+        a = params["a"]
+        b = params["b"]
+        theta1 = params["theta1"]
+        theta2 = params["theta2"]
+        rho = params["rho"]
+        d = doses.copy()
+        d[d < ZEROISH] = ZEROISH
+        smean = self.dataset.smean()
+        bkg = a + theta1 * (fixed_lsc - smean)
+        return 1 - np.exp(-1 * bkg - (b + theta2 * (fixed_lsc - smean)) * np.pow(d, rho))
 
     def get_default_prior_class(self) -> PriorClass:
         return PriorClass.frequentist_restricted
@@ -162,12 +165,14 @@ class Nctr(BmdModelNestedDichotomous):
         self, dataset: NestedDichotomousDataset, settings: InputModelSettings
     ) -> NestedDichotomousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
-
         smax = max(1, max(dataset.litter_ns))
         smin = max(1, min(dataset.litter_ns))
-        model_settings.priors.update("theta1", min_value=-1.0 / smax, max_value=-1.0 / smin)
-        model_settings.priors.update("theta2", min_value=-1.0 / smax, max_value=-1.0 / smin)
-
+        model_settings.priors.update(
+            "theta1", initial_value=-1.0 / smin, min_value=-1.0 / smin, max_value=-1.0 / smax
+        )
+        model_settings.priors.update(
+            "theta2", initial_value=-1.0 / smin, min_value=-1.0 / smin, max_value=-1.0 / smax
+        )
         return model_settings
 
 
