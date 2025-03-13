@@ -5226,7 +5226,7 @@ void runPythonNestedAnalysis() {
   } else if (pyAnal.model == nctr) {
     pyAnal.prior = getNctrPrior(numDoseGroups, pyAnal.prior_cols, isRestricted);
   } else {
-    std::cout<<"Incorrect model selected for testing"<<std::endl;
+    std::cout << "Incorrect model selected for testing" << std::endl;
   }
 
   struct python_nested_result pyRes;
