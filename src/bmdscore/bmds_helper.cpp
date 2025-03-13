@@ -2825,20 +2825,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   double smean = sum1 / nij;  // overall average lsc
 
   double sijfixed = 0;
-  if (pyAnal->model == nlogistic) {
-    if (pyAnal->LSC_type == 2) {  // control group mean
-      sijfixed = smean1;
-    } else {
-      sijfixed = smean;
-    }
-  } else {                        // nctr
-    if (pyAnal->LSC_type == 2) {  // control group mean
-      sijfixed = smean1 - smean;
-    } else {
-      sijfixed = 0;
-    }
+  // fixedLSC defined to be consistent between models
+  if (pyAnal->LSC_type == 2) {  // control group mean
+    sijfixed = smean1;
+  } else {  // overall mean or no LSC
+    sijfixed = smean;
   }
   pyRes->fixedLSC = sijfixed;
+
+  // need to redefine internally for NCTR
+  if (pyAnal->model == nctr) {
+    sijfixed -= smean;
+  }
 
   // compute default starting values for all unfixed parameters
   // revisit if we need to fix any parameters
