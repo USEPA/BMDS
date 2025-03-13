@@ -129,6 +129,9 @@ class NestedDichotomousDataset(DatasetBase):
             )
         return rows
 
+    def smean(self):
+        return np.mean(self.litter_covariates)
+
 
 class NestedDichotomousDatasetSchema(DatasetSchemaBase):
     dtype: constants.Dtype = constants.Dtype.NESTED_DICHOTOMOUS

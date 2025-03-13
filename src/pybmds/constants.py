@@ -53,6 +53,7 @@ class Models(StrEnum):
     ExponentialM5 = "Exponential-M5"
     Hill = "Hill"
     NestedLogistic = "Nested Logistic"
+    NCTR = "NCTR"
 
     @classmethod
     def VARIABLE_POLYNOMIAL(cls):

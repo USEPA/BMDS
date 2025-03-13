@@ -103,9 +103,9 @@ class TestNctr:
         │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ rho         │  1        │  1        │ 18      │
-        │ phi1        │  0        │  0        │ 18      │
-        │ phi2        │  0        │  0        │ 18      │
-        │ phi3        │  0        │  0        │ 18      │
+        │ phi1        │  0        │  0        │  1e+08  │
+        │ phi2        │  0        │  0        │  1e+08  │
+        │ phi3        │  0        │  0        │  1e+08  │
         ╘═════════════╧═══════════╧═══════════╧═════════╛
         """
         )
@@ -124,9 +124,9 @@ class TestNctr:
         │ theta1      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ theta2      │ -0.142857 │ -0.142857 │ -0.0625 │
         │ rho         │  1        │  1        │ 18      │
-        │ phi1        │  0        │  0        │ 18      │
+        │ phi1        │  0        │  0        │  1e+08  │
         │ phi2        │  5        │  5        │  6      │
-        │ phi3        │  0        │  0        │ 18      │
+        │ phi3        │  0        │  0        │  1e+08  │
         ╘═════════════╧═══════════╧═══════════╧═════════╛
         """
         )
@@ -141,3 +141,12 @@ class TestNctr:
             dataset=nd_dataset, settings=dict(priors=PriorClass.frequentist_unrestricted)
         )
         assert m.settings.priors.get_prior("rho").min_value == 0
+
+    def test_execute(self, nd_dataset4):
+        # add seed for reproducibility
+        analysis = nested_dichotomous.Nctr(nd_dataset4, settings=dict(bootstrap_seed=1))
+        result = analysis.execute()
+        assert result.has_completed is True
+        assert result.bmd > 0
+        text = analysis.text()
+        assert len(text) > 0
