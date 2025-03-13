@@ -1,4 +1,5 @@
 import re
+import warnings
 from itertools import chain
 from pathlib import Path
 
@@ -142,11 +143,11 @@ class ModelPriors(BaseModel):
         # check values
         for prior in priors:
             if prior.min_value > prior.max_value:
-                raise ValueError(f"Min Value > Max Value ({prior})")
+                warnings.warn(f"Min Value > Max Value ({prior})", stacklevel=2)
             elif prior.initial_value < prior.min_value:
-                raise ValueError(f"Initial Value < Min Value ({prior})")
+                warnings.warn(f"Initial Value < Min Value ({prior})", stacklevel=2)
             elif prior.initial_value > prior.max_value:
-                raise ValueError(f"Initial Value > Max Value ({prior})")
+                warnings.warn(f"Initial Value > Max Value ({prior})", stacklevel=2)
 
         return [prior.numeric_list() for prior in priors]
 
