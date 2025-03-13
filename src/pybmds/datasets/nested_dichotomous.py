@@ -130,7 +130,7 @@ class NestedDichotomousDataset(DatasetBase):
         return rows
 
     def smean(self):
-        return np.sum(self.litter_covariates) / float(len(self.litter_covariates))
+        return np.mean(self.litter_covariates)
 
 
 class NestedDichotomousDatasetSchema(DatasetSchemaBase):
