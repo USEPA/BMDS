@@ -220,5 +220,5 @@ class TestModelPriors:
         ]:
             priors = deepcopy(mock_prior)
             priors.update("a", **settings)
-            with pytest.raises(ValueError, match=message):
+            with pytest.warns(UserWarning, match=message):
                 priors.priors_list()
