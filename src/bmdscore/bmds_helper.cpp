@@ -3393,6 +3393,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 
   // Generate litter data results
 
+  SortNestedData(grpSize, objData.Xi, objData.Ls, objData.Yp, objData.Yn, objData.Lsc, true);
   // THIS SHOULD BE SAME FOR NCTR
   Nested_GOF(pyRes->parms, &objData, &pyRes->litter, grpSize);
   pyRes->bmdsRes.chisq = pyRes->litter.chiSq;
@@ -3422,7 +3423,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   }
 
   Nested_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
-
   Nested_Bootstrap(&objData, pyAnal, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
 }
 
@@ -3831,11 +3831,9 @@ void Nested_GOF(
   std::vector<double> Var(Nobs);
   std::vector<double> SR(Nobs);
 
-  SortNestedData(grpSize, Xi, Ls, Yp, Yn, Lsc, true);
-
   // assumes PHI_START = 5
-  for (int i = 0; i < ngrp; i++) {
-    phi[i] = parms[5 + i];
+  for (int i = 1; i <= ngrp; i++) {
+    phi[i - 1] = parms[4 + i];
   }
 
   // Predict
@@ -3855,7 +3853,7 @@ void Nested_GOF(
   for (int i = 0; i < Nobs; i++) {
     Ysum[i] = Yp[i] + Yn[i];
     Ypp[i] = Ep[i] * Ysum[i];
-    Var[i] = Ysum[i] * Ep[i] * ((1 - Ep[i]) * (1.0 + (Ysum[i] - 1.0) * phi[Xg[i]]));
+    Var[i] = Ysum[i] * Ep[i] * ((1 - Ep[i]) * (1.0 + (Ysum[i] - 1.0) * phi[Xg[i] - 1]));
   }
 
   // compute the goodness of fit test for litter data
@@ -3980,7 +3978,6 @@ void NCTR_Predict(
   std::vector<double> Xi = objData->Xi;
   std::vector<double> Lsc = objData->Lsc;
   double smean = objData->smean;
-
   double bkg;
   int Nobs = Xi.size();
   for (int i = 0; i < Nobs; i++) {
