@@ -5132,7 +5132,7 @@ void Nctr_BMD(
 
   // Search for BMDU
 
-  objData->isBMDL = true;
+  objData->isBMDL = false;
   stepsize = 0.5;  // Start close to the BMD and work upwards
   xb = BMD;
   xa = xb * (1.0 + stepsize);
@@ -5217,7 +5217,7 @@ void Nlogist_BMD(
 
   // Search for BMDU
 
-  objData->isBMDL = true;
+  objData->isBMDL = false;
   stepsize = 0.5;  // Start close to the BMD and work upwards
   xb = BMD;
   xa = xb * (1.0 + stepsize);
