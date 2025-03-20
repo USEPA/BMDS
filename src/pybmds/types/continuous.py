@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import NamedTuple, Self
+from typing import Annotated, NamedTuple, Self
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -45,12 +45,12 @@ class ContinuousModelSettings(BaseModel):
     bmr_type: ContinuousRiskType = ContinuousRiskType.StandardDeviation
     is_increasing: bool | None = None  # if None; autodetect used
     bmr: float = 1.0
-    tail_prob: float = 0.01
+    tail_prob: Annotated[float, Field(gt=0, lt=1)] = 0.01
     disttype: constants.DistType = constants.DistType.normal
-    alpha: float = 0.05
-    samples: int = 0
-    degree: int = 0  # polynomial only
-    burnin: int = 20
+    alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
+    samples: Annotated[int, Field(ge=10, le=1000)] = 100
+    degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
+    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     name: str = ""  # override model name
 
