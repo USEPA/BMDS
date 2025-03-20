@@ -95,9 +95,6 @@ class ContinuousModelSettings(BaseModel):
         if show_degree:
             data.append(["Degree", self.degree])
 
-        if self.priors.is_bayesian:
-            data.extend((["Samples", self.samples], ["Burn-in", self.burnin]))
-
         return pretty_table(data, "")
 
     @classmethod

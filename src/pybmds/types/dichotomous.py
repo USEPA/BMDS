@@ -64,9 +64,6 @@ class DichotomousModelSettings(BaseModel):
         if show_degree:
             data.append(["Degree", self.degree])
 
-        if self.priors.is_bayesian:
-            data.extend((["Samples", self.samples], ["Burn-in", self.burnin]))
-
         return pretty_table(data, "")
 
     @classmethod
@@ -77,11 +74,6 @@ class DichotomousModelSettings(BaseModel):
             "Confidence Level (one sided)": unique_items(settings, "confidence_level"),
             "Maximum Multistage Degree": str(max(setting.degree for setting in settings)),
         }
-        if settings[0].priors.is_bayesian:
-            data.update(
-                Samples=unique_items(settings, "samples"),
-                **{"Burn-in": unique_items(settings, "burnin")},
-            )
         return data
 
     def update_record(self, d: dict) -> None:
