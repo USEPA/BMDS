@@ -1479,8 +1479,9 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
       gof->calcSD.push_back(exp(sqrt(log(1.0 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)))));
     }
     for (int i = 0; i < GOFanal.n; i++) {
-      gof->estMean.push_back(exp(gof->estMean[i] + pow(exp(res->parms[res->nparms - 1]), 2) / 2));
-      gof->res.push_back(sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
+      gof->estMean[i] = (exp(gof->estMean[i] + pow(exp(res->parms[res->nparms - 1]), 2) / 2));
+      gof->estSD[i] = exp(gof->estSD[i]);
+      gof->res[i] = (sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
     }
   } else {
     for (int i = 0; i < GOFanal.n; i++) {
