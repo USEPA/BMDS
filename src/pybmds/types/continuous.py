@@ -48,7 +48,7 @@ class ContinuousModelSettings(BaseModel):
     tail_prob: Annotated[float, Field(gt=0, lt=1)] = 0.01
     disttype: constants.DistType = constants.DistType.normal
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
-    samples: Annotated[int, Field(ge=10, le=1000)] = 100
+    samples: Annotated[int, Field(ge=0, le=1000)] = 100
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
