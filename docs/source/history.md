@@ -2,6 +2,18 @@
 
 ## bmds-ui
 
+### Version 25.1
+
+*Released on 2025-XX-XX.*
+
+* Add Nested Dichotomous NCTR Model
+* Add Rao-Scott Transformation for summary Nested Dichotomous data
+* Add cloning analysis action
+* Only show dataset type selector for continuous data
+* Enable schema migration for future backwards compatibility
+* Improve database stability for BMDS Desktop
+* Package versions, security updates, etc.
+
 ### Version 24.1
 
 *Released on 2024-11-25.*
@@ -14,6 +26,19 @@
 * Initial release of `bmds-ui`; project was originally forked from [shapiromatron/bmds-server](https://github.com/shapiromatron/bmds-server)
 
 ## pybmds
+
+### Version 25.1
+
+*Released on 2025-XX-XX.*
+
+* Add Nested Dichotomous NCTR Model
+* Add Rao-Scott Transformation for summary Nested Dichotomous data
+* Add CDF to Word Report for dichotomous bayesian model average
+* Add warnings for invalid parameter settings (min, max, initial)
+* Improve plotting ranges for BMDs extrapolated beyond the dose range
+* Fix bug in Quantal Linear plotting
+* Fix bug in Scaled Residual calculations for continuous lognormal distributions
+* Remove reporting of burn-in and # of samples for bayesian modeling since pybmds uses the Laplace Approximation
 
 ### Version 24.1
 
