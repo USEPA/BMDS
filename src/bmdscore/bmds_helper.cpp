@@ -4574,7 +4574,7 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
       for (int k = 1; k <= j; k++) {
         tm = probs[i] + (k - 1) * p[plus4];
         if (tm < CloseToZero) {
-          tm1 += std::numeric_limits<double>::max();
+          tm1 += std::numeric_limits<double>::infinity();
         } else {
           tm1 += log(tm);
         }
@@ -4587,7 +4587,7 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
       for (int k = 1; k <= j; k++) {
         tm = 1.0 - probs[i] + (k - 1) * p[plus4];
         if (tm < CloseToZero) {
-          tm2 += std::numeric_limits<double>::max();
+          tm2 += std::numeric_limits<double>::infinity();
         } else {
           tm2 += log(tm);
         }
@@ -4597,7 +4597,7 @@ double NCTR_lk(std::vector<double> p, struct nestedObjData *objData) {
     for (int k = 1; k <= j; k++) {
       tm = 1.0 + (k - 1) * p[plus4];
       if (tm < CloseToZero) {
-        tm3 += std::numeric_limits<double>::max();
+        tm3 += std::numeric_limits<double>::infinity();
       } else {
         tm3 += log(tm);
       }
@@ -5112,7 +5112,7 @@ void Nctr_BMD(
   //    BMD = exp((ck - pint[1] - pint[3] * sijfixed) / pint[4]);
   //  }
   if (pint[4] <=
-      (log(ck / pint[1] * (1 + pint[3] * sijfixed))) / log(std::numeric_limits<double>::max())) {
+      (log(ck / pint[1] * (1 + pint[3] * sijfixed))) / log(std::numeric_limits<double>::infinity())) {
     BMD = 100 * xmax;
   } else {
     BMD = pow(ck / (pint[1] * (1 + pint[3] * sijfixed)), 1 / pint[4]);
