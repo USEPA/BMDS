@@ -5111,8 +5111,8 @@ void Nctr_BMD(
   //  } else {
   //    BMD = exp((ck - pint[1] - pint[3] * sijfixed) / pint[4]);
   //  }
-  if (pint[4] <=
-      (log(ck / pint[1] * (1 + pint[3] * sijfixed))) / log(std::numeric_limits<double>::infinity())) {
+  if (pint[4] <= (log(ck / pint[1] * (1 + pint[3] * sijfixed))) /
+                     log(std::numeric_limits<double>::infinity())) {
     BMD = 100 * xmax;
   } else {
     BMD = pow(ck / (pint[1] * (1 + pint[3] * sijfixed)), 1 / pint[4]);
