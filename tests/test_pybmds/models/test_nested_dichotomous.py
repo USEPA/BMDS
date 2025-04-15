@@ -77,6 +77,16 @@ class TestNestedLogistic:
         text = analysis.text()
         assert len(text) > 0
 
+    def test_float_inputs(self, nd_dataset4):
+        # add floating point inputs instead of integer values
+        nd_dataset4.litter_ns[0] += 0.25
+        nd_dataset4.incidences[0] += 0.25
+        nd_dataset4.litter_covariates[0] += 0.25
+        analysis = nested_dichotomous.NestedLogistic(nd_dataset4, settings=dict(bootstrap_seed=1))
+        result = analysis.execute()
+        assert result.has_completed is True
+        assert result.bmd > 0
+
 
 class TestNctr:
     def test_param_names(self, nd_dataset, nd_dataset4):
