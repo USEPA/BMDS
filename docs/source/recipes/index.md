@@ -25,25 +25,23 @@ custom-excel-exports
 using-r
 ```
 
-## Using Jupyter
+## Jupyter Notebooks
 
-Recipes are written using [Jupyter](https://jupyter.org/) notebooks for running data-science code in Python. There are many excellent tutorials online describing how to use Jupyter notebooks and this is beyond the scope of `pybmds`. Below are a few tips that may be helpful when copying text from the recipes.
+Recipes are written using [Jupyter](https://jupyter.org/) notebooks. There are many excellent tutorials online describing how to use Jupyter notebooks and this is beyond the scope of `pybmds`. However, a few tips are described below for new Jupyter users.
 
 ### Rendering figures
 
-The build in plotting functionality of `pybmds` uses [matplotlib](https://matplotlib.org/). To render matplotlib figures within a Jupyter notebooks, add a this line to the top of the notebook[^1]:
+The plotting functionality of `pybmds` uses the [matplotlib](https://matplotlib.org/) package to generate figures. To render matplotlib figures within a Jupyter notebook, add this "magic function" to a cell at the top of the notebook, and execute the cell to enable inline plot rendering:
 
 ```python
 %matplotlib inline
 ```
 
-After running this cell, matplotlib figures will appear inline after a cell is executed, if it is the final output in a cell.
+After running this cell, matplotlib figures will appear inline after execution, if it is the final output in a cell. For more information, see this [summary](https://stackoverflow.com/q/43027980/906385) from Stack Overflow.
 
-[^1]: A Stack Overflow [summary](https://stackoverflow.com/q/43027980/906385) of the purpose of `%matplotlib inline`
+### Displaying extra output
 
-### Display extra cell output
-
-By default, notebook cells only display the last output of the code that is executed in them, and anything that you `print` to the screen. You can also `display`[^2] content at any time in a cell by importing the display method. This will allow you to show plots or text in the middle of loops, for example:
+By default, notebook cells only display the last output of the code that is executed in them, and anything that is printed to standard out (for example anything using the `print()` function). You can also display content at any time in a cell by using the [display](https://ipython.readthedocs.io/en/stable/api/generated/IPython.display.html#IPython.display.display) method. This will allow you to show plots or text in the middle of loops, or show multiple outputs from a single cell. We utilize this function in some recipes.
 
 ```python
 from IPython.display import display
@@ -51,5 +49,4 @@ from IPython.display import display
 display(...)
 ```
 
-[^2]: For more information on displaying outputs; see the IPython [documentation](https://ipython.readthedocs.io/en/stable/api/generated/IPython.display.html#IPython.display.display).
-
+Anything that is passed to this function will be shown after the cell is executed.
