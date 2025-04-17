@@ -1,8 +1,8 @@
 import math
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 import numpy as np
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from .. import constants, plotting
 from ..utils import str_list
@@ -136,9 +136,9 @@ class NestedDichotomousDataset(DatasetBase):
 class NestedDichotomousDatasetSchema(DatasetSchemaBase):
     dtype: constants.Dtype = constants.Dtype.NESTED_DICHOTOMOUS
     metadata: DatasetMetadata
-    doses: list[float]
-    litter_ns: list[int]
-    incidences: list[int]
+    doses: list[Annotated[float, Field(ge=0)]]
+    litter_ns: list[Annotated[float, Field(gt=0)]]
+    incidences: list[Annotated[float, Field(ge=0)]]
     litter_covariates: list[float]
 
     MIN_N: ClassVar = 3

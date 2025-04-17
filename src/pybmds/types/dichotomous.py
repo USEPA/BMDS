@@ -1,3 +1,4 @@
+import warnings
 from enum import IntEnum
 from typing import Annotated, NamedTuple, Self
 
@@ -381,7 +382,10 @@ class DichotomousPlotting(BaseModel):
         extra_values = [summary.BMD] if summary.BMD >= 0 else []
         dr_x = model.dataset.dose_linspace(extra_values=extra_values)
         dr_y = clean_array(model.dr_curve(dr_x, params))
-        critical_ys = clean_array(model.dr_curve(xs, params))
+        with warnings.catch_warnings():
+            # xs may have a nan if a BMDU is not calculated; filter power warnings
+            warnings.filterwarnings("ignore", message=".*invalid value encountered in power.*")
+            critical_ys = clean_array(model.dr_curve(xs, params))
         critical_ys[critical_ys <= 0] = constants.BMDS_BLANK_VALUE
         return cls(
             dr_x=dr_x,
