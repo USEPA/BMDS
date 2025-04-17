@@ -31,7 +31,7 @@ Recipes are written using [Jupyter](https://jupyter.org/) notebooks. There are m
 
 ### Rendering figures
 
-The plotting functionality of `pybmds` uses the [matplotlib](https://matplotlib.org/) package to generate figures. To render matplotlib figures within a Jupyter notebook, add this "magic function" to a cell at the top of the notebook, and execute the cell to enable inline plot rendering:
+The built-in plotting functionality of `pybmds` uses [matplotlib](https://matplotlib.org/). To render matplotlib figures within a Jupyter notebook, add this line to the top of the notebook:
 
 ```python
 %matplotlib inline
