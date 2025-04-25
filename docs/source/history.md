@@ -4,7 +4,7 @@
 
 ### Version 25.1
 
-*Released on 2025-XX-XX.*
+*Released on 2025-04-25.*
 
 * Add Nested Dichotomous NCTR Model
 * Add Rao-Scott Transformation for summary Nested Dichotomous data
@@ -29,7 +29,7 @@
 
 ### Version 25.1
 
-*Released on 2025-XX-XX.*
+*Released on 2025-04-25.*
 
 * Add Nested Dichotomous NCTR Model
 * Add Rao-Scott Transformation for summary Nested Dichotomous data
