@@ -1,7 +1,6 @@
 import pytest
-from extra_nested_plots import generate_extra_plots
-
 import pybmds
+from pybmds.extra_nested_plots import generate_extra_plots
 
 
 @pytest.mark.mpl_image_compare
