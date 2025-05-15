@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import scipy.special
 import scipy.stats as stats
-import seaborn as sns
+from matplotlib.lines import Line2D
 
 if TYPE_CHECKING:
     import pybmds
@@ -303,48 +303,71 @@ def generate_extra_plots(session: "pybmds.Session"):
         plot_data["obs_ci_upper"] * plot_data["total_litters_per_dose"]
     )
 
-    sns.set(style="whitegrid")
-    g = sns.FacetGrid(
-        plot_data,
-        col="dose",
-        hue="model_name",
-        height=5,
-        aspect=2,
-        col_wrap=1,
-        sharey=False,
-        sharex=False,
-    )
-    g.map(
-        sns.scatterplot,
-        "Litter_Final",
-        "obs_count",
-        marker="o",
-        label="Observed",
-        s=50,
-        color="black",
-    )
+    unique_doses = plot_data["dose"].unique()
+    models = plot_data["model_name"].unique()
+    ncols = 1
+    nrows = len(unique_doses)
 
-    for ax, dose in zip(g.axes.flat, plot_data["dose"].unique(), strict=False):
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 5 * nrows), squeeze=False)
+    axes = axes.flatten()
+
+    color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    model_colors = {model: color_cycle[i % len(color_cycle)] for i, model in enumerate(models)}
+
+    for i, dose in enumerate(unique_doses):
+        ax = axes[i]
         dose_data = plot_data[plot_data["dose"] == dose]
-        means = dose_data["obs_count"]
-        lls = dose_data["obs_ci_lower_count"]
-        uls = dose_data["obs_ci_upper_count"]
-        ax.errorbar(
-            dose_data["Litter_Final"],
-            means,
-            yerr=[(means - lls).clip(0), (uls - means).clip(0)],
-            fmt="o",
-            color="black",
-            capsize=4,
-        )
 
-    g.map(sns.lineplot, "Litter_Final", "est_count", marker="o", label="Estimated")
-    g.add_legend(title="Model", label_order=["Observed", *g._legend_data.keys()])
-    g.set_axis_labels("Number of Responders", "Number of Litters")
-    g.set_titles("Dose = {col_name}")
-    for ax in g.axes.flat:
+        for model_name in models:
+            model_data = dose_data[dose_data["model_name"] == model_name]
+            if model_data.empty:
+                continue
+
+            color = model_colors[model_name]
+
+            means = model_data["obs_count"]
+            lls = model_data["obs_ci_lower_count"]
+            uls = model_data["obs_ci_upper_count"]
+            ax.errorbar(
+                model_data["Litter_Final"],
+                means,
+                yerr=[(means - lls).clip(lower=0), (uls - means).clip(lower=0)],
+                fmt="o",
+                color="black",
+                capsize=4,
+                label=f"{model_name} Observed" if i == 0 else None,
+                markersize=5,
+            )
+
+            ax.plot(
+                model_data["Litter_Final"],
+                model_data["est_count"],
+                marker="o",
+                color=color,
+                label=f"{model_name} Estimated" if i == 0 else None,
+            )
+
+        ax.set_title(f"Dose = {dose}")
         ax.set_xlabel("Number of Responders")
-        ax.tick_params(axis="x", rotation=45)
-    plt.subplots_adjust(hspace=0.4)
+        ax.set_ylabel("Number of Litters")
+        ax.tick_params(axis="x")
+        ax.set_xticks(range(int(plot_data["Litter_Final"].max()) + 1))
 
-    return g.fig
+    custom_legend = [
+        Line2D([0], [0], marker="o", color="black", linestyle="None", label="Observed")
+    ]
+
+    for model_name in models:
+        color = model_colors[model_name]
+        custom_legend.append(Line2D([0], [0], marker="o", color=color, label=f"{model_name}"))
+
+    fig.legend(
+        custom_legend,
+        [h.get_label() for h in custom_legend],
+        title="Model",
+        loc="center right",
+        bbox_to_anchor=(1.0, 0.5),
+    )
+    fig.tight_layout(rect=[0, 0, 0.75, 1])
+
+    return fig
