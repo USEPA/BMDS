@@ -1,4 +1,5 @@
 import math
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,6 +7,9 @@ import pandas as pd
 import scipy.special
 import scipy.stats as stats
 import seaborn as sns
+
+if TYPE_CHECKING:
+    import pybmds
 
 
 def generate_extra_plots(session: "pybmds.Session"):
@@ -143,7 +147,7 @@ def generate_extra_plots(session: "pybmds.Session"):
         for i in range(int(max_litter_size) + 1):
             col_name = f"Litter_{i}"
 
-            def calc_first_value(row):
+            def calc_first_value(row, i=i):
                 phi_column = dose_to_phi.get(row["dose"], None)
                 is_ilc_plus = row["model_name"] in mname
                 phi_is_zero = phi_column and phi_column in row and row[phi_column] == 0
@@ -163,7 +167,7 @@ def generate_extra_plots(session: "pybmds.Session"):
         for i in range(int(max_litter_size) + 1):
             col_name = f"Litter_Next_{i}"
 
-            def calc_second_value(row):
+            def calc_second_value(row, i=i):
                 phi_column = dose_to_phi.get(row["dose"], None)
                 is_ilc_plus = row["model_name"] in mname
                 phi_is_zero = phi_column and phi_column in row and row[phi_column] == 0
@@ -189,7 +193,7 @@ def generate_extra_plots(session: "pybmds.Session"):
         for i in range(int(max_litter_size) + 1):
             col_name = f"Litter_Final_{i}"
 
-            def calc_final_value(row):
+            def calc_final_value(row, i=i):
                 phi_column = dose_to_phi.get(row["dose"], None)
                 is_ilc_plus = row["model_name"] in mname
                 phi_is_zero = phi_column and phi_column in row and row[phi_column] == 0
@@ -335,7 +339,7 @@ def generate_extra_plots(session: "pybmds.Session"):
         )
 
     g.map(sns.lineplot, "Litter_Final", "est_count", marker="o", label="Estimated")
-    g.add_legend(title="Model", label_order=["Observed"] + list(g._legend_data.keys()))
+    g.add_legend(title="Model", label_order=["Observed", *g._legend_data.keys()])
     g.set_axis_labels("Number of Responders", "Number of Litters")
     g.set_titles("Dose = {col_name}")
     for ax in g.axes.flat:
@@ -344,5 +348,3 @@ def generate_extra_plots(session: "pybmds.Session"):
     plt.subplots_adjust(hspace=0.4)
 
     return g.fig
-
-
