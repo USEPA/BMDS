@@ -29,7 +29,7 @@ class BmdModelContinuous(BmdModel):
             model_settings.is_increasing = dataset.is_increasing
 
         # set preferred variance model if unspecified
-        if settings is None or isinstance(settings, dict) and "disttype" not in settings:
+        if settings is None or (isinstance(settings, dict) and "disttype" not in settings):
             model_settings.disttype = self.set_constant_variance_value()
 
         # get default values, may require further model customization
