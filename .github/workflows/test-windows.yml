@@ -12,13 +12,13 @@ concurrency:
 
 jobs:
   pybmds:
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: pip
       - name: Set dependency path
         shell: bash
