@@ -129,6 +129,18 @@ void calcContAIC(
   free(upperBound);
 }
 
+double calcNestedAIC( double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC){
+
+  double AIC;
+  if (penalizeAIC){
+    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
+  } else {
+    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - (fitted_df + numBounded));
+  }
+
+  return AIC;
+}
+
 double findQuantileVals(double *quant, double *val, int arrSize, double target) {
   double retVal = BMDS_MISSING;
 
@@ -3398,11 +3410,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   anovaVec.push_back(fittedAnova);
   anovaVec.push_back(redAnova);
 
-  if (pyAnal->penalizeAIC){
-    pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2 * (1.0 + redAnova.df - fittedAnova.df);
-  } else {
-    pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2 * (1.0 + redAnova.df - (fittedAnova.df + numBounded));
-  }
+
+  pyRes->bmdsRes.AIC = calcNestedAIC( fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded, pyAnal->penalizeAIC);
 
   pyRes->model_df = fittedAnova.df;
 

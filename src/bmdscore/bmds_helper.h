@@ -475,6 +475,8 @@ void calcContAIC(
     struct BMDS_results *BMDSres, bool penalizeAIC
 );
 
+double calcNestedAIC( double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC);
+
 void clean_dicho_results(
     struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
     struct dicho_AOD *aod

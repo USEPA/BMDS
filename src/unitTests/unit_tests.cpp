@@ -15,6 +15,7 @@ int run_all_unitTests() {
   multitumor_eq_constraint_test();
   dicho_AIC_penalty_test();
   cont_AIC_penalty_test();
+  nested_AIC_penalty_test();
   return 0;
 }
 
@@ -370,4 +371,17 @@ void dicho_AIC_penalty_test (){
 
 
   essentiallyEqual(AIC_unpenalized - 2,  AIC_penalized, 1e-6);
+}
+
+void nested_AIC_penalty_test (){
+  double fitted_LL = -269.735;
+  double fitted_df = 35;
+  double red_df = 38;
+  int numBounded = 5;
+  
+  double AIC_penalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, true);
+  double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, false);
+
+  essentiallyEqual(AIC_unpenalized - 2*numBounded, AIC_penalized, 1e-6);
+
 }
