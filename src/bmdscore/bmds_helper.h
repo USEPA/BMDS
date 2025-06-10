@@ -298,7 +298,6 @@ struct python_multitumor_analysis {
   int prior_cols;  // colunns in the prior
   std::vector<int>
       degree;  // degree of selected polynomial used for each ind multistage (size ndatasets)
-  bool penalizeAIC;  //whether to penalize the AIC by counting parameters that hit a bound
 };
 
 struct python_multitumor_result {
@@ -464,6 +463,16 @@ void collect_dichoMA_bmd_values(
 void collect_cont_bmd_values(
     struct continuous_analysis *anal, struct continuous_model_result *res,
     struct BMDS_results *BMDres
+);
+
+void calcDichoAIC(
+    struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
+    struct BMDS_results *BMDSres, double estParmCount, bool penalizeAIC
+);
+
+void calcContAIC(
+    struct continuous_analysis *anal, struct continuous_model_result *res,
+    struct BMDS_results *BMDSres, bool penalizeAIC
 );
 
 void clean_dicho_results(

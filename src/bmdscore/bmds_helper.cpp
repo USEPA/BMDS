@@ -77,13 +77,13 @@ void calcDichoAIC(
 
   estParmCount = anal->parms - bounded;
 
+  if (penalizeAIC){
+    estParmCount -= bounded;
+  }
+
   // if freq then model_df should be rounded to nearest whole number
   if (freqModel) estParmCount = round(estParmCount);
   BMDSres->AIC = 2 * (res->max + estParmCount);
-
-  if (!penalizeAIC) {
-    BMDSres->AIC += 2*bounded;
-  }
 
   free(lowerBound);
   free(upperBound);
@@ -125,7 +125,6 @@ void calcContAIC(
 
   BMDSres->AIC = 2 * (res->max + estParmCount);
 
-  //               //    BMDSres->AIC = -9998.0;
   free(lowerBound);
   free(upperBound);
 }
