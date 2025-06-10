@@ -51,7 +51,7 @@ int main(void) {
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
-    runPythonNestedAnalysis();
+  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();

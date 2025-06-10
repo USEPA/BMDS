@@ -77,7 +77,7 @@ void calcDichoAIC(
 
   estParmCount = anal->parms - bounded;
 
-  if (penalizeAIC){
+  if (penalizeAIC) {
     estParmCount -= bounded;
   }
 
@@ -117,7 +117,7 @@ void calcContAIC(
   int bounded = checkForBoundedParms(res->nparms, res->parms, lowerBound, upperBound, BMDSres);
 
   double estParmCount = res->model_df;
-  if (penalizeAIC){
+  if (penalizeAIC) {
     estParmCount -= bounded;
   }
   // if freq then model_df should be rounded to nearest whole number
@@ -129,10 +129,11 @@ void calcContAIC(
   free(upperBound);
 }
 
-double calcNestedAIC( double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC){
-
+double calcNestedAIC(
+    double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC
+) {
   double AIC;
-  if (penalizeAIC){
+  if (penalizeAIC) {
     AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
   } else {
     AIC = -2 * fitted_LL + 2 * (1.0 + red_df - (fitted_df + numBounded));
@@ -1360,7 +1361,6 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
     struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof,
     bool *detectAdvDir, bool *restricted, bool *penalizeAIC
 ) {
-  
   bmdsRes->BMD = BMDS_MISSING;
   bmdsRes->BMDL = BMDS_MISSING;
   bmdsRes->BMDU = BMDS_MISSING;
@@ -2317,7 +2317,6 @@ void convertToPythonContRes(
 void BMDS_ENTRY_API __stdcall pythonBMDSDicho(
     struct python_dichotomous_analysis *pyAnal, struct python_dichotomous_model_result *pyRes
 ) {
-
   // 1st convert from python struct
   dichotomous_analysis anal;
   anal.Y = new double[pyAnal->n];
@@ -2332,8 +2331,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(
   res.bmd_dist = new double[pyRes->dist_numE * 2];
   convertFromPythonDichoRes(&res, pyRes);
 
-
-  runBMDSDichoAnalysis(&anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod, &pyAnal->penalizeAIC);
+  runBMDSDichoAnalysis(
+      &anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod, &pyAnal->penalizeAIC
+  );
 
   convertToPythonDichoRes(&res, pyRes);
 }
@@ -3294,7 +3294,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       pyRes->nparms, &pyRes->parms[0], &lowerBound[0], &upperBound[0], &pyRes->bmdsRes
   );
 
-  //numBounded = 0;
+  // numBounded = 0;
 
   // remove rows and columns of vcv that correspond to bounded parms
   for (int i = 0; i < pyRes->nparms; i++) {
@@ -3410,8 +3410,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   anovaVec.push_back(fittedAnova);
   anovaVec.push_back(redAnova);
 
-
-  pyRes->bmdsRes.AIC = calcNestedAIC( fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded, pyAnal->penalizeAIC);
+  pyRes->bmdsRes.AIC =
+      calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded, pyAnal->penalizeAIC);
 
   pyRes->model_df = fittedAnova.df;
 
