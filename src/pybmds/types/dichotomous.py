@@ -32,6 +32,7 @@ _bmr_text_map = {
 
 
 class DichotomousModelSettings(BaseModel):
+    name: str = ""  # override model name
     bmr: Annotated[float, Field(gt=0)] = 0.1
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
     bmr_type: DichotomousRiskType = DichotomousRiskType.ExtraRisk
@@ -39,7 +40,7 @@ class DichotomousModelSettings(BaseModel):
     samples: Annotated[int, Field(ge=10, le=1000)] = 100
     burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
-    name: str = ""  # override model name
+    boundary_param_penalize_aic: bool = True
 
     model_config = ConfigDict(extra="forbid")
 
@@ -104,6 +105,7 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
+    boundary_param_penalize_aic: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -137,6 +139,7 @@ class DichotomousAnalysis(BaseModel):
         analysis.burnin = self.burnin
         analysis.parms = self.num_params
         analysis.prior_cols = constants.NUM_PRIOR_COLS
+        analysis.penalizeAIC = self.boundary_param_penalize_aic
         return analysis
 
     def to_cpp_result(self, analysis) -> bmdscore.python_dichotomous_model_result:
