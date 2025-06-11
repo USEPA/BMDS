@@ -53,7 +53,7 @@ int checkForBoundedParms(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, double estParmCount, bool penalizeAIC
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   bool freqModel = anal->prior[0] == 0;
 
@@ -75,7 +75,7 @@ void calcDichoAIC(
 
   int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
 
-  estParmCount = anal->parms - bounded;
+  double estParmCount = anal->parms;
 
   if (penalizeAIC) {
     estParmCount -= bounded;
@@ -162,7 +162,7 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target) 
 
 void collect_dicho_bmd_values(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, double estParmCount, bool penalizeAIC
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   int distSize = res->dist_numE * 2;
 
@@ -176,7 +176,7 @@ void collect_dicho_bmd_values(
     quant[i - distSize / 2] = res->bmd_dist[i];
   }
 
-  calcDichoAIC(anal, res, BMDSres, estParmCount, penalizeAIC);
+  calcDichoAIC(anal, res, BMDSres, penalizeAIC);
   BMDSres->BMD = findQuantileVals(quant, val, distSize / 2, 0.50);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize / 2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize / 2, 1.0 - anal->alpha);
@@ -1171,7 +1171,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
 
   double estParmCount = 0;
 
-  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount, *penalizeAIC);
+  collect_dicho_bmd_values(anal, res, bmdsRes, *penalizeAIC);
 
   // incorporate affect of bounded parameters
   int bounded = 0;

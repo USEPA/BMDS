@@ -454,7 +454,7 @@ void calc_dichoAOD(
 
 void collect_dicho_bmd_values(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDres, double estParmCount
+    struct BMDS_results *BMDres
 );
 void collect_dichoMA_bmd_values(
     struct dichotomousMA_analysis *anal, struct dichotomousMA_result *res,
@@ -467,7 +467,7 @@ void collect_cont_bmd_values(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, double estParmCount, bool penalizeAIC
+    struct BMDS_results *BMDSres, bool penalizeAIC
 );
 
 void calcContAIC(

@@ -344,7 +344,6 @@ void cont_AIC_penalty_test() {
 }
 
 void dicho_AIC_penalty_test() {
-  int estParmCount;
   struct dichotomous_analysis anal;
   anal.parms = 4;
   double prior[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -18, 0, 0, 0, 18, 1e4, 1e4, 1e4};
@@ -360,12 +359,12 @@ void dicho_AIC_penalty_test() {
 
   bool penalizeAIC;
   penalizeAIC = true;
-  calcDichoAIC(&anal, &res, &bmdsRes, estParmCount, penalizeAIC);
+  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
 
   double AIC_penalized = bmdsRes.AIC;
 
   penalizeAIC = false;
-  calcDichoAIC(&anal, &res, &bmdsRes, estParmCount, penalizeAIC);
+  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
   double AIC_unpenalized = bmdsRes.AIC;
 
   essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
