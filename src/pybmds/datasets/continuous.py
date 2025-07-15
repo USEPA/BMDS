@@ -171,6 +171,92 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         ax.legend(**plotting.LEGEND_OPTS)
         return ax.get_figure()
 
+    def fabricate_individual_responses(
+        self,
+        seed: int | None=None,
+        impose_positivity: bool = True,
+        tol: float = 0.001,
+        max_iter: int = 100000,
+        ) -> ContinuousIndividualDataset:
+            """
+            Generates individual response data from summary statistics within a specified tolerance.
+            If positivity is required, only positive numbers are kept and sampling continues.
+            If the desired statistics can't be matched within the tolerance, warn the user.
+            Returns pybmds.ContinuousIndividualDataset()
+            """
+
+            def exact_rnorm(n, target_mean, target_sd, tol, max_iter, impose_positivity=True):
+                if n == 1:
+                    return np.array([target_mean]), 0
+                if n == 2:
+                    return np.array([target_mean - target_sd, target_mean + target_sd]), 0
+
+                closest_x = None
+                closest_diff = float("inf")
+
+                for iteration in range(1, max_iter + 1):
+                    x = np.random.normal(size=n)
+                    x = (x - np.mean(x)) / np.std(x) * target_sd + target_mean
+
+                if impose_positivity:
+                    x = x[x > 0]
+                    if len(x) < n:
+                        continue
+
+                mean_diff = abs(np.mean(x) - target_mean)
+                sd_diff = abs(np.std(x) - target_sd)
+                current_diff = mean_diff + sd_diff
+
+                if current_diff < closest_diff:
+                    closest_x = x
+                    closest_diff = current_diff
+
+                if abs(np.mean(x) - target_mean) / abs(target_mean + 1e-8) < tol and \
+                   abs(np.std(x) - target_sd) / abs(target_sd + 1e-8) < tol:
+                    return x, iteration
+
+                warnings.warn("Warning: Could not match mean and sd within tolerance; using closest found.")
+
+                return closest_x, max_iter
+
+            if seed is not None:
+                np.random.seed(seed)
+            else:
+                np.random.seed(1234)
+
+            if not (len(dataset.doses) == len(dataset.ns) == len(dataset.means) == len(dataset.stdevs)):
+                raise ValueError("All input lists (doses, sample_sizes, means, sds) must be of the same length.")
+
+            all_doses = []
+            all_responses = []
+
+            for i in range(len(dataset.doses)):
+                dose = dataset.doses[i]
+                n = dataset.ns[i]
+                mu = dataset.means[i]
+                sigma = dataset.stdevs[i]
+
+                responses, iterations = _exact_rnorm(n, mu, sigma, tol, max_iter, impose_positivity=impose_positivity)
+
+                all_doses.extend([dose] * len(responses))
+
+                all_responses.extend([float(r) for r in responses])
+
+
+                print(f"Converged for Dose {dose} in {iterations} iterations")
+
+
+            return pybmds.ContinuousIndividualDataset(
+                name=dataset.metadata.name,
+                dose_name=dataset.metadata.dose_name,
+                dose_units=dataset._get_dose_units_text(),
+                response_name=dataset.metadata.response_name,
+                response_units=dataset._get_response_units_text(),
+                doses=all_doses,
+                responses=all_responses)
+
+
+
     def serialize(self) -> "ContinuousDatasetSchema":
         anova = self.anova()
         return ContinuousDatasetSchema(
