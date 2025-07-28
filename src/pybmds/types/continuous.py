@@ -181,6 +181,7 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
+        analysis.tail_prob = self.tail_prob
 
         # these 3 variables are related; if setting direction; set others to False
         analysis.isIncreasing = self.is_increasing
