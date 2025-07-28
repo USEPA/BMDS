@@ -130,7 +130,6 @@ python_files = ["test_*.py"]
 [tool.ruff]
 exclude = ["docs"]
 line-length = 100
-target-version = "py311"
 lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "ERA", "NPY", "RUF", "PTH"]
 lint.ignore = ["E501"]
 lint.isort.known-first-party = ["pybmds"]
