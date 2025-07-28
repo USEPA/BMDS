@@ -184,6 +184,7 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
+        analysis.tail_prob = self.tail_prob
         analysis.penalizeAIC = self.penalize_aic_on_boundary
 
         # these 3 variables are related; if setting direction; set others to False
