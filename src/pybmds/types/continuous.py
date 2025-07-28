@@ -54,7 +54,7 @@ class ContinuousModelSettings(BaseModel):
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
-    boundary_param_penalize_aic: bool = True
+    penalize_aic_on_boundary: bool = True
 
     model_config = ConfigDict(extra="forbid")
 
@@ -148,7 +148,7 @@ class ContinuousAnalysis(BaseModel):
     samples: int
     burnin: int
     degree: int
-    boundary_param_penalize_aic: bool
+    penalize_aic_on_boundary: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -184,7 +184,7 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
-        analysis.penalizeAIC = self.boundary_param_penalize_aic
+        analysis.penalizeAIC = self.penalize_aic_on_boundary
 
         # these 3 variables are related; if setting direction; set others to False
         analysis.isIncreasing = self.is_increasing
