@@ -3294,8 +3294,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       pyRes->nparms, &pyRes->parms[0], &lowerBound[0], &upperBound[0], &pyRes->bmdsRes
   );
 
-  // numBounded = 0;
-
   // remove rows and columns of vcv that correspond to bounded parms
   for (int i = 0; i < pyRes->nparms; i++) {
     if (pyRes->bmdsRes.bounded[i]) {
