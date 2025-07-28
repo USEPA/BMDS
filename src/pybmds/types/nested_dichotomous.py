@@ -55,6 +55,7 @@ _bmr_text_map = {
 
 
 class NestedDichotomousModelSettings(BaseModel):
+    name: str = ""  # override model name
     bmr_type: RiskType = RiskType.ExtraRisk
     bmr: float = Field(default=0.1, gt=0)
     alpha: float = Field(default=0.05, gt=0, lt=1)
@@ -64,7 +65,7 @@ class NestedDichotomousModelSettings(BaseModel):
     bootstrap_iterations: int = Field(default=1000, ge=10, le=1_000_000)
     bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1_000), ge=0, le=1_000)  # noqa: S311
     bootstrap_n: int = Field(default=3, ge=1, le=10)
-    name: str = ""  # override model name
+    penalize_aic_on_boundary: bool = True
     priors: PriorClass | ModelPriors | None = None  # if None; default used
 
     model_config = ConfigDict(extra="forbid")
@@ -160,6 +161,7 @@ class NestedDichotomousAnalysis(NamedTuple):
         analysis.numBootRuns = settings.bootstrap_n
         analysis.iterations = settings.bootstrap_iterations
         analysis.seed = settings.bootstrap_seed
+        analysis.penalizeAIC = settings.penalize_aic_on_boundary
 
         result = bmdscore.python_nested_result()
         result.nparms = analysis.parms

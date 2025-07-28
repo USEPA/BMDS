@@ -18,8 +18,8 @@ void printContModResult(
 );
 void createDichoAnalysisStructs(
     dich_model model, int modelType, bool restricted, int BMD_type, int degree, double BMR,
-    double alpha, std::vector<double> &D, std::vector<double> &Y, std::vector<double> &N,
-    python_dichotomous_analysis *anal, python_dichotomous_model_result *res
+    double alpha, bool penalizeAIC, std::vector<double> &D, std::vector<double> &Y,
+    std::vector<double> &N, python_dichotomous_analysis *anal, python_dichotomous_model_result *res
 );
 void createContAnalysisStructs(
     cont_model model, int modelType, bool restricted, distribution dist, bool detectAdvDir,
