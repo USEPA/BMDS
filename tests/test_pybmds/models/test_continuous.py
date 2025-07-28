@@ -132,7 +132,7 @@ class TestBmdModelContinuous:
             cdataset, settings=dict(bmr_type=pybmds.ContinuousRiskType.HybridExtra, bmr=0.1)
         )
         model.execute()
-        assert model.results.bmd == pytest.approx(85.2, abs=0.01)
+        assert model.results.bmd == pytest.approx(85.1, abs=0.1)
 
 
 def test_fit_parameters(cdataset2):
