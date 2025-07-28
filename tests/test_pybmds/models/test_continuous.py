@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pytest
 
 import pybmds
@@ -134,15 +135,26 @@ class TestBmdModelContinuous:
         model.execute()
         assert model.results.bmd == pytest.approx(85.1, abs=0.1)
 
-    def test_penalize_aic_on_boundary(self, cdataset2):
-        model_penalize = continuous.Power(cdataset2, settings=dict(penalize_aic_on_boundary=True))
-        model_penalize.execute()
-        model_unpenalized = continuous.Power(
-            cdataset2, settings=dict(penalize_aic_on_boundary=False)
+    def test_penalize_aic_on_boundary(self):
+        # linear dataset; the Power term should be on boundary
+        ds = pybmds.ContinuousDataset(
+            doses=[0, 50, 100, 150],
+            ns=[10, 10, 10, 10],
+            means=[10, 15, 20, 25],
+            stdevs=[2, 3, 4, 5],
         )
-        model_unpenalized.execute()
-        assert model_penalize.results.fit.aic + 2 == pytest.approx(
-            model_unpenalized.results.fit.aic, abs=0.01
+        penalized = continuous.Power(ds, settings=dict(penalize_aic_on_boundary=True))
+        penalized.execute()
+        unpenalized = continuous.Power(ds, settings=dict(penalize_aic_on_boundary=False))
+        unpenalized.execute()
+
+        assert np.isclose(
+            penalized.results.parameters.values,
+            unpenalized.results.parameters.values,
+        ).all()
+        assert np.isclose(
+            penalized.results.fit.aic + 2,
+            unpenalized.results.fit.aic,
         )
 
 

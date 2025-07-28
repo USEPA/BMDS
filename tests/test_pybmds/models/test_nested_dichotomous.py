@@ -1,8 +1,9 @@
 from textwrap import dedent
 
-import pytest
+import numpy as np
 
 from pybmds.constants import PriorClass
+from pybmds.datasets import NestedDichotomousDataset
 from pybmds.models import nested_dichotomous
 
 
@@ -90,16 +91,29 @@ class TestNestedLogistic:
         assert result.bmd > 0
 
     def test_penalize_aic_on_boundary(self, nd_dataset4):
-        model_penalize = nested_dichotomous.NestedLogistic(
-            nd_dataset4, settings=dict(penalize_aic_on_boundary=True)
+        # simulate a very linear dataset
+        ds = NestedDichotomousDataset(
+            doses=np.repeat([1, 2, 3, 4], 5).tolist(),
+            litter_ns=(np.ones(20) * 5).tolist(),
+            incidences=np.repeat([1, 2, 3, 4], 5).tolist(),
+            litter_covariates=np.repeat([1, 2, 3, 4], 5).tolist(),
         )
-        model_penalize.execute()
-        model_unpenalized = nested_dichotomous.NestedLogistic(
-            nd_dataset4, settings=dict(penalize_aic_on_boundary=False)
+        penalized = nested_dichotomous.NestedLogistic(
+            ds, settings=dict(penalize_aic_on_boundary=True)
         )
-        model_unpenalized.execute()
-        assert model_penalize.results.aic + 2 == pytest.approx(
-            model_unpenalized.results.aic, abs=0.01
+        penalized.execute()
+        unpenalized = nested_dichotomous.NestedLogistic(
+            ds, settings=dict(penalize_aic_on_boundary=False)
+        )
+        unpenalized.execute()
+
+        assert np.isclose(
+            penalized.results.parameters,
+            unpenalized.results.parameters,
+        ).all()
+        assert np.isclose(
+            penalized.results.aic - 8,  # 4 dose groups; 4 parameters penalized
+            unpenalized.results.aic,
         )
 
 
