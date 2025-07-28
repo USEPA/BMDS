@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+import pytest
+
 from pybmds.constants import PriorClass
 from pybmds.models import nested_dichotomous
 
@@ -86,6 +88,19 @@ class TestNestedLogistic:
         result = analysis.execute()
         assert result.has_completed is True
         assert result.bmd > 0
+
+    def test_penalize_aic_on_boundary(self, nd_dataset4):
+        model_penalize = nested_dichotomous.NestedLogistic(
+            nd_dataset4, settings=dict(penalize_aic_on_boundary=True)
+        )
+        model_penalize.execute()
+        model_unpenalized = nested_dichotomous.NestedLogistic(
+            nd_dataset4, settings=dict(penalize_aic_on_boundary=False)
+        )
+        model_unpenalized.execute()
+        assert model_penalize.results.aic + 2 == pytest.approx(
+            model_unpenalized.results.aic, abs=0.01
+        )
 
 
 class TestNctr:

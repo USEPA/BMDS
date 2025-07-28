@@ -127,6 +127,17 @@ class TestBmdModelContinuous:
         model = continuous.Power(cdataset, settings=dict(disttype=DistType.normal_ncv))
         assert model.settings.disttype == DistType.normal_ncv
 
+    def test_penalize_aic_on_boundary(self, cdataset2):
+        model_penalize = continuous.Power(cdataset2, settings=dict(penalize_aic_on_boundary=True))
+        model_penalize.execute()
+        model_unpenalized = continuous.Power(
+            cdataset2, settings=dict(penalize_aic_on_boundary=False)
+        )
+        model_unpenalized.execute()
+        assert model_penalize.results.fit.aic + 2 == pytest.approx(
+            model_unpenalized.results.fit.aic, abs=0.01
+        )
+
 
 def test_fit_parameters(cdataset2):
     # check fit parameters for continuous modeling

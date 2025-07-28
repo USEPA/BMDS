@@ -84,6 +84,15 @@ class TestBmdModelDichotomous:
         model.execute()
         return model.cdf_plot()
 
+    def test_penalize_aic_on_boundary(self, ddataset):
+        model_penalize = Multistage(ddataset, settings=dict(penalize_aic_on_boundary=True))
+        model_penalize.execute()
+        model_unpenalized = Multistage(ddataset, settings=dict(penalize_aic_on_boundary=False))
+        model_unpenalized.execute()
+        assert model_penalize.results.fit.aic + 2 == pytest.approx(
+            model_unpenalized.results.fit.aic, abs=0.01
+        )
+
 
 def test_dichotomous_models(ddataset2):
     # compare bmd, bmdl, bmdu, aic values
