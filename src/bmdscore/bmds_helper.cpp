@@ -53,7 +53,7 @@ int checkForBoundedParms(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, double estParmCount
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   bool freqModel = anal->prior[0] == 0;
 
@@ -75,7 +75,11 @@ void calcDichoAIC(
 
   int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
 
-  estParmCount = anal->parms - bounded;
+  double estParmCount = anal->parms;
+
+  if (penalizeAIC) {
+    estParmCount -= bounded;
+  }
 
   // if freq then model_df should be rounded to nearest whole number
   if (freqModel) estParmCount = round(estParmCount);
@@ -87,7 +91,7 @@ void calcDichoAIC(
 
 void calcContAIC(
     struct continuous_analysis *anal, struct continuous_model_result *res,
-    struct BMDS_results *BMDSres
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   bool freqModel = anal->prior[0] == 0;
 
@@ -111,17 +115,31 @@ void calcContAIC(
     }
   }
   int bounded = checkForBoundedParms(res->nparms, res->parms, lowerBound, upperBound, BMDSres);
-  // int bounded = checkForBoundedParms(anal->parms, res->parms, lowerBound, upperBound, BMDSres);
 
-  double estParmCount = res->model_df - bounded;
+  double estParmCount = res->model_df;
+  if (penalizeAIC) {
+    estParmCount -= bounded;
+  }
   // if freq then model_df should be rounded to nearest whole number
   if (freqModel) estParmCount = round(estParmCount);
 
   BMDSres->AIC = 2 * (res->max + estParmCount);
 
-  //               //    BMDSres->AIC = -9998.0;
   free(lowerBound);
   free(upperBound);
+}
+
+double calcNestedAIC(
+    double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC
+) {
+  double AIC;
+  if (penalizeAIC) {
+    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
+  } else {
+    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - (fitted_df + numBounded));
+  }
+
+  return AIC;
 }
 
 double findQuantileVals(double *quant, double *val, int arrSize, double target) {
@@ -144,7 +162,7 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target) 
 
 void collect_dicho_bmd_values(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, double estParmCount
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   int distSize = res->dist_numE * 2;
 
@@ -158,7 +176,7 @@ void collect_dicho_bmd_values(
     quant[i - distSize / 2] = res->bmd_dist[i];
   }
 
-  calcDichoAIC(anal, res, BMDSres, estParmCount);
+  calcDichoAIC(anal, res, BMDSres, penalizeAIC);
   BMDSres->BMD = findQuantileVals(quant, val, distSize / 2, 0.50);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize / 2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize / 2, 1.0 - anal->alpha);
@@ -206,7 +224,7 @@ void collect_dichoMA_bmd_values(
 
 void collect_cont_bmd_values(
     struct continuous_analysis *anal, struct continuous_model_result *res,
-    struct BMDS_results *BMDSres
+    struct BMDS_results *BMDSres, bool penalizeAIC
 ) {
   int distSize = res->dist_numE * 2;
 
@@ -221,7 +239,7 @@ void collect_cont_bmd_values(
     contQuant[i - distSize / 2] = res->bmd_dist[i];
   }
 
-  calcContAIC(anal, res, BMDSres);
+  calcContAIC(anal, res, BMDSres, penalizeAIC);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize / 2, 0.50);
   BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize / 2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize / 2, 1.0 - anal->alpha);
@@ -1044,7 +1062,8 @@ double dslog(double P) {
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD
+    struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
+    bool *penalizeAIC
 ) {
   bmdsRes->validResult = false;
   bmdsRes->slopeFactor = BMDS_MISSING;
@@ -1151,7 +1170,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
   rescale_dichoParms(anal->model, res->parms);
 
   double estParmCount = 0;
-  collect_dicho_bmd_values(anal, res, bmdsRes, estParmCount);
+
+  collect_dicho_bmd_values(anal, res, bmdsRes, *penalizeAIC);
 
   // incorporate affect of bounded parameters
   int bounded = 0;
@@ -1339,7 +1359,7 @@ void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
     struct continuous_analysis *anal, struct continuous_model_result *res,
     struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof,
-    bool *detectAdvDir, bool *restricted
+    bool *detectAdvDir, bool *restricted, bool *penalizeAIC
 ) {
   bmdsRes->BMD = BMDS_MISSING;
   bmdsRes->BMDL = BMDS_MISSING;
@@ -1512,7 +1532,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
   bmdsRes->BIC_equiv =
       res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
-  collect_cont_bmd_values(anal, res, bmdsRes);
+  collect_cont_bmd_values(anal, res, bmdsRes, *penalizeAIC);
 
   aod->LL.resize(5);
   aod->nParms.resize(5);
@@ -2311,7 +2331,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSDicho(
   res.bmd_dist = new double[pyRes->dist_numE * 2];
   convertFromPythonDichoRes(&res, pyRes);
 
-  runBMDSDichoAnalysis(&anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod);
+  runBMDSDichoAnalysis(
+      &anal, &res, &pyRes->gof, &pyRes->bmdsRes, &pyRes->aod, &pyAnal->penalizeAIC
+  );
 
   convertToPythonDichoRes(&res, pyRes);
 }
@@ -2412,7 +2434,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(
 
   runBMDSContAnalysis(
       &anal, &res, &pyRes->bmdsRes, &pyRes->aod, &pyRes->gof, &pyAnal->detectAdvDir,
-      &pyAnal->restricted
+      &pyAnal->restricted, &pyAnal->penalizeAIC
   );
 
   convertToPythonContRes(&res, pyRes);
@@ -3272,8 +3294,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
       pyRes->nparms, &pyRes->parms[0], &lowerBound[0], &upperBound[0], &pyRes->bmdsRes
   );
 
-  numBounded = 0;
-
   // remove rows and columns of vcv that correspond to bounded parms
   for (int i = 0; i < pyRes->nparms; i++) {
     if (pyRes->bmdsRes.bounded[i]) {
@@ -3388,7 +3408,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   anovaVec.push_back(fittedAnova);
   anovaVec.push_back(redAnova);
 
-  pyRes->bmdsRes.AIC = -2 * fittedAnova.LL + 2 * (1.0 + redAnova.df - fittedAnova.df);
+  pyRes->bmdsRes.AIC =
+      calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded, pyAnal->penalizeAIC);
 
   pyRes->model_df = fittedAnova.df;
 

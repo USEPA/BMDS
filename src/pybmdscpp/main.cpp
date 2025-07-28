@@ -183,7 +183,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("samples", &python_dichotomous_analysis::samples)
       .def_readwrite("burnin", &python_dichotomous_analysis::burnin)
       .def_readwrite("parms", &python_dichotomous_analysis::parms)
-      .def_readwrite("prior_cols", &python_dichotomous_analysis::prior_cols);
+      .def_readwrite("prior_cols", &python_dichotomous_analysis::prior_cols)
+      .def_readwrite("penalizeAIC", &python_dichotomous_analysis::penalizeAIC);
 
   py::class_<python_dichotomous_model_result>(m, "python_dichotomous_model_result")
       .def(py::init<>())
@@ -248,7 +249,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("prior_cols", &python_continuous_analysis::prior_cols)
       .def_readwrite("transform_dose", &python_continuous_analysis::transform_dose)
       .def_readwrite("restricted", &python_continuous_analysis::restricted)
-      .def_readwrite("detectAdvDir", &python_continuous_analysis::detectAdvDir);
+      .def_readwrite("detectAdvDir", &python_continuous_analysis::detectAdvDir)
+      .def_readwrite("penalizeAIC", &python_continuous_analysis::penalizeAIC);
 
   py::class_<python_continuous_model_result>(m, "python_continuous_model_result")
       .def(py::init<>())
@@ -312,7 +314,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("alpha", &python_nested_analysis::alpha)
       .def_readwrite("numBootRuns", &python_nested_analysis::numBootRuns)
       .def_readwrite("iterations", &python_nested_analysis::iterations)
-      .def_readwrite("seed", &python_nested_analysis::seed);
+      .def_readwrite("seed", &python_nested_analysis::seed)
+      .def_readwrite("penalizeAIC", &python_nested_analysis::penalizeAIC);
 
   py::class_<python_nested_result>(m, "python_nested_result")
       .def(py::init<>())
