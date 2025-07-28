@@ -127,6 +127,13 @@ class TestBmdModelContinuous:
         model = continuous.Power(cdataset, settings=dict(disttype=DistType.normal_ncv))
         assert model.settings.disttype == DistType.normal_ncv
 
+    def test_hybrid_model(self, cdataset):
+        model = continuous.ExponentialM3(
+            cdataset, settings=dict(bmr_type=pybmds.ContinuousRiskType.HybridExtra, bmr=0.1)
+        )
+        model.execute()
+        assert model.results.bmd == pytest.approx(85.1, abs=0.1)
+
 
 def test_fit_parameters(cdataset2):
     # check fit parameters for continuous modeling
