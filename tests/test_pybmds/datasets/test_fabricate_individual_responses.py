@@ -74,9 +74,9 @@ class TestFabricateIndividualResponses:
 
         fabricated = dataset.fabricate_individual_responses(seed=123, impose_positivity=True)
 
-        assert all(r > 0 for r in fabricated.responses), (
-            "Found non-positive response despite impose_positivity=True"
-        )
+        assert all(
+            r > 0 for r in fabricated.responses
+        ), "Found non-positive response despite impose_positivity=True"
 
     def test_impose_positivity_disabled(self):
         dataset = ContinuousDataset(
