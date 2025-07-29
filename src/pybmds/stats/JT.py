@@ -13,7 +13,7 @@ def jonckheere(x, group, alternative="two.sided", nperm=None):
 
     if not np.issubdtype(x.dtype, np.number):
         raise ValueError("Data needs to be numeric")
-    if not (np.issubdtype(group.dtype, np.number) or np.issubdtype(group.dtype, np.object)):
+    if not (np.issubdtype(group.dtype, np.number) or np.issubdtype(group.dtype, object)):
         raise ValueError("Group needs to be numeric or ordered factor")
     if len(group) != len(x):
         raise ValueError("Data and group values need to be the same length")
