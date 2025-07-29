@@ -13,6 +13,9 @@ int run_all_unitTests() {
   // Nctr_probs_test();
   multitumor_ineq_constraint_test();
   multitumor_eq_constraint_test();
+  dicho_AIC_penalty_test();
+  cont_AIC_penalty_test();
+  nested_AIC_penalty_test();
   return 0;
 }
 
@@ -311,4 +314,70 @@ void multitumor_eq_constraint_test() {
   for (int i = 0; i < grad.size(); i++) {
     essentiallyEqual(grad[i], expGrad[i], 1e-6);
   }
+}
+
+void cont_AIC_penalty_test() {
+  struct continuous_analysis anal;
+  anal.parms = 4;
+  double prior[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0.1, 1, 0.2, 1, -100, -100, 1, -18, 100, 100, 18, 18};
+  anal.prior = prior;
+  anal.model = power;
+
+  struct BMDS_results bmdsRes;
+  struct continuous_model_result res;
+  double parm[4] = {5.05487, -0.0260177, 1, 0.698018};
+  res.nparms = 4;
+  res.parms = parm;
+  res.max = 175.027;
+
+  bool penalizeAIC;
+  penalizeAIC = true;
+  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+
+  double AIC_penalized = bmdsRes.AIC;
+
+  penalizeAIC = false;
+  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  double AIC_unpenalized = bmdsRes.AIC;
+
+  essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
+}
+
+void dicho_AIC_penalty_test() {
+  struct dichotomous_analysis anal;
+  anal.parms = 4;
+  double prior[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -18, 0, 0, 0, 18, 1e4, 1e4, 1e4};
+  anal.prior = prior;
+  anal.model = d_multistage;
+
+  struct BMDS_results bmdsRes;
+  struct dichotomous_model_result res;
+  double parm[4] = {1.523e-8, 0, 1.05565e-5, 2.39079e-7};
+  res.nparms = 4;
+  res.parms = parm;
+  res.max = 178.237;
+
+  bool penalizeAIC;
+  penalizeAIC = true;
+  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+
+  double AIC_penalized = bmdsRes.AIC;
+
+  penalizeAIC = false;
+  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  double AIC_unpenalized = bmdsRes.AIC;
+
+  essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
+}
+
+void nested_AIC_penalty_test() {
+  double fitted_LL = -269.735;
+  double fitted_df = 35;
+  double red_df = 38;
+  int numBounded = 5;
+
+  double AIC_penalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, true);
+  double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, false);
+
+  essentiallyEqual(AIC_unpenalized - 2 * numBounded, AIC_penalized, 1e-6);
 }

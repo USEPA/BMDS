@@ -94,4 +94,4 @@ class TestContinuousAnalysisCPPStructs:
         text = str(model.structs)
         assert """- python_continuous_analysis""" in text
         assert """- python_continuous_model_result""" in text
-        assert len(text.splitlines()) == 71
+        assert len(text.splitlines()) == 72
