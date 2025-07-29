@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pybmds.stats import jonckheere
+from pybmds.stats.JT import jonckheere
 
 dummy_data = np.array([1, 2, 3, 4, 5, 6])
 dummy_group = np.array([1, 1, 2, 2, 3, 3])
