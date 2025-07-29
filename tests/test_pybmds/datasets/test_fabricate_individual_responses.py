@@ -53,7 +53,7 @@ class TestFabricateIndividualResponses:
             doses=[0.0, 1.0, 2.0, 3.0],
             ns=[200, 200, 200, 200],
             means=[1.0, 2.0, 3.0, 4.0],
-            stdevs=[0.1, 0.2, 0.3, 0.4],
+            stdevs=[2.1, 2.2, 2.3, 2.4],
             name="UnrealisticToleranceTest",
         )
 
