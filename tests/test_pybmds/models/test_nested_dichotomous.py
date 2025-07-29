@@ -7,7 +7,7 @@ import pybmds
 from pybmds.constants import PriorClass
 from pybmds.datasets import NestedDichotomousDataset
 from pybmds.models import nested_dichotomous
-from pybmds.plotting.nested_dichotomous import generate_extra_plots
+from pybmds.plotting.nested_dichotomous import dose_litter_response_plot
 
 
 class TestNestedLogistic:
@@ -194,11 +194,16 @@ class TestNctr:
         assert len(text) > 0
 
 
-@pytest.mark.mpl_image_compare
-def test_nested_plot(nd_dataset4):
-    session = pybmds.Session(dataset=nd_dataset4)
-    session.add_default_models(
-        settings={"litter_specific_covariate": 1, "intralitter_correlation": 1},
-    )
-    session.execute()
-    return generate_extra_plots(session)
+class TestSession:
+    @pytest.mark.mpl_image_compare
+    def test_dose_litter_response_plot(self, nd_dataset4):
+        session = pybmds.Session(dataset=nd_dataset4)
+        for settings in [
+            {"litter_specific_covariate": 1, "intralitter_correlation": 1},
+            {"litter_specific_covariate": 1, "intralitter_correlation": 0},
+            {"litter_specific_covariate": 0, "intralitter_correlation": 1},
+            {"litter_specific_covariate": 0, "intralitter_correlation": 0},
+        ]:
+            session.add_default_models(settings=settings)
+        session.execute()
+        return dose_litter_response_plot(session)

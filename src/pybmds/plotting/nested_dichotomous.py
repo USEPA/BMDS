@@ -3,16 +3,16 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.special
-import scipy.stats as stats
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from scipy.special import gamma
+from scipy.stats import norm
 
 from ..session import Session
 from .common import create_empty_figure
 
 
-def _calc_alpha(row, dose_to_phi):
+def _calc_alpha(row, dose_to_phi) -> float | None:
     """
     For ilc+ models, if phi is estimated for a specific dose group, we calculate the parameters of a beta distribution.
     This function calculates alpha.
@@ -24,7 +24,7 @@ def _calc_alpha(row, dose_to_phi):
     return None
 
 
-def _calc_rd(row, dose_to_phi):
+def _calc_rd(row, dose_to_phi) -> float | None:
     """
     For ilc+ models with phi_i > 0, we calculate Rd. For x in (0, 1, 2, …, n) the probability mass function
     defining the probability of observing x responders in a litter of size n in group d is defined as Rd.
@@ -43,19 +43,15 @@ def _calc_rd(row, dose_to_phi):
             return None
 
         return (
-            scipy.special.gamma(litter_size + 1)
-            * scipy.special.gamma(alpha + beta)
-            / (
-                scipy.special.gamma(alpha)
-                * scipy.special.gamma(beta)
-                * scipy.special.gamma(litter_size + alpha + beta)
-            )
+            gamma(litter_size + 1)
+            * gamma(alpha + beta)
+            / (gamma(alpha) * gamma(beta) * gamma(litter_size + alpha + beta))
         )
 
     return None
 
 
-def _generate_litter_columns(df: pd.DataFrame, dose_to_phi: dict):
+def _generate_litter_columns(df: pd.DataFrame, dose_to_phi: dict) -> pd.DataFrame:
     """
     This function goes through the methodology for both ilc+ and ilc- models.
 
@@ -102,9 +98,9 @@ def _generate_litter_columns(df: pd.DataFrame, dose_to_phi: dict):
                 if i > row["litter_size"]:
                     return 0
                 return (
-                    scipy.special.gamma(i + row["alpha"])
-                    * scipy.special.gamma(row["litter_size"] - i + row["beta"])
-                    / (scipy.special.gamma(i + 1) * scipy.special.gamma(row["litter_size"] - i + 1))
+                    gamma(i + row["alpha"])
+                    * gamma(row["litter_size"] - i + row["beta"])
+                    / (gamma(i + 1) * gamma(row["litter_size"] - i + 1))
                 )
             else:
                 return row["est_prob"] ** i * (1 - row["est_prob"]) ** (row["litter_size"] - i)
@@ -121,18 +117,15 @@ def _generate_litter_columns(df: pd.DataFrame, dose_to_phi: dict):
         litter_next[i] = df.apply(calc_litter_next, axis=1)
         litter_final[i] = df.apply(calc_litter_final, axis=1)
 
-    df_with_final = pd.concat([df.copy(), litter_final], axis=1)
-    return df_with_final
+    return pd.concat([df.copy(), litter_final], axis=1)
 
 
 def _sum_litter_by_dose(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Estimated counts for each dose group
+    Estimated counts for each dose group.
     """
     litter_final_cols = [col for col in df.columns if isinstance(col, int)]
-    grouped_df = df.groupby(["dose", "model_name"])[litter_final_cols].sum().reset_index()
-
-    return grouped_df
+    return df.groupby(["dose", "model_name"])[litter_final_cols].sum().reset_index()
 
 
 def _count_litter_obs(df: pd.DataFrame) -> pd.DataFrame:
@@ -141,24 +134,20 @@ def _count_litter_obs(df: pd.DataFrame) -> pd.DataFrame:
     """
     litter_final_cols = [col for col in df.columns if isinstance(col, int)]
 
-    result_df = pd.DataFrame()
-
     grouped_df = df.groupby(["dose", "model_name"])
-
-    result_df["dose"] = grouped_df["dose"].first().values
-    result_df["model_name"] = grouped_df["model_name"].first().values
-
+    result_df = pd.DataFrame(
+        data=dict(
+            dose=grouped_df["dose"].first().values,
+            model_name=grouped_df["model_name"].first().values,
+        )
+    )
     for litter_col in litter_final_cols:
         counts = []
-
         for _, group in grouped_df:
             count = (group["obs"] == litter_col).sum()
             counts.append(count)
-
         result_df[litter_col] = counts
-
     result_df.reset_index(drop=True, inplace=True)
-
     return result_df
 
 
@@ -166,15 +155,13 @@ def _add_all_doses(counted_df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds rows at the end for the estimated and observed values for all doses
     """
-    summed_df = counted_df.groupby("model_name")[
-        counted_df.columns.difference(["dose", "model_name"])
-    ].sum()
-    summed_df["dose"] = "All"
-    summed_df.reset_index(inplace=True)
-
-    final_df = pd.concat([counted_df, summed_df], ignore_index=True)
-
-    return final_df
+    summed_df = (
+        counted_df.groupby("model_name")[counted_df.columns.difference(["dose", "model_name"])]
+        .sum()
+        .reset_index()
+        .assign(dose="All")
+    )
+    return pd.concat([counted_df, summed_df], ignore_index=True)
 
 
 def _transform(observed_df: pd.DataFrame, estimated_df: pd.DataFrame) -> pd.DataFrame:
@@ -196,7 +183,7 @@ def _calculate_plotting(incidence: float, n: float, alpha: float = 0.05):
     intervals on the observed proportions (independent of model).
     """
     p = incidence / float(n)
-    z = stats.norm.ppf(1 - alpha / 2)
+    z = norm.ppf(1 - alpha / 2)
     z2 = z * z
     q = 1.0 - p
     tmp1 = 2 * n * p + z2
@@ -205,7 +192,7 @@ def _calculate_plotting(incidence: float, n: float, alpha: float = 0.05):
     return p, ll, ul
 
 
-def get_plotting_data(session: Session) -> pd.DataFrame:
+def dose_litter_response_data(session: Session) -> pd.DataFrame:
     """
     Generate data for plotting nested litter plots comparing observed vs estimated responder
     distributions for each dose level.
@@ -225,22 +212,21 @@ def get_plotting_data(session: Session) -> pd.DataFrame:
         name = model.name()
         param_map = dict(zip(res.parameter_names, res.parameters, strict=True))
         ilc_est = model.settings.intralitter_correlation
-
         for i in range(len(res.litter.dose)):
-            litter = {
-                "bmds_model_index": j,
-                "model_name": name,
-                "ilc_est": ilc_est,
-                "dose": res.litter.dose[i],
-                "est_prob": res.litter.estimated_probabilities[i],
-                "lsc": res.litter.lsc[i],
-                "litter_size": res.litter.litter_size[i],
-                "obs": res.litter.observed[i],
-                "scaled_residuals": res.litter.scaled_residuals[i],
-            }
-
-            litter.update(param_map)
-            model_res.append(litter)
+            model_res.append(
+                {
+                    "bmds_model_index": j,
+                    "model_name": name,
+                    "ilc_est": ilc_est,
+                    "dose": res.litter.dose[i],
+                    "est_prob": res.litter.estimated_probabilities[i],
+                    "lsc": res.litter.lsc[i],
+                    "litter_size": res.litter.litter_size[i],
+                    "obs": res.litter.observed[i],
+                    "scaled_residuals": res.litter.scaled_residuals[i],
+                    **param_map,
+                }
+            )
 
     final = pd.DataFrame(model_res)
 
@@ -264,16 +250,12 @@ def get_plotting_data(session: Session) -> pd.DataFrame:
         axis=1,
         result_type="expand",
     )
-    plot_data["obs_ci_lower_count"] = (
-        plot_data["obs_ci_lower"] * plot_data["total_litters_per_dose"]
-    )
-    plot_data["obs_ci_upper_count"] = (
-        plot_data["obs_ci_upper"] * plot_data["total_litters_per_dose"]
-    )
+    plot_data["obs_ci_lower_count"] = plot_data.obs_ci_lower * plot_data.total_litters_per_dose
+    plot_data["obs_ci_upper_count"] = plot_data.obs_ci_upper * plot_data.total_litters_per_dose
     return plot_data
 
 
-def generate_extra_plots(session: Session) -> Figure:
+def dose_litter_response_plot(session: Session) -> Figure:
     """
     Generate nested litter plots comparing observed vs estimated responder distributions
     for each dose level.
@@ -284,7 +266,7 @@ def generate_extra_plots(session: Session) -> Figure:
     Returns:
         Figure: a maptlotlib figure.
     """
-    plot_data = get_plotting_data(session)
+    plot_data = dose_litter_response_data(session)
     plot_data["lls"] = (plot_data.obs_count - plot_data.obs_ci_lower_count).clip(lower=0)
     plot_data["uls"] = (plot_data.obs_ci_upper_count - plot_data.obs_count).clip(lower=0)
 
@@ -316,9 +298,9 @@ def generate_extra_plots(session: Session) -> Figure:
             ax.plot(
                 model_data.litter_final,
                 model_data.est_count,
+                color=color,
                 marker=".",
                 linestyle="-",
-                color=color,
             )
         ax.margins(x=0.05, y=0.05)
         ax.set_title(f"Dose = {dose}")
@@ -328,10 +310,12 @@ def generate_extra_plots(session: Session) -> Figure:
         ax.set_xticks(range(int(plot_data["litter_final"].max()) + 1))
 
     # build legend
-    legend = [Line2D([0], [0], marker="o", color="grey", linestyle="None", label="Observations")]
-    for model_name in models:
-        color = model_colors[model_name]
-        legend.append(Line2D([0], [0], marker="o", color=color, label=f"{model_name}"))
+    legend = [
+        Line2D([0], [0], marker="o", color=model_colors[model_name], label=f"{model_name}")
+        for model_name in models
+    ]
+    obs = Line2D([0], [0], marker="o", color="grey", linestyle="None", label="Observations")
+    legend.insert(0, obs)
 
     fig.legend(
         legend,
