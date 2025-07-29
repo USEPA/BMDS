@@ -17,17 +17,18 @@ def exact_rnorm(
     Args:
         n (int): Number of samples to generate.
         target_mean (float): The target mean of the samples.
-        target_sd (float): The target standard deviation fo the samples.
+        target_sd (float): The target standard deviation of the samples.
         seed (int, optional): Random number seed; defaults to 42.
         tolerance (float, optional): Maximum difference between simulated and target values.
-        max_iterations (int, optional): _Maximum iterations to attempt.
+        max_iterations (int, optional): Maximum iterations to attempt.
         impose_positivity (bool, optional): Require values to be positive.
 
     Raises:
-        ValueError: _description_
+        ValueError: if values cannot be generated which meets the desired summary statistics
+            within the tolerance and number of iterations
 
     Returns:
-        tuple[np.ndarray, int]: _description_
+        tuple[np.ndarray, int]: The sampled values and number of iterations taken.
     """
     if n == 1:
         if target_sd != 0:
