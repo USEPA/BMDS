@@ -43,6 +43,7 @@ _bmr_text_map = {
 
 
 class ContinuousModelSettings(BaseModel):
+    name: str = ""  # override model name
     bmr_type: ContinuousRiskType = ContinuousRiskType.StandardDeviation
     is_increasing: bool | None = None  # if None; autodetect used
     bmr: float = 1.0
@@ -53,7 +54,7 @@ class ContinuousModelSettings(BaseModel):
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
-    name: str = ""  # override model name
+    penalize_aic_on_boundary: bool = True
 
     model_config = ConfigDict(extra="forbid")
 
@@ -147,6 +148,8 @@ class ContinuousAnalysis(BaseModel):
     samples: int
     burnin: int
     degree: int
+    penalize_aic_on_boundary: bool
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
@@ -181,6 +184,8 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
+        analysis.tail_prob = self.tail_prob
+        analysis.penalizeAIC = self.penalize_aic_on_boundary
 
         # these 3 variables are related; if setting direction; set others to False
         analysis.isIncreasing = self.is_increasing

@@ -66,6 +66,7 @@ class BmdModelContinuous(BmdModel):
             samples=self.settings.samples,
             burnin=self.settings.burnin,
             degree=self.settings.degree,
+            penalize_aic_on_boundary=self.settings.penalize_aic_on_boundary,
         )
 
     def execute(self) -> ContinuousResult:
