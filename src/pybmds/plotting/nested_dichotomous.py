@@ -8,7 +8,8 @@ import scipy.stats as stats
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from pybmds.session import Session
+from ..session import Session
+from .common import create_empty_figure
 
 
 def _calc_alpha(row, dose_to_phi):
@@ -54,16 +55,23 @@ def _calc_rd(row, dose_to_phi):
     return None
 
 
-def _generate_litter_columns(df, dose_to_phi):
+def _generate_litter_columns(df: pd.DataFrame, dose_to_phi: dict):
     """
-    This function goes through the methodology for both ilc+ and ilc- models. If an ilc+ model has phi = 0, it will follow the ilc- approach.
-    "litter" is the binomial coefficient representing the number of ways to select (i) responders from a litter of size (n). In ilc+ models, this term is always 1,
-    as the litter-level variability is already incorporated into the beta-binomial structure. In ilc- models, this follows the standard binomial formulation.
-    "litter_next" is the conditional probability of exactly (i) responders in a litter of size (n). In ilc+ models, this is computed using the beta-binomial probability.
-    In ilc- models, this is computed using the binomial probability.
-    "litter_final" is the expected number of litters with exactly (i) responders in dose group (d), obtained by multiplying litter and litter_next.
-    For ilc+ models, since litter=1, we have litter_final=litter_next*Rd.
-    For ilc- models, we have litter_final=litter*litter_next.
+    This function goes through the methodology for both ilc+ and ilc- models.
+
+    If an ilc+ model has phi = 0, it will follow the ilc- approach.
+
+    * "litter" is the binomial coefficient representing the number of ways to select (i)
+        responders from a litter of size (n). In ilc+ models, this term is always 1,
+        as the litter-level variability is already incorporated into the beta-binomial
+        structure. In ilc- models, this follows the standard binomial formulation.
+    * "litter_next" is the conditional probability of exactly (i) responders in a litter
+        of size (n). In ilc+ models, this is computed using the beta-binomial probability.
+        In ilc- models, this is computed using the binomial probability.
+    * "litter_final" is the expected number of litters with exactly (i) responders in dose
+        group (d), obtained by multiplying litter and litter_next.
+        For ilc+ models, since litter=1, we have litter_final=litter_next*Rd.
+        For ilc- models, we have litter_final=litter*litter_next.
     """
     max_litter_size = int(df["litter_size"].max())
 
@@ -117,7 +125,7 @@ def _generate_litter_columns(df, dose_to_phi):
     return df_with_final
 
 
-def _sum_litter_by_dose(df):
+def _sum_litter_by_dose(df: pd.DataFrame) -> pd.DataFrame:
     """
     Estimated counts for each dose group
     """
@@ -127,7 +135,7 @@ def _sum_litter_by_dose(df):
     return grouped_df
 
 
-def _count_litter_obs(df):
+def _count_litter_obs(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates the number of litters in each dose group that have exactly x responders
     """
@@ -154,7 +162,7 @@ def _count_litter_obs(df):
     return result_df
 
 
-def _add_all_doses(counted_df):
+def _add_all_doses(counted_df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds rows at the end for the estimated and observed values for all doses
     """
@@ -169,26 +177,23 @@ def _add_all_doses(counted_df):
     return final_df
 
 
-def _transform(observed_df, estimated_df):
+def _transform(observed_df: pd.DataFrame, estimated_df: pd.DataFrame) -> pd.DataFrame:
     obs_long = observed_df.melt(
         id_vars=["dose", "model_name"], var_name="litter_final", value_name="obs_count"
     )
-
     est_long = estimated_df.melt(
         id_vars=["dose", "model_name"], var_name="litter_final", value_name="est_count"
     )
-
     return pd.merge(obs_long, est_long, on=["dose", "model_name", "litter_final"], how="outer")
 
 
-def _calculate_plotting(incidence, n, alpha=0.05):
+def _calculate_plotting(incidence: float, n: float, alpha: float = 0.05):
     """
     Add confidence intervals to dichotomous datasets.
     https://www.epa.gov/sites/production/files/2020-09/documents/bmds_3.2_user_guide.pdf
 
-    The error bars shown in BMDS plots use alpha = 0.05 and so
-    represent the 95% confidence intervals on the observed
-    proportions (independent of model).
+    The error bars shown in BMDS plots use alpha = 0.05 and so represent the 95% confidence
+    intervals on the observed proportions (independent of model).
     """
     p = incidence / float(n)
     z = stats.norm.ppf(1 - alpha / 2)
@@ -200,28 +205,18 @@ def _calculate_plotting(incidence, n, alpha=0.05):
     return p, ll, ul
 
 
-def generate_extra_plots(session: Session) -> Figure:
+def get_plotting_data(session: Session) -> pd.DataFrame:
     """
-    Generate nested litter plots comparing observed vs estimated responder distributions
-    for each dose level.
+    Generate data for plotting nested litter plots comparing observed vs estimated responder
+    distributions for each dose level.
 
-    Args:
-        session (pybmds.Session): A fitted BMDS session with nested models.
-
-    Returns:
-        Figure: the final plot.
-    """
-
-    """
     We extract the necessary results and parameter values to create the plots and save
     them in "final". We need the model parameters to calculate alpha and beta and the
     "Litter Data" information such as the estimated probabilities, litter size, etc. for
-    each litter. The model parameters and phi's are saved as columns and each value repeated for each
-    bmds_model_index for individual litter calculations.
+    each litter. The model parameters and phi's are saved as columns and each value repeated
+    for each bmds_model_index for individual litter calculations.
     """
-
     model_res = []
-
     for j, model in enumerate(session.models):
         if not model.has_results:
             continue
@@ -257,10 +252,8 @@ def generate_extra_plots(session: Session) -> Figure:
     final["Rd"] = final.apply(lambda row: _calc_rd(row, dose_to_phi), axis=1)
 
     df = _generate_litter_columns(final, dose_to_phi)
-
     estimated = _add_all_doses(_sum_litter_by_dose(df))
     observed = _add_all_doses(_count_litter_obs(df))
-
     plot_data = _transform(observed, estimated)
 
     plot_data["total_litters_per_dose"] = plot_data.groupby(["dose", "model_name"])[
@@ -277,72 +270,76 @@ def generate_extra_plots(session: Session) -> Figure:
     plot_data["obs_ci_upper_count"] = (
         plot_data["obs_ci_upper"] * plot_data["total_litters_per_dose"]
     )
+    return plot_data
 
-    unique_doses = plot_data["dose"].unique()
-    models = plot_data["model_name"].unique()
-    ncols = 1
-    nrows = len(unique_doses)
 
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(12, 5 * nrows), squeeze=False)
-    axes = axes.flatten()
+def generate_extra_plots(session: Session) -> Figure:
+    """
+    Generate nested litter plots comparing observed vs estimated responder distributions
+    for each dose level.
 
+    Args:
+        session (pybmds.Session): A fitted BMDS session with nested models.
+
+    Returns:
+        Figure: a maptlotlib figure.
+    """
+    plot_data = get_plotting_data(session)
+    plot_data["lls"] = (plot_data.obs_count - plot_data.obs_ci_lower_count).clip(lower=0)
+    plot_data["uls"] = (plot_data.obs_ci_upper_count - plot_data.obs_count).clip(lower=0)
+
+    unique_doses = plot_data.dose.unique()
+    models = plot_data.model_name.unique()
+    nrows = plot_data.dose.nunique()
+
+    height = 2 * nrows
+    width = plot_data.litter_final.max() / 2
+
+    fig = create_empty_figure(rows=nrows, cols=1, figsize=(width, height))
     cmap = plt.get_cmap("tab10")
     model_colors = {model: cmap(i % cmap.N) for i, model in enumerate(models)}
 
-    for i, dose in enumerate(unique_doses):
-        ax = axes[i]
-        dose_data = plot_data[plot_data["dose"] == dose]
-
-        for model_name in models:
-            model_data = dose_data[dose_data["model_name"] == model_name]
-            if model_data.empty:
-                continue
-
-            color = model_colors[model_name]
-
-            means = model_data["obs_count"]
-            lls = model_data["obs_ci_lower_count"]
-            uls = model_data["obs_ci_upper_count"]
+    for ax, dose in zip(fig.get_axes(), unique_doses, strict=True):
+        dose_data = plot_data[plot_data.dose == dose]
+        for model in models:
+            model_data = dose_data.query(f"model_name == '{model}'")
+            color = model_colors[model]
             ax.errorbar(
-                model_data["litter_final"],
-                means,
-                yerr=[(means - lls).clip(lower=0), (uls - means).clip(lower=0)],
+                model_data.litter_final,
+                model_data.obs_count,
+                yerr=(model_data.lls, model_data.uls),
                 fmt="o",
-                color="black",
+                color="grey",
                 capsize=4,
-                label=f"{model_name} Observed" if i == 0 else None,
                 markersize=5,
             )
-
             ax.plot(
-                model_data["litter_final"],
-                model_data["est_count"],
-                marker="o",
+                model_data.litter_final,
+                model_data.est_count,
+                marker=".",
+                linestyle="-",
                 color=color,
-                label=f"{model_name} Estimated" if i == 0 else None,
             )
-
+        ax.margins(x=0.05, y=0.05)
         ax.set_title(f"Dose = {dose}")
-        ax.set_xlabel("Number of Responders")
-        ax.set_ylabel("Number of Litters")
+        ax.set_xlabel("# of Responders")
+        ax.set_ylabel("# of Litters")
         ax.tick_params(axis="x")
         ax.set_xticks(range(int(plot_data["litter_final"].max()) + 1))
 
-    custom_legend = [
-        Line2D([0], [0], marker="o", color="black", linestyle="None", label="Observed")
-    ]
-
+    # build legend
+    legend = [Line2D([0], [0], marker="o", color="grey", linestyle="None", label="Observations")]
     for model_name in models:
         color = model_colors[model_name]
-        custom_legend.append(Line2D([0], [0], marker="o", color=color, label=f"{model_name}"))
+        legend.append(Line2D([0], [0], marker="o", color=color, label=f"{model_name}"))
 
     fig.legend(
-        custom_legend,
-        [h.get_label() for h in custom_legend],
-        title="Model",
-        loc="center right",
-        bbox_to_anchor=(1.0, 0.5),
+        legend,
+        [h.get_label() for h in legend],
+        loc="upper right",
+        bbox_to_anchor=(1.0, 0.96),
     )
-    fig.tight_layout(rect=[0, 0, 0.75, 1])  # leave space for legend
 
+    # leave space for legend
+    fig.tight_layout(rect=[0, 0, 0.7, 1])
     return fig

@@ -16,7 +16,7 @@ def write_model(f: StringIO, ModelClass: type[dichotomous.BmdModel]):
 
 
 def write_break(f: StringIO):
-    f.write(f"{'-' * 80}\n\n")
+    f.write(f"{'-'*80}\n\n")
 
 
 def write_settings(f: StringIO, model: dichotomous.BmdModel, settings: dict, footnote: str = ""):
