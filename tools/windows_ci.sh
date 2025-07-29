@@ -11,7 +11,7 @@ mkdir -p $DEPS
 
 # filenames and versions
 EIGEN="eigen-3.4.0"
-NLOPT="nlopt-2.7.1"
+NLOPT="nlopt-2.10.0"
 GSL="ampl-gsl-60539d2"
 
 # eigen
