@@ -13,7 +13,7 @@ class TestDichotomousAnalysisCPPStructs:
         text = str(model.structs)
         assert """- python_dichotomous_analysis""" in text
         assert """- python_dichotomous_model_result""" in text
-        assert len(text.splitlines()) == 64
+        assert len(text.splitlines()) == 65
 
 
 class TestDichotomousModelSettings:

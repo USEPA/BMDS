@@ -10,4 +10,4 @@ class TestDichotomousModelAverage:
         text = str(session.model_average.structs)
         assert "- python_dichotomous_analysis" in text
         assert "- python_dichotomousMA_result" in text
-        assert len(text.splitlines()) == 30
+        assert len(text.splitlines()) == 31
