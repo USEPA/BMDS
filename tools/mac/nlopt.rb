@@ -42,7 +42,7 @@ class Nlopt < Formula
 
     test do
       (testpath/"CMakeLists.txt").write <<~EOS
-        cmake_minimum_required(VERSION 3.5)
+        cmake_minimum_required(VERSION 3.15)
         project(box C)
         find_package(NLopt REQUIRED)
         add_executable(box "#{pkgshare}/box.c")
