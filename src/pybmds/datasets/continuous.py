@@ -1,5 +1,4 @@
 import math
-import warnings
 from typing import Annotated, ClassVar
 
 import numpy as np
@@ -10,6 +9,7 @@ from scipy import stats
 
 from .. import constants, plotting
 from ..stats.anova import AnovaTests
+from ..stats.normal import exact_rnorm
 from ..utils import str_list
 from .base import DatasetBase, DatasetMetadata, DatasetPlottingSchema, DatasetSchemaBase
 
@@ -172,90 +172,42 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         ax.legend(**plotting.LEGEND_OPTS)
         return ax.get_figure()
 
-    def fabricate_individual_responses(
+    def simulate_individual_dataset(
         self,
-        seed: int | None = None,
-        impose_positivity: bool = True,
-        tol: float = 0.001,
-        max_iter: int = 100000,
+        seed: int = 42,
+        impose_positivity: bool = False,
+        tolerance: float = 0.01,
+        max_iterations: int = 100_000,
     ) -> "ContinuousIndividualDataset":
+        """Generate simulated individual response data  matching summary statistics.
+
+        May raise a `ValueError` if a simulated dataset cannot be generated.
+
+        Args:
+            seed (int, optional): Defaults to 42.
+            impose_positivity (bool, optional): Only positive responses are allowed.
+            tolerance (float, optional): Tolerance between simulated and actual mean/sd.
+            max_iterations (int, optional): Maximum number of iterations to attempt.
         """
-        Generates individual response data from summary statistics within a specified tolerance.
-        If positivity is required, only positive numbers are kept and sampling continues.
-        If the desired statistics can't be matched within the tolerance, warn the user.
-        Returns pybmds.ContinuousIndividualDataset()
-        """
-
-        def exact_rnorm(n, target_mean, target_sd, tol, max_iter, impose_positivity=True):
-            if n == 1:
-                return np.array([target_mean]), 0
-            if n == 2:
-                return np.array([target_mean - target_sd, target_mean + target_sd]), 0
-
-            rng = np.random.default_rng(seed if seed is not None else 1234)
-
-            closest_x = None
-            closest_diff = float("inf")
-
-            for iteration in range(1, max_iter + 1):
-                x = rng.normal(size=n)
-                x = (x - np.mean(x)) / np.std(x) * target_sd + target_mean
-
-                if impose_positivity:
-                    x = x[x > 0]
-                    if len(x) < n:
-                        continue
-
-                mean_diff = abs(np.mean(x) - target_mean)
-                sd_diff = abs(np.std(x) - target_sd)
-                current_diff = mean_diff + sd_diff
-
-                if current_diff < closest_diff:
-                    closest_x = x
-                    closest_diff = current_diff
-
-                if (
-                    abs(np.mean(x) - target_mean) / abs(target_mean + 1e-8) < tol
-                    and abs(np.std(x) - target_sd) / abs(target_sd + 1e-8) < tol
-                ):
-                    return x, iteration
-
-            if closest_x is None:
-                raise ValueError(
-                    "Could not generate a valid sample — try reducing `tol`, increasing `max_iter`, or disabling `impose_positivity`."
-                )
-
-            warnings.warn(
-                "Warning: Could not match mean and sd within tolerance; using closest found. Suggest increasing max_iter.",
-                stacklevel=2,
+        doses = []
+        responses = []
+        for dose, n, mu, sigma in zip(self.doses, self.ns, self.means, self.stdevs, strict=True):
+            n_int = math.ceil(n)  # may be a float; cast to int
+            values, _ = exact_rnorm(
+                n_int,
+                mu,
+                sigma,
+                seed=seed,
+                tolerance=tolerance,
+                max_iterations=max_iterations,
+                impose_positivity=impose_positivity,
             )
-
-            return closest_x, max_iter
-
-        if not (len(self.doses) == len(self.ns) == len(self.means) == len(self.stdevs)):
-            raise ValueError(
-                "All input lists (doses, sample_sizes, means, sds) must be of the same length."
-            )
-
-        all_doses = []
-        all_responses = []
-
-        for i in range(len(self.doses)):
-            dose = self.doses[i]
-            n = self.ns[i]
-            mu = self.means[i]
-            sigma = self.stdevs[i]
-
-            responses, iterations = exact_rnorm(
-                n, mu, sigma, tol, max_iter, impose_positivity=impose_positivity
-            )
-
-            all_doses.extend([dose] * len(responses))
-
-            all_responses.extend([float(r) for r in responses])
-
+            doses.append([dose] * n_int)
+            responses.append(values)
         return ContinuousIndividualDataset(
-            metadata=self.metadata, doses=all_doses, responses=all_responses
+            metadata=self.metadata,
+            doses=np.array(doses).flatten().tolist(),
+            responses=np.array(responses).flatten().tolist(),
         )
 
     def serialize(self) -> "ContinuousDatasetSchema":
