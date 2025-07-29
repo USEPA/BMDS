@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pytest
 
@@ -56,16 +54,8 @@ class TestFabricateIndividualResponses:
             stdevs=[2.1, 2.2, 2.3, 2.4],
             name="UnrealisticToleranceTest",
         )
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            dataset.fabricate_individual_responses(seed=42, tol=1e-10, max_iter=10)
-
-            warning_msgs = [str(warn.message) for warn in w]
-            matched = any(
-                "Could not match mean and sd within tolerance" in msg for msg in warning_msgs
-            )
-            assert matched, "Expected convergence warning not found"
+        with pytest.raises(ValueError, match="Could not generate a valid sample"):
+            dataset.fabricate_individual_responses(seed=42, tol=1e-10, max_iter=2)
 
     def test_impose_positivity_enforced(self):
         dataset = ContinuousDataset(
