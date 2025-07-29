@@ -1,10 +1,13 @@
 from textwrap import dedent
 
 import numpy as np
+import pytest
 
+import pybmds
 from pybmds.constants import PriorClass
 from pybmds.datasets import NestedDichotomousDataset
 from pybmds.models import nested_dichotomous
+from pybmds.plotting.nested_dichotomous import generate_extra_plots
 
 
 class TestNestedLogistic:
@@ -189,3 +192,13 @@ class TestNctr:
         assert result.bmd > 0
         text = analysis.text()
         assert len(text) > 0
+
+
+@pytest.mark.mpl_image_compare
+def test_nested_plot(nd_dataset4):
+    session = pybmds.Session(dataset=nd_dataset4)
+    session.add_default_models(
+        settings={"litter_specific_covariate": 1, "intralitter_correlation": 1},
+    )
+    session.execute()
+    return generate_extra_plots(session)

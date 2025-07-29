@@ -3,6 +3,7 @@ from typing import Self
 
 import numpy as np
 import pandas as pd
+from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from pydantic import BaseModel
 
@@ -441,7 +442,7 @@ class Multitumor:
                 self.results.bmdl,
                 self.results.bmdu,
                 c="k",
-                ecolor=plotting.to_rgba("k", 0.7),
+                ecolor=to_rgba("k", 0.7),
             )
             ax.plot(
                 [x0, self.results.bmdl],
