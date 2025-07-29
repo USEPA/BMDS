@@ -701,3 +701,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 #ifdef __cplusplus
 }
 #endif
+
+//overloaded print statements
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct BMDS_results *bmdsRes);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_continuous_analysis *pyAnal);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_continuous_model_result *pyRes);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_GOF *gof);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_AOD *AOD);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct testsOfInterest *TOI);

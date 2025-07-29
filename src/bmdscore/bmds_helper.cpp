@@ -5563,3 +5563,237 @@ double zeroin_nested(
     if (pass > maxPass) return BMDS_MISSING;
   }
 }
+
+
+template<typename T> void printElement(T t, const int& width){
+   const char separator = ' ';
+   std::cout<<left<<setw(width)<<setfill(separator)<<t;
+}
+
+void printBmdsStruct(struct testsOfInterest *TOI){
+
+   const int nameWidth = 20;
+   const int numWidth = 9;
+
+   std::vector<std::string> desc = {"Test1: A2 vs R", "Test2: A1 vs R", "Test3: A3 vs A2", "Test4: Fitted vs A3"};
+
+   std::cout<<std::endl<<"Tests Of Interest"<<std::endl;
+
+   printElement("Desc", nameWidth);
+   printElement("LLratio", numWidth);
+   printElement("DF", numWidth);
+   printElement("pVal", numWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<desc.size(); i++){
+           printElement(desc[i], nameWidth);
+	   printElement(TOI->llRatio[i], numWidth);
+	   printElement(TOI->DF[i], numWidth);
+	   printElement(TOI->pVal[i], numWidth);
+	   std::cout<<std::endl;
+   }
+
+
+}
+
+void printBmdsStruct(struct continuous_AOD *AOD){
+
+   const int nameWidth = 13;
+   const int numWidth = 10;
+   std::vector<std::string> desc = {"A1 Model", "A2 Model", "A3 Model", "Fitted Model", "R Model"};
+
+   std::cout<<std::endl<<"Continuous AOD"<<std::endl;
+   printElement("Model",nameWidth);
+   printElement("LL",numWidth);
+   printElement("nParms",numWidth);
+   printElement("AIC",numWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<desc.size(); i++){
+     printElement(desc[i], nameWidth);
+     printElement(AOD->LL[i],numWidth);
+     printElement(AOD->nParms[i],numWidth);
+     printElement(AOD->AIC[i],numWidth);
+     std::cout<<std::endl;
+   }
+   std::cout<<"Additive Constant:"<<AOD->addConst<<std::endl;
+
+   printBmdsStruct(&AOD->TOI);
+}
+
+
+ void printBmdsStruct(struct BMDS_results *bmdsRes){
+
+   const int colWidth = 11;
+
+   std::cout<<std::endl<<"BMDS Results"<<std::endl;
+   std::cout<<"BMD:"<<bmdsRes->BMD<<std::endl;
+   std::cout<<"BMDL:"<<bmdsRes->BMDL<<std::endl;
+   std::cout<<"BMDU:"<<bmdsRes->BMDU<<std::endl;
+   std::cout<<"AIC:"<<bmdsRes->AIC<<std::endl;
+   std::cout<<"BIC_equiv:"<<bmdsRes->BIC_equiv<<std::endl;
+   std::cout<<"chisq:"<<bmdsRes->chisq<<std::endl;
+   
+   printElement("bounded",colWidth);
+   printElement("StdErr",colWidth);
+   printElement("LowerConf",colWidth);
+   printElement("UpperConf",colWidth);
+   std::cout<<std::endl;
+
+   for(int i=0; i<bmdsRes->bounded.size(); i++){
+      printElement((bmdsRes->bounded[i]?"true":"false"), colWidth);
+      printElement(bmdsRes->stdErr[i], colWidth);
+      printElement(bmdsRes->lowerConf[i], colWidth);
+      printElement(bmdsRes->upperConf[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"validResult:"<<(bmdsRes->validResult?"true":"false")<<std::endl;
+   std::cout<<"slopeFactor:"<<bmdsRes->slopeFactor<<std::endl;
+
+ }
+
+
+void printBmdsStruct(struct continuous_GOF *gof){
+
+   const int colWidth = 12;
+
+   std::cout<<std::endl<<"Continuous GOF"<<std::endl;
+   std::cout<<"n:"<<gof->n<<std::endl;
+
+   //first header row
+   printElement("",colWidth);
+   printElement("",colWidth);
+   printElement("Estimated",colWidth);
+   printElement("Calculated",colWidth);
+   printElement("Observed",colWidth);
+   printElement("Estimated",colWidth);
+   printElement("Calculated",colWidth);
+   printElement("Observed",colWidth);
+   printElement("",colWidth);
+   printElement("Error Bound",colWidth);
+   printElement("Error Bound",colWidth);
+   std::cout<<std::endl;
+   //second header row
+   printElement("Dose", colWidth);
+   printElement("size", colWidth);
+   printElement("Mean", colWidth);
+   printElement("Mean", colWidth);
+   printElement("Mean", colWidth);
+   printElement("SD", colWidth);
+   printElement("SD", colWidth);
+   printElement("SD", colWidth);
+   printElement("residual", colWidth);
+   printElement("Lower", colWidth);
+   printElement("Upper", colWidth);
+   std::cout<<std::endl;
+
+   for (int i=0; i<gof->dose.size(); i++){
+      printElement(gof->dose[i], colWidth);
+      printElement(gof->size[i], colWidth);
+      printElement(gof->estMean[i], colWidth);
+      printElement(gof->calcMean[i], colWidth);
+      printElement(gof->obsMean[i], colWidth);
+      printElement(gof->estSD[i], colWidth);
+      printElement(gof->calcSD[i], colWidth);
+      printElement(gof->obsSD[i], colWidth);
+      printElement(gof->res[i], colWidth);
+      printElement(gof->ebLower[i], colWidth);
+      printElement(gof->ebUpper[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+}
+
+
+ void printBmdsStruct(struct python_continuous_analysis *pyAnal){
+
+   const int colWidth = 8;
+
+   std::cout<<std::endl<<"Python Continuous Analysis"<<std::endl;
+   std::cout<<"cont_model:"<<pyAnal->model<<std::endl;
+   std::cout<<"n:"<<pyAnal->n<<std::endl;
+   std::cout<<"suff_stat:"<<(pyAnal->suff_stat?"true":"false")<<std::endl;
+   std::cout<<"Data:"<<std::endl;
+   printElement("Dose", colWidth);
+   printElement("Y",colWidth);
+   if (pyAnal->suff_stat){
+      printElement("SD",colWidth);
+      printElement("N_group",colWidth);
+   }
+   std::cout<<std::endl;
+   for (int i=0; i<pyAnal->doses.size(); i++){
+      printElement(pyAnal->doses[i], colWidth);
+      printElement(pyAnal->Y[i], colWidth);
+      if (pyAnal->suff_stat){
+        printElement(pyAnal->sd[i], colWidth);
+        printElement(pyAnal->n_group[i], colWidth);
+      }
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"priors:"<<std::endl;
+   for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
+	   for (int j=0; j<pyAnal->prior_cols; j++){
+	      printElement(pyAnal->prior[i*j], colWidth);
+	   }
+	   std::cout<<std::endl;
+   }
+   std::cout<<"BMD_type:"<<pyAnal->BMD_type<<std::endl;
+   std::cout<<"isIncreasing:"<<(pyAnal->isIncreasing?"true":"false")<<std::endl;
+   std::cout<<"BMR:"<<pyAnal->BMR<<std::endl;
+   std::cout<<"tail_prob:"<<pyAnal->tail_prob<<std::endl;
+   std::cout<<"disttype:"<<pyAnal->disttype<<std::endl;
+   std::cout<<"alpha:"<<pyAnal->alpha<<std::endl;
+   std::cout<<"samples:"<<pyAnal->samples<<std::endl;
+   std::cout<<"degree:"<<pyAnal->degree<<std::endl;
+   std::cout<<"burnin:"<<pyAnal->burnin<<std::endl;
+   std::cout<<"parms:"<<pyAnal->parms<<std::endl;
+   std::cout<<"prior_cols:"<<pyAnal->parms<<std::endl;
+   std::cout<<"transform_dose:"<<pyAnal->transform_dose<<std::endl;
+   std::cout<<"restricted:"<<(pyAnal->restricted?"true":"false")<<std::endl;
+   std::cout<<"detectAdvDir:"<<(pyAnal->detectAdvDir?"true":"false")<<std::endl;
+
+ }
+
+ void printBmdsStruct(struct python_continuous_model_result *pyRes){
+
+   const int colWidth = 8;
+   const int largeColWidth = 14;
+
+   std::cout<<std::endl<<"Python Continuous Model Result"<<std::endl;
+   std::cout<<"model:"<<pyRes->model<<std::endl;
+   std::cout<<"dist:"<<pyRes->dist<<std::endl;
+   std::cout<<"nparms:"<<pyRes->nparms<<std::endl;
+   std::cout<<"parms"<<std::endl;
+   for (int i=0; i<pyRes->parms.size(); i++){
+     printElement("i:",colWidth);
+     printElement(pyRes->parms[i],colWidth);
+     std::cout<<std::endl;
+   }
+   std::cout<<"cov"<<std::endl;
+   int matSize = sqrt(pyRes->cov.size());
+   for (int i=0; i<matSize; i++){
+      for(int j=0; j<matSize; j++){
+         printElement(pyRes->cov[i*j],largeColWidth);
+      }
+      std::cout<<std::endl;
+   }
+   std::cout<<"max:"<<pyRes->max<<std::endl;
+   std::cout<<"dist_numE:"<<pyRes->dist_numE<<std::endl;
+   std::cout<<"model_df:"<<pyRes->model_df<<std::endl;
+   std::cout<<"total_df:"<<pyRes->total_df<<std::endl;
+   std::cout<<"bmd:"<<pyRes->bmd<<std::endl;
+   printBmdsStruct(&pyRes->bmdsRes);
+   printBmdsStruct(&pyRes->gof);
+   printBmdsStruct(&pyRes->aod);
+
+   std::cout<<std::endl<<"CDF"<<std::endl;
+   printElement("Percentile", largeColWidth);
+   printElement("Value", largeColWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<pyRes->dist_numE; i++){
+      printElement(pyRes->bmd_dist[i+pyRes->dist_numE], largeColWidth);
+      printElement(pyRes->bmd_dist[i], largeColWidth);
+      std::cout<<std::endl;
+   }
+
+ }

@@ -49,9 +49,9 @@ int main(void) {
   //  runCompleteContAnalysis();
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
-  //  runPythonContAnalysis();
+    runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+  // runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -4001,48 +4001,11 @@ void runPythonContAnalysis() {
   res.aod = aod;
 
   printf("\n\n-----------INPUT---------------\n");
-  printf("priors sent to model code:\n");
-  for (int i = 0; i < prCols * numParms; i++) {
-    printf("%.20f\n", anal.prior[i]);
-  }
-  printf("\n\ncontinuous_analysis values\n");
-  printf("CA.n = %d\n", anal.n);
-  printf("CA.suff_stat = %s\n", (anal.suff_stat ? "true" : "false"));
-  //  printf("CA data arrays (dose, Y, n_group, sd)\n");
-  //  for (int i=0; i<anal.n;i++){
-  //    printf("%f, %f, %f, %f\n", anal.doses[i], anal.Y[i], anal.n_group[i], anal.sd[i]);
-  //  }
-  printf("CA.BMD_type = %d\n", anal.BMD_type);
-  printf("CA.isIncreasing = %s\n", (anal.isIncreasing ? "true" : "false"));
-  printf("CA.BMR = %.20f\n", anal.BMR);
-  printf("CA.disttype = %d\n", anal.disttype);
-  printf("CA.alpha = %.20f\n", anal.alpha);
-  printf("CA.degree = %d\n", anal.degree);
-  printf("CA.parms = %d\n", anal.parms);
-  printf("CA.prior_cols = %d\n", anal.prior_cols);
-
-  printf("\n\nData\n");
-  printf("Dose, N, Mean, Std. Dev.\n");
-
-  if (anal.suff_stat) {
-    for (int i = 0; i < anal.n; i++) {
-      printf("%.20f, %.20f, %.20f, %.20f\n", anal.doses[i], anal.n_group[i], anal.Y[i], anal.sd[i]);
-    }
-  } else {
-    for (int i = 0; i < anal.n; i++) {
-      // printf("%.20f, %.20f, %.20f, %.20f\n",anal.doses[i],anal.n_group[i], anal.Y[i],
-      // anal.sd[i]);
-      printf("%.20f, %.20f\n", anal.doses[i], anal.Y[i]);
-    }
-  }
+  printBmdsStruct(&anal);
   printf("\n\n");
 
   printf("calling pythonBMDSCont\n");
   pythonBMDSCont(&anal, &res);
-
-  if (detectAdvDir) {
-    printf("auto adverse direction: %s\n", anal.isIncreasing ? "increasing" : "decreasing");
-  }
 
   printf("\n\n");
   printf("prior after adj by model code:\n");
@@ -4051,70 +4014,17 @@ void runPythonContAnalysis() {
   }
 
   printf("\n\n----------OUTPUT-----------\n");
-  printf("tlink BMDSres.validResult = %s\n", res.bmdsRes.validResult ? "valid" : "invalid");
   if (BMDSres.validResult || showResultsOverride) {
-    printf("\nBenchmark Dose\n");
-    printf("max:  %f\n", res.max);
-    printf("BMD:  %f\n", res.bmdsRes.BMD);
-    printf("Matt's BMD:  %f\n", res.bmd);
-    printf("BMDL: %f\n", res.bmdsRes.BMDL);
-    printf("BMDU: %f\n", res.bmdsRes.BMDU);
-    printf("AIC:  %f\n", res.bmdsRes.AIC);
-    printf("LPP: %f\n", res.bmdsRes.BIC_equiv);
-    printf("Test 4 P-value: %f\n", aod.TOI.pVal[3]);
-    printf("DOF: %f\n", aod.TOI.DF[3]);
-    printf("ChiSq: %f\n", res.bmdsRes.chisq);
-
-    printf("\nModel Parameters\n");
-    printf("# of parms: %d\n", anal.parms);
-    printf("parm, estimate, bounded, std.err., lower conf, upper conf\n");
-    for (int i = 0; i < anal.parms; i++) {
-      printf(
-          "%d, %.20f, %s, %f, %f, %f\n", i, res.parms[i], res.bmdsRes.bounded[i] ? "true" : "false",
-          res.bmdsRes.stdErr[i], res.bmdsRes.lowerConf[i], res.bmdsRes.upperConf[i]
-      );
-      //     printf("bounded %d = %s\n", i, BMDSres.bounded[i] ? "true" : "false");
-    }
-
-    printf("\nGoodness of Fit\n");
-    printf("res.gof.n = %d\n", res.gof.n);
-    printf("Dose, Size, EstMed, CalcMed, ObsMean, EstSD, CalcSD, ObsSD, SR\n");
-    for (int i = 0; i < res.gof.n; i++) {
-      printf(
-          "%f, %f, %f, %f, %f, %f, %f, %f, %f\n", res.gof.dose[i], res.gof.size[i],
-          res.gof.estMean[i], res.gof.calcMean[i], res.gof.obsMean[i], res.gof.estSD[i],
-          res.gof.calcSD[i], res.gof.obsSD[i], res.gof.res[i]
-      );
-    }
-    printf("\nError Bars\n");
-    for (int i = 0; i < res.gof.n; i++) {
-      printf("%f, %f\n", res.gof.ebLower[i], res.gof.ebUpper[i]);
-    }
-
-    printf("\nLikelihoods of Interest\n");
-    for (int i = 0; i < 5; i++) {
-      printf(
-          "i:%d, LL:%f, nParms:%d, AIC:%f\n", i, res.aod.LL[i], res.aod.nParms[i], res.aod.AIC[i]
-      );
-    }
-    printf("additive constant:%f\n", res.aod.addConst);
-
-    printf("\nTests of Interest:\n");
-    for (int i = 0; i < 4; i++) {
-      printf(
-          "i:%d, llRatio:%f, DF:%f, pVal:%f\n", i, res.aod.TOI.llRatio[i], res.aod.TOI.DF[i],
-          res.aod.TOI.pVal[i]
-      );
-    }
-
-    printf("\nBMD Dist:\n");
-    for (int i = 0; i < res.dist_numE; i++) {
-      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i + res.dist_numE], res.bmd_dist[i]);
-    }
-
+      printBmdsStruct(&res);
+//    printf("\nBMD Dist:\n");
+//    for (int i = 0; i < res.dist_numE; i++) {
+//      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i + res.dist_numE], res.bmd_dist[i]);
+//    }
+//
   } else {
     printf("Model was not run\n");
   }
+
 
   // debugContAnal(&anal);
 }
