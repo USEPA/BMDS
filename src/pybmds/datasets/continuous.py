@@ -220,6 +220,11 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
                 ):
                     return x, iteration
 
+            if closest_x is None:
+                raise ValueError(
+                    "Could not generate a valid sample — try reducing `tol`, increasing `max_iter`, or disabling `impose_positivity`."
+                )
+
             warnings.warn(
                 "Warning: Could not match mean and sd within tolerance; using closest found. Suggest increasing max_iter.",
                 stacklevel=2,
