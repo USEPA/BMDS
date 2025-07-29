@@ -50,10 +50,10 @@ class TestFabricateIndividualResponses:
     def test_warning_if_cannot_converge(self):
         # Artificially tight tolerance and small max_iter to trigger warning
         dataset = ContinuousDataset(
-            doses=self.doses,
-            ns=self.ns,
-            means=self.means,
-            stdevs=self.stdevs,
+            doses=[0.0, 1.0, 2.0, 3.0],
+            ns=[200, 200, 200, 200],
+            means=[1.0, 2.0, 3.0, 4.0],
+            stdevs=[0.1, 0.2, 0.3, 0.4],
             name="UnrealisticToleranceTest",
         )
 
