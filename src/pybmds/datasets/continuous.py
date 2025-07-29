@@ -179,7 +179,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         tolerance: float = 0.01,
         max_iterations: int = 100_000,
     ) -> "ContinuousIndividualDataset":
-        """Generate simulated individual response data matching summary statistics.
+        """Generate a simulated individual dataset matching summary statistics.
 
         May raise a `ValueError` if a simulated dataset cannot be generated.
 
