@@ -99,8 +99,8 @@ before-build = "tools/cibuildwheel-linux.sh"
 [tool.cibuildwheel.linux.environment]
 EIGEN_DIR="/usr/include/eigen3"
 NLOPT_DIR="/usr/local/lib64/"
-CMAKE_C_COMPILER="/opt/rh/gcc-toolset-13/root/usr/bin/gcc"
-CMAKE_CXX_COMPILER="/opt/rh/gcc-toolset-13/root/usr/bin/g++"
+CMAKE_C_COMPILER="/opt/rh/gcc-toolset-14/root/usr/bin/gcc"
+CMAKE_CXX_COMPILER="/opt/rh/gcc-toolset-14/root/usr/bin/g++"
 
 [tool.cibuildwheel.macos]
 before-build = "tools/cibuildwheel-mac.sh"
