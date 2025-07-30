@@ -3,13 +3,24 @@ import pytest
 
 from pybmds.stats.JT import jonckheere
 
-dummy_data = np.array([1, 2, 3, 4, 5, 6])
-dummy_group = np.array([1, 1, 2, 2, 3, 3])
+dummy_data = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+dummy_group = np.array([1, 1, 2, 2, 3, 3, 4, 4])
 dummy_uneven = np.array([1, 1, 2, 2, 3])
 alternative = "two.sided"
-dummy_nonnumeric = ["a", "b", "c", "d", "e", "f"]
-dummy_1unique = np.array([1, 1, 1, 1, 1, 1])
-dummy_empty = np.array([])
+dummy_nonnumeric = np.array(["a", "b", "c", "d", "e", "f", "g", "h"])
+dummy_1unique = np.array([1, 1, 1, 1, 1, 1, 1, 1])
+dummy_empty = np.array(
+    [
+        float("inf"),
+        float("inf"),
+        float("inf"),
+        float("inf"),
+        float("inf"),
+        float("inf"),
+        float("inf"),
+        float("inf"),
+    ]
+)
 
 
 class TestJonckheereTrendTest:

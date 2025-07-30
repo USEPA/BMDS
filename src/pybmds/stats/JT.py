@@ -47,7 +47,7 @@ def jonckheere(x, group, alternative="two.sided", nperm=None):
         jtmean += na * nb / 2
         jtvar += na * nb * (na + nb + 1) / 12
 
-    jtrsum = 2 * jtmean - jtrsum
+    jtrsum = int(2 * jtmean - jtrsum)
     STATISTIC = jtrsum
 
     if nperm is not None:
@@ -91,7 +91,8 @@ def _conv_pdf(group_size):
     """
 
     group_count = len(group_size)
-    csum_groupsize = list(reversed([sum(group_size[i:]) for i in range(group_count)]))
+    csum_groupsize = np.cumsum(np.flip(group_size))
+    csum_groupsize = np.flip(csum_groupsize)
     max_sum = sum(group_size[:-1] * csum_groupsize[1:]) + 1
     pdf = _jon_pdf(max_sum, group_count, csum_groupsize)
     return pdf
@@ -137,15 +138,16 @@ def _jon_pdf(max_sum, group_count, csum_groupsize):
     pdf = np.zeros(max_sum)
     pdf0 = np.zeros(max_sum)
     pdf1 = np.zeros(max_sum)
+    group_count_index = group_count - 1
 
-    m = csum_groupsize[group_count - 1] - csum_groupsize[group_count]
-    n = csum_groupsize[group_count]
+    m = csum_groupsize[group_count_index - 1] - csum_groupsize[group_count_index]
+    n = csum_groupsize[group_count_index]
     mn1 = m * n
 
     for i in range(mn1 + 1):
         pdf[i] = _wilcox_normal_pdf(float(i), float(m), float(n))
 
-    for g in range(group_count - 2, 0, -1):
+    for g in range(group_count_index - 2, 0, -1):
         pdf1[:] = pdf
         pdf.fill(0)
 
@@ -153,11 +155,11 @@ def _jon_pdf(max_sum, group_count, csum_groupsize):
         n = csum_groupsize[g + 1]
         mn0 = m * n
 
-        for i in range(mn0 + 1):
+        for i in range(mn0):
             pdf0[i] = _wilcox_normal_pdf(float(i), float(m), float(n))
 
-        for i in range(mn0 + 1):
-            for j in range(mn0 + 1):
+        for i in range(mn0):
+            for j in range(mn0):
                 pdf[i + j] += pdf0[i] * pdf1[j]
 
         mn1 = mn0 + mn1
