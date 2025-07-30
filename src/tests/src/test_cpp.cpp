@@ -48,9 +48,9 @@ int main(void) {
   //  runOldContAnalysis();
   //  runCompleteContAnalysis();
   //  runPythonDichoAnalysis();
-    runPythonDichoMA();
+  //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  //  runPythonMultitumorAnalysis();
+    runPythonMultitumorAnalysis();
   // runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
@@ -4449,38 +4449,12 @@ void runPythonMultitumorAnalysis() {
   // run MSCombo
   pythonBMDSMultitumor(&anal, &res);
 
-  // individual model results
-  //  for (int dataset=0; dataset<numDatasets; dataset++){
-  //    std::cout<<"dataset:"<<dataset<<std::endl;
-  //    for (int mod=0; mod<anal.nmodels[dataset]; mod++){
-  //        std::cout<<" model:"<<mod<<std::endl;
-  //        printDichoModResult(&anal.models[dataset][mod], &res.models[dataset][mod],true);
-  //    }
-  //  }
-
-  std::cout << "Selected model Indexes:  ";
-  for (auto elem : res.selectedModelIndex) {
-    std::cout << elem << ", ";
-  }
-
-  std::cout << "Selected model degrees:  ";
-  for (int i = 0; i < res.selectedModelIndex.size(); i++) {
-    int ind = res.selectedModelIndex[i];
-    if (ind >= 0) {
-      std::cout << anal.models[i][ind].degree << ", ";
-    } else {
-      std::cout << "-1, ";
-    }
-  }
-
   std::cout << std::endl;
   if (res.validResult) {
-    std::cout << "BMD:  " << res.BMD << std::endl;
-    std::cout << "BMDL: " << res.BMDL << std::endl;
-    std::cout << "BMDU: " << res.BMDU << std::endl;
-    std::cout << "slope factor: " << res.slopeFactor << std::endl;
-    std::cout << "combined LL: " << res.combined_LL << std::endl;
-    std::cout << "combined LL constant: " << res.combined_LL_const << std::endl;
+     std::cout<<"INPUT"<<std::endl;
+     printBmdsStruct(&anal);
+     std::cout<<"OUTPUT"<<std::endl;
+     printBmdsStruct(&res);
   } else {
     std::cout << "Multitumor analysis failed" << std::endl;
   }

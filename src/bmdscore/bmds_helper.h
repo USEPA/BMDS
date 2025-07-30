@@ -715,6 +715,10 @@ void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomousMA_analys
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomousMA_result *pyRes);
 
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_multitumor_analysis *pyAnal);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_multitumor_result *pyRes);
+
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_GOF *gof);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_AOD *AOD);

@@ -6082,3 +6082,68 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    }
 
  }
+
+void printBmdsStruct(struct python_multitumor_analysis *pyAnal){
+
+   const int colWidth = 10;
+
+   std::cout<<std::endl<<"python_multitumor_analysis"<<std::endl;
+
+   std::cout<<"ndatasets:"<<pyAnal->ndatasets<<std::endl;
+
+   printElement("model", colWidth);
+   printElement("n", colWidth);
+   printElement("nmodels", colWidth);
+   printElement("degree", colWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<pyAnal->ndatasets; i++){
+      printElement(i, colWidth);
+      printElement(pyAnal->n[i], colWidth);
+      printElement(pyAnal->nmodels[i], colWidth);
+      printElement(pyAnal->degree[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"BMD_type:"<<pyAnal->BMD_type<<std::endl;
+   std::cout<<"BMR:"<<pyAnal->BMR<<std::endl;
+   std::cout<<"alpha:"<<pyAnal->alpha<<std::endl;
+   std::cout<<"prior_cols:"<<pyAnal->prior_cols<<std::endl;
+
+}
+
+void printBmdsStruct(struct python_multitumor_result *pyRes){
+
+   const int colWidth = 10;
+
+   std::cout<<std::endl<<"python_multitumor_result"<<std::endl;
+
+   std::cout<<"ndatasets:"<<pyRes->ndatasets<<std::endl;
+
+   printElement("model", colWidth);
+   printElement("nmodels", colWidth);
+   printElement("selectedModelIndex", colWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<pyRes->ndatasets; i++){
+      printElement(i, colWidth);
+      printElement(pyRes->nmodels[i], colWidth);
+      printElement(pyRes->selectedModelIndex[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"BMD:"<<pyRes->BMD<<std::endl;
+   std::cout<<"BMDL:"<<pyRes->BMDL<<std::endl;
+   std::cout<<"BMDU:"<<pyRes->BMDU<<std::endl;
+   std::cout<<"slopeFactor:"<<pyRes->slopeFactor<<std::endl;
+   std::cout<<"combined_LL:"<<pyRes->combined_LL<<std::endl;
+   std::cout<<"combined_LL_const:"<<pyRes->combined_LL_const<<std::endl;
+
+   //ind model res
+   std::cout<<std::endl<<"models"<<std::endl;
+   for (int j=0; j<pyRes->ndatasets; j++){
+     std::cout<<"dataset:"<<j<<std::endl;
+     for (int i=0; i<pyRes->nmodels[j]; i++){
+        std::cout<<"model:"<<i<<std::endl;
+        printBmdsStruct(&pyRes->models[j][i]);
+     }
+   }
+}
