@@ -110,10 +110,10 @@ class TestNestedLogistic:
         )
         unpenalized.execute()
 
-        assert np.isclose(
+        assert np.allclose(
             penalized.results.parameters,
             unpenalized.results.parameters,
-        ).all()
+        )
         assert np.isclose(
             penalized.results.aic - 8,  # 4 dose groups; 4 parameters penalized
             unpenalized.results.aic,
