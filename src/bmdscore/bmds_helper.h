@@ -714,3 +714,11 @@ void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_GOF *gof);
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_AOD *AOD);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct testsOfInterest *TOI);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomous_analysis *pyAnal);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomous_model_result *pyRes);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct dichotomous_GOF *gof);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD);

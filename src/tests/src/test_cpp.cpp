@@ -47,9 +47,9 @@ int main(void) {
 
   //  runOldContAnalysis();
   //  runCompleteContAnalysis();
-  //  runPythonDichoAnalysis();
+    runPythonDichoAnalysis();
   //  runPythonDichoMA();
-    runPythonContAnalysis();
+  //  runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
   // runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -1304,7 +1304,13 @@ void runPythonDichoAnalysis() {
 
   pythonBMDSDicho(&anal, &res);
 
-  printDichoModResult(&anal, &res, showResultsOverride);
+  std::cout<<"INPUT"<<std::endl;
+  printBmdsStruct(&anal);
+
+  std::cout<<"OUTPUT"<<std::endl;
+  printBmdsStruct(&res);
+
+  //printDichoModResult(&anal, &res, showResultsOverride);
 }
 
 void runDichoMA() {
