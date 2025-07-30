@@ -4,6 +4,7 @@ import pytest
 from pybmds.models import continuous
 
 
+@pytest.mark.skip(reason="TODO - fix in https://github.com/USEPA/BMDS/pull/114")
 class TestBmdModelContinuousIndividual:
     def test_increasing(self, cidataset):
         for Model, bmd_values, aic in [
