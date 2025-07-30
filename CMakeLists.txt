@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(pybind11-download NONE)
+set(PYBIND11_FINDPYTHON OFF)
 
 include(ExternalProject)
 ExternalProject_Add(
