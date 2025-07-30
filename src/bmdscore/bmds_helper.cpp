@@ -5689,6 +5689,40 @@ void printBmdsStruct(struct dicho_AOD *AOD){
 
  }
 
+ void printBmdsStruct(struct BMDSMA_results *bmdsRes){
+
+   const int colWidth = 10;
+   std::cout<<std::endl<<"BMDSMA Results"<<std::endl;
+   std::cout<<"BMD_MA:"<<bmdsRes->BMD_MA<<std::endl;
+   std::cout<<"BMDL_MA:"<<bmdsRes->BMDL_MA<<std::endl;
+   std::cout<<"BMDU_MA:"<<bmdsRes->BMDU_MA<<std::endl;
+
+   printElement("model", colWidth);
+   printElement("BMD", colWidth);
+   printElement("BMDL", colWidth);
+   printElement("BMDU", colWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<bmdsRes->BMD.size(); i++){
+      printElement(i, colWidth);
+      printElement(bmdsRes->BMD[i], colWidth);
+      printElement(bmdsRes->BMDL[i], colWidth);
+      printElement(bmdsRes->BMDU[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"Error bars"<<std::endl;
+   printElement("dose grp", colWidth);
+   printElement("Lower", colWidth);
+   printElement("Upper", colWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<bmdsRes->ebLower.size(); i++){
+	   printElement(i,colWidth);
+	   printElement(bmdsRes->ebLower[i], colWidth);
+	   printElement(bmdsRes->ebUpper[i], colWidth);
+	   std::cout<<std::endl;
+   }
+
+ }
 
 void printBmdsStruct(struct continuous_GOF *gof){
 
@@ -5767,7 +5801,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    std::cout<<"p_value:"<<gof->p_value<<std::endl;
    std::cout<<"df:"<<gof->df<<std::endl;
 
-   std::cout<<"Error bounds"<<std::endl;
+   std::cout<<"Error bars"<<std::endl;
    printElement("Upper", colWidth);
    printElement("Lower", colWidth);
    std::cout<<std::endl;
@@ -5863,7 +5897,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    printBmdsStruct(&pyRes->gof);
    printBmdsStruct(&pyRes->aod);
 
-   std::cout<<std::endl<<"CDF"<<std::endl;
+   std::cout<<std::endl<<"bmd_dist"<<std::endl;
    printElement("Percentile", largeColWidth);
    printElement("Value", largeColWidth);
    std::cout<<std::endl;
@@ -5896,11 +5930,15 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    }
 
    std::cout<<"priors:"<<std::endl;
-   for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
-	   for (int j=0; j<pyAnal->prior_cols; j++){
-	      printElement(pyAnal->prior[i*j], colWidth);
-	   }
-	   std::cout<<std::endl;
+   if (pyAnal->prior.size()>0){
+     for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
+  	   for (int j=0; j<pyAnal->prior_cols; j++){
+  	      printElement(pyAnal->prior[i*j], colWidth);
+  	   }
+  	   std::cout<<std::endl;
+     }
+   } else {
+     std::cout<<"   prior size is zero"<<std::endl;
    }
    std::cout<<"BMR:"<<pyAnal->BMR<<std::endl;
    std::cout<<"alpha:"<<pyAnal->alpha<<std::endl;
@@ -5947,7 +5985,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    printBmdsStruct(&pyRes->gof);
    printBmdsStruct(&pyRes->aod);
 
-   std::cout<<std::endl<<"CDF"<<std::endl;
+   std::cout<<std::endl<<"bmd_dist"<<std::endl;
    printElement("Percentile", largeColWidth);
    printElement("Value", largeColWidth);
    std::cout<<std::endl;
@@ -5955,6 +5993,92 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
       printElement(pyRes->bmd_dist[i+pyRes->dist_numE], largeColWidth);
       printElement(pyRes->bmd_dist[i], largeColWidth);
       std::cout<<std::endl;
+   }
+
+ }
+
+
+ void printBmdsStruct(struct python_dichotomousMA_analysis *pyMA){
+
+   const int colWidth = 13;
+
+   std::cout<<std::endl<<"Python Dichotomous MA Analysis"<<std::endl;
+   std::cout<<"nmodels:"<<pyMA->nmodels<<std::endl;
+
+   bool printNparms = false;
+   if (pyMA->nparms.size() > 0){
+      printNparms = true;
+   } else {
+      
+   }
+
+   printElement("Model", colWidth);
+   if (printNparms){
+      printElement("nparms", colWidth);
+   }
+   printElement("actual_parms", colWidth);
+   printElement("prior_cols", colWidth);
+   printElement("model priors", colWidth);
+   std::cout<<std::endl;
+
+   for (int i=0; i<pyMA->nmodels; i++){
+      printElement(pyMA->models[i], colWidth);
+      if (pyMA->nparms.size()>i){
+         printElement(pyMA->nparms[i], colWidth);
+      }
+      printElement(pyMA->actual_parms[i], colWidth);
+      printElement(pyMA->prior_cols[i], colWidth);
+      printElement(pyMA->modelPriors[i], colWidth);
+      std::cout<<std::endl;
+   }
+
+   std::cout<<"priors:"<<std::endl;
+   for (int k=0; k<pyMA->nmodels; k++){
+      std::cout<<"model:"<<k<<std::endl;
+      for (int i=0; i<pyMA->priors[k].size()/pyMA->prior_cols[k]; i++){
+         for (int j=0; j<pyMA->prior_cols[k]; j++){
+            printElement(pyMA->priors[k][i*j], colWidth);
+         }
+         std::cout<<std::endl;
+      }
+   }
+
+   printBmdsStruct(&pyMA->pyDA);
+
+ }
+
+ void printBmdsStruct(struct python_dichotomousMA_result *pyRes){
+
+   const int colWidth = 10;
+   const int largeColWidth = 14;
+
+   std::cout<<std::endl<<"Python Dichotomous MA Result"<<std::endl;
+
+   std::cout<<"nmodels:"<<pyRes->nmodels<<std::endl;
+   std::cout<<"dist_numE:"<<pyRes->dist_numE<<std::endl;
+
+   for (int i=0; i<pyRes->post_probs.size(); i++){
+      std::cout<<"model:"<<i<<", Posterior Prob:"<<pyRes->post_probs[i]<<std::endl;
+   }
+
+   printBmdsStruct(&pyRes->bmdsRes);
+
+   //bmd_dist
+   std::cout<<std::endl<<"bmd_dist"<<std::endl;
+   printElement("Percentile", largeColWidth);
+   printElement("Value", largeColWidth);
+   std::cout<<std::endl;
+   for (int i=0; i<pyRes->dist_numE; i++){
+      printElement(pyRes->bmd_dist[i+pyRes->dist_numE], largeColWidth);
+      printElement(pyRes->bmd_dist[i], largeColWidth);
+      std::cout<<std::endl;
+   }
+
+   //ind model res
+   std::cout<<std::endl<<"models"<<std::endl;
+   for (int i=0; i<pyRes->nmodels; i++){
+      std::cout<<"model:"<<i<<std::endl;
+      printBmdsStruct(&pyRes->models[i]);
    }
 
  }

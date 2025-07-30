@@ -47,8 +47,8 @@ int main(void) {
 
   //  runOldContAnalysis();
   //  runCompleteContAnalysis();
-    runPythonDichoAnalysis();
-  //  runPythonDichoMA();
+  //  runPythonDichoAnalysis();
+    runPythonDichoMA();
   //  runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
   // runPythonNestedAnalysis();
@@ -2038,61 +2038,10 @@ void runPythonDichoMA() {
 
   pythonBMDSDichoMA(&ma_info, &ma_res);
 
-  //  printf("\nBMD Dist:\n");
-  //  for (int i=0; i<ma_res.dist_numE; i++){
-  //    printf("i:%d, perc:%f, dist:%f\n", i, ma_res.bmd_dist[i+ma_res.dist_numE],
-  //    ma_res.bmd_dist[i]);
-  //  }
-  struct dichotomous_model_result indRes;
-
-  //  printf("individual BMD Dist:\n");
-  //  for (int j=0; j<numModels; j++){
-  //    indRes = *ma_res.models[j];
-  //    printf("\nModel %d\n", j);
-  //    for (int i=0; i<indRes.dist_numE; i++){
-  //      printf("i:%d, perc:%f, dist:%f\n", i, indRes.bmd_dist[i+indRes.dist_numE],
-  //      indRes.bmd_dist[i]);
-  //    }
-  //  }
-
-  printf("\nBenchmark Dose\n");
-  printf("MA BMD: %f\n", ma_res.bmdsRes.BMD_MA);
-  printf("MA BMDL: %f\n", ma_res.bmdsRes.BMDL_MA);
-  printf("MA BMDU: %f\n", ma_res.bmdsRes.BMDU_MA);
-
-  printf("\nMA - Individual Models\n");
-  for (int i = 0; i < numModels; i++) {
-    printf("i:%d, model:%d\n", i, ma_res.models[i].model);
-    printf("\tpost prob:%f\n", ma_res.post_probs[i]);
-    printf("\tBMD:%f\n", ma_res.bmdsRes.BMD[i]);
-    printf("\tBMDL:%f\n", ma_res.bmdsRes.BMDL[i]);
-    printf("\tBMDU:%f\n", ma_res.bmdsRes.BMDU[i]);
-    printf("\tParms:\n");
-    for (int j = 0; j < ma_res.models[i].nparms; j++) {
-      printf("\t\tj:%d, value:%f\n", j, ma_res.models[i].parms[j]);
-    }
-    // printf("i:%d, model:%d, post prob:%f, BMD:%f, BMDL:%f,
-    // BMDU:%f\n",i,ma_res.models[i]->model,ma_res.post_probs[i],bmdsRes.BMD[i],bmdsRes.BMDL[i],bmdsRes.BMDU[i]);
-  }
-  printf("Error bars\n");
-  for (int i = 0; i < anal.n; i++) {
-    printf("%f\t%f\n", ma_res.bmdsRes.ebLower[i], ma_res.bmdsRes.ebUpper[i]);
-  }
-
-  //  printf("\nMA - Individual Models\n");
-  //  for(int i=0; i<numModels; i++){
-  //    printf("i:%d, model:%d, post prob:%f, BMD:%f, BMDL:%f,
-  //    BMDU:%f\n",i,ma_res.models[i]->model,ma_res.post_probs[i],bmdsRes.BMD[i],bmdsRes.BMDL[i],bmdsRes.BMDU[i]);
-  //  }
-
-  //  printf("model priors2\n");
-  //  for (int i=0; i<numModels; i++){
-  //    printf("model %d\n", i);
-  //    for (int j=0; j<numParms[i]*prCols; j++){
-  //      printf("%f, ", *(ma_info.priors[i] + j));
-  //    }
-  //    printf("\n");
-  //  }
+  std::cout<<"INPUT"<<std::endl; 
+  printBmdsStruct(&ma_info);
+  std::cout<<"OUTPUT"<<std::endl;
+  printBmdsStruct(&ma_res);
 }
 
 void runOldContAnalysis() {
