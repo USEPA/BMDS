@@ -77,7 +77,6 @@ include(FetchContent)
 
 # pybind11 cmake
 set(FETCHCONTENT_QUIET FALSE)
-set(PYBIND11_FINDPYTHON COMPAT)
 
 FetchContent_Declare(
   pybind11
