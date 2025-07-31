@@ -707,6 +707,14 @@ void BMDS_ENTRY_API __stdcall printBmdsStruct(struct BMDS_results *bmdsRes);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct BMDSMA_results *bmdsRes);
 
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct nestedLitterData *litter);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct nestedBootstrap *boot);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct nestedReducedData *red);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct nestedSRData *sr);
+
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_continuous_analysis *pyAnal);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_continuous_model_result *pyRes);
@@ -718,6 +726,10 @@ void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomousMA_result
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_multitumor_analysis *pyAnal);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_multitumor_result *pyRes);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_nested_analysis *pyAnal);
+
+void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_nested_result *pyRes);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_GOF *gof);
 

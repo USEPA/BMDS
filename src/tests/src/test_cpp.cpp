@@ -50,8 +50,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-    runPythonMultitumorAnalysis();
-  // runPythonNestedAnalysis();
+  //  runPythonMultitumorAnalysis();
+   runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -5142,7 +5142,12 @@ void runPythonNestedAnalysis() {
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
-  printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
+  std::cout<<"INPUT"<<std::endl;
+  printBmdsStruct(&pyAnal);
+  std::cout<<"OUTPUT"<<std::endl;
+  printBmdsStruct(&pyRes);
+  //printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
+
 }
 
 void printNestedModResult(
