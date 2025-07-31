@@ -5577,10 +5577,10 @@ void printBmdsStruct(struct testsOfInterest *TOI){
 
    std::vector<std::string> desc = {"Test1: A2 vs R", "Test2: A1 vs R", "Test3: A3 vs A2", "Test4: Fitted vs A3"};
 
-   std::cout<<std::endl<<"Tests Of Interest"<<std::endl;
+   std::cout<<std::endl<<"Struct: testsOfInterest"<<std::endl;
 
    printElement("Desc", nameWidth);
-   printElement("LLratio", numWidth);
+   printElement("llRatio", numWidth);
    printElement("DF", numWidth);
    printElement("pVal", numWidth);
    std::cout<<std::endl;
@@ -5601,7 +5601,7 @@ void printBmdsStruct(struct continuous_AOD *AOD){
    const int numWidth = 10;
    std::vector<std::string> desc = {"A1 Model", "A2 Model", "A3 Model", "Fitted Model", "R Model"};
 
-   std::cout<<std::endl<<"Continuous AOD"<<std::endl;
+   std::cout<<std::endl<<"Struct: continuous_AOD"<<std::endl;
    printElement("Model",nameWidth);
    printElement("LL",numWidth);
    printElement("nParms",numWidth);
@@ -5614,7 +5614,7 @@ void printBmdsStruct(struct continuous_AOD *AOD){
      printElement(AOD->AIC[i],numWidth);
      std::cout<<std::endl;
    }
-   std::cout<<"Additive Constant:"<<AOD->addConst<<std::endl;
+   std::cout<<"addConst:"<<AOD->addConst<<std::endl;
 
    printBmdsStruct(&AOD->TOI);
 }
@@ -5625,12 +5625,12 @@ void printBmdsStruct(struct dicho_AOD *AOD){
    const int numWidth = 10;
    std::vector<std::string> desc = {"Full Model", "Fitted Model", "Reduced Model"};
 
-   std::cout<<std::endl<<"Dichotomous AOD"<<std::endl;
+   std::cout<<std::endl<<"Struct: dicho_AOD"<<std::endl;
    printElement("Model",nameWidth);
    printElement("LL",numWidth);
    printElement("nParms",numWidth);
    printElement("Deviance",numWidth);
-   printElement("Test DF",numWidth);
+   printElement("DF",numWidth);
    printElement("P Value",numWidth);
    std::cout<<std::endl;
 
@@ -5662,7 +5662,7 @@ void printBmdsStruct(struct dicho_AOD *AOD){
 
    const int colWidth = 11;
 
-   std::cout<<std::endl<<"BMDS Results"<<std::endl;
+   std::cout<<std::endl<<"Struct: BMDS_results"<<std::endl;
    std::cout<<"BMD:"<<bmdsRes->BMD<<std::endl;
    std::cout<<"BMDL:"<<bmdsRes->BMDL<<std::endl;
    std::cout<<"BMDU:"<<bmdsRes->BMDU<<std::endl;
@@ -5671,9 +5671,9 @@ void printBmdsStruct(struct dicho_AOD *AOD){
    std::cout<<"chisq:"<<bmdsRes->chisq<<std::endl;
    
    printElement("bounded",colWidth);
-   printElement("StdErr",colWidth);
-   printElement("LowerConf",colWidth);
-   printElement("UpperConf",colWidth);
+   printElement("stdErr",colWidth);
+   printElement("lowerConf",colWidth);
+   printElement("upperConf",colWidth);
    std::cout<<std::endl;
 
    for(int i=0; i<bmdsRes->bounded.size(); i++){
@@ -5692,7 +5692,7 @@ void printBmdsStruct(struct dicho_AOD *AOD){
  void printBmdsStruct(struct BMDSMA_results *bmdsRes){
 
    const int colWidth = 10;
-   std::cout<<std::endl<<"BMDSMA Results"<<std::endl;
+   std::cout<<std::endl<<"Struct: BMDSMA_results"<<std::endl;
    std::cout<<"BMD_MA:"<<bmdsRes->BMD_MA<<std::endl;
    std::cout<<"BMDL_MA:"<<bmdsRes->BMDL_MA<<std::endl;
    std::cout<<"BMDU_MA:"<<bmdsRes->BMDU_MA<<std::endl;
@@ -5712,8 +5712,8 @@ void printBmdsStruct(struct dicho_AOD *AOD){
 
    std::cout<<"Error bars"<<std::endl;
    printElement("dose grp", colWidth);
-   printElement("Lower", colWidth);
-   printElement("Upper", colWidth);
+   printElement("ebLower", colWidth);
+   printElement("ebUpper", colWidth);
    std::cout<<std::endl;
    for (int i=0; i<bmdsRes->ebLower.size(); i++){
 	   printElement(i,colWidth);
@@ -5727,7 +5727,7 @@ void printBmdsStruct(struct dicho_AOD *AOD){
 void printBmdsStruct(struct nestedLitterData *litter){
 
    const int colWidth = 12;
-   std::cout<<std::endl<<"nestedLitterData"<<std::endl;
+   std::cout<<std::endl<<"Struct: nestedLitterData"<<std::endl;
 
    printElement("dose", colWidth);
    printElement("LSC", colWidth);
@@ -5754,7 +5754,7 @@ void printBmdsStruct(struct nestedLitterData *litter){
 void printBmdsStruct(struct nestedBootstrap *boot){
 
    const int colWidth = 10;
-   std::cout<<std::endl<<"nestedBootstrap"<<std::endl;
+   std::cout<<std::endl<<"Struct: nestedBootstrap"<<std::endl;
 
    printElement("pVal", colWidth);
    printElement("perc50", colWidth);
@@ -5775,7 +5775,7 @@ void printBmdsStruct(struct nestedBootstrap *boot){
 void printBmdsStruct(struct nestedReducedData *red){
 
    const int colWidth = 12;
-   std::cout<<std::endl<<"nestedReducedData"<<std::endl;
+   std::cout<<std::endl<<"Struct: nestedReducedData"<<std::endl;
 
    printElement("dose", colWidth);
    printElement("propAffect", colWidth);
@@ -5794,7 +5794,7 @@ void printBmdsStruct(struct nestedReducedData *red){
 
 void printBmdsStruct(struct nestedSRData *sr){
 
-   std::cout<<std::endl<<"nestedSRData"<<std::endl;
+   std::cout<<std::endl<<"Struct: nestedSRData"<<std::endl;
    std::cout<<"minSR:"<<sr->minSR<<std::endl;
    std::cout<<"avgSR:"<<sr->avgSR<<std::endl;
    std::cout<<"maxSR:"<<sr->maxSR<<std::endl;
@@ -5808,34 +5808,20 @@ void printBmdsStruct(struct continuous_GOF *gof){
 
    const int colWidth = 12;
 
-   std::cout<<std::endl<<"Continuous GOF"<<std::endl;
+   std::cout<<std::endl<<"Struct: continuous_GOF"<<std::endl;
    std::cout<<"n:"<<gof->n<<std::endl;
 
-   //first header row
-   printElement("",colWidth);
-   printElement("",colWidth);
-   printElement("Estimated",colWidth);
-   printElement("Calculated",colWidth);
-   printElement("Observed",colWidth);
-   printElement("Estimated",colWidth);
-   printElement("Calculated",colWidth);
-   printElement("Observed",colWidth);
-   printElement("",colWidth);
-   printElement("Error Bound",colWidth);
-   printElement("Error Bound",colWidth);
-   std::cout<<std::endl;
-   //second header row
-   printElement("Dose", colWidth);
+   printElement("dose", colWidth);
    printElement("size", colWidth);
-   printElement("Mean", colWidth);
-   printElement("Mean", colWidth);
-   printElement("Mean", colWidth);
-   printElement("SD", colWidth);
-   printElement("SD", colWidth);
-   printElement("SD", colWidth);
-   printElement("residual", colWidth);
-   printElement("Lower", colWidth);
-   printElement("Upper", colWidth);
+   printElement("estMean", colWidth);
+   printElement("calcMean", colWidth);
+   printElement("obsMean", colWidth);
+   printElement("estSD", colWidth);
+   printElement("calcSD", colWidth);
+   printElement("obsSD", colWidth);
+   printElement("res", colWidth);
+   printElement("ebLower", colWidth);
+   printElement("ebUpper", colWidth);
    std::cout<<std::endl;
 
    for (int i=0; i<gof->dose.size(); i++){
@@ -5859,16 +5845,11 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    
    const int colWidth = 12;
 
-   std::cout<<std::endl<<"Dichotomous GOF"<<std::endl;
+   std::cout<<std::endl<<"Struct: dichotomous_GOF"<<std::endl;
    std::cout<<"n:"<<gof->n<<std::endl;
 
-   //first header row
-   printElement("",colWidth);
-   printElement("Scaled",colWidth);
-   std::cout<<std::endl;
-   //second header row
-   printElement("Expected",colWidth);
-   printElement("Residual",colWidth);
+   printElement("expected",colWidth);
+   printElement("residual",colWidth);
    std::cout<<std::endl;
 
    for (int i=0; i<gof->n; i++){
@@ -5882,8 +5863,8 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    std::cout<<"df:"<<gof->df<<std::endl;
 
    std::cout<<"Error bars"<<std::endl;
-   printElement("Upper", colWidth);
-   printElement("Lower", colWidth);
+   printElement("ebUpper", colWidth);
+   printElement("ebLower", colWidth);
    std::cout<<std::endl;
    for (int i=0; i<gof->ebLower.size(); i++){
       printElement(gof->ebLower[i], colWidth);
@@ -5898,16 +5879,16 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
 
    const int colWidth = 8;
 
-   std::cout<<std::endl<<"Python Continuous Analysis"<<std::endl;
-   std::cout<<"cont_model:"<<pyAnal->model<<std::endl;
+   std::cout<<std::endl<<"Struct: python_continuous_analysis"<<std::endl;
+   std::cout<<"model:"<<pyAnal->model<<std::endl;
    std::cout<<"n:"<<pyAnal->n<<std::endl;
    std::cout<<"suff_stat:"<<(pyAnal->suff_stat?"true":"false")<<std::endl;
    std::cout<<"Data:"<<std::endl;
-   printElement("Dose", colWidth);
+   printElement("doses", colWidth);
    printElement("Y",colWidth);
    if (pyAnal->suff_stat){
-      printElement("SD",colWidth);
-      printElement("N_group",colWidth);
+      printElement("sd",colWidth);
+      printElement("n_group",colWidth);
    }
    std::cout<<std::endl;
    for (int i=0; i<pyAnal->doses.size(); i++){
@@ -5920,7 +5901,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
       std::cout<<std::endl;
    }
 
-   std::cout<<"priors:"<<std::endl;
+   std::cout<<"prior:"<<std::endl;
    for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
 	   for (int j=0; j<pyAnal->prior_cols; j++){
 	      printElement(pyAnal->prior[i*j], colWidth);
@@ -5950,7 +5931,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    const int colWidth = 8;
    const int largeColWidth = 14;
 
-   std::cout<<std::endl<<"Python Continuous Model Result"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_continuous_model_result"<<std::endl;
    std::cout<<"model:"<<pyRes->model<<std::endl;
    std::cout<<"dist:"<<pyRes->dist<<std::endl;
    std::cout<<"nparms:"<<pyRes->nparms<<std::endl;
@@ -5994,13 +5975,13 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
 
    const int colWidth = 8;
 
-   std::cout<<std::endl<<"Python Dichotomous Analysis"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_dichotomous_analysis"<<std::endl;
    std::cout<<"model:"<<pyAnal->model<<std::endl;
    std::cout<<"n:"<<pyAnal->n<<std::endl;
    std::cout<<"Data:"<<std::endl;
-   printElement("Dose", colWidth);
+   printElement("doses", colWidth);
    printElement("Y",colWidth);
-   printElement("N_group",colWidth);
+   printElement("n_group",colWidth);
    std::cout<<std::endl;
    for (int i=0; i<pyAnal->doses.size(); i++){
       printElement(pyAnal->doses[i], colWidth);
@@ -6009,7 +5990,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
       std::cout<<std::endl;
    }
 
-   std::cout<<"priors:"<<std::endl;
+   std::cout<<"prior:"<<std::endl;
    if (pyAnal->prior.size()>0){
      for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
   	   for (int j=0; j<pyAnal->prior_cols; j++){
@@ -6037,7 +6018,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    const int colWidth = 8;
    const int largeColWidth = 14;
 
-   std::cout<<std::endl<<"Python Dichotomous Model Result"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_dichotomous_model_result"<<std::endl;
    std::cout<<"model:"<<pyRes->model<<std::endl;
    std::cout<<"nparms:"<<pyRes->nparms<<std::endl;
    std::cout<<"parms"<<std::endl;
@@ -6082,7 +6063,7 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
 
    const int colWidth = 13;
 
-   std::cout<<std::endl<<"Python Dichotomous MA Analysis"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_dichotomousMA_analysis"<<std::endl;
    std::cout<<"nmodels:"<<pyMA->nmodels<<std::endl;
 
    bool printNparms = false;
@@ -6092,13 +6073,13 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
       
    }
 
-   printElement("Model", colWidth);
+   printElement("models", colWidth);
    if (printNparms){
       printElement("nparms", colWidth);
    }
    printElement("actual_parms", colWidth);
    printElement("prior_cols", colWidth);
-   printElement("model priors", colWidth);
+   printElement("modelPriors", colWidth);
    std::cout<<std::endl;
 
    for (int i=0; i<pyMA->nmodels; i++){
@@ -6132,13 +6113,13 @@ void printBmdsStruct(struct dichotomous_GOF *gof){
    const int colWidth = 10;
    const int largeColWidth = 14;
 
-   std::cout<<std::endl<<"Python Dichotomous MA Result"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_dichotomousMA_result"<<std::endl;
 
    std::cout<<"nmodels:"<<pyRes->nmodels<<std::endl;
    std::cout<<"dist_numE:"<<pyRes->dist_numE<<std::endl;
 
    for (int i=0; i<pyRes->post_probs.size(); i++){
-      std::cout<<"model:"<<i<<", Posterior Prob:"<<pyRes->post_probs[i]<<std::endl;
+      std::cout<<"model:"<<i<<", post_probs:"<<pyRes->post_probs[i]<<std::endl;
    }
 
    printBmdsStruct(&pyRes->bmdsRes);
@@ -6167,7 +6148,7 @@ void printBmdsStruct(struct python_multitumor_analysis *pyAnal){
 
    const int colWidth = 10;
 
-   std::cout<<std::endl<<"python_multitumor_analysis"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_multitumor_analysis"<<std::endl;
 
    std::cout<<"ndatasets:"<<pyAnal->ndatasets<<std::endl;
 
@@ -6195,7 +6176,7 @@ void printBmdsStruct(struct python_multitumor_result *pyRes){
 
    const int colWidth = 10;
 
-   std::cout<<std::endl<<"python_multitumor_result"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_multitumor_result"<<std::endl;
 
    std::cout<<"ndatasets:"<<pyRes->ndatasets<<std::endl;
 
@@ -6233,13 +6214,13 @@ void printBmdsStruct(struct python_nested_analysis *pyAnal){
 
    const int colWidth = 10;
 
-   std::cout<<std::endl<<"python_nested_analysis"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_nested_analysis"<<std::endl;
    
    std::cout<<"Data:"<<std::endl;
-   printElement("Dose", colWidth);
-   printElement("Incidence",colWidth);
+   printElement("doses", colWidth);
+   printElement("incidence",colWidth);
    printElement("litterSize",colWidth);
-   printElement("LSC",colWidth);
+   printElement("lsc",colWidth);
    std::cout<<std::endl;
    for (int i=0; i<pyAnal->doses.size(); i++){
       printElement(pyAnal->doses[i], colWidth);
@@ -6262,7 +6243,7 @@ void printBmdsStruct(struct python_nested_analysis *pyAnal){
    std::cout<<"seed:"<<pyAnal->seed<<std::endl;
    std::cout<<"penalizeAIC:"<<(pyAnal->penalizeAIC?"True":"False")<<std::endl;
   
-   std::cout<<"priors:"<<std::endl;
+   std::cout<<"prior:"<<std::endl;
    for (int i=0; i<pyAnal->prior.size()/pyAnal->prior_cols; i++){
          for (int j=0; j<pyAnal->prior_cols; j++){
             printElement(pyAnal->prior[i*j], colWidth);
@@ -6278,7 +6259,7 @@ void printBmdsStruct(struct python_nested_result *pyRes){
    const int colWidth = 10;
    const int largeColWidth = 14;
 
-   std::cout<<std::endl<<"python_nested_result"<<std::endl;
+   std::cout<<std::endl<<"Struct: python_nested_result"<<std::endl;
 
    std::cout<<"validResult:"<<(pyRes->validResult?"True":"False")<<std::endl;
    std::cout<<"model:"<<pyRes->model<<std::endl;
