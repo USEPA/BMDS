@@ -51,7 +51,7 @@ int main(void) {
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
-   runPythonNestedAnalysis();
+  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -1304,13 +1304,13 @@ void runPythonDichoAnalysis() {
 
   pythonBMDSDicho(&anal, &res);
 
-  std::cout<<"INPUT"<<std::endl;
+  std::cout << "INPUT" << std::endl;
   printBmdsStruct(&anal);
 
-  std::cout<<"OUTPUT"<<std::endl;
+  std::cout << "OUTPUT" << std::endl;
   printBmdsStruct(&res);
 
-  //printDichoModResult(&anal, &res, showResultsOverride);
+  // printDichoModResult(&anal, &res, showResultsOverride);
 }
 
 void runDichoMA() {
@@ -2038,9 +2038,9 @@ void runPythonDichoMA() {
 
   pythonBMDSDichoMA(&ma_info, &ma_res);
 
-  std::cout<<"INPUT"<<std::endl; 
+  std::cout << "INPUT" << std::endl;
   printBmdsStruct(&ma_info);
-  std::cout<<"OUTPUT"<<std::endl;
+  std::cout << "OUTPUT" << std::endl;
   printBmdsStruct(&ma_res);
 }
 
@@ -3970,16 +3970,15 @@ void runPythonContAnalysis() {
 
   printf("\n\n----------OUTPUT-----------\n");
   if (BMDSres.validResult || showResultsOverride) {
-      printBmdsStruct(&res);
-//    printf("\nBMD Dist:\n");
-//    for (int i = 0; i < res.dist_numE; i++) {
-//      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i + res.dist_numE], res.bmd_dist[i]);
-//    }
-//
+    printBmdsStruct(&res);
+    //    printf("\nBMD Dist:\n");
+    //    for (int i = 0; i < res.dist_numE; i++) {
+    //      printf("i:%d, perc:%f, dist:%f\n", i, res.bmd_dist[i + res.dist_numE], res.bmd_dist[i]);
+    //    }
+    //
   } else {
     printf("Model was not run\n");
   }
-
 
   // debugContAnal(&anal);
 }
@@ -4451,10 +4450,10 @@ void runPythonMultitumorAnalysis() {
 
   std::cout << std::endl;
   if (res.validResult) {
-     std::cout<<"INPUT"<<std::endl;
-     printBmdsStruct(&anal);
-     std::cout<<"OUTPUT"<<std::endl;
-     printBmdsStruct(&res);
+    std::cout << "INPUT" << std::endl;
+    printBmdsStruct(&anal);
+    std::cout << "OUTPUT" << std::endl;
+    printBmdsStruct(&res);
   } else {
     std::cout << "Multitumor analysis failed" << std::endl;
   }
@@ -5142,12 +5141,11 @@ void runPythonNestedAnalysis() {
 
   pythonBMDSNested(&pyAnal, &pyRes);
 
-  std::cout<<"INPUT"<<std::endl;
+  std::cout << "INPUT" << std::endl;
   printBmdsStruct(&pyAnal);
-  std::cout<<"OUTPUT"<<std::endl;
+  std::cout << "OUTPUT" << std::endl;
   printBmdsStruct(&pyRes);
-  //printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
-
+  // printNestedModResult(&pyAnal, &pyRes, showResultsOverride);
 }
 
 void printNestedModResult(

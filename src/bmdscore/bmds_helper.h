@@ -702,7 +702,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 }
 #endif
 
-//overloaded print statements
+// overloaded print statements
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct BMDS_results *bmdsRes);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct BMDSMA_results *bmdsRes);
@@ -744,4 +744,3 @@ void BMDS_ENTRY_API __stdcall printBmdsStruct(struct python_dichotomous_model_re
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct dichotomous_GOF *gof);
 
 void BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD);
-
