@@ -124,7 +124,7 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = "tests/test_pybmds"
-addopts = "--mpl-baseline-path=tests/data/mpl"
+addopts = "--mpl-baseline-path=tests/test_pybmds/data/mpl"
 python_files = ["test_*.py"]
 
 [tool.ruff]
@@ -154,6 +154,14 @@ sequence = [
 [tool.poe.tasks.test]
 help = "Run Python tests"
 cmd = "py.test"
+
+[tool.poe.tasks.test-mpl]
+help = "Run Python tests (compare images)"
+cmd = "py.test --mpl --mpl-generate-summary=html"
+
+[tool.poe.tasks.test-mpl-generate]
+help = "Run Python tests (generate images)"
+cmd = "py.test --mpl-generate-path=tests/test_pybmds/data/mpl"
 
 [tool.poe.tasks.format]
 help = "Format Python code"

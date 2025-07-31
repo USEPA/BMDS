@@ -1,10 +1,13 @@
 from textwrap import dedent
 
 import numpy as np
+import pytest
 
+import pybmds
 from pybmds.constants import PriorClass
 from pybmds.datasets import NestedDichotomousDataset
 from pybmds.models import nested_dichotomous
+from pybmds.plotting.nested_dichotomous import dose_litter_response_plot
 
 
 class TestNestedLogistic:
@@ -107,10 +110,10 @@ class TestNestedLogistic:
         )
         unpenalized.execute()
 
-        assert np.isclose(
+        assert np.allclose(
             penalized.results.parameters,
             unpenalized.results.parameters,
-        ).all()
+        )
         assert np.isclose(
             penalized.results.aic - 8,  # 4 dose groups; 4 parameters penalized
             unpenalized.results.aic,
@@ -189,3 +192,18 @@ class TestNctr:
         assert result.bmd > 0
         text = analysis.text()
         assert len(text) > 0
+
+
+class TestSession:
+    @pytest.mark.mpl_image_compare
+    def test_dose_litter_response_plot(self, nd_dataset4):
+        session = pybmds.Session(dataset=nd_dataset4)
+        for settings in [
+            {"litter_specific_covariate": 1, "intralitter_correlation": 1},
+            {"litter_specific_covariate": 1, "intralitter_correlation": 0},
+            {"litter_specific_covariate": 0, "intralitter_correlation": 1},
+            {"litter_specific_covariate": 0, "intralitter_correlation": 0},
+        ]:
+            session.add_default_models(settings=settings)
+        session.execute()
+        return dose_litter_response_plot(session)
