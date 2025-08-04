@@ -16,6 +16,7 @@
 .ruff_cache/
 .vscode/
 build/
+deps/
 dist/
 htmlcov/
 venv/
