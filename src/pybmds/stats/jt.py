@@ -12,6 +12,15 @@ class Alternative(StrEnum):
     increasing = "increasing"
     decreasing = "decreasing"
 
+    def calc_pval(self, decreasing: float, increasing: float) -> float:
+        if self == Alternative.two_sided:
+            return 2 * min(decreasing, increasing, 0.5)
+        elif self == Alternative.increasing:
+            return increasing
+        elif self == Alternative.decreasing:
+            return decreasing
+        raise ValueError("Unreachable code path")  # pragma: no cover
+
 
 class JonckheereResult(BaseModel):
     statistic: float
@@ -67,28 +76,18 @@ def jonckheere(
     jtrsum = int(2 * jtmean - jtrsum)
     statistic = jtrsum
 
-    if nperm is not None:
+    if nperm:
         pval = _jtperm(x, group_count, group_size, csum_groupsize, alternative, nperm)
-        pass
     else:
         if n > 100 or len(np.unique(x)) < n:
             zstat = (statistic - jtmean) / np.sqrt(jtvar)
-            pval = ss.norm.cdf(zstat)
-            if alternative == Alternative.two_sided:
-                pval = 2 * min(pval, 1 - pval, 0.5)
-            elif alternative == Alternative.increasing:
-                pval = 1 - pval
-            elif alternative == Alternative.decreasing:
-                pval = pval
+            decreasing = ss.norm.cdf(zstat)
+            increasing = 1 - decreasing
+            pval = alternative.calc_pval(decreasing, increasing)
         else:
-            dec_pval = sum(_conv_pdf(group_size)[1 : (jtrsum + 1)])
-            inc_pval = 1 - sum(_conv_pdf(group_size)[1:(jtrsum)])
-            if alternative == Alternative.two_sided:
-                pval = 2 * min(inc_pval, dec_pval, 0.5)
-            elif alternative == Alternative.increasing:
-                pval = inc_pval
-            elif alternative == Alternative.decreasing:
-                pval = dec_pval
+            decreasing = sum(_conv_pdf(group_size)[1 : (jtrsum + 1)])
+            increasing = 1 - sum(_conv_pdf(group_size)[1:(jtrsum)])
+            pval = alternative.calc_pval(decreasing, increasing)
 
     return JonckheereResult(statistic=statistic, p_value=pval, alternative=alternative)
 
@@ -127,17 +126,9 @@ def _jtperm(
 
         pjtrsum[j] = jtrsum
 
-    inc_pval = np.sum(pjtrsum <= pjtrsum[0]) / nperm
-    dec_pval = np.sum(pjtrsum >= pjtrsum[0]) / nperm
-
-    if alternative == Alternative.two_sided:
-        return 2 * min(inc_pval, dec_pval, 0.5)
-    elif alternative == Alternative.increasing:
-        return inc_pval
-    elif alternative == Alternative.decreasing:
-        return dec_pval
-
-    raise ValueError("Unreachable code")
+    decreasing = np.sum(pjtrsum >= pjtrsum[0]) / nperm
+    increasing = np.sum(pjtrsum <= pjtrsum[0]) / nperm
+    return alternative.calc_pval(decreasing, increasing)
 
 
 def _wilcox_normal_pdf(x: float, m: float, n: float) -> np.ndarray:

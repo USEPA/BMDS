@@ -20,6 +20,26 @@ class TestJonckheere:
         assert isinstance(result, JonckheereResult)
         assert 0 <= result.p_value <= 1
 
+    @pytest.mark.parametrize("alternative", ("increasing", "decreasing", "two-sided"))
+    def test_alternative_paths(self, alternative, valid_x, valid_group):
+        # run all code paths and confirm we always get a p_value.
+
+        # unique x
+        result = jonckheere(valid_x, valid_group, alternative=alternative)
+        assert 0 <= result.p_value <= 1
+
+        # non-unique x
+        result = jonckheere(
+            np.repeat(np.linspace(1, 10, 10), 2),
+            np.repeat(np.linspace(1, 5, 5), 4),
+            alternative=alternative,
+        )
+        assert 0 <= result.p_value <= 1
+
+        # permutations
+        result = jonckheere(valid_x, valid_group, alternative=alternative, nperm=10)
+        assert 0 <= result.p_value <= 1
+
     def test_data_not_numeric(self, valid_group):
         x = np.array("a b c".split())
         with pytest.raises(ValueError, match="Data needs to be numeric"):
