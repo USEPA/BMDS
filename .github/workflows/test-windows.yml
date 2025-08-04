@@ -5,6 +5,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -19,7 +20,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: pip
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          cache-dependency-glob: "**/pyproject.toml"
       - name: Set dependency path
         shell: bash
         run: |
@@ -40,18 +44,17 @@ jobs:
         run: tools/windows_ci.sh
       - name: Build package
         run: |
-          python -m pip install -U pip wheel
-          python -m pip install -e ".[dev]" -v
+          uv pip install --system -v -e ".[dev]"
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
           python -c "import pybmds; print(pybmds.bmdscore.version())"
       - name: Check shared object linked files
         run: |
-          python -m pip install pefile
+          uv pip install --system pefile
           python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
       - name: Build package
         run: |
-          python -m pip install -U pip wheel
+          uv pip install --system -v wheel
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
