@@ -9,6 +9,7 @@ from scipy import stats
 
 from .. import constants, plotting
 from ..stats.anova import AnovaTests
+from ..stats.normal import exact_rnorm
 from ..utils import str_list
 from .base import DatasetBase, DatasetMetadata, DatasetPlottingSchema, DatasetSchemaBase
 
@@ -170,6 +171,44 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         )
         ax.legend(**plotting.LEGEND_OPTS)
         return ax.get_figure()
+
+    def simulate_individual_dataset(
+        self,
+        seed: int = 42,
+        impose_positivity: bool = False,
+        tolerance: float = 0.01,
+        max_iterations: int = 100_000,
+    ) -> "ContinuousIndividualDataset":
+        """Generate a simulated individual dataset matching summary statistics.
+
+        May raise a `ValueError` if a simulated dataset cannot be generated.
+
+        Args:
+            seed (int, optional): Defaults to 42.
+            impose_positivity (bool, optional): Only positive responses are allowed.
+            tolerance (float, optional): Tolerance between simulated and actual mean/sd.
+            max_iterations (int, optional): Maximum number of iterations to attempt.
+        """
+        doses = []
+        responses = []
+        for dose, n, mu, sigma in zip(self.doses, self.ns, self.means, self.stdevs, strict=True):
+            n_int = math.ceil(n)  # may be a float; cast to int
+            values, _ = exact_rnorm(
+                n_int,
+                mu,
+                sigma,
+                seed=seed,
+                tolerance=tolerance,
+                max_iterations=max_iterations,
+                impose_positivity=impose_positivity,
+            )
+            doses.append([dose] * n_int)
+            responses.append(values)
+        return ContinuousIndividualDataset(
+            metadata=self.metadata,
+            doses=np.array(doses).flatten().tolist(),
+            responses=np.array(responses).flatten().tolist(),
+        )
 
     def serialize(self) -> "ContinuousDatasetSchema":
         anova = self.anova()
