@@ -23,7 +23,7 @@ dummy_empty = np.array(
 )
 
 
-@pytest.skip(reason="debugging GitHub Actions")
+@pytest.mark.skip(reason="debugging GitHub Actions")
 class TestJonckheereTrendTest:
     def test_valid_result(self):
         # This test should be valid
