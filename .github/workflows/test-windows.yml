@@ -41,7 +41,7 @@ jobs:
       - name: Build package
         run: |
           python -m pip install -U pip wheel
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev]" -v
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
           python -c "import pybmds; print(pybmds.bmdscore.version())"
