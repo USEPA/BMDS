@@ -29,7 +29,10 @@ class JonckheereResult(BaseModel):
 
 
 def jonckheere(
-    x, group, alternative: str | Alternative = Alternative.two_sided, nperm: int | None = None
+    x: np.ndarray,
+    group: np.ndarray,
+    alternative: str | Alternative = Alternative.two_sided,
+    nperm: int | None = None,
 ) -> JonckheereResult:
     """
     Compute Jonckheere-Terpstra test.
@@ -69,7 +72,7 @@ def jonckheere(
     for i in range(group_count - 1):
         na = group_size[i]
         nb = n - csum_groupsize[i + 1]
-        jtrsum += np.sum(ss.rankdata(x[csum_groupsize[i] : n])[:na]) - na * (na + 1) / 2
+        jtrsum += ((ss.rankdata(x[csum_groupsize[i] : n])[:na]) - na * (na + 1) / 2).sum()
         jtmean += na * nb / 2
         jtvar += na * nb * (na + nb + 1) / 12
 
@@ -81,12 +84,12 @@ def jonckheere(
     else:
         if n > 100 or len(np.unique(x)) < n:
             zstat = (statistic - jtmean) / np.sqrt(jtvar)
-            decreasing = ss.norm.cdf(zstat)
+            decreasing = float(ss.norm.cdf(zstat))
             increasing = 1 - decreasing
             pval = alternative.calc_pval(decreasing, increasing)
         else:
-            decreasing = sum(_conv_pdf(group_size)[1 : (jtrsum + 1)])
-            increasing = 1 - sum(_conv_pdf(group_size)[1:(jtrsum)])
+            decreasing = _conv_pdf(group_size)[1 : (jtrsum + 1)].sum()
+            increasing = 1 - _conv_pdf(group_size)[1:(jtrsum)].sum()
             pval = alternative.calc_pval(decreasing, increasing)
 
     return JonckheereResult(statistic=statistic, p_value=pval, alternative=alternative)
@@ -112,18 +115,15 @@ def _jtperm(
     nperm: int,
 ) -> float:
     """
-    Evaluate p-value.
+    Calculate a pvalue.
     """
-
     pjtrsum = np.zeros(nperm)
-
     for j in range(nperm):
         jtrsum = 0
         for i in range(group_count - 1):
             na = group_size[i]
             ranks = np.argsort(np.argsort(x[csum_groupsize[i] :]))
             jtrsum += np.sum(ranks[:na]) - na * (na + 1) / 2
-
         pjtrsum[j] = jtrsum
 
     decreasing = np.sum(pjtrsum >= pjtrsum[0]) / nperm
