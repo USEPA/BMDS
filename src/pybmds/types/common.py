@@ -8,6 +8,10 @@ from pydantic_core import CoreSchema, core_schema
 from .. import bmdscore
 from ..constants import BMDS_BLANK_VALUE
 
+import io
+import sys
+from contextlib import redirect_stdout
+
 
 def residual_of_interest(bmd: float, doses: list[float], residuals: list[float]) -> float:
     if bmd <= 0:
@@ -57,37 +61,24 @@ class NumpyFloatArray(PydanticNumpyArray):
 
 
 def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
-    """Recursively inspect a C++ object.
+    """Prints struct contents using C++ function
 
-    Append attributes to the a list of strings, which can be
-    transformed into a string representation of the object.
+    Captures stdout from C++ function and stores in a list of strings.
 
-    Args:
-        lines (list[str]): a list of strings to append to
+    Arg:
+        lines (list[str]): a list of strings converted from stdout
         obj (Any): the object to inspect
-        depth (int): current depth of recursion
+        depth (int): current depth of recursion (not currently implemented)
     """
-    indent = "  " * depth + "- "
-    lines.append(f"{indent}{obj.__class__.__name__}")
-    depth += 1
-    indent = "  " * depth + "- "
-    for attr, value in inspect.getmembers(obj):
-        if attr.startswith("__") or attr.startswith("_pybind11"):
-            continue
-        elif attr == "models" and "multitumor" in obj.__class__.__name__:
-            lines.append(f"{indent}{attr}:")
-            for model_list in value:
-                indent_x2 = "  " * (depth + 1) + "- "
-                lines.append(f"{indent_x2}[]:")
-                for model in model_list:
-                    inspect_cpp_obj(lines, model, depth + 2)
-        elif "bmdscore" in value.__class__.__module__:
-            if isinstance(value, bmdscore.cont_model | bmdscore.nested_model):
-                lines.append(f"{indent}{attr}: {value}")
-            else:
-                inspect_cpp_obj(lines, value, depth)
-        else:
-            lines.append(f"{indent}{attr}: {value}")
+    captured_output = io.StringIO()
+  
+    with redirect_stdout(captured_output):
+        bmdscore.printBmdsStruct(obj)
+
+    output_string = captured_output.getvalue()
+
+    lines.extend(output_string.splitlines())
+
 
 
 BOUND_FOOTNOTE = """
