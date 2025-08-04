@@ -22,7 +22,7 @@ class Alternative(StrEnum):
         raise ValueError("Unreachable code path")  # pragma: no cover
 
 
-class JonckheereResult(BaseModel):
+class TestResult(BaseModel):
     statistic: float
     p_value: float
     alternative: Alternative
@@ -33,11 +33,18 @@ def jonckheere(
     group: np.ndarray,
     alternative: str | Alternative = Alternative.two_sided,
     nperm: int | None = None,
-) -> JonckheereResult:
+) -> TestResult:
     """
     Compute Jonckheere-Terpstra test.
 
-    Returns test statistic, p-value, alternative hypothesis, and method used.
+    Args:
+        x (np.ndarray): ... TODO - add.
+        group (np.ndarray): ... TODO - add.
+        alternative (str | Alternative): ... TODO - add.
+        nperm (int, optional): ... TODO - add.
+
+    Returns:
+        Test statistic, p-value, alternative hypothesis, and method used.
     """
 
     if not np.issubdtype(x.dtype, np.number):
@@ -92,7 +99,7 @@ def jonckheere(
             increasing = 1 - _conv_pdf(group_size)[1:(jtrsum)].sum()
             pval = alternative.calc_pval(decreasing, increasing)
 
-    return JonckheereResult(statistic=statistic, p_value=pval, alternative=alternative)
+    return TestResult(statistic=statistic, p_value=pval, alternative=alternative)
 
 
 def _conv_pdf(group_size: np.ndarray) -> np.ndarray:

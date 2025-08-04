@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pybmds.stats.jt import JonckheereResult, jonckheere
+from pybmds.stats.jt import TestResult, jonckheere
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def valid_group():
 class TestJonckheere:
     def test_valid_result(self, valid_x, valid_group):
         result = jonckheere(valid_x, valid_group, alternative="increasing")
-        assert isinstance(result, JonckheereResult)
+        assert isinstance(result, TestResult)
         assert 0 <= result.p_value <= 1
 
     @pytest.mark.parametrize("alternative", ("increasing", "decreasing", "two-sided"))
