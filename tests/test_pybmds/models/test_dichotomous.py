@@ -90,10 +90,10 @@ class TestBmdModelDichotomous:
         unpenalized = Multistage(ddataset, settings=dict(penalize_aic_on_boundary=False))
         unpenalized.execute()
 
-        assert np.isclose(
+        assert np.allclose(
             penalized.results.parameters.values,
             unpenalized.results.parameters.values,
-        ).all()
+        )
         assert np.isclose(
             penalized.results.fit.aic + 2,
             unpenalized.results.fit.aic,
