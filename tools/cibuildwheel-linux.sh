@@ -5,7 +5,9 @@ set -xe
 yum update -y
 yum install -y cmake gsl-devel eigen3-devel
 
-cp ./vendor/nlopt-2.7.1.tar.gz ~
+NLOPT="nlopt-2.10.0"
+
+cp ./vendor/$NLOPT.tar.gz ~
 cd ~
-tar -xf nlopt-2.7.1.tar.gz && cd nlopt-2.7.1 && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=OFF .. && make install
+tar -xf $NLOPT.tar.gz && cd $NLOPT && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=OFF .. && make install
 cd $GITHUB_WORKSPACE
