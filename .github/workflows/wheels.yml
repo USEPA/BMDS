@@ -24,7 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-14]
+        # os: [ubuntu-22.04, windows-2022, macos-14]  # TODO - uncomment this line
+        os: [ubuntu-22.04]  # TODO - remove this line
     steps:
       - uses: actions/checkout@v4
 
