@@ -3,6 +3,7 @@ from enum import StrEnum
 import numpy as np
 import pandas as pd
 import scipy.stats as ss
+from pydantic import BaseModel
 from scipy.stats import norm
 
 
@@ -12,9 +13,15 @@ class Alternative(StrEnum):
     decreasing = "decreasing"
 
 
+class JonckheereResult(BaseModel):
+    statistic: float
+    p_value: float
+    alternative: Alternative
+
+
 def jonckheere(
     x, group, alternative: str | Alternative = Alternative.two_sided, nperm: int | None = None
-) -> dict:
+) -> JonckheereResult:
     """
     Compute Jonckheere-Terpstra test.
 
@@ -83,7 +90,7 @@ def jonckheere(
             elif alternative == Alternative.decreasing:
                 pval = dec_pval
 
-    return {"statistic": statistic, "p.value": pval, "alternative": alternative}
+    return JonckheereResult(statistic=statistic, p_value=pval, alternative=alternative)
 
 
 def _conv_pdf(group_size: np.ndarray) -> np.ndarray:
