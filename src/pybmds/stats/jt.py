@@ -1,14 +1,24 @@
+from enum import StrEnum
+
 import numpy as np
 import pandas as pd
 import scipy.stats as ss
 from scipy.stats import norm
 
 
-def jonckheere(x, group, alternative="two.sided", nperm=None):
+class Alternative(StrEnum):
+    two_sided = "two-sided"
+    increasing = "increasing"
+    decreasing = "decreasing"
+
+
+def jonckheere(
+    x, group, alternative: str | Alternative = Alternative.two_sided, nperm: int | None = None
+) -> dict:
     """
-    This function runs the Jonckheere-Terpstra test and returns
-    the test statistic, p-value, alternative hypothesis, and method
-    used
+    Compute Jonckheere-Terpstra test.
+
+    Returns test statistic, p-value, alternative hypothesis, and method used.
     """
 
     if not np.issubdtype(x.dtype, np.number):
@@ -18,19 +28,17 @@ def jonckheere(x, group, alternative="two.sided", nperm=None):
     if len(group) != len(x):
         raise ValueError("Data and group values need to be the same length")
 
-    alternative_opt = ["two.sided", "increasing", "decreasing"]
-    if alternative not in alternative_opt:
-        raise ValueError("Alternative choice not valid")
+    # will raise ValueError if not valid choice
+    alternative = Alternative(alternative)
 
-    finite_filter = np.isfinite(x) & np.isfinite(group)
-    x = x[finite_filter]
-    n = len(x)
+    x = x[np.isfinite(x) & np.isfinite(group)]
 
+    n = x.size
     if n == 0:
         raise ValueError("Either data or group is missing for all observations")
 
     group_size = pd.Series(group).value_counts()
-    group_count = len(group_size)
+    group_count = group_size.size
     group_size = group_size.to_numpy()
 
     if group_count <= 1:
@@ -38,7 +46,9 @@ def jonckheere(x, group, alternative="two.sided", nperm=None):
 
     csum_groupsize = np.concatenate(([0], np.cumsum(group_size)))
 
-    jtrsum = jtmean = jtvar = 0
+    jtrsum = 0
+    jtmean = 0
+    jtvar = 0
 
     for i in range(group_count - 1):
         na = group_size[i]
@@ -48,59 +58,55 @@ def jonckheere(x, group, alternative="two.sided", nperm=None):
         jtvar += na * nb * (na + nb + 1) / 12
 
     jtrsum = int(2 * jtmean - jtrsum)
-    STATISTIC = jtrsum
+    statistic = jtrsum
 
     if nperm is not None:
-        PVAL = _jtperm(x, group_count, group_size, csum_groupsize, alternative, nperm)
+        pval = _jtperm(x, group_count, group_size, csum_groupsize, alternative, nperm)
         pass
     else:
         if n > 100 or len(np.unique(x)) < n:
-            zstat = (STATISTIC - jtmean) / np.sqrt(jtvar)
-            PVAL = ss.norm.cdf(zstat)
-            if alternative == "two.sided":
-                PVAL = 2 * min(PVAL, 1 - PVAL, 0.5)
-            elif alternative == "increasing":
-                PVAL = 1 - PVAL
-            elif alternative == "decreasing":
-                PVAL = PVAL
+            zstat = (statistic - jtmean) / np.sqrt(jtvar)
+            pval = ss.norm.cdf(zstat)
+            if alternative == Alternative.two_sided:
+                pval = 2 * min(pval, 1 - pval, 0.5)
+            elif alternative == Alternative.increasing:
+                pval = 1 - pval
+            elif alternative == Alternative.decreasing:
+                pval = pval
         else:
-            dPVAL = sum(_conv_pdf(group_size)[1 : (jtrsum + 1)])
-            iPVAL = 1 - sum(_conv_pdf(group_size)[1:(jtrsum)])
-            if alternative == "two.sided":
-                PVAL = 2 * min(iPVAL, dPVAL, 0.5)
-            elif alternative == "increasing":
-                PVAL = iPVAL
-            elif alternative == "decreasing":
-                PVAL = dPVAL
+            dec_pval = sum(_conv_pdf(group_size)[1 : (jtrsum + 1)])
+            inc_pval = 1 - sum(_conv_pdf(group_size)[1:(jtrsum)])
+            if alternative == Alternative.two_sided:
+                pval = 2 * min(inc_pval, dec_pval, 0.5)
+            elif alternative == Alternative.increasing:
+                pval = inc_pval
+            elif alternative == Alternative.decreasing:
+                pval = dec_pval
 
-            pass
-
-    return {
-        "statistic": STATISTIC,
-        "p.value": PVAL,
-        "alternative": alternative,
-        "method": "Jonckheere-Terpstra test",
-    }
+    return {"statistic": statistic, "p.value": pval, "alternative": alternative}
 
 
-def _conv_pdf(group_size):
+def _conv_pdf(group_size: np.ndarray) -> np.ndarray:
     """
-    This function finds the probability density
-    function (PDF) using the convolution by
-    Mark van de Wiel
+    Find the probability density function (PDF) using the convolution by Mark van de Wiel.
     """
-
-    group_count = len(group_size)
+    group_count = group_size.size
     csum_groupsize = np.cumsum(np.flip(group_size))
     csum_groupsize = np.flip(csum_groupsize)
     max_sum = sum(group_size[:-1] * csum_groupsize[1:]) + 1
-    pdf = _jon_pdf(max_sum, group_count, csum_groupsize)
-    return pdf
+    return _jon_pdf(max_sum, group_count, csum_groupsize)
 
 
-def _jtperm(x, group_count, group_size, csum_groupsize, alternative, nperm):
+def _jtperm(
+    x: np.ndarray,
+    group_count: int,
+    group_size: np.ndarray,
+    csum_groupsize,
+    alternative: Alternative,
+    nperm: int,
+) -> float:
     """
-    This function evalvulates p-value
+    Evaluate p-value.
     """
 
     pjtrsum = np.zeros(nperm)
@@ -113,28 +119,27 @@ def _jtperm(x, group_count, group_size, csum_groupsize, alternative, nperm):
             jtrsum += np.sum(ranks[:na]) - na * (na + 1) / 2
 
         pjtrsum[j] = jtrsum
-        np.random.Generator(x)
 
-    iPVAL = np.sum(pjtrsum <= pjtrsum[0]) / nperm
-    dPVAL = np.sum(pjtrsum >= pjtrsum[0]) / nperm
+    inc_pval = np.sum(pjtrsum <= pjtrsum[0]) / nperm
+    dec_pval = np.sum(pjtrsum >= pjtrsum[0]) / nperm
 
-    if alternative == "two.sided":
-        PVAL = 2 * min(iPVAL, dPVAL, 0.5)
-    elif alternative == "increasing":
-        PVAL = iPVAL
-    elif alternative == "decreasing":
-        PVAL = dPVAL
+    if alternative == Alternative.two_sided:
+        return 2 * min(inc_pval, dec_pval, 0.5)
+    elif alternative == Alternative.increasing:
+        return inc_pval
+    elif alternative == Alternative.decreasing:
+        return dec_pval
 
-    return PVAL
+    raise ValueError("Unreachable code")
 
 
-def _wilcox_normal_pdf(x, m, n):
+def _wilcox_normal_pdf(x: float, m: float, n: float) -> np.ndarray:
     mu = m * (m + n + 1) / 2
     sigma = np.sqrt(m * n * (m + n + 1) / 12)
     return norm.pdf(x, loc=mu, scale=sigma)
 
 
-def _jon_pdf(max_sum, group_count, csum_groupsize):
+def _jon_pdf(max_sum: int, group_count: int, csum_groupsize: np.ndarray) -> np.ndarray:
     pdf = np.zeros(max_sum)
     pdf0 = np.zeros(max_sum)
     pdf1 = np.zeros(max_sum)

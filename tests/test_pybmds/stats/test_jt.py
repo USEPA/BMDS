@@ -23,7 +23,6 @@ dummy_empty = np.array(
 )
 
 
-@pytest.mark.skip(reason="debugging GitHub Actions")
 class TestJonckheereTrendTest:
     def test_valid_result(self):
         # This test should be valid
@@ -42,28 +41,28 @@ class TestJonckheereTrendTest:
         x = dummy_nonnumeric
         group = dummy_group
         with pytest.raises(ValueError, match="Data needs to be numeric"):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
 
     def test_group_not_numeric(self):
         # Group non-numeric to trigger warning
         x = dummy_data
         group = dummy_nonnumeric
         with pytest.raises(ValueError, match="Group needs to be numeric or ordered factor"):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
 
     def test_group_data_different_lengths(self):
         # Group and data are different lengths to trigger warning
         x = dummy_data
         group = dummy_uneven
         with pytest.raises(ValueError, match="Data and group values need to be the same length"):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
 
     def test_alternative_not_valid(self):
         # Using an alternative value that is not valid to trigger warning
         x = dummy_data
         group = dummy_group
         alternative = "test"
-        with pytest.raises(ValueError, match="Alternative choice not valid"):
+        with pytest.raises(ValueError, match="'test' is not a valid Alternative"):
             jonckheere(x, group, alternative)
 
     def test_data_empty(self):
@@ -73,7 +72,7 @@ class TestJonckheereTrendTest:
         with pytest.raises(
             ValueError, match="Either data or group is missing for all observations"
         ):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
 
     def test_group_empty(self):
         # Group data is missing to trigger warning
@@ -82,11 +81,11 @@ class TestJonckheereTrendTest:
         with pytest.raises(
             ValueError, match="Either data or group is missing for all observations"
         ):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
 
     def test_one_group(self):
         # Testing only one unique group to trigger warning
         x = dummy_data
         group = dummy_1unique
         with pytest.raises(ValueError, match="Only one group has non-missing data"):
-            jonckheere(x, group, alternative="two.sided")
+            jonckheere(x, group, alternative="two-sided")
