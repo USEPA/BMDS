@@ -5667,15 +5667,19 @@ void printBmdsStruct(struct BMDS_results *bmdsRes) {
 
   printElement("bounded", colWidth);
   printElement("stdErr", colWidth);
-  printElement("lowerConf", colWidth);
-  printElement("upperConf", colWidth);
+  if (bmdsRes->lowerConf.size() > 0) {
+    printElement("lowerConf", colWidth);
+    printElement("upperConf", colWidth);
+  }
   std::cout << std::endl;
 
   for (int i = 0; i < bmdsRes->bounded.size(); i++) {
     printElement((bmdsRes->bounded[i] ? "true" : "false"), colWidth);
     printElement(bmdsRes->stdErr[i], colWidth);
-    printElement(bmdsRes->lowerConf[i], colWidth);
-    printElement(bmdsRes->upperConf[i], colWidth);
+    if (bmdsRes->lowerConf.size() > 0) {
+      printElement(bmdsRes->lowerConf[i], colWidth);
+      printElement(bmdsRes->upperConf[i], colWidth);
+    }
     std::cout << std::endl;
   }
 
