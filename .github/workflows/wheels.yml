@@ -16,6 +16,10 @@ env:
   CIBW_TEST_REQUIRES: "pytest pytest-mpl"
   CIBW_TEST_COMMAND: "pytest {project}/tests"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
 
   build_wheels:
