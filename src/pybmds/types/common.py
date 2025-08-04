@@ -1,4 +1,5 @@
-import inspect
+import io
+from contextlib import redirect_stdout
 from typing import Any
 
 import numpy as np
@@ -7,10 +8,6 @@ from pydantic_core import CoreSchema, core_schema
 
 from .. import bmdscore
 from ..constants import BMDS_BLANK_VALUE
-
-import io
-import sys
-from contextlib import redirect_stdout
 
 
 def residual_of_interest(bmd: float, doses: list[float], residuals: list[float]) -> float:
@@ -71,14 +68,13 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
         depth (int): current depth of recursion (not currently implemented)
     """
     captured_output = io.StringIO()
-  
+
     with redirect_stdout(captured_output):
         bmdscore.printBmdsStruct(obj)
 
     output_string = captured_output.getvalue()
 
     lines.extend(output_string.splitlines())
-
 
 
 BOUND_FOOTNOTE = """
