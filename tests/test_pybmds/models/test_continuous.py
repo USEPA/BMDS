@@ -136,7 +136,7 @@ class TestBmdModelContinuous:
         assert model.results.bmd == pytest.approx(85.1, abs=0.1)
 
     def test_penalize_aic_on_boundary(self):
-        # linear dataset; the Polynomial term should be on boundary
+        # linear dataset; the Polynomial parameter should be on boundary
         ds = pybmds.ContinuousDataset(
             doses=[0, 50, 100, 150],
             ns=[10, 10, 10, 10],
