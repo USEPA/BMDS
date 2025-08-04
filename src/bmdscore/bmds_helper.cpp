@@ -5884,7 +5884,7 @@ void printBmdsStruct(struct python_continuous_analysis *pyAnal) {
   std::cout << "prior:" << std::endl;
   for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
     for (int j = 0; j < pyAnal->prior_cols; j++) {
-      printElement(pyAnal->prior[i * j], colWidth);
+      printElement(pyAnal->prior[i * pyAnal->prior_cols + j], colWidth);
     }
     std::cout << std::endl;
   }
@@ -5898,7 +5898,7 @@ void printBmdsStruct(struct python_continuous_analysis *pyAnal) {
   std::cout << "degree:" << pyAnal->degree << std::endl;
   std::cout << "burnin:" << pyAnal->burnin << std::endl;
   std::cout << "parms:" << pyAnal->parms << std::endl;
-  std::cout << "prior_cols:" << pyAnal->parms << std::endl;
+  std::cout << "prior_cols:" << pyAnal->prior_cols << std::endl;
   std::cout << "transform_dose:" << pyAnal->transform_dose << std::endl;
   std::cout << "restricted:" << (pyAnal->restricted ? "true" : "false") << std::endl;
   std::cout << "detectAdvDir:" << (pyAnal->detectAdvDir ? "true" : "false") << std::endl;
@@ -5923,7 +5923,7 @@ void printBmdsStruct(struct python_continuous_model_result *pyRes) {
   int matSize = sqrt(pyRes->cov.size());
   for (int i = 0; i < matSize; i++) {
     for (int j = 0; j < matSize; j++) {
-      printElement(pyRes->cov[i * j], largeColWidth);
+      printElement(pyRes->cov[i * matSize + j], largeColWidth);
     }
     std::cout << std::endl;
   }
@@ -5969,7 +5969,7 @@ void printBmdsStruct(struct python_dichotomous_analysis *pyAnal) {
   if (pyAnal->prior.size() > 0) {
     for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
       for (int j = 0; j < pyAnal->prior_cols; j++) {
-        printElement(pyAnal->prior[i * j], colWidth);
+        printElement(pyAnal->prior[i * pyAnal->prior_cols + j], colWidth);
       }
       std::cout << std::endl;
     }
@@ -5982,7 +5982,7 @@ void printBmdsStruct(struct python_dichotomous_analysis *pyAnal) {
   std::cout << "degree:" << pyAnal->degree << std::endl;
   std::cout << "burnin:" << pyAnal->burnin << std::endl;
   std::cout << "parms:" << pyAnal->parms << std::endl;
-  std::cout << "prior_cols:" << pyAnal->parms << std::endl;
+  std::cout << "prior_cols:" << pyAnal->prior_cols << std::endl;
   std::cout << "penalizeAIC:" << (pyAnal->penalizeAIC ? "true" : "false") << std::endl;
 }
 
@@ -6003,7 +6003,7 @@ void printBmdsStruct(struct python_dichotomous_model_result *pyRes) {
   int matSize = sqrt(pyRes->cov.size());
   for (int i = 0; i < matSize; i++) {
     for (int j = 0; j < matSize; j++) {
-      printElement(pyRes->cov[i * j], largeColWidth);
+      printElement(pyRes->cov[i * matSize + j], largeColWidth);
     }
     std::cout << std::endl;
   }
@@ -6066,7 +6066,7 @@ void printBmdsStruct(struct python_dichotomousMA_analysis *pyMA) {
     std::cout << "model:" << k << std::endl;
     for (int i = 0; i < pyMA->priors[k].size() / pyMA->prior_cols[k]; i++) {
       for (int j = 0; j < pyMA->prior_cols[k]; j++) {
-        printElement(pyMA->priors[k][i * j], colWidth);
+        printElement(pyMA->priors[k][i * pyMA->prior_cols[k] + j], colWidth);
       }
       std::cout << std::endl;
     }
@@ -6206,7 +6206,7 @@ void printBmdsStruct(struct python_nested_analysis *pyAnal) {
   std::cout << "prior:" << std::endl;
   for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
     for (int j = 0; j < pyAnal->prior_cols; j++) {
-      printElement(pyAnal->prior[i * j], colWidth);
+      printElement(pyAnal->prior[i * pyAnal->prior_cols + j], colWidth);
     }
     std::cout << std::endl;
   }
@@ -6235,7 +6235,7 @@ void printBmdsStruct(struct python_nested_result *pyRes) {
   int matSize = sqrt(pyRes->cov.size());
   for (int i = 0; i < matSize; i++) {
     for (int j = 0; j < matSize; j++) {
-      printElement(pyRes->cov[i * j], largeColWidth);
+      printElement(pyRes->cov[i * matSize + j], largeColWidth);
     }
     std::cout << std::endl;
   }
