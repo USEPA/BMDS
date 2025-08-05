@@ -81,8 +81,8 @@ jobs:
 
           # set export locations
           export EIGEN_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/include/eigen3"
-          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/include"
-          export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/lib"
+          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic"
+          export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic"
           export CMAKE_C_COMPILER="/usr/bin/gcc-11"
           export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
           export TEST_EXC="'/usr/include/*'"
@@ -95,6 +95,9 @@ jobs:
 
           echo $GSL_DIR
           ls -laht $GSL_DIR
+
+          uv pip install --system -q setuptools
+          python setup.py develop
 
           uv pip install --system -v -e ".[dev,docs]"
           stubgen -p pybmds.bmdscore -o src
