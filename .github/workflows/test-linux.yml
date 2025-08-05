@@ -82,12 +82,18 @@ jobs:
 
           # set export locations
           export EIGEN_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/include/eigen3"
-          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic"
+          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/lib"
           export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic"
           export CMAKE_C_COMPILER="/usr/bin/gcc-11"
           export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
           export TEST_EXC="'/usr/include/*'"
 
+          echo "------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------"
           echo $EIGEN_DIR
           ls -laht $EIGEN_DIR
 
