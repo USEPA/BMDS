@@ -39,11 +39,10 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "poethepoet~=0.32.2",
-  "coverage~=7.10.2",
+  "coverage~=7.6.4",
   "mypy~=1.13.0",
   "pybind11==3.0.0",
   "pytest-mpl~=0.17.0",
-  "pytest-xdist~=3.8.0",
   "pytest~=8.3.3",
   "ruff~=0.7.1",
   "setuptools~=75.3.0",
