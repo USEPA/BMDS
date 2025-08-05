@@ -63,9 +63,9 @@ jobs:
           ls "$NLOPT_DIR" -laht
           ls "$GSL_DIR" -laht
 
-      #     # debugging
-      #     uv pip install --system setuptools
-      #     python setup.py develop
+          # debugging
+          uv pip install --system setuptools
+          python setup.py develop
 
       #     # install dependencies and compile pybmds
       #     uv pip install --system -v -e ".[dev]"
