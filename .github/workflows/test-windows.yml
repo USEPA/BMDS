@@ -45,29 +45,30 @@ jobs:
       # --------------------------------------------------------
       # --------------------- Setup pybmds ---------------------
       # --------------------------------------------------------
-      - name: set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          cache-dependency-glob: "**/pyproject.toml"
-      - name: Build package
-        shell: bash
-        run: |
-          uv pip install --system -v -e ".[dev]"
-          stubgen -p pybmds.bmdscore -o src
-          ruff format src/pybmds/bmdscore.pyi
-          python -c "import pybmds; print(pybmds.bmdscore.version())"
-      - name: Check shared object linked files
-        run: |
-          uv pip install --system pefile
-          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      - name: Build package
-        run: |
-          uv pip install --system -v wheel
-          python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v4
-        with:
-          path: ./dist/*.whl
+      # - name: set up Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.13"
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v5
+      #   with:
+      #     cache-dependency-glob: "**/pyproject.toml"
+      # - name: Build package
+      #   shell: bash
+      #   run: |
+      #     source ./tools/ci_setup.sh
+      #     uv pip install --system -v -e ".[dev]"
+      #     stubgen -p pybmds.bmdscore -o src
+      #     ruff format src/pybmds/bmdscore.pyi
+      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
+      # - name: Check shared object linked files
+      #   run: |
+      #     uv pip install --system pefile
+      #     python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+      # - name: Build package
+      #   run: |
+      #     uv pip install --system -v wheel
+      #     python setup.py bdist_wheel
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     path: ./dist/*.whl
