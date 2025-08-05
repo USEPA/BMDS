@@ -168,8 +168,9 @@ jobs:
           cd src/build
           cmake ..
           make -j$(nproc)
-
-          # run tests
+      - name: Run tests and generate report
+        run: |
+          cd src/build
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
         with:
