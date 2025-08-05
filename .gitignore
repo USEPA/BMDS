@@ -25,6 +25,10 @@ wheelhouse/
 .coverage/
 .env
 
+# C++ build system
+vcpkg/
+vcpkg_installed/
+
 # documentation outputs
 docs/source/recipes/output/*
 !docs/source/recipes/output/.gitkeep
