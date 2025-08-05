@@ -1,0 +1,15 @@
+{
+  "name": "bmdscore",
+  "version-string": "0.0.1",
+  "dependencies": [
+    {"name": "gsl"},
+    {"name": "eigen3"},
+    {"name": "nlopt"}
+  ],
+  "builtin-baseline": "c9c17dcea3016bc241df0422e82b8aea212dcb93",
+  "overrides": [
+    { "name": "gsl", "version": "2.8#1"},
+    { "name": "eigen3", "version": "3.4.0#5"},
+    { "name": "nlopt", "version": "2.10.0"}
+  ]
+}
