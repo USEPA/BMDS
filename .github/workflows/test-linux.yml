@@ -1,25 +1,27 @@
 name: Test Linux
 
 on:
-  workflow_dispatch:
   pull_request:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      generateDocx:
+        description: 'Generate docx report'
+        required: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+
   pybmds:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # os: [ubuntu-22.04, windows-2022, macos-14]
-        os: [ubuntu-22.04]
+    runs-on: ubuntu-22.04
+    env:
+      generateDocx: ${{ inputs.generateDocx }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,77 +43,71 @@ jobs:
           path: vcpkg
           ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
 
-      - name: Install libraries with vcpkg.json (macOS/Linux)
-        if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os != 'Windows'
-        run: "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh"
-
-      - name: Install libraries with vcpkg.json (macOS/Linux)
-        if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os != 'Windows'
-        shell: bash
-        run: ./vcpkg/vcpkg install --host-triplet=x64-linux-dynamic
-
-      - name: Install libraries with vcpkg.json (Windows)
-        if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os == 'Windows'
-        shell: bash
-        run: ./vcpkg/bootstrap-vcpkg.sh
-
-      - name: Install libraries with vcpkg.json (Windows)
-        if: steps.cache-deps.outputs.cache-hit != 'true' && runner.os == 'Windows'
-        shell: bash
-        run: ./vcpkg/vcpkg.exe install --host-triplet=x64-windows-dynamic
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh"
+          ./vcpkg/vcpkg install --host-triplet=x64-linux-dynamic
 
       # --------------------------------------------------------
       # --------------------- Setup pybmds ---------------------
       # --------------------------------------------------------
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           cache-dependency-glob: "**/pyproject.toml"
-
       - name: Build pybmds
         run: |
-          # install dependencies
-          sudo apt-get update -y
-          sudo apt-get install -y automake build-essential libtool make cmake lcov
+          source ./tools/linux_ci_env.sh
 
-          # set export locations
-          export EIGEN_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/include/eigen3"
-          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic/lib"
-          export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux-dynamic"
-          export CMAKE_C_COMPILER="/usr/bin/gcc-11"
-          export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
-          export TEST_EXC="'/usr/include/*'"
-
-          echo "------------------------------------------------------------------------------------"
-          echo "------------------------------------------------------------------------------------"
-          echo "------------------------------------------------------------------------------------"
-          echo "------------------------------------------------------------------------------------"
-          echo "------------------------------------------------------------------------------------"
-          echo "------------------------------------------------------------------------------------"
-          echo $EIGEN_DIR
-          ls -laht $EIGEN_DIR
-
-          echo $NLOPT_DIR
-          ls -laht $NLOPT_DIR
-
-          echo $GSL_DIR
-          ls -laht $GSL_DIR
-
-          uv pip install --system -q setuptools
-          python setup.py develop
-
+          # install dependencies and compile pybmds
           uv pip install --system -v -e ".[dev,docs]"
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
           python -c "import pybmds; print(pybmds.bmdscore.version())"
 
+          # show linked files
           ls -lah src/pybmds
           ldd src/pybmds/bmdscore*.so
+
+      # --------------------------------------------------------
+      # --------------------- Test pybmds ----------------------
+      # --------------------------------------------------------
+      - name: loc
+        run: |
+          echo "# Lines of Code Report" >> $GITHUB_STEP_SUMMARY
+          poe loc >> $GITHUB_STEP_SUMMARY
+      - name: Check linting
+        run: |
+          poe lint
+      - name: Test with pytest
+        run: |
+          coverage run -m pytest
+          echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
+          coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+          coverage html -d coverage -i
+      - name: Build documentation
+        run: |
+          poe docs
+          if [ "$generateDocx" = "true" ]; then
+            poe docs-docx
+            rm -rf docs/build/singlehtml
+          fi
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: docs/build/
+          retention-days: 14
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 14
 
 
