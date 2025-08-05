@@ -15,5 +15,6 @@ if [ "$RUNNER_OS" == "Linux" ]; then
     export GSL_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic"
     export CMAKE_C_COMPILER="/usr/bin/gcc-11"
     export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
-
+    export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
+    echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
 fi
