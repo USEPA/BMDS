@@ -33,9 +33,9 @@ fi
 
 if [ "$RUNNER_OS" == "Windows" ]; then
     # set environment variables
-    export EIGEN_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows-static\include"
-    export NLOPT_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows-static\lib"
-    export GSL_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows-static\lib"
+    export EIGEN_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\include"
+    export NLOPT_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\lib"
+    export GSL_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows"
     export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
     echo "CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
 

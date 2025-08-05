@@ -59,25 +59,29 @@ jobs:
           # setup compiler environment
           source ./tools/ci_setup.sh
 
-          # debugging
-          uv pip install --system setuptools
-          python setup.py develop
+          ls "$EIGEN_DIR" -laht
+          ls "$NLOPT_DIR" -laht
+          ls "$GSL_DIR" -laht
 
-          # install dependencies and compile pybmds
-          uv pip install --system -v -e ".[dev]"
-          stubgen -p pybmds.bmdscore -o src
-          ruff format src/pybmds/bmdscore.pyi
+      #     # debugging
+      #     uv pip install --system setuptools
+      #     python setup.py develop
 
-          # check successful install
-          python -c "import pybmds; print(pybmds.bmdscore.version())"
-      - name: Check shared object linked files
-        run: |
-          uv pip install --system pefile
-          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      - name: Build package
-        run: |
-          uv pip install --system -v wheel
-          python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v4
-        with:
-          path: ./dist/*.whl
+      #     # install dependencies and compile pybmds
+      #     uv pip install --system -v -e ".[dev]"
+      #     stubgen -p pybmds.bmdscore -o src
+      #     ruff format src/pybmds/bmdscore.pyi
+
+      #     # check successful install
+      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
+      # - name: Check shared object linked files
+      #   run: |
+      #     uv pip install --system pefile
+      #     python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+      # - name: Build package
+      #   run: |
+      #     uv pip install --system -v wheel
+      #     python setup.py bdist_wheel
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     path: ./dist/*.whl
