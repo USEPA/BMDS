@@ -47,7 +47,9 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
           "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh"
-          ./vcpkg/vcpkg install --host-triplet=x64-linux-dynamic
+          cd vcpkg
+          git apply ../vendor/nlopt.patch
+          vcpkg install --host-triplet=x64-linux-dynamic
 
       # --------------------------------------------------------
       # --------------------- Setup pybmds ---------------------
