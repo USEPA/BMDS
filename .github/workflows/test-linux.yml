@@ -49,6 +49,7 @@ jobs:
           "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh"
           cd vcpkg
           git apply ../vendor/nlopt.patch
+          git diff
           vcpkg install --host-triplet=x64-linux-dynamic
 
       # --------------------------------------------------------

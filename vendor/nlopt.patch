@@ -7,6 +7,7 @@ index 2270ce0182..95aa1fe5e9 100644
          -DNLOPT_FORTRAN=OFF
          -DNLOPT_GUILE=OFF
 -        -DNLOPT_LUKSAN=OFF
++        -DNLOPT_LUKSAN=ON
          -DNLOPT_MATLAB=OFF
          -DNLOPT_OCTAVE=OFF
          -DNLOPT_PYTHON=OFF
