@@ -88,8 +88,8 @@ jobs:
 
           # set export locations
           export EIGEN_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux/include/eigen3"
-          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux"
-          export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux"
+          export NLOPT_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux/include"
+          export GSL_DIR="${{ github.workspace }}/vcpkg_installed/x64-linux/include"
           export CMAKE_C_COMPILER="/usr/bin/gcc-11"
           export CMAKE_CXX_COMPILER="/usr/bin/g++-11"
           export TEST_EXC="'/usr/include/*'"
