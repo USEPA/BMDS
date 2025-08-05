@@ -26,7 +26,6 @@ jobs:
         with:
           path: vcpkg_installed
           key: vcpkg_installed-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
       - name: Acquire vcpkg
         if: steps.cache-deps.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
@@ -34,7 +33,6 @@ jobs:
           repository: "Microsoft/vcpkg"
           path: vcpkg
           ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
-
       - name: Install libraries with vcpkg.json
         if: steps.cache-deps.outputs.cache-hit != 'true'
         shell: bash
@@ -59,29 +57,21 @@ jobs:
           # setup compiler environment
           source ./tools/ci_setup.sh
 
-          ls "$EIGEN_DIR" -laht
-          ls "$NLOPT_DIR" -laht
-          ls "$GSL_DIR" -laht
+          # install dependencies and compile pybmds
+          uv pip install --system -v -e ".[dev]"
+          stubgen -p pybmds.bmdscore -o src
+          ruff format src/pybmds/bmdscore.pyi
 
-          # debugging
-          uv pip install --system setuptools
-          python setup.py develop
-
-      #     # install dependencies and compile pybmds
-      #     uv pip install --system -v -e ".[dev]"
-      #     stubgen -p pybmds.bmdscore -o src
-      #     ruff format src/pybmds/bmdscore.pyi
-
-      #     # check successful install
-      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
-      # - name: Check shared object linked files
-      #   run: |
-      #     uv pip install --system pefile
-      #     python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      # - name: Build package
-      #   run: |
-      #     uv pip install --system -v wheel
-      #     python setup.py bdist_wheel
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     path: ./dist/*.whl
+          # check successful install
+          python -c "import pybmds; print(pybmds.bmdscore.version())"
+      - name: Check shared object linked files
+        run: |
+          uv pip install --system pefile
+          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+      - name: Build package
+        run: |
+          uv pip install --system -v wheel
+          python setup.py bdist_wheel
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./dist/*.whl
