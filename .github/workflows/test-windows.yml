@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg.exe install --overlay-ports="./vendor/ports" --host-triplet=x64-windows-static
+          ./vcpkg/vcpkg.exe install --overlay-ports="./vendor/ports" --host-triplet=x64-windows-dynamic
 
       # --------------------------------------------------------
       # --------------------- Setup pybmds ---------------------
