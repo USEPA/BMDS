@@ -39,8 +39,8 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          "${{ github.workspace }}\vcpkg\bootstrap-vcpkg.sh"
-          ${{ github.workspace }}\vcpkg\vcpkg.exe install --overlay-ports="${{ github.workspace }}\vendor\ports" --host-triplet=x64-windows-static
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg.exe install --overlay-ports="./vendor/ports" --host-triplet=x64-windows-static
 
       # --------------------------------------------------------
       # --------------------- Setup pybmds ---------------------
