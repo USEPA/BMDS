@@ -1,6 +1,4 @@
-import io
-#from contextlib import redirect_stdout
-import sys
+import inspect
 from typing import Any
 
 import numpy as np
@@ -90,7 +88,6 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
                 inspect_cpp_obj(lines, value, depth)
         else:
             lines.append(f"{indent}{attr}: {value}")
-
 
 
 BOUND_FOOTNOTE = """
