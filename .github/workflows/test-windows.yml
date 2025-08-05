@@ -59,6 +59,10 @@ jobs:
           # setup compiler environment
           source ./tools/ci_setup.sh
 
+          # debugging
+          uv pip install --system setuptools
+          python setup.py develop
+
           # install dependencies and compile pybmds
           uv pip install --system -v -e ".[dev]"
           stubgen -p pybmds.bmdscore -o src
