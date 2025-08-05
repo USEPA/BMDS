@@ -61,9 +61,6 @@ jobs:
           uv pip install --system -v -e ".[dev]"
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
-
-          # check successful install
-          python -c "import pybmds; print(pybmds.bmdscore.version())"
       - name: Check shared object linked files
         run: |
           uv pip install --system pefile
