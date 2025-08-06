@@ -4,7 +4,6 @@
 set -xe
 
 if [ "$RUNNER_OS" == "Linux" ]; then
-
     # install dependencies
     sudo apt-get update -y
     sudo apt-get install -y build-essential libtool cmake lcov cloc
@@ -48,6 +47,16 @@ fi
 
 
 if [ "$RUNNER_OS" == "macOS" ]; then
-    echo "Not implemented (yet)"
-    exit 1
+    # set environment variables
+    export EIGEN_DIR="$GITHUB_WORKSPACE/vcpkg_installed/arm64-osx-dynamic/include/eigen3"
+    export NLOPT_DIR="$GITHUB_WORKSPACE/vcpkg_installed/arm64-osx-dynamic/lib"
+    export GSL_DIR="$GITHUB_WORKSPACE/vcpkg_installed/arm64-osx-dynamic"
+    export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
+    echo CMAKE_BUILD_PARALLEL_LEVEL="$CMAKE_BUILD_PARALLEL_LEVEL"
+
+    # persist across Github Action steps
+    echo EIGEN_DIR="$EIGEN_DIR" >> $GITHUB_ENV
+    echo NLOPT_DIR="$NLOPT_DIR" >> $GITHUB_ENV
+    echo GSL_DIR="$GSL_DIR" >> $GITHUB_ENV
+    echo CMAKE_BUILD_PARALLEL_LEVEL="$CMAKE_BUILD_PARALLEL_LEVEL" >> $GITHUB_ENV
 fi

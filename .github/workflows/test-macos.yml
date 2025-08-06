@@ -1,0 +1,81 @@
+name: Test macOS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pybmds:
+    runs-on: macos-14
+    env:
+      generateDocx: ${{ inputs.generateDocx }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # --------------- Install C++ dependencies ---------------
+      # --------------------------------------------------------
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: vcpkg_installed
+          key: vcpkg_installed-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Acquire vcpkg
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh"
+          ${{ github.workspace }}/vcpkg/vcpkg install --overlay-ports="${{ github.workspace }}/vendor/ports" --host-triplet=arm64-osx-dynamic
+
+
+      # --------------------------------------------------------
+      # --------------------- Setup pybmds ---------------------
+      # --------------------------------------------------------
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.13"
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v5
+      #   with:
+      #     cache-dependency-glob: "**/pyproject.toml"
+      # - name: Build pybmds
+      #   run: |
+      #     # setup compiler environment
+      #     source ./tools/ci_setup.sh
+
+      #     # install dependencies and compile pybmds
+      #     uv pip install --system -v -e ".[dev,docs]"
+      #     stubgen -p pybmds.bmdscore -o src
+      #     ruff format src/pybmds/bmdscore.pyi
+      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
+
+      #     # show linked files
+      #     ls -lah src/pybmds
+      #     ldd src/pybmds/bmdscore*.so
+
+      # # --------------------------------------------------------
+      # # --------------------- Test pybmds ----------------------
+      # # --------------------------------------------------------
+      # - name: Test with pytest
+      #   run: |
+      #     coverage run -m pytest
+      #     echo "# Python coverage report" >> $GITHUB_STEP_SUMMARY
+      #     coverage report --format=markdown -i >> $GITHUB_STEP_SUMMARY || true
+      #     coverage html -d coverage -i
