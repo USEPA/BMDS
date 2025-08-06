@@ -27,31 +27,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Acquire vcpkg
+      - name: Checkout vcpkg
         uses: actions/checkout@v4
         with:
           repository: "Microsoft/vcpkg"
           path: vcpkg
           ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
 
-      - name: Install libraries with vcpkg.json
+      - name: Install C++ dependencies
         shell: bash
         run: |
           case "$RUNNER_OS" in
               Linux)
-              export $VCPKG_TRIPLET="x64-linux-dynamic"
+              export VCPKG_HOST_TRIPLET="x64-linux-dynamic"
               ;;
               Windows)
-              export $VCPKG_TRIPLET="x64-windows"
+              export VCPKG_HOST_TRIPLET="x64-windows"
               ;;
               macOS)
-              export $VCPKG_TRIPLET="arm64-osx-dynamic"
+              export VCPKG_HOST_TRIPLET="arm64-osx-dynamic"
               ;;
           esac
-          echo VCPKG_TRIPLET="$VCPKG_TRIPLET" >> $GITHUB_ENV
-          echo VCPKG_ROOT="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" >> $GITHUB_ENV
+
           ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet=$VCPKG_TRIPLET
+          ./vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet=$VCPKG_HOST_TRIPLET
+
+          export VCPKG_ROOT="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_HOST_TRIPLET"
+          echo VCPKG_ROOT="$VCPKG_ROOT" >> $GITHUB_ENV
+          ls -laht $VCPKG_ROOT
 
       - name: Set environment variables for Linux
         if: runner.os == 'Linux'
