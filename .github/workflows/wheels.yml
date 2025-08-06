@@ -27,20 +27,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache dependencies
-        id: cache-deps
-        uses: actions/cache@v4
+      - name: Acquire vcpkg
+        uses: actions/checkout@v4
         with:
-          path: vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**') }}
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+
+      - name: Install libraries with vcpkg.json
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+              Linux)
+              export $VCPKG_TRIPLET="x64-linux-dynamic"
+              ;;
+              Windows)
+              export $VCPKG_TRIPLET="x64-windows"
+              ;;
+              macOS)
+              export $VCPKG_TRIPLET="arm64-osx-dynamic"
+              ;;
+          esac
+          echo VCPKG_TRIPLET="$VCPKG_TRIPLET" >> $GITHUB_ENV
+          echo VCPKG_ROOT="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_TRIPLET" >> $GITHUB_ENV
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet=$VCPKG_TRIPLET
 
       - name: Set environment variables for Linux
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          echo EIGEN_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic/include/eigen3" >> $GITHUB_ENV
-          echo NLOPT_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic/lib" >> $GITHUB_ENV
-          echo GSL_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic" >> $GITHUB_ENV
+          echo EIGEN_DIR="$VCPKG_ROOT/include/eigen3" >> $GITHUB_ENV
+          echo NLOPT_DIR="$VCPKG_ROOT/lib" >> $GITHUB_ENV
+          echo GSL_DIR="$VCPKG_ROOT" >> $GITHUB_ENV
           echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
 
       - name: Set environment variables for Windows
