@@ -67,7 +67,7 @@ jobs:
 
           # show linked files
           ls -lah src/pybmds
-          ldd src/pybmds/bmdscore*.so
+          otool -L src/pybmds/bmdscore*.so
 
       # # --------------------------------------------------------
       # # --------------------- Test pybmds ----------------------
