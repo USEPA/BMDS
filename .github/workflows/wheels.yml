@@ -61,9 +61,12 @@ jobs:
         shell: bash
         run: |
           echo EIGEN_DIR="$VCPKG_ROOT/include/eigen3" >> $GITHUB_ENV
-          echo NLOPT_DIR="$VCPKG_ROOT/lib" >> $GITHUB_ENV
-          echo GSL_DIR="$VCPKG_ROOT" >> $GITHUB_ENV
+          echo NLOPT_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
+          echo GSL_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
           echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
+
+          ls -laht $VCPKG_ROOT
+          ls -laht $VCPKG_ROOT/lib
 
       - name: Set environment variables for Windows
         if: runner.os == 'Windows'
