@@ -190,6 +190,30 @@ class TestContinuousSummaryDataset:
         # make sure we get the same result back after deserializing
         assert ds1.serialize().model_dump() == ds2.serialize().model_dump()
 
+    def test_simulate_individual_dataset(self):
+        # test a simulated dataset is created fits desired distribution
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 1, 5], ns=[10, 10, 10], means=[1, 2, 3], stdevs=[0.1, 0.2, 0.3]
+        )
+        fabricated = dataset.simulate_individual_dataset()
+        assert isinstance(fabricated, pybmds.ContinuousIndividualDataset)
+        assert len(fabricated.responses) == sum(dataset.ns)
+        assert len(fabricated.individual_doses) == sum(dataset.ns)
+        assert np.allclose(dataset.doses, fabricated.doses)
+        assert np.allclose(dataset.ns, fabricated.ns)
+        assert np.allclose(dataset.means, fabricated.means)
+        assert np.allclose(dataset.stdevs, fabricated.stdevs)
+
+    def test_simulate_individual_dataset_failure(self):
+        # should fail with large SD close to zero w/ impose_positivity
+        dataset = pybmds.ContinuousDataset(
+            doses=[1, 2, 3], ns=[10] * 3, means=[1] * 3, stdevs=[5] * 3
+        )
+        with pytest.raises(ValueError, match="Could not generate a valid sample"):
+            dataset.simulate_individual_dataset(
+                seed=42, tolerance=1e-10, max_iterations=1, impose_positivity=True
+            )
+
 
 class TestContinuousIndividualDataset:
     def test_validation(self):
@@ -250,13 +274,13 @@ class TestContinuousIndividualDataset:
 
     def test_ci_summary_stats(self, cidataset):
         assert len(cidataset.doses) == 7
-        assert np.isclose(cidataset.ns, [8, 6, 6, 6, 6, 6, 6]).all()
-        assert np.isclose(
+        assert np.allclose(cidataset.ns, [8, 6, 6, 6, 6, 6, 6])
+        assert np.allclose(
             cidataset.means, [9.9264, 10.1889, 10.17755, 10.3571, 10.0275, 11.4933, 10.85275]
-        ).all()
-        assert np.isclose(
+        )
+        assert np.allclose(
             cidataset.stdevs, [0.87969, 0.90166, 0.50089, 0.85590, 0.42833, 0.83734, 0.690373]
-        ).all()
+        )
 
     def test_dose_drops(self, cidataset):
         assert (
