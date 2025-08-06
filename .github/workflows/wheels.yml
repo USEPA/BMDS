@@ -47,10 +47,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-              echo EIGEN_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\include" >> $GITHUB_ENV
-              echo NLOPT_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\lib" >> $GITHUB_ENV
-              echo GSL_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\lib" >> $GITHUB_ENV
-              echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
+          echo EIGEN_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\include" >> $GITHUB_ENV
+          echo NLOPT_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\lib" >> $GITHUB_ENV
+          echo GSL_DIR="$GITHUB_WORKSPACE\vcpkg_installed\x64-windows\lib" >> $GITHUB_ENV
+          echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
 
       - name: Set environment variables for macOS
         if: runner.os == 'macOS'
