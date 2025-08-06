@@ -1,7 +1,6 @@
 name: Test Linux
 
 on:
-  pull_request:
   push:
     branches:
       - main
@@ -11,6 +10,7 @@ on:
         description: 'Generate docx report'
         required: false
         type: boolean
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
