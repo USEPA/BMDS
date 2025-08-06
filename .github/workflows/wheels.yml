@@ -32,21 +32,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('/vcpkg.json', 'vendor') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**') }}
 
       - name: Set environment variables for Linux
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vendor') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vendor') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vendor/**') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vendor/**/*.*') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**/*') }}"
-          echo "vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**/*.*') }}"
-          exit 1
           echo EIGEN_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic/include/eigen3" >> $GITHUB_ENV
           echo NLOPT_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic/lib" >> $GITHUB_ENV
           echo GSL_DIR="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic" >> $GITHUB_ENV
