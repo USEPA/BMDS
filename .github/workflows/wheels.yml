@@ -76,6 +76,7 @@ jobs:
           CIBW_BEFORE_BUILD: "tools/cibw_setup.sh"
           CIBW_TEST_REQUIRES: "pytest pytest-mpl"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
+          CIBW_ENVIRONMENT_PASS_LINUX: "EIGEN_DIR NLOPT_DIR GSL_DIR CMAKE_BUILD_PARALLEL_LEVEL RUNNER_OS"
 
       - uses: actions/upload-artifact@v4
         with:
