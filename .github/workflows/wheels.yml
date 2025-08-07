@@ -38,7 +38,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          export VCPKG_ROOT="$GITHUB_WORKSPACE/vcpkg_installed/x64-linux-dynamic"
+          export VCPKG_ROOT="/project/vcpkg_installed/x64-linux-dynamic"
 
           echo VCPKG_ROOT="$VCPKG_ROOT" >> $GITHUB_ENV
           echo EIGEN_DIR="$VCPKG_ROOT/include/eigen3" >> $GITHUB_ENV

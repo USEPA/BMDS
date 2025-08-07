@@ -4,3 +4,9 @@
 set -e
 
 env
+
+pwd
+
+ls -laht
+
+
