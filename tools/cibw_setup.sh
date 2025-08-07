@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# exit if an error occurs
-set -xe
-
 env
 
 pwd
