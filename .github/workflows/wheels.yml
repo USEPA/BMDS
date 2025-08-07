@@ -44,6 +44,7 @@ jobs:
           echo NLOPT_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
           echo GSL_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
           echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
+          export RUNNER_OS="$RUNNER_OS" >> $GITHUB_ENV
           env  # TODO - remove after cleanup
 
       - name: Set environment variables for Windows

@@ -3,16 +3,15 @@
 # exit if an error occurs
 set -e
 
+set -x
 echo "Current OS: $RUNNER_OS"
-echo "$GITHUB_WORKSPACE"
-ls $GITHUB_WORKSPACE
-
-ls $GITHUB_WORKSPACE/vcpkg || true
-ls $GITHUB_WORKSPACE/vcpkg_installed || true
+ls -laht ./vcpkg || true
+ls -laht ./vcpkg_installed || true-laht
+unset -x
 
 if [ "$RUNNER_OS" == "Linux" ]; then
-$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh
-$GITHUB_WORKSPACE/vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet="x64-linux-dynamic"
+./vcpkg/bootstrap-vcpkg.sh
+./vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet="x64-linux-dynamic"
 fi
 
 
