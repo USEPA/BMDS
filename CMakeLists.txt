@@ -53,6 +53,7 @@ ENDIF()
 #set(CMAKE_CXX_FLAGS "-O3")
 #set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+set(GSL_ROOT_DIR "/project/vcpkg_installed/x64-linux-dynamic" CACHE PATH "Root directory of GSL installation")
 IF(WIN32)
   find_library(GSL_LIB gsl REQUIRED HINTS ${GSL_DIR})
 ELSE()
