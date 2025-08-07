@@ -28,7 +28,7 @@ export VCPKG_ROOT="/project/vcpkg_installed/x64-linux-dynamic"
 export VCPKG_ROOT="$VCPKG_ROOT"
 export EIGEN_DIR="$VCPKG_ROOT/include/eigen3"
 export NLOPT_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib"
-export GSL_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib"
+export GSL_DIR="$VCPKG_ROOT"
 export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
 
 # TODO - remove after cleanup
