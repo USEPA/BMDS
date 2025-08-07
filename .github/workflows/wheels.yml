@@ -49,12 +49,8 @@ jobs:
               ;;
           esac
 
-          ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg install --overlay-ports="./vendor/ports" --host-triplet=$VCPKG_HOST_TRIPLET
-
           export VCPKG_ROOT="$GITHUB_WORKSPACE/vcpkg_installed/$VCPKG_HOST_TRIPLET"
           echo VCPKG_ROOT="$VCPKG_ROOT" >> $GITHUB_ENV
-          ls -laht $VCPKG_ROOT
 
       - name: Set environment variables for Linux
         if: runner.os == 'Linux'
@@ -94,6 +90,7 @@ jobs:
           # CIBW_BUILD: "cp311-* cp312-* cp313-*"
           CIBW_BUILD: "cp313-*" # TODO - remove this line
           CIBW_SKIP: "*-win32 *-win_arm64 *musllinux* *i686 *-macosx_x86_64 *-macosx_universal2"
+          CIBW_BEFORE_BUILD: "tools/cibw_setup.sh"
           CIBW_TEST_REQUIRES: "pytest pytest-mpl"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
 
