@@ -17,4 +17,4 @@ yum update -y
 yum install -y zip
 
 ./vcpkg/bootstrap-vcpkg.sh
-./vcpkg/vcpkg install --overlay-ports="${{ github.workspace }}/vendor/ports" --host-triplet=x64-linux-dynamic
+./vcpkg/vcpkg install --overlay-ports=./vendor/ports --host-triplet=x64-linux-dynamic
