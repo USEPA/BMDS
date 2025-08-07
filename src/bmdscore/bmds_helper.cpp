@@ -5565,7 +5565,7 @@ double zeroin_nested(
 }
 
 template <typename T>
-void printElement(std::stringstream& ss, T t, const int &width) {
+void printElement(std::stringstream &ss, T t, const int &width) {
   const char separator = ' ';
   ss << left << setw(width) << setfill(separator) << t;
 }
@@ -5594,7 +5594,7 @@ std::string printBmdsStruct(struct testsOfInterest *TOI, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5623,17 +5623,16 @@ std::string printBmdsStruct(struct continuous_AOD *AOD, bool print) {
 
   ss << printBmdsStruct(&AOD->TOI, print);
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
-
 }
 
 std::string printBmdsStruct(struct dicho_AOD *AOD, bool print) {
   const int nameWidth = 13;
   const int numWidth = 10;
   std::stringstream ss;
-  
+
   std::vector<std::string> desc = {"Full Model", "Fitted Model", "Reduced Model"};
 
   ss << std::endl << "Struct: dicho_AOD" << std::endl;
@@ -5667,14 +5666,14 @@ std::string printBmdsStruct(struct dicho_AOD *AOD, bool print) {
   printElement(ss, AOD->pvRed, numWidth);
   ss << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
 
 std::string printBmdsStruct(struct BMDS_results *bmdsRes, bool print) {
   const int colWidth = 11;
- 
+
   std::stringstream ss;
 
   ss << std::endl << "Struct: BMDS_results" << std::endl;
@@ -5706,7 +5705,7 @@ std::string printBmdsStruct(struct BMDS_results *bmdsRes, bool print) {
   ss << "validResult:" << (bmdsRes->validResult ? "true" : "false") << std::endl;
   ss << "slopeFactor:" << bmdsRes->slopeFactor << std::endl;
 
-  if(print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5745,7 +5744,7 @@ std::string printBmdsStruct(struct BMDSMA_results *bmdsRes, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5753,7 +5752,7 @@ std::string printBmdsStruct(struct BMDSMA_results *bmdsRes, bool print) {
 std::string printBmdsStruct(struct nestedLitterData *litter, bool print) {
   const int colWidth = 12;
   std::stringstream ss;
-  
+
   ss << std::endl << "Struct: nestedLitterData" << std::endl;
 
   printElement(ss, "dose", colWidth);
@@ -5777,7 +5776,7 @@ std::string printBmdsStruct(struct nestedLitterData *litter, bool print) {
 
   ss << "chiSq:" << litter->chiSq << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5803,7 +5802,7 @@ std::string printBmdsStruct(struct nestedBootstrap *boot, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<< ss.str() << std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5827,7 +5826,7 @@ std::string printBmdsStruct(struct nestedReducedData *red, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5843,7 +5842,7 @@ std::string printBmdsStruct(struct nestedSRData *sr, bool print) {
   ss << "avgAbsSR:" << sr->avgAbsSR << std::endl;
   ss << "maxAbsSR:" << sr->maxAbsSR << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5883,7 +5882,7 @@ std::string printBmdsStruct(struct continuous_GOF *gof, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
   return ss.str();
 }
 
@@ -5918,7 +5917,7 @@ std::string printBmdsStruct(struct dichotomous_GOF *gof, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -5972,7 +5971,7 @@ std::string printBmdsStruct(struct python_continuous_analysis *pyAnal, bool prin
   ss << "detectAdvDir:" << (pyAnal->detectAdvDir ? "true" : "false") << std::endl;
   ss << "penalizeAIC:" << (pyAnal->penalizeAIC ? "true" : "false") << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6020,7 +6019,7 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6064,7 +6063,7 @@ std::string printBmdsStruct(struct python_dichotomous_analysis *pyAnal, bool pri
   ss << "prior_cols:" << pyAnal->prior_cols << std::endl;
   ss << "penalizeAIC:" << (pyAnal->penalizeAIC ? "true" : "false") << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6098,9 +6097,9 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   ss << "bmd:" << pyRes->bmd << std::endl;
   ss << "gof_p_value:" << pyRes->gof_p_value << std::endl;
   ss << "gof_chi_sqr_statistic:" << pyRes->gof_chi_sqr_statistic << std::endl;
-  ss <<  printBmdsStruct(&pyRes->bmdsRes, print);
-  ss <<  printBmdsStruct(&pyRes->gof, print);
-  ss <<  printBmdsStruct(&pyRes->aod, print);
+  ss << printBmdsStruct(&pyRes->bmdsRes, print);
+  ss << printBmdsStruct(&pyRes->gof, print);
+  ss << printBmdsStruct(&pyRes->aod, print);
 
   ss << std::endl << "bmd_dist" << std::endl;
   printElement(ss, "Percentile", largeColWidth);
@@ -6112,7 +6111,7 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6162,7 +6161,7 @@ std::string printBmdsStruct(struct python_dichotomousMA_analysis *pyMA, bool pri
 
   ss << printBmdsStruct(&pyMA->pyDA, print);
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6201,7 +6200,7 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
     ss << printBmdsStruct(&pyRes->models[i]);
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6232,7 +6231,7 @@ std::string printBmdsStruct(struct python_multitumor_analysis *pyAnal, bool prin
   ss << "alpha:" << pyAnal->alpha << std::endl;
   ss << "prior_cols:" << pyAnal->prior_cols << std::endl;
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6273,7 +6272,7 @@ std::string printBmdsStruct(struct python_multitumor_result *pyRes, bool print) 
     }
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6320,7 +6319,7 @@ std::string printBmdsStruct(struct python_nested_analysis *pyAnal, bool print) {
     ss << std::endl;
   }
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }
@@ -6368,7 +6367,7 @@ std::string printBmdsStruct(struct python_nested_result *pyRes, bool print) {
   ss << printBmdsStruct(&pyRes->reduced, print);
   ss << printBmdsStruct(&pyRes->srData, print);
 
-  if (print) std::cout<<ss.str()<<std::endl;
+  if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
 }

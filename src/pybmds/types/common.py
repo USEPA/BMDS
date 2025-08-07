@@ -1,4 +1,3 @@
-import inspect
 from typing import Any
 
 import numpy as np
@@ -66,8 +65,9 @@ def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
         obj (Any): the object to inspect
         depth (int): current depth of recursion (not currently implemented)
     """
-    cpp_string = bmdscore.printBmdsStruct(obj, False)
+    cpp_string = bmdscore.print(obj, False)
     lines += cpp_string.splitlines()
+
 
 BOUND_FOOTNOTE = """
 Standard errors estimates are not generated for parameters estimated on corresponding bounds,
