@@ -27,12 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache dependencies
-        id: cache-deps
-        uses: actions/cache@v4
+      - name: Acquire vcpkg
+        uses: actions/checkout@v4
         with:
-          path: vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vendor/**') }}
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
 
       - name: Set environment variables for Linux
         if: runner.os == 'Linux'
