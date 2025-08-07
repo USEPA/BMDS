@@ -6,7 +6,7 @@ set -e
 set -x
 echo "Current OS: $RUNNER_OS"
 ls -laht ./vcpkg || true
-ls -laht ./vcpkg_installed || true-laht
+ls -laht ./vcpkg_installed || true
 unset -x
 
 if [ "$RUNNER_OS" == "Linux" ]; then
