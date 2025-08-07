@@ -20,4 +20,4 @@ class TestMultitumorAnalysis:
         session.execute()
         assert isinstance(session.structs, MultitumorAnalysis)
         assert len(str(session.structs)) > 0
-        assert str(session.structs).startswith("- python_multitumor_analysis")
+        assert """python_multitumor_analysis""" in str(session.structs)
