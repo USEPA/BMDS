@@ -364,107 +364,107 @@ PYBIND11_MODULE(bmdscore, m) {
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_dichotomous_analysis*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_dichotomous_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_dichotomous_model_result*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_dichotomous_model_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_continuous_analysis*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_continuous_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_continuous_model_result*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_continuous_model_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_dichotomousMA_analysis*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_dichotomousMA_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_dichotomousMA_result*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_dichotomousMA_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_multitumor_analysis*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_multitumor_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_multitumor_result*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_multitumor_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_nested_analysis*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_nested_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<python_nested_result*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<python_nested_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<BMDS_results*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<BMDS_results*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<BMDSMA_results*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<BMDSMA_results*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<nestedLitterData*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<nestedLitterData*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<nestedBootstrap*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<nestedBootstrap*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<nestedReducedData*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<nestedReducedData*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<nestedSRData*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<nestedSRData*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<continuous_GOF*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<continuous_GOF*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<continuous_AOD*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<continuous_AOD*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<testsOfInterest*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<testsOfInterest*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<dichotomous_GOF*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<dichotomous_GOF*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
   m.def(
-      "printBmdsStruct", overload_cast_<dicho_AOD*>()(&printBmdsStruct),
+      "printBmdsStruct", overload_cast_<dicho_AOD*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 }
