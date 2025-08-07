@@ -34,20 +34,6 @@ jobs:
           path: vcpkg
           ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
 
-      - name: Set environment variables for Linux
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          export VCPKG_ROOT="/project/vcpkg_installed/x64-linux-dynamic"
-
-          echo VCPKG_ROOT="$VCPKG_ROOT" >> $GITHUB_ENV
-          echo EIGEN_DIR="$VCPKG_ROOT/include/eigen3" >> $GITHUB_ENV
-          echo NLOPT_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
-          echo GSL_DIR="$VCPKG_ROOT;$VCPKG_ROOT/lib" >> $GITHUB_ENV
-          echo CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)" >> $GITHUB_ENV
-          export RUNNER_OS="$RUNNER_OS" >> $GITHUB_ENV
-          env  # TODO - remove after cleanup
-
       - name: Set environment variables for Windows
         if: runner.os == 'Windows'
         shell: bash
@@ -77,7 +63,6 @@ jobs:
           CIBW_BEFORE_BUILD: "tools/cibw_setup.sh"
           CIBW_TEST_REQUIRES: "pytest pytest-mpl"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
-          CIBW_ENVIRONMENT_PASS_LINUX: "EIGEN_DIR NLOPT_DIR GSL_DIR CMAKE_BUILD_PARALLEL_LEVEL RUNNER_OS"
 
       - uses: actions/upload-artifact@v4
         with:
