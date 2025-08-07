@@ -3,11 +3,7 @@
 # exit if an error occurs
 set -e
 
-set -x
-echo "Current OS: $RUNNER_OS"
-ls -laht ./vcpkg || true
-ls -laht ./vcpkg_installed || true
-unset -x
+env
 
 if [ "$RUNNER_OS" == "Linux" ]; then
 ./vcpkg/bootstrap-vcpkg.sh
