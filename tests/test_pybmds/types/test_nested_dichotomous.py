@@ -41,3 +41,11 @@ class TestNestedDichotomousAnalysis:
         assert len(rows) == len(results.parameter_names)
         assert rows[0]["zzz"] == "test"
         assert rows[0]["name"] == "a"
+
+    def test_cpp_str(self, nd_dataset4):
+        # ensure we can generate a string representation of the cpp structs
+        model = NestedLogistic(nd_dataset4, settings=dict(bootstrap_seed=1))
+        model.execute()
+        text = str(model.structs)
+        assert "python_nested_analysis" in text
+        assert "python_nested_result" in text

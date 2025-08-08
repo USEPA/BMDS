@@ -701,3 +701,80 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 #ifdef __cplusplus
 }
 #endif
+
+// overloaded print statements
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct BMDS_results *bmdsRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct BMDSMA_results *bmdsRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct nestedLitterData *litter, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct nestedBootstrap *boot, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct nestedReducedData *red, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct nestedSRData *sr, bool print = true);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_continuous_analysis *pyAnal, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_continuous_model_result *pyRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_dichotomousMA_analysis *pyMA, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_dichotomousMA_result *pyRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_multitumor_analysis *pyAnal, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_multitumor_result *pyRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_nested_analysis *pyAnal, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_nested_result *pyRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_GOF *gof, bool print = true);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct continuous_AOD *AOD, bool print = true);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct testsOfInterest *TOI, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_dichotomous_analysis *pyAnal, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct python_dichotomous_model_result *pyRes, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
+    struct dichotomous_GOF *gof, bool print = true
+);
+
+std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD, bool print = true);

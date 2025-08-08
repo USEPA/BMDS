@@ -166,10 +166,12 @@ class DichotomousAnalysisCPPStructs(NamedTuple):
         bmdscore.pythonBMDSDicho(self.analysis, self.result)
 
     def __str__(self) -> str:
-        lines = []
-        inspect_cpp_obj(lines, self.analysis, depth=0)
-        inspect_cpp_obj(lines, self.result, depth=0)
-        return "\n".join(lines)
+        return "\n".join(
+            [
+                inspect_cpp_obj(self.analysis),
+                inspect_cpp_obj(self.result),
+            ]
+        )
 
 
 class DichotomousModelResult(BaseModel):
