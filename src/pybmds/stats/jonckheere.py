@@ -117,7 +117,7 @@ def jonckheere(
             increasing = 1 - sum(_conv_pdf(group_size)[:j_sum])
             pval = hypothesis.calc_pval(decreasing, increasing)
 
-    return TestResult(statistic=statistic, p_value=pval, hypothesis=hypothesis)
+    return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
 
 
 def _conv_pdf(group_size: np.ndarray) -> np.ndarray:
@@ -201,7 +201,6 @@ def _jtperm(
             ranks = np.argsort(np.argsort(x[csum_groupsize[i] :]))
             j_sum += np.sum(ranks[:current_size]) - current_size * (current_size + 1) / 2
         perm_jsum[j] = j_sum
-        np.random.Generator(x)
 
     decreasing = np.sum(perm_jsum >= perm_jsum[0]) / nperm
     increasing = np.sum(perm_jsum <= perm_jsum[0]) / nperm

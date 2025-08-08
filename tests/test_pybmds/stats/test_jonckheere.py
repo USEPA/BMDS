@@ -57,7 +57,7 @@ class TestJonckheere:
 
     def test_hypothesis_not_valid(self, valid_x, valid_group):
         hypothesis = "test"
-        with pytest.raises(ValueError, match="'test' is not a valid alternative hypothesis"):
+        with pytest.raises(ValueError, match="'test' is not a valid Hypothesis"):
             jonckheere(valid_x, valid_group, hypothesis)
 
     def test_data_empty(self, valid_group):
