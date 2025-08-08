@@ -194,15 +194,16 @@ def _jtperm(
     """
     perm_jsum = np.zeros(nperm)
     rng = np.random.default_rng()
+    x_copy = x.copy()
     # Calculate the test statistic for each group for the specified number of permutations then store results
     for j in range(nperm):
+        rng.shuffle(x_copy)
         j_sum = 0
         for i in range(group_count - 1):
             current_size = group_size[i]
-            ranks = np.argsort(np.argsort(x[csum_groupsize[i] :]))
+            ranks = np.argsort(np.argsort(x_copy[csum_groupsize[i] :]))
             j_sum += np.sum(ranks[:current_size]) - current_size * (current_size + 1) / 2
         perm_jsum[j] = j_sum
-        rng.shuffle(x)
 
     decreasing = np.sum(perm_jsum >= perm_jsum[0]) / nperm
     increasing = np.sum(perm_jsum <= perm_jsum[0]) / nperm
