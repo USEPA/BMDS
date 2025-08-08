@@ -193,6 +193,7 @@ def _jtperm(
         The p-value given the number of permutations specified.
     """
     perm_jsum = np.zeros(nperm)
+    rng = np.random.default_rng()
     # Calculate the test statistic for each group for the specified number of permutations then store results
     for j in range(nperm):
         j_sum = 0
@@ -201,6 +202,7 @@ def _jtperm(
             ranks = np.argsort(np.argsort(x[csum_groupsize[i] :]))
             j_sum += np.sum(ranks[:current_size]) - current_size * (current_size + 1) / 2
         perm_jsum[j] = j_sum
+        rng.shuffle(x)
 
     decreasing = np.sum(perm_jsum >= perm_jsum[0]) / nperm
     increasing = np.sum(perm_jsum <= perm_jsum[0]) / nperm
