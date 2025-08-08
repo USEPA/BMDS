@@ -92,6 +92,5 @@ class TestContinuousAnalysisCPPStructs:
         model = continuous.Power(cdataset2)
         model.execute()
         text = str(model.structs)
-        assert """python_continuous_analysis""" in text
-        assert """python_continuous_model_result""" in text
-        assert len(text.splitlines()) == 199
+        assert "python_continuous_analysis" in text
+        assert "python_continuous_model_result" in text

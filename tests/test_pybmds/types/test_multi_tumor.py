@@ -19,5 +19,4 @@ class TestMultitumorAnalysis:
         session = pybmds.Multitumor(mt_datasets, degrees=[1, 1, 1])
         session.execute()
         assert isinstance(session.structs, MultitumorAnalysis)
-        assert len(str(session.structs)) > 0
-        assert """python_multitumor_analysis""" in str(session.structs)
+        assert "python_multitumor_analysis" in str(session.structs)
