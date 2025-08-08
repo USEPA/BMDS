@@ -4878,7 +4878,7 @@ void NCTR_probs(
   }
 
   if (isBMDL) {
-    if (riskType = 1) {  // Extra
+    if (riskType == 1) {  // Extra
       pint[1] = -log(1 - BMR) / (1 + pint[3] * sijfixed) / pow(tD, pint[4]);
     } else {  // Added
       pint[1] = -log(1 - BMR * exp(pint[0] * (1 + pint[2] * sijfixed))) / (1 + pint[3] * sijfixed) /
