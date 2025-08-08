@@ -6197,7 +6197,7 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
   ss << std::endl << "models" << std::endl;
   for (int i = 0; i < pyRes->nmodels; i++) {
     ss << "model:" << i << std::endl;
-    ss << printBmdsStruct(&pyRes->models[i]);
+    ss << printBmdsStruct(&pyRes->models[i], print);
   }
 
   if (print) std::cout << ss.str() << std::endl;
