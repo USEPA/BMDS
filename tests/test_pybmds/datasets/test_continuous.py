@@ -27,7 +27,7 @@ class TestContinuousSummaryDataset:
             pybmds.ContinuousDataset(doses=dummy4, ns=dummy3, means=dummy3, stdevs=dummy3)
         with pytest.raises(ValueError, match="N must be positive and non-zero"):
             pybmds.ContinuousDataset(doses=dummy3, ns=[0, 2, 3], means=dummy3, stdevs=dummy3)
-        with pytest.raises(ValueError, match="Stdev must be be greater than zero"):
+        with pytest.raises(ValueError, match="Stdev must be greater than zero"):
             pybmds.ContinuousDataset(doses=dummy3, ns=dummy3, means=dummy3, stdevs=[0, 1, 2])
 
     def test_extra_kwargs(self):
@@ -218,7 +218,7 @@ class TestContinuousIndividualDataset:
         with pytest.raises(ValueError, match="All arrays must be of the same length"):
             pybmds.ContinuousIndividualDataset(doses=[1, 2, 3, 4], responses=[1, 2, 3])
         # < 3 dose groups
-        with pytest.raises(ValueError, match="Must have more than 3 dose groups"):
+        with pytest.raises(ValueError, match="Must have 3 or more dose groups"):
             pybmds.ContinuousIndividualDataset(doses=[1, 2], responses=[1, 2])
         # n <= 1
         with pytest.raises(ValueError, match="more than one response for each dose group"):
