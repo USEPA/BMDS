@@ -55,18 +55,15 @@ class NumpyFloatArray(PydanticNumpyArray):
             raise ValueError("invalid np.ndarray format") from err
 
 
-def inspect_cpp_obj(lines: list[str], obj: Any, depth: int):
+def inspect_cpp_obj(obj: Any) -> str:
     """Prints struct contents using C++ function
 
     Captures stream from C++ function and stores in list of strings.
 
     Args:
-        lines (list[str]): a list of strings to append to
         obj (Any): the object to inspect
-        depth (int): current depth of recursion (not currently implemented)
     """
-    cpp_string = bmdscore.print(obj, False)
-    lines += cpp_string.splitlines()
+    return bmdscore.print(obj, False)
 
 
 BOUND_FOOTNOTE = """
