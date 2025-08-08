@@ -26,10 +26,11 @@ class ContinuousSummaryDataMixin:
         if np.min(self.ns) <= 0:
             raise ValueError("N must be positive and non-zero")
 
+        if np.min(self.stdevs) <= 0:
+            raise ValueError("Stdev must be greater than zero")
+
         if self.num_dose_groups < self.MINIMUM_DOSE_GROUPS:
-            raise ValueError(
-                f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups after dropping doses"
-            )
+            raise ValueError(f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups")
 
     @property
     def is_increasing(self):
@@ -317,14 +318,12 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
         )
 
     def _validate(self):
-        length = len(self.individual_doses)
-        if not all(len(lst) == length for lst in [self.individual_doses, self.responses]):
-            raise ValueError("All input lists must be same length")
-
         if self.num_dose_groups < self.MINIMUM_DOSE_GROUPS:
-            raise ValueError(
-                f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups after dropping doses"
-            )
+            raise ValueError(f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups")
+
+        _, counts = np.unique(self.individual_doses, return_counts=True)
+        if counts.min() <= 1:
+            raise ValueError("There must be more than one response for each dose group")
 
         self._validate_summary_data()
 

@@ -58,9 +58,7 @@ class DichotomousDataset(DatasetBase):
             raise ValueError("Doses are not unique")
 
         if self.num_dose_groups < self.MINIMUM_DOSE_GROUPS:
-            raise ValueError(
-                f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups after dropping doses"
-            )
+            raise ValueError(f"Must have {self.MINIMUM_DOSE_GROUPS} or more dose groups")
 
     def drop_dose(self):
         """

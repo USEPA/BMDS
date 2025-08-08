@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 import pybmds
@@ -101,36 +100,6 @@ def ddataset3():
         doses=[0, 50, 100, 150, 200],
         ns=[10.1, 10.2, 10.3, 10.4, 10.5],
         incidences=[0.0, 2.5, 3.5, 7.5, 9.5],
-    )
-
-
-@pytest.fixture
-def anova_dataset():
-    variances = [
-        0.884408974,
-        0.975597151,
-        0.301068371,
-        0.879069846,
-        0.220161323,
-        0.841362172,
-        0.571939331,
-    ]
-    stdevs = np.power(np.array(variances), 0.5)
-    return pybmds.ContinuousDataset(
-        doses=[1, 2, 3, 4, 5, 6, 7],
-        ns=[8, 6, 6, 6, 6, 6, 6],
-        means=[9.9264, 10.18886667, 10.17755, 10.35711667, 10.02756667, 11.4933, 10.85275],
-        stdevs=stdevs.tolist(),
-    )
-
-
-@pytest.fixture
-def bad_anova_dataset():
-    return pybmds.ContinuousDataset(
-        doses=[0.0, 0.2, 1.5, 10.0],
-        means=[0.0, 0.0, 0.0, 0.67],
-        ns=[6, 6, 6, 4],
-        stdevs=[0.0, 0.0, 0.0, 0.67],
     )
 
 
