@@ -2112,6 +2112,81 @@ void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_resu
   }
 }
 
+void clean_multitumor_results(struct python_multitumor_result *res) {
+  cleanDouble(&res->BMD);
+  cleanDouble(&res->BMDL);
+  cleanDouble(&res->BMDU);
+  cleanDouble(&res->slopeFactor);
+  cleanDouble(&res->combined_LL);
+  cleanDouble(&res->combined_LL_const);
+}
+
+void clean_nested_results(struct python_nested_result *res) {
+  // python_nested_result
+  for (int i = 0; i < res->nparms; i++) {
+    cleanDouble(&res->parms[i]);
+  }
+  for (int i = 0; i < res->cov.size(); i++) {
+    cleanDouble(&res->cov[i]);
+  }
+  cleanDouble(&res->model_df);
+  cleanDouble(&res->bmd);
+  cleanDouble(&res->fixedLSC);
+  cleanDouble(&res->LL);
+  cleanDouble(&res->combPVal);
+
+  // BMDS_results
+  cleanDouble(&res->bmdsRes.BMD);
+  cleanDouble(&res->bmdsRes.BMDL);
+  cleanDouble(&res->bmdsRes.BMDU);
+  cleanDouble(&res->bmdsRes.AIC);
+  cleanDouble(&res->bmdsRes.BIC_equiv);
+  cleanDouble(&res->bmdsRes.chisq);
+  // for (int i = 0; i < res->nparms; i++) {
+  //   cleanDouble(&res->bmdsRes.stdErr[i]);
+  //   cleanDouble(&res->bmdsRes.lowerConf[i]);
+  //   cleanDouble(&res->bmdsRes.upperConf[i]);
+  // }
+
+  // nestedLitterData
+  int numBootRuns = res->boot.pVal.size();
+  for (int i = 0; i < numBootRuns; i++) {
+    cleanDouble(&res->boot.pVal[i]);
+    cleanDouble(&res->boot.perc50[i]);
+    cleanDouble(&res->boot.perc90[i]);
+    cleanDouble(&res->boot.perc95[i]);
+    cleanDouble(&res->boot.perc99[i]);
+  }
+
+  // nestedBootstrap
+  int numRows = res->litter.dose.size();
+  for (int i = 0; i < numRows; i++) {
+    cleanDouble(&res->litter.dose[i]);
+    cleanDouble(&res->litter.LSC[i]);
+    cleanDouble(&res->litter.estProb[i]);
+    cleanDouble(&res->litter.litterSize[i]);
+    cleanDouble(&res->litter.expected[i]);
+    cleanDouble(&res->litter.SR[i]);
+  }
+  cleanDouble(&res->litter.chiSq);
+
+  // nestedReducedData
+  for (int i = 0; i < numRows; i++) {
+    cleanDouble(&res->reduced.dose[i]);
+    cleanDouble(&res->reduced.propAffect[i]);
+    cleanDouble(&res->reduced.lowerConf[i]);
+    cleanDouble(&res->reduced.upperConf[i]);
+  }
+
+  // nestedSRData
+  cleanDouble(&res->srData.minSR);
+  cleanDouble(&res->srData.avgSR);
+  cleanDouble(&res->srData.maxSR);
+  cleanDouble(&res->srData.minAbsSR);
+  cleanDouble(&res->srData.avgAbsSR);
+  cleanDouble(&res->srData.maxAbsSR);
+}
+
 // replace any double values containing NaN or infinity with BMDS_MISSING
 void cleanDouble(double *val) {
   if (!isfinite(*val)) {
@@ -2505,6 +2580,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(
 
   // run MSCombo
   runMultitumorModel(&anal, &res);
+
+  clean_multitumor_results(&res);
 
   pyRes->BMD = res.BMD;
   pyRes->BMDL = res.BMDL;
@@ -3446,6 +3523,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 
   Nested_SRoI(&objData, &pyRes->srData, pyRes->litter.SR, grpSize, pyRes->bmd);
   Nested_Bootstrap(&objData, pyAnal, pyRes, pyAnal->seed, pyAnal->iterations, pyAnal->numBootRuns);
+
+  clean_nested_results(pyRes);
 }
 
 void Nested_Bootstrap(
