@@ -489,6 +489,10 @@ void clean_cont_results(
 );
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
 
+void clean_multitumor_results(struct python_multitumor_result *res);
+
+void clean_nested_results(struct python_nested_result *res);
+
 void convertFromPythonDichoAnalysis(
     struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal
 );
