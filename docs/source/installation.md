@@ -2,7 +2,7 @@
 
 We recommend installing `bmds-ui` on your computer; this makes it possible to run both **BMDS Desktop** for a user interface and **pybmds** for scripting.
 
-This guide describes the basics for a user new to Python, from how to install Python, to setting up an environment, to installing the specific packages. A [simplified installer script](simplified-installer) is also available that reduces the amount of command line typing required for installation.
+This guide describes the basics for a user new to Python, from how to install Python, to setting up an environment, to installing the specific packages.
 
 :::{note}
 This guide documents a standard installation process for packages in the Python ecosystem. If you know someone who uses Python, they can likely help! If you need support, please go to the [BMDS web site](https://www.epa.gov/bmds) and select the Contact Us link.
@@ -348,26 +348,6 @@ bmds-desktop
 :::
 
 ::::
-
-(simplified-installer)=
-## Simplified installer
-
-The simplified installer (experimental) uses automation and reasonable defaults to streamline the installation process.  However, if you wish to have multiple versions of BMDS Desktop installed at the same time on your computer, the simplified installer script may be too simple and you may need to follow the [detailed guide](part-1).
-
-1. Install Python and open your terminal, following [Part 1](part-1) of the installation guide. Install the most recent version available from [https://python.org](https://python.org).
-2. Download the <a href="_static/install-bmds-desktop.py" download>installation script</a>. Move the downloaded file to the same location that is open in your terminal. Then, run the command:
-    ```
-    python install-bmds-desktop.py
-    ```
-3. The script will install BMDS Desktop, and then will create a BMDS Desktop Manager file. Create a shortcut or alias to the [BMDS Desktop Manager](desktop-shortcut).
-
-After running the installation script and creating a shortcut to the BMDS Desktop Manager, you shouldn't need to open your terminal in the future to update or run BMDS Desktop.
-
-To uninstall BMDS Desktop, open your terminal and navigate to the installation script as described above, and run the following command:
-
-```
-python install-bmds-desktop.py --uninstall
-```
 
 (faq)=
 ## Frequently Asked Questions (FAQ)
