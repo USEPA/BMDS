@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       generateDocx: ${{ inputs.generateDocx }}
+      VCPKG_HOST_TRIPLET: x64-linux
     steps:
       - uses: actions/checkout@v4
 
@@ -41,8 +42,6 @@ jobs:
         if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          VCPKG_HOST_TRIPLET=x64-linux
-          echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           ./vcpkg/bootstrap-vcpkg.sh
           ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
 

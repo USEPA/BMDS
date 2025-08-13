@@ -5,7 +5,7 @@ on:
     branches:
       - main
   workflow_dispatch:
-  pull_request:
+  pull_request:  # TODO - remove when done
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -14,6 +14,8 @@ concurrency:
 jobs:
   pybmds:
     runs-on: windows-2022
+    env:
+      VCPKG_HOST_TRIPLET: x64-windows-static-md
     steps:
       - uses: actions/checkout@v4
 
@@ -34,39 +36,37 @@ jobs:
         if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          VCPKG_HOST_TRIPLET=x64-windows-static-md
-          echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           ./vcpkg/bootstrap-vcpkg.sh
           ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
 
-      # - name: set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: "3.13"
-      # - name: Install uv
-      #   uses: astral-sh/setup-uv@v5
-      #   with:
-      #     cache-dependency-glob: "**/pyproject.toml"
-      # - name: Build package
-      #   run: |
-      #     uv pip install pybind11==3.0.0 --target=./pybind11
-      #     $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
-      #     $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
-      #     echo "$env:VCPKG_HOST_TRIPLET"
-      #     echo "$env:CMAKE_PREFIX_PATH"
-      #     echo "$env:CMAKE_BUILD_PARALLEL_LEVEL"
-      #     uv pip install --system -v -e ".[dev]"
-      #     stubgen -p pybmds.bmdscore -o src
-      #     ruff format src/pybmds/bmdscore.pyi
-      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
-      # - name: Check shared object linked files
-      #   run: |
-      #     uv pip install --system pefile
-      #     python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      # - name: Build package
-      #   run: |
-      #     uv pip install --system -v wheel
-      #     python setup.py bdist_wheel
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     path: ./dist/*.whl
+      - name: set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          cache-dependency-glob: "**/pyproject.toml"
+      - name: Build package
+        run: |
+          uv pip install pybind11==3.0.0 --target=./pybind11
+          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
+          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
+          echo "$env:VCPKG_HOST_TRIPLET"
+          echo "$env:CMAKE_PREFIX_PATH"
+          echo "$env:CMAKE_BUILD_PARALLEL_LEVEL"
+          uv pip install --system -v -e ".[dev]"
+          stubgen -p pybmds.bmdscore -o src
+          ruff format src/pybmds/bmdscore.pyi
+          python -c "import pybmds; print(pybmds.bmdscore.version())"
+      - name: Check shared object linked files
+        run: |
+          uv pip install --system pefile
+          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+      - name: Build package
+        run: |
+          uv pip install --system -v wheel
+          python setup.py bdist_wheel
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./dist/*.whl
