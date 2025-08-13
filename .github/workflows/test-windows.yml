@@ -5,7 +5,7 @@ on:
     branches:
       - main
   workflow_dispatch:
-  # pull_request:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -16,46 +16,57 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          cache-dependency-glob: "**/pyproject.toml"
-      - name: Set dependency path
-        shell: bash
-        run: |
-          DEP="$GITHUB_WORKSPACE/deps"
-          echo "DEPENDENCY_DIR=$DEP" >> $GITHUB_ENV
-          echo "EIGEN_DIR=$DEP\eigen" >> $GITHUB_ENV
-          echo "NLOPT_DIR=$DEP\nlopt\src\api;$DEP\nlopt\build\Release;$DEP\nlopt\build" >> $GITHUB_ENV
-          echo "GSL_DIR=$DEP\gsl\build\Release;$DEP\gsl\build" >> $GITHUB_ENV
-      - name: Restore dependencies from cache
-        id: cache-dependencies
+
+      - name: Cache dependencies
+        id: cache-vcpkg-deps
         uses: actions/cache@v4
         with:
-          path: ${{ env.DEPENDENCY_DIR }}
-          key: ${{runner.os}}-cache-dependencies
-      - name: Build dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        shell: bash
-        run: tools/windows_ci.sh
-      - name: Build package
-        run: |
-          uv pip install --system -v -e ".[dev]"
-          stubgen -p pybmds.bmdscore -o src
-          ruff format src/pybmds/bmdscore.pyi
-          python -c "import pybmds; print(pybmds.bmdscore.version())"
-      - name: Check shared object linked files
-        run: |
-          uv pip install --system pefile
-          python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      - name: Build package
-        run: |
-          uv pip install --system -v wheel
-          python setup.py bdist_wheel
-      - uses: actions/upload-artifact@v4
+          path: vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Acquire vcpkg
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
         with:
-          path: ./dist/*.whl
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          VCPKG_HOST_TRIPLET=x64-windows-static-md
+          echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
+
+      # - name: set up Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.13"
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v5
+      #   with:
+      #     cache-dependency-glob: "**/pyproject.toml"
+      # - name: Build package
+      #   run: |
+      #     uv pip install pybind11==3.0.0 --target=./pybind11
+      #     $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
+      #     $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
+      #     echo "$env:VCPKG_HOST_TRIPLET"
+      #     echo "$env:CMAKE_PREFIX_PATH"
+      #     echo "$env:CMAKE_BUILD_PARALLEL_LEVEL"
+      #     uv pip install --system -v -e ".[dev]"
+      #     stubgen -p pybmds.bmdscore -o src
+      #     ruff format src/pybmds/bmdscore.pyi
+      #     python -c "import pybmds; print(pybmds.bmdscore.version())"
+      # - name: Check shared object linked files
+      #   run: |
+      #     uv pip install --system pefile
+      #     python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
+      # - name: Build package
+      #   run: |
+      #     uv pip install --system -v wheel
+      #     python setup.py bdist_wheel
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     path: ./dist/*.whl
