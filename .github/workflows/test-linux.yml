@@ -44,7 +44,7 @@ jobs:
           VCPKG_HOST_TRIPLET=x64-linux
           echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET"
+          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -108,6 +108,7 @@ jobs:
           retention-days: 14
 
   bmdscore:
+    # TODO - fix
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
