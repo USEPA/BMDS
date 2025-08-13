@@ -1,9 +1,9 @@
-name: Build Python Packages
+name: Build Wheels
 
 on:
   schedule:
     - cron: '30 3 1 */1 *'  # At 03:30 on the 1st of every month
-  # pull_request: # TODO - remove when complete
+  pull_request: # TODO - remove when complete
   push:
     tags:
       - '*'
@@ -56,9 +56,6 @@ jobs:
           CIBW_TEST_EXTRAS: dev
           CIBW_BEFORE_BUILD: rm -rf {project}/build
 
-          CIBW_BEFORE_ALL_WINDOWS: bash tools\cibw_before.sh
-          CIBW_ENVIRONMENT_WINDOWS: "CMAKE_PREFIX_PATH=D:/a/pycpp/pycpp/pybind11/pybind11/share/cmake"
-
           CIBW_ENVIRONMENT_PASS_LINUX: "VCPKG_HOST_TRIPLET RUNNER_OS"
           CIBW_BEFORE_ALL_LINUX: "source tools/cibw_before.sh"
           CIBW_ENVIRONMENT_LINUX: "CMAKE_PREFIX_PATH=/project/pybind11/pybind11/share/cmake"
@@ -66,6 +63,9 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: "source tools/cibw_before.sh"
           CIBW_ENVIRONMENT_MACOS: "CMAKE_PREFIX_PATH=${{ github.workspace }}/pybind11/pybind11/share/cmake"
           MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+          CIBW_BEFORE_ALL_WINDOWS: bash tools\cibw_before.sh
+          CIBW_ENVIRONMENT_WINDOWS: "CMAKE_PREFIX_PATH=D:/a/pycpp/pycpp/pybind11/pybind11/share/cmake"
 
       - uses: actions/upload-artifact@v4
         with:
