@@ -18,11 +18,34 @@ concurrency:
 
 jobs:
   pybmds:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       generateDocx: ${{ inputs.generateDocx }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: cache-vcpkg-deps
+        uses: actions/cache@v4
+        with:
+          path: vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Acquire vcpkg
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          VCPKG_HOST_TRIPLET=x64-linux
+          echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -34,13 +57,14 @@ jobs:
       - name: Install dependencies
         run: |
           echo "generateDocx: $generateDocx"
-          source ./tools/linux_ci_setup.sh
           if [ "$generateDocx" = "true" ]; then
             sudo apt-get install -y pandoc
           fi
       - name: Build pybmds
         run: |
-          source ./tools/linux_ci_env.sh
+          uv pip install pybind11==3.0.0 --target=./pybind11
+          export CMAKE_PREFIX_PATH=${{ github.workspace }}/pybind11/pybind11/share/cmake
+          export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
           uv pip install --system -v -e ".[dev,docs]"
           stubgen -p pybmds.bmdscore -o src
           ruff format src/pybmds/bmdscore.pyi
@@ -84,7 +108,7 @@ jobs:
           retention-days: 14
 
   bmdscore:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
