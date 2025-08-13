@@ -77,9 +77,9 @@ add_custom_target(coverage
     ${CMAKE_SOURCE_DIR}/unitTests
     ${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno
     ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/*.gcno
-	COMMAND lcov -d "${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/" -c -o ./coverage.info
-	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*' -o ./coverage.info --ignore-errors unused
-	COMMAND genhtml ./coverage.info -o ./coverage
+	#COMMAND lcov -d "${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/" -c -o ./coverage.info
+	#COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*' -o ./coverage.info --ignore-errors unused
+	#COMMAND genhtml ./coverage.info -o ./coverage
 	WORKING_DIRECTORY ./
 	COMMENT "Generating code coverage report"
 )
