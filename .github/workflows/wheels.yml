@@ -3,7 +3,7 @@ name: Build Python Packages
 on:
   schedule:
     - cron: '30 3 1 */1 *'  # At 03:30 on the 1st of every month
-  pull_request: # TODO - remove when complete
+  # pull_request: # TODO - remove when complete
   push:
     tags:
       - '*'
@@ -65,11 +65,6 @@ jobs:
 
           CIBW_BEFORE_ALL_MACOS: "source tools/cibw_before.sh"
           CIBW_ENVIRONMENT_MACOS: "CMAKE_PREFIX_PATH=${{ github.workspace }}/pybind11/pybind11/share/cmake"
-          MACOSX_DEPLOYMENT_TARGET: "14.0"
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.1
-        env:
           MACOSX_DEPLOYMENT_TARGET: "14.0"
 
       - uses: actions/upload-artifact@v4
