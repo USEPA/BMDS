@@ -76,30 +76,34 @@ set(TEST_EXC "'/usr/include/*'")
 # Executing tests, generate coverage data, and builds HTML report
 add_custom_target(run_tests_with_coverage
 	COMMAND ./unit_tests
-  COMMAND "here"
+  COMMAND cat Makefile
+  COMMAND echo "here"
   COMMAND ls "${CMAKE_SOURCE_DIR}/unitTests/*"
   COMMAND ls "${CMAKE_SOURCE_DIR}/unitTests"
   COMMAND ls "${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno"
   COMMAND ls "${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/*.gcno*"
+  COMMAND gcov --help
+  COMMAND lcov --help
+  COMMAND genhtml --help
 	COMMAND ${CMAKE_COMMAND} -E env
     "LCOV_EXCL_BR_LINE=:${CMAKE_SOURCE_DIR}/unitTests/*"
     gcov -b
     ${CMAKE_SOURCE_DIR}/unitTests
     ${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno
     ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/*.gcno
-	COMMAND "here2"
+	COMMAND echo "here2"
   COMMAND lcov
     -d ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/ -c
     -o ${CMAKE_SOURCE_DIR}/build/coverage.info
-	COMMAND "here3"
+	COMMAND echo "here3"
   COMMAND lcov
     -r ${CMAKE_SOURCE_DIR}/build/coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*'
     -o ${CMAKE_SOURCE_DIR}/build/coverage.info
     --ignore-errors unused
-	COMMAND "here4"
+	COMMAND echo "here4"
   COMMAND genhtml
     ${CMAKE_SOURCE_DIR}/build/coverage.info
     -o ${CMAKE_SOURCE_DIR}/build/coverage
-	COMMAND "here5"
+	COMMAND echo "here5"
   COMMENT "Running test, generating coverage data, and generating HTML report"
 )
