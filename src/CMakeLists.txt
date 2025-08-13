@@ -68,42 +68,41 @@ target_link_libraries(unit_tests bmdscore)
 
 # Enable code coverage analysis
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+set(TEST_EXC, "'/usr/include/*'")
 
 # Add a custom target for generating coverage report
-set(PROJECT_SOURCE_DIR "bmdscore")
-set(TEST_EXC "'/usr/include/*'")
-
-# Executing tests, generate coverage data, and builds HTML report
-add_custom_target(run_tests_with_coverage
-	COMMAND ./unit_tests
-  COMMAND cat Makefile
-  COMMAND echo "here"
-  COMMAND ls "${CMAKE_SOURCE_DIR}/unitTests/*"
-  COMMAND ls "${CMAKE_SOURCE_DIR}/unitTests"
-  COMMAND ls "${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno"
-  COMMAND ls "${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/*.gcno*"
-  COMMAND gcov --help
-  COMMAND lcov --help
-  COMMAND genhtml --help
-	COMMAND ${CMAKE_COMMAND} -E env
-    "LCOV_EXCL_BR_LINE=:${CMAKE_SOURCE_DIR}/unitTests/*"
+add_custom_target(coverage
+  COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${CMAKE_SOURCE_DIR}/unitTests/*"
     gcov -b
     ${CMAKE_SOURCE_DIR}/unitTests
     ${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno
-    ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/*.gcno
-	COMMAND echo "here2"
-  COMMAND lcov
-    -d ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/ -c
-    -o ${CMAKE_SOURCE_DIR}/build/coverage.info
-	COMMAND echo "here3"
-  COMMAND lcov
-    -r ${CMAKE_SOURCE_DIR}/build/coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*'
-    -o ${CMAKE_SOURCE_DIR}/build/coverage.info
-    --ignore-errors unused
-	COMMAND echo "here4"
-  COMMAND genhtml
-    ${CMAKE_SOURCE_DIR}/build/coverage.info
-    -o ${CMAKE_SOURCE_DIR}/build/coverage
-	COMMAND echo "here5"
-  COMMENT "Running test, generating coverage data, and generating HTML report"
+    ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/*.gcno
+	COMMAND lcov -d "${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/" -c -o ./coverage.info
+	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*' -o ./coverage.info --ignore-errors unused
+	COMMAND genhtml ./coverage.info -o ./coverage
+	WORKING_DIRECTORY ./
+	COMMENT "Generating code coverage report"
+)
+
+# Add a custom target for executing tests and generating coverage report
+add_custom_target(run_tests
+	COMMAND ./unit_tests
+	DEPENDS unit_tests
+	WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+	COMMENT "Running tests and generating code coverage data"
+)
+
+# Add a custom target for executing tests, generating coverage data, and generating HTML report
+add_custom_target(run_tests_with_coverage
+	COMMAND ./unit_tests
+	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${CMAKE_SOURCE_DIR}/unitTests/*"
+    gcov -b
+    ${CMAKE_SOURCE_DIR}/unitTests
+    ${CMAKE_SOURCE_DIR}/build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno
+    ${CMAKE_SOURCE_DIR}/build/CMakeFiles/bmdscore.dir/bmdscore/*.gcno
+	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/bmdscore/ -c -o ./coverage.info
+	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_PATH} '*gcc*' -o ./coverage.info --ignore-errors unused
+	COMMAND genhtml ./coverage.info -o ./coverage
+	WORKING_DIRECTORY ./
+	COMMENT "Running test, generating coverage data, and generating HTML report"
 )

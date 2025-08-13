@@ -17,7 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-14]
+        # os: [ubuntu-24.04, windows-2022, macos-14]
+        os: [windows-2022]
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +66,7 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: "14.0"
 
           CIBW_BEFORE_ALL_WINDOWS: bash tools\cibw_before.sh
-          CIBW_ENVIRONMENT_WINDOWS: "CMAKE_PREFIX_PATH=D:/a/pycpp/pycpp/pybind11/pybind11/share/cmake"
+          CIBW_ENVIRONMENT_WINDOWS: "CMAKE_PREFIX_PATH=D:/a/bmds/bmds/pybind11/pybind11/share/cmake"
 
       - uses: actions/upload-artifact@v4
         with:

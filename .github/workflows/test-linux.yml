@@ -145,7 +145,6 @@ jobs:
       - name: Run tests and generate report
         run: |
           cd src/build
-          ls -laht
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
         with:
