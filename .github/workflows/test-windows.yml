@@ -62,6 +62,7 @@ jobs:
           python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
       - name: Build package (wheel)
         run: |
+          uv pip install --system -v wheel setuptools
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:

@@ -51,9 +51,9 @@ ENDIF(WIN32)
 # make includes public so `unit_tests` can use them
 target_include_directories(bmdscore PUBLIC ${CMAKE_SOURCE_DIR}/bmdscore)
 target_include_directories(bmdscore PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(bmdscore PRIVATE ${EIGEN_PATH})
-target_include_directories(bmdscore PRIVATE ${NLOPT_DIR_INCLUDE_DIR})
-target_include_directories(bmdscore PRIVATE ${GSL_INCLUDE_DIR})
+target_include_directories(bmdscore PUBLIC ${EIGEN_PATH})
+target_include_directories(bmdscore PUBLIC ${NLOPT_DIR_INCLUDE_DIR})
+target_include_directories(bmdscore PUBLIC ${GSL_INCLUDE_DIR})
 
 target_link_libraries(bmdscore PRIVATE ${NLOPT_LIB})
 target_link_libraries(bmdscore PRIVATE ${GSL_LIB})
