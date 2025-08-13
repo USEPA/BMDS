@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   pybmds:
-    if: true
+    if: false # TODO - remove (debugging)
     runs-on: ubuntu-24.04
     env:
       generateDocx: ${{ inputs.generateDocx }}
@@ -140,7 +140,7 @@ jobs:
           make -j$(nproc)
       - name: Run tests and generate report
         run: |
-          ls -laht src/**/*
+          find . -type f -printf '%M %u %g %p\n'
           cd src/build
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
