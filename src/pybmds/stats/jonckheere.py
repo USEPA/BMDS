@@ -100,10 +100,11 @@ def jonckheere(
         j_var += current_size * remain_size * (current_size + remain_size + 1) / 12
 
     # Adjust for increasing/decreasing trends
-    j_sum = int(2 * j_mean - j_sum)
+    j_sum = 2 * j_mean - j_sum
     statistic = j_sum
 
     # Calculate p-value based on permutation or normal approximation
+    j_index = int(j_sum)
     if nperm:
         pval = _jtperm(x, group_count, group_size, csum_groupsize, hypothesis, nperm)
     else:
@@ -113,8 +114,8 @@ def jonckheere(
             increasing = 1 - decreasing
             pval = hypothesis.calc_pval(decreasing, increasing)
         else:
-            decreasing = sum(_conv_pdf(group_size)[: j_sum + 1])
-            increasing = 1 - sum(_conv_pdf(group_size)[:j_sum])
+            decreasing = sum(_conv_pdf(group_size)[: j_index + 1])
+            increasing = 1 - sum(_conv_pdf(group_size)[:j_index])
             pval = hypothesis.calc_pval(decreasing, increasing)
 
     return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
@@ -197,13 +198,13 @@ def _jtperm(
     x_copy = x.copy()
     # Calculate the test statistic for each group for the specified number of permutations then store results
     for j in range(nperm):
-        rng.shuffle(x_copy)
         j_sum = 0
         for i in range(group_count - 1):
             current_size = group_size[i]
             ranks = np.argsort(np.argsort(x_copy[csum_groupsize[i] :]))
             j_sum += np.sum(ranks[:current_size]) - current_size * (current_size + 1) / 2
         perm_jsum[j] = j_sum
+        rng.shuffle(x_copy)
 
     decreasing = np.sum(perm_jsum >= perm_jsum[0]) / nperm
     increasing = np.sum(perm_jsum <= perm_jsum[0]) / nperm
