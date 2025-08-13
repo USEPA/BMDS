@@ -63,7 +63,7 @@ target_link_libraries(bmdscore PRIVATE ${GSL_LIB})
 
 # Add the executable target for the tests
 file (GLOB UNIT_TEST_FILES "${CMAKE_SOURCE_DIR}/unitTests/*.cpp")
-add_executable(unit_tests ${UNIT_TEST_FILES})
+add_executable(unit_tests ${UNIT_TEST_FILES} ${HEADER_FILES})
 
 # Link the library to the test executable
 target_link_libraries(unit_tests bmdscore)

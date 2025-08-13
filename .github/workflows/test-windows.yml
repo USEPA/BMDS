@@ -47,7 +47,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           cache-dependency-glob: "**/pyproject.toml"
-      - name: Build package
+      - name: Build package (test)
         run: |
           uv pip install pybind11==3.0.0 --target=./pybind11
           $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
@@ -63,9 +63,10 @@ jobs:
         run: |
           uv pip install --system pefile
           python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      - name: Build package
+      - name: Build package (wheel)
         run: |
-          uv pip install --system -v wheel
+          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
+          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
