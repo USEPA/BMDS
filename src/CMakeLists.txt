@@ -48,7 +48,8 @@ ELSE()
 	add_library(bmdscore STATIC ${SOURCE_FILES} ${HEADER_FILES})
 ENDIF(WIN32)
 
-target_include_directories(bmdscore PRIVATE ${CMAKE_SOURCE_DIR}/bmdscore)
+# make includes public so `unit_tests` can use them
+target_include_directories(bmdscore PUBLIC ${CMAKE_SOURCE_DIR}/bmdscore)
 target_include_directories(bmdscore PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(bmdscore PRIVATE ${EIGEN_PATH})
 target_include_directories(bmdscore PRIVATE ${NLOPT_DIR_INCLUDE_DIR})
