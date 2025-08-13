@@ -140,7 +140,8 @@ jobs:
           make -j$(nproc)
       - name: Run tests and generate report
         run: |
-          find . -type f -printf '%M %u %g %p\n'
+          sudo apt-get update -y
+          sudo apt-get install -y lcov
           cd src/build
           make run_tests_with_coverage
       - uses: actions/upload-artifact@v4
