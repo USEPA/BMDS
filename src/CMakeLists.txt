@@ -49,7 +49,7 @@ ELSE()
 ENDIF(WIN32)
 
 target_include_directories(bmdscore PRIVATE ${CMAKE_SOURCE_DIR}/bmdscore)
-target_include_directories(bmdscore PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(bmdscore PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(bmdscore PRIVATE ${EIGEN_PATH})
 target_include_directories(bmdscore PRIVATE ${NLOPT_DIR_INCLUDE_DIR})
 target_include_directories(bmdscore PRIVATE ${GSL_INCLUDE_DIR})
@@ -61,11 +61,8 @@ target_link_libraries(bmdscore PRIVATE ${GSL_LIB})
 # --- Build Unit Tests ---
 # ------------------------
 
-# Add the executable target for the tests
-file (GLOB UNIT_TEST_FILES "${CMAKE_SOURCE_DIR}/unitTests/*.cpp")
-add_executable(unit_tests ${UNIT_TEST_FILES} ${HEADER_FILES})
-
-# Link the library to the test executable
+file (GLOB UNIT_TEST_SOURCE "${CMAKE_SOURCE_DIR}/unitTests/*.cpp")
+add_executable(unit_tests ${UNIT_TEST_SOURCE})
 target_link_libraries(unit_tests bmdscore)
 
 # Enable code coverage analysis
@@ -74,7 +71,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
 # Add a custom target for generating coverage report
 set(PROJECT_SOURCE_DIR "bmdscore")
 add_custom_target(coverage
-	COMMAND ${CMAKE_COMMAND} -E env "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*" gcov -b ${PROJECT_SOURCE_DIR}../unitTests ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
+	COMMAND ${CMAKE_COMMAND} -E env
+    "LCOV_EXCL_BR_LINE=:${PROJECT_SOURCE_DIR}/../unitTests/*"
+    gcov -b
+    ${PROJECT_SOURCE_DIR}../unitTests
+    ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/unit_tests.dir/unitTests/test_main.cpp.gcno
+    ${PROJECT_SOURCE_DIR}/../build/CMakeFiles/bmdscore.dir/*.gcno
 	COMMAND lcov -d ./CMakeFiles/bmdscore.dir/bmdscore/ -c -o ./coverage.info
 	COMMAND lcov -r ./coverage.info ${TEST_EXC} ${EIGEN_DIR} '*gcc*' -o ./coverage.info --ignore-errors unused
 	COMMAND lcov -r ./coverage.info

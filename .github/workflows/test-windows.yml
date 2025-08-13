@@ -5,7 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-  pull_request:  # TODO - remove when done
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -47,26 +46,21 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           cache-dependency-glob: "**/pyproject.toml"
+      - name: Set environment variables
+        run: |
+          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
+          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
+          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Build package (test)
         run: |
           uv pip install pybind11==3.0.0 --target=./pybind11
-          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
-          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
-          echo "$env:VCPKG_HOST_TRIPLET"
-          echo "$env:CMAKE_PREFIX_PATH"
-          echo "$env:CMAKE_BUILD_PARALLEL_LEVEL"
-          uv pip install --system -v -e ".[dev]"
-          stubgen -p pybmds.bmdscore -o src
-          ruff format src/pybmds/bmdscore.pyi
+          uv pip install --system -v -e "."
           python -c "import pybmds; print(pybmds.bmdscore.version())"
-      - name: Check shared object linked files
-        run: |
           uv pip install --system pefile
           python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
       - name: Build package (wheel)
         run: |
-          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
-          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
