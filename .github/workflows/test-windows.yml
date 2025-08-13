@@ -1,7 +1,6 @@
 name: Test Windows
 
 on:
-  pull_request:  # TODO - remove when done
   push:
     branches:
       - main
