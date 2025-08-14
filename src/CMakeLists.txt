@@ -68,7 +68,7 @@ target_link_libraries(unit_tests bmdscore)
 
 # Enable code coverage analysis
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-set(TEST_EXC, "'/usr/include/*'")
+set(TEST_EXC "'/usr/include/*'")
 
 # Add a custom target for generating coverage report
 add_custom_target(coverage

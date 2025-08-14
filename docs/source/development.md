@@ -159,8 +159,8 @@ git checkout FETCH_HEAD
 cd ..
 
 # build static dependencies (eigen, nlopt, gsl)
-$env:VCPKG_HOST_TRIPLET="x64-linux". # OS-specific; x64-windows-static-md / arm64-osx / etc.
-.\vcpkg\bootstrap-vcpkg
+export VCPKG_HOST_TRIPLET="x64-linux" # OS-specific; x64-windows-static-md / arm64-osx / etc.
+.\vcpkg\bootstrap-vcpkg.sh
 .\vcpkg\vcpkg install --host-triplet="$env:VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
 
 # build C++ code
