@@ -108,7 +108,7 @@ jobs:
           retention-days: 14
 
   bmdscore:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     env:
       VCPKG_HOST_TRIPLET: x64-linux
     steps:
@@ -140,15 +140,8 @@ jobs:
           make -j$(nproc)
       - name: Install lcov
         run: |
-          # build from source so gcc matches lcov
-          sudo apt-get -y update
-          sudo apt-get install -y wget libdatetime-perl libcapture-tiny-perl
-          V_LCOV=2.3.1
-          wget "https://github.com/linux-test-project/lcov/releases/download/v$V_LCOV/lcov-$V_LCOV.tar.gz"
-          tar xzf "lcov-$V_LCOV.tar.gz"
-          cd "lcov-$V_LCOV"
-          sudo make install
-          lcov --version
+          sudo apt-get update -y
+          sudo apt-get install -y lcov
       - name: Run tests and generate report
         run: |
           cd src/build
