@@ -1,6 +1,8 @@
 name: Test Windows
 
 on:
+  schedule:
+    - cron: "14 3 1 */1 *" # At 03:14 on the 1st of every month
   push:
     branches:
       - main
@@ -65,4 +67,9 @@ jobs:
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
+          name: bmdscore
+          path: ./src/pybmds/*.pyd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Python package
           path: ./dist/*.whl

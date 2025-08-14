@@ -4,30 +4,131 @@ BMDS consists of multiple products, each of which requires slightly different bu
 
 ## Building and testing `pybmds`
 
-To install a development version:
+For `pybmds` development, we use [uv](https://docs.astral.sh/uv/) to download Python and manage environments. Install `uv` and make sure it's available on your terminal path before proceeding.
 
-```bash
-# clone repo
+The Python `pybmds` package's engine, `bmdscore`, is a C++ library, and therefore it must be compiled in order to be used. Compiling C++ is difficult, and may not be required for some development tasks.  Instructions below describe a few different installation paths.
+
+If you're on Linux/MacOS, it's easier to build the C++ package, so we recommend following the guide below to build `pybmds` and compile `bmdscore` (see [below](#compiling-pybmds)).
+
+However, on Windows, it's more complex.  The simplest method is to install the Python package without compiling C++. To do that, you'll need to download a precompiled file from GitHub and place that file in the correct location.
+
+```ps1
+# clone repository
 git clone https://github.com/USEPA/BMDS
 
 # create a new python virtual environment
-python -m venv venv
+uv venv --python=3.13
 
-# active virtual environment
-source venv/bin/activate
+# activate virtual environment
+.venv/Scripts/activate
 
-# install package in developer mode and developer tools
-python -m pip install -U pip
-python -m pip install -e ".[dev,docs]"
+# download a Python `bmdscore` artifact from GitHub:
+# https://github.com/USEPA/BMDS/actions/workflows/test-windows.yml
+# move the `*.pyd` file to the `src/pybmds` folder, beside the `bmdscore.pyi` file.
+
+# install pybmds in developer mode (skipping compilation)
+$env:SKIP_BUILD=1
+uv pip install -e ".[dev,docs]"
+
+# tests should pass
+pytest
+```
+(compiling-pybmds)=
+### Building `pybmds` including compiling `bmdscore`
+
+The [vcpkg](https://github.com/microsoft/vcpkg) C++ package manager is used to install C++ dependencies. The steps below will install `vcpkg`, download and compile the required dependencies as static libraries, and then build the `bmdscore` package and Python bindings. These steps are fully automated on GitHub using GitHub Actions, so should you have any troubles for any particular environment, refer to the GitHub Actions.
+
+For **Linux/MacOS**:
+
+```bash
+# clone repository
+git clone https://github.com/USEPA/BMDS
+cd bmds
+
+# check out a snapshot from vcpkg git repository
+mkdir vcpkg
+cd vcpkg
+git init
+git remote add origin git@github.com:microsoft/vcpkg.git
+git fetch --depth 1 origin c9c17dcea3016bc241df0422e82b8aea212dcb93
+git checkout FETCH_HEAD
+cd ..
+
+# build static dependencies (eigen, nlopt, gsl)
+# use the appropriate VCPKG_HOST_TRIPLET for your architecture/OS
+export VCPKG_HOST_TRIPLET="arm64-osx" # for macOS
+export VCPKG_HOST_TRIPLET="x64-linux" # for linux
+./vcpkg/bootstrap-vcpkg.sh
+./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET"
+
+# install pybind11 at the root so for our build phase
+uv pip install pybind11=="3.0.0" --target="./pybind11"
+
+# set environment variables for building python extension
+export CMAKE_PREFIX_PATH="$(readlink -f ./pybind11/pybind11/share/cmake)" --overlay-ports="./vendor/ports"
+export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
+
+echo "$VCPKG_HOST_TRIPLET"
+echo "$CMAKE_PREFIX_PATH"
+echo "$CMAKE_BUILD_PARALLEL_LEVEL"
+
+# create a new python virtual environment
+uv venv --python="3.13"
+source .venv/bin/activate
+
+# compile and install the package
+uv pip install -v -e ".[dev]"
+
+# test to see if compilation was successful
+pytest
 ```
 
-This will install the package and all dependencies, including building the C++ `bmdscore` shared object, which will require a compiler and related dependencies to be installed and configured for your local setup.
+For **Windows (PowerShell)**:
 
-:::{tip}
+Install the command line tools for [Visual Studio](https://visualstudio.microsoft.com/downloads/) (not [Visual Studio Code](https://code.visualstudio.com/)). In the installation process, install the C++ dependencies that are needed to build C++ code (cmake, make, etc.). Using [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/), select a Visual Studio Window so the environment is configured for compiling C++.
 
-If you want to skip building `bmdscore` locally, you can set the environment variable `SKIP_BUILD=1` in your Python environment. Setting this variable will allow you to install the package but skip compilation of the shared object.
+```ps1
+# clone repository
+git clone https://github.com/USEPA/BMDS
+cd bmds
 
-:::
+# check out a single commit from a git repository
+mkdir vcpkg
+cd vcpkg
+git init
+git remote add origin git@github.com:microsoft/vcpkg.git
+git fetch --depth 1 origin c9c17dcea3016bc241df0422e82b8aea212dcb93
+git checkout FETCH_HEAD
+cd ..
+
+# build static dependencies (eigen, nlopt, gsl)
+$env:VCPKG_HOST_TRIPLET="x64-windows-static-md"
+.\vcpkg\bootstrap-vcpkg.bat
+.\vcpkg\vcpkg install --host-triplet="$env:VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
+
+# install pybind11 at the root so for our build phase
+uv pip install pybind11=="3.0.0" --target="./pybind11"
+
+# set environment variables for building python extension
+$env:CMAKE_PREFIX_PATH=Resolve-Path "./pybind11/pybind11/share/cmake" | Select-Object -ExpandProperty Path
+$env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
+
+echo "$env:VCPKG_HOST_TRIPLET"
+echo "$env:CMAKE_PREFIX_PATH"
+echo "$env:CMAKE_BUILD_PARALLEL_LEVEL"
+
+# create a new python virtual environment
+uv venv --python=3.13
+.venv/Scripts/activate
+
+# compile and install the package
+uv pip install -v -e ".[dev]"
+
+# test to see if compilation was successful
+pytest
+```
+
+## Testing `pybmds`
 
 Tests are written using [pytest](http://doc.pytest.org/en/latest/). To run all tests:
 
@@ -43,12 +144,28 @@ You can run tests by running `poe test`, run code formatting using `poe format`,
 
 Github Actions are in place to execute whenever a pull-request is submitted to check code formatting and successful tests. When code is merged into the `main` branch, a wheel artifact is created and stored on github. We use [cibuildwheel](https://cibuildwheel.pypa.io/en/stable/) to build wheel packages in Windows, macOS, and Linux using Github Actions.
 
-## Build and testing in `bmdscore`
+## Build and testing `bmdscore`
 
 You can also build the `bmdscore` C++ library separately from `pybmds` integration. Inside `src/build` directory:
 
 ```bash
+# check out a single commit from a git repository
+mkdir vcpkg
+cd vcpkg
+git init
+git remote add origin git@github.com:microsoft/vcpkg.git
+git fetch --depth 1 origin c9c17dcea3016bc241df0422e82b8aea212dcb93
+git checkout FETCH_HEAD
+cd ..
+
+# build static dependencies (eigen, nlopt, gsl)
+$env:VCPKG_HOST_TRIPLET="x64-linux". # OS-specific; x64-windows-static-md / arm64-osx / etc.
+.\vcpkg\bootstrap-vcpkg
+.\vcpkg\vcpkg install --host-triplet="$env:VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
+
 # build C++ code
+mkdir -p src/build
+cd src/build
 cmake ..
 make
 
