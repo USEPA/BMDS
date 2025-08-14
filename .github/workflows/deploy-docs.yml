@@ -11,22 +11,44 @@ on:
 jobs:
   build:
     name: Build Documentation
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      VCPKG_HOST_TRIPLET: x64-linux
     steps:
       - uses: actions/checkout@v4
+      - name: Cache vcpkg dependencies
+        id: cache-vcpkg-deps
+        uses: actions/cache@v4
+        with:
+          path: vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Acquire vcpkg
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: pip
-      - name: Install dependencies
-        run: |
-          source ./tools/linux_ci_setup.sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          cache-dependency-glob: "**/pyproject.toml"
       - name: Build pybmds
         run: |
-          source ./tools/linux_ci_env.sh
-          python -m pip install -U pip wheel
-          python -m pip install -e ".[dev,docs]"
+          uv pip install pybind11==3.0.0 --target=./pybind11
+          export CMAKE_PREFIX_PATH=${{ github.workspace }}/pybind11/pybind11/share/cmake
+          export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
+          uv pip install --system -v -e ".[dev,docs]"
       - name: Build documentation
         run: |
           poe docs
@@ -38,7 +60,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write
