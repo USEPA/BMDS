@@ -15,14 +15,15 @@ class TestResult(BaseModel):
 
 def cochran_armitage(dose: np.ndarray, n: np.ndarray, incidence: np.ndarray) -> TestResult:
     """
-    Perform the Cochran-Armitage trend test for response data across ordered dose levels.
+    Cochran-Armitage trend test for response data across ordered dose levels.
 
     This function computes both the asymptotic and conditional exact p-values for testing
     the presence of a monotonic trend in incidence rates across increasing dose groups.
 
     The asymptotic p-value is based on a normal approximation of the linear trend statistic
-    proposed by Cochran (1954) and Armitage (1955).
-
+    proposed by Cochran (1954) and Armitage (1955). The the exact one-sided p-value for the
+    Cochran-Armitage trend test using a special case of the linear rank test algorithm by
+    Mehta, Patel, and Tsiatis (1992).
 
     Args:
         dose (np.ndarray): independent variable, monotonically increasing
@@ -31,10 +32,14 @@ def cochran_armitage(dose: np.ndarray, n: np.ndarray, incidence: np.ndarray) -> 
 
     References:
         Cochran, W. G. (1954). Some methods for strengthening the common χ² tests.
-            Biometrics, 10(4), 417-451.
+        Biometrics, 10(4), 417-451.
 
         Armitage, P. (1955). Tests for linear trends in proportions and frequencies.
-            Biometrics, 11(3), 375-386.
+        Biometrics, 11(3), 375-386.
+
+        Mehta, C. R., Patel, N. R., & Tsiatis, A. A. (1992). Exact stratified linear rank tests
+        for ordered categorical and binary data. Journal of Computational and Graphical
+        Statistics, 1(1), 21-40.
     """
     # Input validation
     if dose.size < 3:
@@ -85,9 +90,9 @@ def _p_value_exact(dose: np.ndarray, n: np.ndarray, incidence: np.ndarray) -> fl
     as extreme or more extreme than the observed value.
 
     References:
-        Mehta, C. R., Patel, N. R., & Tsiatis, A. A. (1992).
-        Exact stratified linear rank tests for ordered categorical and binary data.
-        Journal of Computational and Graphical Statistics, 1(1), 21-40.
+        Mehta, C. R., Patel, N. R., & Tsiatis, A. A. (1992). Exact stratified linear rank tests
+        for ordered categorical and binary data. Journal of Computational and Graphical
+        Statistics, 1(1), 21-40.
     """
     dk = dose / dose[1]  # normalize
     rest = dk - np.floor(dk)
