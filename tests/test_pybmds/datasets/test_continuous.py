@@ -18,18 +18,17 @@ class TestContinuousSummaryDataset:
     def test_validation(self):
         # these should be valid
         pybmds.ContinuousDataset(doses=dummy3, ns=dummy3, means=dummy3, stdevs=dummy3)
-        # some data adjustments result in non-integer based counts
         pybmds.ContinuousDataset(doses=dummy3, ns=dummy3_floats, means=dummy3, stdevs=dummy3)
-        # these should raise errors
-        with pytest.raises((IndexError, ValueError)):
-            # insufficient number of dose groups
+
+        # these should raise exceptions
+        with pytest.raises(ValueError, match="Must have 3 or more dose groups"):
             pybmds.ContinuousDataset(doses=dummy2, ns=dummy2, means=dummy2, stdevs=dummy2)
-        with pytest.raises((IndexError, ValueError)):
-            # different sized lists
+        with pytest.raises(IndexError):
             pybmds.ContinuousDataset(doses=dummy4, ns=dummy3, means=dummy3, stdevs=dummy3)
-        with pytest.raises((IndexError, ValueError)):
-            # zero in ns data
+        with pytest.raises(ValueError, match="N must be positive and non-zero"):
             pybmds.ContinuousDataset(doses=dummy3, ns=[0, 2, 3], means=dummy3, stdevs=dummy3)
+        with pytest.raises(ValueError, match="Stdev must be greater than zero"):
+            pybmds.ContinuousDataset(doses=dummy3, ns=dummy3, means=dummy3, stdevs=[0, 1, 2])
 
     def test_extra_kwargs(self):
         ds = pybmds.ContinuousDataset(
@@ -91,16 +90,10 @@ class TestContinuousSummaryDataset:
         ds = pybmds.ContinuousDataset(doses=dummy4, ns=dummy4, means=[0, 2, -1, 0], stdevs=dummy4)
         assert ds.is_increasing is True
 
-    def test_anova(self, anova_dataset, bad_anova_dataset):
-        # Check that anova generates expected output from original specifications.
-        report = anova_dataset.get_anova_report()
-        expected = "                     Tests of Interest    \n   Test    -2*log(Likelihood Ratio)  Test df        P-Value    \n   Test 1              22.2699         12           0.0346\n   Test 2               5.5741          6           0.4725\n   Test 3               5.5741          6           0.4725"
-        assert report == expected
-
-        # check bad anova dataset
-        report = bad_anova_dataset.get_anova_report()
-        expected = "ANOVA cannot be calculated for this dataset."
-        assert report == expected
+    def test_anova(self, cdataset):
+        actual = cdataset.get_anova_report()
+        expected = "                     Tests of Interest    \n   Test    -2*log(Likelihood Ratio)  Test df        P-Value    \n   Test 1              475.068          8                0\n   Test 2              15.4005          4         0.003939\n   Test 3              15.4005          4         0.003939"
+        assert actual == expected
 
     def test_dfile_outputs(self):
         ds = pybmds.ContinuousDataset(doses=dummy3, ns=dummy3, means=dummy3, stdevs=dummy3)
@@ -218,14 +211,18 @@ class TestContinuousSummaryDataset:
 class TestContinuousIndividualDataset:
     def test_validation(self):
         # these should be valid
-        pybmds.ContinuousIndividualDataset(doses=dummy3, responses=dummy3)
-        # these should raise errors
-        with pytest.raises((IndexError, ValueError)):
-            # different sized lists
-            pybmds.ContinuousIndividualDataset(doses=dummy4, responses=dummy3)
-        with pytest.raises((IndexError, ValueError)):
-            # also duplicate, but less than 2 dose-groups
-            pybmds.ContinuousIndividualDataset(doses=dummy3_dups, responses=dummy3)
+        pybmds.ContinuousIndividualDataset(
+            doses=[1, 1, 2, 2, 3, 3, 4, 4], responses=[1, 2, 3, 4, 5, 6, 7, 8]
+        )
+        # different sized lists
+        with pytest.raises(ValueError, match="All arrays must be of the same length"):
+            pybmds.ContinuousIndividualDataset(doses=[1, 2, 3, 4], responses=[1, 2, 3])
+        # < 3 dose groups
+        with pytest.raises(ValueError, match="Must have 3 or more dose groups"):
+            pybmds.ContinuousIndividualDataset(doses=[1, 2], responses=[1, 2])
+        # n <= 1
+        with pytest.raises(ValueError, match="more than one response for each dose group"):
+            pybmds.ContinuousIndividualDataset(doses=[1, 2, 3], responses=[1, 2, 3])
 
     def test_extra_kwargs(self):
         ds = pybmds.ContinuousIndividualDataset(
@@ -267,9 +264,11 @@ class TestContinuousIndividualDataset:
         assert ds.get_ylabel() == "Volume (ug/m3)"
 
     def test_dfile_outputs(self):
-        ds = pybmds.ContinuousIndividualDataset(doses=dummy3, responses=dummy3)
+        ds = pybmds.ContinuousIndividualDataset(
+            doses=[1, 1, 2, 2, 3, 3], responses=[1, 2, 3, 4, 5, 6]
+        )
         dfile = ds.as_dfile()
-        expected = "Dose Response\n1.000000 1.000000\n2.000000 2.000000\n3.000000 3.000000"
+        expected = "Dose Response\n1.000000 1.000000\n1.000000 2.000000\n2.000000 3.000000\n2.000000 4.000000\n3.000000 5.000000\n3.000000 6.000000"
         assert dfile == expected
 
     def test_ci_summary_stats(self, cidataset):
