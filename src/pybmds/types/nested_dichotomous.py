@@ -57,7 +57,7 @@ _bmr_text_map = {
 class NestedDichotomousModelSettings(BaseModel):
     name: str = ""  # override model name
     bmr_type: RiskType = RiskType.ExtraRisk
-    bmr: float = Field(default=0.1, gt=0)
+    bmr: float = Field(default=0.05, gt=0)
     alpha: float = Field(default=0.05, gt=0, lt=1)
     litter_specific_covariate: LitterSpecificCovariate = LitterSpecificCovariate.OverallMean
     intralitter_correlation: IntralitterCorrelation = IntralitterCorrelation.Estimate
@@ -178,10 +178,12 @@ class NestedDichotomousAnalysis(NamedTuple):
         bmdscore.pythonBMDSNested(self.analysis, self.result)
 
     def __str__(self) -> str:
-        lines = []
-        inspect_cpp_obj(lines, self.analysis, depth=0)
-        inspect_cpp_obj(lines, self.result, depth=0)
-        return "\n".join(lines)
+        return "\n".join(
+            [
+                inspect_cpp_obj(self.analysis),
+                inspect_cpp_obj(self.result),
+            ]
+        )
 
 
 class BootstrapRuns(BaseModel):
