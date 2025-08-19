@@ -12,7 +12,7 @@ class Hypothesis(StrEnum):
     increasing = "increasing"
     decreasing = "decreasing"
 
-    def calc_pval(self, decreasing: float, increasing: float) -> float:
+    def calculate_pvalue(self, decreasing: float, increasing: float) -> float:
         """Compute the p-value with the given alternative hypothesis.
 
         Args:
@@ -112,11 +112,11 @@ def jonckheere(
             zstat = (statistic - j_mean) / np.sqrt(j_var)
             decreasing = float(ss.norm.cdf(zstat))
             increasing = 1 - decreasing
-            pval = hypothesis.calc_pval(decreasing, increasing)
+            pval = hypothesis.calculate_pvalue(decreasing, increasing)
         else:
             decreasing = sum(_conv_pdf(group_size)[: j_index + 1])
             increasing = 1 - sum(_conv_pdf(group_size)[:j_index])
-            pval = hypothesis.calc_pval(decreasing, increasing)
+            pval = hypothesis.calculate_pvalue(decreasing, increasing)
 
     return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
 
@@ -209,7 +209,7 @@ def _jtperm(
     decreasing = np.sum(perm_jsum >= perm_jsum[0]) / nperm
     increasing = np.sum(perm_jsum <= perm_jsum[0]) / nperm
 
-    return hypothesis.calc_pval(decreasing, increasing)
+    return hypothesis.calculate_pvalue(decreasing, increasing)
 
 
 def _wilcoxon_pdf(i: int, m: int, n: int) -> np.ndarray:
