@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pybmds.stats.jonckheere import TestResult, jonckheere
+from pybmds.stats.jonckheere import jonckheere
 
 
 @pytest.fixture
@@ -15,9 +15,17 @@ def valid_group():
 
 
 class TestJonckheere:
+    def test_exact_result(self, valid_x, valid_group):
+        result = jonckheere(valid_x, valid_group, hypothesis="increasing")
+        assert pytest.approx(result.statistic) == 24.0
+        assert pytest.approx(result.p_value, abs=1e-6) == 0.0003968
+
+        result = jonckheere(valid_x, valid_group, hypothesis="two-sided")
+        assert pytest.approx(result.statistic) == 24.0
+        assert pytest.approx(result.p_value, abs=1e-6) == 0.0007936
+
     def test_valid_result(self, valid_x, valid_group):
         result = jonckheere(valid_x, valid_group, hypothesis="increasing")
-        assert isinstance(result, TestResult)
         assert 0 <= result.p_value <= 1
 
     @pytest.mark.parametrize("hypothesis", ("increasing", "decreasing", "two-sided"))
