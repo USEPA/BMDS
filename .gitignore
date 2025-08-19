@@ -18,6 +18,9 @@
 build/
 dist/
 htmlcov/
+pybind11/
+vcpkg/
+vcpkg_installed/
 venv/
 wheelhouse/
 *.log
