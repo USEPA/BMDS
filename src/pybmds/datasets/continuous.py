@@ -203,12 +203,12 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
                 max_iterations=max_iterations,
                 impose_positivity=impose_positivity,
             )
-            doses.append([dose] * n_int)
-            responses.append(values)
+            doses.extend([dose] * n_int)
+            responses.extend(values)
         return ContinuousIndividualDataset(
             metadata=self.metadata,
-            doses=np.array(doses).flatten().tolist(),
-            responses=np.array(responses).flatten().tolist(),
+            doses=np.array(doses).tolist(),
+            responses=np.array(responses).tolist(),
         )
 
     def serialize(self) -> "ContinuousDatasetSchema":

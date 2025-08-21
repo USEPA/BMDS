@@ -186,7 +186,7 @@ class TestContinuousSummaryDataset:
     def test_simulate_individual_dataset(self):
         # test a simulated dataset is created fits desired distribution
         dataset = pybmds.ContinuousDataset(
-            doses=[0, 1, 5], ns=[10, 10, 10], means=[1, 2, 3], stdevs=[0.1, 0.2, 0.3]
+            doses=[0, 1, 5], ns=[10, 9, 8], means=[1, 2, 3], stdevs=[0.1, 0.2, 0.3]
         )
         fabricated = dataset.simulate_individual_dataset()
         assert isinstance(fabricated, pybmds.ContinuousIndividualDataset)
