@@ -206,9 +206,9 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
             doses.extend([dose] * n_int)
             responses.extend(values)
         return ContinuousIndividualDataset(
-            metadata=self.metadata,
             doses=np.array(doses).tolist(),
             responses=np.array(responses).tolist(),
+            **self.metadata.model_dump(),
         )
 
     def serialize(self) -> "ContinuousDatasetSchema":
