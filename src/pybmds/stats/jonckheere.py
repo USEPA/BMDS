@@ -138,6 +138,11 @@ def _calc_stat(x, group_indices, group_size):
     for i in range(group_count - 1):
         xi = x[csum_groupsize[i] : csum_groupsize[i + 1]]
         for j in range(i + 1, group_count):
-            xj = x[csum_groupsize[j] : csum_groupsize[j + 1]]
+    group_count = len(group_size)
+    stat = 0
+    for i in range(group_count - 1):
+        xi = x[group_indices[i]]
+        for j in range(i + 1, group_count):
+            xj = x[group_indices[j]]
             stat += np.sum(xi[:, None] < xj[None, :])
     return stat
