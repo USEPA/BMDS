@@ -130,7 +130,11 @@ def _perm(x, group_indices, group_size, hypothesis, nperm):
     return hypothesis.calculate_pvalue(decreasing, increasing)
 
 
-def _calc_stat(x, group_indices, group_size):
+def _calc_stat(
+    x: np.ndarray,
+    group_indices: np.ndarray,
+    group_size: np.ndarray,
+) -> int:
     """Vectorized Jonckheere statistic calculation."""
     csum_groupsize = np.concatenate(([0], np.cumsum(group_size)))
     group_count = len(group_size)
