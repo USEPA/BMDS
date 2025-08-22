@@ -117,7 +117,13 @@ def _zstat(group_size: np.ndarray, statistic: int) -> float:
     return (statistic - j_mean) / np.sqrt(j_var)
 
 
-def _perm(x, group_indices, group_size, hypothesis, nperm):
+def _perm(
+    x: np.ndarray,
+    group_indices: np.ndarray,
+    group_size: np.ndarray,
+    hypothesis: Hypothesis,
+    nperm: int,
+) -> float:
     """Fast permutation test using numpy vectorization."""
     rng = np.random.default_rng()
     observed_stat = _calc_stat(x, group_indices, group_size)
