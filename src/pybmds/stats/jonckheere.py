@@ -107,7 +107,7 @@ def jonckheere(
         pval = hypothesis.calculate_pvalue(decreasing, increasing)
 
         if tot_elements < 30:
-            msg = "P-Test estimated using normal distribution; total observations < 30"
+            msg = "P-value estimated using normal distribution; total observations < 30"
             warnings.warn(msg, stacklevel=2)
 
     return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
