@@ -16,7 +16,8 @@ def valid_group():
 
 class TestJonckheere:
     def test_exact_result(self, valid_x, valid_group):
-        result = jonckheere(valid_x, valid_group, hypothesis="increasing")
+        with pytest.warns(UserWarning, match="total observations < 30"):
+            result = jonckheere(valid_x, valid_group, hypothesis="increasing")
         assert pytest.approx(result.statistic) == 24.0
         assert pytest.approx(result.p_value, abs=1e-3) == 0.00109
 
