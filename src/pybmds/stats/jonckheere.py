@@ -77,10 +77,6 @@ def jonckheere(
     if tot_elements == 0:
         raise ValueError("Either data or group is missing for all observations")
 
-    if tot_elements < 30:
-        msg = "P-Test estimated using normal distribution; total observations < 30"
-        warnings.warn(msg, stacklevel=2)
-
     # Use numpy for group sizes and sorting
     unique_groups, group_indices = np.unique(group, return_inverse=True)
     group_count = unique_groups.size
@@ -109,6 +105,10 @@ def jonckheere(
         decreasing = float(ss.norm.cdf(zstat))
         increasing = 1 - decreasing
         pval = hypothesis.calculate_pvalue(decreasing, increasing)
+
+        if tot_elements < 30:
+            msg = "P-Test estimated using normal distribution; total observations < 30"
+            warnings.warn(msg, stacklevel=2)
 
     return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
 
