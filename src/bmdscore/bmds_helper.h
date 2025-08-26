@@ -3,6 +3,7 @@
 #endif
 // #include "bmdStruct.h"
 #include "dichotomous_entry_code.h"
+#include "trend.h"
 
 // define __stdcall to nothing if not on Windows platform
 #ifndef WIN32
