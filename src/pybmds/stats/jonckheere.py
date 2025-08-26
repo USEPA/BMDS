@@ -1,3 +1,4 @@
+import warnings
 from enum import StrEnum
 
 import numpy as np
@@ -75,6 +76,10 @@ def jonckheere(
     tot_elements = x.size
     if tot_elements == 0:
         raise ValueError("Either data or group is missing for all observations")
+
+    if tot_elements < 30:
+        msg = "P-Test estimated using normal distribution; total observations < 30"
+        warnings.warn(msg, stacklevel=2)
 
     # Use numpy for group sizes and sorting
     unique_groups, group_indices = np.unique(group, return_inverse=True)
