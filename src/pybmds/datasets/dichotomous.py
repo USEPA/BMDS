@@ -212,6 +212,7 @@ class DichotomousDataset(DatasetBase):
         incidence = np.array(self.incidences)
         return cochran_armitage(dose, n, incidence)
 
+
 class DichotomousDatasetSchema(DatasetSchemaBase):
     dtype: constants.Dtype
     metadata: DatasetMetadata

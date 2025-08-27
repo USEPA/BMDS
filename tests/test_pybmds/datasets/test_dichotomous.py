@@ -146,6 +146,7 @@ class TestDichotomousDataset:
         assert result2.p_value_asymptotic > 0.05
         assert result2.p_value_exact > 0.05
 
+
 class TestDichotomousDatasetSchema:
     def test_schema(self, ddataset):
         # check that cycling through serialization returns the same

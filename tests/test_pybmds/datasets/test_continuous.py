@@ -395,7 +395,7 @@ class TestContinuousDatasetSchema:
         with pytest.raises(ValidationError, match="At least 3 groups are required"):
             ContinuousDatasetSchema.model_validate(data)
 
-    
+
 class TestContinuousIndividualDatasetSchema:
     def test_schema(self, cidataset):
         # check that cycling through serialization returns the same

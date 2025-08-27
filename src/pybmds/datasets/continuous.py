@@ -467,7 +467,7 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
             {**extra, **dict(dose=dose, response=response)}
             for dose, response in zip(self.individual_doses, self.responses, strict=True)
         ]
-    
+
     def trend(self, hypothesis: str = "two-sided", nperm: int | None = None):
         """
         Perform the Jonckheere-Terpstra trend test for monotonic trend in continuous individual data.
