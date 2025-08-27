@@ -123,7 +123,7 @@ class TestDichotomousDataset:
         # make sure we get the same result back after deserializing
         assert ds1.serialize().model_dump() == ds2.serialize().model_dump()
 
-    def test_trend(self):
+    def test_trend_strong(self):
         # Data with a strong trend
         doses = [0, 25, 75, 125, 200]
         ns = [20, 20, 20, 20, 20]
@@ -135,16 +135,17 @@ class TestDichotomousDataset:
         assert result.p_value_asymptotic < 0.01
         assert result.p_value_exact < 0.01
 
+    def test_trend_no_trend(self):
         # Data with no trend
         doses = [0, 25, 75, 125, 200]
         ns = [20, 20, 20, 20, 20]
         incidences = [0, 1, 2, 1, 2]
-        ds2 = pybmds.DichotomousDataset(doses=doses, ns=ns, incidences=incidences)
-        result2 = ds2.trend()
+        ds = pybmds.DichotomousDataset(doses=doses, ns=ns, incidences=incidences)
+        result = ds.trend()
         # Check that the statistic is close to zero and p-values are not significant
-        assert abs(result2.statistic) < 2
-        assert result2.p_value_asymptotic > 0.05
-        assert result2.p_value_exact > 0.05
+        assert abs(result.statistic) < 2
+        assert result.p_value_asymptotic > 0.05
+        assert result.p_value_exact > 0.05
 
 
 class TestDichotomousDatasetSchema:

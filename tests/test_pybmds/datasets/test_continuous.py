@@ -207,7 +207,7 @@ class TestContinuousSummaryDataset:
                 seed=42, tolerance=1e-10, max_iterations=1, impose_positivity=True
             )
 
-    def test_summary_trend(self):
+    def test_summary_trend_strong(self):
         # Data with a strong increasing trend
         doses = [0, 50, 100, 200, 400]
         ns = [20, 20, 20, 20, 20]
@@ -220,12 +220,16 @@ class TestContinuousSummaryDataset:
         assert result.p_value < 0.05
         assert result.hypothesis == "increasing"
 
+    def test_summary_trend_no_trend(self):
         # Data with no trend
-        means_no_trend = [5.26, 5.30, 5.28, 5.27, 5.29]
-        ds2 = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means_no_trend, stdevs=stdevs)
-        result2 = ds2.summary_trend(hypothesis="increasing", seed=42)
+        doses = [0, 50, 100, 200, 400]
+        ns = [20, 20, 20, 20, 20]
+        means = [5.26, 5.30, 5.28, 5.27, 5.29]
+        stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
+        ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
+        result = ds.summary_trend(hypothesis="increasing", seed=42)
         # Check that the statistic is close to zero and p-value is not significant
-        assert result2.p_value > 0.05
+        assert result.p_value > 0.05
 
 
 class TestContinuousIndividualDataset:
@@ -353,7 +357,7 @@ class TestContinuousIndividualDataset:
         # make sure we get the same result back after deserializing
         assert ds1.serialize().model_dump() == ds2.serialize().model_dump()
 
-    def test_trend(self):
+    def test_trend_strong(self):
         # Data with a strong increasing trend
         doses = [0, 0, 1, 1, 2, 2, 3, 3]
         responses = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -363,11 +367,13 @@ class TestContinuousIndividualDataset:
         assert result.p_value < 0.05
         assert result.hypothesis == "increasing"
 
+    def test_trend_no_trend(self):
         # Data with no trend
-        responses_no_trend = [2, 1, 2, 1, 2, 1, 2, 1]
-        ds2 = pybmds.ContinuousIndividualDataset(doses=doses, responses=responses_no_trend)
-        result2 = ds2.trend(hypothesis="increasing")
-        assert result2.p_value > 0.05
+        doses = [0, 0, 1, 1, 2, 2, 3, 3]
+        responses = [2, 1, 2, 1, 2, 1, 2, 1]
+        ds = pybmds.ContinuousIndividualDataset(doses=doses, responses=responses)
+        result = ds.trend(hypothesis="increasing")
+        assert result.p_value > 0.05
 
 
 class TestContinuousDatasetSchema:
