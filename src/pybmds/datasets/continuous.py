@@ -245,6 +245,58 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
             )
         ]
 
+    def summary_trend(
+        self,
+        hypothesis: str = "two-sided",
+        nperm: int | None = None,
+        seed: int | None = 42,  # Default seed is 42
+        impose_positivity: bool = True,
+        tolerance: float = 0.01,
+        max_iterations: int = 100000,
+    ):
+        """
+        Generate synthetic individual response data from summary statistics and
+        perform the Jonckheere-Terpstra trend test.
+
+        Parameters
+        ----------
+        hypothesis : str, optional
+            The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+        nperm : int or None, optional
+            Number of permutations for permutation-based p-value (default: None).
+        seed : int or None, optional
+            Random seed for reproducibility.
+        impose_positivity : bool, optional
+            Ensure all synthetic responses are positive.
+        tolerance : float, optional
+            Tolerance for matching summary statistics.
+        max_iterations : int, optional
+            Maximum iterations for synthetic data generation.
+
+        Returns
+        -------
+        TestResult
+            An object containing the test statistic, p-value, and hypothesis.
+
+        Examples
+        --------
+        >>> result = dataset.summary_trend(hypothesis="increasing")
+        >>> print(result)
+        TestResult(statistic=..., p_value=..., hypothesis=...)
+        """
+        # Generate synthetic individual data
+        synthetic = self.simulate_individual_dataset(
+            seed=seed,
+            impose_positivity=impose_positivity,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+        )
+        from ..stats.jonckheere import jonckheere
+
+        x = np.array(synthetic.responses)
+        group = np.array(synthetic.individual_doses)
+        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
+
 
 class ContinuousDatasetSchema(DatasetSchemaBase):
     dtype: constants.Dtype
@@ -415,6 +467,37 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
             {**extra, **dict(dose=dose, response=response)}
             for dose, response in zip(self.individual_doses, self.responses, strict=True)
         ]
+    
+    def trend(self, hypothesis: str = "two-sided", nperm: int | None = None):
+        """
+        Perform the Jonckheere-Terpstra trend test for monotonic trend in continuous individual data.
+
+        Parameters
+        ----------
+        hypothesis : str, optional
+            The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+        nperm : int or None, optional
+            Number of permutations for permutation-based p-value (default: None, uses normal approximation).
+
+        Returns
+        -------
+        TestResult
+            An object containing the test statistic, p-value, and hypothesis.
+
+        Examples
+        --------
+        >>> result = dataset.trend()
+        >>> print(result)
+        TestResult(statistic=..., p_value=..., hypothesis=...)
+
+        This test evaluates whether there is a statistically significant monotonic trend
+        in the response values across ordered dose groups using the Jonckheere-Terpstra test.
+        """
+        from ..stats.jonckheere import jonckheere
+
+        x = np.array(self.responses)
+        group = np.array(self.individual_doses)
+        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
 
 
 class ContinuousIndividualDatasetSchema(DatasetSchemaBase):
