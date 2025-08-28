@@ -250,7 +250,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         self,
         hypothesis: str = "two-sided",
         nperm: int | None = None,
-        seed: int | None = 42,  # Default seed is 42
+        seed: int | None = None,
         impose_positivity: bool = True,
         tolerance: float = 0.01,
         max_iterations: int = 10000,
