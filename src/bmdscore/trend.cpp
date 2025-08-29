@@ -1,4 +1,4 @@
-include "trend.h";
+#include "trend.h"
 
 double approximate_pi(int terms) {
     double pi = 0.0;

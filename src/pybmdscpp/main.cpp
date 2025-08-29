@@ -15,7 +15,7 @@ PYBIND11_MODULE(bmdscore, m) {
 
   m.def("version", &version, "bmdscore version number");
 
-  m.def("approximate_pi", &approximate_pi, "approximate Pi using the Leibniz formula")
+  m.def("approximate_pi", &approximate_pi, "approximate Pi using the Leibniz formula");
 
   py::enum_<dich_model>(m, "dich_model", py::arithmetic(), "Dichotomous model enumeration")
       .value("d_hill", d_hill, "dichotomous hill model enum")
