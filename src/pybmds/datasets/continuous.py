@@ -254,33 +254,32 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         impose_positivity: bool = True,
         tolerance: float = 0.01,
         max_iterations: int = 10000,
-    ) -> TestResult:   
-    
+    ) -> TestResult:
         """
-        Generate synthetic individual response data from summary statistics and
-        perform the Jonckheere-Terpstra trend test.
+         Generate synthetic individual response data from summary statistics and
+         perform the Jonckheere-Terpstra trend test.
 
-       Args:
-        hypothesis : str, optional
-            The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
-        nperm : int or None, optional
-            Number of permutations for permutation-based p-value (default: None).
-        seed : int or None, optional
-            Random seed for reproducibility.
-        impose_positivity : bool, optional
-            Ensure all synthetic responses are positive.
-        tolerance : float, optional
-            Tolerance for matching summary statistics.
-        max_iterations : int, optional
-            Maximum iterations for synthetic data generation.
+        Args:
+         hypothesis : str, optional
+             The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+         nperm : int or None, optional
+             Number of permutations for permutation-based p-value (default: None).
+         seed : int or None, optional
+             Random seed for reproducibility.
+         impose_positivity : bool, optional
+             Ensure all synthetic responses are positive.
+         tolerance : float, optional
+             Tolerance for matching summary statistics.
+         max_iterations : int, optional
+             Maximum iterations for synthetic data generation.
 
-        Returns: 
-            TestResult: An object containing the test statistic, p-value, and hypothesis.
+         Returns:
+             TestResult: An object containing the test statistic, p-value, and hypothesis.
 
-        Examples:         
-        >>> result = dataset.summary_trend(hypothesis="increasing")
-        >>> print(result)
-        TestResult(statistic=..., p_value=..., hypothesis=...)
+         Examples:
+         >>> result = dataset.summary_trend(hypothesis="increasing")
+         >>> print(result)
+         TestResult(statistic=..., p_value=..., hypothesis=...)
         """
         # Generate synthetic individual data
         synthetic = self.simulate_individual_dataset(
@@ -466,7 +465,9 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
             for dose, response in zip(self.individual_doses, self.responses, strict=True)
         ]
 
-    def trend(self, hypothesis: Hypothesis = Hypothesis.two_sided, nperm: int | None = None) -> TestResult:
+    def trend(
+        self, hypothesis: Hypothesis = Hypothesis.two_sided, nperm: int | None = None
+    ) -> TestResult:
         """
         Perform the Jonckheere-Terpstra trend test for monotonic trend in continuous individual data.
 
