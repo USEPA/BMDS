@@ -59,13 +59,13 @@ cd ..
 export VCPKG_HOST_TRIPLET="arm64-osx" # for macOS
 export VCPKG_HOST_TRIPLET="x64-linux" # for linux
 ./vcpkg/bootstrap-vcpkg.sh
-./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET"
+./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
 
 # install pybind11 at the root so for our build phase
 uv pip install pybind11=="3.0.0" --target="./pybind11"
 
 # set environment variables for building python extension
-export CMAKE_PREFIX_PATH="$(readlink -f ./pybind11/pybind11/share/cmake)" --overlay-ports="./vendor/ports"
+export CMAKE_PREFIX_PATH="$(readlink -f ./pybind11/pybind11/share/cmake)"
 export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
 
 echo "$VCPKG_HOST_TRIPLET"
