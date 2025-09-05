@@ -21,6 +21,11 @@ class TestCochranArmitage:
         assert 0 <= result.p_value_asymptotic <= 1
         assert 0 <= result.p_value_exact <= 1
 
+    def test_result_table(self, dataset):
+        dose, n, incidence = dataset
+        result = cochran_armitage(dose, n, incidence)
+        assert isinstance(result.tbl(), str)
+
     def test_accurate_result(self, dataset):
         # This test determines if the result is accurate based on the given dataset
         dose, n, incidence = dataset

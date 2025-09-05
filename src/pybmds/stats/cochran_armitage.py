@@ -5,12 +5,23 @@ from pydantic import BaseModel
 from scipy.stats import norm
 
 from ..constants import ZEROISH
+from ..utils import pretty_table
 
 
 class TestResult(BaseModel):
     statistic: float
     p_value_asymptotic: float
     p_value_exact: float
+
+    def tbl(self) -> str:
+        return pretty_table(
+            [
+                ["Statistic", self.statistic],
+                ["P-Value (Asymptotic)", self.p_value_asymptotic],
+                ["P-Value (Exact)", self.p_value_exact],
+            ],
+            "",
+        )
 
 
 def cochran_armitage(dose: np.ndarray, n: np.ndarray, incidence: np.ndarray) -> TestResult:

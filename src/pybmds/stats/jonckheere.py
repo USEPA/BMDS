@@ -46,10 +46,10 @@ class TestResult(BaseModel):
     def tbl(self) -> str:
         return pretty_table(
             [
-                ["Approach", self.approach],
                 ["Hypothesis", self.hypothesis],
                 ["Statistic", self.statistic],
-                ["P Value", self.p_value],
+                ["Approach (P-Value)", self.approach],
+                ["P-Value", self.p_value],
             ],
             "",
         )
