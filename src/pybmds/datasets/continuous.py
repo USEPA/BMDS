@@ -9,6 +9,7 @@ from scipy import stats
 
 from .. import constants, plotting
 from ..stats.anova import AnovaTests
+from ..stats.jonckheere import Hypothesis, TestResult, jonckheere
 from ..stats.normal import exact_rnorm
 from ..utils import str_list
 from .base import DatasetBase, DatasetMetadata, DatasetPlottingSchema, DatasetSchemaBase
@@ -178,7 +179,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         seed: int = 42,
         impose_positivity: bool = False,
         tolerance: float = 0.01,
-        max_iterations: int = 100_000,
+        max_iterations: int = 10000,
     ) -> "ContinuousIndividualDataset":
         """Generate a simulated individual dataset matching summary statistics.
 
@@ -244,6 +245,54 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
                 self.doses, self.ns, self.means, self.stdevs, strict=True
             )
         ]
+
+    def summary_trend(
+        self,
+        hypothesis: str = "two-sided",
+        nperm: int | None = None,
+        seed: int | None = None,
+        impose_positivity: bool = True,
+        tolerance: float = 0.01,
+        max_iterations: int = 10000,
+    ) -> TestResult:
+        """
+         Generate synthetic individual response data from summary statistics and
+         perform the Jonckheere-Terpstra trend test.
+
+        Args:
+         hypothesis : str, optional
+             The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+         nperm : int or None, optional
+             Number of permutations for permutation-based p-value (default: None).
+         seed : int or None, optional
+             Random seed for reproducibility.
+         impose_positivity : bool, optional
+             Ensure all synthetic responses are positive.
+         tolerance : float, optional
+             Tolerance for matching summary statistics.
+         max_iterations : int, optional
+             Maximum iterations for synthetic data generation.
+
+         Returns:
+             TestResult: An object containing the test statistic, p-value, and hypothesis.
+
+         Examples:
+         >>> result = dataset.summary_trend(hypothesis="increasing")
+         >>> print(result)
+         TestResult(statistic=..., p_value=..., hypothesis=...)
+        """
+        # Generate synthetic individual data
+        synthetic = self.simulate_individual_dataset(
+            seed=seed,
+            impose_positivity=impose_positivity,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+        )
+        from ..stats.jonckheere import jonckheere
+
+        x = np.array(synthetic.responses)
+        group = np.array(synthetic.individual_doses)
+        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
 
 
 class ContinuousDatasetSchema(DatasetSchemaBase):
@@ -415,6 +464,32 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
             {**extra, **dict(dose=dose, response=response)}
             for dose, response in zip(self.individual_doses, self.responses, strict=True)
         ]
+
+    def trend(
+        self, hypothesis: Hypothesis = Hypothesis.two_sided, nperm: int | None = None
+    ) -> TestResult:
+        """
+        Perform the Jonckheere-Terpstra trend test for monotonic trend in continuous individual data.
+
+        Args:
+        hypothesis : str, optional
+            The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+        nperm : int or None, optional
+            Number of permutations for permutation-based p-value (default: None, uses normal approximation).
+
+        Returns: TestResult: An object containing the test statistic, p-value, and hypothesis.
+
+        Examples
+        >>> result = dataset.trend()
+        >>> print(result)
+        TestResult(statistic=..., p_value=..., hypothesis=...)
+
+        This test evaluates whether there is a statistically significant monotonic trend
+        in the response values across ordered dose groups using the Jonckheere-Terpstra test.
+        """
+        x = np.array(self.responses)
+        group = np.array(self.individual_doses)
+        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
 
 
 class ContinuousIndividualDatasetSchema(DatasetSchemaBase):
