@@ -1,8 +1,11 @@
+import warnings
 from enum import StrEnum
 
 import numpy as np
 import scipy.stats as ss
 from pydantic import BaseModel
+
+from ..utils import pretty_table
 
 
 class Hypothesis(StrEnum):
@@ -28,10 +31,28 @@ class Hypothesis(StrEnum):
         raise ValueError("Unreachable code path")  # pragma: no cover
 
 
+class Approach(StrEnum):
+    exact = "exact"
+    approximate = "approximate"
+    permtuation = "permutation"
+
+
 class TestResult(BaseModel):
+    approach: Approach
     statistic: float
     p_value: float
     hypothesis: Hypothesis
+
+    def tbl(self) -> str:
+        return pretty_table(
+            [
+                ["Hypothesis", self.hypothesis],
+                ["Statistic", self.statistic],
+                ["Approach (P-Value)", self.approach],
+                ["P-Value", self.p_value],
+            ],
+            "",
+        )
 
 
 def jonckheere(
@@ -39,6 +60,7 @@ def jonckheere(
     group: np.ndarray,
     hypothesis: str | Hypothesis = Hypothesis.two_sided,
     nperm: int | None = None,
+    seed: int | None = None,
 ) -> TestResult:
     """Compute Jonckheere-Terpstra test.
 
@@ -52,6 +74,7 @@ def jonckheere(
         group (np.ndarray): A numeric or ordered factor indicating group membership.
         hypothesis (str | Hypothesis): The type of hypothesis test to be run (two-sided, increasing, or decreasing).
         nperm (int, optional): The number of permutations for the test.
+        seed (int, optional): Random number seed used for permutations.
 
     Returns:
         Test statistic, p-value, alternative hypothesis, and method used.
@@ -84,28 +107,36 @@ def jonckheere(
     if group_count <= 1:
         raise ValueError("Only one group has non-missing data")
 
-    # Vectorized calculation of Jonckheere statistic
-    # For each pair of groups (i < j), count number of times x_i < x_j
-    j_sum = 0
-    for i in range(group_count - 1):
-        xi = x[group_indices == i]
-        for j in range(i + 1, group_count):
-            xj = x[group_indices == j]
-            j_sum += np.sum(xi[:, None] < xj[None, :])
-
-    statistic = j_sum
+    statistic = _calc_stat(x, group_indices, group_count)
 
     if nperm:
         # calculate P-value via permutation
-        pval = _perm(x, group_indices, group_size, hypothesis, nperm)
+        approach = Approach.permtuation
+        rng = np.random.default_rng(seed)
+        observed_stat = statistic
+        perm_stats = np.empty(nperm, dtype=np.float64)
+        x_perm = x.copy()
+        for i in range(nperm):
+            perm_stats[i] = _calc_stat(x_perm, group_indices, group_count)
+            x_perm = rng.permutation(x)
+        decreasing = np.sum(perm_stats >= observed_stat) / nperm
+        increasing = np.sum(perm_stats <= observed_stat) / nperm
+
     else:
         # calculate P-value via normal approximation
+        approach = Approach.approximate
         zstat = _zstat(group_size, statistic)
         decreasing = float(ss.norm.cdf(zstat))
         increasing = 1 - decreasing
-        pval = hypothesis.calculate_pvalue(decreasing, increasing)
 
-    return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
+        if tot_elements < 30:
+            msg = "P-value estimated using normal distribution; total observations < 30"
+            warnings.warn(msg, stacklevel=2)
+
+    pval = hypothesis.calculate_pvalue(decreasing, increasing)
+    return TestResult(
+        approach=approach, statistic=statistic, p_value=float(pval), hypothesis=hypothesis
+    )
 
 
 def _zstat(group_size: np.ndarray, statistic: int) -> float:
@@ -117,37 +148,12 @@ def _zstat(group_size: np.ndarray, statistic: int) -> float:
     return (statistic - j_mean) / np.sqrt(j_var)
 
 
-def _perm(
-    x: np.ndarray,
-    group_indices: np.ndarray,
-    group_size: np.ndarray,
-    hypothesis: Hypothesis,
-    nperm: int,
-) -> float:
-    """Fast permutation test using numpy vectorization."""
-    rng = np.random.default_rng()
-    observed_stat = _calc_stat(x, group_indices, group_size)
-    perm_stats = np.empty(nperm, dtype=np.float64)
-    for i in range(nperm):
-        perm_x = rng.permutation(x)
-        perm_stats[i] = _calc_stat(perm_x, group_indices, group_size)
-    decreasing = np.mean(perm_stats >= observed_stat)
-    increasing = np.mean(perm_stats <= observed_stat)
-    return hypothesis.calculate_pvalue(decreasing, increasing)
-
-
-def _calc_stat(
-    x: np.ndarray,
-    group_indices: np.ndarray,
-    group_size: np.ndarray,
-) -> int:
+def _calc_stat(x: np.ndarray, group_indices: np.ndarray, group_count: int) -> int:
     """Vectorized Jonckheere statistic calculation."""
-    csum_groupsize = np.concatenate(([0], np.cumsum(group_size)))
-    group_count = len(group_size)
-    stat = 0
+    j_sum = 0
     for i in range(group_count - 1):
-        xi = x[csum_groupsize[i] : csum_groupsize[i + 1]]
+        xi = x[group_indices == i]
         for j in range(i + 1, group_count):
-            xj = x[csum_groupsize[j] : csum_groupsize[j + 1]]
-            stat += np.sum(xi[:, None] < xj[None, :])
-    return stat
+            xj = x[group_indices == j]
+            j_sum += np.sum(xi[:, None] < xj[None, :])
+    return j_sum
