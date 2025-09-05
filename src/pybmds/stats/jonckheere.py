@@ -29,7 +29,14 @@ class Hypothesis(StrEnum):
         raise ValueError("Unreachable code path")  # pragma: no cover
 
 
+class Approach(StrEnum):
+    exact = "exact"
+    approximate = "approximate"
+    permtuation = "permutation"
+
+
 class TestResult(BaseModel):
+    approach: Approach
     statistic: float
     p_value: float
     hypothesis: Hypothesis
@@ -99,9 +106,11 @@ def jonckheere(
     if nperm:
         # calculate P-value via permutation
         pval = _perm(x, group_indices, group_size, hypothesis, nperm)
+        approach = Approach.permtuation
 
     else:
         # calculate P-value via normal approximation
+        approach = Approach.approximate
         zstat = _zstat(group_size, statistic)
         decreasing = float(ss.norm.cdf(zstat))
         increasing = 1 - decreasing
@@ -111,7 +120,9 @@ def jonckheere(
             msg = "P-value estimated using normal distribution; total observations < 30"
             warnings.warn(msg, stacklevel=2)
 
-    return TestResult(statistic=statistic, p_value=float(pval), hypothesis=hypothesis)
+    return TestResult(
+        approach=approach, statistic=statistic, p_value=float(pval), hypothesis=hypothesis
+    )
 
 
 def _zstat(group_size: np.ndarray, statistic: int) -> float:
