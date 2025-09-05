@@ -1,11 +1,12 @@
 name: Test Windows
 
 on:
+  schedule:
+    - cron: "14 3 1 */1 *" # At 03:14 on the 1st of every month
   push:
     branches:
       - main
   workflow_dispatch:
-  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -14,8 +15,31 @@ concurrency:
 jobs:
   pybmds:
     runs-on: windows-2022
+    env:
+      VCPKG_HOST_TRIPLET: x64-windows-static-md
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: cache-vcpkg-deps
+        uses: actions/cache@v4
+        with:
+          path: vcpkg_installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+      - name: Acquire vcpkg
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: "Microsoft/vcpkg"
+          path: vcpkg
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+      - name: Install libraries with vcpkg.json
+        if: steps.cache-vcpkg-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports=./vendor/ports
+
       - name: set up Python
         uses: actions/setup-python@v5
         with:
@@ -24,38 +48,28 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           cache-dependency-glob: "**/pyproject.toml"
-      - name: Set dependency path
-        shell: bash
+      - name: Set environment variables
         run: |
-          DEP="$GITHUB_WORKSPACE/deps"
-          echo "DEPENDENCY_DIR=$DEP" >> $GITHUB_ENV
-          echo "EIGEN_DIR=$DEP\eigen" >> $GITHUB_ENV
-          echo "NLOPT_DIR=$DEP\nlopt\src\api;$DEP\nlopt\build\Release;$DEP\nlopt\build" >> $GITHUB_ENV
-          echo "GSL_DIR=$DEP\gsl\build\Release;$DEP\gsl\build" >> $GITHUB_ENV
-      - name: Restore dependencies from cache
-        id: cache-dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.DEPENDENCY_DIR }}
-          key: ${{runner.os}}-cache-dependencies
-      - name: Build dependencies
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        shell: bash
-        run: tools/windows_ci.sh
-      - name: Build package
+          $env:CMAKE_PREFIX_PATH="${{ github.workspace }}\pybind11\pybind11\share\cmake"
+          $env:CMAKE_BUILD_PARALLEL_LEVEL=[Environment]::ProcessorCount
+          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Build package (test)
         run: |
-          uv pip install --system -v -e ".[dev]"
-          stubgen -p pybmds.bmdscore -o src
-          ruff format src/pybmds/bmdscore.pyi
+          uv pip install pybind11==3.0.0 --target=./pybind11
+          uv pip install --system -v -e "."
           python -c "import pybmds; print(pybmds.bmdscore.version())"
-      - name: Check shared object linked files
-        run: |
           uv pip install --system pefile
           python -c "from pathlib import Path; import pefile; fn = str(list(Path('src/pybmds').glob('bmdscore*'))[0].resolve()); pe = pefile.PE(fn); print([i.dll for i in pe.DIRECTORY_ENTRY_IMPORT])"
-      - name: Build package
+      - name: Build package (wheel)
         run: |
-          uv pip install --system -v wheel
+          uv pip install --system -v wheel setuptools
           python setup.py bdist_wheel
       - uses: actions/upload-artifact@v4
         with:
+          name: bmdscore
+          path: ./src/pybmds/*.pyd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Python package
           path: ./dist/*.whl
