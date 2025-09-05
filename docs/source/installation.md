@@ -79,7 +79,7 @@ Python virtual environments are simple to create, but the steps are specific dep
 
 There is one decision you'll need to make when creating an environment: **the environment name**.
 
-You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create a new one).
+You can use any name for the environment; in the example below we use the name `bmds-desktop`. If you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-25-1`. You cannot rename an environment after you create it (but you can delete or create a new one).
 
 An example setup is below:
 
@@ -98,7 +98,7 @@ This creates an environment (by default in a path in your home directory).  Anac
 There are two decisions you'll need to make when creating a virtual environment:
 
 1. **The location of the environment on your computer.** You will want to put this environment in your home folder, but ideally not in folders managed by cloud-syncing software such as OneDrive or Dropbox. Environments create many small files that do not need to be backed up; backing them up may hinder the performance of your cloud sync application and may slow down your computer. In the example below, we make a new `dev` folder in the home directory, but you can use other locations.
-2. **The environment name.** You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create another one).
+2. **The environment name.** You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-25-1`. You cannot rename an environment after you create it (but you can delete or create another one).
 
 An example setup is below. First, navigate to the folder where we want to create the environment (where `USERNAME` is your username):
 
@@ -123,7 +123,7 @@ The instructions above create a virtual environment here: `C:\Users\USERNAME\dev
 There are two decisions you'll need to make when creating a virtual environment:
 
 1. **The location of the environment on your computer.** You will want to put this environment in your home folder, but ideally not in folders managed by cloud-syncing software such as OneDrive or Dropbox. Environments create many small files that do not need to be backed up; backing them up may hinder the performance of your cloud sync application and may slow down your computer. In the example below, we make a new `dev` folder in the home directory, but you can use other locations.
-2. **The environment name.** You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-24-1`. You cannot rename an environment after you create it (but you can delete or create another one)
+2. **The environment name.** You can use any name for the environment; in the example below we use the name `bmds-desktop`. However, if you plan on installing multiple versions of BMDS Desktop simultaneously, you may want to add the version to the name, for example, `bmds-desktop-25-1`. You cannot rename an environment after you create it (but you can delete or create another one)
 
 An example setup is below:
 
