@@ -99,6 +99,7 @@ def jonckheere(
     if nperm:
         # calculate P-value via permutation
         pval = _perm(x, group_indices, group_size, hypothesis, nperm)
+
     else:
         # calculate P-value via normal approximation
         zstat = _zstat(group_size, statistic)
@@ -134,10 +135,10 @@ def _perm(
     observed_stat = _calc_stat(x, group_indices, group_size)
     perm_stats = np.empty(nperm, dtype=np.float64)
     for i in range(nperm):
-        perm_x = rng.permutation(x)
-        perm_stats[i] = _calc_stat(perm_x, group_indices, group_size)
-    decreasing = np.mean(perm_stats >= observed_stat)
-    increasing = np.mean(perm_stats <= observed_stat)
+        perm_stats[i] = _calc_stat(x, group_indices, group_size)
+        x = rng.permutation(x)
+    decreasing = np.sum(perm_stats >= observed_stat) / nperm
+    increasing = np.sum(perm_stats <= observed_stat) / nperm
     return hypothesis.calculate_pvalue(decreasing, increasing)
 
 
@@ -151,8 +152,8 @@ def _calc_stat(
     group_count = len(group_size)
     stat = 0
     for i in range(group_count - 1):
-        xi = x[csum_groupsize[i] : csum_groupsize[i + 1]]
-        for j in range(i + 1, group_count):
-            xj = x[csum_groupsize[j] : csum_groupsize[j + 1]]
-            stat += np.sum(xi[:, None] < xj[None, :])
+        xi = x[csum_groupsize[i] : len(x)]
+        rank_a = ss.rankdata(xi)
+        rank_b = rank_a[: group_size[i]]
+        stat += sum(rank_b) - group_size[i] * (group_size[i] + 1) / 2
     return stat
