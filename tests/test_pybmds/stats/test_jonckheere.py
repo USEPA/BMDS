@@ -29,6 +29,10 @@ class TestJonckheere:
         result = jonckheere(valid_x, valid_group, hypothesis="increasing")
         assert 0 <= result.p_value <= 1
 
+    def test_result_table(self, valid_x, valid_group):
+        result = jonckheere(valid_x, valid_group)
+        assert isinstance(result.tbl(), str)
+
     @pytest.mark.parametrize("hypothesis", ("increasing", "decreasing", "two-sided"))
     def test_hypothesis_paths(self, hypothesis, valid_x, valid_group):
         # run all code paths and confirm we always get a p_value.

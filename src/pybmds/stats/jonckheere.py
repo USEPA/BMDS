@@ -5,6 +5,8 @@ import numpy as np
 import scipy.stats as ss
 from pydantic import BaseModel
 
+from ..utils import pretty_table
+
 
 class Hypothesis(StrEnum):
     two_sided = "two-sided"
@@ -40,6 +42,17 @@ class TestResult(BaseModel):
     statistic: float
     p_value: float
     hypothesis: Hypothesis
+
+    def tbl(self) -> str:
+        return pretty_table(
+            [
+                ["Approach", self.approach],
+                ["Hypothesis", self.hypothesis],
+                ["Statistic", self.statistic],
+                ["P Value", self.p_value],
+            ],
+            "",
+        )
 
 
 def jonckheere(
