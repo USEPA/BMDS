@@ -246,7 +246,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
             )
         ]
 
-    def summary_trend(
+    def trend(
         self,
         hypothesis: str = "two-sided",
         nperm: int | None = None,
