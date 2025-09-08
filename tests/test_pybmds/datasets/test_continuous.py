@@ -214,7 +214,7 @@ class TestContinuousSummaryDataset:
         means = [5.26, 5.76, 6.13, 8.24, 10.23]
         stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
         ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
-        result = ds.summary_trend(hypothesis="increasing", seed=42)
+        result = ds.trend(hypothesis="increasing", seed=42)
         # Check that the statistic is positive and p-value is significant
         assert result.statistic > 0
         assert result.p_value < 0.05
@@ -227,8 +227,8 @@ class TestContinuousSummaryDataset:
         means = [5.26, 5.30, 5.28, 5.27, 5.29]
         stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
         ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
-        result = ds.summary_trend(hypothesis="increasing", seed=42)
-        # Check that the statistic is close to zero and p-value is not significant
+        result = ds.trend(hypothesis="increasing", seed=42)
+        # Check that the p-value is not significant
         assert result.p_value > 0.05
 
 
