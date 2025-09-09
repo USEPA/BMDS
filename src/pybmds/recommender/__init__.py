@@ -1,1 +1,6 @@
-from .recommender import Recommender, RecommenderSettings  # noqa: F401
+from .recommender import Recommender, RecommenderSettings
+
+__all__ = [
+    "Recommender",
+    "RecommenderSettings",
+]

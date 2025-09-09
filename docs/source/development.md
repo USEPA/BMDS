@@ -13,8 +13,9 @@ If you're on Linux/MacOS, it's easier to build the C++ package, so we recommend 
 However, on Windows, it's more complex.  The simplest method is to install the Python package without compiling C++. To do that, you'll need to download a precompiled file from GitHub and place that file in the correct location.
 
 ```ps1
-# clone repository
-git clone https://github.com/USEPA/BMDS
+# clone repository to the `bmds-dev` path
+git clone https://github.com/USEPA/BMDS bmds-dev
+cd bmds-dev
 
 # create a new python virtual environment
 uv venv --python=3.13
@@ -41,9 +42,9 @@ The [vcpkg](https://github.com/microsoft/vcpkg) C++ package manager is used to i
 For **Linux/MacOS**:
 
 ```bash
-# clone repository
-git clone https://github.com/USEPA/BMDS
-cd bmds
+# clone repository to the `bmds-dev` path
+git clone https://github.com/USEPA/BMDS bmds-dev
+cd bmds-dev
 
 # check out a snapshot from vcpkg git repository
 mkdir vcpkg
@@ -59,13 +60,13 @@ cd ..
 export VCPKG_HOST_TRIPLET="arm64-osx" # for macOS
 export VCPKG_HOST_TRIPLET="x64-linux" # for linux
 ./vcpkg/bootstrap-vcpkg.sh
-./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET"
+./vcpkg/vcpkg install --host-triplet="$VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
 
 # install pybind11 at the root so for our build phase
 uv pip install pybind11=="3.0.0" --target="./pybind11"
 
 # set environment variables for building python extension
-export CMAKE_PREFIX_PATH="$(readlink -f ./pybind11/pybind11/share/cmake)" --overlay-ports="./vendor/ports"
+export CMAKE_PREFIX_PATH="$(readlink -f ./pybind11/pybind11/share/cmake)"
 export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
 
 echo "$VCPKG_HOST_TRIPLET"
@@ -88,9 +89,9 @@ For **Windows (PowerShell)**:
 Install the command line tools for [Visual Studio](https://visualstudio.microsoft.com/downloads/) (not [Visual Studio Code](https://code.visualstudio.com/)). In the installation process, install the C++ dependencies that are needed to build C++ code (cmake, make, etc.). Using [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/), select a Visual Studio Window so the environment is configured for compiling C++.
 
 ```ps1
-# clone repository
-git clone https://github.com/USEPA/BMDS
-cd bmds
+# clone repository to the `bmds-dev` path
+git clone https://github.com/USEPA/BMDS bmds-dev
+cd bmds-dev
 
 # check out a single commit from a git repository
 mkdir vcpkg
@@ -159,7 +160,7 @@ git checkout FETCH_HEAD
 cd ..
 
 # build static dependencies (eigen, nlopt, gsl)
-export VCPKG_HOST_TRIPLET="x64-linux" # OS-specific; x64-windows-static-md / arm64-osx / etc.
+export VCPKG_HOST_TRIPLET="x64-linux" # OS-specific; x64-windows-static-md / arm64-osx
 .\vcpkg\bootstrap-vcpkg.sh
 .\vcpkg\vcpkg install --host-triplet="$env:VCPKG_HOST_TRIPLET" --overlay-ports="./vendor/ports"
 
