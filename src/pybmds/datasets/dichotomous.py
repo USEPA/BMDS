@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 from scipy import stats
 
 from .. import constants, plotting
+from ..stats.cochran_armitage import cochran_armitage
 from ..utils import pretty_table, str_list
 from .base import DatasetBase, DatasetMetadata, DatasetPlottingSchema, DatasetSchemaBase
 
@@ -186,6 +187,24 @@ class DichotomousDataset(DatasetBase):
     def tbl(self) -> str:
         data = [args for args in zip(self.doses, self.incidences, self.ns, strict=True)]
         return pretty_table(data, "Dose|Incidence|N".split("|"))
+
+    def trend(self):
+        """
+        Perform the Cochran-Armitage trend test for monotonic trend in incidence rates.
+
+        This test evaluates whether there is a statistically significant monotonic trend
+        in the proportion of positive responses across increasing dose groups.
+
+        Returns
+        -------
+        TestResult
+            An object containing the test statistic, asymptotic p-value, and exact p-value.
+
+        """
+        dose = np.array(self.doses)
+        n = np.array(self.ns)
+        incidence = np.array(self.incidences)
+        return cochran_armitage(dose, n, incidence)
 
 
 class DichotomousDatasetSchema(DatasetSchemaBase):

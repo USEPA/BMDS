@@ -207,6 +207,30 @@ class TestContinuousSummaryDataset:
                 seed=42, tolerance=1e-10, max_iterations=1, impose_positivity=True
             )
 
+    def test_summary_trend_strong(self):
+        # Data with a strong increasing trend
+        doses = [0, 50, 100, 200, 400]
+        ns = [20, 20, 20, 20, 20]
+        means = [5.26, 5.76, 6.13, 8.24, 10.23]
+        stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
+        ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
+        result = ds.trend(hypothesis="increasing", seed=42)
+        # Check that the statistic is positive and p-value is significant
+        assert result.statistic > 0
+        assert result.p_value < 0.05
+        assert result.hypothesis == "increasing"
+
+    def test_summary_trend_no_trend(self):
+        # Data with no trend
+        doses = [0, 50, 100, 200, 400]
+        ns = [20, 20, 20, 20, 20]
+        means = [5.26, 5.30, 5.28, 5.27, 5.29]
+        stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
+        ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
+        result = ds.trend(hypothesis="increasing", seed=42)
+        # Check that the p-value is not significant
+        assert result.p_value > 0.05
+
 
 class TestContinuousIndividualDataset:
     def test_validation(self):
@@ -332,6 +356,24 @@ class TestContinuousIndividualDataset:
 
         # make sure we get the same result back after deserializing
         assert ds1.serialize().model_dump() == ds2.serialize().model_dump()
+
+    def test_trend_strong(self):
+        # Data with a strong increasing trend
+        doses = [0, 0, 1, 1, 2, 2, 3, 3]
+        responses = [1, 2, 3, 4, 5, 6, 7, 8]
+        ds = pybmds.ContinuousIndividualDataset(doses=doses, responses=responses)
+        result = ds.trend(hypothesis="increasing")
+        assert result.statistic > 0
+        assert result.p_value < 0.05
+        assert result.hypothesis == "increasing"
+
+    def test_trend_no_trend(self):
+        # Data with no trend
+        doses = [0, 0, 1, 1, 2, 2, 3, 3]
+        responses = [2, 1, 2, 1, 2, 1, 2, 1]
+        ds = pybmds.ContinuousIndividualDataset(doses=doses, responses=responses)
+        result = ds.trend(hypothesis="increasing")
+        assert result.p_value > 0.05
 
 
 class TestContinuousDatasetSchema:
