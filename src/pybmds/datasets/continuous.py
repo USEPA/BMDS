@@ -176,17 +176,17 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
 
     def simulate_individual_dataset(
         self,
-        seed: int = 42,
+        seed: int | None = None,
         impose_positivity: bool = False,
         tolerance: float = 0.01,
-        max_iterations: int = 10000,
+        max_iterations: int = 100_000,
     ) -> "ContinuousIndividualDataset":
         """Generate a simulated individual dataset matching summary statistics.
 
         May raise a `ValueError` if a simulated dataset cannot be generated.
 
         Args:
-            seed (int, optional): Defaults to 42.
+            seed (int, optional): A randomization seed.
             impose_positivity (bool, optional): Only positive responses are allowed.
             tolerance (float, optional): Tolerance between simulated and actual mean/sd.
             max_iterations (int, optional): Maximum number of iterations to attempt.
@@ -248,19 +248,19 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
 
     def trend(
         self,
-        hypothesis: str = "two-sided",
+        hypothesis: Hypothesis = Hypothesis.two_sided,
         nperm: int | None = None,
         seed: int | None = None,
         impose_positivity: bool = True,
         tolerance: float = 0.01,
-        max_iterations: int = 10000,
+        max_iterations: int = 100_000,
     ) -> TestResult:
         """
          Generate synthetic individual response data from summary statistics and
          perform the Jonckheere-Terpstra trend test.
 
         Args:
-         hypothesis : str, optional
+         hypothesis : Hypothesis, optional; defaults to two-sided
              The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
          nperm : int or None, optional
              Number of permutations for permutation-based p-value (default: None).
@@ -275,11 +275,6 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
 
          Returns:
              TestResult: An object containing the test statistic, p-value, and hypothesis.
-
-         Examples:
-         >>> result = dataset.summary_trend(hypothesis="increasing")
-         >>> print(result)
-         TestResult(statistic=..., p_value=..., hypothesis=...)
         """
         # Generate synthetic individual data
         synthetic = self.simulate_individual_dataset(
@@ -288,11 +283,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
             tolerance=tolerance,
             max_iterations=max_iterations,
         )
-        from ..stats.jonckheere import jonckheere
-
-        x = np.array(synthetic.responses)
-        group = np.array(synthetic.individual_doses)
-        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
+        return synthetic.trend(hypothesis=hypothesis, nperm=nperm, seed=seed)
 
 
 class ContinuousDatasetSchema(DatasetSchemaBase):
@@ -466,30 +457,29 @@ class ContinuousIndividualDataset(ContinuousSummaryDataMixin, DatasetBase):
         ]
 
     def trend(
-        self, hypothesis: Hypothesis = Hypothesis.two_sided, nperm: int | None = None
+        self,
+        hypothesis: Hypothesis = Hypothesis.two_sided,
+        nperm: int | None = None,
+        seed: int | None = None,
     ) -> TestResult:
         """
         Perform the Jonckheere-Terpstra trend test for monotonic trend in continuous individual data.
 
-        Args:
-        hypothesis : str, optional
-            The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
-        nperm : int or None, optional
-            Number of permutations for permutation-based p-value (default: None, uses normal approximation).
-
-        Returns: TestResult: An object containing the test statistic, p-value, and hypothesis.
-
-        Examples
-        >>> result = dataset.trend()
-        >>> print(result)
-        TestResult(statistic=..., p_value=..., hypothesis=...)
-
         This test evaluates whether there is a statistically significant monotonic trend
         in the response values across ordered dose groups using the Jonckheere-Terpstra test.
+
+        Args:
+            hypothesis : Hypothesis, optional; defaults to two-sided
+                The alternative hypothesis to test: "two-sided", "increasing", or "decreasing".
+            nperm : int or None, optional
+                Number of permutations for permutation-based p-value (default: None, uses normal approximation).
+
+        Returns:
+            TestResult: An object containing the test statistic, p-value, and hypothesis.
         """
         x = np.array(self.responses)
         group = np.array(self.individual_doses)
-        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm)
+        return jonckheere(x, group, hypothesis=hypothesis, nperm=nperm, seed=seed)
 
 
 class ContinuousIndividualDatasetSchema(DatasetSchemaBase):
