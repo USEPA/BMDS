@@ -1,9 +1,12 @@
 import warnings
 from enum import StrEnum
+from math import comb
 
 import numpy as np
 import scipy.stats as ss
 from pydantic import BaseModel
+
+from pybmds.bmdscore import cwilcox
 
 from ..utils import pretty_table
 
@@ -79,6 +82,10 @@ def jonckheere(
     Returns:
         Test statistic, p-value, alternative hypothesis, and method used.
     """
+
+    # set maximum data length for using exact method
+    maxN = 150
+
     # Input validation
     if not np.issubdtype(x.dtype, np.number):
         raise ValueError("Data needs to be numeric")
@@ -123,20 +130,106 @@ def jonckheere(
         increasing = np.sum(perm_stats <= observed_stat) / nperm
 
     else:
-        # calculate P-value via normal approximation
-        approach = Approach.approximate
-        zstat = _zstat(group_size, statistic)
-        decreasing = float(ss.norm.cdf(zstat))
-        increasing = 1 - decreasing
+        # calculate p-value with exact method
+        if tot_elements <= maxN or len(np.unique(x)) < tot_elements:
+            approach = Approach.exact
+            decreasing = sum(_conv_pdf(group_size)[: int(statistic) + 1])
+            increasing = 1 - sum(_conv_pdf(group_size)[: int(statistic)])
+        else:
+            # calculate P-value via normal approximation
+            approach = Approach.approximate
+            zstat = _zstat(group_size, statistic)
+            decreasing = float(ss.norm.cdf(zstat))
+            increasing = 1 - decreasing
 
-        if tot_elements < 30:
-            msg = "P-value estimated using normal distribution; total observations < 30"
-            warnings.warn(msg, stacklevel=2)
-
+            if tot_elements < 30:
+                msg = "P-value estimated using normal distribution; total observations < 30"
+                warnings.warn(msg, stacklevel=2)
     pval = hypothesis.calculate_pvalue(decreasing, increasing)
+
     return TestResult(
         approach=approach, statistic=statistic, p_value=float(pval), hypothesis=hypothesis
     )
+
+
+def _conv_pdf(group_size: np.ndarray) -> np.ndarray:
+    """Finds the probability density function (PDF) using the convolution by Mark van de Wiel.
+
+    Args:
+        group_size (np.ndarray): An array of group sizes.
+
+    Returns:
+        The probability density function (PDF).
+    """
+    # Find the cmulative sizes in reverse order and calculate the maximum sum for the PDF computation
+    group_count = group_size.size
+    csum_groupsize = np.cumsum(np.flip(group_size))
+    csum_groupsize = np.flip(csum_groupsize)
+    max_sum = sum(group_size[:-1] * csum_groupsize[1:]) + 1
+
+    pdf = np.zeros(max_sum)
+    pdf0 = np.zeros(max_sum)
+    pdf1 = np.zeros(max_sum)
+
+    # Calculate the PDF for the last two groups
+    m = csum_groupsize[-2] - csum_groupsize[-1]
+    n = csum_groupsize[-1]
+    mn1 = m * n
+
+    for i in range(mn1 + 1):
+        pdf[i] = _wilcoxon_pdf(int(i), int(m), int(n))
+
+    # Loop through the remaining groups in reverse order
+    for g in range(group_count - 3, -1, -1):
+        pdf1[:] = pdf
+        pdf.fill(0)
+
+        # Calculate PDF
+        m = csum_groupsize[g] - csum_groupsize[g + 1]
+        n = csum_groupsize[g + 1]
+        mn0 = m * n
+
+        for i in range(mn0 + 1):
+            pdf0[i] = _wilcoxon_pdf(int(i), int(m), int(n))
+
+        # Convolve pdf0 and pdf1 and store in pdf
+        for i in range(mn0 + 1):
+            for j in range(mn1 + 1):
+                pdf[i + j] += pdf0[i] * pdf1[j]
+
+        # Update range
+        mn1 = mn0 + mn1
+
+    return pdf
+
+
+def _wilcoxon_pdf(i: int, m: int, n: int) -> np.ndarray:
+    """Calculates the raw density for the distribution of the Wilcoxon rank sum statistic.
+
+    Args:
+        i (int): Vector of quantiles.
+        m: (int): Number of observations in the first sample.
+        n: (int): Number of observations in the second sample.
+
+    Returns:
+        The raw density for the distribution.
+    """
+    # Check for NaN values
+    if np.isnan(i) or np.isnan(m) or np.isnan(n):
+        return i + m + n
+
+    # Check if sample sizes are valid
+    if m <= 0 or n <= 0:
+        return float("nan")  # Return NaN if invalid
+
+    # Check if i is within valid bounds
+    if i < 0 or i > m * n:
+        return 0.0  # Return 0 if i is out of bounds
+
+    # Calculate the raw density
+    d = cwilcox(i, m, n) / comb(m + n, n)
+
+    return d
 
 
 def _zstat(group_size: np.ndarray, statistic: int) -> float:
