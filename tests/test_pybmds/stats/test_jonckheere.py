@@ -10,20 +10,28 @@ def valid_x():
 
 
 @pytest.fixture
+def rep_x():
+    return np.array([1.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+
+
+@pytest.fixture
 def valid_group():
     return np.repeat(np.linspace(1, 4, 4), 2)
 
 
 class TestJonckheere:
-    def test_exact_result(self, valid_x, valid_group):
+    def test_obs_warning(self, rep_x, valid_group):
         with pytest.warns(UserWarning, match="total observations < 30"):
-            result = jonckheere(valid_x, valid_group, hypothesis="increasing")
+            jonckheere(rep_x, valid_group, hypothesis="increasing")
+
+    def test_exact_result(self, valid_x, valid_group):
+        result = jonckheere(valid_x, valid_group, hypothesis="increasing")
         assert pytest.approx(result.statistic) == 24.0
         assert pytest.approx(result.p_value, abs=1e-3) == 0.00109
 
         result = jonckheere(valid_x, valid_group, hypothesis="two-sided")
         assert pytest.approx(result.statistic) == 24.0
-        assert pytest.approx(result.p_value, abs=1e-3) == 0.00218
+        assert pytest.approx(result.p_value, abs=1e-4) == 0.000793
 
     def test_valid_result(self, valid_x, valid_group):
         result = jonckheere(valid_x, valid_group, hypothesis="increasing")

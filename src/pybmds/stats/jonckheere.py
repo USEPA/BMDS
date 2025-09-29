@@ -25,13 +25,21 @@ class Hypothesis(StrEnum):
         Returns:
             P-value with given alternative hypothesis.
         """
+        maxVal = 1.0
+        minVal = 0.0
+        val = -9999
         if self == Hypothesis.two_sided:
-            return 2 * min(decreasing, increasing, 0.5)
+            val = 2 * min(decreasing, increasing, 0.5)
         elif self == Hypothesis.increasing:
-            return increasing
+            val = increasing
         elif self == Hypothesis.decreasing:
-            return decreasing
-        raise ValueError("Unreachable code path")  # pragma: no cover
+            val = decreasing
+
+        if val == -9999:
+            raise ValueError("Bad Hypothesis def")  # pragma: no cover
+
+        # ensure p-value is between zero and one
+        return min(maxVal, max(minVal, val))
 
 
 class Approach(StrEnum):
@@ -131,11 +139,7 @@ def jonckheere(
 
     else:
         # calculate p-value with exact method
-        if tot_elements <= maxN or len(np.unique(x)) < tot_elements:
-            approach = Approach.exact
-            decreasing = sum(_conv_pdf(group_size)[: int(statistic) + 1])
-            increasing = 1 - sum(_conv_pdf(group_size)[: int(statistic)])
-        else:
+        if tot_elements > maxN or len(np.unique(x)) < tot_elements:
             # calculate P-value via normal approximation
             approach = Approach.approximate
             zstat = _zstat(group_size, statistic)
@@ -145,6 +149,11 @@ def jonckheere(
             if tot_elements < 30:
                 msg = "P-value estimated using normal distribution; total observations < 30"
                 warnings.warn(msg, stacklevel=2)
+        else:
+            approach = Approach.exact
+            decreasing = sum(_conv_pdf(group_size)[: int(statistic) + 1])
+            increasing = 1 - sum(_conv_pdf(group_size)[: int(statistic)])
+
     pval = hypothesis.calculate_pvalue(decreasing, increasing)
 
     return TestResult(
