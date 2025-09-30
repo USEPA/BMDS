@@ -87,7 +87,8 @@ int cwilcox(int k, int m, int n) {
   double ret = cwilcox_new(k, m, n);
 
   // free w
-  if (m > WILCOX_MAX || n > WILCOX_MAX) w_free(m, n);
+  // if (m > WILCOX_MAX || n > WILCOX_MAX) w_free(m, n);
+  w_free(m, n);
 
   return ((int)ret);
 }
