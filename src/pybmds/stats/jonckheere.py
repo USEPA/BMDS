@@ -138,9 +138,8 @@ def jonckheere(
         increasing = np.sum(perm_stats <= observed_stat) / nperm
 
     else:
-        # calculate p-value with exact method
+        # calculate P-value via normal approximation
         if tot_elements > maxN or len(np.unique(x)) < tot_elements:
-            # calculate P-value via normal approximation
             approach = Approach.approximate
             zstat = _zstat(group_size, statistic)
             decreasing = float(ss.norm.cdf(zstat))
@@ -149,6 +148,7 @@ def jonckheere(
             if tot_elements < 30:
                 msg = "P-value estimated using normal distribution; total observations < 30"
                 warnings.warn(msg, stacklevel=2)
+        # calculate p-value with exact method
         else:
             approach = Approach.exact
             decreasing = sum(_conv_pdf(group_size)[: int(statistic) + 1])
