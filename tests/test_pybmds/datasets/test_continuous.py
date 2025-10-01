@@ -208,17 +208,17 @@ class TestContinuousSummaryDataset:
             )
 
     def test_summary_trend_strong(self):
-        # Data with a strong increasing trend
-        doses = [0, 50, 100, 200, 400]
-        ns = [20, 20, 20, 20, 20]
-        means = [5.26, 5.76, 6.13, 8.24, 10.23]
-        stdevs = [2.03, 1.97, 2.47, 2.24, 1.8]
+        # Data with a strong decreasing trend
+        doses = [0, 25, 50, 100, 200]
+        ns = [20, 20, 19, 20, 20]
+        means = [6, 5.2, 2.4, 1.1, 0.75]
+        stdevs = [1.2, 1.1, 0.81, 0.74, 0.66]
         ds = pybmds.ContinuousDataset(doses=doses, ns=ns, means=means, stdevs=stdevs)
-        result = ds.trend(hypothesis="increasing", seed=42)
+        result = ds.trend(hypothesis="decreasing", seed=42)
         # Check that the statistic is positive and p-value is significant
         assert result.statistic > 0
         assert result.p_value < 0.05
-        assert result.hypothesis == "increasing"
+        assert result.hypothesis == "decreasing"
 
     def test_summary_trend_no_trend(self):
         # Data with no trend
