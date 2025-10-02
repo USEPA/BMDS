@@ -307,6 +307,7 @@ def dose_litter_response_plot(session: Session) -> Figure:
         ax.set_xlabel("# of Responders")
         ax.set_ylabel("# of Litters")
         ax.tick_params(axis="x")
+        print(plot_data["litter_final"])
         ax.set_xticks(range(int(plot_data["litter_final"].max()) + 1))
 
     # build legend
