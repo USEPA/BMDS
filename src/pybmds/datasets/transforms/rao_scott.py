@@ -51,9 +51,9 @@ class RaoScott:
     def __init__(self, dataset: DichotomousDataset, species: Species):
         self.dataset = dataset
         self.species = species
-        self.df = self.calculate()
+        self.df = self.calculate_zero_mask()
 
-    def calculate(self) -> pd.DataFrame:
+    def calculate_zero_mask(self) -> pd.DataFrame:
         df = pd.DataFrame(
             {
                 "dose": self.dataset.doses,
@@ -63,15 +63,40 @@ class RaoScott:
         )
         df["fraction_affected"] = df.incidence / df.n
 
-        p = self.adjustment_parameters[(self.species, Regression.least_square)]
-        df["design_ls"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
+        # Masks for zero and nonzero fraction_affected
+        zero_mask = df["fraction_affected"] == 0
+        nonzero_mask = ~zero_mask
 
-        p = self.adjustment_parameters[(self.species, Regression.orthogonal)]
-        df["design_o"] = np.exp(p.a + (p.b * np.log(df.fraction_affected)) + (0.5 * p.sigma))
+        # Prepare columns with NaN
+        df["design_ls"] = np.nan
+        df["design_o"] = np.nan
+        df["design_avg"] = np.nan
 
-        df["design_avg"] = df[["design_ls", "design_o"]].mean(axis=1)
-        df["incidence_adjusted"] = df.incidence / df.design_avg
-        df["n_adjusted"] = df.n / df.design_avg
+        # Only calculate design effects where fraction_affected is not zero
+        if nonzero_mask.any():
+            p_ls = self.adjustment_parameters[(self.species, Regression.least_square)]
+            p_or = self.adjustment_parameters[(self.species, Regression.orthogonal)]
+
+            log_fa = np.log(df.loc[nonzero_mask, "fraction_affected"])
+            df.loc[nonzero_mask, "design_ls"] = np.exp(
+                p_ls.a + (p_ls.b * log_fa) + (0.5 * p_ls.sigma)
+            )
+            df.loc[nonzero_mask, "design_o"] = np.exp(
+                p_or.a + (p_or.b * log_fa) + (0.5 * p_or.sigma)
+            )
+            df.loc[nonzero_mask, "design_avg"] = df.loc[
+                nonzero_mask, ["design_ls", "design_o"]
+            ].mean(axis=1)
+
+        # For zero_mask, set design_ls and design_o to 1, and design_avg to 1 as well
+        df.loc[zero_mask, "design_ls"] = 1
+        df.loc[zero_mask, "design_o"] = 1
+        df.loc[zero_mask, "design_avg"] = 1
+
+        # Now calculate adjusted columns using design_avg (which is 1 for zero_mask)
+        df["incidence_adjusted"] = df["incidence"] / df["design_avg"]
+        df["n_adjusted"] = df["n"] / df["design_avg"]
+
         return df
 
     def figure(self, figsize: tuple[float, float] | None = None) -> Figure:
@@ -169,7 +194,8 @@ class RaoScott:
 
         report.document.add_paragraph("Summary", h2)
         write_setting_p(report, "Species: ", self.species.name.title())
-        report.document.add_paragraph(df_to_table(report, self.summary_df()))
+        summary = self.summary_df()
+        report.document.add_paragraph(df_to_table(report, summary))
         report.document.add_paragraph(
             add_mpl_figure(report.document, self.figure(figsize=(8, 4)), 6.5)
         )
@@ -180,6 +206,14 @@ class RaoScott:
         report.document.add_paragraph(
             "Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity Studies. Risk Anal. 2017 May;37(5):905-917. PMID: 27567129. DOI: 10.1111/risa.12667."
         )
+        report.document.add_paragraph("")
+        # Check summary table to see if any row in the Incidence column contains either a integer 0 and string "0"
+        incidence_col = summary["Incidence"]
+        has_zero = ((incidence_col == 0) | (incidence_col == "0")).any()
+        if has_zero:
+            footnote_text = "Note: One or more dose groups have a fraction affected equal to zero and therefore the design effect was set equal to 1; incidences and Ns were thus not adjusted for those dose groups."
+            report.document.add_paragraph(footnote_text)
+
         return report.document
 
     def summary_df(self) -> pd.DataFrame:
@@ -194,7 +228,8 @@ class RaoScott:
             "n_adjusted": "N (Rao-Scott Transformed)",
             "incidence_adjusted": "Incidence (Rao-Scott Transformed)",
         }
-        return self.df[list(mapping.keys())].rename(columns=mapping)
+        df = self.df[list(mapping.keys())].rename(columns=mapping)
+        return df.fillna("--")
 
     def to_excel(self) -> BytesIO:
         """Returns an Excel report with worksheets summarizing the adjustment.
