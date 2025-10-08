@@ -78,9 +78,15 @@ class RaoScott:
             p_or = self.adjustment_parameters[(self.species, Regression.orthogonal)]
 
             log_fa = np.log(df.loc[nonzero_mask, "fraction_affected"])
-            df.loc[nonzero_mask, "design_ls"] = np.exp(p_ls.a + (p_ls.b * log_fa) + (0.5 * p_ls.sigma))
-            df.loc[nonzero_mask, "design_o"] = np.exp(p_or.a + (p_or.b * log_fa) + (0.5 * p_or.sigma))
-            df.loc[nonzero_mask, "design_avg"] = df.loc[nonzero_mask, ["design_ls", "design_o"]].mean(axis=1)
+            df.loc[nonzero_mask, "design_ls"] = np.exp(
+                p_ls.a + (p_ls.b * log_fa) + (0.5 * p_ls.sigma)
+            )
+            df.loc[nonzero_mask, "design_o"] = np.exp(
+                p_or.a + (p_or.b * log_fa) + (0.5 * p_or.sigma)
+            )
+            df.loc[nonzero_mask, "design_avg"] = df.loc[
+                nonzero_mask, ["design_ls", "design_o"]
+            ].mean(axis=1)
 
         # For zero_mask, set design_ls and design_o to 1, and design_avg to 1 as well
         df.loc[zero_mask, "design_ls"] = 1
@@ -201,13 +207,11 @@ class RaoScott:
             "Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity Studies. Risk Anal. 2017 May;37(5):905-917. PMID: 27567129. DOI: 10.1111/risa.12667."
         )
         report.document.add_paragraph("")
-# Check summary table to see if any row in the Incidence column contains either a integer 0 and string "0"
+        # Check summary table to see if any row in the Incidence column contains either a integer 0 and string "0"
         incidence_col = summary["Incidence"]
         has_zero = ((incidence_col == 0) | (incidence_col == "0")).any()
         if has_zero:
-            footnote_text = (
-                "Note: One or more dose groups have a fraction affected equal to zero and therefore the design effect was set equal to 1; incidences and Ns were thus not adjusted for those dose groups."
-            )
+            footnote_text = "Note: One or more dose groups have a fraction affected equal to zero and therefore the design effect was set equal to 1; incidences and Ns were thus not adjusted for those dose groups."
             report.document.add_paragraph(footnote_text)
 
         return report.document
