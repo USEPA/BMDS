@@ -82,13 +82,15 @@ class RaoScott:
             df.loc[nonzero_mask, "design_o"] = np.exp(p_or.a + (p_or.b * log_fa) + (0.5 * p_or.sigma))
             df.loc[nonzero_mask, "design_avg"] = df.loc[nonzero_mask, ["design_ls", "design_o"]].mean(axis=1)
 
-        # Use np.where for adjusted columns for efficiency and clarity
-        df["incidence_adjusted"] = np.where(
-            zero_mask, df["incidence"], df["incidence"] / df["design_avg"]
-        )
-        df["n_adjusted"] = np.where(
-            zero_mask, df["n"], df["n"] / df["design_avg"]
-        )
+        # For zero_mask, set design_ls and design_o to 1, and design_avg to 1 as well
+        df.loc[zero_mask, "design_ls"] = 1
+        df.loc[zero_mask, "design_o"] = 1
+        df.loc[zero_mask, "design_avg"] = 1
+
+        # Now calculate adjusted columns using design_avg (which is 1 for zero_mask)
+        df["incidence_adjusted"] = df["incidence"] / df["design_avg"]
+        df["n_adjusted"] = df["n"] / df["design_avg"]
+
         return df
 
     def figure(self, figsize: tuple[float, float] | None = None) -> Figure:
@@ -204,7 +206,7 @@ class RaoScott:
         has_zero = ((incidence_col == 0) | (incidence_col == "0")).any()
         if has_zero:
             footnote_text = (
-                "Note: One or more dose groups have a fraction affected equal to zero and therefore the incidences and Ns were not adjusted for those dose groups."
+                "Note: One or more dose groups have a fraction affected equal to zero and therefore the design effect was set equal to 1; incidences and Ns were thus not adjusted for those dose groups."
             )
             report.document.add_paragraph(footnote_text)
 
