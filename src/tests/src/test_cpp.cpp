@@ -51,7 +51,7 @@ int main(void) {
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
   //  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+    runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -413,7 +413,7 @@ void runOldDichoAnalysis() {
   int degree = 3;                     // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = true;
   ///////////////////////////////
   // dicho data - dose, N, incidence
   ///////////////////////////////
@@ -887,7 +887,7 @@ void runOldDichoAnalysis() {
   aod.pvFit = pvFit;
   aod.pvRed = pvRed;
 
-  runBMDSDichoAnalysis(&anal, &res, &gof, &bmdsRes, &aod, &penalizeAIC);
+  runBMDSDichoAnalysis(&anal, &res, &gof, &bmdsRes, &aod, &countAllParmsOnBoundary);
 
   printf("tlink bmdsRes.validResult = %s\n", bmdsRes.validResult ? "valid" : "invalid");
   if (bmdsRes.validResult || showResultsOverride) {
@@ -968,7 +968,7 @@ void runPythonDichoAnalysis() {
   int degree = 3;                        // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
-  double penalizeAIC = false;
+  double countAllParmsOnBoundary = false;
   ///////////////////////////////
   // dicho data - dose, N, incidence
   ///////////////////////////////
@@ -1067,7 +1067,7 @@ void runPythonDichoAnalysis() {
 
   // struct dichotomous_analysis anal;
   struct python_dichotomous_analysis anal;
-  anal.penalizeAIC = penalizeAIC;
+  anal.countAllParmsOnBoundary = countAllParmsOnBoundary;
 
   int numDataRows = sizeof(D) / sizeof(D[0]);
 
@@ -2065,7 +2065,7 @@ void runOldContAnalysis() {
   bool restricted = true;           // only used for frequentist models
   enum distribution dist = normal;  // normal, normal_ncv, log_normal
   bool detectAdvDir = true;         // if false then need to set isIncreasing
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
   int degree = 2;  // for polynomial only
@@ -3052,7 +3052,7 @@ void runOldContAnalysis() {
 
   printf("\n\n");
   printf("calling runBMDSContAnalysis\n");
-  runBMDSContAnalysis(&anal, &res, &BMDSres, &aod, &gof, &detectAdvDir, &restricted, &penalizeAIC);
+  runBMDSContAnalysis(&anal, &res, &BMDSres, &aod, &gof, &detectAdvDir, &restricted, &countAllParmsOnBoundary);
 
   if (detectAdvDir) {
     printf("auto adverse direction: %s\n", anal.isIncreasing ? "increasing" : "decreasing");
@@ -3151,7 +3151,7 @@ void runPythonContAnalysis() {
   bool restricted = true;           // only used for frequentist models
   enum distribution dist = normal;  // normal, normal_ncv, log_normal
   bool detectAdvDir = true;         // if false then need to set isIncreasing
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
   int degree = 2;  // for polynomial only
@@ -3442,7 +3442,7 @@ void runPythonContAnalysis() {
 
   // struct continuous_analysis anal;
   struct python_continuous_analysis anal;
-  anal.penalizeAIC = penalizeAIC;
+  anal.countAllParmsOnBoundary = countAllParmsOnBoundary;
   int numDataRows = sizeof(D) / sizeof(D[0]);
 
   if (!detectAdvDir) {
@@ -4800,7 +4800,7 @@ void runPythonNestedAnalysis() {
   struct python_nested_analysis pyAnal;
   // pyAnal.model = nlogistic;
   pyAnal.model = nctr;
-  pyAnal.penalizeAIC = false;
+  pyAnal.countAllParmsOnBoundary = false;
   bool isRestricted = true;
 
   // nested.dax

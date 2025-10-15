@@ -84,10 +84,10 @@ class TestBmdModelDichotomous:
         model.execute()
         return model.cdf_plot()
 
-    def test_penalize_aic_on_boundary(self, ddataset):
-        penalized = Multistage(ddataset, settings=dict(penalize_aic_on_boundary=True))
+    def test_count_all_parameters_on_boundary(self, ddataset):
+        penalized = Multistage(ddataset, settings=dict(count_all_parameters_on_boundary=True))
         penalized.execute()
-        unpenalized = Multistage(ddataset, settings=dict(penalize_aic_on_boundary=False))
+        unpenalized = Multistage(ddataset, settings=dict(count_all_parameters_on_boundary=False))
         unpenalized.execute()
 
         assert np.allclose(
@@ -95,7 +95,7 @@ class TestBmdModelDichotomous:
             unpenalized.results.parameters.values,
         )
         assert np.isclose(
-            penalized.results.fit.aic + 2,
+            penalized.results.fit.aic - 2,
             unpenalized.results.fit.aic,
         )
 

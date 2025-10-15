@@ -65,7 +65,7 @@ class NestedDichotomousModelSettings(BaseModel):
     bootstrap_iterations: int = Field(default=1000, ge=10, le=1_000_000)
     bootstrap_seed: int = Field(default_factory=lambda: randrange(0, 1_000), ge=0, le=1_000)  # noqa: S311
     bootstrap_n: int = Field(default=3, ge=1, le=10)
-    penalize_aic_on_boundary: bool = True
+    count_all_parameters_on_boundary: bool = False
     priors: PriorClass | ModelPriors | None = None  # if None; default used
 
     model_config = ConfigDict(extra="forbid")
@@ -161,7 +161,7 @@ class NestedDichotomousAnalysis(NamedTuple):
         analysis.numBootRuns = settings.bootstrap_n
         analysis.iterations = settings.bootstrap_iterations
         analysis.seed = settings.bootstrap_seed
-        analysis.penalizeAIC = settings.penalize_aic_on_boundary
+        analysis.countAllParmsOnBoundary = settings.count_all_parameters_on_boundary
 
         result = bmdscore.python_nested_result()
         result.nparms = analysis.parms

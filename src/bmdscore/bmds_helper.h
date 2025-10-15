@@ -196,7 +196,7 @@ struct python_dichotomous_analysis {
   int burnin;        // size of burin
   int parms;         // number of parameters in the model
   int prior_cols;    // colunns in the prior
-  bool penalizeAIC;  // whether to penalize the AIC by counting parameters that hit a bound
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
 };
 
 struct python_dichotomous_model_result {
@@ -265,7 +265,7 @@ struct python_continuous_analysis {
   int transform_dose;  // Use the arc-sin-hyperbolic inverse to transform dose.
   bool restricted;
   bool detectAdvDir;
-  bool penalizeAIC;  // whether to penalize the AIC by counting parameters that hit a bound
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
 };
 
 struct python_continuous_model_result {
@@ -338,7 +338,7 @@ struct python_nested_analysis {
   int numBootRuns;   // number of bootstrap run
   int iterations;    // number of iterations per run
   long seed;         // -9999 = automatic;  seed value otherwise
-  bool penalizeAIC;  // whether to penalize the AIC by counting parameters that hit a bound
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
 };
 
 struct python_nested_result {
@@ -468,16 +468,16 @@ void collect_cont_bmd_values(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, bool penalizeAIC
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary 
 );
 
 void calcContAIC(
     struct continuous_analysis *anal, struct continuous_model_result *res,
-    struct BMDS_results *BMDSres, bool penalizeAIC
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 );
 
 double calcNestedAIC(
-    double fitted_LL, double fitted_df, double red_df, int numBounded, bool penalizeAIC
+    double fitted_LL, double fitted_df, double red_df, int numBounded, bool countAllParmsOnBoundary
 );
 
 void clean_dicho_results(
@@ -667,13 +667,13 @@ void SortNestedData(
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod,
-    bool *penalizeAIC
+    bool *countAllParmsOnBoundary
 );
 
 void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
     struct continuous_analysis *anal, struct continuous_model_result *res,
     struct BMDS_results *bmdsRes, struct continuous_AOD *aod, struct continuous_GOF *gof,
-    bool *detectAdvDir, bool *restricted, bool *penalizeAIC
+    bool *detectAdvDir, bool *restricted, bool *countAllParmsOnBoundary
 );
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoMA(

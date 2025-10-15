@@ -330,14 +330,14 @@ void cont_AIC_penalty_test() {
   res.parms = parm;
   res.max = 175.027;
 
-  bool penalizeAIC;
-  penalizeAIC = true;
-  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  bool countAllParmsOnBoundary;
+  countAllParmsOnBoundary = true;
+  calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
 
   double AIC_penalized = bmdsRes.AIC;
 
-  penalizeAIC = false;
-  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  countAllParmsOnBoundary = false;
+  calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
   essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
@@ -357,14 +357,14 @@ void dicho_AIC_penalty_test() {
   res.parms = parm;
   res.max = 178.237;
 
-  bool penalizeAIC;
-  penalizeAIC = true;
-  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  bool countAllParmsOnBoundary;
+  countAllParmsOnBoundary = true;
+  calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
 
   double AIC_penalized = bmdsRes.AIC;
 
-  penalizeAIC = false;
-  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  countAllParmsOnBoundary = false;
+  calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
   essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);

@@ -135,7 +135,7 @@ class TestBmdModelContinuous:
         model.execute()
         assert model.results.bmd == pytest.approx(85.1, abs=0.1)
 
-    def test_penalize_aic_on_boundary(self):
+    def test_count_all_parameters_on_boundary(self):
         # linear dataset; the Polynomial parameter should be on boundary
         ds = pybmds.ContinuousDataset(
             doses=[0, 50, 100, 150],
@@ -143,9 +143,9 @@ class TestBmdModelContinuous:
             means=[10, 15, 20, 25],
             stdevs=[2, 3, 4, 5],
         )
-        penalized = continuous.Polynomial(ds, settings=dict(penalize_aic_on_boundary=True))
+        penalized = continuous.Polynomial(ds, settings=dict(count_all_parameters_on_boundary=True))
         penalized.execute()
-        unpenalized = continuous.Polynomial(ds, settings=dict(penalize_aic_on_boundary=False))
+        unpenalized = continuous.Polynomial(ds, settings=dict(count_all_parameters_on_boundary=False))
         unpenalized.execute()
 
         assert np.allclose(
@@ -153,7 +153,7 @@ class TestBmdModelContinuous:
             unpenalized.results.parameters.values,
         )
         assert np.isclose(
-            penalized.results.fit.aic + 2,
+            penalized.results.fit.aic - 2,
             unpenalized.results.fit.aic,
         )
 
