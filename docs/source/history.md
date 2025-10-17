@@ -35,7 +35,7 @@
 * Added Jonckheere-Terpstra trend test for continuous data
 * Added additional plotting functionality for nested dichotomous data
 * Changed restriction for rho parameter in non-constant variance model to allow negative values
-* Other changes?  Cody can add if so.
+* Added ability to count all parameters in a model automatically for the purpose of calculating AIC and p-values.
 
 ### Version 25.1
 
