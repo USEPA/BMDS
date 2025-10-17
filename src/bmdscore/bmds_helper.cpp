@@ -129,10 +129,7 @@ void calcContAIC(
   free(upperBound);
 }
 
-double calcNestedAIC(double fitted_LL, double fitted_df, double red_df, int numBounded) {
-  std::cout << "fitted_LL: " << fitted_LL << std::endl;
-  std::cout << "red_df: " << red_df << ", fitted_df: " << fitted_df
-            << ", numBounded: " << numBounded << std::endl;
+double calcNestedAIC(double fitted_LL, double fitted_df, double red_df) {
   double AIC;
   AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
 
@@ -3499,7 +3496,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 
   // do not need to consider countAllParmsOnBoundary because fittedAnova.df already accounts for
   // this
-  pyRes->bmdsRes.AIC = calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded);
+  pyRes->bmdsRes.AIC = calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df);
 
   pyRes->model_df = fittedAnova.df;
 

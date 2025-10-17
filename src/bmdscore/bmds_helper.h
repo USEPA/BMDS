@@ -481,7 +481,7 @@ void calcContAIC(
 );
 
 double calcNestedAIC(
-    double fitted_LL, double fitted_df, double red_df, int numBounded, bool countAllParmsOnBoundary
+    double fitted_LL, double fitted_df, double red_df
 );
 
 void clean_dicho_results(
