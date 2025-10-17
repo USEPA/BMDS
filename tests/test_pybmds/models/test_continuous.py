@@ -145,7 +145,9 @@ class TestBmdModelContinuous:
         )
         penalized = continuous.Polynomial(ds, settings=dict(count_all_parameters_on_boundary=True))
         penalized.execute()
-        unpenalized = continuous.Polynomial(ds, settings=dict(count_all_parameters_on_boundary=False))
+        unpenalized = continuous.Polynomial(
+            ds, settings=dict(count_all_parameters_on_boundary=False)
+        )
         unpenalized.execute()
 
         assert np.allclose(

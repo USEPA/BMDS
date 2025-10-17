@@ -190,13 +190,14 @@ struct python_dichotomous_analysis {
   std::vector<double> prior;    // a column order matrix (parms x prior_cols)
   int BMD_type;                 // 1 = extra ; added otherwise
   double BMR;
-  double alpha;      // alpha of the analysis
-  int degree;        // degree of polynomial used only  multistage
-  int samples;       // number of MCMC samples.
-  int burnin;        // size of burin
-  int parms;         // number of parameters in the model
-  int prior_cols;    // colunns in the prior
-  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
+  double alpha;                  // alpha of the analysis
+  int degree;                    // degree of polynomial used only  multistage
+  int samples;                   // number of MCMC samples.
+  int burnin;                    // size of burin
+  int parms;                     // number of parameters in the model
+  int prior_cols;                // colunns in the prior
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF,
+                                 // and p-value calculations
 };
 
 struct python_dichotomous_model_result {
@@ -265,7 +266,8 @@ struct python_continuous_analysis {
   int transform_dose;  // Use the arc-sin-hyperbolic inverse to transform dose.
   bool restricted;
   bool detectAdvDir;
-  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF,
+                                 // and p-value calculations
 };
 
 struct python_continuous_model_result {
@@ -335,10 +337,11 @@ struct python_nested_analysis {
   int prior_cols;
   double BMR;
   double alpha;
-  int numBootRuns;   // number of bootstrap run
-  int iterations;    // number of iterations per run
-  long seed;         // -9999 = automatic;  seed value otherwise
-  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF, and p-value calculations
+  int numBootRuns;               // number of bootstrap run
+  int iterations;                // number of iterations per run
+  long seed;                     // -9999 = automatic;  seed value otherwise
+  bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF,
+                                 // and p-value calculations
 };
 
 struct python_nested_result {
@@ -446,7 +449,8 @@ void determineAdvDir(struct continuous_analysis *anal);
 
 void calc_contAOD(
     struct continuous_analysis *CA, struct continuous_analysis *GOFanal,
-    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod
+    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
+    bool countAllParmsOnBoundary
 );
 void calc_dichoAOD(
     struct dichotomous_analysis *DA, struct dichotomous_model_result *res,
@@ -468,7 +472,7 @@ void collect_cont_bmd_values(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary 
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 );
 
 void calcContAIC(

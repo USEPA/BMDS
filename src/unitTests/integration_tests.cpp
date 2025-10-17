@@ -40,7 +40,8 @@ void runPythonDichoAnalysis() {
   struct python_dichotomous_analysis anal;
   struct python_dichotomous_model_result res;
   createDichoAnalysisStructs(
-      model, modelType, restricted, BMD_type, degree, BMR, alpha, countAllParmsOnBoundary, D, Y, N, &anal, &res
+      model, modelType, restricted, BMD_type, degree, BMR, alpha, countAllParmsOnBoundary, D, Y, N,
+      &anal, &res
   );
 
   pythonBMDSDicho(&anal, &res);
@@ -529,7 +530,7 @@ void createDichoAnalysisStructs(
   anal->prior_cols = prCols;
   anal->n = numDataRows;
   anal->degree = degree;
-  anal-> countAllParmsOnBoundary= countAllParmsOnBoundary;
+  anal->countAllParmsOnBoundary = countAllParmsOnBoundary;
 
   res->model = anal->model;
   res->dist_numE = dist_numE;

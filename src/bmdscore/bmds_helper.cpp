@@ -53,7 +53,7 @@ int checkForBoundedParms(
 
 void calcDichoAIC(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary 
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 ) {
   bool freqModel = anal->prior[0] == 0;
 
@@ -91,7 +91,7 @@ void calcDichoAIC(
 
 void calcContAIC(
     struct continuous_analysis *anal, struct continuous_model_result *res,
-    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary 
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 ) {
   bool freqModel = anal->prior[0] == 0;
 
@@ -129,15 +129,12 @@ void calcContAIC(
   free(upperBound);
 }
 
-double calcNestedAIC(
-    double fitted_LL, double fitted_df, double red_df, int numBounded, bool countAllParmsOnBoundary 
-) {
+double calcNestedAIC(double fitted_LL, double fitted_df, double red_df, int numBounded) {
+  std::cout << "fitted_LL: " << fitted_LL << std::endl;
+  std::cout << "red_df: " << red_df << ", fitted_df: " << fitted_df
+            << ", numBounded: " << numBounded << std::endl;
   double AIC;
-  if (countAllParmsOnBoundary) {
-    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
-  } else {
-    AIC = -2 * fitted_LL + 2 * (1.0 + red_df - (fitted_df + numBounded));
-  }
+  AIC = -2 * fitted_LL + 2 * (1.0 + red_df - fitted_df);
 
   return AIC;
 }
@@ -162,7 +159,7 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target) 
 
 void collect_dicho_bmd_values(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
-    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary 
+    struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 ) {
   int distSize = res->dist_numE * 2;
 
@@ -176,7 +173,7 @@ void collect_dicho_bmd_values(
     quant[i - distSize / 2] = res->bmd_dist[i];
   }
 
-  calcDichoAIC(anal, res, BMDSres, countAllParmsOnBoundary);
+  // calcDichoAIC(anal, res, BMDSres, countAllParmsOnBoundary);
   BMDSres->BMD = findQuantileVals(quant, val, distSize / 2, 0.50);
   BMDSres->BMDL = findQuantileVals(quant, val, distSize / 2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(quant, val, distSize / 2, 1.0 - anal->alpha);
@@ -239,7 +236,7 @@ void collect_cont_bmd_values(
     contQuant[i - distSize / 2] = res->bmd_dist[i];
   }
 
-  calcContAIC(anal, res, BMDSres, countAllParmsOnBoundary);
+  //  calcContAIC(anal, res, BMDSres, countAllParmsOnBoundary);
   BMDSres->BMD = findQuantileVals(contQuant, contVal, distSize / 2, 0.50);
   BMDSres->BMDL = findQuantileVals(contQuant, contVal, distSize / 2, anal->alpha);
   BMDSres->BMDU = findQuantileVals(contQuant, contVal, distSize / 2, 1.0 - anal->alpha);
@@ -1173,6 +1170,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
 
   collect_dicho_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
 
+  calcDichoAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
   // incorporate affect of bounded parameters
   int bounded = 0;
   for (int i = 0; i < anal->parms; i++) {
@@ -1181,7 +1179,11 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     }
   }
 
-  bmdsAOD->nFit = anal->parms - bounded;     // number of estimated parameter
+  if (*countAllParmsOnBoundary) {
+    bmdsAOD->nFit = anal->parms;  // number of estimated parameter
+  } else {
+    bmdsAOD->nFit = anal->parms - bounded;  // number of estimated parameter
+  }
   bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  // nObs - nEstParms
 
   if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
@@ -1534,13 +1536,15 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
   bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
   collect_cont_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
 
+  calcContAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
+
   aod->LL.resize(5);
   aod->nParms.resize(5);
   aod->AIC.resize(5);
   aod->TOI.llRatio.resize(4);
   aod->TOI.DF.resize(4);
   aod->TOI.pVal.resize(4);
-  calc_contAOD(anal, &GOFanal, res, bmdsRes, aod);
+  calc_contAOD(anal, &GOFanal, res, bmdsRes, aod, *countAllParmsOnBoundary);
 
   rescale_contParms(anal, res->parms);
 
@@ -1689,7 +1693,8 @@ void calc_dichoAOD(
 
 void calc_contAOD(
     struct continuous_analysis *CA, struct continuous_analysis *GOFanal,
-    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod
+    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
+    bool countAllParmsOnBoundary
 ) {
   continuous_deviance CD;
 
@@ -1718,7 +1723,11 @@ void calc_contAOD(
       bounded++;
     }
   }
-  aod->nParms[3] = res->nparms - bounded;
+  if (countAllParmsOnBoundary) {
+    aod->nParms[3] = res->nparms;
+  } else {
+    aod->nParms[3] = res->nparms - bounded;
+  }
   aod->LL[4] = -1 * CD.R;
   aod->nParms[4] = CD.NR;
 
@@ -3438,7 +3447,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   double lkr = pdep * log(W) + ndep * log(1 - W);  // reduced model likelihood
 
   double dev = 2 * (lkf - pyRes->LL);
-  int df = pyRes->nparms - numBounded;
+  int df = pyRes->nparms;
+  if (!pyAnal->countAllParmsOnBoundary) {
+    df -= numBounded;
+  }
   double pv;
   if (dev < 0.0) {
     pv = BMDS_MISSING;
@@ -3485,8 +3497,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
   anovaVec.push_back(fittedAnova);
   anovaVec.push_back(redAnova);
 
-  pyRes->bmdsRes.AIC =
-      calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded, pyAnal->countAllParmsOnBoundary);
+  // do not need to consider countAllParmsOnBoundary because fittedAnova.df already accounts for
+  // this
+  pyRes->bmdsRes.AIC = calcNestedAIC(fittedAnova.LL, fittedAnova.df, redAnova.df, numBounded);
 
   pyRes->model_df = fittedAnova.df;
 
@@ -6048,7 +6061,8 @@ std::string printBmdsStruct(struct python_continuous_analysis *pyAnal, bool prin
   ss << "transform_dose:" << pyAnal->transform_dose << std::endl;
   ss << "restricted:" << (pyAnal->restricted ? "true" : "false") << std::endl;
   ss << "detectAdvDir:" << (pyAnal->detectAdvDir ? "true" : "false") << std::endl;
-  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "true" : "false") << std::endl;
+  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "true" : "false")
+     << std::endl;
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -6140,7 +6154,8 @@ std::string printBmdsStruct(struct python_dichotomous_analysis *pyAnal, bool pri
   ss << "burnin:" << pyAnal->burnin << std::endl;
   ss << "parms:" << pyAnal->parms << std::endl;
   ss << "prior_cols:" << pyAnal->prior_cols << std::endl;
-  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "true" : "false") << std::endl;
+  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "true" : "false")
+     << std::endl;
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -6388,7 +6403,8 @@ std::string printBmdsStruct(struct python_nested_analysis *pyAnal, bool print) {
   ss << "numBootRuns:" << pyAnal->numBootRuns << std::endl;
   ss << "iterations:" << pyAnal->iterations << std::endl;
   ss << "seed:" << pyAnal->seed << std::endl;
-  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "True" : "False") << std::endl;
+  ss << "countAllParmsOnBoundary:" << (pyAnal->countAllParmsOnBoundary ? "True" : "False")
+     << std::endl;
 
   ss << "prior:" << std::endl;
   for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
