@@ -27,6 +27,16 @@
 
 ## pybmds
 
+### Version 25.2 
+
+*Released on 2025-10-xx.*
+
+* Added Cochran Armitage trend test for dichotomous data
+* Added Jonckheere-Terpstra trend test for continuous data
+* Added additional plotting functionality for nested dichotomous data
+* Changed restriction for rho parameter in non-constant variance model to allow negative values
+* Added ability to count all parameters in a model automatically for the purpose of calculating AIC and p-values.
+
 ### Version 25.1
 
 *Released on 2025-04-25.*
