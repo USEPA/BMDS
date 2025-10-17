@@ -269,7 +269,7 @@ class python_continuous_analysis:
     n: int
     n_group: list[float]
     parms: int
-    penalizeAIC: bool
+    countAllParmsOnBoundary: bool
     prior: list[float]
     prior_cols: int
     restricted: bool
@@ -329,7 +329,7 @@ class python_dichotomous_analysis:
     n: int
     n_group: list[float]
     parms: int
-    penalizeAIC: bool
+    C: bool
     prior: list[float]
     prior_cols: int
     samples: int
@@ -395,7 +395,7 @@ class python_nested_analysis:
     model: nested_model
     numBootRuns: int
     parms: int
-    penalizeAIC: bool
+    countAllParmsOnBoundary: bool
     prior: list[float]
     prior_cols: int
     seed: int

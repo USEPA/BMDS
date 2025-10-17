@@ -48,7 +48,7 @@ class BmdModelDichotomous(BmdModel):
             degree=self.settings.degree,
             samples=self.settings.samples,
             burnin=self.settings.burnin,
-            penalize_aic_on_boundary=self.settings.penalize_aic_on_boundary,
+            count_all_parameters_on_boundary=self.settings.count_all_parameters_on_boundary,
         )
 
     def execute(self, slope_factor: bool = False) -> DichotomousResult:

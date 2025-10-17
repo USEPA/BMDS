@@ -330,14 +330,14 @@ void cont_AIC_penalty_test() {
   res.parms = parm;
   res.max = 175.027;
 
-  bool penalizeAIC;
-  penalizeAIC = true;
-  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  bool countAllParmsOnBoundary;
+  countAllParmsOnBoundary = true;
+  calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
 
   double AIC_penalized = bmdsRes.AIC;
 
-  penalizeAIC = false;
-  calcContAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  countAllParmsOnBoundary = false;
+  calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
   essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
@@ -357,14 +357,14 @@ void dicho_AIC_penalty_test() {
   res.parms = parm;
   res.max = 178.237;
 
-  bool penalizeAIC;
-  penalizeAIC = true;
-  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  bool countAllParmsOnBoundary;
+  countAllParmsOnBoundary = true;
+  calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
 
   double AIC_penalized = bmdsRes.AIC;
 
-  penalizeAIC = false;
-  calcDichoAIC(&anal, &res, &bmdsRes, penalizeAIC);
+  countAllParmsOnBoundary = false;
+  calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
   essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
@@ -372,12 +372,13 @@ void dicho_AIC_penalty_test() {
 
 void nested_AIC_penalty_test() {
   double fitted_LL = -269.735;
-  double fitted_df = 35;
+  double fitted_df_pen = 30;
+  double fitted_df_unpen = 35;
   double red_df = 38;
   int numBounded = 5;
 
-  double AIC_penalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, true);
-  double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df, red_df, numBounded, false);
+  double AIC_penalized = calcNestedAIC(fitted_LL, fitted_df_pen, red_df);
+  double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df_unpen, red_df);
 
   essentiallyEqual(AIC_unpenalized - 2 * numBounded, AIC_penalized, 1e-6);
 }

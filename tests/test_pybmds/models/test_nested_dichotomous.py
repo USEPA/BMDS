@@ -93,7 +93,7 @@ class TestNestedLogistic:
         assert result.has_completed is True
         assert result.bmd > 0
 
-    def test_penalize_aic_on_boundary(self, nd_dataset4):
+    def test_count_all_parameters_on_boundary(self, nd_dataset4):
         # simulate a very linear dataset
         ds = NestedDichotomousDataset(
             doses=np.repeat([1, 2, 3, 4], 5).tolist(),
@@ -102,11 +102,11 @@ class TestNestedLogistic:
             litter_covariates=np.repeat([1, 2, 3, 4], 5).tolist(),
         )
         penalized = nested_dichotomous.NestedLogistic(
-            ds, settings=dict(penalize_aic_on_boundary=True)
+            ds, settings=dict(count_all_parameters_on_boundary=True)
         )
         penalized.execute()
         unpenalized = nested_dichotomous.NestedLogistic(
-            ds, settings=dict(penalize_aic_on_boundary=False)
+            ds, settings=dict(count_all_parameters_on_boundary=False)
         )
         unpenalized.execute()
 

@@ -32,7 +32,7 @@ void runPythonDichoAnalysis() {
   int degree = 3;
   double BMR = 0.1;
   double alpha = 0.05;
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = false;
   std::vector<double> D{0, 50, 100, 150, 200};
   std::vector<double> Y{0, 5, 30, 65, 90};
   std::vector<double> N{100, 100, 100, 100, 100};
@@ -40,7 +40,8 @@ void runPythonDichoAnalysis() {
   struct python_dichotomous_analysis anal;
   struct python_dichotomous_model_result res;
   createDichoAnalysisStructs(
-      model, modelType, restricted, BMD_type, degree, BMR, alpha, penalizeAIC, D, Y, N, &anal, &res
+      model, modelType, restricted, BMD_type, degree, BMR, alpha, countAllParmsOnBoundary, D, Y, N,
+      &anal, &res
   );
 
   pythonBMDSDicho(&anal, &res);
@@ -301,7 +302,7 @@ std::vector<double> getMultitumorPrior(int degree, int prior_cols) {
 
 void createDichoAnalysisStructs(
     dich_model model, int modelType, bool restricted, int BMD_type, int degree, double BMR,
-    double alpha, bool penalizeAIC, std::vector<double> &D, std::vector<double> &Y,
+    double alpha, bool countAllParmsOnBoundary, std::vector<double> &D, std::vector<double> &Y,
     std::vector<double> &N, python_dichotomous_analysis *anal, python_dichotomous_model_result *res
 ) {
   int prCols = 5;
@@ -529,7 +530,7 @@ void createDichoAnalysisStructs(
   anal->prior_cols = prCols;
   anal->n = numDataRows;
   anal->degree = degree;
-  anal->penalizeAIC = penalizeAIC;
+  anal->countAllParmsOnBoundary = countAllParmsOnBoundary;
 
   res->model = anal->model;
   res->dist_numE = dist_numE;
