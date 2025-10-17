@@ -480,9 +480,7 @@ void calcContAIC(
     struct BMDS_results *BMDSres, bool countAllParmsOnBoundary
 );
 
-double calcNestedAIC(
-    double fitted_LL, double fitted_df, double red_df
-);
+double calcNestedAIC(double fitted_LL, double fitted_df, double red_df);
 
 void clean_dicho_results(
     struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
