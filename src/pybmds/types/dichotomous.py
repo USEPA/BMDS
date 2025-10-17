@@ -40,7 +40,7 @@ class DichotomousModelSettings(BaseModel):
     samples: Annotated[int, Field(ge=10, le=1000)] = 100
     burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
-    penalize_aic_on_boundary: bool = True
+    count_all_parameters_on_boundary: bool = False
 
     model_config = ConfigDict(extra="forbid")
 
@@ -105,7 +105,7 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
-    penalize_aic_on_boundary: bool
+    count_all_parameters_on_boundary: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -139,7 +139,7 @@ class DichotomousAnalysis(BaseModel):
         analysis.burnin = self.burnin
         analysis.parms = self.num_params
         analysis.prior_cols = constants.NUM_PRIOR_COLS
-        analysis.penalizeAIC = self.penalize_aic_on_boundary
+        analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
         return analysis
 
     def to_cpp_result(self, analysis) -> bmdscore.python_dichotomous_model_result:

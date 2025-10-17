@@ -413,7 +413,7 @@ void runOldDichoAnalysis() {
   int degree = 3;                     // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = true;
   ///////////////////////////////
   // dicho data - dose, N, incidence
   ///////////////////////////////
@@ -887,7 +887,7 @@ void runOldDichoAnalysis() {
   aod.pvFit = pvFit;
   aod.pvRed = pvRed;
 
-  runBMDSDichoAnalysis(&anal, &res, &gof, &bmdsRes, &aod, &penalizeAIC);
+  runBMDSDichoAnalysis(&anal, &res, &gof, &bmdsRes, &aod, &countAllParmsOnBoundary);
 
   printf("tlink bmdsRes.validResult = %s\n", bmdsRes.validResult ? "valid" : "invalid");
   if (bmdsRes.validResult || showResultsOverride) {
@@ -965,17 +965,17 @@ void runPythonDichoAnalysis() {
   int modelType = 1;                     // 1 = frequentist, 2 = bayesian
   bool restricted = true;                // only used for frequentist models
   int BMD_type = 1;                      // 1 = extra ; added otherwise
-  int degree = 3;                        // for multistage only
+  int degree = 2;                        // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
-  double penalizeAIC = false;
+  double countAllParmsOnBoundary = false;
   ///////////////////////////////
   // dicho data - dose, N, incidence
   ///////////////////////////////
-  //  //Dichotomous.dax Effect 1
-  //  double D[] = {0,50, 100, 150, 200};
-  //  double Y[] = {0, 5, 30, 65, 90};
-  //  double N[] = {100, 100, 100, 100, 100};
+  // Dichotomous.dax Effect 1
+  double D[] = {0, 50, 100, 150, 200};
+  double Y[] = {0, 5, 30, 65, 90};
+  double N[] = {100, 100, 100, 100, 100};
 
   //  //Dichotomous.dax Effect 2
   //  double D[] = {0,50, 100, 150, 200};
@@ -1032,9 +1032,9 @@ void runPythonDichoAnalysis() {
   //  double N[] = {50, 49, 45};
 
   // D60
-  double D[] = {0, 0.011, 0.057, 1.3, 5.6};
-  double Y[] = {30, 26, 17, 27, 42};
-  double N[] = {127, 63, 64, 64, 64};
+  //  double D[] = {0, 0.011, 0.057, 1.3, 5.6};
+  //  double Y[] = {30, 26, 17, 27, 42};
+  //  double N[] = {127, 63, 64, 64, 64};
 
   // D80
   //  double D[] = {0, 4.79, 9.57};
@@ -1067,7 +1067,7 @@ void runPythonDichoAnalysis() {
 
   // struct dichotomous_analysis anal;
   struct python_dichotomous_analysis anal;
-  anal.penalizeAIC = penalizeAIC;
+  anal.countAllParmsOnBoundary = countAllParmsOnBoundary;
 
   int numDataRows = sizeof(D) / sizeof(D[0]);
 
@@ -2065,7 +2065,7 @@ void runOldContAnalysis() {
   bool restricted = true;           // only used for frequentist models
   enum distribution dist = normal;  // normal, normal_ncv, log_normal
   bool detectAdvDir = true;         // if false then need to set isIncreasing
-  bool penalizeAIC = true;
+  bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
   int degree = 2;  // for polynomial only
@@ -3052,7 +3052,9 @@ void runOldContAnalysis() {
 
   printf("\n\n");
   printf("calling runBMDSContAnalysis\n");
-  runBMDSContAnalysis(&anal, &res, &BMDSres, &aod, &gof, &detectAdvDir, &restricted, &penalizeAIC);
+  runBMDSContAnalysis(
+      &anal, &res, &BMDSres, &aod, &gof, &detectAdvDir, &restricted, &countAllParmsOnBoundary
+  );
 
   if (detectAdvDir) {
     printf("auto adverse direction: %s\n", anal.isIncreasing ? "increasing" : "decreasing");
@@ -3146,12 +3148,12 @@ void runPythonContAnalysis() {
   // USER INPUT
   //////////////////////////////
 
-  enum cont_model model = exp_5;    // hill, exp_3, exp_5, power, funl, polynomial
-  int modelType = 1;                // 1 = frequentist, 2 = bayesian
-  bool restricted = true;           // only used for frequentist models
-  enum distribution dist = normal;  // normal, normal_ncv, log_normal
-  bool detectAdvDir = true;         // if false then need to set isIncreasing
-  bool penalizeAIC = true;
+  enum cont_model model = polynomial;  // hill, exp_3, exp_5, power, funl, polynomial
+  int modelType = 1;                   // 1 = frequentist, 2 = bayesian
+  bool restricted = true;              // only used for frequentist models
+  enum distribution dist = normal;     // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;            // if false then need to set isIncreasing
+  bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
   int degree = 2;  // for polynomial only
@@ -3164,7 +3166,7 @@ void runPythonContAnalysis() {
   // cont data - suff stat: dose, Y, N, SD
   // cont data - individual: dose, response
   /////////////////////////////////////////////
-  bool suffStat = false;
+  bool suffStat = true;
 
   // continuous1.dax
   //  double D[] = {0,25,50, 100, 200};
@@ -3174,13 +3176,13 @@ void runPythonContAnalysis() {
   // isIncreasing = false;
 
   // continuous2.dax
-  double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
-                30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
-  double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
-                50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
-  double N[1];
-  double SD[1];
-  isIncreasing = true;
+  // double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
+  //               30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
+  // double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
+  //               50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
+  // double N[1];
+  // double SD[1];
+  // isIncreasing = true;
 
   // continuous3.dax
   //  double D[] = {0,35,105,316,625};
@@ -3436,13 +3438,19 @@ void runPythonContAnalysis() {
   //  double Y[] = {5.26, 5.76, 9.23};
   //  double N[] = {20, 20, 20};
   //  double SD[] = {2.23, 1.47, 1.56};
+
+  double D[] = {0, 50, 100, 150};
+  double Y[] = {10, 15, 20, 25};
+  double N[] = {10, 10, 10, 10};
+  double SD[] = {2, 3, 4, 5};
+
   /////////////////////////////////////////////////
   // END USER INPUT
   ///////////////////////////////////////////////////
 
   // struct continuous_analysis anal;
   struct python_continuous_analysis anal;
-  anal.penalizeAIC = penalizeAIC;
+  anal.countAllParmsOnBoundary = countAllParmsOnBoundary;
   int numDataRows = sizeof(D) / sizeof(D[0]);
 
   if (!detectAdvDir) {
@@ -4800,7 +4808,7 @@ void runPythonNestedAnalysis() {
   struct python_nested_analysis pyAnal;
   // pyAnal.model = nlogistic;
   pyAnal.model = nctr;
-  pyAnal.penalizeAIC = false;
+  pyAnal.countAllParmsOnBoundary = true;
   bool isRestricted = true;
 
   // nested.dax
@@ -4852,40 +4860,41 @@ void runPythonNestedAnalysis() {
   //                             4, 5, 5, 4, 5, 4, 5, 6, 2, 4, 6, 6, 8, 7, 8, 6, 6, 5, 4};
   //
   // testing dataset id:3
-  std::vector<double> D = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-                           0,    500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,
-                           500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,
-                           500,  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
-                           1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
-                           1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
-                           2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
-                           2000, 2000, 2000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000,
-                           5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000,
-                           5000, 5000, 5000, 5000, 5000};
-  std::vector<double> LS = {6, 6, 5, 6, 2, 7, 5, 6, 6, 6, 6, 5, 5, 1, 3, 3, 6, 2, 8, 2, 4,
-                            7, 5, 7, 5, 6, 4, 2, 8, 4, 4, 7, 4, 6, 8, 3, 5, 7, 6, 2, 7, 7,
-                            7, 5, 6, 8, 4, 8, 2, 1, 5, 6, 2, 7, 1, 3, 5, 2, 4, 8, 5, 8, 5,
-                            8, 7, 4, 5, 7, 3, 3, 3, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 8,
-                            7, 5, 5, 6, 5, 6, 6, 6, 6, 7, 7, 6, 9, 8, 6, 5, 4, 5, 6, 7, 6,
-                            7, 1, 2, 6, 4, 3, 5, 7, 5, 4, 5, 6, 7, 4, 6, 5, 1, 6, 3, 4};
-  std::vector<double> I = {0, 2, 2, 0, 0, 3, 0, 2, 1, 0, 1, 1, 0, 0, 0, 1, 0, 2, 1, 1, 0,
-                           0, 1, 1, 1, 1, 0, 0, 1, 2, 0, 3, 0, 2, 1, 0, 1, 0, 0, 0, 1, 2,
-                           3, 1, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 2, 0, 3, 4,
-                           0, 2, 1, 1, 2, 0, 1, 3, 1, 2, 0, 1, 1, 3, 2, 4, 2, 3, 4, 0, 5,
-                           1, 1, 3, 2, 5, 0, 2, 5, 6, 3, 5, 5, 6, 7, 3, 1, 4, 4, 0, 6, 0,
-                           7, 1, 2, 6, 4, 3, 4, 5, 5, 3, 5, 5, 7, 2, 4, 3, 1, 5, 1, 4};
-  std::vector<double> LSC = {6.0,  13.0, 6.0,  7.0,  11.0, 12.0, 14.0, 12.0, 9.0,  9.0,  11.0, 7.0,
-                             9.0,  13.0, 4.0,  13.0, 9.0,  6.0,  9.0,  5.0,  6.0,  7.0,  11.0, 9.0,
-                             14.0, 7.0,  4.0,  2.0,  13.0, 12.0, 7.0,  7.0,  9.0,  9.0,  8.0,  14.0,
-                             9.0,  7.0,  9.0,  9.0,  10.0, 7.0,  11.0, 5.0,  10.0, 10.0, 8.0,  14.0,
-                             10.0, 13.0, 10.0, 14.0, 14.0, 8.0,  6.0,  3.0,  10.0, 9.0,  10.0, 9.0,
-                             14.0, 8.0,  14.0, 13.0, 10.0, 14.0, 6.0,  12.0, 9.0,  7.0,  14.0, 11.0,
-                             14.0, 9.0,  7.0,  11.0, 10.0, 14.0, 10.0, 8.0,  13.0, 11.0, 10.0, 13.0,
-                             7.0,  6.0,  14.0, 6.0,  7.0,  14.0, 8.0,  12.0, 6.0,  10.0, 13.0, 12.0,
-                             10.0, 11.0, 8.0,  6.0,  5.0,  14.0, 14.0, 13.0, 12.0, 9.0,  4.0,  13.0,
-                             6.0,  12.0, 3.0,  7.0,  7.0,  10.0, 14.0, 11.0, 14.0, 7.0,  4.0,  8.0,
-                             10.0, 13.0, 7.0,  10.0, 4.0};
+  // std::vector<double> D = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+  //                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+  //                          0,    500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,
+  //                          500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,  500,
+  //                          500,  1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+  //                          1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+  //                          1000, 1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000, 2000,
+  //                          2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
+  //                          2000, 2000, 2000, 2000, 2000, 2000, 2000, 5000, 5000, 5000, 5000,
+  //                          5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000,
+  //                          5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000};
+  // std::vector<double> LS = {6, 6, 5, 6, 2, 7, 5, 6, 6, 6, 6, 5, 5, 1, 3, 3, 6, 2, 8, 2, 4,
+  //                           7, 5, 7, 5, 6, 4, 2, 8, 4, 4, 7, 4, 6, 8, 3, 5, 7, 6, 2, 7, 7,
+  //                           7, 5, 6, 8, 4, 8, 2, 1, 5, 6, 2, 7, 1, 3, 5, 2, 4, 8, 5, 8, 5,
+  //                           8, 7, 4, 5, 7, 3, 3, 3, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 8,
+  //                           7, 5, 5, 6, 5, 6, 6, 6, 6, 7, 7, 6, 9, 8, 6, 5, 4, 5, 6, 7, 6,
+  //                           7, 1, 2, 6, 4, 3, 5, 7, 5, 4, 5, 6, 7, 4, 6, 5, 1, 6, 3, 4};
+  // std::vector<double> I = {0, 2, 2, 0, 0, 3, 0, 2, 1, 0, 1, 1, 0, 0, 0, 1, 0, 2, 1, 1, 0,
+  //                          0, 1, 1, 1, 1, 0, 0, 1, 2, 0, 3, 0, 2, 1, 0, 1, 0, 0, 0, 1, 2,
+  //                          3, 1, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 1, 0, 2, 0, 3, 4,
+  //                          0, 2, 1, 1, 2, 0, 1, 3, 1, 2, 0, 1, 1, 3, 2, 4, 2, 3, 4, 0, 5,
+  //                          1, 1, 3, 2, 5, 0, 2, 5, 6, 3, 5, 5, 6, 7, 3, 1, 4, 4, 0, 6, 0,
+  //                          7, 1, 2, 6, 4, 3, 4, 5, 5, 3, 5, 5, 7, 2, 4, 3, 1, 5, 1, 4};
+  // std::vector<double> LSC =
+  // {6.0,  13.0, 6.0,  7.0,  11.0, 12.0, 14.0, 12.0, 9.0,  9.0,  11.0, 7.0,
+  //                            9.0,  13.0, 4.0,  13.0, 9.0,  6.0,  9.0,  5.0,  6.0,  7.0,  11.0, 9.0,
+  //                            14.0, 7.0,  4.0,  2.0,  13.0, 12.0, 7.0,  7.0,  9.0,  9.0,  8.0,  14.0,
+  //                            9.0,  7.0,  9.0,  9.0,  10.0, 7.0,  11.0, 5.0,  10.0, 10.0, 8.0,  14.0,
+  //                            10.0, 13.0, 10.0, 14.0, 14.0, 8.0,  6.0,  3.0,  10.0, 9.0,  10.0, 9.0,
+  //                            14.0, 8.0,  14.0, 13.0, 10.0, 14.0, 6.0,  12.0, 9.0,  7.0,  14.0, 11.0,
+  //                            14.0, 9.0,  7.0,  11.0, 10.0, 14.0, 10.0, 8.0,  13.0, 11.0, 10.0, 13.0,
+  //                            7.0,  6.0,  14.0, 6.0,  7.0,  14.0, 8.0,  12.0, 6.0,  10.0, 13.0, 12.0,
+  //                            10.0, 11.0, 8.0,  6.0,  5.0,  14.0, 14.0, 13.0, 12.0, 9.0,  4.0,  13.0,
+  //                            6.0,  12.0, 3.0,  7.0,  7.0,  10.0, 14.0, 11.0, 14.0, 7.0,  4.0,  8.0,
+  //                            10.0, 13.0, 7.0,  10.0, 4.0};
 
   //  // testing dataset id:4
   //  std::vector<double> D = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
@@ -5045,6 +5054,13 @@ void runPythonNestedAnalysis() {
   //                             14.0, 9.0,  14.0, 9.0,  13.0, 12.0, 10.0, 10.0, 11.0, 14.0,
   //                             11.0, 11.0, 14.0, 11.0, 10.0, 11.0, 10.0, 15.0, 7.0,  14.0,
   //                             11.0, 14.0, 12.0, 13.0, 12.0, 14.0, 11.0, 8.0,  10.0};
+
+  // parameter counting test
+  std::vector<double> D = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+  std::vector<double> LS = {5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+                            5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0};
+  std::vector<double> I = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
+  std::vector<double> LSC = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4};
 
   pyAnal.doses = D;
   pyAnal.litterSize = LS;
