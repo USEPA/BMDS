@@ -8,6 +8,7 @@
 
 #include <ctime>
 #include <iomanip>
+#include <numeric>
 // #include <cmath>
 #include <nlopt.hpp>
 
@@ -1863,6 +1864,7 @@ void determineAdvDir(struct continuous_analysis *CA) {
     // already suff stat
     n_rows = CA->n;
   }
+
   Eigen::MatrixXd X(n_rows, 2);
   Eigen::MatrixXd W(n_rows, n_rows);
   Eigen::VectorXd Y(n_rows);
@@ -2519,6 +2521,147 @@ void BMDS_ENTRY_API __stdcall pythonBMDSCont(
   );
 
   convertToPythonContRes(&res, pyRes);
+}
+
+void determineAdvDir(struct python_continuous_analysis *pyAnal) {
+  // convert pyAnal to anal
+  continuous_analysis anal;
+  anal.Y = new double[pyAnal->n];
+  anal.doses = new double[pyAnal->n];
+  anal.sd = new double[pyAnal->n];
+  anal.n_group = new double[pyAnal->n];
+  anal.prior = new double[pyAnal->parms * pyAnal->prior_cols];
+  convertFromPythonContAnalysis(&anal, pyAnal);
+  determineAdvDir(&anal);
+  pyAnal->isIncreasing = anal.isIncreasing;
+}
+
+void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+) {
+  if (&pyMA->pyCA.detectAdvDir) {
+    determineAdvDir(&pyMA->pyCA);
+  }
+  bool isIncreasing = pyMA->pyCA.isIncreasing;
+
+  //  std::cout<<"isIncreasing: "<<(isIncreasing?"True":"False")<<std::endl;
+
+  std::vector<int> N_obs;
+  std::vector<double> mean;
+  std::vector<double> logMean;
+  double tmpMean = 0.0;
+  double tmpLogMean = 0.0;
+
+  double curDose = pyMA->pyCA.doses[0];
+  int count = 0;
+  for (int i = 0; i < pyMA->pyCA.n; i++) {
+    if (pyMA->pyCA.doses[i] == curDose) {
+      count++;
+      tmpMean += pyMA->pyCA.Y[i];
+      tmpLogMean += std::log(pyMA->pyCA.Y[i]);
+    } else {
+      N_obs.push_back(count);
+      mean.push_back(tmpMean / count);
+      logMean.push_back(tmpLogMean / count);
+      curDose = pyMA->pyCA.doses[i];
+      count = 1;
+      tmpMean = pyMA->pyCA.Y[i];
+      tmpLogMean = std::log(pyMA->pyCA.Y[i]);
+    }
+  }
+  N_obs.push_back(count);
+  mean.push_back(tmpMean / count);
+  logMean.push_back(tmpLogMean / count);
+
+  //  for (int i=0; i<N_obs.size(); i++){
+  //    std::cout<<"i:"<<i<<", N_obs:"<<N_obs[i]<<", mean:"<<mean[i]<<std::endl;
+  //  }
+
+  // variances
+  std::vector<double> sumsq;
+  std::vector<double> logSumsq;
+  std::vector<double> var;
+  std::vector<double> logVar;
+  double sums = 0.0;
+  double logSums = 0.0;
+  count = 0;
+  for (int i = 0; i < N_obs.size(); i++) {
+    for (int j = 0; j < N_obs[i]; j++) {
+      sums += std::pow(pyMA->pyCA.Y[count] - mean[i], 2);
+      logSums += std::pow(std::log(pyMA->pyCA.Y[count]) - logMean[i], 2);
+      count++;
+    }
+    sumsq.push_back(sums);
+    logSumsq.push_back(logSums);
+
+    var.push_back(sums / (N_obs[i] - 1));
+    logVar.push_back(logSums / (N_obs[i] - 1));
+    sums = 0.0;
+    logSums = 0.0;
+  }
+
+  //  std::cout<<"Var size:"<<var.size()<<std::endl;
+  //  for (int i=0; i<var.size(); i++){
+  //    std::cout<<"i:"<<i<<", var:"<<var[i]<<std::endl;
+  //  }
+
+  //  std::cout<<"lmean0:"<<mean[0]<<std::endl;
+  //  std::cout<<"lmean1:"<<mean[mean.size()-1]<<std::endl;
+
+  double numerator = 0.0;
+  double denominator = 0.0;
+  double numerator2 = 0.0;
+  double denominator2 = 0.0;
+  for (int i = 0; i < N_obs.size(); i++) {
+    numerator += (N_obs[i] - 1) * var[i];
+    denominator += N_obs[i] - 1;
+    numerator2 += (N_obs[i] - 1) * logVar[i];
+    denominator2 += N_obs[i] - 1;
+  }
+
+  //  std::cout<<"numerator:"<<numerator<<std::endl;
+  //  std::cout<<"denominator:"<<denominator<<std::endl;
+  //  std::cout<<"numerator2:"<<numerator2<<std::endl;
+  //  std::cout<<"denominator2:"<<denominator2<<std::endl;
+
+  double ssq = numerator / denominator;
+  double ssq_log = numerator2 / denominator2;
+
+  double num_01 = (N_obs[0] - 1) * var[0] + (N_obs[N_obs.size() - 1] - 1) * var[var.size() - 1];
+  double den_01 = (N_obs[0] - 1) + (N_obs[N_obs.size() - 1] - 1);
+
+  double ssq01 = num_01 / den_01;
+  int N_obs01 = N_obs[0] + N_obs[N_obs.size() - 1];
+
+  //  std::cout<<"ssq:"<<ssq<<std::endl;
+  //  std::cout<<"ssq_log:"<<ssq_log<<std::endl;
+  //  std::cout<<"ssq01:"<<ssq01<<std::endl;
+  //  std::cout<<"N_obs01:"<<N_obs01<<std::endl;
+
+  // define post data - skip dose group 0 and N
+  int postStartInd = N_obs[0];
+  int postEndInd = pyMA->pyCA.n - N_obs[N_obs.size() - 1];
+  std::vector<double> doses_posttmp;
+  std::vector<double> Y_posttmp;
+  std::vector<double> logY_post;
+  for (int i = postStartInd; i < postEndInd; i++) {
+    doses_posttmp.push_back(pyMA->pyCA.doses[i]);
+    Y_posttmp.push_back(pyMA->pyCA.Y[i]);
+    logY_post.push_back(log(pyMA->pyCA.Y[i]));
+  }
+
+  //  for (int i=0; i<doses_post.size(); i++){
+  //    std::cout<<"i:"<<i<<", dose:"<<doses_post[i]<<", Y:"<<Y_post[i]<<std::endl;
+  //  }
+
+  int postSize = doses_posttmp.size();
+
+  Eigen::MatrixXd doses_post =
+      Eigen::Map<Eigen::VectorXd>(doses_posttmp.data(), doses_posttmp.size());
+  Eigen::MatrixXd Y_post = Eigen::Map<Eigen::VectorXd>(Y_posttmp.data(), Y_posttmp.size());
+
+  //  std::cout<<"Dose Matrix:\n" << doses_post << std::endl;
+  //  std::cout<<"Y Matrix:\n" << Y_post << std::endl;
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(

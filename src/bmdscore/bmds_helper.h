@@ -287,6 +287,30 @@ struct python_continuous_model_result {
   struct continuous_AOD aod;
 };
 
+struct python_continuousMA_analysis {
+  int nmodels;                              // number of models for the model average
+  std::vector<std::vector<double>> priors;  // List of pointers to prior arrays
+                                            // priors[i] is the prior array for the ith model ect
+  std::vector<int> nparms;                  // parameters in each model
+  std::vector<int> actual_parms;            // actual number of parameters in the model
+  std::vector<int> prior_cols;      // columns in the prior if there are 'more' in the future
+                                    // presently there are only 5
+  std::vector<int> models;          // list of models this is defined by cont_model.
+  std::vector<double> modelPriors;  // prior probability on the model
+  int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  struct python_continuous_analysis pyCA;
+};
+
+struct python_continuousMA_result {
+  int nmodels;  // number of models for each
+  std::vector<python_continuous_model_result>
+      models;                      // Individual model fits for each model average
+  int dist_numE;                   // number of entries in rows for the bmd_dist
+  std::vector<double> post_probs;  // posterior probabilities
+  std::vector<double> bmd_dist;    // bmd ma distribution (dist_numE x 2) matrix
+  struct BMDSMA_results bmdsRes;
+};
+
 struct python_multitumor_analysis {
   //  int model; // Model Type as listed in dich_model
   int ndatasets;
@@ -705,9 +729,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
+void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
+    struct python_continuousMA_analysis *pyMA2, struct python_continuousMA_result *pyRes2
+);
+
 #ifdef __cplusplus
 }
 #endif
+
+// overloaded functions
+void determineAdvDir(struct python_continuous_analysis *pyAnal);
 
 // overloaded print statements
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(

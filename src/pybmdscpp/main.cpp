@@ -278,6 +278,27 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("bmdsRes", &python_continuous_model_result::bmdsRes)
       .def_readwrite("aod", &python_continuous_model_result::aod);
 
+  py::class_<python_continuousMA_analysis>(m, "python_continuousMA_analysis")
+      .def(py::init<>())
+      .def_readwrite("nmodels", &python_continuousMA_analysis::nmodels)
+      .def_readwrite("priors", &python_continuousMA_analysis::priors)
+      .def_readwrite("nparms", &python_continuousMA_analysis::nparms)
+      .def_readwrite("actual_parms", &python_continuousMA_analysis::actual_parms)
+      .def_readwrite("prior_cols", &python_continuousMA_analysis::prior_cols)
+      .def_readwrite("models", &python_continuousMA_analysis::models)
+      .def_readwrite("modelPriors", &python_continuousMA_analysis::modelPriors)
+      .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
+      .def_readwrite("pyDA", &python_continuousMA_analysis::pyCA);
+
+  py::class_<python_continuousMA_result>(m, "python_continuousMA_result")
+      .def(py::init<>())
+      .def_readwrite("nmodels", &python_continuousMA_result::nmodels)
+      .def_readwrite("models", &python_continuousMA_result::models)
+      .def_readwrite("dist_numE", &python_continuousMA_result::dist_numE)
+      .def_readwrite("post_probs", &python_continuousMA_result::post_probs)
+      .def_readwrite("bmd_dist", &python_continuousMA_result::bmd_dist)
+      .def_readwrite("bmdsRes", &python_continuousMA_result::bmdsRes);
+
   py::class_<python_multitumor_analysis>(m, "python_multitumor_analysis")
       .def(py::init<>())
       .def_readwrite("ndatasets", &python_multitumor_analysis::ndatasets)
@@ -357,6 +378,11 @@ PYBIND11_MODULE(bmdscore, m) {
   m.def(
       "pythonBMDSCont", &pythonBMDSCont, "Entry point to run BMDS continuous models",
       py::arg("python_continuous_analysis"), py::arg("python_continuous_model_result")
+  );
+
+  m.def(
+      "pythonBMDSContLoud", &pythonBMDSContLoud, "Entry point to run BMDS continuous LOUD MA",
+      py::arg("python_continuousMA_analysis"), py::arg("python_continuousMA_result")
   );
 
   m.def(
