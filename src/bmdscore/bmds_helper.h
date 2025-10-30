@@ -209,6 +209,7 @@ struct python_dichotomous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   double bmd;                    // the central estimate of the BMD
   double gof_p_value;            // P-value from Chi Square goodness of fit
@@ -280,6 +281,7 @@ struct python_continuous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   double bmd;                    // The bmd at the maximum
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   struct continuous_GOF gof;
