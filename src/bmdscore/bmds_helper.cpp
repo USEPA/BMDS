@@ -2829,8 +2829,225 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut){
 //void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
 //};
 
+//entry point for Loud methods
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+) {
+   pythonBMDSContLoud_dummy(pyMA, pyRes);
+}
 
-void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
+//dummy results for Loud methods
+void BMDS_ENTRY_API __stdcall pythonBMDSContLoud_dummy(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+) {
+
+   std::cout<<"inside pythonBMDSContLoud_dummy"<<std::endl;
+   //define individual model results
+   //power cv
+   struct python_continuous_model_result m1;
+   m1.model = l_power;
+   m1.dist = distribution::normal;
+//   m1.nparms = ;
+//   m1.parms = ;
+//   m1.cov = ;
+//   m1.max = ;
+//   m1.dist_numE = ;
+//   m1.model_df = ;
+//   m1.total_df = ;
+//   m1.bmd = ;
+//   m1.bmd_dist = ;
+//   m1.gof = ;
+//   m1.bmdsRes = ;
+//   m1.aod = ;
+   //power ncv
+   struct python_continuous_model_result m2;
+   m2.model = l_power;
+   m2.dist = distribution::normal_ncv;
+//   m2.nparms = ;
+//   m2.parms = ;
+//   m2.cov = ;
+//   m2.max = ;
+//   m2.dist_numE = ;
+//   m2.model_df = ;
+//   m2.total_df = ;
+//   m2.bmd = ;
+//   m2.bmd_dist = ;
+//   m2.gof = ;
+//   m2.bmdsRes = ;
+//   m2.aod = ;
+   //hill cv
+   struct python_continuous_model_result m3;
+   m3.model = l_hill;
+   m3.dist = distribution::normal;
+//   m3.nparms = ;
+//   m3.parms = ;
+//   m3.cov = ;
+//   m3.max = ;
+//   m3.dist_numE = ;
+//   m3.model_df = ;
+//   m3.total_df = ;
+//   m3.bmd = ;
+//   m3.bmd_dist = ;
+//   m3.gof = ;
+//   m3.bmdsRes = ;
+//   m3.aod = ;
+   //hill ncv
+   struct python_continuous_model_result m4;
+   m4.model = l_hill;
+   m4.dist = distribution::normal_ncv;
+//   m4.nparms = ;
+//   m4.parms = ;
+//   m4.cov = ;
+//   m4.max = ;
+//   m4.dist_numE = ;
+//   m4.model_df = ;
+//   m4.total_df = ;
+//   m4.bmd = ;
+//   m4.bmd_dist = ;
+//   m4.gof = ;
+//   m4.bmdsRes = ;
+//   m4.aod = ;
+   //exp3 cv
+   struct python_continuous_model_result m5;
+   m5.model = l_exp_3;
+   m5.dist = distribution::normal;
+//   m5.nparms = ;
+//   m5.parms = ;
+//   m5.cov = ;
+//   m5.max = ;
+//   m5.dist_numE = ;
+//   m5.model_df = ;
+//   m5.total_df = ;
+//   m5.bmd = ;
+//   m5.bmd_dist = ;
+//   m5.gof = ;
+//   m5.bmdsRes = ;
+//   m5.aod = ;
+   //exp3 ncv
+   struct python_continuous_model_result m6;
+   m6.model = l_exp_3;
+   m6.dist = distribution::normal_ncv;
+//   m6.nparms = ;
+//   m6.parms = ;
+//   m6.cov = ;
+//   m6.max = ;
+//   m6.dist_numE = ;
+//   m6.model_df = ;
+//   m6.total_df = ;
+//   m6.bmd = ;
+//   m6.bmd_dist = ;
+//   m6.gof = ;
+//   m6.bmdsRes = ;
+//   m6.aod = ;
+   //exp3 logcv
+   struct python_continuous_model_result m7;
+   m7.model = l_exp_3;
+   m7.dist = distribution::log_normal;
+//   m7.nparms = ;
+//   m7.parms = ;
+//   m7.cov = ;
+//   m7.max = ;
+//   m7.dist_numE = ;
+//   m7.model_df = ;
+//   m7.total_df = ;
+//   m7.bmd = ;
+//   m7.bmd_dist = ;
+//   m7.gof = ;
+//   m7.bmdsRes = ;
+//   m7.aod = ;
+   //exp5 cv
+   struct python_continuous_model_result m8;
+   m8.model = l_exp_5;
+   m8.dist = distribution::normal;
+//   m8.nparms = ;
+//   m8.parms = ;
+//   m8.cov = ;
+//   m8.max = ;
+//   m8.dist_numE = ;
+//   m8.model_df = ;
+//   m8.total_df = ;
+//   m8.bmd = ;
+//   m8.bmd_dist = ;
+//   m8.gof = ;
+//   m8.bmdsRes = ;
+//   m8.aod = ;
+   //exp5 ncv
+   struct python_continuous_model_result m9;
+   m9.model = l_exp_5;
+   m9.dist = distribution::normal_ncv;
+//   m9.nparms = ;
+//   m9.parms = ;
+//   m9.cov = ;
+//   m9.max = ;
+//   m9.dist_numE = ;
+//   m9.model_df = ;
+//   m9.total_df = ;
+//   m9.bmd = ;
+//   m9.bmd_dist = ;
+//   m9.gof = ;
+//   m9.bmdsRes = ;
+//   m9.aod = ;
+   //exp logcv
+   struct python_continuous_model_result m10;
+   m10.model = l_exp_5;
+   m10.dist = distribution::log_normal;
+//   m10.nparms = ;
+//   m10.parms = ;
+//   m10.cov = ;
+//   m10.max = ;
+//   m10.dist_numE = ;
+//   m10.model_df = ;
+//   m10.total_df = ;
+//   m10.bmd = ;
+//   m10.bmd_dist = ;
+//   m10.gof = ;
+//   m10.bmdsRes = ;
+//   m10.aod = ;
+
+   std::vector<python_continuous_model_result> models = {m1, m2, m3, m4, m5, m6, m7, m8, m9, m10};
+
+      
+   //define MA results
+   pyRes->nmodels = pyRes->models.size();
+   std::vector<double> post_probs = {0.0, 0.16397856, 0.03499435, 0.26533511, 0.11834432, 0.01603566,
+       0.19441962, 0.04908757, 0.12154386, 0.03626096};
+   pyRes->post_probs = post_probs;
+   std::vector<double> bmd_dist = {4.07592902e+01, 4.08714853e+01, 4.09890642e+01, 4.11090871e+01,
+        4.12286141e+01, 4.13447055e+01, 4.14544214e+01, 4.15548219e+01,
+        4.16429672e+01, 4.17159174e+01, 4.17726123e+01, 4.18242241e+01,
+        4.18732045e+01, 4.19196610e+01, 4.19637011e+01, 4.20054324e+01,
+        4.20449623e+01, 4.20823983e+01, 4.21178480e+01, 4.21514189e+01,
+        4.21832185e+01, 4.22133542e+01, 4.22419337e+01, 4.22690644e+01,
+        4.22948538e+01, 4.23194095e+01, 4.23428389e+01, 4.23652495e+01,
+        4.23867490e+01, 4.24074447e+01, 4.24274442e+01, 4.24468550e+01,
+        4.24657846e+01, 4.24843405e+01, 4.25026303e+01, 4.25207614e+01,
+        4.25388413e+01, 4.25569777e+01, 4.25752779e+01, 4.25938495e+01,
+        4.26128000e+01, 4.26322369e+01, 4.26522677e+01, 4.26729999e+01,
+        4.26945411e+01, 4.27169987e+01, 4.27404803e+01, 4.27650934e+01,
+        4.27909454e+01, 4.28181440e+01, 4.28453445e+01, 4.28712109e+01,
+        4.28958630e+01, 4.29194208e+01, 4.29420043e+01, 4.29637334e+01,
+        4.29847280e+01, 4.30051080e+01, 4.30249935e+01, 4.30445043e+01,
+        4.30637604e+01, 4.30828817e+01, 4.31019882e+01, 4.31211998e+01,
+        4.31406365e+01, 4.31604181e+01, 4.31806647e+01, 4.32014962e+01,
+        4.32230325e+01, 4.32453935e+01, 4.32686993e+01, 4.32930697e+01,
+        4.33186247e+01, 4.33454842e+01, 4.33737681e+01, 4.34035965e+01,
+        4.34350892e+01, 4.34683662e+01, 4.35035475e+01, 4.35407529e+01,
+        4.35801024e+01, 4.36217160e+01, 4.36657136e+01, 4.37122151e+01,
+        4.37613405e+01, 4.38132097e+01, 4.38679427e+01, 4.67484362e+01,
+        4.72559354e+01, 4.76292440e+01, 4.78536741e+01, 4.80092077e+01,
+        4.81758890e+01, 4.84337618e+01, 4.88010144e+01, 4.92103072e+01,
+        4.96222502e+01};
+   pyRes->bmd_dist = bmd_dist;
+
+   struct BMDSMA_results bmdsRes;
+   bmdsRes.BMD_MA = 42.81814396381378;
+   bmdsRes.BMDL_MA = 41.22861413452043;
+   bmdsRes.BMDU_MA = 48.80101438777344;
+
+   pyRes->bmdsRes = bmdsRes;
+}
+
+void BMDS_ENTRY_API __stdcall pythonBMDSContLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
   if (&pyMA->pyCA.detectAdvDir) {

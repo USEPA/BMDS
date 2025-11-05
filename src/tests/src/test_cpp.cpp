@@ -2132,7 +2132,7 @@ void runPythonContLoud() {
 
   struct python_continuousMA_result ma_res;
 
-  pythonBMDSContLoud(&ma_info, &ma_res);
+  pythonBMDSLoud(&ma_info, &ma_res);
 }
 
 void runOldContAnalysis() {

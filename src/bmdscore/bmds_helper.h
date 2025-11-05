@@ -358,7 +358,7 @@ struct python_continuousMA_analysis {
   std::vector<int> models;          // list of models this is defined by cont_model.
   std::vector<double> modelPriors;  // prior probability on the model
   int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
-  int datatype;                     // 1 - normal cv, 2 - normal ncv, 3 - lognormal, 4 - nested
+  int datatype;                     // uses loud_datatype enum
   long seed;
   struct python_continuous_analysis pyCA;
 };
@@ -811,8 +811,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
-void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
-    struct python_continuousMA_analysis *pyMA2, struct python_continuousMA_result *pyRes2
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void pythonBMDSContLoud_dev(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void pythonBMDSContLoud_dummy(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
 #ifdef __cplusplus

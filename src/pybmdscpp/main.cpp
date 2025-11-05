@@ -413,7 +413,7 @@ PYBIND11_MODULE(bmdscore, m) {
   );
 
   m.def(
-      "pythonBMDSContLoud", &pythonBMDSContLoud, "Entry point to run BMDS continuous LOUD MA",
+      "pythonBMDSLoud", &pythonBMDSLoud, "Entry point to run BMDS continuous LOUD MA",
       py::arg("python_continuousMA_analysis"), py::arg("python_continuousMA_result")
   );
 
