@@ -14,6 +14,7 @@
 
 #include "analysis_of_deviance.h"
 #include "bmds_helper.h"
+#include "functional_generalized.h"
 
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
 std::string BMDS_VERSION = "25.2";
@@ -2536,6 +2537,299 @@ void determineAdvDir(struct python_continuous_analysis *pyAnal) {
   pyAnal->isIncreasing = anal.isIncreasing;
 }
 
+
+
+
+struct fitInput createFitInput(Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1,
+                int N_obs0, int N_obs1, double s0sq, double s1sq, int N_obs, double ssq, bool sign,
+                int iter, double bmr_rel, double bmr_sd, int dist){
+        fitInput input;
+        input.doses = doses;
+        input.Y = Y;
+        input.lmean0 = lmean0;
+        input.lmean1 = lmean1;
+        input.N_obs0 = N_obs0;
+        input.N_obs1 = N_obs1;
+        input.s0sq = s0sq;
+        input.s1sq = s1sq;
+        input.iter = iter;
+        input.bmr_rel = bmr_rel;
+        input.bmr_sd = bmr_sd;
+	input.dist = dist;
+
+        //optional parameters
+        input.sign = sign;
+        if (N_obs > 0) input.N_obs = N_obs;
+        if (ssq > 0) input.ssq = ssq;
+
+        return input;
+}
+
+//double power_model(double dose, std::vector<double> &theta){
+//   double m0 = theta[0];
+//   double m1 = theta[1];
+//   double n = theta[2];
+//   double b = m1 - m0;
+//   return m0 + b*pow(dose,n);
+//}
+
+Eigen::MatrixXd loud_likelihood(const Eigen::MatrixXd& Y, const Eigen::VectorXd& parms, Eigen::VectorXd& mu, int dist, int datatype){
+
+   Eigen::MatrixXd loglik;
+   Eigen::VectorXd sd;
+
+   double pi_const = log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+
+
+   if (datatype == loud_datatype::l_summary){
+     if (dist == distribution::normal){
+       double prec0 = parms(parms.rows() - 1);
+       double var = 1.0/prec0;
+       for (int i=0; i<mu.rows(); i++){
+          double ybar = Y(i,0);
+          double s2 = Y(i,1);
+          double n = Y(i,2);
+          double term1 = n*pow(ybar - mu(i), 2);
+          double term2 = (n-1)*pow(s2,2);
+          loglik(i) = -0.5 * n * log(2 * pi_const) - 0.5 * n * log(var) - 0.5 * (term1 + term2)/var;
+       }
+
+     } else if (dist == distribution::normal_ncv){
+        double prec0 = parms(parms.rows() - 2);
+        double prec1 = parms(parms.rows() - 1);
+        double sigmas0sq = 1.0/prec0;
+        double sigmas1sq = 1.0/prec1;
+        double rho = log(sigmas1sq/sigmas0sq)/log(parms(1)/parms(0));
+        double alpha = log(sigmas0sq/pow(parms(0),rho));
+        for (int i=0; i<mu.rows(); i++){
+           double ybar = Y(i,0);
+           double s2 = Y(i,1);
+           double n = Y(i,2);
+           double term1 = n*pow(ybar-mu(i),2);
+           double term2 = (n-1)*pow(s2,2);
+           double var = exp(alpha) * pow(mu(i), rho);
+           loglik(i) = -0.5 * n * log(2 * pi_const) - 0.5 * n * log(var) - 0.5 * (term1 + term2)/var;
+        }
+
+     } else if (dist == distribution::log_normal){
+        double prec0 = parms(parms.size()-1);
+        double gamma2 = 1.0/prec0;
+        for (int i=0; i<mu.rows(); i++){
+           double ybar = Y(i,0);
+           double s = Y(i,1);
+           double n = Y(i,2);
+           double logvar = log(pow(s/ybar, 2)+1.0);
+           double y_tilde = log(ybar) - 0.5*logvar;
+           double jacobian = n * y_tilde;
+           double term1 = n*pow(y_tilde - mu(i),2);
+           double term2 = (n-1)*logvar;
+           loglik(i) = -1.0 * jacobian - 0.5 * n * log(2*pi_const) - 0.5 * n * log(gamma2) - 0.5 * (term1+term2)/gamma2;
+        }
+     } else {
+       std::cout<<"Error in loud_likelihood.  Unknown distribution."<<std::endl;
+     }
+   } else if (datatype == loud_datatype::l_individual){
+     if (dist == distribution::normal){
+        double prec0 = parms(parms.rows() - 1);
+        double var = 1.0/prec0;
+        for (int i=0; i<mu.rows(); i++){
+            loglik(i) = log(gsl_ran_gaussian_pdf(Y(i)-mu(i), sqrt(var)));
+         }
+     } else if (dist == distribution::normal_ncv){
+        double prec0 = parms(parms.rows() - 2);
+        double prec1 = parms(parms.rows() - 1);
+        double sigmas0sq = 1.0/prec0;
+        double sigmas1sq = 1.0/prec1;
+        double rho = log(sigmas1sq/sigmas0sq)/log(parms(1)/parms(0));
+        double alpha = log(sigmas0sq/pow(parms(0),rho));
+        Eigen::VectorXd var;
+        for (int i=0; i<mu.rows(); i++){
+          var(i) = exp(alpha) * pow(mu(i), rho);
+          loglik(i) = log(gsl_ran_gaussian_pdf(Y(i)-mu(i), sqrt(var(i))));
+        }
+     } else if (dist == distribution::log_normal){
+       double prec = parms(parms.size()-1);
+       double sdlog = sqrt(1.0/prec);
+       for (int i=0; i<mu.size(); i++){
+          loglik(i) = log(gsl_ran_gaussian_pdf(Y(i)-mu(i), sdlog));
+       }
+     } else {
+       std::cout<<"Error in loud_likelihood.  Unknown distribution."<<std::endl;
+     }
+
+   } else if (datatype == loud_datatype::l_nested){
+     if (dist == distribution::normal){
+	double prec0 = parms(parms.rows()-3);
+        double prec1 = parms(parms.rows()-2);
+	double precF = parms(parms.rows()-1);
+	double sigma0sq = 1/prec0;
+	double sigma1sq = 1/prec1;
+	double sigmaFsq = 1/precF;
+	double rho = log(sigma1sq/sigma0sq)/log(parms(1)/parms(0));
+	double alpha = log(sigma0sq/pow(parms(0),rho));
+        for (int i=0; i<mu.rows(); i++){
+	  double mean = Y(i,0);
+	  double s = Y(i,1);
+	  double N = Y(i,2);
+	  double var_between = exp(alpha) * pow(mu(i),rho);
+	  double var = var_between + sigmaFsq/N;
+	  loglik(i) = -0.5*log(2*pi_const) + log(var) + pow(mean - mu(i),2)/var;
+	}
+     } else if (dist == distribution::normal_ncv){
+	 double prec0 = parms(parms.rows()-4);
+	 double prec1 = parms(parms.rows()-3);
+	 double precF0 = parms(parms.rows()-2);
+	 double precF1 = parms(parms.rows()-1);
+	 double sigma0sq = 1.0/prec0;
+	 double sigma1sq = 1.0/prec1;
+	 double sigmaF0sq = 1.0/precF0;
+	 double sigmaF1sq = 1.0/precF1;
+	 double rho = log(sigma1sq/sigma0sq)/log(parms(1)/parms(0));
+	 double alpha = log(sigma0sq/pow(parms(0),rho));
+	 double bf = log(sigmaF1sq/sigmaF0sq)/log(parms(1)/parms(0));
+	 double af = log(sigmaF0sq/pow(parms(0),bf));
+         for (int i=0; i<mu.rows();i++){
+             double mean = Y(i,0);
+	     double s = Y(i,1);
+	     double N = Y(i,2);
+             double var_between = exp(alpha) * pow(mu(i), rho);
+	     double var_within = exp(af) * pow(mu(i), bf);
+	     double var = var_between + var_within/N;
+	     loglik(i) = -0.5*log(2*pi_const) + log(var) + pow(mean-mu(i),2)/var;
+	 }
+//     } else if (dist == distribution::log_normal){
+//       std::cout<<"Error in loud_likelihood.  Unknown distribution."<<std::endl;
+     } else {
+       std::cout<<"Error in loud_likelihood.  Unknown distribution."<<std::endl;
+     }
+   } else if (datatype == loud_datatype::l_dichotomous){
+      for (int i=0; i<mu.rows(); i++){
+         loglik(i) = log(gsl_ran_binomial_pdf(parms(i,0), mu(i), parms(i,1)));
+      } 
+   } else {
+     std::cout<<"Error in loud_likelihood.  Unknown datatype."<<std::endl;
+   }
+
+
+   return loglik;
+   
+}
+
+//void bridge_sample(Eigen::MatrixXd R, int iter, double (*model_fun)(double, std::vector<double>&), Eigen::MatrixXd &Y, Eigen::MatrixXd &doses, Eigen::MatrixXd &priorr, std::vector<bool> &isNegative, int ll_type){
+void bridge_sample(Eigen::MatrixXd R, struct fitInput *loudIn, struct fitResult *loudOut, Eigen::VectorXd (*model_fun)(const Eigen::VectorXd&, const Eigen::MatrixXd& X), Eigen::MatrixXd &priorr, std::vector<bool> &isNegative){
+
+   
+   //change from original bridgesource R code
+   //now references functional_generalized.cpp model fun with function signature
+   //Eigen::VectorXd model_fun(const Eigen::VectorXd& parms, const Eigen::MatrixXd& doses)
+   Eigen::VectorXd mu = model_fun(loudOut->parms, loudIn->doses);
+
+   Eigen::MatrixXd ll = loud_likelihood(loudIn->Y, loudOut->parms, mu, loudIn->dist, loudIn->datatype);
+
+
+
+}
+
+void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut){
+  
+  //make some of these enums
+  int model_typ = 103;
+  int burnin_samples = 5000;
+  int n_rounds = 2;
+  double LAM = 2.0;
+  int pri_typ = 32;
+
+  Eigen::VectorXd init;
+  std::vector<bool> isNegative = {true, true, false, false, false};
+  int ll_type;
+  if (loudIn->dist == distribution::log_normal) {
+     std::cout<<"power model not available in lognormal"<<std::endl;
+     return;
+  } else if (loudIn->dist == distribution::normal){
+     init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->s0sq;
+     ll_type = 56;
+     isNegative = {true, true, false, false};
+  } else if (loudIn->dist == distribution::normal_ncv){
+     init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0/loudIn->s0sq, 1.0/loudIn->s1sq;
+     ll_type = 55;
+     isNegative = {true, true, false, false, false};
+  }
+
+  Eigen::MatrixXd diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
+
+  Eigen::MatrixXd priorr(5,5);
+  priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq/(loudIn->N_obs0 - 1)), 1;
+  priorr << 5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq/(loudIn->N_obs1 - 1)), 1;
+  priorr << 2, log(1.6), 0.421, BMDS_MISSING, 1;
+  priorr << 4, (loudIn->N_obs0 - 1)/2.0, loudIn->N_obs0*loudIn->s0sq/2.0, BMDS_MISSING, 1;
+  priorr << 4, (loudIn->N_obs1 - 1)/2.0, loudIn->N_obs1*loudIn->s1sq/2.0, BMDS_MISSING, 1;
+
+  double startVal = 0.025;
+  double stopVal = 0.975;
+  double stepSize = 0.025;
+  int numSteps = (stopVal - startVal)/stepSize + 1;
+  Eigen::VectorXd qtiles(numSteps);
+
+  for (int i=0; i<numSteps; i++){
+     qtiles(i) = startVal + i*stepSize;
+  }
+
+
+  //remove use of ll_type.  Replace with disttype, suff_stat 
+  Eigen::MatrixXd R = run_latentslice_functional_general(loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, burnin_samples, loudIn->iter, n_rounds, qtiles, LAM, pri_typ, ll_type);
+
+  double m0 = R(0,0);
+  double m1 = R(0,1);
+  double n = R(0,2);
+  double prec0 = R(0,3);
+  double prec1 = R(0,4);
+  double b = m1 -m0;
+  double sigma0sq = 1/prec0;
+  double sigma1sq = 1/prec1;
+
+  double rho = log(sigma1sq/sigma0sq)/log(m1/m0);
+  double alpha = log(sigma0sq/pow(m0,rho));
+
+
+  loudOut->parms << m0, m1, n;
+  //bridge sample
+  bridge_sample(R, loudIn, loudOut, &continuous_power_transform, priorr, isNegative);
+
+
+
+
+
+
+//  loudOut->parms;
+//  loudOut->int_factor;
+//  loudOut->waic;
+//  loudOut->BMD_rel;
+//  loudOut->BMD_sd;
+//  loudOut->R;
+
+
+
+}
+
+
+//void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_chill(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+//void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
+//};
+
+
 void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
@@ -2633,6 +2927,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
   double ssq01 = num_01 / den_01;
   int N_obs01 = N_obs[0] + N_obs[N_obs.size() - 1];
 
+  //log scale version
+  double ssq_log01 = ((N_obs[0] - 1) * logVar[0] + (N_obs[N_obs.size()-1] - 1) * logVar[logVar.size()-1] )/ den_01; 
+ 
+
   //  std::cout<<"ssq:"<<ssq<<std::endl;
   //  std::cout<<"ssq_log:"<<ssq_log<<std::endl;
   //  std::cout<<"ssq01:"<<ssq01<<std::endl;
@@ -2662,6 +2960,75 @@ void BMDS_ENTRY_API __stdcall pythonBMDSContLoud(
 
   //  std::cout<<"Dose Matrix:\n" << doses_post << std::endl;
   //  std::cout<<"Y Matrix:\n" << Y_post << std::endl;
+  
+  //fits
+  int iter=50000;
+  double bmr_rel = 0.1;
+  double bmr_sd = 1.0;
+
+  struct fitInput cvInput = createFitInput(doses_post, Y_post, mean[0], mean[mean.size()-1], N_obs[0], N_obs[N_obs.size()-1], var[0], var[var.size()-1], N_obs01, ssq01, true, iter, bmr_rel, bmr_sd, distribution::normal );
+
+  struct fitInput ncvInput = createFitInput(doses_post, Y_post, mean[0], mean[mean.size()-1], N_obs[0], N_obs[N_obs.size()-1], var[0], var[var.size()-1], BMDS_MISSING, BMDS_MISSING, true, iter, bmr_rel, bmr_sd, distribution::normal_ncv);
+
+  struct fitInput logcvInput = createFitInput(doses_post, Y_post, logMean[0], logMean[logMean.size()-1], N_obs[0], N_obs[N_obs.size()-1], var[0], var[var.size()-1], N_obs01, ssq_log01, BMDS_MISSING, iter, bmr_rel, bmr_sd, distribution::log_normal);
+
+
+  //add logic here if all model results are not needed
+
+  ////////////
+  //STANDARD//
+  ////////////
+  //Power_CV
+
+  //Power_NCV
+
+  //Exp3_CV
+
+  //Exp3_NCV
+
+  //Exp3_LogCV
+
+  //Exp5_CV
+
+  //Exp5_NCV
+
+  //Exp5_LogCV
+
+  //Hill
+
+  //Hill_NCV
+  
+  ////////
+  //EFSA//
+  ////////
+  //Hill_EFSA
+
+  //Hill_NCV_EFSA
+
+  //Hill_LogCV_EFSA
+
+  //InvExp_CV
+
+  //InvExp_NCV
+
+  //InvExp_LogCV
+
+  //Log_CV
+
+  //Log_NCV
+
+  //Gamma_CV
+
+  //Gamma_LogCV
+
+  //LMS_CV
+
+  //LMS_NCV
+
+  //LMS_LogCV
+
+
+
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(

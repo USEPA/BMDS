@@ -34,6 +34,48 @@ PYBIND11_MODULE(bmdscore, m) {
       .value("nctr", nctr, "NCTR model enum")
       .export_values();
 
+  py::enum_<cont_model>(m, "cont_model", py::arithmetic(), "Continuous model enumeration")
+      .value("generic", generic, "generic model enum")
+      .value("hill", hill, "continuous hill model enum")
+      .value("exp_3", exp_3, "exponential 3 model enum")
+      .value("exp_5", exp_5, "exponential 5 model enum")
+      .value("power", power, "power model enum")
+      .value("funl", funl, "funl model enum")
+      .value("polynomial", polynomial, "polynomial model enum")
+      .export_values();
+
+  py::enum_<loud_cont_model>(m, "loud_cont_model", py::arithmetic(), "Loud continuous model enumeration")
+	  .value("l_exp_3", l_exp_3, "loud exponential 3 model enum")
+	  .value("l_exp_5", l_exp_5, "loud exponential 5 model enum")
+	  .value("l_power", l_power, "loud power model enum")
+	  .value("l_hill", l_hill, "loud hill model enum")
+	  .value("l_poly", l_poly, "loud polynomial modle enum")
+	  .value("l_hill_efsa", l_hill_efsa, "loud hill EFSA model enum")
+	  .value("l_invexp_efsa", l_invexp_efsa, "loud inverse exponential EFSA model enum")
+	  .value("l_lognormal_efsa", l_lognormal_efsa, "loud lognormal EFSA model enum")
+	  .value("l_gamma_efsa", l_gamma_efsa, "loud gamma EFSA model enum")
+	  .value("l_lms_efsa", l_lms_efsa, "loud linearized multistage EFSA model enum")
+	  .export_values();
+
+  py::enum_<loud_dich_model>(m, "loud_dich_model", py::arithmetic(), "Loud dichotomous model enumeration")
+	  .value("l_logistic", l_logistic, "loud logistic model enum")
+	  .value("l_weibull", l_weibull, "loud weibull model enum")
+	  .value("l_gamma", l_gamma, "loud gamma model enum")
+	  .value("l_dhill", l_dhill, "loud hill model enum")
+	  .value("l_loglogistic", l_loglogistic, "loud loglogistic model enum")
+	  .value("l_logprobit", l_logprobit, "loud logprobit model enum")
+	  .value("l_probit", l_probit, "loud probit model enum")
+	  .value("l_qlinear", l_qlinear, "loud quantal linear model enum")
+	  .value("l_multistage", l_multistage, "loud multistage model enum")
+	  .export_values();
+
+  py::enum_<loud_datatype>(m, "loud_datatype", py::arithmetic(), "Loud datatype enumeration")
+	  .value("l_summary", l_summary, "loud summary data")
+	  .value("l_individual", l_individual, "loud individual data")
+	  .value("l_nested", l_nested, "loud nested data")
+	  .value("l_dichotomous", l_dichotomous, "loud dichotomous data")
+	  .export_values();
+
   py::class_<test_struct>(m, "test_struct")
       .def(py::init<>())
       .def_readwrite("BMD", &test_struct::BMD)
@@ -93,16 +135,6 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("dfRed", &dicho_AOD::dfRed)
       .def_readwrite("pvFit", &dicho_AOD::pvFit)
       .def_readwrite("pvRed", &dicho_AOD::pvRed);
-
-  py::enum_<cont_model>(m, "cont_model", py::arithmetic(), "Continuous model enumeration")
-      .value("generic", generic, "generic model enum")
-      .value("hill", hill, "continuous hill model enum")
-      .value("exp_3", exp_3, "exponential 3 model enum")
-      .value("exp_5", exp_5, "exponential 5 model enum")
-      .value("power", power, "power model enum")
-      .value("funl", funl, "funl model enum")
-      .value("polynomial", polynomial, "polynomial model enum")
-      .export_values();
 
   py::enum_<distribution>(m, "distribution", py::arithmetic(), "Continuous model distribution")
       .value("normal", normal, "normal distribution")

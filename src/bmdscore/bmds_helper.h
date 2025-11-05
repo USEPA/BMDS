@@ -34,6 +34,36 @@ extern std::string BMDS_VERSION;
 
 enum nested_model { nlogistic = 1, nctr = 2 };
 
+enum loud_cont_model {
+	l_exp_3 = 1, 
+	l_exp_5 = 2, 
+	l_power = 3, 
+	l_hill = 4, 
+	l_poly = 5, 
+	l_hill_efsa = 6, 
+	l_invexp_efsa = 7, 
+	l_lognormal_efsa = 8, 
+	l_gamma_efsa = 9, 
+	l_lms_efsa = 10};
+
+enum loud_dich_model {
+	l_logistic = 1, 
+	l_weibull = 2,  
+	l_gamma = 3, 
+	l_dhill = 4, 
+	l_loglogistic = 5, 
+	l_logprobit = 6, 
+	l_probit = 7, 
+	l_qlinear = 8, 
+	l_multistage = 9};
+
+enum loud_datatype {
+	l_summary = 1,
+	l_individual = 2,
+	l_nested = 3,
+        l_dichotomous = 4};
+
+
 // BMDS helper structures
 #ifdef _WIN64
 #  pragma pack(8)
@@ -181,6 +211,36 @@ struct nestedSRData {
   double maxAbsSR;
 };
 
+//input struct for LOUD CMA
+struct fitInput {
+  Eigen::MatrixXd doses;
+  Eigen::MatrixXd Y;
+  double lmean0;
+  double lmean1;
+  int N_obs0;
+  int N_obs1;
+  double s0sq;
+  double s1sq;
+  int N_obs; //required for cv
+  double ssq; //required for cv
+  bool sign; //required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
+  int iter;
+  double bmr_rel;
+  double bmr_sd;
+  int dist; //defined in the distribution enum
+  int datatype;
+};
+
+//result struct for LOUD CMA
+struct fitResult {
+  Eigen::VectorXd parms;
+  double int_factor;
+  double waic;
+  double BMD_rel;
+  double BMD_sd;
+  Eigen::MatrixXd R;
+};
+
 struct python_dichotomous_analysis {
   int model;              // Model Type as listed in dich_model
   int n;                  // total number of observations obs/n
@@ -298,6 +358,8 @@ struct python_continuousMA_analysis {
   std::vector<int> models;          // list of models this is defined by cont_model.
   std::vector<double> modelPriors;  // prior probability on the model
   int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;                     // 1 - normal cv, 2 - normal ncv, 3 - lognormal, 4 - nested
+  long seed;
   struct python_continuous_analysis pyCA;
 };
 
@@ -689,6 +751,26 @@ void SortNestedData(
     const std::vector<int> &GrpSize, std::vector<double> &Xi, std::vector<double> &Ls,
     std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc
 );
+
+struct fitInput createFitInput(Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, 
+		int N_obs0, int N_obs1, double s0sq, double s1sq, int N_obs, double ssq, bool sign,
+		int iter, double bmr_rel, double bmr_sd, int dist);
+
+void bridge_sample(Eigen::MatrixXd R, struct fitInput *loudIn, struct fitResult *loudOut, Eigen::VectorXd (*model_fun)(const Eigen::VectorXd&, const Eigen::MatrixXd& X), Eigen::MatrixXd &priorr, std::vector<bool> &isNegative);
+
+void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+
+Eigen::MatrixXd loud_likelihood(const Eigen::MatrixXd& Y, const Eigen::VectorXd& parms, Eigen::VectorXd& mu, int ll_type);
+
+//void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_chill(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+//void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
