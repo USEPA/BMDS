@@ -4,8 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel
 
-#from .. import bmdscore
-import bmdscore
+from .. import bmdscore
 from ..models.continuous import BmdModelContinuous
 from .common import inspect_cpp_obj
 from .continuous import NumpyFloatArray
@@ -127,50 +126,3 @@ class ContinuousModelAverageResult(ModelAverageResult):
             model_prior=self.priors[index],
             model_posterior=self.posteriors[index],
         )
-
-if __name__ == "__main__":
-    # Minimal dev test for the C++ dummy CMA hook.
-    # This code runs only when you execute this file directly.
-
-    import numpy as np
-
-    # Import your dataset + session the same way you do in real code.
-    # Adjust these imports to match your actual package layout.
-    from .. import ContinuousDataset, Session  # or from ..session import Session, etc.
-
-    from .continuous import NumpyFloatArray  # already imported above; safe if duplicated
-    from .models.continuous import BmdModelContinuous  # adjust if needed, or reuse existing import
-
-    # 1) Build a small continuous dataset (same as your example in the question)
-    dataset = ContinuousDataset(
-        doses=[0, 25, 50, 75, 100],
-        ns=[20, 20, 20, 20, 20],
-        means=[6, 8, 13, 25, 30],
-        stdevs=[4, 4.3, 3.8, 4.4, 3.7],
-    )
-
-    # 2) Fit some continuous models the normal way
-    session = Session(dataset=dataset)
-    session.add_default_models()
-    session.execute()
-
-    # Keep only continuous models
-    models = [m for m in session.models if isinstance(m, BmdModelContinuous)]
-
-    # For now, just give them equal weights
-    weights = np.full(len(models), 1 / len(models))
-
-    # 3) Build the ContinuousModelAverage wrapper
-    cma = ContinuousModelAverage(dataset, models, weights)
-
-    # 4) This calls your C++ dummy:
-    #    pythonBMDSLoud(self.average, self.result) -> pythonBMDSContLoud_dummy(...)
-    cma.execute()
-
-    # 5) Inspect what the C++ dummy wrote back
-    print("=== Raw C++ dummy CMA values ===")
-    print("BMD_MA:", cma.bmdsRes.BMD_MA)
-    print("BMDL_MA:", cma.bmdsRes.BMDL_MA)
-    print("BMDU_MA:", cma.bmdsRes.BMDU_MA)
-    print("post_probs:", cma.result.post_probs)
-    print("len(bmd_dist):", len(cma.result.bmd_dist))
