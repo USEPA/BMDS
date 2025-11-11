@@ -765,7 +765,6 @@ void bridge_sample(
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 
-
 // void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut);
