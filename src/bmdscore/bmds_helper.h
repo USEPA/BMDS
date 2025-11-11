@@ -765,9 +765,6 @@ void bridge_sample(
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 
-Eigen::MatrixXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
-);
 
 // void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -833,6 +830,10 @@ void pythonBMDSContLoud_dummy(
 #ifdef __cplusplus
 }
 #endif
+
+Eigen::MatrixXd loud_likelihood(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
+);
 
 // overloaded functions
 void determineAdvDir(struct python_continuous_analysis *pyAnal);
