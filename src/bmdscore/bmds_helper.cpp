@@ -2833,7 +2833,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 }
 
 // dummy results for Loud methods
-void BMDS_ENTRY_API __stdcall pythonBMDSContLoud_dummy(
+void pythonBMDSContLoud_dummy(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
   std::cout << "inside pythonBMDSContLoud_dummy" << std::endl;
@@ -3038,7 +3038,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSContLoud_dummy(
   pyRes->bmdsRes = bmdsRes;
 }
 
-void BMDS_ENTRY_API __stdcall pythonBMDSLoud_dev(
+void pythonBMDSLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
   std::cout << "pyMA->datatype:" << pyMA->datatype << std::endl;
