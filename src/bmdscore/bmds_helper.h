@@ -751,12 +751,6 @@ void SortNestedData(
     std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc
 );
 
-struct fitInput createFitInput(
-    Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
-    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, double bmr_rel,
-    double bmr_sd, int dist
-);
-
 void bridge_sample(
     Eigen::MatrixXd R, struct fitInput *loudIn, struct fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
@@ -764,10 +758,6 @@ void bridge_sample(
 );
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
-
-Eigen::MatrixXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
-);
 
 // void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -822,7 +812,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
-void pythonBMDSContLoud_dev(
+void pythonBMDSLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
@@ -833,6 +823,16 @@ void pythonBMDSContLoud_dummy(
 #ifdef __cplusplus
 }
 #endif
+
+Eigen::VectorXd loud_likelihood(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
+);
+
+struct fitInput createFitInput(
+    Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
+    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, double bmr_rel,
+    double bmr_sd, int dist, int datatype
+);
 
 // overloaded functions
 void determineAdvDir(struct python_continuous_analysis *pyAnal);

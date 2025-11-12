@@ -25,6 +25,8 @@
 // available from R
 // using namespace Rcpp;
 
+const double pi_const = 4.0 * atan(1.0);
+
 //////////////////////////////////////////////////////////////////////////////
 /// @brief Computes the  transformation
 /// @param params - A (nparams x 1) vector of Q. Linear parameters

@@ -2075,6 +2075,7 @@ void runPythonContLoud() {
                    14.302947, 16.061184, 16.060429, 13.971971, 18.086398, 15.485381, 16.729798};
 
   bool suffStat = false;
+  int datatype = loud_datatype::l_individual;
   // bool isIncreasing = true;
   bool detectAdvDir = true;
 
@@ -2129,6 +2130,7 @@ void runPythonContLoud() {
   // ma_info.modelPriors = modelPriors;
   // ma_info.nmodels = numModels;
   ma_info.pyCA = anal;
+  ma_info.datatype = datatype;
 
   struct python_continuousMA_result ma_res;
 

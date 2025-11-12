@@ -1262,6 +1262,9 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
   double returnV = 0;
   double mean = 0;
   double sd = 0;
+
+  const double recsqrt2pi_const = 2.0 / sqrt(pi_const);  // 2*1/sqrt(pi)
+  const double recsqrt2_const = 1.0 / sqrt(2.0);         // 1/sqrt(2)
   // loop over the prior specification in prior_spec
   // when  it is 1 - Normal Prior
   // when  it is 2 - Log normal prior.
@@ -1273,7 +1276,8 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
         mean = (theta[i] - prior_spec(i, 1));
         sd = prior_spec(i, 2);
         returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) +
-                   double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+                   // double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+                   double(theta.size()) * log(0.5 * recsqrt2pi_const * recsqrt2_const);
         break;
       case 2:
 
@@ -1283,7 +1287,8 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
           mean = (log(theta[i]) - prior_spec(i, 1));
           sd = prior_spec(i, 2);
           returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) +
-                     double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+                     // double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+                     double(theta.size()) * log(0.5 * recsqrt2pi_const * recsqrt2_const);
         }
         break;
       case 3:
@@ -1302,7 +1307,8 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
           returnV += -std::numeric_limits<double>::infinity();
         } else {
           double term1 = std::lgamma((df + 1.0) / 2.0) - std::lgamma(df / 2.0);
-          double term2 = -0.5 * log(df * M_PI) - log(sigma);
+          // double term2 = -0.5 * log(df * M_PI) - log(sigma);
+          double term2 = -0.5 * log(df * pi_const) - log(sigma);
           double term3 = -(df + 1.0) / 2.0 * log(1.0 + (z * z) / df);
           returnV += term1 + term2 + term3;
         }
@@ -1310,7 +1316,8 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
       }
 
       default:
-        returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+        // returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+        returnV -= log(0.5 * recsqrt2pi_const * recsqrt2_const);
         break;
     }
   }
@@ -1403,7 +1410,8 @@ double ll_continuous(
     double m = mu[i];
     double var = std::exp(alpha) * std::pow(m, rho);  // mean-dependent variance
     double resid = Y(i, 0) - m;
-    ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
+    // ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
+    ll += -0.5 * std::log(2 * pi_const * var) - 0.5 * (resid * resid) / var;
   }
 
   return -1.0 * ll;
@@ -1436,8 +1444,8 @@ double ll_continuous_summary(
     double term1 = n * std::pow(ybar - m, 2);
     double term2 = (n - 1.0) * std::pow(s, 2);
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
+    ll += -0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(sigma2) -
+          0.5 * (term1 + term2) / sigma2;
   }
 
   return -1.0 * ll;
@@ -1473,7 +1481,8 @@ double ll_continuous_cv(
   double ll = 0.0;
   for (int i = 0; i < Y.rows(); ++i) {
     double resid = Y(i, 0) - mu[i];
-    ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
+    // ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
+    ll += -0.5 * std::log(2.0 * pi_const * var) - 0.5 * (resid * resid) / var;
   }
 
   return -1.0 * ll;
@@ -1498,8 +1507,10 @@ double ll_continuous_cv_summary(
     double term1 = n * std::pow(ybar - m, 2);
     double term2 = (n - 1.0) * std::pow(s, 2);
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
+    // ll += -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) /
+    // sigma2;
+    ll += -0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(sigma2) -
+          0.5 * (term1 + term2) / sigma2;
   }
 
   return -1.0 * ll;
@@ -1523,9 +1534,12 @@ double ll_lognormal_cv(
   for (int i = 0; i < Y.rows(); ++i) {
     double logy = std::log(Y(i, 0));
     double resid = logy - mu[i];
-    ll += -std::log(Y(i, 0))                  // Jacobian term
-          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
-          - 0.5 * (resid * resid) / var;      // squared error
+    //    ll += -std::log(Y(i, 0))                  // Jacobian term
+    //          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
+    //          - 0.5 * (resid * resid) / var;      // squared error
+    ll += -std::log(Y(i, 0))                      // Jacobian term
+          - 0.5 * std::log(2.0 * pi_const * var)  // normalization
+          - 0.5 * (resid * resid) / var;          // squared error
   }
 
   return -1.0 * ll;  // log-likelihood; negate if needed by your sampler
@@ -1553,7 +1567,9 @@ double ll_lognormal_cv_summary(
     double term1 = n * std::pow(ybar_log - mu_log[i], 2);
     double term2 = (n - 1.0) * s_log2;
 
-    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
+    //    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
+    //          0.5 * (term1 + term2) / gamma2;
+    ll += -jacobian - 0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(gamma2) -
           0.5 * (term1 + term2) / gamma2;
   }
 
@@ -1591,7 +1607,8 @@ double ll_nested_cv(
     double var_mean = v_within / Ni + var_between;
 
     double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
+    // ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
+    ll += -0.5 * (std::log(2.0 * pi_const) + std::log(var_mean) + (resid * resid) / var_mean);
   }
 
   return -1.0 * ll;  // negative log-likelihood
@@ -1632,7 +1649,8 @@ double ll_nested_ncv(
     double var_mean = v_within / Ni + var_between;
 
     double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
+    // ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
+    ll += -0.5 * (std::log(2.0 * pi_const) + std::log(var_mean) + (resid * resid) / var_mean);
   }
 
   return -1.0 * ll;  // negative log-likelihood
