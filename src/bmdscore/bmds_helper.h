@@ -824,7 +824,6 @@ void pythonBMDSContLoud_dummy(
 }
 #endif
 
-
 Eigen::VectorXd loud_likelihood(
     const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
 );
