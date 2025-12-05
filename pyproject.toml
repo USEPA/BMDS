@@ -22,7 +22,7 @@ dependencies = [
   "matplotlib>=3.7",
   "numpy",
   "openpyxl",
-  "pandas>=2",
+  "pandas<3",
   "pydantic>=2",
   "python-docx",
   "scipy",
