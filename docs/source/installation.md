@@ -452,7 +452,7 @@ operable program or batch file`.
 
 To fix, [activate](activate-venv) your Python virtual environment after successfully installing BMDS Desktop.
 
-(bmds-desktop-blank)
+(bmds-desktop-blank)=
 #### BMDS Desktop Startup Interface is blank
 
 When using the [BMDS Desktop Manager](desktop-shortcut) shortcut, some users have experienced a blank [BMDS Desktop Startup Interface](./desktop.md#bmds-desktop-startup-interface).  This is likely due to a discrepancy between Python package versions required by `bmds-ui` and the versions actually installed on the users' machines.  Currently, `bmds-ui` requires that exactly version 2.1.2 of `textual` be installed and `textual` itself requires that `rich` version $\ge 13.3.3$ be installed.  If you experience this issue, try manually uninstalling and installing the `rich` Python package as follows:
