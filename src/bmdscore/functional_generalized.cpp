@@ -1,18 +1,19 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
-#include <random>
 #include "functional_generalized.h"
+
+#include <random>
 // we only include RcppEigen.h which pulls Rcpp.h in for us
 // #include <RcppEigen.h>
 // #include <math.h>
-//#include <cmath>
+// #include <cmath>
 // #include <boost/math/distributions/gamma.hpp>
-//#include <gsl/gsl_cdf.h>
-//#include <gsl/gsl_randist.h>
-//#include <gsl/gsl_rng.h>
+// #include <gsl/gsl_cdf.h>
+// #include <gsl/gsl_randist.h>
+// #include <gsl/gsl_rng.h>
 //
 //
-//#include <Eigen/Dense>
+// #include <Eigen/Dense>
 
 // via the depends attribute we tell Rcpp to create hooks for
 // RcppEigen so that the build process will know what to do
@@ -26,7 +27,6 @@
 // via the exports attribute we tell Rcpp to make this function
 // available from R
 // using namespace Rcpp;
-
 
 //////////////////////////////////////////////////////////////////////////////
 /// @brief Computes the  transformation
@@ -1739,12 +1739,12 @@ Eigen::MatrixXd run_latentslice_functional_general(
     logli = ll_binomial;
   }
 
-//  Eigen::MatrixXd init_samps(5,4);
-//  init_samps << 10.53683, 15.83323, 0.7422079, 0.9311202,
-//                10.51171, 15.85932, 0.7576000, 0.8718168,
-//                10.47343, 15.86369, 0.7519050, 0.8723461,
-//                10.45887, 15.68575, 0.7448072, 0.8143091,
-//                10.46783, 15.69122, 0.7583600, 0.7978510;
+  //  Eigen::MatrixXd init_samps(5,4);
+  //  init_samps << 10.53683, 15.83323, 0.7422079, 0.9311202,
+  //                10.51171, 15.85932, 0.7576000, 0.8718168,
+  //                10.47343, 15.86369, 0.7519050, 0.8723461,
+  //                10.45887, 15.68575, 0.7448072, 0.8143091,
+  //                10.46783, 15.69122, 0.7583600, 0.7978510;
 
   //  // initial run
   Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
@@ -1781,7 +1781,6 @@ Eigen::MatrixXd run_latentslice_functional_general(
   //                                             cov_eta, function_return, X, keep_samples, LAM,
   //                                             logli, priii, nonlinn);
 
-
   init_samps = transformed_slice_sampler_cpp3(
       Y, new_start, postt, priorr, CM, cov, betas, knots, X, keep_samples, LAM, logli, priii,
       nonlinn
@@ -1789,10 +1788,9 @@ Eigen::MatrixXd run_latentslice_functional_general(
   return init_samps;
 }
 
-
-//double (*getLogLikeFunc(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&))(int ll_type){
-LogLikeFunction getLogLikeFunc(int ll_type){
-
+// double (*getLogLikeFunc(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const
+// ptr2&))(int ll_type){
+LogLikeFunction getLogLikeFunc(int ll_type) {
   std::function<
       double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
       logli;
@@ -1820,60 +1818,87 @@ LogLikeFunction getLogLikeFunc(int ll_type){
   }
 
   return logli;
-
 }
 
+void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample) {
+  int dim = sample.cols();
 
-void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample){
+  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
+  Eigen::MatrixXd L = llt.matrixL();
 
-   int dim = sample.cols();
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::normal_distribution<> d(0, 1);
 
-   Eigen::LLT<Eigen::MatrixXd> llt(sigma);
-   Eigen::MatrixXd L = llt.matrixL();
+  Eigen::VectorXd sample_row(dim);
+  Eigen::VectorXd z(dim);
 
-   std::random_device rd;
-   std::mt19937 gen(rd());
-   std::normal_distribution<> d(0,1);
-
-   Eigen::VectorXd sample_row(dim);
-   Eigen::VectorXd z(dim);
-
-   for (int k=0; k<iter; k++){
-     for (int i=0; i<dim; ++i){
-       z(i) = d(gen);
-     }
-     sample.row(k) = mu + L*z;
-   }
-
-}
-
-void dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma){
-
-  int sampleSize = mu.size();
-
-  for (int i=0; i<V.rows(); i++){
- 
-    Eigen::VectorXd loopRow = V.row(i);
-
-    Eigen::VectorXd diff = loopRow - mu;
-    double det_cov = sigma.determinant();
-    Eigen::MatrixXd inv_cov = sigma.inverse();
-    double exponent = -0.5 * diff.transpose() * inv_cov * diff;
-    //double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov); 
-    double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov); 
-
+  for (int k = 0; k < iter; k++) {
+    for (int i = 0; i < dim; ++i) {
+      z(i) = d(gen);
+    }
+    sample.row(k) = mu + L * z;
   }
-  //normalization_factor*exp(exponent);
-
 }
 
-//double pdf_t_location_scale(double x, double mu, double sigma, double df){
-double pdf_t_location_scale(double x, double df, double mu, double sigma){
+double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
+  int k = V.size();
+  Eigen::VectorXd diff = V - mu;
 
-   double stand_x = (x-mu)/sigma;
-   double stand_pdf_val = gsl_ran_tdist_pdf(stand_x, df);
-   double location_scale_pdf_val = stand_pdf_val/sigma;
+  // Cholesky decomp
+  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
+  if (llt.info() != Eigen::Success) {
+    std::cout << "dg Cholesky decomp failed" << std::endl;
+  }
 
-   return location_scale_pdf_val;
+  Eigen::VectorXd y = llt.solve(diff);
+  double quadratic_form = diff.dot(y);
+
+  // log determinant: Log[Sigma] = 2*sum(log(diag(L)))
+  // double log_det = 2.0 * llt.matrixL().template
+  // triangularView<Eigen::Lower>().diagonal().array().log().sum(); double log_det = 2.0 *
+  // llt.matrixL().diagonal().array().log().sum();
+
+  //   auto lower_view = llt.matrixL().triangularView<Eigen::Lower>();
+  //
+  //   //log density
+  //   double log_density = 0.5*k*log(2.0*M_PI) - 0.5 * log_det - 0.5*quadratic_form;
+  //
+  //   return log_density;
+  //
+  Eigen::MatrixXd m(3, 3);
+  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+
+  Eigen::MatrixXd mat = llt.matrixL();
+  auto lower_view2 = mat.triangularView<Eigen::Lower>();
+  double log_det = lower_view2.matrixLLT().diagonal().array().log().sum();
+
+  //   auto lower_view = m.triangularView<Eigen::Lower>();
+
+  return -1;
+
+  //  int sampleSize = mu.size();
+  //
+  //  for (int i=0; i<V.rows(); i++){
+  //
+  //    Eigen::VectorXd loopRow = V.row(i);
+  //
+  //    Eigen::VectorXd diff = loopRow - mu;
+  //    double det_cov = sigma.determinant();
+  //    Eigen::MatrixXd inv_cov = sigma.inverse();
+  //    double exponent = -0.5 * diff.transpose() * inv_cov * diff;
+  //    //double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov);
+  //    double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov);
+  //
+  //  }
+  //  //normalization_factor*exp(exponent);
 }
 
+// double pdf_t_location_scale(double x, double mu, double sigma, double df){
+double pdf_t_location_scale(double x, double df, double mu, double sigma) {
+  double stand_x = (x - mu) / sigma;
+  double stand_pdf_val = gsl_ran_tdist_pdf(stand_x, df);
+  double location_scale_pdf_val = stand_pdf_val / sigma;
+
+  return location_scale_pdf_val;
+}

@@ -94,7 +94,7 @@ struct BMDS_results {
   bool validResult;
   double slopeFactor;
 
-void setSlopeFactor(double bmr) { slopeFactor = calcSlopeFactor(bmr, BMDL); }
+  void setSlopeFactor(double bmr) { slopeFactor = calcSlopeFactor(bmr, BMDL); }
 };
 
 struct BMDSMA_results {
@@ -759,9 +759,7 @@ void bridge_sample(
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 
-
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
-
 
 // void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -831,7 +829,6 @@ void pythonBMDSContLoud_dummy(
 Eigen::VectorXd loud_likelihood(
     const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
 );
-
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,

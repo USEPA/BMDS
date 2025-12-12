@@ -297,8 +297,8 @@ class BmdModelAveraging(abc.ABC):
 class BmdModelAveragingSchema(BaseModel):
     @classmethod
     def get_subclass(cls, dtype: Dtype) -> Self:
-        from .ma import BmdModelAveragingDichotomousSchema
         from .cma import BmdModelAveragingContinuousSchema
+        from .ma import BmdModelAveragingDichotomousSchema
 
         if dtype in (Dtype.DICHOTOMOUS):
             return BmdModelAveragingDichotomousSchema

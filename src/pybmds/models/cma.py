@@ -1,7 +1,7 @@
 from pydantic import Field
 
-from ..types.continuous import ContinuousModelSettings
 from ..types.cma import ContinuousModelAverage, ContinuousModelAverageResult
+from ..types.continuous import ContinuousModelSettings
 from .base import BmdModelAveraging, BmdModelAveragingSchema, InputModelSettings
 
 
