@@ -27,6 +27,13 @@ set(GSL_INCLUDE_DIR "${GSL_DIR}/include")
 set(GSL_LIBRARY_DIR "${GSL_DIR}/lib")
 find_library(GSL_LIB gsl NO_DEFAULT_PATH PATHS "${GSL_LIBRARY_DIR}")
 
+#set(OpenBLAS_DIR "${CMAKE_SOURCE_DIR}/../vcpkg_installed/${VCPKG_HOST_TRIPLET}")
+set(OpenBLAS_DIR "${CMAKE_SOURCE_DIR}/../vcpkg_installed/${VCPKG_HOST_TRIPLET}/share/openblas/")
+message(STATUS "OpenBLAS Path: ${OpenBLAS_DIR}")
+#set(OpenBLAS_INCLUDE_DIR "${OpenBLAS_DIR}/include")
+#set(OpenBLAS_LIBRARY_DIR "${OpenBLAS_DIR}/lib")
+find_package(OpenBLAS REQUIRED)
+
 set(NLOPT_DIR "${CMAKE_SOURCE_DIR}/../vcpkg_installed/${VCPKG_HOST_TRIPLET}")
 message(STATUS "NLOPT Path: ${NLOPT_DIR}")
 set(NLOPT_DIR_INCLUDE_DIR "${NLOPT_DIR}/include")
@@ -57,6 +64,7 @@ target_include_directories(bmdscore PUBLIC ${GSL_INCLUDE_DIR})
 
 target_link_libraries(bmdscore PRIVATE ${NLOPT_LIB})
 target_link_libraries(bmdscore PRIVATE ${GSL_LIB})
+target_link_libraries(bmdscore PRIVATE OpenBLAS::OpenBLAS)
 
 # ------------------------
 # --- Build Unit Tests ---

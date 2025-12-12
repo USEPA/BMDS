@@ -9,8 +9,16 @@
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_linalg.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_cblas.h>
+#include <gsl/gsl_sf_gamma.h>
+
 
 #include <Eigen/Dense>
+#include <iostream>
 
 // via the depends attribute we tell Rcpp to create hooks for
 // RcppEigen so that the build process will know what to do
@@ -24,6 +32,7 @@
 // via the exports attribute we tell Rcpp to make this function
 // available from R
 // using namespace Rcpp;
+
 
 const double pi_const = 4.0 * atan(1.0);
 
@@ -440,3 +449,16 @@ Eigen::MatrixXd run_latentslice_functional_general(
     // const Rcpp::NumericVector qtiles,
     const Eigen::VectorXd qtiles, double LAM, int pri_typ, int ll_typ
 );
+
+//void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::Ref<Eigen::MatrixXd> sample);
+void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample);
+
+
+void dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma);
+
+
+double pdf_t_location_scale(double x, double df, double mu, double sigma);
+//double pdf_t_location_scale(double x, double mu, double sigma, double df);
+using LogLikeFunction = std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>;
+
+LogLikeFunction getLogLikeFunc(int ll_type);

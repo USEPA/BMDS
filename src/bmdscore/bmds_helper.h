@@ -94,7 +94,7 @@ struct BMDS_results {
   bool validResult;
   double slopeFactor;
 
-  void setSlopeFactor(double bmr) { slopeFactor = calcSlopeFactor(bmr, BMDL); }
+void setSlopeFactor(double bmr) { slopeFactor = calcSlopeFactor(bmr, BMDL); }
 };
 
 struct BMDSMA_results {
@@ -752,12 +752,16 @@ void SortNestedData(
 );
 
 void bridge_sample(
-    Eigen::MatrixXd R, struct fitInput *loudIn, struct fitResult *loudOut,
+    Eigen::MatrixXd &R, struct fitInput *loudIn, struct fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+
+
+double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
+
 
 // void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -827,6 +831,7 @@ void pythonBMDSContLoud_dummy(
 Eigen::VectorXd loud_likelihood(
     const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
 );
+
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
@@ -913,3 +918,7 @@ std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
 );
 
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD, bool print = true);
+
+std::string printBmdsStruct(struct fitInput *in, bool print = true);
+
+std::string printBmdsStruct(struct fitResult *out, bool print = true);
