@@ -1842,38 +1842,38 @@ void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sa
 }
 
 double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
-  int k = V.size();
-  Eigen::VectorXd diff = V - mu;
-
-  // Cholesky decomp
-  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
-  if (llt.info() != Eigen::Success) {
-    std::cout << "dg Cholesky decomp failed" << std::endl;
-  }
-
-  Eigen::VectorXd y = llt.solve(diff);
-  double quadratic_form = diff.dot(y);
-
-  // log determinant: Log[Sigma] = 2*sum(log(diag(L)))
-  // double log_det = 2.0 * llt.matrixL().template
-  // triangularView<Eigen::Lower>().diagonal().array().log().sum(); double log_det = 2.0 *
-  // llt.matrixL().diagonal().array().log().sum();
-
-  //   auto lower_view = llt.matrixL().triangularView<Eigen::Lower>();
+  //  int k = V.size();
+  //  Eigen::VectorXd diff = V - mu;
   //
-  //   //log density
-  //   double log_density = 0.5*k*log(2.0*M_PI) - 0.5 * log_det - 0.5*quadratic_form;
+  //  // Cholesky decomp
+  //  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
+  //  if (llt.info() != Eigen::Success) {
+  //    std::cout << "dg Cholesky decomp failed" << std::endl;
+  //  }
   //
-  //   return log_density;
+  //  Eigen::VectorXd y = llt.solve(diff);
+  //  double quadratic_form = diff.dot(y);
   //
-  Eigen::MatrixXd m(3, 3);
-  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-
-  Eigen::MatrixXd mat = llt.matrixL();
-  auto lower_view2 = mat.triangularView<Eigen::Lower>();
-  double log_det = lower_view2.matrixLLT().diagonal().array().log().sum();
-
-  //   auto lower_view = m.triangularView<Eigen::Lower>();
+  //  // log determinant: Log[Sigma] = 2*sum(log(diag(L)))
+  //  // double log_det = 2.0 * llt.matrixL().template
+  //  // triangularView<Eigen::Lower>().diagonal().array().log().sum(); double log_det = 2.0 *
+  //  // llt.matrixL().diagonal().array().log().sum();
+  //
+  //  //   auto lower_view = llt.matrixL().triangularView<Eigen::Lower>();
+  //  //
+  //  //   //log density
+  //  //   double log_density = 0.5*k*log(2.0*M_PI) - 0.5 * log_det - 0.5*quadratic_form;
+  //  //
+  //  //   return log_density;
+  //  //
+  //  Eigen::MatrixXd m(3, 3);
+  //  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  //
+  //  Eigen::MatrixXd mat = llt.matrixL();
+  //  auto lower_view2 = mat.triangularView<Eigen::Lower>();
+  //  double log_det = lower_view2.matrixLLT().diagonal().array().log().sum();
+  //
+  //  //   auto lower_view = m.triangularView<Eigen::Lower>();
 
   return -1;
 
