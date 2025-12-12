@@ -298,8 +298,11 @@ class BmdModelAveragingSchema(BaseModel):
     @classmethod
     def get_subclass(cls, dtype: Dtype) -> Self:
         from .ma import BmdModelAveragingDichotomousSchema
+        from .cma import BmdModelAveragingContinuousSchema
 
         if dtype in (Dtype.DICHOTOMOUS):
             return BmdModelAveragingDichotomousSchema
+        elif dtype in (Dtype.CONTINUOUS):
+            return BmdModelAveragingContinuousSchema
         else:
             raise ValueError(f"Invalid dtype: {dtype}")

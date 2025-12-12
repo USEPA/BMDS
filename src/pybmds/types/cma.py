@@ -17,7 +17,7 @@ class ModelAverageResult(BaseModel):
 class ContinuousModelAverage:
     def __init__(self, dataset, models: list[BmdModelContinuous], model_weights: npt.NDArray):
         first = models[0].structs.analysis
-        analysis = bmdscore.python_loud_continuous_analysis()
+        analysis = bmdscore.python_continuous_analysis()
         analysis.BMD_type = first.BMD_type
         analysis.BMR = first.BMR
         analysis.alpha = first.alpha
