@@ -1841,7 +1841,74 @@ void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sa
   }
 }
 
-double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
+// double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
+double dg(Eigen::VectorXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
+  // get gls_matrix from Eigen::MatrixXd
+  int N = sigma.rows();
+  gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
+
+  for (size_t i = 0; i < N; ++i) {
+    for (size_t j = 0; j < N; ++j) {
+      gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
+      gsl_matrix_complex_set(complex_s, i, j, z);
+    }
+  }
+  gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
+
+  // compute the cholesky decomposition of Sigma (store L)
+  int status = gsl_linalg_complex_cholesky_decomp(complex_s);
+
+  Eigen::VectorXd diff = X - mu;
+  //    gsl_vector_complex* complex_x = gsl_vector_complex_alloc(N);
+  gsl_vector* x_vec = gsl_vector_alloc(N);
+
+  //    for (size_t i=0; i<N; ++i){
+  //       gsl_complex z = gsl_complex_rect(diff(i), 0.0);
+  //       gsl_vector_complex_set(complex_x, i, z);
+  //    }
+
+  //    gsl_vector_complex* complex_res = gsl_vector_complex_alloc(N);
+  gsl_vector* res = gsl_vector_alloc(N);
+
+  if (status == GSL_SUCCESS) {
+    std::cout << "success" << std::endl;
+
+    for (size_t i = 0; i < N; ++i) {
+      for (size_t j = 0; j < N; ++j) {
+        gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
+      }
+    }
+    // gsl_linalg_cholesky_solve(complex_s, diff, res);
+    gsl_linalg_cholesky_solve(s_mat, x_vec, res);
+
+  } else {
+    std::cout
+        << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code: "
+        << status << std::endl;
+    gsl_matrix_free(s_mat);
+    gsl_vector_free(x_vec);
+    gsl_vector_free(res);
+    return -9999;
+  }
+
+  // convert result back to Eigen::VectorXd
+  Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
+  //    double exponent = 0.0;
+  //    gsl_blas_ddot(tmpRes, tmpRes, &exponent);
+  double exponent = 0.5 * tmpRes.determinant();
+
+  double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
+
+  //    exponent *= -0.5;
+  double constant = pow(2 * M_PI, 0.5 * N) * det;
+  constant = 1.0 / constant;
+
+  gsl_matrix_free(s_mat);
+  gsl_vector_free(x_vec);
+  gsl_vector_free(res);
+
+  return constant * exp(exponent);
+
   //  int k = V.size();
   //  Eigen::VectorXd diff = V - mu;
   //
@@ -1875,7 +1942,7 @@ double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
   //
   //  //   auto lower_view = m.triangularView<Eigen::Lower>();
 
-  return -1;
+  // return -1;
 
   //  int sampleSize = mu.size();
   //
@@ -1892,6 +1959,67 @@ double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
   //
   //  }
   //  //normalization_factor*exp(exponent);
+}
+
+void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::VectorXd ret) {
+  // get gls_matrix from Eigen::MatrixXd
+  int N = sigma.rows();
+  gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
+
+  for (size_t i = 0; i < N; ++i) {
+    for (size_t j = 0; j < N; ++j) {
+      gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
+      gsl_matrix_complex_set(complex_s, i, j, z);
+    }
+  }
+  gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
+
+  // compute the cholesky decomposition of Sigma (store L)
+  int status = gsl_linalg_complex_cholesky_decomp(complex_s);
+
+  gsl_vector* res = gsl_vector_alloc(N);
+
+  if (status == GSL_SUCCESS) {
+    for (size_t i = 0; i < N; ++i) {
+      for (size_t j = 0; j < N; ++j) {
+        gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
+      }
+    }
+
+  } else {
+    std::cout
+        << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code: "
+        << status << std::endl;
+    gsl_matrix_free(s_mat);
+    gsl_vector_free(res);
+    return;
+  }
+
+  double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
+  double constant = pow(2 * M_PI, 0.5 * N) * det;
+  constant = 1.0 / constant;
+
+  for (int i = 0; i < X.rows(); ++i) {
+    Eigen::VectorXd tmpX = X.row(i);
+    Eigen::VectorXd diff = tmpX - mu;
+
+    gsl_vector_view x_view = gsl_vector_view_array(diff.data(), diff.size());
+    gsl_vector* x_vec = &x_view.vector;
+
+    // solve L^Ty = (x-mu) for y
+    gsl_linalg_cholesky_solve(s_mat, x_vec, res);
+
+    Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
+    double exponent = 0.5 * tmpRes.dot(tmpRes);
+
+    ret(i) = constant * exp(exponent);
+  }
+
+  gsl_matrix_free(s_mat);
+  gsl_vector_free(res);
+
+  //    return constant * exp(exponent);
+  return;
 }
 
 // double pdf_t_location_scale(double x, double mu, double sigma, double df){

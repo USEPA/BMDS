@@ -2823,14 +2823,49 @@ void bridge_sample(
 
   Eigen::VectorXd g_g(g_estimate.rows());
   Eigen::VectorXd g_post(R.rows());
-  for (int i = 0; i < g_estimate.rows(); i++) {
-    Eigen::VectorXd row = g_estimate.row(i);
-    g_g(i) = dg(row, log_mu, log_cov);
-    row = R.row(i);
-    g_post(i) = dg(row, log_mu, log_cov);
+
+  dg(g_estimate, log_mu, log_cov, g_g);
+  dg(R, log_mu, log_cov, g_post);
+
+  double p1 = 0.01;
+  double log_p1 = 0.0;
+
+  for (int i = 0; i < 20; ++i) {
+    Eigen::VectorXd log_num_weights(post.size());
+    Eigen::VectorXd log_den_weights(post.size());
+
+    for (int i = 0; i < post.size(); ++i) {
+      log_num_weights(i) = -1.0 * log(0.5 + 0.5 * exp(log(p1) + g_g(i) - post_g(i)));
+      log_den_weights(i) = -1.0 * log(0.5 * exp(post(i) - g_post(i)) + 0.5 * exp(log(p1)));
+    }
+
+    // call logsumexp
+    double log_num = logsumexp(log_num_weights) - log(log_num_weights.size());
+    double log_den = logsumexp(log_den_weights) - log(log_den_weights.size());
+
+    log_p1 = log_num - log_den;
+    p1 = exp(log_p1);
   }
 
+  //  std::cout<<"1 log_p1:"<<log_p1<<std::endl;
+  //  std::cout<<"2 waic:"<<waic<<std::endl;
+
   loudOut->R = R;
+  loudOut->int_factor = log_p1;
+  loudOut->waic = waic;
+}
+
+double logsumexp(Eigen::VectorXd X) {
+  double m = X.maxCoeff();
+
+  double ret = 0;
+  for (int i = 0; i < X.size(); ++i) {
+    ret += exp(X(i) - m);
+  }
+
+  ret = m + log(ret);
+
+  return ret;
 }
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &row) {
@@ -2868,23 +2903,23 @@ double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &row) {
 }
 
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
-  // make some of these enums
+  // Parameters needed for latent slice function
+  //  make some of these enums
   int model_typ = 103;
+  int pri_typ = 32;
   int burnin_samples = 5000;
   int n_rounds = 2;
   double LAM = 2.0;
-  int pri_typ = 32;
+  int ll_type;
 
   Eigen::VectorXd init;
   Eigen::MatrixXd diag;
   std::vector<bool> isNegative;
   Eigen::MatrixXd priorr;
-  int ll_type;
   if (loudIn->dist == distribution::log_normal) {
     std::cout << "power model not available in lognormal" << std::endl;
     return;
   } else if (loudIn->dist == distribution::normal) {
-    std::cout << "fit_cpower: normal dist" << std::endl;
     init.resize(4);
     init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->s0sq;
     ll_type = 56;
@@ -2927,6 +2962,22 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
   );
 
   bridge_sample(R, loudIn, loudOut, &continuous_power_transform, priorr, isNegative);
+
+  // pivotal pvalue
+
+  // other calcs
+  loudOut->BMD_rel.resize(R.rows());
+  loudOut->BMD_sd.resize(R.rows());
+  for (int i = 0; i < R.rows(); ++i) {
+    double m0 = R(i, 0);
+    double m1 = R(i, 1);
+    double n = R(i, 2);
+    double b = m1 - m0;
+    double prec = R(i, 3);
+    double alpha = 1.0 / prec;
+    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
+    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
+  }
 }
 
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut){
@@ -2950,8 +3001,8 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
 void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
-  pythonBMDSContLoud_dummy(pyMA, pyRes);
-  // pythonBMDSLoud_dev(pyMA, pyRes);
+  // pythonBMDSContLoud_dummy(pyMA, pyRes);
+  pythonBMDSLoud_dev(pyMA, pyRes);
 }
 
 // dummy results for Loud methods

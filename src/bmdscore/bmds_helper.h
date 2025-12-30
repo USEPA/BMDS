@@ -233,8 +233,8 @@ struct fitResult {
   Eigen::VectorXd parms;
   double int_factor;
   double waic;
-  double BMD_rel;
-  double BMD_sd;
+  Eigen::VectorXd BMD_rel;
+  Eigen::VectorXd BMD_sd;
   Eigen::MatrixXd R;
 };
 

@@ -9,6 +9,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_cblas.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_randist.h>
@@ -451,7 +452,10 @@ Eigen::MatrixXd run_latentslice_functional_general(
 // void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::Ref<Eigen::MatrixXd> sample);
 void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample);
 
-double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma);
+// double dg(Eigen::VectorXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma);
+void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::VectorXd ret);
+
+double logsumexp(Eigen::VectorXd X);
 
 double pdf_t_location_scale(double x, double df, double mu, double sigma);
 // double pdf_t_location_scale(double x, double mu, double sigma, double df);
