@@ -21,7 +21,9 @@ class ContinuousModelAverage:
         analysis.BMD_type = first.BMD_type
         analysis.BMR = first.BMR
         analysis.alpha = first.alpha
-        analysis.Y = dataset.incidences
+        analysis.disttype = first.disttype
+        analysis.Y = dataset.means
+        analysis.sd = dataset.stdevs
         analysis.n_group = dataset.ns
         analysis.doses = dataset.doses
         analysis.n = dataset.num_dose_groups
@@ -34,7 +36,7 @@ class ContinuousModelAverage:
         average.models = [model.structs.analysis.model for model in models]
         average.priors = [model.structs.analysis.prior for model in models]
         average.modelPriors = model_weights
-        average.pyDA = analysis
+        average.pyCA = analysis
 
         bmdsRes = bmdscore.BMDSMA_results()
         bmdsRes.BMD = np.full(average.nmodels, -9999)
