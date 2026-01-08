@@ -218,14 +218,17 @@ struct fitInput {
   int N_obs1;
   double s0sq;
   double s1sq;
-  int N_obs;   // required for cv
-  double ssq;  // required for cv
-  bool sign;   // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
-  int iter;
+  int N_obs;     // required for cv
+  double ssq;    // required for cv
+  bool sign;     // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
+  int iter = 5;  // 50000;
   double bmr_rel;
   double bmr_sd;
   int dist;  // defined in the distribution enum
   int datatype;
+  int burnin = 5;  // 5000;
+  double qlev = 0.90;
+  int df_override = BMDS_MISSING;
 };
 
 // result struct for LOUD CMA
@@ -757,6 +760,11 @@ void bridge_sample(
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
+void pivotal_pvalue(
+    Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
+    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
+);
+
 void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
@@ -832,8 +840,8 @@ Eigen::VectorXd loud_likelihood(
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
-    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, double bmr_rel,
-    double bmr_sd, int dist, int datatype
+    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, int burnin,
+    double bmr_rel, double bmr_sd, int dist, int datatype
 );
 
 // overloaded functions

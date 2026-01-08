@@ -1739,52 +1739,57 @@ Eigen::MatrixXd run_latentslice_functional_general(
     logli = ll_binomial;
   }
 
-  //  Eigen::MatrixXd init_samps(5,4);
-  //  init_samps << 10.53683, 15.83323, 0.7422079, 0.9311202,
-  //                10.51171, 15.85932, 0.7576000, 0.8718168,
-  //                10.47343, 15.86369, 0.7519050, 0.8723461,
-  //                10.45887, 15.68575, 0.7448072, 0.8143091,
-  //                10.46783, 15.69122, 0.7583600, 0.7978510;
-
+  Eigen::MatrixXd init_samps(5, 4);
+  init_samps << 10.60374, 16.10538, 0.8010121, 0.8507299, 10.53340, 16.11147, 0.7849439, 0.8838649,
+      10.20586, 16.05533, 0.7020278, 0.8821467, 10.20685, 16.08820, 0.6148830, 0.8707171, 10.20756,
+      16.06210, 0.7131429, 0.8629621;
   //  // initial run
-  Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
-      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn
-  );
-  Eigen::MatrixXd betas = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
-  Eigen::MatrixXd knots = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
-  Eigen::VectorXd CM;
-  Eigen::MatrixXd covtmp;
-  for (auto ii = 0; ii < nrounds; ii++) {
-    // List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
-    compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
-    // List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
-    compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
-    Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
-    //    init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
-    //                                               cov_eta, function_return, X, burnin_samples,
-    //                                               LAM, logli, priii, nonlinn);
-    init_samps = transformed_slice_sampler_cpp3(
-        Y, new_start, postt, priorr, CM, cov, betas, knots, X, burnin_samples, LAM, logli, priii,
-        nonlinn
-    );
-  }
-  //  List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
-  // betas.setZero();
-  // knots.setZero();
-  compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
-  //  List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
-  // CM.resize(0);
-  // cov.resize(0,0);
-  compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
-  Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
-  //  init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
-  //                                             cov_eta, function_return, X, keep_samples, LAM,
-  //                                             logli, priii, nonlinn);
-
-  init_samps = transformed_slice_sampler_cpp3(
-      Y, new_start, postt, priorr, CM, cov, betas, knots, X, keep_samples, LAM, logli, priii,
-      nonlinn
-  );
+  //  Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
+  //      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn
+  //  );
+  //  std::cout<<"1 init_samps:"<<std::endl;
+  //  std::cout<<init_samps<<std::endl;
+  //
+  //  Eigen::MatrixXd betas = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
+  //  Eigen::MatrixXd knots = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
+  //  Eigen::VectorXd CM;
+  //  Eigen::MatrixXd covtmp;
+  //  for (auto ii = 0; ii < nrounds; ii++) {
+  //    // List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
+  //    compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
+  //    // List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
+  //    compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
+  //    Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
+  //    //    init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
+  //    //                                               cov_eta, function_return, X,
+  //    burnin_samples,
+  //    //                                               LAM, logli, priii, nonlinn);
+  //    init_samps = transformed_slice_sampler_cpp3(
+  //        Y, new_start, postt, priorr, CM, cov, betas, knots, X, burnin_samples, LAM, logli,
+  //        priii, nonlinn
+  //    );
+  //  }
+  //  std::cout<<"2 init_samps:"<<std::endl;
+  //  std::cout<<init_samps<<std::endl;
+  //  //  List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
+  //  compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
+  //  std::cout<<"3 init_samps:"<<std::endl;
+  //  std::cout<<init_samps<<std::endl;
+  //  //  List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
+  //  compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
+  //  std::cout<<"4 init_samps:"<<std::endl;
+  //  std::cout<<init_samps<<std::endl;
+  //  Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
+  //  //  init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
+  //  //                                             cov_eta, function_return, X, keep_samples, LAM,
+  //  //                                             logli, priii, nonlinn);
+  //
+  //  init_samps = transformed_slice_sampler_cpp3(
+  //      Y, new_start, postt, priorr, CM, cov, betas, knots, X, keep_samples, LAM, logli, priii,
+  //      nonlinn
+  //  );
+  //  std::cout<<"5 init_samps:"<<std::endl;
+  //  std::cout<<init_samps<<std::endl;
   return init_samps;
 }
 
@@ -1820,7 +1825,10 @@ LogLikeFunction getLogLikeFunc(int ll_type) {
   return logli;
 }
 
-void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample) {
+void rg(
+    int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>& isNegative,
+    Eigen::MatrixXd& sample
+) {
   int dim = sample.cols();
 
   Eigen::LLT<Eigen::MatrixXd> llt(sigma);
@@ -1839,188 +1847,173 @@ void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sa
     }
     sample.row(k) = mu + L * z;
   }
-}
 
-// double dg(Eigen::MatrixXd V, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
-double dg(Eigen::VectorXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma) {
-  // get gls_matrix from Eigen::MatrixXd
-  int N = sigma.rows();
-  gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
-
-  for (size_t i = 0; i < N; ++i) {
-    for (size_t j = 0; j < N; ++j) {
-      gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
-      gsl_matrix_complex_set(complex_s, i, j, z);
-    }
-  }
-  gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
-
-  // compute the cholesky decomposition of Sigma (store L)
-  int status = gsl_linalg_complex_cholesky_decomp(complex_s);
-
-  Eigen::VectorXd diff = X - mu;
-  //    gsl_vector_complex* complex_x = gsl_vector_complex_alloc(N);
-  gsl_vector* x_vec = gsl_vector_alloc(N);
-
-  //    for (size_t i=0; i<N; ++i){
-  //       gsl_complex z = gsl_complex_rect(diff(i), 0.0);
-  //       gsl_vector_complex_set(complex_x, i, z);
-  //    }
-
-  //    gsl_vector_complex* complex_res = gsl_vector_complex_alloc(N);
-  gsl_vector* res = gsl_vector_alloc(N);
-
-  if (status == GSL_SUCCESS) {
-    std::cout << "success" << std::endl;
-
-    for (size_t i = 0; i < N; ++i) {
-      for (size_t j = 0; j < N; ++j) {
-        gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
+  for (int j = 0; j < dim; ++j) {
+    if (!isNegative[j]) {
+      for (int i = 0; i < iter; ++i) {
+        sample(i, j) = exp(sample(i, j));
       }
     }
-    // gsl_linalg_cholesky_solve(complex_s, diff, res);
-    gsl_linalg_cholesky_solve(s_mat, x_vec, res);
-
-  } else {
-    std::cout
-        << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code: "
-        << status << std::endl;
-    gsl_matrix_free(s_mat);
-    gsl_vector_free(x_vec);
-    gsl_vector_free(res);
-    return -9999;
   }
-
-  // convert result back to Eigen::VectorXd
-  Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
-  //    double exponent = 0.0;
-  //    gsl_blas_ddot(tmpRes, tmpRes, &exponent);
-  double exponent = 0.5 * tmpRes.determinant();
-
-  double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
-
-  //    exponent *= -0.5;
-  double constant = pow(2 * M_PI, 0.5 * N) * det;
-  constant = 1.0 / constant;
-
-  gsl_matrix_free(s_mat);
-  gsl_vector_free(x_vec);
-  gsl_vector_free(res);
-
-  return constant * exp(exponent);
-
-  //  int k = V.size();
-  //  Eigen::VectorXd diff = V - mu;
-  //
-  //  // Cholesky decomp
-  //  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
-  //  if (llt.info() != Eigen::Success) {
-  //    std::cout << "dg Cholesky decomp failed" << std::endl;
-  //  }
-  //
-  //  Eigen::VectorXd y = llt.solve(diff);
-  //  double quadratic_form = diff.dot(y);
-  //
-  //  // log determinant: Log[Sigma] = 2*sum(log(diag(L)))
-  //  // double log_det = 2.0 * llt.matrixL().template
-  //  // triangularView<Eigen::Lower>().diagonal().array().log().sum(); double log_det = 2.0 *
-  //  // llt.matrixL().diagonal().array().log().sum();
-  //
-  //  //   auto lower_view = llt.matrixL().triangularView<Eigen::Lower>();
-  //  //
-  //  //   //log density
-  //  //   double log_density = 0.5*k*log(2.0*M_PI) - 0.5 * log_det - 0.5*quadratic_form;
-  //  //
-  //  //   return log_density;
-  //  //
-  //  Eigen::MatrixXd m(3, 3);
-  //  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  //
-  //  Eigen::MatrixXd mat = llt.matrixL();
-  //  auto lower_view2 = mat.triangularView<Eigen::Lower>();
-  //  double log_det = lower_view2.matrixLLT().diagonal().array().log().sum();
-  //
-  //  //   auto lower_view = m.triangularView<Eigen::Lower>();
-
-  // return -1;
-
-  //  int sampleSize = mu.size();
-  //
-  //  for (int i=0; i<V.rows(); i++){
-  //
-  //    Eigen::VectorXd loopRow = V.row(i);
-  //
-  //    Eigen::VectorXd diff = loopRow - mu;
-  //    double det_cov = sigma.determinant();
-  //    Eigen::MatrixXd inv_cov = sigma.inverse();
-  //    double exponent = -0.5 * diff.transpose() * inv_cov * diff;
-  //    //double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov);
-  //    double normalization_factor = 1.0/sqrt(pow(2*M_PI, sampleSize) *det_cov);
-  //
-  //  }
-  //  //normalization_factor*exp(exponent);
 }
 
-void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::VectorXd ret) {
-  // get gls_matrix from Eigen::MatrixXd
-  int N = sigma.rows();
-  gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
-
-  for (size_t i = 0; i < N; ++i) {
-    for (size_t j = 0; j < N; ++j) {
-      gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
-      gsl_matrix_complex_set(complex_s, i, j, z);
-    }
-  }
-  gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
-
-  // compute the cholesky decomposition of Sigma (store L)
-  int status = gsl_linalg_complex_cholesky_decomp(complex_s);
-
-  gsl_vector* res = gsl_vector_alloc(N);
-
-  if (status == GSL_SUCCESS) {
-    for (size_t i = 0; i < N; ++i) {
-      for (size_t j = 0; j < N; ++j) {
-        gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
-      }
-    }
-
-  } else {
-    std::cout
-        << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code: "
-        << status << std::endl;
-    gsl_matrix_free(s_mat);
-    gsl_vector_free(res);
+void dg(
+    const Eigen::MatrixXd x, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
+    std::vector<bool>& isNegative, Eigen::VectorXd& ret
+) {
+  Eigen::MatrixXd cov_inv = sigma.inverse();
+  double det_cov = sigma.determinant();
+  // check if positive definite
+  if (det_cov <= 0) {
+    // handle error
+    std::cout << "error in dg cov matrix" << std::endl;
     return;
   }
 
-  double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
-  double constant = pow(2 * M_PI, 0.5 * N) * det;
-  constant = 1.0 / constant;
+  for (int i = 0; i < x.rows(); ++i) {
+    Eigen::VectorXd tmpX = x.row(i);
+    for (int j = 0; j < tmpX.size(); ++j) {
+      if (!isNegative[j]) {
+        tmpX[j] = log(tmpX[j]);
+      }
+    }
+    int k = tmpX.size();
+    Eigen::VectorXd x_minus_mu = tmpX - mu;
 
-  for (int i = 0; i < X.rows(); ++i) {
-    Eigen::VectorXd tmpX = X.row(i);
-    Eigen::VectorXd diff = tmpX - mu;
+    double mahalanobis_squared = x_minus_mu.transpose() * cov_inv * x_minus_mu;
 
-    gsl_vector_view x_view = gsl_vector_view_array(diff.data(), diff.size());
-    gsl_vector* x_vec = &x_view.vector;
+    double normalizer = 1.0 / (sqrt(pow(2.0 * M_PI, k) * det_cov));
 
-    // solve L^Ty = (x-mu) for y
-    gsl_linalg_cholesky_solve(s_mat, x_vec, res);
+    double log_density = log(normalizer * exp(-0.5 * mahalanobis_squared));
 
-    Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
-    double exponent = 0.5 * tmpRes.dot(tmpRes);
-
-    ret(i) = constant * exp(exponent);
+    double adjustment = 0.0;
+    tmpX = x.row(i);  // reset to original x
+    for (int j = 0; j < tmpX.size(); ++j) {
+      if (!isNegative[j]) {
+        adjustment += log(1 / tmpX(j));
+      }
+    }
+    ret[i] = log_density + adjustment;
   }
-
-  gsl_matrix_free(s_mat);
-  gsl_vector_free(res);
-
-  //    return constant * exp(exponent);
-  return;
 }
+
+// void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>
+// &isNegative, Eigen::VectorXd ret) {
+//
+//   std::cout<<"dg Inputs:"<<std::endl;
+//   std::cout<<"X:"<<std::endl;
+//   std::cout<<X<<std::endl;
+//   std::cout<<"mu:"<<std::endl;
+//   std::cout<<mu<<std::endl;
+//   std::cout<<"sigma:"<<std::endl;
+//   std::cout<<sigma<<std::endl;
+//
+//   // get gls_matrix from Eigen::MatrixXd
+//   int N = sigma.rows();
+//   gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
+//
+//   for (size_t i = 0; i < N; ++i) {
+//     for (size_t j = 0; j < N; ++j) {
+//       gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
+//       gsl_matrix_complex_set(complex_s, i, j, z);
+//     }
+//   }
+//
+//   std::cout<<"complex_s:"<<std::endl;
+//   //std::cout<<complex_s<<std::endl;
+//   for (size_t i=0; i<N; ++i){
+//      for (size_t j=0; j<N; ++j){
+//        std::cout<<"("<<i<<","<<j<<"):"<< GSL_REAL(gsl_matrix_complex_get(complex_s,i,j)) << "  "
+//        << GSL_IMAG(gsl_matrix_complex_get(complex_s,i,j)) << std::endl;
+//      }
+//   }
+//
+//   gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
+//
+//   // compute the cholesky decomposition of Sigma (store L)
+//   int status = gsl_linalg_complex_cholesky_decomp(complex_s);
+//
+//   gsl_vector* res = gsl_vector_alloc(N);
+//
+//   if (status == GSL_SUCCESS) {
+//     for (size_t i = 0; i < N; ++i) {
+//       for (size_t j = 0; j < N; ++j) {
+//         gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
+//       }
+//     }
+//
+//   } else {
+//     std::cout
+//         << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code:
+//         "
+//         << status << std::endl;
+//     gsl_matrix_free(s_mat);
+//     gsl_vector_free(res);
+//     return;
+//   }
+//
+//   std::cout<<"s_mat:"<<std::endl;
+//   //std::cout<<s_mat<<std::endl;
+//   for (size_t i=0; i<N; ++i){
+//      for (size_t j=0; j<N; ++j){
+//        std::cout<<"("<<i<<","<<j<<"):"<<gsl_matrix_get(s_mat, i, j)<<std::endl;
+//      }
+//   }
+//
+//   //double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
+//   double det = gsl_linalg_LU_det(s_mat, 1);
+//   std::cout<<"det:"<<det<<std::endl;
+//   double constant = pow(2 * M_PI, 0.5 * N) * sqrt(det);
+//   constant = 1.0 / constant;
+//   std::cout<<"constant:"<<constant<<std::endl;
+//
+//   for (int i = 0; i < X.rows(); ++i) {
+//     Eigen::VectorXd tmpX = X.row(i);
+//     for (int j=0; j<tmpX.size(); ++j){
+//       if (!isNegative[j]){
+//         tmpX[j] = log(tmpX[j]);
+//       }
+//     }
+//     std::cout<<"row:"<<i<<" is "<<tmpX<<std::endl;
+//     Eigen::VectorXd diff = tmpX - mu;
+//
+//     std::cout<<"diff:"<<diff<<std::endl;
+//
+//     gsl_vector_view x_view = gsl_vector_view_array(diff.data(), diff.size());
+//     gsl_vector* x_vec = &x_view.vector;
+//
+//     for (size_t i=0; i<N; ++i){
+//        std::cout<<"i:"<<i<<", val:"<<gsl_vector_get(x_vec, i)<<std::endl;
+//     }
+//
+//     // solve L^Ty = (x-mu) for y
+//     gsl_linalg_cholesky_solve(s_mat, x_vec, res);
+//
+//     for (size_t i=0; i<N; ++i){
+//       std::cout<<"res:"<<gsl_vector_get(res,i)<<std::endl;
+//     }
+//
+//     Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
+//     double exponent = 0.5 * tmpRes.dot(tmpRes);
+//
+//     ret(i) = constant * exp(exponent);
+//
+////    for (int j=0; j<isNegative.size(); ++j){
+////       double sum =0.0;
+////       if (!isNegative[j]){
+////          sum += log(1/X(i,j));
+////       }
+////       ret(i) += sum;
+////    }
+//
+//  }
+//
+//
+//  gsl_matrix_free(s_mat);
+//  gsl_vector_free(res);
+//
+//  return;
+//}
 
 // double pdf_t_location_scale(double x, double mu, double sigma, double df){
 double pdf_t_location_scale(double x, double df, double mu, double sigma) {

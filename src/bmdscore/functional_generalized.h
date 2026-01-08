@@ -450,10 +450,16 @@ Eigen::MatrixXd run_latentslice_functional_general(
 );
 
 // void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::Ref<Eigen::MatrixXd> sample);
-void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::MatrixXd& sample);
+void rg(
+    int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>& isNegative,
+    Eigen::MatrixXd& sample
+);
 
 // double dg(Eigen::VectorXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma);
-void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::VectorXd ret);
+void dg(
+    const Eigen::MatrixXd X, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
+    std::vector<bool>& isNegative, Eigen::VectorXd& ret
+);
 
 double logsumexp(Eigen::VectorXd X);
 
