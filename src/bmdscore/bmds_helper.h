@@ -239,6 +239,7 @@ struct fitResult {
   Eigen::VectorXd BMD_rel;
   Eigen::VectorXd BMD_sd;
   Eigen::MatrixXd R;
+  double pval;
 };
 
 struct python_dichotomous_analysis {
@@ -760,7 +761,7 @@ void bridge_sample(
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
-void pivotal_pvalue(
+double pivotal_pvalue(
     Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 );
@@ -836,6 +837,11 @@ void pythonBMDSContLoud_dummy(
 
 Eigen::VectorXd loud_likelihood(
     const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
+);
+
+double getQVals(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    int datatype
 );
 
 struct fitInput createFitInput(
