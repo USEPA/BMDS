@@ -1,19 +1,10 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
-#include "functional_generalized.h"
-
-#include <random>
 // we only include RcppEigen.h which pulls Rcpp.h in for us
 // #include <RcppEigen.h>
 // #include <math.h>
-// #include <cmath>
+#include "functional_generalized.h"
 // #include <boost/math/distributions/gamma.hpp>
-// #include <gsl/gsl_cdf.h>
-// #include <gsl/gsl_randist.h>
-// #include <gsl/gsl_rng.h>
-//
-//
-// #include <Eigen/Dense>
 
 // via the depends attribute we tell Rcpp to create hooks for
 // RcppEigen so that the build process will know what to do
@@ -90,8 +81,8 @@ Eigen::VectorXd binomial_clogprobit(const Eigen::VectorXd& params, const Eigen::
   double p0 = a1 / sum;
   double p1 = (a1 + b1) / sum;
 
-  //  double a = R::qnorm((p1-p0)/(1-p0),0,1,true,false);
-  double a = gsl_cdf_gaussian_Pinv((p1 - p0) / (1 - p0), 1);
+  // double a = R::qnorm((p1-p0)/(1-p0),0,1,true,false);
+  double a = gsl_cdf_gaussian_Pinv((p1 - p0) / (1 - p0), 1.0);
 
   Eigen::VectorXd out = X.col(0);
 
@@ -100,7 +91,7 @@ Eigen::VectorXd binomial_clogprobit(const Eigen::VectorXd& params, const Eigen::
       return p0;
     }
     // return p0+(1-p0)*R::pnorm(a+b*log(xx),0,1,true,false);
-    return p0 + (1 - p0) * gsl_cdf_gaussian_P(a + b * log(xx), 1);
+    return p0 + (1 - p0) * gsl_cdf_gaussian_P(a + b * log(xx), 1.0);
   });
   return out;
 }
@@ -145,15 +136,15 @@ Eigen::VectorXd binomial_cprobit(const Eigen::VectorXd& params, const Eigen::Mat
   double p_zero = a1 / sum;
   double p_one = (a1 + b1) / sum;
 
-  //  double a = R::qnorm(p_zero,0,1,true,false);
-  //  double b = R::qnorm(p_one ,0,1,true,false) - a;
-  double a = gsl_cdf_gaussian_Pinv(p_zero, 1);
-  double b = gsl_cdf_gaussian_Pinv(p_one, 1) - a;
+  // double a = R::qnorm(p_zero,0,1,true,false);
+  // double b = R::qnorm(p_one ,0,1,true,false) - a;
+  double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
+  double b = gsl_cdf_gaussian_Pinv(p_one, 1.0);
 
   Eigen::VectorXd out = X.col(0);
 
   // out = out.unaryExpr([&a,&b](double xx){return R::pnorm(a+b*xx,0,1,true,false);});
-  out = out.unaryExpr([&a, &b](double xx) { return gsl_cdf_gaussian_P(a + b * xx, 1); });
+  out = out.unaryExpr([&a, &b](double xx) { return gsl_cdf_gaussian_P(a + b * xx, 1.0); });
   return out;
 }
 
@@ -242,7 +233,7 @@ Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::Matr
   }
 
   // double b = R::qgamma((p1-p0)/(1-p0),alpha,1,true, false);
-  double b = gsl_cdf_gamma_Pinv((p1 - p0) / (1 - p0), alpha, 1);
+  double b = gsl_cdf_gamma_Pinv((p1 - p0) / (1 - p0), alpha, 1.0);
 
   Eigen::VectorXd out = X.col(0);
   if (b <= 0) {
@@ -256,6 +247,9 @@ Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::Matr
 
   return out;
 }
+
+// typedef Eigen::VectorXd (*ptr)(const Eigen::VectorXd&, const Eigen::MatrixXd&);
+typedef Eigen::VectorXd (*ptr2)(const Eigen::VectorXd&, const Eigen::MatrixXd&);
 
 /// @brief
 /// @param x
@@ -916,34 +910,20 @@ ptr2 choose_nonlinearity2(int op) {
 // from Dirk, https://github.com/RcppCore/Rcpp/issues/967
 // Rcpp::NumericVector Quantile3(Rcpp::NumericVector x,
 //                              Rcpp::NumericVector probs) {
-Eigen::VectorXd Quantile3(Eigen::VectorXd x, Eigen::VectorXd probs) {
+Eigen::VectorXd Quantile3(const Eigen::VectorXd& x, const Eigen::VectorXd& probs) {
   // implementation of type 7
   const size_t n = x.size(), np = probs.size();
   if (n == 0) return x;
   if (np == 0) return probs;
-  ////  Rcpp::NumericVector index = (n-1.)*probs, y=x.sort(), x_hi(np), qs(np);
-  ////  Rcpp::NumericVector lo = Rcpp::floor(index), hi = Rcpp::ceiling(index);
-  //  std::vector<double> index(probs.size());
-  //  std::vector<int> lo(probs.size());
-  //  std::vector<int> hi(probs.size());
-  //  for (int i=0; i<probs.size(); i++){
-  //    index[i] = (n-1.)*probs[i];
-  //    lo[i] = floor(index[i]);
-  //    hi[i] = ceil(index[i]);
-  //  }
-
+  // Rcpp::NumericVector index = (n-1.)*probs, y=x.sort(), x_hi(np), qs(np);
+  // Rcpp::NumericVector lo = Rcpp::floor(index), hi = Rcpp::ceiling(index);
   Eigen::VectorXd index = (n - 1.) * probs;
-  Eigen::VectorXd lo = Eigen::floor(index.array());
-  Eigen::VectorXd hi = Eigen::ceil(index.array());
-
-  //  std::vector<double> y= x;
-  //  std::sort(y.begin(), y.end());
-  //  std::vector<double> x_hi(np);
-  //  std::vector<double> qs(np);
   Eigen::VectorXd y = x;
   std::sort(y.begin(), y.end());
   Eigen::VectorXd x_hi(np);
   Eigen::VectorXd qs(np);
+  Eigen::VectorXd lo = Eigen::floor(index.array());
+  Eigen::VectorXd hi = Eigen::ceil(index.array());
 
   for (size_t i = 0; i < np; ++i) {
     qs[i] = y[lo[i]];
@@ -980,24 +960,24 @@ Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd knots)
   return m;
 }
 
-// List compute_transform_f_lag1_cpp3(const Eigen::MatrixXd Y,
-//                                    const Rcpp::NumericVector qtiles) {
 void compute_transform_f_lag1_cpp3(
-    const Eigen::MatrixXd Y, const Eigen::VectorXd qtiles, Eigen::MatrixXd& beta_return,
+    const Eigen::MatrixXd& Y, const Eigen::VectorXd& qtiles, Eigen::MatrixXd& beta_return,
     Eigen::MatrixXd& knot_return
 ) {
-  //  Eigen::MatrixXd beta_return = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
-  //  Eigen::MatrixXd knot_return = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
-  beta_return = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
-  knot_return = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
-  // beta_return.setZero();
-  // knot_return.setZero();
+  // Eigen::MatrixXd beta_return = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
+  // Eigen::MatrixXd knot_return = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
+  //  beta_return.setZero();
+  //  knot_return.setZero();
+  beta_return.resize(qtiles.size() + 2, Y.cols());
+  knot_return.resize(qtiles.size(), Y.cols());
+  beta_return.setZero();
+  knot_return.setZero();
 
   beta_return(0, 0) = Y.col(0).mean();
 
   for (auto jj = 1; jj < Y.cols(); jj++) {
     Eigen::VectorXd temp = Y.col(jj - 1);
-    // Eigen::VectorXd knots = <Eigen::VectorXd>(Quantile3(wrap(temp), qtiles));
+    // Eigen::VectorXd knots = as<Eigen::VectorXd>(Quantile3(wrap(temp), wrap(qtiles)));
     Eigen::VectorXd knots = Quantile3(temp, qtiles);
 
     Eigen::MatrixXd tx = truncated_linear_cpp3(Y.col(jj - 1), knots);
@@ -1009,21 +989,18 @@ void compute_transform_f_lag1_cpp3(
     knot_return.col(jj) = knots;
   }
 
-  //  return List::create(Named("betas") = beta_return,
-  //                      Named("knots") = knot_return);
-  return;
+  // return List::create(Named("betas") = beta_return,
+  //                     Named("knots") = knot_return);
 }
 
-// List compute_cov_eta_cpp3(Eigen::MatrixXd Y,
-//                           List beta_return) {
 void compute_cov_eta_cpp3(
-    Eigen::MatrixXd Y, Eigen::MatrixXd& betas, Eigen::MatrixXd& knots, Eigen::VectorXd& colm,
-    Eigen::MatrixXd& tempp
+    Eigen::MatrixXd Y, const Eigen::MatrixXd& betas, const Eigen::MatrixXd& knots,
+    Eigen::VectorXd& colm, Eigen::MatrixXd& tempp
 ) {
   Eigen::MatrixXd eta = Y;
 
-  //  Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(beta_return["betas"]));
-  //  Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(beta_return["knots"]));
+  // Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(beta_return["betas"]));
+  // Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(beta_return["knots"]));
 
   for (auto j = 0; j < Y.cols(); j++) {
     if (j == 0) {
@@ -1040,9 +1017,8 @@ void compute_cov_eta_cpp3(
 
   tempp = (centt.adjoint() * centt) / double(centt.rows() - 1.0);
 
-  //  return List::create(Named("col_means") = colm,
-  //                      Named("cov") = tempp);
-  return;
+  // return List::create(Named("col_means") = colm,
+  //                     Named("cov") = tempp);
 }
 
 /// @brief Compute the Latent Slice Sampler
@@ -1058,12 +1034,9 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
     const Eigen::MatrixXd& Y, Eigen::VectorXd theta_cur,
     const std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>, std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)>, const ptr2&)>
         targett,
-    const Eigen::MatrixXd& priorr,
-    // List cov_eta,
-    Eigen::VectorXd CM, const Eigen::MatrixXd cov,
-    // List trans_func,
-    Eigen::MatrixXd& betas, Eigen::MatrixXd& knots, const Eigen::MatrixXd& X, int nsamples,
-    double LAM,
+    const Eigen::MatrixXd& priorr, const Eigen::VectorXd& CM, const Eigen::MatrixXd& cov,
+    const Eigen::MatrixXd& betas, const Eigen::MatrixXd& knots, const Eigen::MatrixXd& X,
+    int nsamples, double LAM,
     std::function<
         double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
         lll,
@@ -1075,13 +1048,13 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   Eigen::MatrixXd returnSamples = Eigen::MatrixXd::Zero(nsamples, theta_cur.size());
 
   Eigen::VectorXd Wcur(theta_cur.size());
-  //  Eigen::VectorXd CM = as<Eigen::VectorXd>(as<NumericVector>(cov_eta["col_means"]));
-  //  Eigen::MatrixXd cov = as<Eigen::MatrixXd>(as<NumericMatrix>(cov_eta["cov"]));
-  //  // Eigen::LLT<Eigen::MatrixXd> lltOfA(cov);
+  // Eigen::VectorXd CM = as<Eigen::VectorXd>(as<NumericVector>(cov_eta["col_means"]));
+  // Eigen::MatrixXd cov = as<Eigen::MatrixXd>(as<NumericMatrix>(cov_eta["cov"]));
+  //  Eigen::LLT<Eigen::MatrixXd> lltOfA(cov);
   Eigen::MatrixXd Ainv = cov.llt().matrixL();
-  //  // do the same for the trans_func (knots/betas)
-  //  Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["betas"]));
-  //  Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["knots"]));
+  // do the same for the trans_func (knots/betas)
+  // Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["betas"]));
+  // Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["knots"]));
 
   for (auto j = 0; j < theta_cur.size(); j++) {
     if (j == 0) {
@@ -1107,23 +1080,24 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   double cut = 0.0;
   double W = 0.0;
   double Wnew = 0.0;
+  gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
 
   for (auto i = 0; i < nsamples; i++) {
     cut = targett(theta_cur, X, Y, priorr, lll, priii, nonlinn);
     cut *= -1.0;
 
     // W = cut - R::rexp(1.0);
-    gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
     W = cut - gsl_ran_exponential(r, 1.0);
     for (auto ii = 0; ii < Wcur.size(); ii++) {
       // l[ii] = R::runif(Wcur[ii] - s[ii]/2.0, Wcur[ii]+s[ii]/2.0);
-      l[ii] = gsl_ran_flat(r, Wcur[ii] - s[ii] / 2.0, Wcur[ii] + s[ii] / 2.0);
+      double minVal = Wcur[ii] - s[ii] / 2.0;
+      double maxVal = Wcur[ii] + s[ii] / 2.0;
+      l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
 
       cut = 2.0 * abs(l[ii] - Wcur[ii]);
 
       // s[ii] = R::rexp(LAM) + cut;
-      // LAM is the rate for rexp.  gsl expects mean where mean = 1/rate.
-      s[ii] = gsl_ran_exponential(r, 1 / (LAM)) + cut;
+      s[ii] = gsl_ran_exponential(r, LAM) + cut;
       a[ii] = l[ii] - s[ii] / 2.0;
       b[ii] = l[ii] + s[ii] / 2.0;
     }
@@ -1133,7 +1107,7 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
     while (accept) {
       for (auto ii = 0; ii < theta_cur.size(); ii++) {
         // Wsnew[ii] = R::runif(a[ii], b[ii]);
-        Wsnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
+        Wsnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
       }
 
       Wtemp = Ainv * Wsnew;
@@ -1167,6 +1141,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
 
     returnSamples.row(i) = theta_cur;
   }
+
+  gsl_rng_free(r);
 
   return returnSamples;
 }
@@ -1203,6 +1179,7 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
   double cut = 0.0;
   double W = 0.0;
   double Wnew = 0.0;
+  gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
 
   for (auto i = 0; i < nsamples; i++) {
     // cut = as<double>(target(Ycur, X, Y));
@@ -1210,17 +1187,18 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
     cut *= -1.0;
 
     // W = cut - R::rexp(1.0);
-    gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
     W = cut - gsl_ran_exponential(r, 1.0);
 
     for (auto ii = 0; ii < Ycur.size(); ii++) {
       // l[ii] = R::runif(0.0 - s[ii]/2.0, 0.0 + s[ii]/2.0);
-      l[ii] = gsl_ran_flat(r, 0.0 - s[ii] / 2.0, 0.0 + s[ii] / 2.0);
+      double minVal = 0.0 - s[ii] / 2.0;
+      double maxVal = 0.0 + s[ii] / 2.0;
+      l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
 
       cut = 2.0 * abs(l[ii] - 0.0);
 
       // s[ii] = R::rexp(LAM) + cut;
-      s[ii] = gsl_ran_exponential(r, 1 / LAM) + cut;
+      s[ii] = gsl_ran_exponential(r, LAM) + cut;
       a[ii] = l[ii] - s[ii] / 2.0;
       b[ii] = l[ii] + s[ii] / 2.0;
     }
@@ -1231,7 +1209,7 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
     while (accept) {
       for (auto ii = 0; ii < Ycur.size(); ii++) {
         // Ysnew[ii] = R::runif(a[ii], b[ii]);
-        Ysnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
+        Ysnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
       }
 
       Ynew = Ainv * Ysnew + Ycur;
@@ -1258,6 +1236,7 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
     returnSamples.row(i) = Ycur;
   }
 
+  gsl_rng_free(r);
   return returnSamples;
 }
 
@@ -1265,9 +1244,6 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
   double returnV = 0;
   double mean = 0;
   double sd = 0;
-
-  const double recsqrt2pi_const = 2.0 / sqrt(pi_const);  // 2*1/sqrt(pi)
-  const double recsqrt2_const = 1.0 / sqrt(2.0);         // 1/sqrt(2)
   // loop over the prior specification in prior_spec
   // when  it is 1 - Normal Prior
   // when  it is 2 - Log normal prior.
@@ -1279,8 +1255,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
         mean = (theta[i] - prior_spec(i, 1));
         sd = prior_spec(i, 2);
         returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) +
-                   // double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
-                   double(theta.size()) * log(0.5 * recsqrt2pi_const * recsqrt2_const);
+                   double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
         break;
       case 2:
 
@@ -1290,8 +1265,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
           mean = (log(theta[i]) - prior_spec(i, 1));
           sd = prior_spec(i, 2);
           returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) +
-                     // double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
-                     double(theta.size()) * log(0.5 * recsqrt2pi_const * recsqrt2_const);
+                     double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
         }
         break;
       case 3:
@@ -1310,8 +1284,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
           returnV += -std::numeric_limits<double>::infinity();
         } else {
           double term1 = std::lgamma((df + 1.0) / 2.0) - std::lgamma(df / 2.0);
-          // double term2 = -0.5 * log(df * M_PI) - log(sigma);
-          double term2 = -0.5 * log(df * pi_const) - log(sigma);
+          double term2 = -0.5 * log(df * M_PI) - log(sigma);
           double term3 = -(df + 1.0) / 2.0 * log(1.0 + (z * z) / df);
           returnV += term1 + term2 + term3;
         }
@@ -1319,8 +1292,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
       }
 
       default:
-        // returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
-        returnV -= log(0.5 * recsqrt2pi_const * recsqrt2_const);
+        returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
         break;
     }
   }
@@ -1413,8 +1385,7 @@ double ll_continuous(
     double m = mu[i];
     double var = std::exp(alpha) * std::pow(m, rho);  // mean-dependent variance
     double resid = Y(i, 0) - m;
-    // ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
-    ll += -0.5 * std::log(2 * pi_const * var) - 0.5 * (resid * resid) / var;
+    ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
   }
 
   return -1.0 * ll;
@@ -1447,8 +1418,8 @@ double ll_continuous_summary(
     double term1 = n * std::pow(ybar - m, 2);
     double term2 = (n - 1.0) * std::pow(s, 2);
 
-    ll += -0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(sigma2) -
-          0.5 * (term1 + term2) / sigma2;
+    ll +=
+        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
   }
 
   return -1.0 * ll;
@@ -1484,8 +1455,7 @@ double ll_continuous_cv(
   double ll = 0.0;
   for (int i = 0; i < Y.rows(); ++i) {
     double resid = Y(i, 0) - mu[i];
-    // ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
-    ll += -0.5 * std::log(2.0 * pi_const * var) - 0.5 * (resid * resid) / var;
+    ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
   }
 
   return -1.0 * ll;
@@ -1510,10 +1480,8 @@ double ll_continuous_cv_summary(
     double term1 = n * std::pow(ybar - m, 2);
     double term2 = (n - 1.0) * std::pow(s, 2);
 
-    // ll += -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) /
-    // sigma2;
-    ll += -0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(sigma2) -
-          0.5 * (term1 + term2) / sigma2;
+    ll +=
+        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
   }
 
   return -1.0 * ll;
@@ -1537,12 +1505,9 @@ double ll_lognormal_cv(
   for (int i = 0; i < Y.rows(); ++i) {
     double logy = std::log(Y(i, 0));
     double resid = logy - mu[i];
-    //    ll += -std::log(Y(i, 0))                  // Jacobian term
-    //          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
-    //          - 0.5 * (resid * resid) / var;      // squared error
-    ll += -std::log(Y(i, 0))                      // Jacobian term
-          - 0.5 * std::log(2.0 * pi_const * var)  // normalization
-          - 0.5 * (resid * resid) / var;          // squared error
+    ll += -std::log(Y(i, 0))                  // Jacobian term
+          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
+          - 0.5 * (resid * resid) / var;      // squared error
   }
 
   return -1.0 * ll;  // log-likelihood; negate if needed by your sampler
@@ -1570,9 +1535,7 @@ double ll_lognormal_cv_summary(
     double term1 = n * std::pow(ybar_log - mu_log[i], 2);
     double term2 = (n - 1.0) * s_log2;
 
-    //    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
-    //          0.5 * (term1 + term2) / gamma2;
-    ll += -jacobian - 0.5 * n * std::log(2 * pi_const) - 0.5 * n * std::log(gamma2) -
+    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
           0.5 * (term1 + term2) / gamma2;
   }
 
@@ -1610,8 +1573,7 @@ double ll_nested_cv(
     double var_mean = v_within / Ni + var_between;
 
     double resid = lmean - m;
-    // ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-    ll += -0.5 * (std::log(2.0 * pi_const) + std::log(var_mean) + (resid * resid) / var_mean);
+    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
   }
 
   return -1.0 * ll;  // negative log-likelihood
@@ -1652,8 +1614,7 @@ double ll_nested_ncv(
     double var_mean = v_within / Ni + var_between;
 
     double resid = lmean - m;
-    // ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-    ll += -0.5 * (std::log(2.0 * pi_const) + std::log(var_mean) + (resid * resid) / var_mean);
+    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
   }
 
   return -1.0 * ll;  // negative log-likelihood
@@ -1693,9 +1654,8 @@ double full_postt(
 Eigen::MatrixXd run_latentslice_functional_general(
     const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const Eigen::VectorXd& initial_val,
     const Eigen::MatrixXd& cov, const Eigen::MatrixXd& priorr, int model_typ, int burnin_samples,
-    int keep_samples, int nrounds,
-    // const Rcpp::NumericVector qtiles,
-    const Eigen::VectorXd qtiles, double LAM, int pri_typ, int ll_typ
+    int keep_samples, int nrounds, const Eigen::VectorXd& qtiles, double LAM, int pri_typ,
+    int ll_typ
 ) {
   // get the nonlinearity type (1 = Hill, 2 = Power, 3 = Exponential, 5 = Logistic, otherwise use
   // Linear)
@@ -1739,91 +1699,70 @@ Eigen::MatrixXd run_latentslice_functional_general(
     logli = ll_binomial;
   }
 
-  Eigen::MatrixXd init_samps(5, 4);
-  init_samps << 10.60374, 16.10538, 0.8010121, 0.8507299, 10.53340, 16.11147, 0.7849439, 0.8838649,
-      10.20586, 16.05533, 0.7020278, 0.8821467, 10.20685, 16.08820, 0.6148830, 0.8707171, 10.20756,
-      16.06210, 0.7131429, 0.8629621;
-  //  // initial run
-  //  Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
-  //      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn
-  //  );
-  //  std::cout<<"1 init_samps:"<<std::endl;
-  //  std::cout<<init_samps<<std::endl;
-  //
-  //  Eigen::MatrixXd betas = Eigen::MatrixXd::Zero(qtiles.size() + 2, Y.cols());
-  //  Eigen::MatrixXd knots = Eigen::MatrixXd::Zero(qtiles.size(), Y.cols());
-  //  Eigen::VectorXd CM;
-  //  Eigen::MatrixXd covtmp;
-  //  for (auto ii = 0; ii < nrounds; ii++) {
-  //    // List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
-  //    compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
-  //    // List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
-  //    compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
-  //    Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
-  //    //    init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
-  //    //                                               cov_eta, function_return, X,
-  //    burnin_samples,
-  //    //                                               LAM, logli, priii, nonlinn);
-  //    init_samps = transformed_slice_sampler_cpp3(
-  //        Y, new_start, postt, priorr, CM, cov, betas, knots, X, burnin_samples, LAM, logli,
-  //        priii, nonlinn
-  //    );
-  //  }
-  //  std::cout<<"2 init_samps:"<<std::endl;
-  //  std::cout<<init_samps<<std::endl;
-  //  //  List function_return = compute_transform_f_lag1_cpp3(init_samps, qtiles);
-  //  compute_transform_f_lag1_cpp3(init_samps, qtiles, betas, knots);
-  //  std::cout<<"3 init_samps:"<<std::endl;
-  //  std::cout<<init_samps<<std::endl;
-  //  //  List cov_eta = compute_cov_eta_cpp3(init_samps, function_return);
-  //  compute_cov_eta_cpp3(init_samps, betas, knots, CM, covtmp);
-  //  std::cout<<"4 init_samps:"<<std::endl;
-  //  std::cout<<init_samps<<std::endl;
-  //  Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
-  //  //  init_samps = transformed_slice_sampler_cpp3(Y, new_start, postt, priorr,
-  //  //                                             cov_eta, function_return, X, keep_samples, LAM,
-  //  //                                             logli, priii, nonlinn);
-  //
-  //  init_samps = transformed_slice_sampler_cpp3(
-  //      Y, new_start, postt, priorr, CM, cov, betas, knots, X, keep_samples, LAM, logli, priii,
-  //      nonlinn
-  //  );
-  //  std::cout<<"5 init_samps:"<<std::endl;
-  //  std::cout<<init_samps<<std::endl;
+  // initial run
+  Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
+      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn
+  );
+  Eigen::MatrixXd beta_return;
+  Eigen::MatrixXd knot_return;
+  Eigen::VectorXd colm;
+  Eigen::MatrixXd tempp;
+  // List function_return;
+  for (auto ii = 0; ii < nrounds; ii++) {
+    compute_transform_f_lag1_cpp3(init_samps, qtiles, beta_return, knot_return);
+    // function_return = List::create(Named("betas") = beta_return,
+    //                  Named("knots") = knot_return);
+
+    compute_cov_eta_cpp3(init_samps, beta_return, knot_return, colm, tempp);
+    // List cov_eta = List::create(Named("col_means") = colm, Named("cov") = tempp);
+    Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
+    init_samps = transformed_slice_sampler_cpp3(
+        Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, burnin_samples, LAM,
+        logli, priii, nonlinn
+    );
+  }
+  compute_transform_f_lag1_cpp3(init_samps, qtiles, beta_return, knot_return);
+  // function_return = List::create(Named("betas") = beta_return,
+  //                     Named("knots") = knot_return);
+  compute_cov_eta_cpp3(init_samps, beta_return, knot_return, colm, tempp);
+  // List cov_eta = List::create(Named("col_means") = colm, Named("cov") = tempp);
+  Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
+  init_samps = transformed_slice_sampler_cpp3(
+      Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, keep_samples, LAM,
+      logli, priii, nonlinn
+  );
   return init_samps;
 }
 
-// double (*getLogLikeFunc(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const
-// ptr2&))(int ll_type){
-LogLikeFunction getLogLikeFunc(int ll_type) {
-  std::function<
-      double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
-      logli;
-
-  if (ll_type == 55) {
-    logli = ll_continuous;
-  } else if (ll_type == 56) {
-    logli = ll_continuous_cv;
-  } else if (ll_type == 57) {
-    logli = ll_lognormal_cv;
-  } else if (ll_type == 58) {
-    logli = ll_continuous_summary;
-  } else if (ll_type == 59) {
-    logli = ll_continuous_cv_summary;
-  } else if (ll_type == 60) {
-    logli = ll_lognormal_cv_summary;
-  } else if (ll_type == 61) {
-    logli = ll_nested_cv;
-  } else if (ll_type == 62) {
-    logli = ll_nested_ncv;
-  } else if (ll_type == 66) {
-    logli = ll_poisson;
-  } else {
-    logli = ll_binomial;
-  }
-
-  return logli;
-}
+// LogLikeFunction getLogLikeFunc(int ll_type) {
+//   std::function<
+//       double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
+//       logli;
+//
+//   if (ll_type == 55) {
+//     logli = ll_continuous;
+//   } else if (ll_type == 56) {
+//     logli = ll_continuous_cv;
+//   } else if (ll_type == 57) {
+//     logli = ll_lognormal_cv;
+//   } else if (ll_type == 58) {
+//     logli = ll_continuous_summary;
+//   } else if (ll_type == 59) {
+//     logli = ll_continuous_cv_summary;
+//   } else if (ll_type == 60) {
+//     logli = ll_lognormal_cv_summary;
+//   } else if (ll_type == 61) {
+//     logli = ll_nested_cv;
+//   } else if (ll_type == 62) {
+//     logli = ll_nested_ncv;
+//   } else if (ll_type == 66) {
+//     logli = ll_poisson;
+//   } else {
+//     logli = ll_binomial;
+//   }
+//
+//   return logli;
+// }
 
 void rg(
     int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>& isNegative,
@@ -1897,125 +1836,6 @@ void dg(
   }
 }
 
-// void dg(Eigen::MatrixXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>
-// &isNegative, Eigen::VectorXd ret) {
-//
-//   std::cout<<"dg Inputs:"<<std::endl;
-//   std::cout<<"X:"<<std::endl;
-//   std::cout<<X<<std::endl;
-//   std::cout<<"mu:"<<std::endl;
-//   std::cout<<mu<<std::endl;
-//   std::cout<<"sigma:"<<std::endl;
-//   std::cout<<sigma<<std::endl;
-//
-//   // get gls_matrix from Eigen::MatrixXd
-//   int N = sigma.rows();
-//   gsl_matrix_complex* complex_s = gsl_matrix_complex_alloc(N, N);
-//
-//   for (size_t i = 0; i < N; ++i) {
-//     for (size_t j = 0; j < N; ++j) {
-//       gsl_complex z = gsl_complex_rect(sigma(i, j), 0.0);
-//       gsl_matrix_complex_set(complex_s, i, j, z);
-//     }
-//   }
-//
-//   std::cout<<"complex_s:"<<std::endl;
-//   //std::cout<<complex_s<<std::endl;
-//   for (size_t i=0; i<N; ++i){
-//      for (size_t j=0; j<N; ++j){
-//        std::cout<<"("<<i<<","<<j<<"):"<< GSL_REAL(gsl_matrix_complex_get(complex_s,i,j)) << "  "
-//        << GSL_IMAG(gsl_matrix_complex_get(complex_s,i,j)) << std::endl;
-//      }
-//   }
-//
-//   gsl_matrix* s_mat = gsl_matrix_alloc(N, N);
-//
-//   // compute the cholesky decomposition of Sigma (store L)
-//   int status = gsl_linalg_complex_cholesky_decomp(complex_s);
-//
-//   gsl_vector* res = gsl_vector_alloc(N);
-//
-//   if (status == GSL_SUCCESS) {
-//     for (size_t i = 0; i < N; ++i) {
-//       for (size_t j = 0; j < N; ++j) {
-//         gsl_matrix_set(s_mat, i, j, GSL_REAL(gsl_matrix_complex_get(complex_s, i, j)));
-//       }
-//     }
-//
-//   } else {
-//     std::cout
-//         << "Error in Cholesky decomp.  matrix is not Hermitian positive-definite. GSL Error code:
-//         "
-//         << status << std::endl;
-//     gsl_matrix_free(s_mat);
-//     gsl_vector_free(res);
-//     return;
-//   }
-//
-//   std::cout<<"s_mat:"<<std::endl;
-//   //std::cout<<s_mat<<std::endl;
-//   for (size_t i=0; i<N; ++i){
-//      for (size_t j=0; j<N; ++j){
-//        std::cout<<"("<<i<<","<<j<<"):"<<gsl_matrix_get(s_mat, i, j)<<std::endl;
-//      }
-//   }
-//
-//   //double det = GSL_REAL(gsl_linalg_complex_LU_det(complex_s, 1));
-//   double det = gsl_linalg_LU_det(s_mat, 1);
-//   std::cout<<"det:"<<det<<std::endl;
-//   double constant = pow(2 * M_PI, 0.5 * N) * sqrt(det);
-//   constant = 1.0 / constant;
-//   std::cout<<"constant:"<<constant<<std::endl;
-//
-//   for (int i = 0; i < X.rows(); ++i) {
-//     Eigen::VectorXd tmpX = X.row(i);
-//     for (int j=0; j<tmpX.size(); ++j){
-//       if (!isNegative[j]){
-//         tmpX[j] = log(tmpX[j]);
-//       }
-//     }
-//     std::cout<<"row:"<<i<<" is "<<tmpX<<std::endl;
-//     Eigen::VectorXd diff = tmpX - mu;
-//
-//     std::cout<<"diff:"<<diff<<std::endl;
-//
-//     gsl_vector_view x_view = gsl_vector_view_array(diff.data(), diff.size());
-//     gsl_vector* x_vec = &x_view.vector;
-//
-//     for (size_t i=0; i<N; ++i){
-//        std::cout<<"i:"<<i<<", val:"<<gsl_vector_get(x_vec, i)<<std::endl;
-//     }
-//
-//     // solve L^Ty = (x-mu) for y
-//     gsl_linalg_cholesky_solve(s_mat, x_vec, res);
-//
-//     for (size_t i=0; i<N; ++i){
-//       std::cout<<"res:"<<gsl_vector_get(res,i)<<std::endl;
-//     }
-//
-//     Eigen::VectorXd tmpRes = Eigen::Map<Eigen::VectorXd>(res->data, res->size);
-//     double exponent = 0.5 * tmpRes.dot(tmpRes);
-//
-//     ret(i) = constant * exp(exponent);
-//
-////    for (int j=0; j<isNegative.size(); ++j){
-////       double sum =0.0;
-////       if (!isNegative[j]){
-////          sum += log(1/X(i,j));
-////       }
-////       ret(i) += sum;
-////    }
-//
-//  }
-//
-//
-//  gsl_matrix_free(s_mat);
-//  gsl_vector_free(res);
-//
-//  return;
-//}
-
-// double pdf_t_location_scale(double x, double mu, double sigma, double df){
 double pdf_t_location_scale(double x, double df, double mu, double sigma) {
   double stand_x = (x - mu) / sigma;
   double stand_pdf_val = gsl_ran_tdist_pdf(stand_x, df);

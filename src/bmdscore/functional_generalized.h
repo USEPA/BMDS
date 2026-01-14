@@ -19,6 +19,7 @@
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <random>
 
 // via the depends attribute we tell Rcpp to create hooks for
 // RcppEigen so that the build process will know what to do
@@ -281,7 +282,7 @@ ptr2 choose_nonlinearity2(int op);
 // from Dirk, https://github.com/RcppCore/Rcpp/issues/967
 // Rcpp::NumericVector Quantile3(Rcpp::NumericVector x,
 //                              Rcpp::NumericVector probs);
-Eigen::VectorXd Quantile3(Eigen::VectorXd x, Eigen::VectorXd probs);
+Eigen::VectorXd Quantile3(Eigen::VectorXd& x, Eigen::VectorXd& probs);
 
 Eigen::MatrixXd truncated_linear_cpp3(const Eigen::VectorXd& x, const Eigen::VectorXd& knots);
 
@@ -290,15 +291,15 @@ Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd knots)
 // List compute_transform_f_lag1_cpp3(const Eigen::MatrixXd Y,
 //                                    const Rcpp::NumericVector qtiles);
 void compute_transform_f_lag1_cpp3(
-    const Eigen::MatrixXd Y, const Eigen::VectorXd qtiles, Eigen::MatrixXd& beta_return,
+    const Eigen::MatrixXd& Y, const Eigen::VectorXd& qtiles, Eigen::MatrixXd& beta_return,
     Eigen::MatrixXd& knot_return
 );
 
 // List compute_cov_eta_cpp3(Eigen::MatrixXd Y,
 //                           List beta_return);
 void compute_cov_eta_cpp3(
-    Eigen::MatrixXd Y, Eigen::MatrixXd& betas, Eigen::MatrixXd& knots, Eigen::VectorXd& colm,
-    Eigen::MatrixXd& tempp
+    Eigen::MatrixXd Y, const Eigen::MatrixXd& betas, const Eigen::MatrixXd& knots,
+    Eigen::VectorXd& colm, Eigen::MatrixXd& tempp
 );
 
 /// @brief Compute the Latent Slice Sampler
@@ -316,10 +317,10 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
         targett,
     const Eigen::MatrixXd& priorr,
     // List cov_eta,
-    Eigen::VectorXd CM, const Eigen::MatrixXd cov,
+    const Eigen::VectorXd& CM, const Eigen::MatrixXd& cov,
     // List trans_func,
-    Eigen::MatrixXd& betas, Eigen::MatrixXd& knots, const Eigen::MatrixXd& X, int nsamples,
-    double LAM,
+    const Eigen::MatrixXd& betas, const Eigen::MatrixXd& knots, const Eigen::MatrixXd& X,
+    int nsamples, double LAM,
     std::function<
         double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
         lll,
@@ -446,7 +447,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
     const Eigen::MatrixXd& cov, const Eigen::MatrixXd& priorr, int model_typ, int burnin_samples,
     int keep_samples, int nrounds,
     // const Rcpp::NumericVector qtiles,
-    const Eigen::VectorXd qtiles, double LAM, int pri_typ, int ll_typ
+    const Eigen::VectorXd& qtiles, double LAM, int pri_typ, int ll_typ
 );
 
 // void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::Ref<Eigen::MatrixXd> sample);

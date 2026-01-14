@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <numeric>
 // #include <cmath>
+#include <ctime>
 #include <nlopt.hpp>
 
 #include "analysis_of_deviance.h"
@@ -2720,11 +2721,11 @@ Eigen::VectorXd loud_likelihood(
   Eigen::VectorXd loglik(mu.rows());
   Eigen::VectorXd sd;
 
-  std::cout << parms << std::endl;
-  // datatype == loud_datatype::l_individual
-  // dist = distribution::normal_ncv
-  // datatype = loud_datatype::l_individual;
-  // dist = distribution::normal;
+  // std::cout << parms << std::endl;
+  //  datatype == loud_datatype::l_individual
+  //  dist = distribution::normal_ncv
+  //  datatype = loud_datatype::l_individual;
+  //  dist = distribution::normal;
 
   if (datatype == loud_datatype::l_summary) {
     if (dist == distribution::normal) {
@@ -2863,13 +2864,13 @@ void bridge_sample(
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-  //  std::cout << "DEBUG R!!!!!!!" << std::endl;
-  // R <<
-  // 10.36884, 15.89159, 0.6346292, 0.8575111,
-  // 10.36485, 15.98676, 0.6282710, 0.8652221,
-  // 10.35952, 16.02945, 0.6329582, 0.8689423,
-  // 10.33165, 15.99100, 0.6510322, 0.9396411,
-  // 10.32701, 16.08124, 0.6614682, 0.9441233;
+  //    std::cout << "DEBUG R!!!!!!!" << std::endl;
+  //   R <<
+  //   10.36884, 15.89159, 0.6346292, 0.8575111,
+  //   10.36485, 15.98676, 0.6282710, 0.8652221,
+  //   10.35952, 16.02945, 0.6329582, 0.8689423,
+  //   10.33165, 15.99100, 0.6510322, 0.9396411,
+  //   10.32701, 16.08124, 0.6614682, 0.9441233;
 
   // change from original bridgesource R code
   // now references functional_generalized.cpp model fun with function signature
@@ -2925,23 +2926,23 @@ void bridge_sample(
 
   Eigen::MatrixXd g_estimate(loudIn->iter, log_mu.size());
 
-  //  std::cout << "DEBUG g_estimate!!!!!!!" << std::endl;
-  //  g_estimate <<
-  // 10.34117, 15.94334, 0.6526064, 0.9222161,
-  // 10.33295, 16.01858, 0.6504717, 0.9376481,
-  // 10.34341, 16.10431, 0.6387830, 0.9034929,
-  // 10.39629, 15.83936, 0.6085771, 0.8025459,
-  // 10.36034, 15.84676, 0.6399200, 0.8821011;
+  //    std::cout << "DEBUG g_estimate!!!!!!!" << std::endl;
+  //    g_estimate <<
+  //   10.34117, 15.94334, 0.6526064, 0.9222161,
+  //   10.33295, 16.01858, 0.6504717, 0.9376481,
+  //   10.34341, 16.10431, 0.6387830, 0.9034929,
+  //   10.39629, 15.83936, 0.6085771, 0.8025459,
+  //   10.36034, 15.84676, 0.6399200, 0.8821011;
   //
-  //  std::cout << "DEBUG log_mu!!!!!!!" << std::endl;
-  //  log_mu <<
-  // 10.3503725, 15.9960079, -0.4438677, -0.1117449;
-  //  std::cout << "DEBUG log_cov!!!!!!!" << std::endl;
-  //  log_cov <<
-  // 0.0003827127, -0.0009136046, -0.0004038809, -0.0009275604,
-  //-0.0009136046,  0.0048494308,  0.0008519373,  0.0020259365,
-  //-0.0004038809,  0.0008519373,  0.0004717426,  0.0009795161,
-  //-0.0009275604,  0.0020259365,  0.0009795161,  0.0022674822;
+  //    std::cout << "DEBUG log_mu!!!!!!!" << std::endl;
+  //    log_mu <<
+  //   10.3503725, 15.9960079, -0.4438677, -0.1117449;
+  //    std::cout << "DEBUG log_cov!!!!!!!" << std::endl;
+  //    log_cov <<
+  //   0.0003827127, -0.0009136046, -0.0004038809, -0.0009275604,
+  //  -0.0009136046,  0.0048494308,  0.0008519373,  0.0020259365,
+  //  -0.0004038809,  0.0008519373,  0.0004717426,  0.0009795161,
+  //  -0.0009275604,  0.0020259365,  0.0009795161,  0.0022674822;
 
   rg(loudIn->iter, log_mu, log_cov, isNegative, g_estimate);
 
@@ -2970,15 +2971,21 @@ void bridge_sample(
   Eigen::VectorXd g_g(R.rows());
   Eigen::VectorXd g_post(R.rows());
 
+  //  std::cout<<"calling dg with:"<<std::endl;
+  //  std::cout<<"g_estimate rows:"<<g_estimate.rows()<<std::endl;
+  //  std::cout<<"R rows:"<<R.rows()<<std::endl;
+  //  std::cout<<"log_mu rows:"<<log_mu.size()<<std::endl;
+  //  std::cout<<"log_cov rows:"<<log_cov.rows()<<std::endl;
+
   dg(g_estimate, log_mu, log_cov, isNegative, g_g);
   dg(R, log_mu, log_cov, isNegative, g_post);
 
-  std::cout << "g_g:" << std::endl;
-  std::cout << g_g << std::endl;
-  std::cout << "g_post:" << std::endl;
-  std::cout << g_post << std::endl;
-  std::cout << "post_g:" << std::endl;
-  std::cout << post_g << std::endl;
+  //  std::cout << "g_g:" << std::endl;
+  //  std::cout << g_g << std::endl;
+  //  std::cout << "g_post:" << std::endl;
+  //  std::cout << g_post << std::endl;
+  //  std::cout << "post_g:" << std::endl;
+  //  std::cout << post_g << std::endl;
 
   double p1 = 0.01;
   double log_p1 = 0.0;
@@ -2996,22 +3003,22 @@ void bridge_sample(
       log_den_weights(j) = -1.0 * log(0.5 * exp(post(j) - g_post(j)) + 0.5 * exp(log(p1)));
     }
 
-    std::cout << "log_num_weights:" << std::endl;
-    std::cout << log_num_weights << std::endl;
-    std::cout << "log_den_weights:" << std::endl;
-    std::cout << log_den_weights << std::endl;
+    //    std::cout << "log_num_weights:" << std::endl;
+    //    std::cout << log_num_weights << std::endl;
+    //    std::cout << "log_den_weights:" << std::endl;
+    //    std::cout << log_den_weights << std::endl;
 
     // call logsumexp
     double log_num = logsumexp(log_num_weights) - log(log_num_weights.size());
     double log_den = logsumexp(log_den_weights) - log(log_den_weights.size());
 
-    std::cout << "log_num:" << log_num << std::endl;
-    std::cout << "log_den:" << log_den << std::endl;
+    //    std::cout << "log_num:" << log_num << std::endl;
+    //    std::cout << "log_den:" << log_den << std::endl;
 
     log_p1 = log_num - log_den;
     p1 = exp(log_p1);
-    std::cout << "log_p1:" << log_p1 << std::endl;
-    std::cout << "p1:" << p1 << std::endl;
+    //    std::cout << "log_p1:" << log_p1 << std::endl;
+    //    std::cout << "p1:" << p1 << std::endl;
   }
 
   //  std::cout<<"1 log_p1:"<<log_p1<<std::endl;
@@ -3116,8 +3123,8 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
         loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
   }
 
-  std::cout << "priorr:" << std::endl;
-  std::cout << priorr << std::endl;
+  //  std::cout << "priorr:" << std::endl;
+  //  std::cout << priorr << std::endl;
 
   double startVal = 0.025;
   double stopVal = 0.975;
@@ -3131,56 +3138,67 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
     qtiles(i) = startVal + i * stepSize;
   }
 
-  std::cout << "Calling run_latentslice_functional_general with:" << std::endl;
-  std::cout << "X:" << loudIn->doses << std::endl;
-  std::cout << "Y:" << loudIn->Y << std::endl;
-  std::cout << "initial_val:" << init << std::endl;
-  std::cout << "cov:" << std::endl;
-  std::cout << diag << std::endl;
-  std::cout << "priorr:" << std::endl;
-  std::cout << priorr << std::endl;
-  std::cout << "model_typ:" << model_typ << std::endl;
-  std::cout << "burnin_samples:" << loudIn->burnin << std::endl;
-  std::cout << "keep_samples:" << loudIn->iter << std::endl;
-  std::cout << "nrounds:" << n_rounds << std::endl;
-  std::cout << "qtiles:" << qtiles << std::endl;
-  std::cout << "LAM:" << LAM << std::endl;
-  std::cout << "pri_typ:" << pri_typ << std::endl;
-  std::cout << "ll_typ:" << ll_type << std::endl;
+  //  std::cout << "Calling run_latentslice_functional_general with:" << std::endl;
+  //  std::cout << "X:" << loudIn->doses << std::endl;
+  //  std::cout << "Y:" << loudIn->Y << std::endl;
+  //  std::cout << "initial_val:" << init << std::endl;
+  //  std::cout << "cov:" << std::endl;
+  //  std::cout << diag << std::endl;
+  //  std::cout << "priorr:" << std::endl;
+  //  std::cout << priorr << std::endl;
+  //  std::cout << "model_typ:" << model_typ << std::endl;
+  //  std::cout << "burnin_samples:" << loudIn->burnin << std::endl;
+  //  std::cout << "keep_samples:" << loudIn->iter << std::endl;
+  //  std::cout << "nrounds:" << n_rounds << std::endl;
+  //  std::cout << "qtiles:" << qtiles << std::endl;
+  //  std::cout << "LAM:" << LAM << std::endl;
+  //  std::cout << "pri_typ:" << pri_typ << std::endl;
+  //  std::cout << "ll_typ:" << ll_type << std::endl;
+
+  std::cout << "calling run_latentslice_functional_general with:" << std::endl;
+  //  std::cout<<"iter:"<<loudIn->iter<<std::endl;
+  //  std::cout<<"burnin:"<<loudIn->burnin<<std::endl;
+  std::time_t currentTime = std::time(nullptr);
+  std::tm *localTime = std::localtime(&currentTime);
+  std::cout << "Current time (ctime): " << std::asctime(localTime) << std::endl;
 
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
+  std::cout << "after run_latentslice_functional_general" << std::endl;
+  currentTime = std::time(nullptr);
+  localTime = std::localtime(&currentTime);
+  std::cout << "Current time (ctime): " << std::asctime(localTime) << std::endl;
 
-  std::cout << "R:" << std::endl;
-  std::cout << R << std::endl;
+  //  std::cout << "R:" << std::endl;
+  //  std::cout << R << std::endl;
 
   bridge_sample(R, loudIn, loudOut, &continuous_power_transform, priorr, isNegative);
 
   // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_power_transform);
-
-  // other calcs
-  loudOut->BMD_rel.resize(R.rows());
-  loudOut->BMD_sd.resize(R.rows());
-  for (int i = 0; i < R.rows(); ++i) {
-    double m0 = R(i, 0);
-    double m1 = R(i, 1);
-    double n = R(i, 2);
-    double b = m1 - m0;
-    double prec = R(i, 3);
-    double alpha = 1.0 / prec;
-    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
-    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
-  }
-
-  std::cout << "BMD_rel:" << std::endl;
-  std::cout << loudOut->BMD_rel << std::endl;
-  std::cout << "BMD_sd:" << std::endl;
-  std::cout << loudOut->BMD_sd << std::endl;
-  std::cout << "pval:" << std::endl;
-  std::cout << loudOut->pval << std::endl;
+  //  loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_power_transform);
+  //
+  //  // other calcs
+  //  loudOut->BMD_rel.resize(R.rows());
+  //  loudOut->BMD_sd.resize(R.rows());
+  //  for (int i = 0; i < R.rows(); ++i) {
+  //    double m0 = R(i, 0);
+  //    double m1 = R(i, 1);
+  //    double n = R(i, 2);
+  //    double b = m1 - m0;
+  //    double prec = R(i, 3);
+  //    double alpha = 1.0 / prec;
+  //    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
+  //    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
+  //  }
+  //
+  //  std::cout << "BMD_rel:" << std::endl;
+  //  std::cout << loudOut->BMD_rel << std::endl;
+  //  std::cout << "BMD_sd:" << std::endl;
+  //  std::cout << loudOut->BMD_sd << std::endl;
+  //  std::cout << "pval:" << std::endl;
+  //  std::cout << loudOut->pval << std::endl;
 }
 
 // void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut){
@@ -3248,8 +3266,8 @@ double pivotal_pvalue(
 void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
-  pythonBMDSContLoud_dummy(pyMA, pyRes);
-  // pythonBMDSLoud_dev(pyMA, pyRes);
+  // pythonBMDSContLoud_dummy(pyMA, pyRes);
+  pythonBMDSLoud_dev(pyMA, pyRes);
 }
 
 // dummy results for Loud methods
@@ -3461,7 +3479,7 @@ void pythonBMDSContLoud_dummy(
 void pythonBMDSLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
-  std::cout << "pyMA->datatype:" << pyMA->datatype << std::endl;
+  // std::cout << "pyMA->datatype:" << pyMA->datatype << std::endl;
   if (&pyMA->pyCA.detectAdvDir) {
     determineAdvDir(&pyMA->pyCA);
   }
@@ -3561,8 +3579,11 @@ void pythonBMDSLoud_dev(
   Eigen::MatrixXd Y_post = Eigen::Map<Eigen::VectorXd>(Y_posttmp.data(), Y_posttmp.size());
 
   // fits
-  double iter = BMDS_MISSING;
-  double burnin = BMDS_MISSING;
+  // double iter = BMDS_MISSING;
+  // double burnin = BMDS_MISSING;
+  double iter = 50000;   // BMDS_MISSING;
+  double burnin = 5000;  // BMDS_MISSING;
+
   double bmr_rel = 0.1;
   double bmr_sd = 1.0;
 
@@ -3595,12 +3616,12 @@ void pythonBMDSLoud_dev(
   ////////////
   // Power_CV
 
-  printBmdsStruct(&cvInput);
+  // printBmdsStruct(&cvInput);
 
   struct fitResult cvPowerOut;
   fit_cpower(&cvInput, &cvPowerOut);
 
-  printBmdsStruct(&cvPowerOut);
+  // printBmdsStruct(&cvPowerOut);
 
   // Power_NCV
 
