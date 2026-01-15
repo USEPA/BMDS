@@ -301,6 +301,9 @@ class ExponentialM5(BmdModelContinuous):
 class MultiplicativeHill(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.mult_hill.value
 
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian
+
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
     ) -> ContinuousModelSettings:
@@ -320,6 +323,9 @@ class MultiplicativeHill(BmdModelContinuous):
 
 class InverseExponential(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.inverse_exp.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -341,6 +347,9 @@ class InverseExponential(BmdModelContinuous):
 class Lognormal(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lognormal.value
 
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian
+
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
     ) -> ContinuousModelSettings:
@@ -361,6 +370,9 @@ class Lognormal(BmdModelContinuous):
 class Gamma(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.cont_gamma.value
 
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian
+
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
     ) -> ContinuousModelSettings:
@@ -380,6 +392,9 @@ class Gamma(BmdModelContinuous):
 
 class LMS(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lms.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
