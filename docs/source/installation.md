@@ -452,22 +452,42 @@ operable program or batch file`.
 
 To fix, [activate](activate-venv) your Python virtual environment after successfully installing BMDS Desktop.
 
-(bmds-desktop-blank)
+(bmds-desktop-blank)=
 #### BMDS Desktop Startup Interface is blank
 
-When using the [BMDS Desktop Manager](desktop-shortcut) shortcut, some users have experienced a blank [BMDS Desktop Startup Interface](./desktop.md#bmds-desktop-startup-interface).  This is likely due to a discrepancy between Python package versions required by `bmds-ui` and the versions actually installed on the users' machines.  Currently, `bmds-ui` requires that exactly version 2.1.2 of `textual` be installed and `textual` itself requires that `rich` version $\ge 13.3.3$ be installed.  If you experience this issue, try manually uninstalling and installing the `rich` Python package as follows:
+When using the [BMDS Desktop Manager](desktop-shortcut) shortcut, some users have experienced a blank [BMDS Desktop Startup Interface](./desktop.md#bmds-desktop-startup-interface).  This is likely due to a discrepancy between Python package versions required by `bmds-ui` and the versions actually installed on the users' machines.  Currently, `bmds-ui` requires that exactly version 2.1.2 of `textual` be installed and `textual` itself requires that `rich` version $\ge$ 13.3.3 be installed.  If you experience this issue, try manually uninstalling and installing the `rich` Python package as follows:
 
-Change the directory to where you installed BMDS Desktop
+First, change the directory to where you installed BMDS Desktop and activate the virtual environment:
+
+::::{tab-set}
+
+:::{tab-item} Windows
 
 ```bash
 cd C:\Users\USERNAME\directory
+
+bmds-desktop\Scripts\activate
 ```
-Manually uninstall and install the `rich` package
+:::
+
+:::{tab-item} Mac
+
+```bash
+cd ~\directory
+
+bmds-desktop\bin\activate
+```
+:::
+
+::::
+
+Now, manually uninstall and install the `rich` package
 
 ```bash
 pip uninstall rich
 pip install rich==13.7.1
 ```
+
 This should allow the [BMDS Desktop Manager](desktop-shortcut) to correctly launch the [BMDS Desktop Startup Interface](./desktop.md#bmds-desktop-startup-interface).
 
 (upgrading-bmds-desktop)=
