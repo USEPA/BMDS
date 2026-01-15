@@ -286,7 +286,7 @@ Eigen::VectorXd Quantile3(Eigen::VectorXd& x, Eigen::VectorXd& probs);
 
 Eigen::MatrixXd truncated_linear_cpp3(const Eigen::VectorXd& x, const Eigen::VectorXd& knots);
 
-Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd knots);
+Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd& knots);
 
 // List compute_transform_f_lag1_cpp3(const Eigen::MatrixXd Y,
 //                                    const Rcpp::NumericVector qtiles);

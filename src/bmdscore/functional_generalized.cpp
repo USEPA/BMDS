@@ -948,7 +948,7 @@ Eigen::MatrixXd truncated_linear_cpp3(const Eigen::VectorXd& x, const Eigen::Vec
   return m;
 }
 
-Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd knots) {
+Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd& knots) {
   Eigen::MatrixXd m(1, knots.size() + 2);
   m(0, 0) = 1.0;
   m(0, 1) = x;
@@ -1092,7 +1092,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
       // l[ii] = R::runif(Wcur[ii] - s[ii]/2.0, Wcur[ii]+s[ii]/2.0);
       double minVal = Wcur[ii] - s[ii] / 2.0;
       double maxVal = Wcur[ii] + s[ii] / 2.0;
-      l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
+      // l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
+      l[ii] = gsl_ran_flat(r, minVal, maxVal);
 
       cut = 2.0 * abs(l[ii] - Wcur[ii]);
 
@@ -1107,7 +1108,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
     while (accept) {
       for (auto ii = 0; ii < theta_cur.size(); ii++) {
         // Wsnew[ii] = R::runif(a[ii], b[ii]);
-        Wsnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
+        // Wsnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
+        Wsnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
       }
 
       Wtemp = Ainv * Wsnew;
@@ -1193,7 +1195,8 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
       // l[ii] = R::runif(0.0 - s[ii]/2.0, 0.0 + s[ii]/2.0);
       double minVal = 0.0 - s[ii] / 2.0;
       double maxVal = 0.0 + s[ii] / 2.0;
-      l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
+      // l[ii] = minVal + (maxVal - minVal) * gsl_rng_uniform(r);
+      l[ii] = gsl_ran_flat(r, minVal, maxVal);
 
       cut = 2.0 * abs(l[ii] - 0.0);
 
@@ -1209,7 +1212,8 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
     while (accept) {
       for (auto ii = 0; ii < Ycur.size(); ii++) {
         // Ysnew[ii] = R::runif(a[ii], b[ii]);
-        Ysnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
+        // Ysnew[ii] = a[ii] + (b[ii] - a[ii]) * gsl_rng_uniform(r);
+        Ysnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
       }
 
       Ynew = Ainv * Ysnew + Ycur;
@@ -1666,7 +1670,6 @@ Eigen::MatrixXd run_latentslice_functional_general(
       double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>, std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)>, const ptr2&)>
       postt = full_postt;
 
-  // qRcout << Y << std::endl;
   std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priii;
   if (pri_typ == 55) {
     priii = no_priorr;
@@ -1710,11 +1713,8 @@ Eigen::MatrixXd run_latentslice_functional_general(
   // List function_return;
   for (auto ii = 0; ii < nrounds; ii++) {
     compute_transform_f_lag1_cpp3(init_samps, qtiles, beta_return, knot_return);
-    // function_return = List::create(Named("betas") = beta_return,
-    //                  Named("knots") = knot_return);
 
     compute_cov_eta_cpp3(init_samps, beta_return, knot_return, colm, tempp);
-    // List cov_eta = List::create(Named("col_means") = colm, Named("cov") = tempp);
     Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
     init_samps = transformed_slice_sampler_cpp3(
         Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, burnin_samples, LAM,
@@ -1722,10 +1722,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
     );
   }
   compute_transform_f_lag1_cpp3(init_samps, qtiles, beta_return, knot_return);
-  // function_return = List::create(Named("betas") = beta_return,
-  //                     Named("knots") = knot_return);
   compute_cov_eta_cpp3(init_samps, beta_return, knot_return, colm, tempp);
-  // List cov_eta = List::create(Named("col_means") = colm, Named("cov") = tempp);
   Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
   init_samps = transformed_slice_sampler_cpp3(
       Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, keep_samples, LAM,
