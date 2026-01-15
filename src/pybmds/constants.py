@@ -197,35 +197,35 @@ class ContinuousModelChoices(Enum):
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * dose ^ d / (b ^ d + dose ^ d))",
-        )
+    )
     inverse_exp = ContinuousModel(
         id=loud_cont_model.l_invexp_efsa.value,
         verbose="Inverse Exponential",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * exp(-b * dose ^ -d))",
-        )
+    )
     lognormal = ContinuousModel(
         id=loud_cont_model.l_lognormal_efsa.value,
         verbose="Lognormal",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * CumNorm(Log(b) + d * Log(dose)))",
-        )
+    )
     cont_gamma = ContinuousModel(
         id=loud_cont_model.l_gamma_efsa.value,
         verbose="Continuous Gamma",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * CumGamma(b * dose, d))",
-        )
+    )
     lms = ContinuousModel(
         id=loud_cont_model.l_lms_efsa.value,
         verbose="LMS 2-Stage",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * (1 - exp(-b * dose - d * dose ^ 2)))",
-        )
+    )
 
 
 class DistType(IntEnum):

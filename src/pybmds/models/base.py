@@ -300,9 +300,9 @@ class BmdModelAveragingSchema(BaseModel):
         from .cma import BmdModelAveragingContinuousSchema
         from .ma import BmdModelAveragingDichotomousSchema
 
-        if dtype in (Dtype.DICHOTOMOUS):
+        if dtype == Dtype.DICHOTOMOUS:
             return BmdModelAveragingDichotomousSchema
-        elif dtype in (Dtype.CONTINUOUS):
+        elif dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
             return BmdModelAveragingContinuousSchema
         else:
             raise ValueError(f"Invalid dtype: {dtype}")
