@@ -5,6 +5,7 @@ import numpy as np
 import pybmds
 from pybmds.constants import PriorClass
 
+
 ## TO DO - to change when we have actual results from models
 class TestContinuousMa:
     def test_continuous_ma_session(self, cdataset2):
@@ -22,8 +23,12 @@ class TestContinuousMa:
     def test_prior_weights(self, cdataset2):
         # default; equal weights
         session = pybmds.Session(dataset=cdataset2)
-        session.add_model(pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
-        session.add_model(pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
         session.add_model_averaging()
         assert np.allclose(session.ma_weights, [0.5, 0.5])
         session.execute()
@@ -32,8 +37,12 @@ class TestContinuousMa:
 
         # custom; propagate through results
         session = pybmds.Session(dataset=cdataset2)
-        session.add_model(pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
-        session.add_model(pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
         session.add_model_averaging(weights=[0.9, 0.1])
         assert np.allclose(session.ma_weights, [0.9, 0.1])
         session.execute()

@@ -90,6 +90,72 @@ class TestSession:
             df.to_excel(data_path / "reports/session-dichotomous-ma.xlsx", index=False)
             docx.save(data_path / "reports/session-dichotomous-ma.docx")
 
+    def test_continuous_ma(self, cdataset2, data_path, rewrite_data_files):
+        # make sure serialize looks correct
+        session1 = pybmds.Session(dataset=cdataset2)
+        session1.add_default_bayesian_models()
+        session1.add_model_averaging()
+        session1.execute_and_recommend()
+        d = session1.to_dict()
+
+        if rewrite_data_files:
+            (data_path / "reports/session-continuous.json").write_text(
+                session1.serialize().model_dump_json()
+            )
+
+        # spot check a few keys
+        assert d["dataset"]["doses"] == [0.0, 50.0, 100.0, 150.0, 200.0]
+        assert len(d["models"]) == 10
+        assert list(d["models"][0].keys()) == ["name", "model_class", "settings", "results"]
+        assert d["model_average"]["model_indexes"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        assert "bmd" in d["model_average"]["results"]
+
+        # ensure we can convert back to a session
+        session2 = pybmds.Session.from_serialized(json.loads(json.dumps(d)))
+        assert isinstance(session2, pybmds.Session)
+        assert session2.dataset.doses == [0.0, 50.0, 100.0, 150.0, 200.0]
+        assert len(session2.models) == 9
+        assert session2.models[0].has_results is True
+
+        # make sure we get the same result back after deserializing
+        d1 = session1.serialize().model_dump()
+        d2 = session2.serialize().model_dump()
+        assert d1 == d2
+
+        # df/docx
+        df = session1.to_df()
+        docx = session1.to_docx(session_inputs_table=True, all_models=True, bmd_cdf_table=True)
+
+        if rewrite_data_files:
+            df.to_excel(data_path / "reports/session-continuous-ma.xlsx", index=False)
+            docx.save(data_path / "reports/session-continuous-ma.docx")
+
+    def test_continuous_cma_with_efsa(cdataset2):
+        session = pybmds.Session(dataset=cdataset2)
+
+        session.add_default_bayesian_models()
+        session.add_model_averaging(include_efsa=True)
+
+        ma = session.model_average
+
+        from pybmds.constants import DistType
+
+        seen = {}
+        for m in ma.models:
+            seen.setdefault(m.__class__.__name__, set()).add(m.settings.disttype)
+
+        # Spot-check one EFSA model
+        assert "MultiplicativeHill" in seen
+        assert seen["MultiplicativeHill"] == {
+            DistType.normal,
+            DistType.normal_ncv,
+            DistType.log_normal,
+        }
+
+        # BMDS models must still be present
+        assert "Power" in seen
+        assert "Hill" in seen
+
     def test_nested_dichotomous(self, nd_dataset4, rewrite_data_files, data_path):
         session = pybmds.Session(dataset=nd_dataset4)
         session.add_default_models()

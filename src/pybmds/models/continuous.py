@@ -298,6 +298,7 @@ class ExponentialM5(BmdModelContinuous):
         d = params[3]
         return a * (c - (c - 1.0) * np.exp(-1.0 * np.power(b * doses, d)))
 
+
 class MultiplicativeHill(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.mult_hill.value
 
@@ -309,8 +310,13 @@ class MultiplicativeHill(BmdModelContinuous):
     ) -> ContinuousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
 
-        if model_settings.priors.prior_class in (PriorClass.frequentist_restricted,PriorClass.frequentist_unrestricted,):
-            raise ConfigurationException("The multiplicative Hill model cannot be fit using maximum likelihood estimation")
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The multiplicative Hill model cannot be fit using maximum likelihood estimation"
+            )
 
         return model_settings
 
@@ -319,7 +325,8 @@ class MultiplicativeHill(BmdModelContinuous):
         b = params[1]
         c = params[2]
         d = params[3]
-        return a * (1 + (c - 1.0) * doses ** d / (b ** d + doses ** d))
+        return a * (1 + (c - 1.0) * doses**d / (b**d + doses**d))
+
 
 class InverseExponential(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.inverse_exp.value
@@ -332,8 +339,13 @@ class InverseExponential(BmdModelContinuous):
     ) -> ContinuousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
 
-        if model_settings.priors.prior_class in (PriorClass.frequentist_restricted,PriorClass.frequentist_unrestricted,):
-            raise ConfigurationException("The Inverse-Exponential model cannot be fit using maximum likelihood estimation")
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Inverse-Exponential model cannot be fit using maximum likelihood estimation"
+            )
 
         return model_settings
 
@@ -342,7 +354,8 @@ class InverseExponential(BmdModelContinuous):
         b = params[1]
         c = params[2]
         d = params[3]
-        return a * (1 + (c - 1.0) * np.exp(-b * doses ** -d))
+        return a * (1 + (c - 1.0) * np.exp(-b * doses**-d))
+
 
 class Lognormal(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lognormal.value
@@ -355,8 +368,13 @@ class Lognormal(BmdModelContinuous):
     ) -> ContinuousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
 
-        if model_settings.priors.prior_class in (PriorClass.frequentist_restricted,PriorClass.frequentist_unrestricted,):
-            raise ConfigurationException("The Lognormal model cannot be fit using maximum likelihood estimation")
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Lognormal model cannot be fit using maximum likelihood estimation"
+            )
 
         return model_settings
 
@@ -366,6 +384,7 @@ class Lognormal(BmdModelContinuous):
         c = params[2]
         d = params[3]
         return a * (1 + (c - 1.0) * norm.cdf(np.log(b) + d * np.log(doses)))
+
 
 class Gamma(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.cont_gamma.value
@@ -378,8 +397,13 @@ class Gamma(BmdModelContinuous):
     ) -> ContinuousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
 
-        if model_settings.priors.prior_class in (PriorClass.frequentist_restricted,PriorClass.frequentist_unrestricted,):
-            raise ConfigurationException("The Gamma model cannot be fit using maximum likelihood estimation")
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Gamma model cannot be fit using maximum likelihood estimation"
+            )
 
         return model_settings
 
@@ -389,6 +413,7 @@ class Gamma(BmdModelContinuous):
         c = params[2]
         d = params[3]
         return a * (1 + (c - 1.0) * gamma.cdf(b * doses, d))
+
 
 class LMS(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lms.value
@@ -401,8 +426,13 @@ class LMS(BmdModelContinuous):
     ) -> ContinuousModelSettings:
         model_settings = super().get_model_settings(dataset, settings)
 
-        if model_settings.priors.prior_class in (PriorClass.frequentist_restricted,PriorClass.frequentist_unrestricted,):
-            raise ConfigurationException("The LMS 2-stage model cannot be fit using maximum likelihood estimation")
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The LMS 2-stage model cannot be fit using maximum likelihood estimation"
+            )
 
         return model_settings
 
@@ -411,7 +441,7 @@ class LMS(BmdModelContinuous):
         b = params[1]
         c = params[2]
         d = params[3]
-        return a * (1 + (c - 1.0) * (1 - np.exp(-b * doses - d * doses ** 2)))
+        return a * (1 + (c - 1.0) * (1 - np.exp(-b * doses - d * doses**2)))
 
 
 _bmd_model_map = {
