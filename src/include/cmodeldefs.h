@@ -37,7 +37,12 @@ enum cont_model {
   exp_5 = 5,
   power = 8,
   funl = 10,
-  polynomial = 666
+  polynomial = 666,
+  l_hill_efsa = 20,
+  l_invexp_efsa = 21,
+  l_lognormal_efsa = 22,
+  l_gamma_efsa = 23,
+  l_lms_efsa = 24
 };
 enum distribution { normal = 1, normal_ncv = 2, log_normal = 3 };
 

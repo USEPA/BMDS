@@ -1367,6 +1367,13 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
   bmdsRes->BMDU = BMDS_MISSING;
   bmdsRes->validResult = false;
   anal->transform_dose = false;
+
+  // the following models are only available via the loud model averaging approach
+  if (anal->model == l_hill_efsa || anal->model == l_invexp_efsa ||
+      anal->model == l_lognormal_efsa || anal->model == l_gamma_efsa || anal->model == l_lms_efsa) {
+    return;
+  }
+
   if (anal->model != cont_model::exp_3 && anal->model != cont_model::exp_5) {
     if (anal->disttype == distribution::log_normal) {
       return;
@@ -3206,7 +3213,8 @@ void pythonBMDSContLoud_dummy(
   // define individual model results
   // power cv
   struct python_continuous_model_result m1;
-  m1.model = l_power;
+  // m1.model = l_power;
+  m1.model = power;
   m1.dist = distribution::normal;
   //   m1.nparms = ;
   //   m1.parms = ;
@@ -3222,7 +3230,8 @@ void pythonBMDSContLoud_dummy(
   //   m1.aod = ;
   // power ncv
   struct python_continuous_model_result m2;
-  m2.model = l_power;
+  // m2.model = l_power;
+  m2.model = power;
   m2.dist = distribution::normal_ncv;
   //   m2.nparms = ;
   //   m2.parms = ;
@@ -3238,7 +3247,8 @@ void pythonBMDSContLoud_dummy(
   //   m2.aod = ;
   // hill cv
   struct python_continuous_model_result m3;
-  m3.model = l_hill;
+  // m3.model = l_hill;
+  m3.model = hill;
   m3.dist = distribution::normal;
   //   m3.nparms = ;
   //   m3.parms = ;
@@ -3254,7 +3264,8 @@ void pythonBMDSContLoud_dummy(
   //   m3.aod = ;
   // hill ncv
   struct python_continuous_model_result m4;
-  m4.model = l_hill;
+  // m4.model = l_hill;
+  m4.model = hill;
   m4.dist = distribution::normal_ncv;
   //   m4.nparms = ;
   //   m4.parms = ;
@@ -3270,7 +3281,8 @@ void pythonBMDSContLoud_dummy(
   //   m4.aod = ;
   // exp3 cv
   struct python_continuous_model_result m5;
-  m5.model = l_exp_3;
+  // m5.model = l_exp_3;
+  m5.model = exp_3;
   m5.dist = distribution::normal;
   //   m5.nparms = ;
   //   m5.parms = ;
@@ -3286,7 +3298,8 @@ void pythonBMDSContLoud_dummy(
   //   m5.aod = ;
   // exp3 ncv
   struct python_continuous_model_result m6;
-  m6.model = l_exp_3;
+  // m6.model = l_exp_3;
+  m6.model = exp_3;
   m6.dist = distribution::normal_ncv;
   //   m6.nparms = ;
   //   m6.parms = ;
@@ -3302,7 +3315,8 @@ void pythonBMDSContLoud_dummy(
   //   m6.aod = ;
   // exp3 logcv
   struct python_continuous_model_result m7;
-  m7.model = l_exp_3;
+  // m7.model = l_exp_3;
+  m7.model = exp_3;
   m7.dist = distribution::log_normal;
   //   m7.nparms = ;
   //   m7.parms = ;
@@ -3318,7 +3332,8 @@ void pythonBMDSContLoud_dummy(
   //   m7.aod = ;
   // exp5 cv
   struct python_continuous_model_result m8;
-  m8.model = l_exp_5;
+  // m8.model = l_exp_5;
+  m8.model = exp_5;
   m8.dist = distribution::normal;
   //   m8.nparms = ;
   //   m8.parms = ;
@@ -3334,7 +3349,8 @@ void pythonBMDSContLoud_dummy(
   //   m8.aod = ;
   // exp5 ncv
   struct python_continuous_model_result m9;
-  m9.model = l_exp_5;
+  // m9.model = l_exp_5;
+  m9.model = exp_5;
   m9.dist = distribution::normal_ncv;
   //   m9.nparms = ;
   //   m9.parms = ;
@@ -3350,7 +3366,8 @@ void pythonBMDSContLoud_dummy(
   //   m9.aod = ;
   // exp logcv
   struct python_continuous_model_result m10;
-  m10.model = l_exp_5;
+  // m10.model = l_exp_5;
+  m10.model = exp_5;
   m10.dist = distribution::log_normal;
   //   m10.nparms = ;
   //   m10.parms = ;
