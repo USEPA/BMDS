@@ -13,16 +13,15 @@ from . import __version__, bmdscore, constants, plotting
 from .constants import (
     BMDS_BLANK_VALUE,
     MAXIMUM_POLYNOMIAL_ORDER,
+    DistType,
     Dtype,
     Models,
     PriorClass,
-    DistType,
 )
 from .datasets.base import DatasetSchemaBase, DatasetType
+from .models import cma, ma
 from .models import continuous as c3
 from .models import dichotomous as d3
-from .models import ma
-from .models import cma
 from .models import nested_dichotomous as nd3
 from .models.base import BmdModel, BmdModelAveraging, BmdModelAveragingSchema, BmdModelSchema
 from .recommender import Recommender, RecommenderSettings
@@ -95,12 +94,8 @@ class Session:
     ):
         """
         Ensure that all continuous models required for CMA exist in session.models.
-
-        - BMDS models are always included:
-          Power, Hill (CV + NCV)
-          Exp3, Exp5 (CV + NCV + Lognormal)
-
-        - EFSA models are included ONLY if include_efsa=True
+        BMDS models are always included: Power, Hill (CV + NCV)Exp3, Exp5 (CV + NCV + Lognormal)
+        EFSA models are included ONLY if include_efsa=True
         """
         settings = deepcopy(settings) if settings else {}
 
@@ -122,7 +117,7 @@ class Session:
                     model_settings.setdefault("name", f"{Model.__name__} ({suffix[dt]})")
                     self.models.append(Model(self.dataset, settings=model_settings))
 
-        # --- BMDS models (always in CMA) ---
+        # BMDS models
         _add(c3.Power, [DistType.normal, DistType.normal_ncv])
         _add(c3.Hill, [DistType.normal, DistType.normal_ncv])
         _add(
@@ -134,7 +129,7 @@ class Session:
             [DistType.normal, DistType.normal_ncv, DistType.log_normal],
         )
 
-        # --- EFSA models (opt-in only) ---
+        # EFSA models (opt-in only)
         if include_efsa:
             for Model in (
                 c3.MultiplicativeHill,
@@ -167,13 +162,21 @@ class Session:
         self.recommender: Recommender | None = None
         self.selected: SelectedModel = SelectedModel(self)
 
-    def add_default_bayesian_models(self, settings: dict | None = None, model_average: bool = True):
+    def add_default_bayesian_models(
+        self, settings: dict | None = None, model_average: bool = True, include_efsa: bool = False
+    ):
         settings = deepcopy(settings) if settings else {}
         settings["priors"] = PriorClass.bayesian
 
+        if include_efsa and self.dataset.dtype not in (
+            Dtype.CONTINUOUS,
+            Dtype.CONTINUOUS_INDIVIDUAL,
+        ):
+            raise ValueError("include_efsa is only supported for continuous datasets.")
+
         if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
             # BMDS CMA defaults (with variance variants)
-            self._add_bmds_continuous_ma_variants(settings=settings)
+            self._ensure_continuous_ma_models(settings=settings, include_efsa=include_efsa)
 
         else:
             for name in self.model_options[self.dataset.dtype].keys():
@@ -217,7 +220,7 @@ class Session:
         weights = np.array(weights)
         self.ma_weights = weights / weights.sum()
 
-    def add_model_averaging(self, weights: list[float] | None = None, include_efsa: bool = False):
+    def add_model_averaging(self, weights: list[float] | None = None):
         """
         Must be added after other models are added since a shallow copy is taken, and the
         execution of model averaging assumes all other models were executed.
@@ -247,11 +250,19 @@ class Session:
                 c3.LMS,
             )
 
-            ma_models = [
-                m
-                for m in self.models
-                if isinstance(m, allowed_bmds) or (include_efsa and isinstance(m, allowed_efsa))
-            ]
+            eligible = allowed_bmds + allowed_efsa
+            ma_models = [m for m in self.models if isinstance(m, eligible)]
+
+            if not ma_models:
+                raise ValueError(
+                    "No continuous models eligible for model averaging were found in session.models."
+                    "Call add_default_bayesian_models(...) or add models manually before add_model_averaging()."
+                )
+
+            # if EFSA/PROAST suite is present, remove additive Hill from MA
+            has_efsa = any(isinstance(m, allowed_efsa) for m in ma_models)
+            if has_efsa:
+                ma_models = [m for m in ma_models if not isinstance(m, c3.Hill)]
 
             instance = cma.BmdModelAveragingContinuous(session=self, models=ma_models)
 

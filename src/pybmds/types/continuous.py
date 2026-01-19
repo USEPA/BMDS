@@ -132,6 +132,11 @@ MODEL_ENUM_MAP = {
     ContinuousModelChoices.polynomial.value.id: bmdscore.cont_model.polynomial,
     ContinuousModelChoices.exp_m3.value.id: bmdscore.cont_model.exp_3,
     ContinuousModelChoices.exp_m5.value.id: bmdscore.cont_model.exp_5,
+    ContinuousModelChoices.mult_hill.value.id: bmdscore.cont_model.l_hill_efsa,  # models only included using LOUD priors
+    ContinuousModelChoices.inverse_exp.value.id: bmdscore.cont_model.l_invexp_efsa,
+    ContinuousModelChoices.lognormal.value.id: bmdscore.cont_model.l_lognormal_efsa,
+    ContinuousModelChoices.gamma.value.id: bmdscore.cont_model.l_gamma_efsa,
+    ContinuousModelChoices.lms.value.id: bmdscore.cont_model.l_lms_efsa,
 }
 
 

@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 import pybmds
-from pybmds.constants import PriorClass
+from pybmds.constants import DistType, PriorClass
 
 
 ## TO DO - to change when we have actual results from models

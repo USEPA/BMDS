@@ -2,7 +2,7 @@ from enum import Enum, IntEnum, StrEnum
 
 from pydantic import BaseModel, Field
 
-from .bmdscore import cont_model, dich_model, nested_model, loud_cont_model
+from .bmdscore import cont_model, dich_model, nested_model
 
 ZEROISH = 1e-8
 BMDS_BLANK_VALUE = -9999
@@ -192,35 +192,35 @@ class ContinuousModelChoices(Enum):
         model_form_str="P[dose] = a * (c - (c - 1) * exp(-(b * dose) ^ d)",
     )
     mult_hill = ContinuousModel(
-        id=loud_cont_model.l_hill_efsa.value,
+        id=cont_model.l_hill_efsa.value,
         verbose="Multiplicative Hill",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * dose ^ d / (b ^ d + dose ^ d))",
     )
     inverse_exp = ContinuousModel(
-        id=loud_cont_model.l_invexp_efsa.value,
+        id=cont_model.l_invexp_efsa.value,
         verbose="Inverse Exponential",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * exp(-b * dose ^ -d))",
     )
     lognormal = ContinuousModel(
-        id=loud_cont_model.l_lognormal_efsa.value,
+        id=cont_model.l_lognormal_efsa.value,
         verbose="Lognormal",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * CumNorm(Log(b) + d * Log(dose)))",
     )
     cont_gamma = ContinuousModel(
-        id=loud_cont_model.l_gamma_efsa.value,
+        id=cont_model.l_gamma_efsa.value,
         verbose="Continuous Gamma",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (1 + (c - 1) * CumGamma(b * dose, d))",
     )
     lms = ContinuousModel(
-        id=loud_cont_model.l_lms_efsa.value,
+        id=cont_model.l_lms_efsa.value,
         verbose="LMS 2-Stage",
         params=("a", "b", "c", "d"),
         variance_params=("rho", "log-alpha"),

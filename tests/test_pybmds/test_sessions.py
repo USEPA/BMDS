@@ -3,7 +3,7 @@ import json
 import pytest
 
 import pybmds
-from pybmds.constants import Models, PriorClass
+from pybmds.constants import DistType, Models, PriorClass
 
 
 class TestSession:
@@ -114,7 +114,7 @@ class TestSession:
         session2 = pybmds.Session.from_serialized(json.loads(json.dumps(d)))
         assert isinstance(session2, pybmds.Session)
         assert session2.dataset.doses == [0.0, 50.0, 100.0, 150.0, 200.0]
-        assert len(session2.models) == 9
+        assert len(session2.models) == 10
         assert session2.models[0].has_results is True
 
         # make sure we get the same result back after deserializing
@@ -133,8 +133,8 @@ class TestSession:
     def test_continuous_cma_with_efsa(cdataset2):
         session = pybmds.Session(dataset=cdataset2)
 
-        session.add_default_bayesian_models()
-        session.add_model_averaging(include_efsa=True)
+        session.add_default_bayesian_models(include_efsa=True)
+        session.add_model_averaging()
 
         ma = session.model_average
 
@@ -230,6 +230,32 @@ class TestSessionPlot:
         session = pybmds.Session(dataset=ddataset)
         session.add_model(Models.Weibull, {"priors": PriorClass.bayesian})
         session.add_model(Models.Logistic, {"priors": PriorClass.bayesian})
+        session.add_model_averaging()
+        session.execute()
+        return session.plot(colorize=False)
+
+    @pytest.mark.mpl_image_compare
+    def test_continuous_ma_colorize(self, cdataset):
+        session = pybmds.Session(dataset=cdataset)
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model_averaging()
+        session.execute()
+        return session.plot(colorize=True)
+
+    @pytest.mark.mpl_image_compare
+    def test_continuous_ma(self, cdataset):
+        session = pybmds.Session(dataset=cdataset)
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
         session.add_model_averaging()
         session.execute()
         return session.plot(colorize=False)
