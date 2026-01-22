@@ -2584,12 +2584,6 @@ double getQVals(
   double qVal = 0.0;
   Eigen::VectorXd sd;
 
-  std::cout << parms << std::endl;
-  // datatype == loud_datatype::l_individual
-  // dist = distribution::normal_ncv
-  // datatype = loud_datatype::l_individual;
-  // dist = distribution::normal;
-
   if (datatype == loud_datatype::l_summary) {
     if (dist == distribution::normal) {
       double prec0 = parms(parms.rows() - 1);
@@ -2870,13 +2864,13 @@ void bridge_sample(
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-  //    std::cout << "DEBUG R!!!!!!!" << std::endl;
-  //   R <<
-  //   10.36884, 15.89159, 0.6346292, 0.8575111,
-  //   10.36485, 15.98676, 0.6282710, 0.8652221,
-  //   10.35952, 16.02945, 0.6329582, 0.8689423,
-  //   10.33165, 15.99100, 0.6510322, 0.9396411,
-  //   10.32701, 16.08124, 0.6614682, 0.9441233;
+  //      std::cout << "DEBUG R!!!!!!!" << std::endl;
+  //     R <<
+  // 10.81203, 16.05766, 1.1000493, 1.148223,
+  // 10.78729, 16.12128, 0.8909173, 1.314119,
+  // 10.63930, 16.13468, 0.8366445, 1.306490,
+  // 10.47241, 16.07384, 0.6861759, 1.321131,
+  // 10.66946, 16.13336, 0.7635320, 1.293448;
 
   // change from original bridgesource R code
   // now references functional_generalized.cpp model fun with function signature
@@ -2932,28 +2926,29 @@ void bridge_sample(
 
   Eigen::MatrixXd g_estimate(loudIn->iter, log_mu.size());
 
-  //    std::cout << "DEBUG g_estimate!!!!!!!" << std::endl;
-  //    g_estimate <<
-  //   10.34117, 15.94334, 0.6526064, 0.9222161,
-  //   10.33295, 16.01858, 0.6504717, 0.9376481,
-  //   10.34341, 16.10431, 0.6387830, 0.9034929,
-  //   10.39629, 15.83936, 0.6085771, 0.8025459,
-  //   10.36034, 15.84676, 0.6399200, 0.8821011;
-  //
-  //    std::cout << "DEBUG log_mu!!!!!!!" << std::endl;
-  //    log_mu <<
-  //   10.3503725, 15.9960079, -0.4438677, -0.1117449;
-  //    std::cout << "DEBUG log_cov!!!!!!!" << std::endl;
-  //    log_cov <<
-  //   0.0003827127, -0.0009136046, -0.0004038809, -0.0009275604,
-  //  -0.0009136046,  0.0048494308,  0.0008519373,  0.0020259365,
-  //  -0.0004038809,  0.0008519373,  0.0004717426,  0.0009795161,
-  //  -0.0009275604,  0.0020259365,  0.0009795161,  0.0022674822;
+  //      std::cout << "DEBUG log_mu!!!!!!!" << std::endl;
+  //      log_mu << 10.6760986, 16.1041649, -0.1689852, 0.2429052;
+  //      std::cout << "DEBUG log_cov!!!!!!!" << std::endl;
+  //      log_cov <<
+  // 0.0184318044,  0.0001105858,  0.021296439, -0.004777084,
+  // 0.0001105858,  0.0012897763, -0.002077423,  0.001368387,
+  // 0.0212964394, -0.0020774231,  0.031525066, -0.008781228,
+  //-0.0047770839,  0.0013683871, -0.008781228,  0.003486636;
 
   rg(loudIn->iter, log_mu, log_cov, isNegative, g_estimate);
 
+  //  std::cout << "DEBUG g_estimate!!!!!!!" << std::endl;
+  //  g_estimate <<
+  // 10.77459, 16.10939, 0.9079338, 1.251621,
+  // 10.80125, 16.07947, 0.9672536, 1.189117,
+  // 10.56638, 16.11882, 0.7455659, 1.341610,
+  // 10.78049, 16.16582, 0.8830838, 1.331389,
+  // 10.65340, 16.18774, 0.6984171, 1.438060;
+
   Eigen::VectorXd A = Eigen::VectorXd::Zero(R.rows());
   Eigen::VectorXd post = Eigen::VectorXd::Zero(R.rows());
+  //  std::cout<<"priorr:"<<std::endl;
+  //  std::cout<<priorr<<std::endl;
   for (int i = 0; i < R.rows(); i++) {
     Eigen::VectorXd row = R.row(i);
     double post_B = prior_v(priorr, row);
@@ -2979,6 +2974,11 @@ void bridge_sample(
 
   dg(g_estimate, log_mu, log_cov, isNegative, g_g);
   dg(R, log_mu, log_cov, isNegative, g_post);
+
+  //  std::cout<<"debug g_g"<<std::endl;
+  //  g_g << 5.457926, 7.274378, 7.655720, 7.825700, 7.592827;
+  //  std::cout<<"debug g_post"<<std::endl;
+  //  g_post << 7.395463, 7.665444, 7.765473, 7.770735, 7.739378;
 
   double p1 = 0.01;
   double log_p1 = 0.0;
@@ -3073,7 +3073,13 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
     // CV
     init.resize(4);
     init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->s0sq;
-    ll_type = 56;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 56;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 59;
+    } else {
+      std::cout << "power model normal dist does not this datatype" << std::endl;
+    }
     isNegative.resize(4);
     isNegative = {true, true, false, false};
     diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
@@ -3093,11 +3099,13 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
     diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
     priorr = Eigen::MatrixXd(5, 5);
     priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
         log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
         loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
         loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
   }
+  std::cout << "N_obs0:" << loudIn->N_obs0 << std::endl;
+  std::cout << "N_obs1:" << loudIn->N_obs1 << std::endl;
 
   double startVal = 0.025;
   double stopVal = 0.975;
@@ -3115,6 +3123,8 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
+
+  std::cout << "completed run_latentslice_functional_general" << std::endl;
 
   bridge_sample(R, loudIn, loudOut, &continuous_power_transform, priorr, isNegative);
 
@@ -3157,6 +3167,7 @@ double pivotal_pvalue(
     Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 ) {
+  std::cout << "inside pivotal_pvalue" << std::endl;
   Eigen::MatrixXd Ruse = R.bottomRows(max(1, loudIn->iter - loudIn->burnin + 1));
   int S = Ruse.rows();
   Eigen::VectorXd Qvals(S);
@@ -3165,7 +3176,7 @@ double pivotal_pvalue(
   if (loudIn->datatype == loud_datatype::l_individual) {
     N = loudIn->Y.rows() - 1;
   } else if (loudIn->datatype == loud_datatype::l_summary) {
-    // N = loudIn->Y.colwise().sum().col[2];
+    N = loudIn->Y.col(2).sum() - 1;
   } else if (loudIn->datatype == loud_datatype::l_nested) {
     N = loudIn->Y.rows() - 1;
   } else if (loudIn->datatype == loud_datatype::l_dichotomous) {
@@ -3185,6 +3196,13 @@ double pivotal_pvalue(
     mu = model_fun(Ruse.row(i), loudIn->doses);
     Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu, loudIn->dist, loudIn->datatype);
   }
+  std::cout << "N:" << N << ", S:" << S << std::endl;
+  std::cout << "df_val:" << df_val << std::endl;
+
+  std::cout << "mu:" << std::endl;
+  std::cout << mu << std::endl;
+  std::cout << "Qvals:" << std::endl;
+  std::cout << Qvals << std::endl;
 
   int m = ceil(loudIn->qlev * S) - 1;  //-1 needed due to 0 indexing
   std::nth_element(Qvals.begin(), Qvals.begin() + m, Qvals.end());
@@ -3194,6 +3212,7 @@ double pivotal_pvalue(
   double G = gsl_sf_gamma_inc_P(df_val / 2.0, t_m / 2.0);
   double pval = 1 - max(0.0, (S * G - m) / (S - m));
 
+  std::cout << "pval:" << pval << std::endl;
   return pval;
 }
 
@@ -3424,38 +3443,70 @@ void pythonBMDSContLoud_dummy(
 void pythonBMDSLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
-  // std::cout << "pyMA->datatype:" << pyMA->datatype << std::endl;
+  bool isIncreasing = pyMA->pyCA.isIncreasing;
   if (&pyMA->pyCA.detectAdvDir) {
+    // this will override isIncreasing
     determineAdvDir(&pyMA->pyCA);
   }
-  bool isIncreasing = pyMA->pyCA.isIncreasing;
 
   std::vector<int> N_obs;
   std::vector<double> mean;
   std::vector<double> logMean;
+  int n;  // total number of observations across all dose groups
   double tmpMean = 0.0;
   double tmpLogMean = 0.0;
-
-  double curDose = pyMA->pyCA.doses[0];
   int count = 0;
-  for (int i = 0; i < pyMA->pyCA.n; i++) {
-    if (pyMA->pyCA.doses[i] == curDose) {
-      count++;
-      tmpMean += pyMA->pyCA.Y[i];
-      tmpLogMean += std::log(pyMA->pyCA.Y[i]);
-    } else {
-      N_obs.push_back(count);
-      mean.push_back(tmpMean / count);
-      logMean.push_back(tmpLogMean / count);
-      curDose = pyMA->pyCA.doses[i];
-      count = 1;
-      tmpMean = pyMA->pyCA.Y[i];
-      tmpLogMean = std::log(pyMA->pyCA.Y[i]);
+
+  if (pyMA->datatype == loud_datatype::l_individual) {
+    double curDose = pyMA->pyCA.doses[0];
+    for (int i = 0; i < pyMA->pyCA.n; i++) {
+      if (pyMA->pyCA.doses[i] == curDose) {
+        count++;
+        tmpMean += pyMA->pyCA.Y[i];
+        tmpLogMean += std::log(pyMA->pyCA.Y[i]);
+      } else {
+        N_obs.push_back(count);
+        mean.push_back(tmpMean / count);
+        logMean.push_back(tmpLogMean / count);
+        curDose = pyMA->pyCA.doses[i];
+        count = 1;
+        tmpMean = pyMA->pyCA.Y[i];
+        tmpLogMean = std::log(pyMA->pyCA.Y[i]);
+      }
     }
+    n = pyMA->pyCA.n;
+    N_obs.push_back(count);
+    mean.push_back(tmpMean / count);
+    logMean.push_back(tmpLogMean / count);
+  } else if (pyMA->datatype == loud_datatype::l_summary) {
+    mean = pyMA->pyCA.Y;
+    n = 0;
+    for (int i = 0; i < pyMA->pyCA.n; i++) {
+      logMean.push_back(log(pyMA->pyCA.Y[i]));
+      N_obs.push_back(pyMA->pyCA.n_group[i]);
+      n += pyMA->pyCA.n_group[i];
+    }
+  } else {
+    std::cout << "datatype not supported" << std::endl;
   }
-  N_obs.push_back(count);
-  mean.push_back(tmpMean / count);
-  logMean.push_back(tmpLogMean / count);
+
+  //  std::cout<<"N_obs:"<<std::endl;
+  //  for (const auto& num : N_obs) {
+  //    std::cout << num << " ";
+  //  }
+  //  std::cout << std::endl;
+  //
+  //  std::cout<<"mean:"<<std::endl;
+  //  for (const auto& num : mean) {
+  //    std::cout << num << " ";
+  //  }
+  //  std::cout << std::endl;
+  //
+  //  std::cout<<"logMean:"<<std::endl;
+  //  for (const auto& num : logMean) {
+  //    std::cout << num << " ";
+  //  }
+  //  std::cout << std::endl;
 
   // variances
   std::vector<double> sumsq;
@@ -3464,35 +3515,59 @@ void pythonBMDSLoud_dev(
   std::vector<double> logVar;
   double sums = 0.0;
   double logSums = 0.0;
-  count = 0;
-  for (int i = 0; i < N_obs.size(); i++) {
-    for (int j = 0; j < N_obs[i]; j++) {
-      sums += std::pow(pyMA->pyCA.Y[count] - mean[i], 2);
-      logSums += std::pow(std::log(pyMA->pyCA.Y[count]) - logMean[i], 2);
-      count++;
-    }
-    sumsq.push_back(sums);
-    logSumsq.push_back(logSums);
+  if (pyMA->datatype == loud_datatype::l_individual) {
+    count = 0;
+    for (int i = 0; i < N_obs.size(); i++) {
+      for (int j = 0; j < N_obs[i]; j++) {
+        sums += std::pow(pyMA->pyCA.Y[count] - mean[i], 2);
+        logSums += std::pow(std::log(pyMA->pyCA.Y[count]) - logMean[i], 2);
+        count++;
+      }
+      sumsq.push_back(sums);
+      logSumsq.push_back(logSums);
 
-    var.push_back(sums / (N_obs[i] - 1));
-    logVar.push_back(logSums / (N_obs[i] - 1));
-    sums = 0.0;
-    logSums = 0.0;
+      var.push_back(sums / (N_obs[i] - 1));
+      logVar.push_back(logSums / (N_obs[i] - 1));
+      sums = 0.0;
+      logSums = 0.0;
+    }
+  } else if (pyMA->datatype == loud_datatype::l_summary) {
+    for (int i = 0; i < pyMA->pyCA.n; i++) {
+      var.push_back(pow(pyMA->pyCA.sd[i], 2));
+      logVar.push_back(log(1 + pow(pyMA->pyCA.sd[i], 2) / pow(pyMA->pyCA.Y[i], 2)));
+    }
+  } else {
+    std::cout << "datatype not supported" << std::endl;
   }
+
+  //  std::cout<<"var:"<<std::endl;
+  //  for (const auto& num : var) {
+  //    std::cout << num << " ";
+  //  }
+  //  std::cout << std::endl;
+  //
+  //  std::cout<<"logVar:"<<std::endl;
+  //  for (const auto& num : logVar) {
+  //    std::cout << num << " ";
+  //  }
+  //  std::cout << std::endl;
 
   double numerator = 0.0;
   double denominator = 0.0;
   double numerator2 = 0.0;
   double denominator2 = 0.0;
+  int loopSize;
   for (int i = 0; i < N_obs.size(); i++) {
     numerator += (N_obs[i] - 1) * var[i];
     denominator += N_obs[i] - 1;
-    numerator2 += (N_obs[i] - 1) * logVar[i];
-    denominator2 += N_obs[i] - 1;
   }
 
+  //  std::cout<<"numerator:"<<numerator<<std::endl;
+  //  std::cout<<"denominator:"<<denominator<<std::endl;
+
   double ssq = numerator / denominator;
-  double ssq_log = numerator2 / denominator2;
+
+  //  std::cout<<"ssq:"<<ssq<<std::endl;
 
   double num_01 = (N_obs[0] - 1) * var[0] + (N_obs[N_obs.size() - 1] - 1) * var[var.size() - 1];
   double den_01 = (N_obs[0] - 1) + (N_obs[N_obs.size() - 1] - 1);
@@ -3500,53 +3575,94 @@ void pythonBMDSLoud_dev(
   double ssq01 = num_01 / den_01;
   int N_obs01 = N_obs[0] + N_obs[N_obs.size() - 1];
 
+  //  std::cout<<"num_01:"<<num_01<<std::endl;
+  //  std::cout<<"den_01:"<<den_01<<std::endl;
+  //  std::cout<<"ssq01:"<<ssq01<<std::endl;
+  //  std::cout<<"N_obs01:"<<N_obs01<<std::endl;
+
   // log scale version
   double ssq_log01 =
       ((N_obs[0] - 1) * logVar[0] + (N_obs[N_obs.size() - 1] - 1) * logVar[logVar.size() - 1]) /
       den_01;
+  //  std::cout<<"ssq_log01:"<<ssq_log01<<std::endl;
 
   // define post data - skip dose group 0 and N
-  int postStartInd = N_obs[0];
-  int postEndInd = pyMA->pyCA.n - N_obs[N_obs.size() - 1];
+  int postStartInd;
+  int postEndInd;
+  if (pyMA->datatype == loud_datatype::l_individual) {
+    postStartInd = N_obs[0];
+    postEndInd = pyMA->pyCA.n - N_obs[N_obs.size() - 1];
+  } else if (pyMA->datatype == loud_datatype::l_summary) {
+    postStartInd = 1;
+    postEndInd = pyMA->pyCA.n - 1;
+  } else {
+    std::cout << "incorrect datatype" << std::endl;
+  }
   std::vector<double> doses_posttmp;
   std::vector<double> Y_posttmp;
   std::vector<double> logY_post;
+  std::vector<double> std_post;
+  std::vector<double> N_post;
   for (int i = postStartInd; i < postEndInd; i++) {
     doses_posttmp.push_back(pyMA->pyCA.doses[i]);
     Y_posttmp.push_back(pyMA->pyCA.Y[i]);
     logY_post.push_back(log(pyMA->pyCA.Y[i]));
+  }
+  if (pyMA->datatype == loud_datatype::l_summary) {
+    for (int i = postStartInd; i < postEndInd; i++) {
+      std_post.push_back(pyMA->pyCA.sd[i]);
+      N_post.push_back(pyMA->pyCA.n_group[i]);
+    }
   }
 
   int postSize = doses_posttmp.size();
 
   Eigen::MatrixXd doses_post =
       Eigen::Map<Eigen::VectorXd>(doses_posttmp.data(), doses_posttmp.size());
-  Eigen::MatrixXd Y_post = Eigen::Map<Eigen::VectorXd>(Y_posttmp.data(), Y_posttmp.size());
+
+  Eigen::MatrixXd Y_post;
+
+  if (pyMA->datatype == loud_datatype::l_individual) {
+    Y_post = Eigen::Map<Eigen::VectorXd>(Y_posttmp.data(), Y_posttmp.size());
+  } else if (pyMA->datatype == loud_datatype::l_summary) {
+    std::cout << "resizing Y_post to rows:" << Y_posttmp.size() << std::endl;
+    if (pyMA->datatype == loud_datatype::l_summary) {
+      Y_post.resize(Y_posttmp.size(), 3);
+      Y_post.col(0) = Eigen::Map<Eigen::VectorXd>(Y_posttmp.data(), Y_posttmp.size());
+      Y_post.col(1) = Eigen::Map<Eigen::VectorXd>(std_post.data(), std_post.size());
+      Y_post.col(2) = Eigen::Map<Eigen::VectorXd>(N_post.data(), N_post.size());
+    }
+  }
+
+  std::cout << "doses_post:" << std::endl;
+  std::cout << doses_post << std::endl;
+  std::cout << "Y_post:" << std::endl;
+  std::cout << Y_post << std::endl;
 
   // fits
-  // need to pull these from user input
-  double iter = 50000;   // BMDS_MISSING;
-  double burnin = 5000;  // BMDS_MISSING;
+  // double iter = 50000;   // BMDS_MISSING;
+  // double burnin = 5000;  // BMDS_MISSING;
 
+  // need to pull these from user input
   double bmr_rel = 0.1;
   double bmr_sd = 1.0;
 
   struct fitInput cvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], pyMA->pyCA.n, ssq01, true, iter, burnin, bmr_rel, bmr_sd,
+      var[var.size() - 1], n, ssq01, true, pyMA->iter, pyMA->burnin, bmr_rel, bmr_sd,
       distribution::normal, pyMA->datatype
   );
 
   struct fitInput ncvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, true, iter, burnin, bmr_rel, bmr_sd,
-      distribution::normal_ncv, pyMA->datatype
+      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, true, pyMA->iter, pyMA->burnin, bmr_rel,
+      bmr_sd, distribution::normal_ncv, pyMA->datatype
   );
 
   struct fitInput logcvInput = createFitInput(
       doses_post, Y_post, logMean[0], logMean[logMean.size() - 1], N_obs[0],
-      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, BMDS_MISSING, iter,
-      burnin, bmr_rel, bmr_sd, distribution::log_normal, pyMA->datatype
+      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, BMDS_MISSING,
+      pyMA->iter, pyMA->burnin, bmr_rel, bmr_sd, distribution::log_normal, pyMA->datatype
   );
 
   // add logic here if all model results are not needed
@@ -3563,52 +3679,55 @@ void pythonBMDSLoud_dev(
 
   // printBmdsStruct(&cvPowerOut);
 
-  // Power_NCV
+  //  // Power_NCV
+  struct fitResult ncvPowerOut;
+  //  fit_cpower(&ncvInput, &ncvPowerOut);
 
   // Exp3_CV
+  //  fit_cexp3(
 
-  // Exp3_NCV
-
-  // Exp3_LogCV
-
-  // Exp5_CV
-
-  // Exp5_NCV
-
-  // Exp5_LogCV
-
-  // Hill
-
-  // Hill_NCV
-
-  ////////
-  // EFSA//
-  ////////
-  // Hill_EFSA
-
-  // Hill_NCV_EFSA
-
-  // Hill_LogCV_EFSA
-
-  // InvExp_CV
-
-  // InvExp_NCV
-
-  // InvExp_LogCV
-
-  // Log_CV
-
-  // Log_NCV
-
-  // Gamma_CV
-
-  // Gamma_LogCV
-
-  // LMS_CV
-
-  // LMS_NCV
-
-  // LMS_LogCV
+  //  // Exp3_NCV
+  //
+  //  // Exp3_LogCV
+  //
+  //  // Exp5_CV
+  //
+  //  // Exp5_NCV
+  //
+  //  // Exp5_LogCV
+  //
+  //  // Hill
+  //
+  //  // Hill_NCV
+  //
+  //  ////////
+  //  // EFSA//
+  //  ////////
+  //  // Hill_EFSA
+  //
+  //  // Hill_NCV_EFSA
+  //
+  //  // Hill_LogCV_EFSA
+  //
+  //  // InvExp_CV
+  //
+  //  // InvExp_NCV
+  //
+  //  // InvExp_LogCV
+  //
+  //  // Log_CV
+  //
+  //  // Log_NCV
+  //
+  //  // Gamma_CV
+  //
+  //  // Gamma_LogCV
+  //
+  //  // LMS_CV
+  //
+  //  // LMS_NCV
+  //
+  //  // LMS_LogCV
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(

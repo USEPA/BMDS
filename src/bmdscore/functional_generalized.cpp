@@ -1797,14 +1797,9 @@ void dg(
     const Eigen::MatrixXd x, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
     std::vector<bool>& isNegative, Eigen::VectorXd& ret
 ) {
-  Eigen::MatrixXd cov_inv = sigma.inverse();
   double det_cov = sigma.determinant();
-  // check if positive definite
-  if (det_cov <= 0) {
-    // handle error
-    std::cout << "error in dg cov matrix" << std::endl;
-    return;
-  }
+
+  Eigen::LDLT<Eigen::MatrixXd> ldlt(sigma);
 
   for (int i = 0; i < x.rows(); ++i) {
     Eigen::VectorXd tmpX = x.row(i);
@@ -1816,7 +1811,7 @@ void dg(
     int k = tmpX.size();
     Eigen::VectorXd x_minus_mu = tmpX - mu;
 
-    double mahalanobis_squared = x_minus_mu.transpose() * cov_inv * x_minus_mu;
+    double mahalanobis_squared = x_minus_mu.transpose() * ldlt.solve(x_minus_mu);
 
     double normalizer = 1.0 / (sqrt(pow(2.0 * M_PI, k) * det_cov));
 

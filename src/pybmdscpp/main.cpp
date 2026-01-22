@@ -329,7 +329,11 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("models", &python_continuousMA_analysis::models)
       .def_readwrite("modelPriors", &python_continuousMA_analysis::modelPriors)
       .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
-      .def_readwrite("pyDA", &python_continuousMA_analysis::pyCA);
+      .def_readwrite("datatype", &python_continuousMA_analysis::datatype)
+      .def_readwrite("seed", &python_continuousMA_analysis::seed)
+      .def_readwrite("iter", &python_continuousMA_analysis::iter)
+      .def_readwrite("burnin", &python_continuousMA_analysis::burnin)
+      .def_readwrite("pyCA", &python_continuousMA_analysis::pyCA);
 
   py::class_<python_continuousMA_result>(m, "python_continuousMA_result")
       .def(py::init<>())

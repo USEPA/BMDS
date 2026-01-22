@@ -450,13 +450,11 @@ Eigen::MatrixXd run_latentslice_functional_general(
     const Eigen::VectorXd& qtiles, double LAM, int pri_typ, int ll_typ
 );
 
-// void rg(int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, Eigen::Ref<Eigen::MatrixXd> sample);
 void rg(
     int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>& isNegative,
     Eigen::MatrixXd& sample
 );
 
-// double dg(Eigen::VectorXd X, Eigen::VectorXd mu, Eigen::MatrixXd sigma);
 void dg(
     const Eigen::MatrixXd X, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
     std::vector<bool>& isNegative, Eigen::VectorXd& ret
@@ -465,7 +463,7 @@ void dg(
 double logsumexp(Eigen::VectorXd X);
 
 double pdf_t_location_scale(double x, double df, double mu, double sigma);
-// double pdf_t_location_scale(double x, double mu, double sigma, double df);
+
 using LogLikeFunction = std::function<
     double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>;
 
