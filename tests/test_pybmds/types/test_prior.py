@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pybmds.constants import DistType, PriorClass, PriorDistribution
-from pybmds.models.continuous import Polynomial
+from pybmds.models.continuous import ExponentialM3, Polynomial
 from pybmds.models.dichotomous import Multistage
 from pybmds.types.priors import ModelPriors, Prior
 
@@ -201,6 +201,70 @@ class TestModelPriors:
         # assert that full JSON validation and parsing works as expected
         initial = m.settings.priors.model_dump_json()
         assert ModelPriors.model_validate_json(initial).model_dump_json() == initial
+
+    def test_loud_continuous_defaults_are_dataset_based(cdataset):
+        # Force LOUD priors and a known disttype so we get Var0 only (CV)
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        priors = m.settings.priors
+        m0 = priors.get_prior("m0")
+        m1 = priors.get_prior("m1")
+        v0 = priors.get_prior("Var0")
+
+        # m0/m1 should be StudentT for LOUD
+        assert m0.type is PriorDistribution.Student_t
+        assert m1.type is PriorDistribution.Student_t
+
+        # Var0 should be InverseGamma for LOUD CV
+        assert v0.type is PriorDistribution.InverseGamma
+
+        # sanity: df should be > 0, scales should be > 0
+        assert m0.initial_value > 0  # df
+        assert m1.initial_value > 0  # df
+        assert m0.min_value > 0  # scale
+        assert m1.min_value > 0  # scale
+        assert v0.initial_value > 0  # shape
+        assert v0.stdev > 0  # scale
+
+    def test_loud_override_semantic_params(cdataset):
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+        priors = m.settings.priors
+
+        # Override StudentT using df/loc/scale semantics
+        priors.update("m0", df=7, loc=123.0, scale=4.5)
+        p = priors.get_prior("m0")
+        assert p.type is PriorDistribution.Student_t
+        assert p.initial_value == 7  # df
+        assert p.stdev == 123.0  # loc
+        assert p.min_value == 4.5  # scale
+
+        # Override InvGamma using shape/scale semantics
+        priors.update("Var0", shape=2.0, scale=10.0)
+        v = priors.get_prior("Var0")
+        assert v.type is PriorDistribution.InverseGamma
+        assert v.initial_value == 2.0  # shape
+        assert v.stdev == 10.0  # scale
+
+    def test_loud_ncv_has_var0_and_var1(cdataset):
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal_ncv),
+        )
+        priors = m.settings.priors
+
+        v0 = priors.get_prior("Var0")
+        v1 = priors.get_prior("Var1")
+
+        assert v0.type is PriorDistribution.InverseGamma
+        assert v1.type is PriorDistribution.InverseGamma
+        assert v0.initial_value > 0 and v0.stdev > 0
+        assert v1.initial_value > 0 and v1.stdev > 0
 
     def test_nested_dichotomous_update(self, mock_nested_dichotomous_prior):
         prior = mock_nested_dichotomous_prior

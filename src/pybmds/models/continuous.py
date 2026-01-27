@@ -41,7 +41,10 @@ class BmdModelContinuous(BmdModel):
                 else self.get_default_prior_class()
             )
             model_settings.priors = get_continuous_prior(
-                self.bmd_model_class, prior_class=prior_class
+                self.bmd_model_class,
+                prior_class=prior_class,
+                dataset=dataset,
+                dist_type=model_settings.disttype,
             )
 
         return model_settings
@@ -303,7 +306,7 @@ class MultiplicativeHill(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.mult_hill.value
 
     def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.bayesian
+        return PriorClass.bayesian_loud
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -332,7 +335,7 @@ class InverseExponential(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.inverse_exp.value
 
     def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.bayesian
+        return PriorClass.bayesian_loud
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -361,7 +364,7 @@ class Lognormal(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lognormal.value
 
     def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.bayesian
+        return PriorClass.bayesian_loud
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -390,7 +393,7 @@ class Gamma(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.cont_gamma.value
 
     def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.bayesian
+        return PriorClass.bayesian_loud
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -419,7 +422,7 @@ class LMS(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.lms.value
 
     def get_default_prior_class(self) -> PriorClass:
-        return PriorClass.bayesian
+        return PriorClass.bayesian_loud
 
     def get_model_settings(
         self, dataset: ContinuousDatasets, settings: InputModelSettings
@@ -449,6 +452,11 @@ _bmd_model_map = {
     ContinuousModelChoices.hill.value.id: Hill,
     ContinuousModelChoices.exp_m3.value.id: ExponentialM3,
     ContinuousModelChoices.exp_m5.value.id: ExponentialM5,
+    ContinuousModelChoices.mult_hill.value.id: MultiplicativeHill,
+    ContinuousModelChoices.inverse_exp.value.id: InverseExponential,
+    ContinuousModelChoices.lognormal.value.id: Lognormal,
+    ContinuousModelChoices.cont_gamma.value.id: Gamma,
+    ContinuousModelChoices.lms.value.id: LMS,
 }
 
 

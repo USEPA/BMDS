@@ -163,10 +163,33 @@ class Session:
         self.selected: SelectedModel = SelectedModel(self)
 
     def add_default_bayesian_models(
-        self, settings: dict | None = None, model_average: bool = True, include_efsa: bool = False
+        self,
+        settings: dict | None = None,
+        model_average: bool = True,
+        include_efsa: bool = False,
+        prior_class: PriorClass | None = None,
     ):
         settings = deepcopy(settings) if settings else {}
-        settings["priors"] = PriorClass.bayesian
+        if prior_class is None:
+            if (
+                self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL)
+                and model_average
+            ):
+                # Continuous MA requires LOUD priors
+                prior_class = PriorClass.bayesian_loud
+            else:
+                # Default behavior everywhere else
+                prior_class = PriorClass.bayesian
+
+        if self.dataset.dtype is constants.Dtype.DICHOTOMOUS and prior_class not in (
+            PriorClass.bayesian,
+            PriorClass.bayesian_loud,
+        ):
+            raise ValueError(
+                "For dichotomous datasets, prior_class must be PriorClass.bayesian or PriorClass.bayesian_loud."
+            )
+
+        settings["priors"] = prior_class
 
         if include_efsa and self.dataset.dtype not in (
             Dtype.CONTINUOUS,
@@ -229,6 +252,19 @@ class Session:
             self.set_ma_weights(weights)
 
         if self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
+            prior_classes = {m.settings.priors.prior_class for m in self.models}
+            allowed = {PriorClass.bayesian, PriorClass.bayesian_loud}
+
+            if len(prior_classes) > 1:
+                raise ValueError(
+                    "Dichotomous model averaging requires all models to use the same prior_class."
+                )
+
+            (prior_class,) = tuple(prior_classes)
+            if prior_class not in allowed:
+                raise ValueError(
+                    f"Dichotomous model averaging requires prior_class in {allowed}; got {prior_class}."
+                )
             instance = ma.BmdModelAveragingDichotomous(session=self, models=copy(self.models))
 
         elif self.dataset.dtype in (
@@ -263,6 +299,10 @@ class Session:
             has_efsa = any(isinstance(m, allowed_efsa) for m in ma_models)
             if has_efsa:
                 ma_models = [m for m in ma_models if not isinstance(m, c3.Hill)]
+
+            prior_classes = {m.settings.priors.prior_class for m in ma_models}
+            if prior_classes != {PriorClass.bayesian_loud}:
+                raise ValueError("Continuous model averaging requires prior_class='bayesian_loud'.")
 
             instance = cma.BmdModelAveragingContinuous(session=self, models=ma_models)
 

@@ -245,12 +245,17 @@ class PriorDistribution(IntEnum):
     Uniform = 0
     Normal = 1
     Lognormal = 2
+    Gamma = 3
+    Beta = 4
+    Student_t = 5
+    InverseGamma = 6
 
 
 class PriorClass(IntEnum):
     frequentist_unrestricted = 0, "Frequentist unrestricted", "Unrestricted", False
     frequentist_restricted = 1, "Frequentist restricted", "Restricted", False
     bayesian = 2, "Bayesian", "N/A", True
+    bayesian_loud = 3, "Bayesian LOUD", "N/A", True
 
     def __new__(cls, value, label, restriction, is_bayesian):
         obj = int.__new__(cls, value)

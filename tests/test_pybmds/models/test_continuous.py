@@ -115,11 +115,11 @@ class TestBmdModelContinuous:
             (continuous.Hill, PriorClass.frequentist_restricted),
             (continuous.Linear, PriorClass.frequentist_unrestricted),
             (continuous.Polynomial, PriorClass.frequentist_restricted),
-            (continuous.MultiplicativeHill, PriorClass.bayesian),
-            (continuous.InverseExponential, PriorClass.bayesian),
-            (continuous.Lognormal, PriorClass.bayesian),
-            (continuous.Gamma, PriorClass.bayesian),
-            (continuous.LMS, PriorClass.bayesian),
+            (continuous.MultiplicativeHill, PriorClass.bayesian_loud),
+            (continuous.InverseExponential, PriorClass.bayesian_loud),
+            (continuous.Lognormal, PriorClass.bayesian_loud),
+            (continuous.Gamma, PriorClass.bayesian_loud),
+            (continuous.LMS, PriorClass.bayesian_loud),
         ]:
             assert Model(cdataset2).settings.priors.prior_class is prior_class
 

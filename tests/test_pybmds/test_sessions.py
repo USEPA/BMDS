@@ -90,6 +90,20 @@ class TestSession:
             df.to_excel(data_path / "reports/session-dichotomous-ma.xlsx", index=False)
             docx.save(data_path / "reports/session-dichotomous-ma.docx")
 
+    def test_dichotomous_ma_loud(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+        session.execute_and_recommend()
+        assert session.model_average is not None
+
+    def test_dichotomous_ma_rejects_mixed_priors(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(Models.Logistic, {"priors": PriorClass.bayesian})
+        session.add_model(Models.Weibull, {"priors": PriorClass.bayesian_loud})
+
+        with pytest.raises(ValueError, match="same prior_class|requires all models"):
+            session.add_model_averaging()
+
     def test_continuous_ma(self, cdataset2, data_path, rewrite_data_files):
         # make sure serialize looks correct
         session1 = pybmds.Session(dataset=cdataset2)
@@ -129,6 +143,34 @@ class TestSession:
         if rewrite_data_files:
             df.to_excel(data_path / "reports/session-continuous-ma.xlsx", index=False)
             docx.save(data_path / "reports/session-continuous-ma.docx")
+
+    def test_continuous_ma_rejects_bayesian_priors(self, cdataset2):
+        session = pybmds.Session(dataset=cdataset2)
+
+        # Add eligible continuous models with "regular" bayesian priors
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
+
+        with pytest.raises(ValueError, match="Continuous model averaging requires.*bayesian_loud"):
+            session.add_model_averaging()
+
+    def test_continuous_ma_allows_bayesian_loud_priors(self, cdataset2):
+        session = pybmds.Session(dataset=cdataset2)
+
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+
+        session.add_model_averaging()
+        session.execute_and_recommend()
+
+        assert session.model_average is not None
+        assert "bmd" in session.model_average.results
 
     def test_continuous_cma_with_efsa(cdataset2):
         session = pybmds.Session(dataset=cdataset2)
@@ -238,10 +280,10 @@ class TestSessionPlot:
     def test_continuous_ma_colorize(self, cdataset):
         session = pybmds.Session(dataset=cdataset)
         session.add_model(
-            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
         )
         session.add_model(
-            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
         )
         session.add_model_averaging()
         session.execute()
@@ -251,10 +293,10 @@ class TestSessionPlot:
     def test_continuous_ma(self, cdataset):
         session = pybmds.Session(dataset=cdataset)
         session.add_model(
-            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
         )
         session.add_model(
-            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
         )
         session.add_model_averaging()
         session.execute()
