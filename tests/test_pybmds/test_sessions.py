@@ -172,7 +172,7 @@ class TestSession:
         assert session.model_average is not None
         assert "bmd" in session.model_average.results
 
-    def test_continuous_cma_with_efsa(cdataset2):
+    def test_continuous_cma_with_efsa(self, cdataset2):
         session = pybmds.Session(dataset=cdataset2)
 
         session.add_default_bayesian_models(include_efsa=True)

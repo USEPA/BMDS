@@ -202,7 +202,7 @@ class TestModelPriors:
         initial = m.settings.priors.model_dump_json()
         assert ModelPriors.model_validate_json(initial).model_dump_json() == initial
 
-    def test_loud_continuous_defaults_are_dataset_based(cdataset):
+    def test_loud_continuous_defaults_are_dataset_based(self, cdataset):
         # Force LOUD priors and a known disttype so we get Var0 only (CV)
         m = ExponentialM3(
             dataset=cdataset,
@@ -229,7 +229,7 @@ class TestModelPriors:
         assert v0.initial_value > 0  # shape
         assert v0.stdev > 0  # scale
 
-    def test_loud_override_semantic_params(cdataset):
+    def test_loud_override_semantic_params(self, cdataset):
         m = ExponentialM3(
             dataset=cdataset,
             settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
@@ -251,7 +251,7 @@ class TestModelPriors:
         assert v.initial_value == 2.0  # shape
         assert v.stdev == 10.0  # scale
 
-    def test_loud_ncv_has_var0_and_var1(cdataset):
+    def test_loud_ncv_has_var0_and_var1(self, cdataset):
         m = ExponentialM3(
             dataset=cdataset,
             settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal_ncv),
