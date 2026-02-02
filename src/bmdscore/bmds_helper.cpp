@@ -2546,8 +2546,8 @@ void determineAdvDir(struct python_continuous_analysis *pyAnal) {
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
-    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, int burnin,
-    double bmr_rel, double bmr_sd, int dist, int datatype
+    double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
+    int datatype, bool isIncreasing
 ) {
   fitInput input;
   input.doses = doses;
@@ -2564,15 +2564,19 @@ struct fitInput createFitInput(
   if (burnin != BMDS_MISSING) {
     input.burnin = burnin;
   }
-  input.bmr_rel = bmr_rel;
-  input.bmr_sd = bmr_sd;
+  input.bmr = bmr;
   input.dist = dist;
   input.datatype = datatype;
 
   // optional parameters
-  input.sign = sign;
   if (N_obs > 0) input.N_obs = N_obs;
   if (ssq > 0) input.ssq = ssq;
+
+  if (isIncreasing) {
+    input.sign = 1;
+  } else {
+    input.sign = -1;
+  }
 
   return input;
 }
@@ -2721,7 +2725,14 @@ Eigen::VectorXd loud_likelihood(
   Eigen::VectorXd loglik(mu.rows());
   Eigen::VectorXd sd;
 
-  // std::cout << parms << std::endl;
+  //   std::cout<<"parms:"<<std::endl;
+  //   std::cout << parms << std::endl;
+  //   std::cout<<"Y:"<<std::endl;
+  //   std::cout<<Y<<std::endl;
+  //   std::cout<<"mu:"<<std::endl;
+  //   std::cout<<mu<<std::endl;
+  //   std::cout<<"dist:"<<dist<<std::endl;
+  //   std::cout<<"datatype:"<<datatype<<std::endl;
   //  datatype == loud_datatype::l_individual
   //  dist = distribution::normal_ncv
   //  datatype = loud_datatype::l_individual;
@@ -2776,6 +2787,7 @@ Eigen::VectorXd loud_likelihood(
       std::cout << "Error in loud_likelihood.  Unknown distribution." << std::endl;
     }
   } else if (datatype == loud_datatype::l_individual) {
+    //    std::cout<<"with indiv datatype"<<std::endl;
     if (dist == distribution::normal) {
       double prec0 = parms(parms.rows() - 1);
       double var = 1.0 / prec0;
@@ -2783,15 +2795,25 @@ Eigen::VectorXd loud_likelihood(
         loglik(i) = log(gsl_ran_gaussian_pdf(Y(i) - mu(i), sqrt(var)));
       }
     } else if (dist == distribution::normal_ncv) {
+      //      std::cout<<"with ncv dist"<<std::endl;
       double prec0 = parms(parms.rows() - 2);
       double prec1 = parms(parms.rows() - 1);
       double sigmas0sq = 1.0 / prec0;
       double sigmas1sq = 1.0 / prec1;
       double rho = log(sigmas1sq / sigmas0sq) / log(parms(1) / parms(0));
       double alpha = log(sigmas0sq / pow(parms(0), rho));
-      Eigen::VectorXd var;
+      //      std::cout<<"assigned parms"<<std::endl;
+      Eigen::VectorXd var(mu.rows());
       for (int i = 0; i < mu.rows(); i++) {
+        //	std::cout<<"i:"<<i<<" of "<<mu.rows()<<std::endl;
+        //	std::cout<<"calc var with:"<<std::endl;
+        //	std::cout<<"mu:"<<mu(i)<<std::endl;
         var(i) = exp(alpha) * pow(mu(i), rho);
+        //	std::cout<<"calculated var:"<<var(i)<<std::endl;
+        //	std::cout<<"calc loglik with:"<<std::endl;
+        //	std::cout<<"Y:"<<Y(i)<<std::endl;
+        //	std::cout<<"mu:"<<mu(i)<<std::endl;
+        //	std::cout<<"var:"<<var(i)<<std::endl;
         loglik(i) = log(gsl_ran_gaussian_pdf(Y(i) - mu(i), sqrt(var(i))));
       }
     } else if (dist == distribution::log_normal) {
@@ -2860,7 +2882,7 @@ Eigen::VectorXd loud_likelihood(
 }
 
 void bridge_sample(
-    Eigen::MatrixXd &R, struct fitInput *loudIn, struct fitResult *loudOut,
+    Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
@@ -2879,11 +2901,13 @@ void bridge_sample(
   int N = loudIn->Y.rows();
   Eigen::VectorXd mu(S);
   Eigen::MatrixXd loglik_mat(S, N);
+  //  std::cout<<"before loglik_mat"<<std::endl;
   for (int i = 0; i < S; i++) {
     mu = model_fun(R.row(i), loudIn->doses);
     loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
   }
 
+  //  std::cout<<"after loglik_mat"<<std::endl;
   double lppd = 0.0;
   double p_waic = 0.0;
   for (int i = 0; i < loglik_mat.cols(); i++) {
@@ -3052,15 +3076,16 @@ double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &row) {
   return B;
 }
 
-void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
   // Parameters needed for latent slice function
   //  make some of these enums
   int model_typ = 103;
   int pri_typ = 32;
-  //  int burnin_samples = 5; //5000;
   int n_rounds = 2;
   double LAM = 2.0;
   int ll_type;
+
+  std::cout << "inside fitcpower with N_obs:" << loudIn->N_obs << std::endl;
 
   Eigen::VectorXd init;
   Eigen::MatrixXd diag;
@@ -3085,15 +3110,21 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
     diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
     priorr = Eigen::MatrixXd(4, 5);
     priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs0 + loudIn->N_obs1 - 1, loudIn->lmean1,
-        sqrt(loudIn->s1sq / (loudIn->N_obs0 + loudIn->N_obs1 - 1)), 1, 2, log(1.6), 0.421,
-        BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0, loudIn->N_obs * loudIn->ssq / 2.0,
-        BMDS_MISSING, 1;
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
+        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+
   } else if (loudIn->dist == distribution::normal_ncv) {
     // NCV
     init.resize(5);
     init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    ll_type = 55;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 55;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 58;
+    } else {
+      std::cout << "power model normal dist does not this datatype" << std::endl;
+    }
     isNegative.resize(5);
     isNegative = {true, true, false, false, false};
     diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
@@ -3104,8 +3135,6 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
         loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
         loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
   }
-  std::cout << "N_obs0:" << loudIn->N_obs0 << std::endl;
-  std::cout << "N_obs1:" << loudIn->N_obs1 << std::endl;
 
   double startVal = 0.025;
   double stopVal = 0.975;
@@ -3124,34 +3153,511 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
 
-  std::cout << "completed run_latentslice_functional_general" << std::endl;
-
   bridge_sample(R, loudIn, loudOut, &continuous_power_transform, priorr, isNegative);
 
   // pivotal pvalue
   loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_power_transform);
 
   // other calcs
-  loudOut->BMD_rel.resize(R.rows());
-  loudOut->BMD_sd.resize(R.rows());
-  for (int i = 0; i < R.rows(); ++i) {
-    double m0 = R(i, 0);
-    double m1 = R(i, 1);
-    double n = R(i, 2);
-    double b = m1 - m0;
-    double prec = R(i, 3);
-    double alpha = 1.0 / prec;
-    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
-    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
+  loudOut->BMD.resize(R.rows());
+
+  // convert R (loud approach) to theta (ToxicR) for BMD calc
+  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
+  // bool bConstVar = loudIn->dist == distribution::normal;  //don't need to check lognormal for
+  // power
+  bool bConstVar =
+      loudIn->dist != distribution::normal_ncv;  // don't need to check lognormal for power
+  // power model only has normal distribtion (cv)
+  normalPOWER_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+
+  bool isIncreasing = true;
+  if (loudIn->sign < 0) isIncreasing = false;
+  if (bConstVar) {
+    // CV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(4, 1);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);             // m0 to gamma
+      theta(1, 0) = R(i, 1) - R(i, 0);   // b to beta
+      theta(2, 0) = R(i, 2);             // n to k
+      theta(3, 0) = log(1.0 / R(i, 3));  // alpha = log(1/prec)
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
+  } else {
+    // NCV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);            // m0 to gamma
+      theta(1, 0) = R(i, 1) - R(i, 0);  // b to beta
+      theta(2, 0) = R(i, 2);            // n to k
+      theta(4, 0) =
+          log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0)))
+          );  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
+      // theta(3,0) = log(1/(pow(R(i,3),2)*pow(R(i,0),theta(4,0)))); //alpha =
+      // log(sigma0sq/(m0^rho))
+      theta(3, 0) =
+          log(1 / (R(i, 3) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
   }
 }
 
-// void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut){
-// };
-// void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut){
-// };
-// void fit_chill(struct fitInput *loudIn, struct fitResult *loudOut){
-// };
+void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut) {
+  // Parameters needed for latent slice function
+  //  make some of these enums
+  int pri_typ = 32;
+  int n_rounds = 2;
+  double LAM = 2.0;
+  int model_typ;
+  int ll_type;
+
+  Eigen::VectorXd init;
+  Eigen::MatrixXd diag;
+  std::vector<bool> isNegative;
+  Eigen::MatrixXd priorr;
+  if (loudIn->dist == distribution::log_normal) {
+    model_typ = 107;
+    init.resize(4);
+    init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->ssq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 57;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 60;
+    } else {
+      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
+    }
+
+    isNegative.resize(4);
+    isNegative = {true, true, false, false};
+    diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
+
+    priorr = Eigen::MatrixXd(4, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
+        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2,
+        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+    //    std::cout<<"lognormal exp3 priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  } else if (loudIn->dist == distribution::normal) {
+    // CV
+    model_typ = 102;
+    init.resize(4);
+    init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->ssq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 56;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 59;
+    } else {
+      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
+    }
+
+    isNegative.resize(4);
+    isNegative = {true, true, false, false};
+    diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
+    std::cout << "calculating priorr" << std::endl;
+    priorr = Eigen::MatrixXd(4, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
+        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+    //    std::cout<<"normal exp3 priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  } else if (loudIn->dist == distribution::normal_ncv) {
+    // NCV
+    model_typ = 102;
+    init.resize(5);
+    init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 55;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 58;
+    } else {
+      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
+    }
+    isNegative.resize(5);
+    isNegative = {true, true, false, false, false};
+    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
+    priorr = Eigen::MatrixXd(5, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
+        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
+        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
+        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
+    //    std::cout<<"normal ncv exp3 priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  }
+
+  double startVal = 0.025;
+  double stopVal = 0.975;
+  double stepSize = 0.025;
+  double numStepsD = (stopVal - startVal) / stepSize + 1;
+  int numSteps = numStepsD;
+
+  Eigen::VectorXd qtiles(numSteps);
+
+  for (int i = 0; i < numSteps; i++) {
+    qtiles(i) = startVal + i * stepSize;
+  }
+
+  Eigen::MatrixXd R = run_latentslice_functional_general(
+      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
+      n_rounds, qtiles, LAM, pri_typ, ll_type
+  );
+
+  bridge_sample(R, loudIn, loudOut, &continuous_exp3_transform, priorr, isNegative);
+
+  // pivotal pvalue
+  loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_exp3_transform);
+
+  // other calcs
+  //  loudOut->BMD_rel.resize(R.rows());
+  //  loudOut->BMD_sd.resize(R.rows());
+  //  for (int i = 0; i < R.rows(); ++i) {
+  //    double m0 = R(i, 0);
+  //    double m1 = R(i, 1);
+  //    double n = R(i, 2);
+  //    double b = m1 - m0;
+  //    double prec = R(i, 3);
+  //    double alpha = 1.0 / prec;
+  //    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
+  //    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
+  //  }
+
+  // other calcs
+  std::cout << "beginning exp3 other calcs" << std::endl;
+  loudOut->BMD.resize(R.rows());
+
+  // convert R (loud approach) to theta (ToxicR) for BMD calc
+  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
+  bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  bool isIncreasing = true;
+  if (loudIn->sign < 0) isIncreasing = false;
+  if (bConstVar) {
+    // CV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    if (loudIn->dist == distribution::log_normal) {
+      lognormalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      for (int i = 0; i < R.rows(); ++i) {
+        theta(0, 0) = R(i, 0);                                                  // m0
+        theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
+        theta(3, 0) = R(i, 3);                                                  // n
+        theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
+        std::cout << "calling calcLoudBMD for exp3 cv lognormal" << std::endl;
+        loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+      }
+
+    } else {
+      std::cout << "start normal" << std::endl;
+      normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      std::cout << "finished model decl" << std::endl;
+      for (int i = 0; i < R.rows(); ++i) {
+        theta(0, 0) = R(i, 0);                                                  // m0
+        theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
+        theta(3, 0) = R(i, 2);                                                  // n
+        theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
+        std::cout << "calling calcLoudBMD for exp3 cv normal" << std::endl;
+        loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+      }
+    }
+  } else {
+    // NCV
+    normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);                                                  // m0
+      theta(1, 0) = pow(loudIn->sign * log(R(i, 1) / R(i, 0)), 1 / R(i, 2));  // b to beta
+      theta(3, 0) = R(i, 2);                                                  // n
+      theta(5, 0) =
+          log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0)))
+          );  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
+      // theta(4,0) = log(1/(pow(R(i,3),2)*pow(R(i,0),theta(4,0)))); //alpha =
+      // log(sigma0sq/(m0^rho))
+      theta(4, 0) =
+          log(1 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
+      std::cout << "calling calcLoudBMD for exp3 ncv normal" << std::endl;
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
+  }
+};
+
+void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut) {
+  // Parameters needed for latent slice function
+  //  make some of these enums
+  int model_typ;
+  int pri_typ = 32;
+  int n_rounds = 2;
+  double LAM = 2.0;
+  int ll_type;
+
+  Eigen::VectorXd init;
+  Eigen::MatrixXd diag;
+  std::vector<bool> isNegative;
+  Eigen::MatrixXd priorr;
+  if (loudIn->dist == distribution::log_normal) {
+    model_typ = 105;
+    init.resize(5);
+    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 57;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 60;
+    } else {
+      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
+    }
+
+    isNegative.resize(5);
+    isNegative = {true, true, false, false, false};
+    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
+
+    priorr = Eigen::MatrixXd(5, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
+        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
+        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+  } else if (loudIn->dist == distribution::normal) {
+    // CV
+    model_typ = 104;
+    init.resize(5);
+    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 56;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 59;
+    } else {
+      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
+    }
+
+    isNegative.resize(5);
+    isNegative = {true, true, false, false, false};
+    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
+    std::cout << "calculating priorr" << std::endl;
+    priorr = Eigen::MatrixXd(5, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0.0,
+        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+    //    std::cout<<"normal exp5 priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  } else if (loudIn->dist == distribution::normal_ncv) {
+    // NCV
+    model_typ = 104;
+    init.resize(6);
+    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 55;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 58;
+    } else {
+      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
+    }
+    isNegative.resize(6);
+    isNegative = {true, true, false, false, false, false};
+    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
+    priorr = Eigen::MatrixXd(6, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
+        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
+        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
+        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
+    //    std::cout<<"normal ncv exp5 priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  }
+
+  double startVal = 0.025;
+  double stopVal = 0.975;
+  double stepSize = 0.025;
+  double numStepsD = (stopVal - startVal) / stepSize + 1;
+  int numSteps = numStepsD;
+
+  Eigen::VectorXd qtiles(numSteps);
+
+  for (int i = 0; i < numSteps; i++) {
+    qtiles(i) = startVal + i * stepSize;
+  }
+
+  std::cout << "calling run_latentslice..." << std::endl;
+  Eigen::MatrixXd R = run_latentslice_functional_general(
+      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
+      n_rounds, qtiles, LAM, pri_typ, ll_type
+  );
+
+  std::cout << "calling bridge_sample" << std::endl;
+  bridge_sample(R, loudIn, loudOut, &continuous_exp5_transform, priorr, isNegative);
+
+  // pivotal pvalue
+  loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_exp5_transform);
+
+  // other calcs
+  loudOut->BMD.resize(R.rows());
+
+  // convert R (loud approach) to theta (ToxicR) for BMD calc
+  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
+  bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  bool isIncreasing = true;
+  if (loudIn->sign < 0) isIncreasing = false;
+  if (bConstVar) {
+    // CV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    if (loudIn->dist == distribution::log_normal) {
+      lognormalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      for (int i = 0; i < R.rows(); ++i) {
+        theta(0, 0) = R(i, 0);  // m0
+        theta(1, 0) = R(i, 2);  // b to beta
+        theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
+                      (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
+        theta(3, 0) = R(i, 3);                                           // n
+        theta(4, 0) = log(1.0 / R(i, 4));                                // alpha
+        loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+      }
+
+    } else {
+      normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      for (int i = 0; i < R.rows(); ++i) {
+        theta(0, 0) = R(i, 0);  // m0
+        theta(1, 0) = R(i, 2);  // b to beta
+        theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
+                      (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
+        theta(3, 0) = R(i, 3);                                           // n
+        theta(4, 0) = log(1.0 / R(i, 4));                                // alpha
+        loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+      }
+    }
+  } else {
+    // NCV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);  // m0
+      theta(1, 0) = R(i, 2);  // b to beta
+      theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
+                    (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
+      theta(3, 0) = R(i, 3);                                           // n
+      theta(5, 0) = log(R(i, 5) / (R(i, 4) * log(R(i, 1) / R(i, 2))));
+      theta(4, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(5, 0))));  // alpha
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
+  }
+};
+
+void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut) {
+  // Parameters needed for latent slice function
+  //  make some of these enums
+  int model_typ = 106;
+  int pri_typ = 32;
+  int n_rounds = 2;
+  double LAM = 2.0;
+  int ll_type;
+
+  Eigen::VectorXd init;
+  Eigen::MatrixXd diag;
+  std::vector<bool> isNegative;
+  Eigen::MatrixXd priorr;
+  if (loudIn->dist == distribution::log_normal) {
+    std::cout << "hill model not available in lognormal" << std::endl;
+    return;
+  } else if (loudIn->dist == distribution::normal) {
+    // CV
+    init.resize(5);
+    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 56;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 59;
+    } else {
+      std::cout << "hill model normal dist does not this datatype" << std::endl;
+    }
+    isNegative.resize(5);
+    isNegative = {true, true, false, false, false};
+    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
+    priorr = Eigen::MatrixXd(5, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
+        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
+        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
+
+    //    std::cout<<"hill normal priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  } else if (loudIn->dist == distribution::normal_ncv) {
+    // NCV
+    init.resize(6);
+    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
+    if (loudIn->datatype == loud_datatype::l_individual) {
+      ll_type = 55;
+    } else if (loudIn->datatype == loud_datatype::l_summary) {
+      ll_type = 58;
+    } else {
+      std::cout << "hill model normal dist does not this datatype" << std::endl;
+    }
+    isNegative.resize(6);
+    isNegative = {true, true, false, false, false, false};
+    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
+    priorr = Eigen::MatrixXd(6, 5);
+    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
+        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
+        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
+        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
+        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
+
+    //    std::cout<<"hill ncv priorr:"<<std::endl;
+    //    std::cout<<priorr<<std::endl;
+  }
+
+  double startVal = 0.025;
+  double stopVal = 0.975;
+  double stepSize = 0.025;
+  double numStepsD = (stopVal - startVal) / stepSize + 1;
+  int numSteps = numStepsD;
+
+  Eigen::VectorXd qtiles(numSteps);
+
+  for (int i = 0; i < numSteps; i++) {
+    qtiles(i) = startVal + i * stepSize;
+  }
+
+  Eigen::MatrixXd R = run_latentslice_functional_general(
+      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
+      n_rounds, qtiles, LAM, pri_typ, ll_type
+  );
+
+  bridge_sample(R, loudIn, loudOut, &continuous_hill_transform, priorr, isNegative);
+
+  // pivotal pvalue
+  loudOut->pval = pivotal_pvalue(R, loudIn, &continuous_hill_transform);
+
+  // other calcs
+  loudOut->BMD.resize(R.rows());
+
+  // convert R (loud approach) to theta (ToxicR) for BMD calc
+  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
+  bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  bool isIncreasing = true;
+  if (loudIn->sign < 0) isIncreasing = false;
+  if (bConstVar) {
+    // CV  (no lognormal for BMDS Hill)
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    normalHILL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);                                            // m0
+      theta(2, 0) = R(i, 2);                                            // k
+      theta(3, 0) = R(i, 3);                                            // n
+      theta(1, 0) = (R(i, 1) - R(i, 0)) * (pow(R(i, 2), R(i, 3)) + 1);  // m0 and m1 to nu (v)
+      theta(4, 0) = log(1.0 / R(i, 4));                                 // alpha
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
+  } else {
+    // NCV
+    Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    normalHILL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+    for (int i = 0; i < R.rows(); ++i) {
+      theta(0, 0) = R(i, 0);                                            // m0
+      theta(2, 0) = R(i, 2);                                            // k
+      theta(3, 0) = R(i, 3);                                            // n
+      theta(1, 0) = (R(i, 1) - R(i, 0)) * (pow(R(i, 2), R(i, 3)) + 1);  // m0 and m1 to nu (v)
+      theta(5, 0) = log(R(i, 5) / (R(i, 4) * log(R(i, 1) / R(i, 2))));
+      theta(4, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(5, 0))));  // alpha
+      loudOut->BMD(i) = calcLoudBMD(model, theta, 3, loudIn->bmr, isIncreasing);
+    }
+  }
+}
 // void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
 // };
 // void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
@@ -3163,8 +3669,76 @@ void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut) {
 // void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut){
 // };
 
+double calcLoudBMD(
+    normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb
+) {
+  double bmd = BMDS_MISSING;
+
+  switch (BMDtype) {
+    case CONTINUOUS_BMD_ABSOLUTE:
+      bmd = model.bmd_absolute(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_REL_DEV:
+      bmd = model.bmd_reldev(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_STD_DEV:
+      bmd = model.bmd_stdev(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_POINT:
+      bmd = model.bmd_point(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_EXTRA:
+      bmd = model.bmd_extra(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_HYBRID_EXTRA:
+      bmd = model.bmd_hybrid_extra(theta, bmr, isIncreasing, tailProb);
+      break;
+      //       case CONTINUOUS_BMD_HYBRID_ADDED:
+      //	   break;
+    default:
+      std::cout << "Incorrect BMDtype for calcLoudBMD" << std::endl;
+  }
+  std::cout << "returning:" << bmd << std::endl;
+  return bmd;
+}
+
+double calcLoudBMD(
+    lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb
+) {
+  double bmd = BMDS_MISSING;
+
+  switch (BMDtype) {
+    case CONTINUOUS_BMD_ABSOLUTE:
+      bmd = model.bmd_absolute(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_REL_DEV:
+      bmd = model.bmd_reldev(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_STD_DEV:
+      bmd = model.bmd_stdev(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_POINT:
+      bmd = model.bmd_point(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_EXTRA:
+      bmd = model.bmd_extra(theta, bmr, isIncreasing);
+      break;
+    case CONTINUOUS_BMD_HYBRID_EXTRA:
+      bmd = model.bmd_hybrid_extra(theta, bmr, isIncreasing, tailProb);
+      break;
+      //       case CONTINUOUS_BMD_HYBRID_ADDED:
+      //	   break;
+    default:
+      std::cout << "Incorrect BMDtype for calcLoudBMD" << std::endl;
+  }
+  std::cout << "returning:" << bmd << std::endl;
+  return bmd;
+}
+
 double pivotal_pvalue(
-    Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
+    Eigen::MatrixXd &R, const struct fitInput *loudIn,  // fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 ) {
   std::cout << "inside pivotal_pvalue" << std::endl;
@@ -3196,13 +3770,13 @@ double pivotal_pvalue(
     mu = model_fun(Ruse.row(i), loudIn->doses);
     Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu, loudIn->dist, loudIn->datatype);
   }
-  std::cout << "N:" << N << ", S:" << S << std::endl;
-  std::cout << "df_val:" << df_val << std::endl;
-
-  std::cout << "mu:" << std::endl;
-  std::cout << mu << std::endl;
-  std::cout << "Qvals:" << std::endl;
-  std::cout << Qvals << std::endl;
+  //  std::cout << "N:" << N << ", S:" << S << std::endl;
+  //  std::cout << "df_val:" << df_val << std::endl;
+  //
+  //  std::cout << "mu:" << std::endl;
+  //  std::cout << mu << std::endl;
+  //  std::cout << "Qvals:" << std::endl;
+  //  std::cout << Qvals << std::endl;
 
   int m = ceil(loudIn->qlev * S) - 1;  //-1 needed due to 0 indexing
   std::nth_element(Qvals.begin(), Qvals.begin() + m, Qvals.end());
@@ -3644,25 +4218,26 @@ void pythonBMDSLoud_dev(
   // double burnin = 5000;  // BMDS_MISSING;
 
   // need to pull these from user input
-  double bmr_rel = 0.1;
-  double bmr_sd = 1.0;
+  //  double bmr_rel = 0.1;
+  //  double bmr_sd = 1.0;
+  double bmr = pyMA->pyCA.BMR;
 
   struct fitInput cvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], n, ssq01, true, pyMA->iter, pyMA->burnin, bmr_rel, bmr_sd,
-      distribution::normal, pyMA->datatype
+      var[var.size() - 1], N_obs[0] + N_obs[N_obs.size() - 1], ssq01, pyMA->iter, pyMA->burnin, bmr,
+      distribution::normal, pyMA->datatype, pyMA->pyCA.isIncreasing
   );
 
   struct fitInput ncvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, true, pyMA->iter, pyMA->burnin, bmr_rel,
-      bmr_sd, distribution::normal_ncv, pyMA->datatype
+      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, pyMA->iter, pyMA->burnin, bmr,
+      distribution::normal_ncv, pyMA->datatype, pyMA->pyCA.isIncreasing
   );
 
   struct fitInput logcvInput = createFitInput(
       doses_post, Y_post, logMean[0], logMean[logMean.size() - 1], N_obs[0],
-      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, BMDS_MISSING,
-      pyMA->iter, pyMA->burnin, bmr_rel, bmr_sd, distribution::log_normal, pyMA->datatype
+      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, pyMA->iter,
+      pyMA->burnin, bmr, distribution::log_normal, pyMA->datatype, pyMA->pyCA.isIncreasing
   );
 
   // add logic here if all model results are not needed
@@ -3675,31 +4250,59 @@ void pythonBMDSLoud_dev(
   // printBmdsStruct(&cvInput);
 
   struct fitResult cvPowerOut;
+  std::cout << "calling power cv" << std::endl;
+  std::cout << "with N_obs:" << cvInput.N_obs << std::endl;
   fit_cpower(&cvInput, &cvPowerOut);
 
   // printBmdsStruct(&cvPowerOut);
 
-  //  // Power_NCV
+  // Power_NCV
   struct fitResult ncvPowerOut;
-  //  fit_cpower(&ncvInput, &ncvPowerOut);
+  std::cout << "calling power ncv" << std::endl;
+  std::cout << "with N_obs:" << ncvInput.N_obs << std::endl;
+  fit_cpower(&ncvInput, &ncvPowerOut);
 
   // Exp3_CV
-  //  fit_cexp3(
+  struct fitResult cvExp3Out;
+  std::cout << "calling exp3 cv" << std::endl;
+  fit_cexp3(&cvInput, &cvExp3Out);
 
-  //  // Exp3_NCV
-  //
-  //  // Exp3_LogCV
-  //
-  //  // Exp5_CV
-  //
-  //  // Exp5_NCV
-  //
-  //  // Exp5_LogCV
-  //
-  //  // Hill
-  //
-  //  // Hill_NCV
-  //
+  // Exp3_NCV
+  struct fitResult ncvExp3Out;
+  std::cout << "calling exp3 ncv" << std::endl;
+  fit_cexp3(&ncvInput, &ncvExp3Out);
+
+  // Exp3_LogCV
+  struct fitResult logcvExp3Out;
+  std::cout << "calling exp3 log cv" << std::endl;
+  std::cout << "with N_obs:" << logcvInput.N_obs << std::endl;
+  fit_cexp3(&logcvInput, &logcvExp3Out);
+
+  // Exp5_CV
+  struct fitResult cvExp5Out;
+  std::cout << "calling exp5 cv" << std::endl;
+  fit_cexp5(&cvInput, &cvExp5Out);
+
+  // Exp5_NCV
+  struct fitResult ncvExp5Out;
+  std::cout << "calling exp5 ncv" << std::endl;
+  fit_cexp5(&ncvInput, &ncvExp5Out);
+
+  // Exp5_LogCV
+  struct fitResult logcvExp5Out;
+  std::cout << "calling exp5 log cv" << std::endl;
+  fit_cexp5(&logcvInput, &logcvExp5Out);
+
+  // Hill_CV
+  struct fitResult cvHillOut;
+  std::cout << "calling hill cv" << std::endl;
+  fit_chill(&cvInput, &cvHillOut);
+
+  // Hill_NCV
+  struct fitResult ncvHillOut;
+  std::cout << "calling hill ncv" << std::endl;
+  fit_chill(&ncvInput, &ncvHillOut);
+
   //  ////////
   //  // EFSA//
   //  ////////
@@ -7692,8 +8295,7 @@ std::string printBmdsStruct(struct fitInput *in, bool print) {
   ss << "ssq:" << in->ssq << std::endl;
   ss << "sign:" << (in->sign ? "True" : "False") << std::endl;
   ss << "iter:" << in->iter << std::endl;
-  ss << "bmr_rel:" << in->bmr_rel << std::endl;
-  ss << "bmr_sd:" << in->bmr_sd << std::endl;
+  ss << "bmr:" << in->bmr << std::endl;
   ss << "dist:" << in->dist << std::endl;
   ss << "datatype:" << in->datatype << std::endl;
 
@@ -7711,8 +8313,7 @@ std::string printBmdsStruct(struct fitResult *out, bool print) {
   ss << "parms:" << out->parms << std::endl;
   ss << "int_factor:" << out->int_factor << std::endl;
   ss << "waic:" << out->waic << std::endl;
-  ss << "BMD_rel:" << out->BMD_rel << std::endl;
-  ss << "BMD_sd:" << out->BMD_sd << std::endl;
+  ss << "BMD:" << out->BMD << std::endl;
   //  ss << "R:" << out->R << std::endl;
 
   if (print) std::cout << ss.str() << std::endl;

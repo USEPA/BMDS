@@ -220,10 +220,11 @@ struct fitInput {
   double s1sq;
   int N_obs;     // required for cv
   double ssq;    // required for cv
-  bool sign;     // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
+  int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
   int iter = 5;  // 50000;
-  double bmr_rel;
-  double bmr_sd;
+  double bmr;
+  // double bmr_rel;
+  // double bmr_sd;
   int dist;  // defined in the distribution enum
   int datatype;
   int burnin = 5;  // 5000;
@@ -236,8 +237,7 @@ struct fitResult {
   Eigen::VectorXd parms;
   double int_factor;
   double waic;
-  Eigen::VectorXd BMD_rel;
-  Eigen::VectorXd BMD_sd;
+  Eigen::VectorXd BMD;
   Eigen::MatrixXd R;
   double pval;
 };
@@ -758,24 +758,23 @@ void SortNestedData(
 );
 
 void bridge_sample(
-    Eigen::MatrixXd &R, struct fitInput *loudIn, struct fitResult *loudOut,
+    Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
 double pivotal_pvalue(
-    Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
+    Eigen::MatrixXd &R, const struct fitInput *loudIn,  // fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 );
 
-void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut);
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 
-// void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
-// void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
-// void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut);
-// void fit_chill(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -848,8 +847,17 @@ double getQVals(
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
-    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, int burnin,
-    double bmr_rel, double bmr_sd, int dist, int datatype
+    double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
+    int datatype, bool isIncreasing
+);
+
+double calcLoudBMD(
+    normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb = BMDS_MISSING
+);
+double calcLoudBMD(
+    lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb = BMDS_MISSING
 );
 
 // overloaded functions
