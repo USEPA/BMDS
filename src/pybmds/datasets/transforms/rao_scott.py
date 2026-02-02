@@ -51,53 +51,7 @@ class RaoScott:
     def __init__(self, dataset: DichotomousDataset, species: Species):
         self.dataset = dataset
         self.species = species
-        self.df = self.calculate_zero_mask()
-
-    def calculate_zero_mask(self) -> pd.DataFrame:
-        df = pd.DataFrame(
-            {
-                "dose": self.dataset.doses,
-                "incidence": self.dataset.incidences,
-                "n": self.dataset.ns,
-            }
-        )
-        df["fraction_affected"] = df.incidence / df.n
-
-        # Masks for zero and nonzero fraction_affected
-        zero_mask = df["fraction_affected"] == 0
-        nonzero_mask = ~zero_mask
-
-        # Prepare columns with NaN
-        df["design_ls"] = np.nan
-        df["design_o"] = np.nan
-        df["design_avg"] = np.nan
-
-        # Only calculate design effects where fraction_affected is not zero
-        if nonzero_mask.any():
-            p_ls = self.adjustment_parameters[(self.species, Regression.least_square)]
-            p_or = self.adjustment_parameters[(self.species, Regression.orthogonal)]
-
-            log_fa = np.log(df.loc[nonzero_mask, "fraction_affected"])
-            df.loc[nonzero_mask, "design_ls"] = np.exp(
-                p_ls.a + (p_ls.b * log_fa) + (0.5 * p_ls.sigma)
-            )
-            df.loc[nonzero_mask, "design_o"] = np.exp(
-                p_or.a + (p_or.b * log_fa) + (0.5 * p_or.sigma)
-            )
-            df.loc[nonzero_mask, "design_avg"] = df.loc[
-                nonzero_mask, ["design_ls", "design_o"]
-            ].mean(axis=1)
-
-        # For zero_mask, set design_ls and design_o to 1, and design_avg to 1 as well
-        df.loc[zero_mask, "design_ls"] = 1
-        df.loc[zero_mask, "design_o"] = 1
-        df.loc[zero_mask, "design_avg"] = 1
-
-        # Now calculate adjusted columns using design_avg (which is 1 for zero_mask)
-        df["incidence_adjusted"] = df["incidence"] / df["design_avg"]
-        df["n_adjusted"] = df["n"] / df["design_avg"]
-
-        return df
+        self.df = self.calculate_design_effects_with_limit()
 
     def calculate_design_effects_with_limit(self) -> pd.DataFrame:
         df = pd.DataFrame(
