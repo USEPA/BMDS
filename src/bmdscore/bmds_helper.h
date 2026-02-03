@@ -227,6 +227,8 @@ struct fitInput {
   // double bmr_sd;
   int dist;  // defined in the distribution enum
   int datatype;
+  int bmdtype;
+  double tailProb;
   int burnin = 5;  // 5000;
   double qlev = 0.90;
   int df_override = BMDS_MISSING;
@@ -356,9 +358,11 @@ struct python_continuousMA_analysis {
                                             // priors[i] is the prior array for the ith model ect
   std::vector<int> nparms;                  // parameters in each model
   std::vector<int> actual_parms;            // actual number of parameters in the model
-  std::vector<int> prior_cols;      // columns in the prior if there are 'more' in the future
-                                    // presently there are only 5
-  std::vector<int> models;          // list of models this is defined by cont_model.
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                                // presently there are only 5
+  std::vector<int> models;      // list of models this is defined by cont_model.
+  std::vector<int>
+      loud_dist_type;  // list of dist types corresponding to each model for loud approach
   std::vector<double> modelPriors;  // prior probability on the model
   int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int datatype;                     // uses loud_datatype enum
@@ -772,12 +776,12 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut);
 void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut);
 void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut);
 void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 
-// void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
-// void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
-// void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 // void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
 
@@ -848,16 +852,21 @@ double getQVals(
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
     double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
-    int datatype, bool isIncreasing
+    int datatype, int bmdtype, bool isIncreasing, double tailProb
 );
 
 double calcLoudBMD(
     normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
-    double tailProb = BMDS_MISSING
+    double tailProb
 );
 double calcLoudBMD(
     lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
-    double tailProb = BMDS_MISSING
+    double tailProb
+);
+
+double calcLoudBMD(
+    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
+    bool isIncreasing, double tailProb
 );
 
 // overloaded functions

@@ -2152,8 +2152,8 @@ void runPythonContLoud() {
   //  }
 
   //  anal.alpha = alpha;
-  anal.BMD_type = BMD_type;  // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 =
-                             // hybrid_extra, 7 = hybrid_added   from src/include/cmodeldefs.h
+  anal.BMD_type = BMD_type;  // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra,
+                             // 6 = hybrid_extra, 7 = hybrid_added   from src/include/cmodeldefs.h
   anal.BMR = BMRF;
   //  anal.samples = 0;  // num MCMC samples
   //  anal.tail_prob = 0.01;
@@ -2177,6 +2177,30 @@ void runPythonContLoud() {
   ma_info.datatype = datatype;
   ma_info.iter = iter;
   ma_info.burnin = burnin;
+
+  // define models to run
+  //  hill = 6,
+  // exp_3 = 3,
+  // exp_5 = 5,
+  // power = 8,
+  // funl = 10,
+  // polynomial = 666,
+  // l_hill_efsa = 20,
+  // l_invexp_efsa = 21,
+  // l_lognormal_efsa = 22,
+  // l_gamma_efsa = 23,
+  // l_lms_efsa = 24
+
+  // define corresponding dists for each model
+  //  normal = 1, normal_ncv = 2, log_normal = 3
+
+  std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+                             21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+                            1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+
+  ma_info.models = models;
+  ma_info.loud_dist_type = dists;
 
   struct python_continuousMA_result ma_res;
 
