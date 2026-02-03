@@ -235,9 +235,7 @@ class RaoScott:
         incidence_col = summary["Incidence"]
         has_zero = ((incidence_col == 0) | (incidence_col == "0")).any()
         if has_zero:
-            footnote_text = (
-                "Note: One or more dose groups have a fraction affected equal to zero; for these dose groups, no scaling was performed and the design effect was set equal to 1."
-            )
+            footnote_text = "Note: One or more dose groups have a fraction affected equal to zero; for these dose groups, no scaling was performed and the design effect was set equal to 1."
             report.document.add_paragraph(footnote_text)
 
         return report.document
