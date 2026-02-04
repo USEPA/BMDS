@@ -1,5 +1,6 @@
 import numpy as np
 from pydantic import Field
+from scipy.stats import gamma, norm
 
 from ..constants import ContinuousModel, ContinuousModelChoices, DistType, PriorClass
 from ..datasets.continuous import ContinuousDatasets
@@ -39,8 +40,26 @@ class BmdModelContinuous(BmdModel):
                 if isinstance(model_settings.priors, PriorClass)
                 else self.get_default_prior_class()
             )
+            if prior_class in (
+                PriorClass.frequentist_restricted,
+                PriorClass.frequentist_unrestricted,
+            ):
+                bayes_only_models = {
+                    ContinuousModelChoices.mult_hill.value,
+                    ContinuousModelChoices.inv_exp.value,
+                    ContinuousModelChoices.lognormal.value,
+                    ContinuousModelChoices.cont_gamma.value,
+                    ContinuousModelChoices.lms.value,
+                }
+                if self.bmd_model_class in bayes_only_models:
+                    raise ConfigurationException(
+                        "This model cannot be fit using maximum likelihood estimation (frequentist priors)."
+                    )
             model_settings.priors = get_continuous_prior(
-                self.bmd_model_class, prior_class=prior_class
+                self.bmd_model_class,
+                prior_class=prior_class,
+                dataset=dataset,
+                dist_type=model_settings.disttype,
             )
 
         return model_settings
@@ -298,11 +317,161 @@ class ExponentialM5(BmdModelContinuous):
         return a * (c - (c - 1.0) * np.exp(-1.0 * np.power(b * doses, d)))
 
 
+class MultiplicativeHill(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.mult_hill.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The multiplicative Hill model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * doses**d / (b**d + doses**d))
+
+
+class InverseExponential(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.inverse_exp.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Inverse-Exponential model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * np.exp(-b * doses**-d))
+
+
+class Lognormal(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.lognormal.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Lognormal model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * norm.cdf(np.log(b) + d * np.log(doses)))
+
+
+class Gamma(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.cont_gamma.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Gamma model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * gamma.cdf(b * doses, d))
+
+
+class LMS(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.lms.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The LMS 2-stage model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * (1 - np.exp(-b * doses - d * doses**2)))
+
+
 _bmd_model_map = {
     ContinuousModelChoices.power.value.id: Power,
     ContinuousModelChoices.hill.value.id: Hill,
     ContinuousModelChoices.exp_m3.value.id: ExponentialM3,
     ContinuousModelChoices.exp_m5.value.id: ExponentialM5,
+    ContinuousModelChoices.mult_hill.value.id: MultiplicativeHill,
+    ContinuousModelChoices.inverse_exp.value.id: InverseExponential,
+    ContinuousModelChoices.lognormal.value.id: Lognormal,
+    ContinuousModelChoices.cont_gamma.value.id: Gamma,
+    ContinuousModelChoices.lms.value.id: LMS,
 }
 
 

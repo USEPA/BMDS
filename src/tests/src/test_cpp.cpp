@@ -20,6 +20,7 @@ void runDichoMA();
 void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
+void runPythonContLoud();
 void runPythonMultitumorAnalysis();
 void runTestMultitumorModel();
 void runPythonNestedAnalysis();
@@ -50,8 +51,9 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
+  runPythonContLoud();
   //  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+  //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -2042,6 +2044,97 @@ void runPythonDichoMA() {
   printBmdsStruct(&ma_info);
   std::cout << "OUTPUT" << std::endl;
   printBmdsStruct(&ma_res);
+}
+
+void runPythonContLoud() {
+  printf("Running LOUD Continuous Model Averaging\n");
+
+  double D[] = {0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+                0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.125, 0.125,
+                0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125,
+                0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.250, 0.250, 0.250, 0.250,
+                0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250,
+                0.250, 0.250, 0.250, 0.250, 0.250, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+                0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+                0.500, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+                1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000};
+
+  double Yarr[] = {10.859490, 10.990850, 9.975845,  10.167415, 11.600947, 8.908355,  12.766907,
+                   9.793314,  10.357511, 10.556906, 11.129513, 10.706564, 9.744599,  10.219390,
+                   9.633552,  10.696789, 12.251775, 10.436382, 11.082718, 10.474072, 11.769161,
+                   11.588864, 10.948461, 12.033503, 10.584272, 10.957064, 12.129170, 12.589572,
+                   12.923549, 11.165075, 9.203102,  11.702857, 11.934181, 11.875876, 10.688606,
+                   12.022749, 11.276965, 10.810963, 14.266820, 10.483300, 11.451485, 12.534117,
+                   12.455834, 13.742919, 13.007306, 12.550801, 10.400657, 12.871480, 13.413661,
+                   9.335636,  10.929786, 10.628343, 12.961808, 12.236850, 14.812280, 11.015145,
+                   13.553928, 10.716097, 12.704578, 12.775769, 14.446332, 14.805081, 17.173102,
+                   14.479885, 14.871077, 13.980834, 12.882616, 15.331523, 14.935816, 14.036283,
+                   14.825733, 14.096924, 15.580711, 15.202018, 14.187712, 14.557464, 13.124163,
+                   17.085746, 14.402763, 16.220990, 15.640171, 17.003492, 15.824510, 15.376245,
+                   15.997810, 15.718334, 16.092409, 14.568786, 15.414712, 15.568454, 14.780717,
+                   14.737647, 17.006861, 17.090000, 17.079688, 15.623780, 14.735885, 16.712593};
+
+  bool suffStat = false;
+  int datatype = loud_datatype::l_individual;
+  // bool isIncreasing = true;
+  bool detectAdvDir = true;
+
+  int numDataRows = sizeof(D) / sizeof(D[0]);
+
+  // check data array sizes for consistency
+  size_t numElementsY = sizeof(Yarr) / sizeof(Yarr[0]);
+  if (numDataRows != numElementsY) {
+    printf("Number of data elements are not consistent\nExiting Code\n");
+    exit(-1);
+  }
+
+  std::vector<double> doses(D, D + numDataRows);
+  std::vector<double> Y(Yarr, Yarr + numDataRows);
+
+  // declare analysis
+  struct python_continuous_analysis anal;
+  anal.doses = doses;
+  anal.Y = Y;
+  anal.n = numDataRows;
+  anal.detectAdvDir = detectAdvDir;
+
+  //  if (suffStat) {
+  //    anal.n_group.assign(N, N + numDataRows);
+  //    anal.sd.assign(SD, SD + numDataRows);
+  //  }
+  //  anal.disttype = dist;
+  //  if (!detectAdvDir) {
+  //    anal.isIncreasing = isIncreasing;
+  //  }
+
+  //  anal.alpha = alpha;
+  //  anal.BMD_type = BMD_type;  // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 =
+  // hybrid_extra, 7 = hybrid_added   from src/include/cmodeldefs.h
+  //  anal.BMR = BMRF;
+  //  anal.samples = 0;  // num MCMC samples
+  //  anal.tail_prob = 0.01;
+  anal.suff_stat = suffStat;
+  //  anal.isIncreasing = isIncreasing;
+  //  anal.parms = numParms;
+  //  anal.prior_cols = prCols;
+  //  anal.transform_dose = 0;
+  //  anal.prior.assign(prior, prior + anal.prior_cols * anal.parms);
+  //  anal.restricted = restricted;
+  //  anal.detectAdvDir = detectAdvDir;
+
+  struct python_continuousMA_analysis ma_info;
+  // ma_info.actual_parms = numParms;
+  // ma_info.prior_cols = priorCols;
+  // ma_info.models = models;
+  // ma_info.priors = pr;
+  // ma_info.modelPriors = modelPriors;
+  // ma_info.nmodels = numModels;
+  ma_info.pyCA = anal;
+  ma_info.datatype = datatype;
+
+  struct python_continuousMA_result ma_res;
+
+  pythonBMDSLoud(&ma_info, &ma_res);
 }
 
 void runOldContAnalysis() {

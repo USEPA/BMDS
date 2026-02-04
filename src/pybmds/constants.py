@@ -52,6 +52,11 @@ class Models(StrEnum):
     ExponentialM4 = "Exponential-M4"
     ExponentialM5 = "Exponential-M5"
     Hill = "Hill"
+    MultiplicativeHill = "Multiplicative Hill"
+    InverseExponential = "Inverse Exponential"
+    Lognormal = "Lognormal"
+    ContinuousGamma = "Continuous Gamma"
+    LMS2 = "LMS 2-Stage"
     NestedLogistic = "Nested Logistic"
     NCTR = "NCTR"
 
@@ -186,6 +191,41 @@ class ContinuousModelChoices(Enum):
         variance_params=("rho", "log-alpha"),
         model_form_str="P[dose] = a * (c - (c - 1) * exp(-(b * dose) ^ d)",
     )
+    mult_hill = ContinuousModel(
+        id=cont_model.l_hill_efsa.value,
+        verbose="Multiplicative Hill",
+        params=("a", "b", "c", "d"),
+        variance_params=("rho", "log-alpha"),
+        model_form_str="P[dose] = a * (1 + (c - 1) * dose ^ d / (b ^ d + dose ^ d))",
+    )
+    inverse_exp = ContinuousModel(
+        id=cont_model.l_invexp_efsa.value,
+        verbose="Inverse Exponential",
+        params=("a", "b", "c", "d"),
+        variance_params=("rho", "log-alpha"),
+        model_form_str="P[dose] = a * (1 + (c - 1) * exp(-b * dose ^ -d))",
+    )
+    lognormal = ContinuousModel(
+        id=cont_model.l_lognormal_efsa.value,
+        verbose="Lognormal",
+        params=("a", "b", "c", "d"),
+        variance_params=("rho", "log-alpha"),
+        model_form_str="P[dose] = a * (1 + (c - 1) * CumNorm(Log(b) + d * Log(dose)))",
+    )
+    cont_gamma = ContinuousModel(
+        id=cont_model.l_gamma_efsa.value,
+        verbose="Continuous Gamma",
+        params=("a", "b", "c", "d"),
+        variance_params=("rho", "log-alpha"),
+        model_form_str="P[dose] = a * (1 + (c - 1) * CumGamma(b * dose, d))",
+    )
+    lms = ContinuousModel(
+        id=cont_model.l_lms_efsa.value,
+        verbose="LMS 2-Stage",
+        params=("a", "b", "c", "d"),
+        variance_params=("rho", "log-alpha"),
+        model_form_str="P[dose] = a * (1 + (c - 1) * (1 - exp(-b * dose - d * dose ^ 2)))",
+    )
 
 
 class DistType(IntEnum):
@@ -205,12 +245,17 @@ class PriorDistribution(IntEnum):
     Uniform = 0
     Normal = 1
     Lognormal = 2
+    Gamma = 3
+    Beta = 4
+    Student_t = 5
+    InverseGamma = 6
 
 
 class PriorClass(IntEnum):
     frequentist_unrestricted = 0, "Frequentist unrestricted", "Unrestricted", False
     frequentist_restricted = 1, "Frequentist restricted", "Restricted", False
     bayesian = 2, "Bayesian", "N/A", True
+    bayesian_loud = 3, "Bayesian LOUD", "N/A", True
 
     def __new__(cls, value, label, restriction, is_bayesian):
         obj = int.__new__(cls, value)

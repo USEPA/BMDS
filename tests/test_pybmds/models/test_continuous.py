@@ -56,6 +56,21 @@ class TestPriorOverrides:
             assert v.min_value == priors[1]
             assert v.max_value == priors[2]
 
+    def test_bayes_only_models_reject_frequentist_priors(self, cdataset2):
+        for Model in [
+            continuous.MultiplicativeHill,
+            continuous.InverseExponential,
+            continuous.Lognormal,
+            continuous.Gamma,
+            continuous.LMS,
+        ]:
+            for prior_class in [
+                PriorClass.frequentist_restricted,
+                PriorClass.frequentist_unrestricted,
+            ]:
+                with pytest.raises(ConfigurationException):
+                    Model(cdataset2, {"priors": prior_class})
+
 
 class TestBmdModelContinuous:
     def test_get_param_names(self, cdataset2):
@@ -100,6 +115,11 @@ class TestBmdModelContinuous:
             (continuous.Hill, PriorClass.frequentist_restricted),
             (continuous.Linear, PriorClass.frequentist_unrestricted),
             (continuous.Polynomial, PriorClass.frequentist_restricted),
+            (continuous.MultiplicativeHill, PriorClass.bayesian_loud),
+            (continuous.InverseExponential, PriorClass.bayesian_loud),
+            (continuous.Lognormal, PriorClass.bayesian_loud),
+            (continuous.Gamma, PriorClass.bayesian_loud),
+            (continuous.LMS, PriorClass.bayesian_loud),
         ]:
             assert Model(cdataset2).settings.priors.prior_class is prior_class
 

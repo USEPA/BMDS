@@ -34,6 +34,33 @@ extern std::string BMDS_VERSION;
 
 enum nested_model { nlogistic = 1, nctr = 2 };
 
+// enum loud_cont_model {
+//   l_exp_3 = 1,
+//   l_exp_5 = 2,
+//   l_power = 3,
+//   l_hill = 4,
+//   l_poly = 5,
+//   l_hill_efsa = 6,
+//   l_invexp_efsa = 7,
+//   l_lognormal_efsa = 8,
+//   l_gamma_efsa = 9,
+//   l_lms_efsa = 10
+// };
+//
+// enum loud_dich_model {
+//   l_logistic = 1,
+//   l_weibull = 2,
+//   l_gamma = 3,
+//   l_dhill = 4,
+//   l_loglogistic = 5,
+//   l_logprobit = 6,
+//   l_probit = 7,
+//   l_qlinear = 8,
+//   l_multistage = 9
+// };
+
+enum loud_datatype { l_summary = 1, l_individual = 2, l_nested = 3, l_dichotomous = 4 };
+
 // BMDS helper structures
 #ifdef _WIN64
 #  pragma pack(8)
@@ -181,6 +208,40 @@ struct nestedSRData {
   double maxAbsSR;
 };
 
+// input struct for LOUD CMA
+struct fitInput {
+  Eigen::MatrixXd doses;
+  Eigen::MatrixXd Y;
+  double lmean0;
+  double lmean1;
+  int N_obs0;
+  int N_obs1;
+  double s0sq;
+  double s1sq;
+  int N_obs;     // required for cv
+  double ssq;    // required for cv
+  bool sign;     // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
+  int iter = 5;  // 50000;
+  double bmr_rel;
+  double bmr_sd;
+  int dist;  // defined in the distribution enum
+  int datatype;
+  int burnin = 5;  // 5000;
+  double qlev = 0.90;
+  int df_override = BMDS_MISSING;
+};
+
+// result struct for LOUD CMA
+struct fitResult {
+  Eigen::VectorXd parms;
+  double int_factor;
+  double waic;
+  Eigen::VectorXd BMD_rel;
+  Eigen::VectorXd BMD_sd;
+  Eigen::MatrixXd R;
+  double pval;
+};
+
 struct python_dichotomous_analysis {
   int model;              // Model Type as listed in dich_model
   int n;                  // total number of observations obs/n
@@ -209,6 +270,7 @@ struct python_dichotomous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   double bmd;                    // the central estimate of the BMD
   double gof_p_value;            // P-value from Chi Square goodness of fit
@@ -280,11 +342,38 @@ struct python_continuous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   double bmd;                    // The bmd at the maximum
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   struct continuous_GOF gof;
   struct BMDS_results bmdsRes;
   struct continuous_AOD aod;
+};
+
+struct python_continuousMA_analysis {
+  int nmodels;                              // number of models for the model average
+  std::vector<std::vector<double>> priors;  // List of pointers to prior arrays
+                                            // priors[i] is the prior array for the ith model ect
+  std::vector<int> nparms;                  // parameters in each model
+  std::vector<int> actual_parms;            // actual number of parameters in the model
+  std::vector<int> prior_cols;      // columns in the prior if there are 'more' in the future
+                                    // presently there are only 5
+  std::vector<int> models;          // list of models this is defined by cont_model.
+  std::vector<double> modelPriors;  // prior probability on the model
+  int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;                     // uses loud_datatype enum
+  long seed;
+  struct python_continuous_analysis pyCA;
+};
+
+struct python_continuousMA_result {
+  int nmodels;  // number of models for each
+  std::vector<python_continuous_model_result>
+      models;                      // Individual model fits for each model average
+  int dist_numE;                   // number of entries in rows for the bmd_dist
+  std::vector<double> post_probs;  // posterior probabilities
+  std::vector<double> bmd_dist;    // bmd ma distribution (dist_numE x 2) matrix
+  struct BMDSMA_results bmdsRes;
 };
 
 struct python_multitumor_analysis {
@@ -666,6 +755,31 @@ void SortNestedData(
     std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc
 );
 
+void bridge_sample(
+    Eigen::MatrixXd &R, struct fitInput *loudIn, struct fitResult *loudOut,
+    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
+    Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
+);
+
+double pivotal_pvalue(
+    Eigen::MatrixXd &R, struct fitInput *loudIn,  // fitResult *loudOut,
+    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
+);
+
+void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+
+double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
+
+// void fit_cpower(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_cexp3(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_cexp5(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_chill(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod,
@@ -705,9 +819,39 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void pythonBMDSLoud_dev(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void pythonBMDSContLoud_dummy(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
 #ifdef __cplusplus
 }
 #endif
+
+Eigen::VectorXd loud_likelihood(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
+);
+
+double getQVals(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    int datatype
+);
+
+struct fitInput createFitInput(
+    Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
+    double s0sq, double s1sq, int N_obs, double ssq, bool sign, int iter, int burnin,
+    double bmr_rel, double bmr_sd, int dist, int datatype
+);
+
+// overloaded functions
+void determineAdvDir(struct python_continuous_analysis *pyAnal);
 
 // overloaded print statements
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
@@ -785,3 +929,7 @@ std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
 );
 
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD, bool print = true);
+
+std::string printBmdsStruct(struct fitInput *in, bool print = true);
+
+std::string printBmdsStruct(struct fitResult *out, bool print = true);
