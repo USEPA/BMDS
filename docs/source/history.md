@@ -29,13 +29,17 @@
 
 ### Version 25.2 
 
-*Released on 2025-10-xx.*
+*Released on 2026-02-04.*
 
 * Added Cochran Armitage trend test for dichotomous data
 * Added Jonckheere-Terpstra trend test for continuous data
 * Added additional plotting functionality for nested dichotomous data
 * Changed restriction for rho parameter in non-constant variance model to allow negative values
 * Added ability to count all parameters in a model automatically for the purpose of calculating AIC and p-values.
+* Fixed bug in continuous hybrid BMR type
+* Added validation check for instances of zero standard deviation for continuous data
+* Fixed bug in Rao-Scott transformation when incidence = 0
+* Changed default nested dichotomous BMR to 0.05 Extra Risk
 
 ### Version 25.1
 
