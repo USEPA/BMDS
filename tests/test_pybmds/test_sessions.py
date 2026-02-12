@@ -196,7 +196,7 @@ class TestSession:
 
         # BMDS models must still be present
         assert "Power" in seen
-        assert "Hill" in seen
+        assert "ExponentialM3" in seen
 
     def test_nested_dichotomous(self, nd_dataset4, rewrite_data_files, data_path):
         session = pybmds.Session(dataset=nd_dataset4)

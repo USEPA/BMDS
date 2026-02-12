@@ -43,15 +43,16 @@ class BmdModelContinuous(BmdModel):
             if prior_class in (
                 PriorClass.frequentist_restricted,
                 PriorClass.frequentist_unrestricted,
+                PriorClass.bayesian,
             ):
                 bayes_only_models = {
-                    ContinuousModelChoices.mult_hill.value,
-                    ContinuousModelChoices.inv_exp.value,
-                    ContinuousModelChoices.lognormal.value,
-                    ContinuousModelChoices.cont_gamma.value,
-                    ContinuousModelChoices.lms.value,
+                    ContinuousModelChoices.mult_hill.value.id,
+                    ContinuousModelChoices.inverse_exp.value.id,
+                    ContinuousModelChoices.lognormal.value.id,
+                    ContinuousModelChoices.cont_gamma.value.id,
+                    ContinuousModelChoices.lms.value.id,
                 }
-                if self.bmd_model_class in bayes_only_models:
+                if self.bmd_model_class.id in bayes_only_models:
                     raise ConfigurationException(
                         "This model cannot be fit using maximum likelihood estimation (frequentist priors)."
                     )

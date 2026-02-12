@@ -67,6 +67,7 @@ class TestPriorOverrides:
             for prior_class in [
                 PriorClass.frequentist_restricted,
                 PriorClass.frequentist_unrestricted,
+                PriorClass.bayesian,
             ]:
                 with pytest.raises(ConfigurationException):
                     Model(cdataset2, {"priors": prior_class})
