@@ -45,7 +45,6 @@ class Prior(BaseModel):
             ]
 
         if self.type is PriorDistribution.InverseGamma:
-            # initial_value=shape, stdev=scale
             return [
                 ("name", self.name),
                 ("type", self.type),
