@@ -119,7 +119,8 @@ class Session:
 
         # BMDS models
         _add(c3.Power, [DistType.normal, DistType.normal_ncv])
-        _add(c3.Hill, [DistType.normal, DistType.normal_ncv])
+        if not include_efsa:
+            _add(c3.Hill, [DistType.normal, DistType.normal_ncv])
         _add(
             c3.ExponentialM3,
             [DistType.normal, DistType.normal_ncv, DistType.log_normal],
