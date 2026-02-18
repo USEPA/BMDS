@@ -31,6 +31,29 @@ class Prior(BaseModel):
     def numeric_list(self) -> list[float]:
         return list(self.model_dump(exclude={"name"}).values())
 
+    def __repr_args__(self):
+        # Make debug printing reflect LOUD parameterization
+        if self.type is PriorDistribution.Student_t:
+            # NOTE: by convention in this codebase:
+            # initial_value=df, stdev=loc, min_value=scale, max_value=<constraint/min/etc>
+            return [
+                ("name", self.name),
+                ("type", self.type),
+                ("df", self.initial_value),
+                ("location", self.stdev),
+                ("scale", self.min_value),
+            ]
+
+        if self.type is PriorDistribution.InverseGamma:
+            return [
+                ("name", self.name),
+                ("type", self.type),
+                ("shape", self.initial_value),
+                ("scale", self.stdev),
+            ]
+
+        return super().__repr_args__()
+
 
 class ModelPriors(BaseModel):
     prior_class: PriorClass  # if this is a predefined model class
@@ -377,7 +400,7 @@ def priors_tbl(
                 df_ = values[1]
                 loc = values[2]
                 scale = values[3]
-                definition = f"df={df_}, loc={loc}, scale={scale}, min={values[4]}"
+                definition = f"df={df_}, loc={loc}, scale={scale}"
             elif dist.name.lower() in {"inversegamma"}:
                 shape = values[1]
                 scale = values[2]
