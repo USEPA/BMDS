@@ -317,7 +317,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("bmd_dist", &python_continuous_model_result::bmd_dist)
       .def_readwrite("gof", &python_continuous_model_result::gof)
       .def_readwrite("bmdsRes", &python_continuous_model_result::bmdsRes)
-      .def_readwrite("aod", &python_continuous_model_result::aod);
+      .def_readwrite("aod", &python_continuous_model_result::aod)
+      .def_readwrite("loudRes", &python_continuous_model_result::loudRes);
 
   py::class_<python_continuousMA_analysis>(m, "python_continuousMA_analysis")
       .def(py::init<>())
@@ -327,6 +328,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("actual_parms", &python_continuousMA_analysis::actual_parms)
       .def_readwrite("prior_cols", &python_continuousMA_analysis::prior_cols)
       .def_readwrite("models", &python_continuousMA_analysis::models)
+      .def_readwrite("disttype", &python_continuousMA_analysis::loud_dist_type)
       .def_readwrite("modelPriors", &python_continuousMA_analysis::modelPriors)
       .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
       .def_readwrite("datatype", &python_continuousMA_analysis::datatype)
@@ -341,6 +343,9 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("models", &python_continuousMA_result::models)
       .def_readwrite("dist_numE", &python_continuousMA_result::dist_numE)
       .def_readwrite("post_probs", &python_continuousMA_result::post_probs)
+      .def_readwrite("post_bmd", &python_continuousMA_result::post_bmd)
+      .def_readwrite("post_bmdl", &python_continuousMA_result::post_bmdl)
+      .def_readwrite("post_bmdu", &python_continuousMA_result::post_bmdu)
       .def_readwrite("bmd_dist", &python_continuousMA_result::bmd_dist)
       .def_readwrite("bmdsRes", &python_continuousMA_result::bmdsRes);
 

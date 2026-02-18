@@ -2065,6 +2065,8 @@ void runPythonContLoud() {
   int iter = 5;
   int burnin = 2;
 
+  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+
   //  // summary data
   //  double D[] = {0, 0.125, 0.25, 0.5, 1.0};
   //  double Y[] = {10.61764, 11.54771, 12.20492, 14.73715, 15.85227};
@@ -2177,6 +2179,7 @@ void runPythonContLoud() {
   ma_info.datatype = datatype;
   ma_info.iter = iter;
   ma_info.burnin = burnin;
+  ma_info.weightOption = weightOption;
 
   // define models to run
   //  hill = 6,
@@ -2202,7 +2205,15 @@ void runPythonContLoud() {
   ma_info.models = models;
   ma_info.loud_dist_type = dists;
 
+  std::vector<python_continuous_model_result> res(models.size());
+  for (int i = 0; i < models.size(); i++) {
+    res[i].model = models[i];
+    res[i].dist = dists[i];
+  }
+
   struct python_continuousMA_result ma_res;
+  ma_res.nmodels = models.size();
+  ma_res.models = res;
 
   pythonBMDSLoud(&ma_info, &ma_res);
 }

@@ -228,6 +228,7 @@ struct fitInput {
   int dist;  // defined in the distribution enum
   int datatype;
   int bmdtype;
+  int weightOption;
   double tailProb;
   int burnin = 5;  // 5000;
   double qlev = 0.90;
@@ -236,11 +237,12 @@ struct fitInput {
 
 // result struct for LOUD CMA
 struct fitResult {
-  Eigen::VectorXd parms;
+  // Eigen::VectorXd parms;
+  Eigen::MatrixXd parms;
   double int_factor;
   double waic;
   Eigen::VectorXd BMD;
-  Eigen::MatrixXd R;
+  // Eigen::MatrixXd R;
   double pval;
 };
 
@@ -350,6 +352,7 @@ struct python_continuous_model_result {
   struct continuous_GOF gof;
   struct BMDS_results bmdsRes;
   struct continuous_AOD aod;
+  struct fitResult loudRes;
 };
 
 struct python_continuousMA_analysis {
@@ -378,7 +381,11 @@ struct python_continuousMA_result {
       models;                      // Individual model fits for each model average
   int dist_numE;                   // number of entries in rows for the bmd_dist
   std::vector<double> post_probs;  // posterior probabilities
-  std::vector<double> bmd_dist;    // bmd ma distribution (dist_numE x 2) matrix
+  std::vector<double> post_bmd;
+  std::vector<double> post_bmdl;
+  std::vector<double> post_bmdu;
+  std::vector<double> bmd_dist;  // bmd ma distribution (dist_numE x 2) matrix
+
   struct BMDSMA_results bmdsRes;
 };
 
@@ -852,7 +859,7 @@ double getQVals(
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
     double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
-    int datatype, int bmdtype, bool isIncreasing, double tailProb
+    int datatype, int bmdtype, bool isIncreasing, int weightOption, double tailProb
 );
 
 double calcLoudBMD(
