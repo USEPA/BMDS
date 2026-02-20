@@ -343,9 +343,6 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("models", &python_continuousMA_result::models)
       .def_readwrite("dist_numE", &python_continuousMA_result::dist_numE)
       .def_readwrite("post_probs", &python_continuousMA_result::post_probs)
-      .def_readwrite("post_bmd", &python_continuousMA_result::post_bmd)
-      .def_readwrite("post_bmdl", &python_continuousMA_result::post_bmdl)
-      .def_readwrite("post_bmdu", &python_continuousMA_result::post_bmdu)
       .def_readwrite("bmd_dist", &python_continuousMA_result::bmd_dist)
       .def_readwrite("bmdsRes", &python_continuousMA_result::bmdsRes);
 

@@ -381,10 +381,7 @@ struct python_continuousMA_result {
       models;                      // Individual model fits for each model average
   int dist_numE;                   // number of entries in rows for the bmd_dist
   std::vector<double> post_probs;  // posterior probabilities
-  std::vector<double> post_bmd;
-  std::vector<double> post_bmdl;
-  std::vector<double> post_bmdu;
-  std::vector<double> bmd_dist;  // bmd ma distribution (dist_numE x 2) matrix
+  std::vector<double> bmd_dist;    // bmd ma distribution (dist_numE x 2) matrix
 
   struct BMDSMA_results bmdsRes;
 };

@@ -138,6 +138,7 @@ double calcNestedAIC(double fitted_LL, double fitted_df, double red_df) {
   return AIC;
 }
 
+// This finds quantile values from cdf
 double findQuantileVals(double *quant, double *val, int arrSize, double target) {
   double retVal = BMDS_MISSING;
 
@@ -154,6 +155,28 @@ double findQuantileVals(double *quant, double *val, int arrSize, double target) 
     }
   }
   return retVal;
+}
+
+// This finds quantile values from dataset. It assumes data has already been sorted.
+double findQuantileVals(std::vector<double> data, double q) {
+  // quantile q must be between 0 and 1
+  if (q < 0.0 || q > 1.0) {
+    std::cout << "invalid quantile" << std::endl;
+    return BMDS_MISSING;
+  }
+
+  int n = data.size();
+  // use linear interpolation if needed
+  double index = q * (n - 1);
+  int lower = static_cast<int>(std::floor(index));
+  int upper = static_cast<int>(std::ceil(index));
+  double weight = index - lower;
+
+  if (lower == upper) {
+    return data[lower];
+  } else {
+    return data[lower] * (1.0 - weight) + data[upper] * weight;
+  }
 }
 
 void collect_dicho_bmd_values(
@@ -5110,19 +5133,16 @@ void pythonBMDSLoud_dev(
   struct fitResult ncvEfsaLmsOut;
   struct fitResult logcvEfsaLmsOut;
 
-  // struct continuous_model_result **res = new struct continuous_model_result
-  // *[pyMA->models.size()];
-
   for (int i = 0; i < pyMA->models.size(); i++) {
-    // res[i]->model = pyMA->models[i];
-    // res[i]->dist = pyMA->loud_dist_type[i];
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
+          std::cout << "Power CV" << std::endl;
           pyRes->models[i].nparms = 4;
           fit_cpower(&cvInput, &cvPowerOut);
           pyRes->models[i].loudRes = cvPowerOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
+          std::cout << "Power NCV" << std::endl;
           pyRes->models[i].nparms = 5;
           fit_cpower(&ncvInput, &ncvPowerOut);
           pyRes->models[i].loudRes = ncvPowerOut;
@@ -5251,156 +5271,123 @@ void pythonBMDSLoud_dev(
       default:
         break;
     }
+
+    // printBmdsStruct(&pyRes->models[i].loudRes);
   }
 
-  //  for (int i=0; i<pyMA.loud_dist_type.size(); i++){
-  //
-  //    distribution dist = pyMA.loud_dist_type(i);
-  //    if (dist == distribution::normal){
-  //
-  //    } else if (dist == distribution::normal_ncv){
-  //    } else if (dist == distribution::log_normal){
-  //    }
-  //
-  //
-  //  }
+  // calculate MA posteriors
+  std::vector<double> posterior_probs_waic;
+  if (pyMA->weightOption != 2) {
+    posterior_probs_waic.reserve(pyMA->nmodels);
+    for (int i = 0; i < pyMA->nmodels; i++) {
+      posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
+    }
 
-  ////////////////
-  // BMDS Models//
-  ////////////////
+    double max_waic = *std::max_element(posterior_probs_waic.begin(), posterior_probs_waic.end());
 
-  //  // Power_CV
-  //  // printBmdsStruct(&cvInput);
-  //  struct fitResult cvPowerOut;
-  //  std::cout << "calling power cv" << std::endl;
-  ////  std::cout << "with N_obs:" << cvInput.N_obs << std::endl;
-  //  fit_cpower(&cvInput, &cvPowerOut);
-  //  // printBmdsStruct(&cvPowerOut);
-  //
-  //  // Power_NCV
-  //  struct fitResult ncvPowerOut;
-  //  std::cout << "calling power ncv" << std::endl;
-  ////  std::cout << "with N_obs:" << ncvInput.N_obs << std::endl;
-  //  fit_cpower(&ncvInput, &ncvPowerOut);
-  //
-  //  // Exp3_CV
-  //  struct fitResult cvExp3Out;
-  //  std::cout << "calling exp3 cv" << std::endl;
-  //  fit_cexp3(&cvInput, &cvExp3Out);
-  //
-  //  // Exp3_NCV
-  //  struct fitResult ncvExp3Out;
-  //  std::cout << "calling exp3 ncv" << std::endl;
-  //  fit_cexp3(&ncvInput, &ncvExp3Out);
-  //
-  //  // Exp3_LogCV
-  //  struct fitResult logcvExp3Out;
-  //  std::cout << "calling exp3 log cv" << std::endl;
-  ////  std::cout << "with N_obs:" << logcvInput.N_obs << std::endl;
-  //  fit_cexp3(&logcvInput, &logcvExp3Out);
-  //
-  //  // Exp5_CV
-  //  struct fitResult cvExp5Out;
-  //  std::cout << "calling exp5 cv" << std::endl;
-  //  fit_cexp5(&cvInput, &cvExp5Out);
-  //
-  //  // Exp5_NCV
-  //  struct fitResult ncvExp5Out;
-  //  std::cout << "calling exp5 ncv" << std::endl;
-  //  fit_cexp5(&ncvInput, &ncvExp5Out);
-  //
-  //  // Exp5_LogCV
-  //  struct fitResult logcvExp5Out;
-  //  std::cout << "calling exp5 log cv" << std::endl;
-  //  fit_cexp5(&logcvInput, &logcvExp5Out);
-  //
-  //  // Hill_CV
-  //  struct fitResult cvHillOut;
-  //  std::cout << "calling hill cv" << std::endl;
-  //  fit_chill(&cvInput, &cvHillOut);
-  //
-  //  // Hill_NCV
-  //  struct fitResult ncvHillOut;
-  //  std::cout << "calling hill ncv" << std::endl;
-  //  fit_chill(&ncvInput, &ncvHillOut);
-  //
-  //  ////////////////
-  //  // EFSA Models//
-  //  ////////////////
-  //  // Hill_EFSA
-  //  struct fitResult cvEfsaHillOut;
-  //  std::cout << "calling efsa hill cv" <<std::endl;
-  //  fit_chill_efsa(&cvInput, &cvEfsaHillOut);
-  //
-  //  // Hill_NCV_EFSA
-  //  struct fitResult ncvEfsaHillOut;
-  //  std::cout << "calling efsa hill ncv" <<std::endl;
-  //  fit_chill_efsa(&ncvInput, &ncvEfsaHillOut);
-  //
-  //  // Hill_LogCV_EFSA
-  //  struct fitResult logcvEfsaHillOut;
-  //  std::cout << "calling efsa hill logcv" <<std::endl;
-  //  fit_chill_efsa(&logcvInput, &logcvEfsaHillOut);
-  //
-  //  //  // InvExp_CV
-  //  struct fitResult cvEfsaInvExpOut;
-  //  std::cout<<"calling efsa inv exp cv"<<std::endl;
-  //  fit_cinvexp_efsa(&cvInput, &cvEfsaInvExpOut);
-  //
-  //  //  // InvExp_NCV
-  //  struct fitResult ncvEfsaInvExpOut;
-  //  std::cout<<"calling efsa inv exp ncv"<<std::endl;
-  //  fit_cinvexp_efsa(&ncvInput, &ncvEfsaInvExpOut);
-  //
-  //  //  // InvExp_LogCV
-  //  struct fitResult logcvEfsaInvExpOut;
-  //  std::cout<<"calling efsa inv exp log cv"<<std::endl;
-  //  fit_cinvexp_efsa(&logcvInput, &logcvEfsaInvExpOut);
-  //
-  //  // Log_CV
-  //  struct fitResult cvEfsaLogOut;
-  //  std::cout<<"calling efsa log cv" <<std::endl;
-  //  fit_clog_efsa(&cvInput, &cvEfsaLogOut);
-  //
-  //  // Log_NCV
-  //  struct fitResult ncvEfsaLogOut;
-  //  std::cout<<"calling efsa log ncv"<<std::endl;
-  //  fit_cinvexp_efsa(&ncvInput, &ncvEfsaLogOut);
-  //
-  //  // Log_LogCV
-  //  struct fitResult logcvEfsaLogOut;
-  //  std::cout<<"calling efsa inv exp log cv"<<std::endl;
-  //  fit_cinvexp_efsa(&logcvInput, &logcvEfsaLogOut);
-  //
-  //  // Gamma_CV
-  //  struct fitResult cvEfsaGammaOut;
-  //  std::cout<<"calling efsa gamma cv"<<std::endl;
-  //  fit_cgamma_efsa(&cvInput, &cvEfsaGammaOut);
-  //
-  //  // Gamma_NCV
-  //  struct fitResult ncvEfsaGammaOut;
-  //  std::cout<<"calling efsa gamma ncv"<<std::endl;
-  //  fit_cgamma_efsa(&ncvInput, &ncvEfsaGammaOut);
-  //
-  //  // Gamma_LogCV
-  //  struct fitResult logcvEfsaGammaOut;
-  //  std::cout<<"calling efsa gamma log cv"<<std::endl;
-  //  fit_cgamma_efsa(&logcvInput, &logcvEfsaGammaOut);
-  //
-  //  // LMS_CV
-  //  struct fitResult cvEfsaLmsOut;
-  //  std::cout<<"calling efsa gamma cv"<<std::endl;
-  //  fit_cgamma_efsa(&cvInput, &cvEfsaLmsOut);
-  //  //
-  //  //  // LMS_NCV
-  //  struct fitResult ncvEfsaLmsOut;
-  //  std::cout<<"calling efsa gamma ncv"<<std::endl;
-  //  fit_cgamma_efsa(&ncvInput, &ncvEfsaLmsOut);
-  //  //
-  //  //  // LMS_LogCV
-  //  struct fitResult logcvEfsaLmsOut;
-  //  std::cout<<"calling efsa gamma log cv"<<std::endl;
-  //  fit_cgamma_efsa(&logcvInput, &logcvEfsaLmsOut);
+    double tmpExpSum = 0;
+    for (int i = 0; i < posterior_probs_waic.size(); i++) {
+      posterior_probs_waic[i] -= max_waic;
+      posterior_probs_waic[i] = exp(posterior_probs_waic[i]);
+      tmpExpSum += posterior_probs_waic[i];
+    }
+    for (int i = 0; i < posterior_probs_waic.size(); i++) {
+      posterior_probs_waic[i] = posterior_probs_waic[i] / tmpExpSum;
+    }
+  }
+
+  std::vector<double> posterior_probs_int_factor;
+  if (pyMA->weightOption != 1) {
+    posterior_probs_waic.reserve(pyMA->nmodels);
+    for (int i = 0; i < pyMA->nmodels; i++) {
+      posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
+    }
+    double max_int_factor =
+        *(std::max_element(posterior_probs_int_factor.begin(), posterior_probs_int_factor.end()));
+    double tmpExpSum = 0;
+    for (int i = 0; i < posterior_probs_int_factor.size(); i++) {
+      posterior_probs_int_factor[i] -= max_int_factor;
+      posterior_probs_int_factor[i] = exp(posterior_probs_int_factor[i]);
+      tmpExpSum += posterior_probs_int_factor[i];
+    }
+    for (int i = 0; i < posterior_probs_int_factor.size(); i++) {
+      posterior_probs_int_factor[i] = posterior_probs_int_factor[i] / tmpExpSum;
+    }
+  }
+
+  std::vector<double> posterior_probs(pyMA->nmodels);
+  switch (pyMA->weightOption) {
+    case 1: {
+      posterior_probs = posterior_probs_waic;
+      break;
+    }
+    case 2: {
+      posterior_probs = posterior_probs_int_factor;
+      break;
+    }
+    case 3: {
+      double tmpSum = 0;
+      for (int i = 0; i < pyMA->nmodels; i++) {
+        posterior_probs[i] = 0.5 * (posterior_probs_waic[i] + posterior_probs_int_factor[i]);
+        tmpSum += posterior_probs[i];
+      }
+      for (int i = 0; i < pyMA->nmodels; i++) {
+        posterior_probs[i] /= tmpSum;
+      }
+      break;
+    }
+    default: {
+      std::cout << "incorrect weight option for Loud approach" << std::endl;
+      break;
+    }
+  }
+
+  Eigen::MatrixXd lbmd(pyMA->iter, pyMA->nmodels);
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    lbmd.col(i) = pyRes->models[i].loudRes.BMD;
+  }
+
+  // sample from lbmd using posterior_probs
+  // seed the generator
+  std::random_device rd;
+  // define a random number generator
+  std::mt19937 gen(rd());
+  // define weight distribution
+  std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
+  std::vector<double> bmds_c(pyMA->iter);
+  for (int i = 0; i < pyMA->iter; i++) {
+    int result = d(gen);
+    bmds_c[i] = lbmd(i, result);
+  }
+
+  // Calc bmdl, bmd, bmdu
+  // remove nans
+  bmds_c.erase(
+      std::remove_if(
+          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
+      ),
+      bmds_c.end()
+  );
+  // sort data
+  std::sort(bmds_c.begin(), bmds_c.end());
+
+  // find bmdl, bmdu
+  double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
+  double bmdu = findQuantileVals(bmds_c, 1.0 - pyMA->pyCA.alpha);
+
+  // find median for bmd
+  double bmd = BMDS_MISSING;
+  int nPost = bmds_c.size();
+  if (nPost % 2 != 0) {
+    bmd = bmds_c[nPost / 2];
+  } else {
+    bmd = (bmds_c[nPost / 2 - 1] + bmds_c[nPost / 2]) / 2.0;
+  }
+
+  pyRes->bmdsRes.BMD_MA = bmd;
+  pyRes->bmdsRes.BMDL_MA = bmdl;
+  pyRes->bmdsRes.BMDU_MA = bmdu;
+  pyRes->bmd_dist = bmds_c;
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(

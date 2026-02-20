@@ -2065,7 +2065,33 @@ void runPythonContLoud() {
   int iter = 5;
   int burnin = 2;
 
-  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+
+  // define models to run
+  //  hill = 6,
+  // exp_3 = 3,
+  // exp_5 = 5,
+  // power = 8,
+  // funl = 10,
+  // polynomial = 666,
+  // l_hill_efsa = 20,
+  // l_invexp_efsa = 21,
+  // l_lognormal_efsa = 22,
+  // l_gamma_efsa = 23,
+  // l_lms_efsa = 24
+
+  // define corresponding dists for each model
+  //  normal = 1, normal_ncv = 2, log_normal = 3
+
+  // kitchen sink
+  // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+  //                            21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+  //                           1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+
+  // BMDS models from CMA_waic_all
+  std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
 
   //  // summary data
   //  double D[] = {0, 0.125, 0.25, 0.5, 1.0};
@@ -2181,29 +2207,9 @@ void runPythonContLoud() {
   ma_info.burnin = burnin;
   ma_info.weightOption = weightOption;
 
-  // define models to run
-  //  hill = 6,
-  // exp_3 = 3,
-  // exp_5 = 5,
-  // power = 8,
-  // funl = 10,
-  // polynomial = 666,
-  // l_hill_efsa = 20,
-  // l_invexp_efsa = 21,
-  // l_lognormal_efsa = 22,
-  // l_gamma_efsa = 23,
-  // l_lms_efsa = 24
-
-  // define corresponding dists for each model
-  //  normal = 1, normal_ncv = 2, log_normal = 3
-
-  std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
-                             21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
-  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
-                            1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
-
   ma_info.models = models;
   ma_info.loud_dist_type = dists;
+  ma_info.nmodels = models.size();
 
   std::vector<python_continuous_model_result> res(models.size());
   for (int i = 0; i < models.size(); i++) {
@@ -2211,9 +2217,20 @@ void runPythonContLoud() {
     res[i].dist = dists[i];
   }
 
+  struct BMDSMA_results bmdsRes;
+  bmdsRes.BMD.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(numModels, BMDS_MISSING);
+  bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
+  bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
+  bmdsRes.BMD_MA = BMDS_MISSING;
+  bmdsRes.BMDL_MA = BMDS_MISSING;
+  bmdsRes.BMDU_MA = BMDS_MISSING;
+
   struct python_continuousMA_result ma_res;
   ma_res.nmodels = models.size();
   ma_res.models = res;
+  ma_res.bmdsRes = bmdsRes;
 
   pythonBMDSLoud(&ma_info, &ma_res);
 }
