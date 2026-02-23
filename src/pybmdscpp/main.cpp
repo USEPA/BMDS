@@ -85,7 +85,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .value("l_nested", l_nested, "loud nested data")
       .value("l_dichotomous", l_dichotomous, "loud dichotomous data")
       .export_values();
-
+  
   py::class_<test_struct>(m, "test_struct")
       .def(py::init<>())
       .def_readwrite("BMD", &test_struct::BMD)
@@ -337,7 +337,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("actual_parms", &python_continuousMA_analysis::actual_parms)
       .def_readwrite("prior_cols", &python_continuousMA_analysis::prior_cols)
       .def_readwrite("models", &python_continuousMA_analysis::models)
-      .def_readwrite("disttype", &python_continuousMA_analysis::loud_dist_type)
+      .def_readwrite("loud_dist_type", &python_continuousMA_analysis::loud_dist_type)
       .def_readwrite("modelPriors", &python_continuousMA_analysis::modelPriors)
       .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
       .def_readwrite("datatype", &python_continuousMA_analysis::datatype)
