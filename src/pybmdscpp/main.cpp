@@ -1,5 +1,6 @@
 
 #include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
 #include "bmds_helper.h"
@@ -213,6 +214,14 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("minAbsSR", &nestedSRData::minAbsSR)
       .def_readwrite("avgAbsSR", &nestedSRData::avgAbsSR)
       .def_readwrite("maxAbsSR", &nestedSRData::maxAbsSR);
+
+  py::class_<fitResult>(m, "fitResult")
+      .def(py::init<>())
+      .def_readwrite("parms", &fitResult::parms)
+      .def_readwrite("int_factor", &fitResult::int_factor)
+      .def_readwrite("waic", &fitResult::waic)
+      .def_readwrite("BMD", &fitResult::BMD)
+      .def_readwrite("pval", &fitResult::pval);
 
   py::class_<python_dichotomous_analysis>(m, "python_dichotomous_analysis")
       .def(py::init<>())
