@@ -175,6 +175,8 @@ class ModelPriors(BaseModel):
                 p.type = PriorDistribution.InverseGamma
                 p.initial_value = (df0 + df1) / 2
                 p.stdev = s2log * (df0 + df1) / 2
+            if p := _p("Var1"): 
+                self.variance_priors.remove(p)
 
     def get_prior(self, name: str) -> Prior:
         """Search all priors and return the match by name.
@@ -236,6 +238,12 @@ class ModelPriors(BaseModel):
         dist_type: DistType | None = None,
         nphi: int | None = None,
     ) -> list[list]:
+
+        if self.prior_class is PriorClass.bayesian_loud:
+            exp3_names = {"m0", "m1", "c", "d", "Var0", "Var1"} 
+            if any(p.name in exp3_names for p in (self.priors + (self.variance_priors or []))): 
+                self.priors = [p for p in self.priors if p.name != "c"] 
+
         priors = []
         for prior in self.priors:
             if nphi is not None and prior.name == "phi":

@@ -18,6 +18,16 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
         self.structs = ContinuousModelAverage(
             self.session.dataset, self.models, self.session.ma_weights
         )
+        avg = self.structs.average  # python_continuousMA_analysis
+        n = int(avg.nmodels)
+
+        # NOTE: your current binding exposes loud_dist_type as "disttype"
+        if len(avg.models) != n:
+            raise ValueError(f"avg.models length {len(avg.models)} != nmodels {n}")
+        if not hasattr(avg, "disttype"):
+            raise AttributeError("avg has no 'disttype' (bound loud_dist_type)")
+        if len(avg.disttype) != n:
+            raise ValueError(f"avg.disttype length {len(avg.disttype)} != nmodels {n}")
         self.structs.execute()
         return ContinuousModelAverageResult.from_cpp(
             self.structs, [model.results for model in self.models]
