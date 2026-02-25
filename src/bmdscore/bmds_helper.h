@@ -873,6 +873,8 @@ double calcLoudBMD(
     bool isIncreasing, double tailProb
 );
 
+double findMedianVal(std::vector<double> dist);
+
 // overloaded functions
 void determineAdvDir(struct python_continuous_analysis *pyAnal);
 
@@ -956,3 +958,7 @@ std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD, bool
 std::string printBmdsStruct(struct fitInput *in, bool print = true);
 
 std::string printBmdsStruct(struct fitResult *out, bool print = true);
+
+std::string printBmdsStruct(struct python_continuousMA_analysis *pyAnal, bool print = true);
+
+std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print = true);

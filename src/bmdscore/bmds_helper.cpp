@@ -5134,15 +5134,17 @@ void pythonBMDSLoud_dev(
   struct fitResult logcvEfsaLmsOut;
 
   for (int i = 0; i < pyMA->models.size(); i++) {
+    pyRes->models[i].model = pyMA->models[i];
+    pyRes->models[i].dist = pyMA->loud_dist_type[i];
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
-          std::cout << "Power CV" << std::endl;
+          //          std::cout << "Power CV" << std::endl;
           pyRes->models[i].nparms = 4;
           fit_cpower(&cvInput, &cvPowerOut);
           pyRes->models[i].loudRes = cvPowerOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
-          std::cout << "Power NCV" << std::endl;
+          //          std::cout << "Power NCV" << std::endl;
           pyRes->models[i].nparms = 5;
           fit_cpower(&ncvInput, &ncvPowerOut);
           pyRes->models[i].loudRes = ncvPowerOut;
@@ -5153,14 +5155,17 @@ void pythonBMDSLoud_dev(
       case cont_model::exp_3:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
+          //          std::cout << "Exp3 CV" << std::endl;
           fit_cexp3(&cvInput, &cvExp3Out);
           pyRes->models[i].loudRes = cvExp3Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
+          //          std::cout << "Exp3 NCV" << std::endl;
           fit_cexp3(&ncvInput, &ncvExp3Out);
           pyRes->models[i].loudRes = ncvExp3Out;
         } else {
           pyRes->models[i].nparms = 4;
+          //          std::cout << "Exp3 LogCV" << std::endl;
           fit_cexp3(&logcvInput, &logcvExp3Out);
           pyRes->models[i].loudRes = logcvExp3Out;
         }
@@ -5168,14 +5173,17 @@ void pythonBMDSLoud_dev(
       case cont_model::exp_5:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
+          //          std::cout << "Exp5 CV" << std::endl;
           fit_cexp5(&cvInput, &cvExp5Out);
           pyRes->models[i].loudRes = cvExp5Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
+          //          std::cout << "Exp5 NCV" << std::endl;
           fit_cexp5(&ncvInput, &ncvExp5Out);
           pyRes->models[i].loudRes = ncvExp5Out;
         } else {
           pyRes->models[i].nparms = 5;
+          //          std::cout << "Exp5 logCV" << std::endl;
           fit_cexp5(&logcvInput, &logcvExp5Out);
           pyRes->models[i].loudRes = logcvExp5Out;
         }
@@ -5183,10 +5191,12 @@ void pythonBMDSLoud_dev(
       case cont_model::hill:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
+          //          std::cout << "Hill CV" << std::endl;
           fit_chill(&cvInput, &cvHillOut);
           pyRes->models[i].loudRes = cvHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
+          //          std::cout << "Hill NCV" << std::endl;
           fit_chill(&ncvInput, &ncvHillOut);
           pyRes->models[i].loudRes = ncvHillOut;
         } else {
@@ -5275,6 +5285,7 @@ void pythonBMDSLoud_dev(
     // printBmdsStruct(&pyRes->models[i].loudRes);
   }
 
+  //  std::cout <<"after model fits"<<std::endl;
   // calculate MA posteriors
   std::vector<double> posterior_probs_waic;
   if (pyMA->weightOption != 2) {
@@ -5296,6 +5307,7 @@ void pythonBMDSLoud_dev(
     }
   }
 
+  //  std::cout<<"after waic"<<std::endl;
   std::vector<double> posterior_probs_int_factor;
   if (pyMA->weightOption != 1) {
     posterior_probs_waic.reserve(pyMA->nmodels);
@@ -5315,6 +5327,7 @@ void pythonBMDSLoud_dev(
     }
   }
 
+  //  std::cout<<"after int_factor"<<std::endl;
   std::vector<double> posterior_probs(pyMA->nmodels);
   switch (pyMA->weightOption) {
     case 1: {
@@ -5342,6 +5355,18 @@ void pythonBMDSLoud_dev(
     }
   }
 
+  //  std::cout<<"after posterior_probs"<<std::endl;
+
+  // calc individual model bmdl, bmd, bmdu
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    std::vector<double> bmd_dist;
+    bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
+    Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) = pyRes->models[i].loudRes.BMD;
+    double bmdl = findQuantileVals(bmd_dist, pyMA->pyCA.alpha);
+    double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyCA.alpha);
+    double bmd = findMedianVal(bmd_dist);
+  }
+
   Eigen::MatrixXd lbmd(pyMA->iter, pyMA->nmodels);
   for (int i = 0; i < pyMA->nmodels; i++) {
     lbmd.col(i) = pyRes->models[i].loudRes.BMD;
@@ -5359,8 +5384,9 @@ void pythonBMDSLoud_dev(
     int result = d(gen);
     bmds_c[i] = lbmd(i, result);
   }
+  //  std::cout<<"after bmds_c"<<std::endl;
 
-  // Calc bmdl, bmd, bmdu
+  // Calc MA bmdl, bmd, bmdu
   // remove nans
   bmds_c.erase(
       std::remove_if(
@@ -5375,19 +5401,29 @@ void pythonBMDSLoud_dev(
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
   double bmdu = findQuantileVals(bmds_c, 1.0 - pyMA->pyCA.alpha);
 
-  // find median for bmd
-  double bmd = BMDS_MISSING;
-  int nPost = bmds_c.size();
-  if (nPost % 2 != 0) {
-    bmd = bmds_c[nPost / 2];
-  } else {
-    bmd = (bmds_c[nPost / 2 - 1] + bmds_c[nPost / 2]) / 2.0;
-  }
+  //  std::cout<<"after bmdl, bmdu"<<std::endl;
+
+  double bmd = findMedianVal(bmds_c);
+
+  //  std::cout<<"after bmd"<<std::endl;
 
   pyRes->bmdsRes.BMD_MA = bmd;
   pyRes->bmdsRes.BMDL_MA = bmdl;
   pyRes->bmdsRes.BMDU_MA = bmdu;
   pyRes->bmd_dist = bmds_c;
+  pyRes->post_probs = posterior_probs;
+  //  std::cout<<"end of LOUD"<<std::endl;
+}
+
+double findMedianVal(std::vector<double> dist) {
+  int n = dist.size();
+  double median = BMDS_MISSING;
+  if (n % 2 != 0) {
+    median = dist[n / 2];
+  } else {
+    median = (dist[n / 2 - 1] + dist[n / 2]) / 2.0;
+  }
+  return median;
 }
 
 void BMDS_ENTRY_API __stdcall pythonBMDSMultitumor(
@@ -8579,7 +8615,7 @@ std::string printBmdsStruct(struct continuous_AOD *AOD, bool print) {
   }
   ss << "addConst:" << AOD->addConst << std::endl;
 
-  ss << printBmdsStruct(&AOD->TOI, print);
+  ss << printBmdsStruct(&AOD->TOI, false);
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -8880,6 +8916,50 @@ std::string printBmdsStruct(struct dichotomous_GOF *gof, bool print) {
   return ss.str();
 }
 
+std::string printBmdsStruct(struct fitInput *in, bool print) {
+  const int colWidth = 10;
+  const int largeColWidth = 14;
+
+  std::stringstream ss;
+  ss << std::endl << "Struct: fitInput" << std::endl;
+
+  ss << "doses:" << in->doses << std::endl;
+  ss << "Y:" << in->Y << std::endl;
+  ss << "lmean0:" << in->lmean0 << std::endl;
+  ss << "lmean1:" << in->lmean1 << std::endl;
+  ss << "N_obs0:" << in->N_obs0 << std::endl;
+  ss << "N_obs1:" << in->N_obs1 << std::endl;
+  ss << "s0sq:" << in->s0sq << std::endl;
+  ss << "s1sq:" << in->s1sq << std::endl;
+  ss << "N_obs:" << in->N_obs << std::endl;
+  ss << "ssq:" << in->ssq << std::endl;
+  ss << "sign:" << (in->sign ? "True" : "False") << std::endl;
+  ss << "iter:" << in->iter << std::endl;
+  ss << "bmr:" << in->bmr << std::endl;
+  ss << "dist:" << in->dist << std::endl;
+  ss << "datatype:" << in->datatype << std::endl;
+
+  if (print) std::cout << ss.str() << std::endl;
+  return ss.str();
+}
+
+std::string printBmdsStruct(struct fitResult *out, bool print) {
+  const int colWidth = 10;
+  const int largeColWidth = 14;
+
+  std::stringstream ss;
+  ss << std::endl << "Struct: fitOutput" << std::endl;
+
+  ss << "parms:" << out->parms << std::endl;
+  ss << "int_factor:" << out->int_factor << std::endl;
+  ss << "waic:" << out->waic << std::endl;
+  ss << "BMD:" << out->BMD << std::endl;
+  // ss << "R:" << out->R << std::endl;
+
+  if (print) std::cout << ss.str() << std::endl;
+  return ss.str();
+}
+
 std::string printBmdsStruct(struct python_continuous_analysis *pyAnal, bool print) {
   const int colWidth = 8;
   std::stringstream ss;
@@ -8964,9 +9044,13 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
   ss << "model_df:" << pyRes->model_df << std::endl;
   ss << "total_df:" << pyRes->total_df << std::endl;
   ss << "bmd:" << pyRes->bmd << std::endl;
-  ss << printBmdsStruct(&pyRes->bmdsRes, print);
-  ss << printBmdsStruct(&pyRes->gof, print);
-  ss << printBmdsStruct(&pyRes->aod, print);
+  ss << printBmdsStruct(&pyRes->bmdsRes, false);
+  if (pyRes->gof.dose.size() > 0) {
+    ss << printBmdsStruct(&pyRes->gof, false);
+  }
+  if (pyRes->aod.LL.size() > 0) {
+    ss << printBmdsStruct(&pyRes->aod, false);
+  }
 
   ss << std::endl << "bmd_dist" << std::endl;
   printElement(ss, "Percentile", largeColWidth);
@@ -8977,6 +9061,8 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
     printElement(ss, pyRes->bmd_dist[i], largeColWidth);
     ss << std::endl;
   }
+
+  ss << printBmdsStruct(&pyRes->loudRes, false);
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -9057,9 +9143,9 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   ss << "bmd:" << pyRes->bmd << std::endl;
   ss << "gof_p_value:" << pyRes->gof_p_value << std::endl;
   ss << "gof_chi_sqr_statistic:" << pyRes->gof_chi_sqr_statistic << std::endl;
-  ss << printBmdsStruct(&pyRes->bmdsRes, print);
-  ss << printBmdsStruct(&pyRes->gof, print);
-  ss << printBmdsStruct(&pyRes->aod, print);
+  ss << printBmdsStruct(&pyRes->bmdsRes, false);
+  ss << printBmdsStruct(&pyRes->gof, false);
+  ss << printBmdsStruct(&pyRes->aod, false);
 
   ss << std::endl << "bmd_dist" << std::endl;
   printElement(ss, "Percentile", largeColWidth);
@@ -9119,7 +9205,7 @@ std::string printBmdsStruct(struct python_dichotomousMA_analysis *pyMA, bool pri
     }
   }
 
-  ss << printBmdsStruct(&pyMA->pyDA, print);
+  ss << printBmdsStruct(&pyMA->pyDA, false);
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -9140,7 +9226,7 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
     ss << "model:" << i << ", post_probs:" << pyRes->post_probs[i] << std::endl;
   }
 
-  ss << printBmdsStruct(&pyRes->bmdsRes, print);
+  ss << printBmdsStruct(&pyRes->bmdsRes, false);
 
   // bmd_dist
   ss << std::endl << "bmd_dist" << std::endl;
@@ -9157,8 +9243,103 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
   ss << std::endl << "models" << std::endl;
   for (int i = 0; i < pyRes->nmodels; i++) {
     ss << "model:" << i << std::endl;
-    ss << printBmdsStruct(&pyRes->models[i], print);
+    ss << printBmdsStruct(&pyRes->models[i], false);
   }
+
+  if (print) std::cout << ss.str() << std::endl;
+
+  return ss.str();
+}
+
+std::string printBmdsStruct(struct python_continuousMA_analysis *pyMA, bool print) {
+  const int colWidth = 13;
+  std::stringstream ss;
+
+  ss << std::endl << "Struct: python_continuousMA_analysis" << std::endl;
+  ss << "nmodels:" << pyMA->nmodels << std::endl;
+
+  bool printNparms = false;
+  if (pyMA->nparms.size() > 0) {
+    printNparms = true;
+  }
+
+  printElement(ss, "models", colWidth);
+  //  if (printNparms) {
+  //    printElement(ss, "nparms", colWidth);
+  //  }
+  //  printElement(ss, "actual_parms", colWidth);
+  //  printElement(ss, "prior_cols", colWidth);
+  //  printElement(ss, "modelPriors", colWidth);
+  ss << std::endl;
+
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    printElement(ss, pyMA->models[i], colWidth);
+    printElement(ss, pyMA->loud_dist_type[i], colWidth);
+    //    if (pyMA->nparms.size() > i) {
+    //      printElement(ss, pyMA->nparms[i], colWidth);
+    //    }
+    //    printElement(ss, pyMA->actual_parms[i], colWidth);
+    //    printElement(ss, pyMA->prior_cols[i], colWidth);
+    //    printElement(ss, pyMA->modelPriors[i], colWidth);
+    ss << std::endl;
+  }
+
+  //  ss << "priors:" << std::endl;
+  //  for (int k = 0; k < pyMA->nmodels; k++) {
+  //    ss << "model:" << k << std::endl;
+  //    for (int i = 0; i < pyMA->priors[k].size() / pyMA->prior_cols[k]; i++) {
+  //      for (int j = 0; j < pyMA->prior_cols[k]; j++) {
+  //        printElement(ss, pyMA->priors[k][i * pyMA->prior_cols[k] + j], colWidth);
+  //      }
+  //      ss << std::endl;
+  //    }
+  //  }
+
+  ss << "weightOption:" << pyMA->weightOption << std::endl;
+  ss << "datatype:" << pyMA->datatype << std::endl;
+  ss << "iter:" << pyMA->iter << std::endl;
+  ss << "burnin:" << pyMA->burnin << std::endl;
+
+  ss << printBmdsStruct(&pyMA->pyCA, false);
+
+  if (print) std::cout << ss.str() << std::endl;
+
+  return ss.str();
+}
+
+std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print) {
+  const int colWidth = 10;
+  const int largeColWidth = 14;
+  std::stringstream ss;
+
+  ss << std::endl << "Struct: python_continuousMA_result" << std::endl;
+
+  ss << "nmodels:" << pyRes->nmodels << std::endl;
+
+  for (int i = 0; i < pyRes->post_probs.size(); i++) {
+    ss << "model:" << i << ", post_probs:" << pyRes->post_probs[i] << std::endl;
+  }
+
+  ss << printBmdsStruct(&pyRes->bmdsRes, false);
+
+  // bmd_dist
+  ss << std::endl << "post_probs" << std::endl;
+  for (int i = 0; i < pyRes->post_probs.size(); i++) {
+    printElement(ss, pyRes->post_probs[i], largeColWidth);
+    ss << std::endl;
+  }
+  ss << std::endl << "bmd_dist" << std::endl;
+  for (int i = 0; i < pyRes->bmd_dist.size(); i++) {
+    printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+    ss << std::endl;
+  }
+
+  // ind model res
+  //  ss << std::endl << "models" << std::endl;
+  //  for (int i = 0; i < pyRes->nmodels; i++) {
+  //    ss << "model:" << i << std::endl;
+  //    ss << printBmdsStruct(&pyRes->models[i], false);
+  //  }
 
   if (print) std::cout << ss.str() << std::endl;
 
@@ -9228,7 +9409,7 @@ std::string printBmdsStruct(struct python_multitumor_result *pyRes, bool print) 
     ss << "dataset:" << j << std::endl;
     for (int i = 0; i < pyRes->nmodels[j]; i++) {
       ss << "model:" << i << std::endl;
-      ss << printBmdsStruct(&pyRes->models[j][i], print);
+      ss << printBmdsStruct(&pyRes->models[j][i], false);
     }
   }
 
@@ -9322,57 +9503,13 @@ std::string printBmdsStruct(struct python_nested_result *pyRes, bool print) {
   ss << "combPVal:" << pyRes->combPVal << std::endl;
 
   // structs
-  ss << printBmdsStruct(&pyRes->bmdsRes, print);
-  ss << printBmdsStruct(&pyRes->litter, print);
-  ss << printBmdsStruct(&pyRes->boot, print);
-  ss << printBmdsStruct(&pyRes->reduced, print);
-  ss << printBmdsStruct(&pyRes->srData, print);
+  ss << printBmdsStruct(&pyRes->bmdsRes, false);
+  ss << printBmdsStruct(&pyRes->litter, false);
+  ss << printBmdsStruct(&pyRes->boot, false);
+  ss << printBmdsStruct(&pyRes->reduced, false);
+  ss << printBmdsStruct(&pyRes->srData, false);
 
   if (print) std::cout << ss.str() << std::endl;
 
-  return ss.str();
-}
-
-std::string printBmdsStruct(struct fitInput *in, bool print) {
-  const int colWidth = 10;
-  const int largeColWidth = 14;
-
-  std::stringstream ss;
-  ss << std::endl << "Struct: fitInput" << std::endl;
-
-  ss << "doses:" << in->doses << std::endl;
-  ss << "Y:" << in->Y << std::endl;
-  ss << "lmean0:" << in->lmean0 << std::endl;
-  ss << "lmean1:" << in->lmean1 << std::endl;
-  ss << "N_obs0:" << in->N_obs0 << std::endl;
-  ss << "N_obs1:" << in->N_obs1 << std::endl;
-  ss << "s0sq:" << in->s0sq << std::endl;
-  ss << "s1sq:" << in->s1sq << std::endl;
-  ss << "N_obs:" << in->N_obs << std::endl;
-  ss << "ssq:" << in->ssq << std::endl;
-  ss << "sign:" << (in->sign ? "True" : "False") << std::endl;
-  ss << "iter:" << in->iter << std::endl;
-  ss << "bmr:" << in->bmr << std::endl;
-  ss << "dist:" << in->dist << std::endl;
-  ss << "datatype:" << in->datatype << std::endl;
-
-  if (print) std::cout << ss.str() << std::endl;
-  return ss.str();
-}
-
-std::string printBmdsStruct(struct fitResult *out, bool print) {
-  const int colWidth = 10;
-  const int largeColWidth = 14;
-
-  std::stringstream ss;
-  ss << std::endl << "Struct: fitOutput" << std::endl;
-
-  ss << "parms:" << out->parms << std::endl;
-  ss << "int_factor:" << out->int_factor << std::endl;
-  ss << "waic:" << out->waic << std::endl;
-  ss << "BMD:" << out->BMD << std::endl;
-  // ss << "R:" << out->R << std::endl;
-
-  if (print) std::cout << ss.str() << std::endl;
   return ss.str();
 }

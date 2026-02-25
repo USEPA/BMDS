@@ -1,6 +1,6 @@
 
-#include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "bmds_helper.h"
@@ -85,7 +85,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .value("l_nested", l_nested, "loud nested data")
       .value("l_dichotomous", l_dichotomous, "loud dichotomous data")
       .export_values();
-  
+
   py::class_<test_struct>(m, "test_struct")
       .def(py::init<>())
       .def_readwrite("BMD", &test_struct::BMD)
