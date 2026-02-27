@@ -3095,8 +3095,6 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
   double LAM = 2.0;
   int ll_type;
 
-  //  std::cout << "inside fitcpower with N_obs:" << loudIn->N_obs << std::endl;
-
   Eigen::VectorXd init;
   Eigen::MatrixXd diag;
   std::vector<bool> isNegative;
@@ -5082,26 +5080,28 @@ void pythonBMDSLoud_dev(
   //  double bmr_rel = 0.1;
   //  double bmr_sd = 1.0;
   double bmr = pyMA->pyCA.BMR;
+  int iter = pyMA->pyCA.samples;
+  int burnin = pyMA->pyCA.burnin;
 
   struct fitInput cvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], N_obs[0] + N_obs[N_obs.size() - 1], ssq01, pyMA->iter, pyMA->burnin, bmr,
+      var[var.size() - 1], N_obs[0] + N_obs[N_obs.size() - 1], ssq01, iter, burnin, bmr,
       distribution::normal, pyMA->datatype, pyMA->pyCA.BMD_type, pyMA->pyCA.isIncreasing,
       pyMA->weightOption, pyMA->pyCA.tail_prob
   );
 
   struct fitInput ncvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
-      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, pyMA->iter, pyMA->burnin, bmr,
-      distribution::normal_ncv, pyMA->datatype, pyMA->pyCA.BMD_type, pyMA->pyCA.isIncreasing,
-      pyMA->weightOption, pyMA->pyCA.tail_prob
+      var[var.size() - 1], BMDS_MISSING, BMDS_MISSING, iter, burnin, bmr, distribution::normal_ncv,
+      pyMA->datatype, pyMA->pyCA.BMD_type, pyMA->pyCA.isIncreasing, pyMA->weightOption,
+      pyMA->pyCA.tail_prob
   );
 
   struct fitInput logcvInput = createFitInput(
       doses_post, Y_post, logMean[0], logMean[logMean.size() - 1], N_obs[0],
-      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, pyMA->iter,
-      pyMA->burnin, bmr, distribution::log_normal, pyMA->datatype, pyMA->pyCA.BMD_type,
-      pyMA->pyCA.isIncreasing, pyMA->weightOption, pyMA->pyCA.tail_prob
+      N_obs[N_obs.size() - 1], var[0], var[var.size() - 1], N_obs01, ssq_log01, iter, burnin, bmr,
+      distribution::log_normal, pyMA->datatype, pyMA->pyCA.BMD_type, pyMA->pyCA.isIncreasing,
+      pyMA->weightOption, pyMA->pyCA.tail_prob
   );
 
   // add logic here if all model results are not needed
@@ -5139,12 +5139,10 @@ void pythonBMDSLoud_dev(
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
-          //          std::cout << "Power CV" << std::endl;
           pyRes->models[i].nparms = 4;
           fit_cpower(&cvInput, &cvPowerOut);
           pyRes->models[i].loudRes = cvPowerOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
-          //          std::cout << "Power NCV" << std::endl;
           pyRes->models[i].nparms = 5;
           fit_cpower(&ncvInput, &ncvPowerOut);
           pyRes->models[i].loudRes = ncvPowerOut;
@@ -5155,17 +5153,14 @@ void pythonBMDSLoud_dev(
       case cont_model::exp_3:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
-          //          std::cout << "Exp3 CV" << std::endl;
           fit_cexp3(&cvInput, &cvExp3Out);
           pyRes->models[i].loudRes = cvExp3Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
-          //          std::cout << "Exp3 NCV" << std::endl;
           fit_cexp3(&ncvInput, &ncvExp3Out);
           pyRes->models[i].loudRes = ncvExp3Out;
         } else {
           pyRes->models[i].nparms = 4;
-          //          std::cout << "Exp3 LogCV" << std::endl;
           fit_cexp3(&logcvInput, &logcvExp3Out);
           pyRes->models[i].loudRes = logcvExp3Out;
         }
@@ -5173,17 +5168,14 @@ void pythonBMDSLoud_dev(
       case cont_model::exp_5:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          //          std::cout << "Exp5 CV" << std::endl;
           fit_cexp5(&cvInput, &cvExp5Out);
           pyRes->models[i].loudRes = cvExp5Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          //          std::cout << "Exp5 NCV" << std::endl;
           fit_cexp5(&ncvInput, &ncvExp5Out);
           pyRes->models[i].loudRes = ncvExp5Out;
         } else {
           pyRes->models[i].nparms = 5;
-          //          std::cout << "Exp5 logCV" << std::endl;
           fit_cexp5(&logcvInput, &logcvExp5Out);
           pyRes->models[i].loudRes = logcvExp5Out;
         }
@@ -5191,12 +5183,10 @@ void pythonBMDSLoud_dev(
       case cont_model::hill:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          //          std::cout << "Hill CV" << std::endl;
           fit_chill(&cvInput, &cvHillOut);
           pyRes->models[i].loudRes = cvHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          //          std::cout << "Hill NCV" << std::endl;
           fit_chill(&ncvInput, &ncvHillOut);
           pyRes->models[i].loudRes = ncvHillOut;
         } else {
@@ -5367,7 +5357,7 @@ void pythonBMDSLoud_dev(
     double bmd = findMedianVal(bmd_dist);
   }
 
-  Eigen::MatrixXd lbmd(pyMA->iter, pyMA->nmodels);
+  Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
   for (int i = 0; i < pyMA->nmodels; i++) {
     lbmd.col(i) = pyRes->models[i].loudRes.BMD;
   }
@@ -5379,8 +5369,8 @@ void pythonBMDSLoud_dev(
   std::mt19937 gen(rd());
   // define weight distribution
   std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
-  std::vector<double> bmds_c(pyMA->iter);
-  for (int i = 0; i < pyMA->iter; i++) {
+  std::vector<double> bmds_c(iter);
+  for (int i = 0; i < iter; i++) {
     int result = d(gen);
     bmds_c[i] = lbmd(i, result);
   }
@@ -8986,12 +8976,14 @@ std::string printBmdsStruct(struct python_continuous_analysis *pyAnal, bool prin
     ss << std::endl;
   }
 
-  ss << "prior:" << std::endl;
-  for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
-    for (int j = 0; j < pyAnal->prior_cols; j++) {
-      printElement(ss, pyAnal->prior[i * pyAnal->prior_cols + j], colWidth);
+  if (pyAnal->prior_cols > 0 && pyAnal->prior.size() > 0) {
+    ss << "prior:" << std::endl;
+    for (int i = 0; i < pyAnal->prior.size() / pyAnal->prior_cols; i++) {
+      for (int j = 0; j < pyAnal->prior_cols; j++) {
+        printElement(ss, pyAnal->prior[i * pyAnal->prior_cols + j], colWidth);
+      }
+      ss << std::endl;
     }
-    ss << std::endl;
   }
   ss << "BMD_type:" << pyAnal->BMD_type << std::endl;
   ss << "isIncreasing:" << (pyAnal->isIncreasing ? "true" : "false") << std::endl;
@@ -9270,6 +9262,7 @@ std::string printBmdsStruct(struct python_continuousMA_analysis *pyMA, bool prin
   //  printElement(ss, "actual_parms", colWidth);
   //  printElement(ss, "prior_cols", colWidth);
   //  printElement(ss, "modelPriors", colWidth);
+  printElement(ss, "loud_dist_type", colWidth);
   ss << std::endl;
 
   for (int i = 0; i < pyMA->nmodels; i++) {
@@ -9297,8 +9290,6 @@ std::string printBmdsStruct(struct python_continuousMA_analysis *pyMA, bool prin
 
   ss << "weightOption:" << pyMA->weightOption << std::endl;
   ss << "datatype:" << pyMA->datatype << std::endl;
-  ss << "iter:" << pyMA->iter << std::endl;
-  ss << "burnin:" << pyMA->burnin << std::endl;
 
   ss << printBmdsStruct(&pyMA->pyCA, false);
 

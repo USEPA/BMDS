@@ -62,7 +62,7 @@ class BmdModelContinuous(BmdModel):
                 dataset=dataset,
                 dist_type=model_settings.disttype,
             )
-            if model_settings.priors.prior_class is PriorClass.bayesian_loud: 
+            if model_settings.priors.prior_class is PriorClass.bayesian_loud:
                 if model_settings.samples is None:
                     model_settings.samples = 500
                 if model_settings.burnin is None:

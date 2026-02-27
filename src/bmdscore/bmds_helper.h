@@ -370,8 +370,6 @@ struct python_continuousMA_analysis {
   int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int datatype;                     // uses loud_datatype enum
   long seed;
-  int iter;    // for loud approach
-  int burnin;  // for loud approach
   struct python_continuous_analysis pyCA;
 };
 

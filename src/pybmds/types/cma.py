@@ -23,13 +23,15 @@ class ContinuousModelAverage:
         analysis.alpha = first.alpha
         analysis.suff_stat = first.suff_stat
         analysis.disttype = first.disttype
-        analysis.samples = first.samples 
-        analysis.burnin = first.burnin 
+        analysis.samples = first.samples
+        analysis.burnin = first.burnin
         analysis.Y = dataset.means
         analysis.sd = dataset.stdevs
         analysis.n_group = dataset.ns
         analysis.doses = dataset.doses
         analysis.n = dataset.num_dose_groups
+        analysis.samples = 500
+        analysis.burnin = 100
 
         average = bmdscore.python_continuousMA_analysis()
         average.nmodels = len(models)
@@ -38,53 +40,52 @@ class ContinuousModelAverage:
         average.prior_cols = [model.structs.analysis.prior_cols for model in models]
         average.models = [int(m.structs.analysis.model) for m in models]
         average.disttype = [int(m.structs.analysis.disttype) for m in models]
-        average.iter = int(models[0].settings.samples)
-        average.burnin = int(models[0].settings.burnin)
+        average.weightOption = 1
 
         if analysis.suff_stat is True:
-            average.datatype = bmdscore.loud_datatype.l_summary 
+            average.datatype = bmdscore.loud_datatype.l_summary
         elif analysis.suff_stat is False:
-            average.datatype = bmdscore.loud_datatype.l_individual 
-        else: 
+            average.datatype = bmdscore.loud_datatype.l_individual
+        else:
             raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
 
-        print("DEBUG CMA:") 
-        print(average.iter)
-        print(" nmodels:", average.nmodels) 
-        print(" len(models):", len(models)) 
-        print(" len(average.models):", len(average.models)) 
-        print(" len(average.loud_dist_type):", len(average.disttype)) 
-        print(" len(average.nparms):", len(average.nparms)) 
-        print(" len(average.actual_parms):", len(average.actual_parms)) 
+        print("DEBUG CMA:")
+        print(analysis.samples)
+        print(" nmodels:", average.nmodels)
+        print(" len(models):", len(models))
+        print(" len(average.models):", len(average.models))
+        print(" len(average.loud_dist_type):", len(average.disttype))
+        print(" len(average.nparms):", len(average.nparms))
+        print(" len(average.actual_parms):", len(average.actual_parms))
         print(" len(average.prior_cols):", len(average.prior_cols))
         print(models)
 
         average.priors = [model.structs.analysis.prior for model in models]
-        for i, m in enumerate(models): 
-            n = m.structs.result.nparms 
+        for i, m in enumerate(models):
+            n = m.structs.result.nparms
             c = m.structs.analysis.prior_cols
-            p = average.priors[i] 
-            print(f"Model {i}: nparms={n}, prior_cols={c}, len(prior)={len(p)}, expected={n * c}") 
+            p = average.priors[i]
+            print(f"Model {i}: nparms={n}, prior_cols={c}, len(prior)={len(p)}, expected={n * c}")
             assert len(p) == n * c, f"Bad prior length for model {i}"
 
         average.modelPriors = [float(x) for x in model_weights]
         average.pyCA = analysis
 
         bmdsRes = bmdscore.BMDSMA_results()
-        bmdsRes.BMD_MA  = -9999.0
+        bmdsRes.BMD_MA = -9999.0
         bmdsRes.BMDL_MA = -9999.0
         bmdsRes.BMDU_MA = -9999.0
 
         result = bmdscore.python_continuousMA_result()
         result.nmodels = len(models)
-        
-        result.post_probs = [0.0] * result.nmodels         
-        result.bmd_dist   = [0.0] * int(average.iter)     
+
+        result.post_probs = [0.0] * result.nmodels
+        result.bmd_dist = [0.0] * int(analysis.samples)
         result.models = [bmdscore.python_continuous_model_result() for _ in range(result.nmodels)]
 
         for i, m in enumerate(models):
             nparms = int(m.structs.result.nparms)
-            iters  = int(average.iter)
+            iters = int(analysis.samples)
 
             loud = result.models[i].loudRes
 
@@ -93,6 +94,13 @@ class ContinuousModelAverage:
             loud.BMD = [0.0] * iters
 
         result.bmdsRes = bmdsRes
+
+        print("MA analysis:")
+        bmdscore.print(average, True)
+        print("CA analysis:")
+        bmdscore.print(analysis, True)
+        print("MA result:")
+        bmdscore.print(result, True)
 
         self.analysis = analysis
         self.average = average
@@ -168,7 +176,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
         if posteriors.size == 0:
             raise RuntimeError("C++ MA did not populate post_probs (empty).")
 
-        values = np.asarray([r.plotting.dr_y for r in model_results], dtype=float) 
+        values = np.asarray([r.plotting.dr_y for r in model_results], dtype=float)
         dr_x = np.asarray(model_results[0].plotting.dr_x, dtype=float)
 
         if posteriors.size != values.shape[0]:

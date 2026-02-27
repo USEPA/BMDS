@@ -342,8 +342,6 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
       .def_readwrite("datatype", &python_continuousMA_analysis::datatype)
       .def_readwrite("seed", &python_continuousMA_analysis::seed)
-      .def_readwrite("iter", &python_continuousMA_analysis::iter)
-      .def_readwrite("burnin", &python_continuousMA_analysis::burnin)
       .def_readwrite("pyCA", &python_continuousMA_analysis::pyCA);
 
   py::class_<python_continuousMA_result>(m, "python_continuousMA_result")
@@ -468,6 +466,16 @@ PYBIND11_MODULE(bmdscore, m) {
 
   m.def(
       "print", overload_cast_<python_continuous_model_result*, bool>()(&printBmdsStruct),
+      "Overloaded method to print structs"
+  );
+
+  m.def(
+      "print", overload_cast_<python_continuousMA_analysis*, bool>()(&printBmdsStruct),
+      "Overloaded method to print structs"
+  );
+
+  m.def(
+      "print", overload_cast_<python_continuousMA_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 
