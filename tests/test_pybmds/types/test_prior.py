@@ -7,7 +7,7 @@ import pytest
 from pybmds.constants import DistType, PriorClass, PriorDistribution
 from pybmds.models.continuous import ExponentialM3, Polynomial
 from pybmds.models.dichotomous import Multistage
-from pybmds.types.priors import ModelPriors, Prior
+from pybmds.types.priors import ModelPriors, Prior, priors_tbl
 
 
 @pytest.fixture
@@ -286,3 +286,79 @@ class TestModelPriors:
             priors.update("a", **settings)
             with pytest.warns(UserWarning, match=message):
                 priors.priors_list()
+
+    def test_loud_priors_list_includes_variance(self, cidataset):
+        m = ExponentialM3(
+            dataset=cidataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        names = m.get_param_names()
+
+        # LOUD priors list is numeric rows; should align 1:1 with names
+        plist = m.get_priors_list()
+
+        assert "m0" in names
+        assert "m1" in names
+        # for DistType.normal LOUD you add Var0 (displayed as "Var" later in priors_tbl)
+        assert "Var0" in names
+
+        assert len(plist) == len(names)
+
+    def test_LOUD_prior_table(self, cidataset):
+        # Test LOUD prior table is constructed correctly and that the dataset-informed defaults produce the expected values
+        m = ExponentialM3(
+            dataset=cidataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        mp = m.settings.priors
+        assert mp.prior_class is PriorClass.bayesian_loud
+
+        names = m.get_param_names()
+        priors = m.get_priors_list()
+
+        table = priors_tbl(
+            names,
+            priors,
+            mp.is_bayesian,
+            m.settings.disttype,
+        )
+        print("f")
+        print(table)
+
+        ## Verify table structure and content for LOUD priors with dataset-informed defaults
+        # Verify Student-t priors (m0, m1)
+        assert "Student_t" in table
+        assert "m0" in table
+        assert "m1" in table
+        assert "df=" in table
+        assert "loc=" in table
+        assert "scale=" in table
+
+        # Verify InverseGamma variance prior
+        assert "InverseGamma" in table
+        assert "Var" in table
+        assert "shape=" in table
+        assert "min=" in table
+        assert "max=" in table
+
+        # Verify that the expected values are in the table
+        assert "df=7" in table
+        assert "loc=9.9264" in table
+        assert "scale=0.332492" in table
+
+        expected = dedent(
+            """
+        ╒═════════════╤════════════════╤══════════════════════════════════════════════════════════╕
+        │ Parameter   │ Distribution   │ Definition                                               │
+        ╞═════════════╪════════════════╪══════════════════════════════════════════════════════════╡
+        │ m0          │ Student_t      │ df=7.0, loc=9.926400000000001, scale=0.33249228831014155 │
+        │ m1          │ Student_t      │ df=5.0, loc=10.85275, scale=0.3087445899660966           │
+        │ d           │ Lognormal      │ initial=0.47, stdev=0.421, min=0.0, max=18.0             │
+        │ Var         │ InverseGamma   │ shape=6.0, scale=3.900042756666664, min=0.0, max=10000.0 │
+        ╘═════════════╧════════════════╧══════════════════════════════════════════════════════════╛
+        """
+        )
+
+        assert table == expected.strip()

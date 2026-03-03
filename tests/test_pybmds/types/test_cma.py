@@ -2,9 +2,9 @@ import pybmds
 
 
 class TestContinuousModelAverage:
-    def test_cpp_str(self, cdataset2):
+    def test_cpp_str(self, cdataset3):
         # ensure we can generate a string representation of the cpp structs
-        session = pybmds.Session(dataset=cdataset2)
+        session = pybmds.Session(dataset=cdataset3)
         session.add_default_bayesian_models()
         session.execute()
         text = str(session.model_average.structs)

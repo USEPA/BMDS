@@ -72,6 +72,11 @@ class Session:
             Models.Hill: c3.Hill,
             Models.ExponentialM3: c3.ExponentialM3,
             Models.ExponentialM5: c3.ExponentialM5,
+            Models.MultiplicativeHill: c3.MultiplicativeHill,
+            Models.InverseExponential: c3.InverseExponential,
+            Models.Lognormal: c3.Lognormal,
+            Models.Gamma: c3.Gamma,
+            Models.LMS2: c3.LMS,
         },
         Dtype.CONTINUOUS_INDIVIDUAL: {
             Models.Linear: c3.Linear,
@@ -80,6 +85,11 @@ class Session:
             Models.Hill: c3.Hill,
             Models.ExponentialM3: c3.ExponentialM3,
             Models.ExponentialM5: c3.ExponentialM5,
+            Models.MultiplicativeHill: c3.MultiplicativeHill,
+            Models.InverseExponential: c3.InverseExponential,
+            Models.Lognormal: c3.Lognormal,
+            Models.Gamma: c3.Gamma,
+            Models.LMS2: c3.LMS,
         },
         Dtype.NESTED_DICHOTOMOUS: {
             Models.NestedLogistic: nd3.NestedLogistic,
@@ -159,6 +169,7 @@ class Session:
         self.models: list[BmdModel] = []
         self.ma_weights: npt.NDArray | None = None
         self.model_average: BmdModelAveraging | None = None
+        self.weight_option: int = 1
         self.recommendation_settings: RecommenderSettings | None = recommendation_settings
         self.recommender: Recommender | None = None
         self.selected: SelectedModel = SelectedModel(self)
@@ -169,6 +180,7 @@ class Session:
         model_average: bool = True,
         include_efsa: bool = False,
         prior_class: PriorClass | None = None,
+        weight_option: str | int | None = None,
     ):
         settings = deepcopy(settings) if settings else {}
         if prior_class is None:
@@ -191,6 +203,39 @@ class Session:
             )
 
         settings["priors"] = prior_class
+
+        weight_option_int = 1
+
+        if weight_option is not None:
+            if prior_class != PriorClass.bayesian_loud:
+                raise ValueError("weight_option can only be set for the LOUD Bayesian MA approach")
+
+            weight_map = {
+                "waic": 1,
+                "bridge": 2,
+                "bridge_sampling": 2,
+                "average": 3,
+            }
+
+            if isinstance(weight_option, int):
+                if weight_option not in (1, 2, 3):
+                    raise ValueError(
+                        "weight_option int must be 1 (WAIC), 2 (Bridge), or 3 (average)."
+                    )
+                weight_option_int = weight_option
+
+            elif isinstance(weight_option, str):
+                key = weight_option.strip().lower().replace(" ", "_")
+                if key not in weight_map:
+                    raise ValueError(
+                        "weight_option must be one of: 'waic', 'bridge', or 'average'."
+                    )
+                weight_option_int = weight_map[key]
+
+            else:
+                raise ValueError("weight_option must be str or int.")
+
+        self.weight_option = weight_option_int
 
         if include_efsa and self.dataset.dtype not in (
             Dtype.CONTINUOUS,
@@ -244,13 +289,45 @@ class Session:
         weights = np.array(weights)
         self.ma_weights = weights / weights.sum()
 
-    def add_model_averaging(self, weights: list[float] | None = None):
+    def add_model_averaging(
+        self,
+        weights: list[float] | None = None,
+        weight_option: str | int | None = None,
+    ):
         """
         Must be added after other models are added since a shallow copy is taken, and the
         execution of model averaging assumes all other models were executed.
         """
         if weights or self.ma_weights is None:
             self.set_ma_weights(weights)
+
+        weight_option_int: int = 1
+
+        if weight_option is not None:
+            weight_map = {
+                "waic": 1,
+                "bridge": 2,
+                "bridge_sampling": 2,
+                "average": 3,
+            }
+
+            if isinstance(weight_option, int):
+                if weight_option not in (1, 2, 3):
+                    raise ValueError(
+                        "weight_option int must be 1 (WAIC), 2 (Bridge), or 3 (average)."
+                    )
+                weight_option_int = weight_option
+
+            elif isinstance(weight_option, str):
+                key = weight_option.strip().lower().replace(" ", "_")
+                if key not in weight_map:
+                    raise ValueError(
+                        "weight_option must be one of: 'waic', 'bridge', or 'average'."
+                    )
+                weight_option_int = weight_map[key]
+
+            else:
+                raise ValueError("weight_option must be str or int.")
 
         if self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
             prior_classes = {m.settings.priors.prior_class for m in self.models}

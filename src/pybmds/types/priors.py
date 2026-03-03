@@ -56,6 +56,7 @@ class Prior(BaseModel):
 
 
 class ModelPriors(BaseModel):
+    model_id: int | None = None
     prior_class: PriorClass  # if this is a predefined model class
     priors: list[Prior]  # priors for main model
     variance_priors: list[Prior] | None = None  # priors for variance model (continuous-only)
@@ -238,13 +239,15 @@ class ModelPriors(BaseModel):
         dist_type: DistType | None = None,
         nphi: int | None = None,
     ) -> list[list]:
+        priors_src = list(self.priors)
         if self.prior_class is PriorClass.bayesian_loud:
-            exp3_names = {"m0", "m1", "c", "d", "Var0", "Var1"}
-            if any(p.name in exp3_names for p in (self.priors + (self.variance_priors or []))):
-                self.priors = [p for p in self.priors if p.name != "c"]
+            EXP3_MODEL_ID = 3
+
+            if self.model_id == EXP3_MODEL_ID:
+                priors_src = [p for p in priors_src if p.name != "c"]
 
         priors = []
-        for prior in self.priors:
+        for prior in priors_src:
             if nphi is not None and prior.name == "phi":
                 continue
             priors.append(prior.model_copy())
@@ -339,6 +342,7 @@ def _load_model_priors():
             gof_priors = params[params.variance_param == False]  # noqa: E712
             var_priors = params[params.variance_param == True]  # noqa: E712
             priors[key] = ModelPriors(
+                model_id=int(model_id),
                 prior_class=prior_class,
                 priors=gof_priors.to_dict("records"),
                 variance_priors=var_priors.to_dict("records") if var_priors.shape[0] > 0 else None,
@@ -396,10 +400,17 @@ def priors_tbl(
     Student_t: (df, loc, scale, min)  => (initial, stdev, min, max)
     InvGamma: (shape, scale, min, max) => (initial, stdev, min, max)
     """
-    headers = []
     rows = []
     if is_bayesian:
         headers = "Parameter|Distribution|Definition"
+
+        # enforce 1:1 alignment; if this fails, upstream is wrong
+        if len(params) != len(priors):
+            raise ValueError(
+                f"Mismatch between parameter names ({len(params)}) and priors ({len(priors)}). "
+                f"Params: {params}"
+            )
+
         for name, values in zip(params, priors, strict=True):
             dist = values[0]
 
@@ -416,17 +427,24 @@ def priors_tbl(
                 definition = (
                     f"initial={values[1]}, stdev={values[2]}, min={values[3]}, max={values[4]}"
                 )
+
             display_name = name
             if name == "Var0" and dist_type == DistType.normal:
                 display_name = "Var"
             elif name == "Var0" and dist_type == DistType.log_normal:
                 display_name = "Var_log"
+
             rows.append((display_name, dist.name, definition))
+
     else:
         headers = "Parameter|Initial|Min|Max"
         for name, values in zip(params, priors, strict=True):
             rows.append((name, values[1], values[3], values[4]))
-    return pretty_table(rows, headers.split("|"))
+
+    return pretty_table(
+        rows,
+        headers.split("|"),
+    )
 
 
 def multistage_cancer_prior() -> ModelPriors:

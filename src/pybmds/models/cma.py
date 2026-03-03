@@ -16,7 +16,7 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
 
     def execute(self) -> ContinuousModelAverageResult:
         self.structs = ContinuousModelAverage(
-            self.session.dataset, self.models, self.session.ma_weights
+            self.session.dataset, self.models, self.session.ma_weights, self.session.weight_option
         )
         avg = self.structs.average  # python_continuousMA_analysis
         n = int(avg.nmodels)
