@@ -50,8 +50,8 @@ class ContinuousModelSettings(BaseModel):
     tail_prob: Annotated[float, Field(gt=0, lt=1)] = 0.01
     disttype: constants.DistType = constants.DistType.normal
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
-    samples: int | None = None
-    burnin: int | None = None
+    samples: Annotated[int, Field(ge=0, le=1000)] = 100
+    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     loud_priors_tbl: str | None = None
@@ -190,6 +190,8 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
+        analysis.samples = self.samples
+        analysis.burnin = self.burnin
         analysis.tail_prob = self.tail_prob
         analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
 
@@ -261,9 +263,13 @@ class ContinuousModelResult(BaseModel):
         arr = arr[:, np.isfinite(arr[0, :])]
         arr = arr[:, arr[0, :] > 0]
 
+        ll = getattr(getattr(result, "aod", None), "LL", None)
+        ll = list(ll) if ll is not None else []
+        loglik = ll[3] if len(ll) >= 4 else (ll[-1] if len(ll) else float("nan"))
+
         return ContinuousModelResult(
             dist=result.dist,
-            loglikelihood=result.aod.LL[3],
+            loglikelihood=loglik,  ## temp fix -- to change
             aic=summary.AIC,
             bic_equiv=summary.BIC_equiv,
             chisq=summary.chisq,
@@ -304,18 +310,19 @@ class ContinuousParameters(BaseModel):
         slice = None
 
         # DLL deletes the c parameter and shifts items down; correct in outputs here
-        if model.bmd_model_class.id == ContinuousModelChoices.exp_m3.value.id:
-            # do the same for parameter names for consistency
-            c_index = param_names.index("c")
-            param_names.pop(c_index)
+        if not (model.settings.priors.prior_class is PriorClass.bayesian_loud):
+            if model.bmd_model_class.id == ContinuousModelChoices.exp_m3.value.id:
+                # do the same for parameter names for consistency
+                c_index = param_names.index("c")
+                param_names.pop(c_index)
 
-            # shift priors as well
-            priors = priors.T
-            priors[c_index:-1] = priors[c_index + 1 :]
-            priors = priors[:-1].T
+                # shift priors as well
+                priors = priors.T
+                priors[c_index:-1] = priors[c_index + 1 :]
+                priors = priors[:-1].T
 
-            # remove final element for some params (stdErr, lowerConf, upperConf)
-            slice = -1
+                # remove final element for some params (stdErr, lowerConf, upperConf)
+                slice = -1
 
         return cls(
             names=param_names,

@@ -13,8 +13,9 @@ from .. import plotting
 from ..constants import BmdModelSchema as BmdModelClass
 from ..constants import Dtype
 from ..datasets.base import DatasetType
-from ..types.priors import priors_tbl
+from ..types.priors import ModelPriors, priors_tbl as priors_tbl_fn
 from ..utils import get_version, multi_lstrip
+from ..constants import DistType, PriorClass, ContinuousModelChoices
 
 if TYPE_CHECKING:
     from ..session import Session
@@ -112,8 +113,27 @@ class BmdModel(abc.ABC):
 
     def priors_tbl(self) -> str:
         """Show prior or parameter boundary testing."""
-        return priors_tbl(
-            self.get_param_names(), self.get_priors_list(), self.settings.priors.is_bayesian
+        mp = self.settings.priors
+        priors = self.get_priors_list()
+
+        # If priors are LOUD, build the table names from the priors object
+        if isinstance(mp, ModelPriors) and mp.prior_class is PriorClass.bayesian_loud:
+            names = [p.name for p in mp.priors]
+            if getattr(self.bmd_model_class, "id", None) == ContinuousModelChoices.exp_m3.value.id:
+                names = [n for n in names if n != "c"]
+
+            var_names = [p.name for p in (mp.variance_priors or [])]
+            if getattr(self.settings, "disttype", None) != DistType.normal_ncv and var_names:
+                var_names = [var_names[0]]
+            names = names + var_names
+
+            return priors_tbl_fn(
+                names, priors, mp.is_bayesian, getattr(self.settings, "disttype", None)
+            )
+
+        # Default behavior (frequentist or non-LOUD bayesian): use model param names
+        return priors_tbl_fn(
+            self.get_param_names(), priors, mp.is_bayesian, getattr(self.settings, "disttype", None)
         )
 
     def model_settings_text(self) -> str:

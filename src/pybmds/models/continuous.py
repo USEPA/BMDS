@@ -62,11 +62,11 @@ class BmdModelContinuous(BmdModel):
                 dataset=dataset,
                 dist_type=model_settings.disttype,
             )
-            if model_settings.priors.prior_class is PriorClass.bayesian_loud:
-                if model_settings.samples is None:
-                    model_settings.samples = 500
-                if model_settings.burnin is None:
-                    model_settings.burnin = 50
+        if model_settings.priors.prior_class is PriorClass.bayesian_loud:
+            if model_settings.samples is None:
+                model_settings.samples = 500
+            if model_settings.burnin is None:
+                model_settings.burnin = 50
 
         return model_settings
 
@@ -117,6 +117,17 @@ class BmdModelContinuous(BmdModel):
         )
 
     def get_param_names(self) -> list[str]:
+        mp = self.settings.priors
+        if isinstance(mp, ModelPriors) and mp.prior_class is PriorClass.bayesian_loud:
+            names = [p.name for p in mp.priors]
+            if self.__class__.__name__ == "ExponentialM3":
+                names = [n for n in names if n != "c"]
+
+            var_names = [p.name for p in (mp.variance_priors or [])]
+            if self.settings.disttype != DistType.normal_ncv and var_names:
+                var_names = [var_names[0]]
+
+            return names + var_names
         names = list(self.bmd_model_class.params)
         names.extend(self.get_variance_param_names())
         return names
