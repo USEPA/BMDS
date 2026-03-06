@@ -212,15 +212,17 @@ struct nestedSRData {
 struct fitInput {
   Eigen::MatrixXd doses;
   Eigen::MatrixXd Y;
+  Eigen::MatrixXd priorr;
+  int model;
   double lmean0;
   double lmean1;
   int N_obs0;
   int N_obs1;
   double s0sq;
   double s1sq;
-  int N_obs;     // required for cv
-  double ssq;    // required for cv
-  int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamam, & LMS
+  int N_obs;     // required for cv, logcv
+  double ssq;    // required for cv, logcv
+  int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamma, & LMS
   int iter = 5;  // 50000;
   double bmr;
   // double bmr_rel;
@@ -774,13 +776,15 @@ double pivotal_pvalue(
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 );
 
-void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
-void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_chill_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cinvexp_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_clog_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cgamma_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_clms_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 
@@ -842,6 +846,8 @@ void pythonBMDSContLoud_dummy(
 }
 #endif
 
+Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
+
 Eigen::VectorXd loud_likelihood(
     const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
 );
@@ -872,6 +878,10 @@ double calcLoudBMD(
 );
 
 double findMedianVal(std::vector<double> dist);
+
+int getLoudModelType(int model, int distType);
+
+int getLoudLLType(int distType, int dataType);
 
 // overloaded functions
 void determineAdvDir(struct python_continuous_analysis *pyAnal);
