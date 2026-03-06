@@ -780,11 +780,21 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut, const 
 void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
 void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
 void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
-void fit_chill_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
-void fit_cinvexp_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
-void fit_clog_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
-void fit_cgamma_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
-void fit_clms_efsa(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_chill_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_cinvexp_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_clog_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_cgamma_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_clms_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
 
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 

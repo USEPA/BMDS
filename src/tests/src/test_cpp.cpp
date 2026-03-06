@@ -2046,9 +2046,7 @@ void runPythonDichoMA() {
   printBmdsStruct(&ma_res);
 }
 
-
-std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_analysis *pyMA){
-
+std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_analysis *pyMA) {
   std::vector<int> N_obs;
   std::vector<double> mean;
   std::vector<double> logMean;
@@ -2090,7 +2088,6 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
     std::cout << "datatype not supported" << std::endl;
   }
 
-
   // variances
   std::vector<double> sumsq;
   std::vector<double> logSumsq;
@@ -2123,7 +2120,7 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
     std::cout << "datatype not supported" << std::endl;
   }
 
-    double numerator = 0.0;
+  double numerator = 0.0;
   double denominator = 0.0;
   double numerator2 = 0.0;
   double denominator2 = 0.0;
@@ -2151,191 +2148,186 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
       den_01;
 
   int N0 = N_obs[0];
-  int N1 = N_obs[N_obs.size()-1];
-  int N = N0+N1;
+  int N1 = N_obs[N_obs.size() - 1];
+  int N = N0 + N1;
   double s0sq = var[0];
-  double s1sq = var[var.size()-1];
+  double s1sq = var[var.size() - 1];
   double logmean0 = logMean[0];
-  double logmean1 = logMean[logMean.size()-1];
+  double logmean1 = logMean[logMean.size() - 1];
   double mean0 = mean[0];
-  double mean1 = mean[mean.size()-1];
+  double mean1 = mean[mean.size() - 1];
 
-
-  std::vector<double> rowA = {5, N0-1.0, mean0, sqrt(s0sq/(N0-1)), 1};
-  std::vector<double> rowB = {5, N1-1.0, mean1, sqrt(s1sq/(N1-1)), 1};
-  std::vector<double> rowAlog = {5, N0-1.0, logmean0, sqrt(ssq_log01/(N0-1)), 1};
-  std::vector<double> rowBlog = {5, N1-1.0, logmean1, sqrt(ssq_log01/(N1-1)), 1};
+  std::vector<double> rowA = {5, N0 - 1.0, mean0, sqrt(s0sq / (N0 - 1)), 1};
+  std::vector<double> rowB = {5, N1 - 1.0, mean1, sqrt(s1sq / (N1 - 1)), 1};
+  std::vector<double> rowAlog = {5, N0 - 1.0, logmean0, sqrt(ssq_log01 / (N0 - 1)), 1};
+  std::vector<double> rowBlog = {5, N1 - 1.0, logmean1, sqrt(ssq_log01 / (N1 - 1)), 1};
   std::vector<double> rowC1 = {2, log(1.6), 0.421, BMDS_MISSING, 1};
   std::vector<double> rowC2 = {2, 0, 2, BMDS_MISSING, 1};
-  std::vector<double> rowD1 = {4, (N-1)/2.0, N*ssq01/2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD2 = {4, (N0-1)/2.0, N0*s0sq/2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD3 = {4, (N1-1)/2.0, N1*s1sq/2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD4 = {4, (N-1)/2.0, N*ssq_log01/2.0, BMDS_MISSING, 1};
-
+  std::vector<double> rowD1 = {4, (N - 1) / 2.0, N * ssq01 / 2.0, BMDS_MISSING, 1};
+  std::vector<double> rowD2 = {4, (N0 - 1) / 2.0, N0 * s0sq / 2.0, BMDS_MISSING, 1};
+  std::vector<double> rowD3 = {4, (N1 - 1) / 2.0, N1 * s1sq / 2.0, BMDS_MISSING, 1};
+  std::vector<double> rowD4 = {4, (N - 1) / 2.0, N * ssq_log01 / 2.0, BMDS_MISSING, 1};
 
   std::vector<std::vector<double>> ret;
 
-  for (int i=0; i< pyMA->models.size(); i++){
-    std::cout<<"i:"<<i<<std::endl;
+  for (int i = 0; i < pyMA->models.size(); i++) {
+    std::cout << "i:" << i << std::endl;
     std::vector<std::vector<double>> tmpPrior;
     int model = pyMA->models[i];
     int dist = pyMA->loud_dist_type[i];
-    if (dist == distribution::log_normal){
+    if (dist == distribution::log_normal) {
       tmpPrior.push_back(rowAlog);
       tmpPrior.push_back(rowBlog);
-      switch (model){
-         case(cont_model::power):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_3):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_5):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::hill):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_hill_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_invexp_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lognormal_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_gamma_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lms_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC2);
-	    break;
+      switch (model) {
+        case (cont_model::power):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_3):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_5):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::hill):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_hill_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_invexp_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lognormal_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_gamma_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lms_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC2);
+          break;
       }
       tmpPrior.push_back(rowD4);
-    } else if (dist == distribution::normal){
+    } else if (dist == distribution::normal) {
       tmpPrior.push_back(rowA);
       tmpPrior.push_back(rowB);
-      switch (model){
-         case(cont_model::power):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_3):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_5):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::hill):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_hill_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_invexp_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lognormal_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_gamma_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lms_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC2);
-	    break;
+      switch (model) {
+        case (cont_model::power):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_3):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_5):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::hill):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_hill_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_invexp_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lognormal_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_gamma_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lms_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC2);
+          break;
       }
       tmpPrior.push_back(rowD1);
-    } else if (dist == distribution::normal_ncv){
+    } else if (dist == distribution::normal_ncv) {
       tmpPrior.push_back(rowA);
       tmpPrior.push_back(rowB);
-      switch (model){
-         case(cont_model::power):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_3):
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::exp_5):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::hill):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_hill_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_invexp_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lognormal_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_gamma_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC1);
-	    break;
-         case(cont_model::l_lms_efsa):
-            tmpPrior.push_back(rowC2);
-            tmpPrior.push_back(rowC2);
-	    break;
+      switch (model) {
+        case (cont_model::power):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_3):
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::exp_5):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::hill):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_hill_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_invexp_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lognormal_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_gamma_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC1);
+          break;
+        case (cont_model::l_lms_efsa):
+          tmpPrior.push_back(rowC2);
+          tmpPrior.push_back(rowC2);
+          break;
       }
       tmpPrior.push_back(rowD2);
       tmpPrior.push_back(rowD3);
     } else {
-      std::cout<<"error in createDefaultPriors for i:"<<i<<std::endl;
+      std::cout << "error in createDefaultPriors for i:" << i << std::endl;
     }
-    std::cout<<"model:"<<model<<std::endl;
-    std::cout<<"prior:"<<std::endl;
-    for (int j=0; j<tmpPrior.size(); j++){
-       for (int k=0; k<tmpPrior[j].size(); k++){
-          std::cout<<tmpPrior[j][k]<<",";
-       }
-       std::cout<<std::endl;
+    std::cout << "model:" << model << std::endl;
+    std::cout << "prior:" << std::endl;
+    for (int j = 0; j < tmpPrior.size(); j++) {
+      for (int k = 0; k < tmpPrior[j].size(); k++) {
+        std::cout << tmpPrior[j][k] << ",";
+      }
+      std::cout << std::endl;
     }
-    //flatten the vector
+    // flatten the vector
     int priorCols = pyMA->prior_cols[i];
     int numEntries = priorCols * tmpPrior.size();
     std::vector<double> flatPrior(numEntries);
-    int count=0;
-    for(int k=0; k<priorCols; k++){
-       for (int j=0; j<tmpPrior.size(); j++){
-          flatPrior[count] = tmpPrior[j][k];
-          count++;
-       }
+    int count = 0;
+    for (int k = 0; k < priorCols; k++) {
+      for (int j = 0; j < tmpPrior.size(); j++) {
+        flatPrior[count] = tmpPrior[j][k];
+        count++;
+      }
     }
-    std::cout<<"flatPrior:"<<std::endl;
-    for (int j=0; j<flatPrior.size(); j++){
-       std::cout<<flatPrior[j]<<",";
+    std::cout << "flatPrior:" << std::endl;
+    for (int j = 0; j < flatPrior.size(); j++) {
+      std::cout << flatPrior[j] << ",";
     }
-    std::cout<<std::endl;
+    std::cout << std::endl;
     ret.push_back(flatPrior);
   }
 
   return ret;
 }
-
-
-
 
 void runPythonContLoud() {
   printf("Running LOUD Continuous Model Averaging\n");
@@ -2376,14 +2368,14 @@ void runPythonContLoud() {
   //  normal = 1, normal_ncv = 2, log_normal = 3
 
   // kitchen sink
-   std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
-                              21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
-   std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
-                             1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+  std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+                             21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+                            1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
 
   // BMDS models from CMA_waic_all
-  //std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
-  //std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
+  // std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
+  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
 
   // summary data
   double D[] = {0, 0.125, 0.25, 0.5, 1.0};
@@ -2496,14 +2488,14 @@ void runPythonContLoud() {
   // ma_info.nmodels = numModels;
   ma_info.pyCA = anal;
   ma_info.datatype = datatype;
-  //ma_info.iter = iter;
-  //ma_info.burnin = burnin;
+  // ma_info.iter = iter;
+  // ma_info.burnin = burnin;
   ma_info.weightOption = weightOption;
 
   ma_info.models = models;
   ma_info.loud_dist_type = dists;
   ma_info.nmodels = models.size();
-  ma_info.prior_cols = std::vector<int>(ma_info.nmodels, 5); 
+  ma_info.prior_cols = std::vector<int>(ma_info.nmodels, 5);
 
   std::vector<python_continuous_model_result> res(models.size());
   //  for (int i = 0; i < models.size(); i++) {
@@ -2525,7 +2517,6 @@ void runPythonContLoud() {
   ma_res.nmodels = models.size();
   ma_res.models = res;
   ma_res.bmdsRes = bmdsRes;
-
 
   ma_info.priors = createDefaultPriors(&ma_info);
   pythonBMDSLoud(&ma_info, &ma_res);
@@ -5291,7 +5282,6 @@ std::vector<double> getNctrPrior(int ngrp, int prior_cols, bool restricted) {
 
   return pr;
 }
-
 
 void runPythonNestedAnalysis() {
   bool showResultsOverride = true;
