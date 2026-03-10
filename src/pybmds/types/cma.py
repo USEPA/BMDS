@@ -65,7 +65,7 @@ class ContinuousModelAverage:
         # print(models)
 
         average.priors = [model.structs.analysis.prior for model in models]
-        # print("priors:", average.priors)
+        print("priors:", average.priors)
         # for i, m in enumerate(models):
         #     n = m.structs.result.nparms
         #     c = m.structs.analysis.prior_cols

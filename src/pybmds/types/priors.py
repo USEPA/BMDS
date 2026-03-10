@@ -44,7 +44,7 @@ class Prior(BaseModel):
                 ("scale", self.min_value),
             ]
 
-        if self.type is PriorDistribution.InverseGamma:
+        if self.type is PriorDistribution.Gamma:
             return [
                 ("name", self.name),
                 ("type", self.type),
@@ -149,31 +149,31 @@ class ModelPriors(BaseModel):
                 p.min_value = scale1
 
         # -----------------------------
-        # Variance priors (Inv-Gamma)
+        # Variance priors (Gamma)
         # -----------------------------
         if dist_type is DistType.normal:
             # pooled variance
             s2 = ((df0 * s0**2) + (df1 * s1**2)) / (df0 + df1)
             if p := _p("Var0"):
-                p.type = PriorDistribution.InverseGamma
+                p.type = PriorDistribution.Gamma
                 p.initial_value = (df0 + df1) / 2  # shape
                 p.stdev = s2 * (df0 + df1) / 2  # scale
 
         elif dist_type is DistType.normal_ncv:
             if p := _p("Var0"):
-                p.type = PriorDistribution.InverseGamma
+                p.type = PriorDistribution.Gamma
                 p.initial_value = df0 / 2
                 p.stdev = (s0**2) * df0 / 2
 
             if p := _p("Var1"):
-                p.type = PriorDistribution.InverseGamma
+                p.type = PriorDistribution.Gamma
                 p.initial_value = df1 / 2
                 p.stdev = (s1**2) * df1 / 2
 
         elif dist_type is DistType.log_normal:
             s2log = ((df0 * varlog0) + (df1 * varlog1)) / (df0 + df1)
             if p := _p("Var0"):
-                p.type = PriorDistribution.InverseGamma
+                p.type = PriorDistribution.Gamma
                 p.initial_value = (df0 + df1) / 2
                 p.stdev = s2log * (df0 + df1) / 2
             if p := _p("Var1"):
@@ -223,7 +223,7 @@ class ModelPriors(BaseModel):
         prior = self.get_prior(name)
         if prior.type is PriorDistribution.Student_t:
             alias = {"df": "initial_value", "loc": "stdev", "scale": "min_value"}
-        elif prior.type is PriorDistribution.InverseGamma:
+        elif prior.type is PriorDistribution.Gamma:
             alias = {"shape": "initial_value", "scale": "stdev"}
         else:
             alias = {}
@@ -398,7 +398,7 @@ def priors_tbl(
     """NOTE: values is [type, initial_value, stdev, min_value, max_value]
     For LOUD we interpret these fields as distribution parameters:
     Student_t: (df, loc, scale, min)  => (initial, stdev, min, max)
-    InvGamma: (shape, scale, min, max) => (initial, stdev, min, max)
+    Gamma: (shape, scale, min, max) => (initial, stdev, min, max)
     """
     rows = []
     if is_bayesian:
@@ -419,7 +419,7 @@ def priors_tbl(
                 loc = values[2]
                 scale = values[3]
                 definition = f"df={df_}, loc={loc}, scale={scale}"
-            elif dist.name.lower() in {"inversegamma"}:
+            elif dist.name.lower() in {"gamma"}:
                 shape = values[1]
                 scale = values[2]
                 definition = f"shape={shape}, scale={scale}, min={values[3]}, max={values[4]}"
