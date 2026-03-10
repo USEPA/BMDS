@@ -3086,62 +3086,190 @@ double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &row) {
   return B;
 }
 
-void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
+int getLoudModelType(int model, int distType) {
+  int modelType = BMDS_MISSING;
+  switch (model) {
+    case cont_model::power:
+      if (distType == distribution::log_normal) {
+        std::cout << "log_normal dist not available for power model" << std::endl;
+      } else {
+        modelType = 103;
+      }
+      break;
+    case cont_model::exp_3:
+      if (distType == distribution::log_normal) {
+        modelType = 107;
+      } else {
+        modelType = 102;
+      }
+      break;
+    case cont_model::exp_5:
+      if (distType == distribution::log_normal) {
+        modelType = 105;
+      } else {
+        modelType = 104;
+      }
+      break;
+    case cont_model::hill:
+      if (distType == distribution::log_normal) {
+        std::cout << "log_normal dist not available for hill model" << std::endl;
+      } else {
+        modelType = 106;
+      }
+      break;
+    case cont_model::l_hill_efsa:
+      if (distType == distribution::log_normal) {
+        modelType = 109;
+      } else {
+        modelType = 108;
+      }
+      break;
+    case cont_model::l_invexp_efsa:
+      if (distType == distribution::log_normal) {
+        modelType = 111;
+      } else {
+        modelType = 110;
+      }
+      break;
+    case cont_model::l_lognormal_efsa:
+      if (distType == distribution::log_normal) {
+        modelType = 113;
+      } else {
+        modelType = 112;
+      }
+      break;
+    case cont_model::l_gamma_efsa:
+      if (distType == distribution::log_normal) {
+        modelType = 115;
+      } else {
+        modelType = 114;
+      }
+      break;
+    case cont_model::l_lms_efsa:
+      if (distType == distribution::log_normal) {
+        modelType = 117;
+      } else {
+        modelType = 116;
+      }
+      break;
+    default:
+      std::cout << "error in getModelAndLLType" << std::endl;
+      break;
+  }
+  return modelType;
+}
+
+int getLoudLLType(int distType, int dataType) {
+  int llType = BMDS_MISSING;
+  switch (dataType) {
+    case loud_datatype::l_summary:
+      if (distType == distribution::normal) {
+        llType = 59;
+      } else if (distType == distribution::normal_ncv) {
+        llType = 58;
+      } else if (distType == distribution::log_normal) {
+        llType = 60;
+      } else {
+        std::cout << "invalid distType in getModelAndLLType" << std::endl;
+      }
+      break;
+    case loud_datatype::l_individual:
+      if (distType == distribution::normal) {
+        llType = 56;
+      } else if (distType == distribution::normal_ncv) {
+        llType = 55;
+      } else if (distType == distribution::log_normal) {
+        llType = 57;
+      } else {
+        std::cout << "invalid distType in getModelAndLLType" << std::endl;
+      }
+      break;
+    default:
+      std::cout << "wrong dataType in getModelAndLLType" << std::endl;
+      break;
+  }
+  return llType;
+}
+
+void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   // Parameters needed for latent slice function
-  //  make some of these enums
-  int model_typ = 103;  // continuous_power_transform
-  int pri_typ = 32;     // specifies neg_log_prior in run latent slice
+  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
   int n_rounds = 2;
   double LAM = 2.0;
-  int ll_type;
 
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
+  Eigen::MatrixXd priorr = loudIn->priorr;
+  std::vector<bool> isNegative(priorr.rows());
+  Eigen::VectorXd init(priorr.rows());
+  Eigen::MatrixXd diag = Eigen::VectorXd::Constant(priorr.rows(), 1.0).asDiagonal();
+  isNegative[0] = true;
+  isNegative[1] = true;
+  for (int i = 2; i < isNegative.size(); i++) {
+    isNegative[i] = false;
+  }
+
+  int ll_type = getLoudLLType(loudIn->dist, loudIn->datatype);
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist);
+
+  // Need to fix this for all models not just power
   if (loudIn->dist == distribution::log_normal) {
-    std::cout << "power model not available in lognormal" << std::endl;
-    return;
+    if (loudIn->model == cont_model::power || loudIn->model == cont_model::hill) {
+      std::cout << "lognormal distribution not available for this model" << std::endl;
+      return;
+    }
+    switch (loudIn->model) {
+      case cont_model::exp_3:
+        init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->ssq;
+        break;
+      case cont_model::exp_5:
+      case cont_model::l_hill_efsa:
+      case cont_model::l_invexp_efsa:
+      case cont_model::l_lognormal_efsa:
+      case cont_model::l_gamma_efsa:
+      case cont_model::l_lms_efsa:
+        init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
+        break;
+      default:
+        std::cout << "error in init for fit_Loud" << std::endl;
+        break;
+    }
   } else if (loudIn->dist == distribution::normal) {
-    // CV
-    init.resize(4);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->s0sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "power model normal dist does not this datatype" << std::endl;
+    switch (loudIn->model) {
+      case cont_model::power:
+      case cont_model::exp_3:
+        init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->s0sq;
+        break;
+      case cont_model::exp_5:
+      case cont_model::hill:
+      case cont_model::l_hill_efsa:
+      case cont_model::l_invexp_efsa:
+      case cont_model::l_lognormal_efsa:
+      case cont_model::l_gamma_efsa:
+      case cont_model::l_lms_efsa:
+        init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->s0sq;
+        break;
+      default:
+        std::cout << "error in init for fit_Loud" << std::endl;
+        break;
     }
-    isNegative.resize(4);
-    isNegative = {true, true, false, false};
-    diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(4, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
-        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-
   } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "power model normal dist does not this datatype" << std::endl;
+    switch (loudIn->model) {
+      case cont_model::power:
+      case cont_model::exp_3:
+        init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
+        break;
+      case cont_model::exp_5:
+      case cont_model::hill:
+      case cont_model::l_hill_efsa:
+      case cont_model::l_invexp_efsa:
+      case cont_model::l_lognormal_efsa:
+      case cont_model::l_gamma_efsa:
+      case cont_model::l_lms_efsa:
+        init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
+        break;
+      default:
+        std::cout << "error in init for fit_Loud" << std::endl;
+        break;
     }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
-        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
   }
 
   // start common code
@@ -3174,10 +3302,42 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   // end common code
 
+  switch (loudIn->model) {
+    case cont_model::power:
+      fit_cpower(loudIn, loudOut, R);
+      break;
+    case cont_model::exp_3:
+      fit_cexp3(loudIn, loudOut, R);
+      break;
+    case cont_model::exp_5:
+      fit_cexp5(loudIn, loudOut, R);
+      break;
+    case cont_model::hill:
+      fit_chill(loudIn, loudOut, R);
+      break;
+    case cont_model::l_hill_efsa:
+      fit_chill_efsa(loudIn, loudOut, R);
+      break;
+    case cont_model::l_invexp_efsa:
+      fit_cinvexp_efsa(loudIn, loudOut, R);
+      break;
+    case cont_model::l_lognormal_efsa:
+      fit_clog_efsa(loudIn, loudOut, R);
+      break;
+    case cont_model::l_gamma_efsa:
+      fit_cgamma_efsa(loudIn, loudOut, R);
+      break;
+    case cont_model::l_lms_efsa:
+      fit_clms_efsa(loudIn, loudOut, R);
+      break;
+  }
+}
+
+void fit_cpower(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
-  // bool bConstVar = loudIn->dist == distribution::normal;  //don't need to check lognormal for
-  // power
   bool bConstVar =
       loudIn->dist != distribution::normal_ncv;  // don't need to check lognormal for power
   // power model only has normal distribtion (cv)
@@ -3203,11 +3363,7 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
       theta(0, 0) = R(i, 0);            // m0 to gamma
       theta(1, 0) = R(i, 1) - R(i, 0);  // b to beta
       theta(2, 0) = R(i, 2);            // n to k
-      theta(4, 0) =
-          log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0)))
-          );  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
-      // theta(3,0) = log(1/(pow(R(i,3),2)*pow(R(i,0),theta(4,0)))); //alpha =
-      // log(sigma0sq/(m0^rho))
+      theta(4, 0) = log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0))));
       theta(3, 0) =
           log(1 / (R(i, 3) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
       loudOut->BMD(i) =
@@ -3218,132 +3374,7 @@ void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 }
 
-void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut) {
-  // Parameters needed for latent slice function
-  //  make some of these enums
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int model_typ;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 107;  // continuous_exp3_transform_log
-    init.resize(4);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
-    }
-
-    isNegative.resize(4);
-    isNegative = {true, true, false, false};
-    diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
-
-    priorr = Eigen::MatrixXd(4, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2,
-        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-    //    std::cout<<"lognormal exp3 priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 102;  // continuous_exp3_transform
-    init.resize(4);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
-    }
-
-    isNegative.resize(4);
-    isNegative = {true, true, false, false};
-    diag = Eigen::VectorXd::Constant(4, 1.0).asDiagonal();
-    //    std::cout << "calculating priorr" << std::endl;
-    priorr = Eigen::MatrixXd(4, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
-        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-    //    std::cout<<"normal exp3 priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 102;  // continuous_exp3_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "exp3 model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2,
-        log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-    //    std::cout<<"normal ncv exp3 priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  //  loudOut->BMD_rel.resize(R.rows());
-  //  loudOut->BMD_sd.resize(R.rows());
-  //  for (int i = 0; i < R.rows(); ++i) {
-  //    double m0 = R(i, 0);
-  //    double m1 = R(i, 1);
-  //    double n = R(i, 2);
-  //    double b = m1 - m0;
-  //    double prec = R(i, 3);
-  //    double alpha = 1.0 / prec;
-  //    loudOut->BMD_rel(i) = abs(pow(loudIn->bmr_rel * m0 / b, 1.0 / n));
-  //    loudOut->BMD_sd(i) = abs(pow(loudIn->bmr_sd * sqrt(alpha) / b, 1.0 / n));
-  //  }
-
-  // other calcs
-  //  std::cout << "beginning exp3 other calcs" << std::endl;
-  loudOut->BMD.resize(R.rows());
-
+void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -3359,21 +3390,17 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut) {
         theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
         theta(3, 0) = R(i, 3);                                                  // n
         theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
-        //        std::cout << "calling calcLoudBMD for exp3 cv lognormal" << std::endl;
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
       }
 
     } else {
-      //      std::cout << "start normal" << std::endl;
       normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
-      //      std::cout << "finished model decl" << std::endl;
       for (int i = 0; i < R.rows(); ++i) {
         theta(0, 0) = R(i, 0);                                                  // m0
         theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
         theta(3, 0) = R(i, 2);                                                  // n
         theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
-        //        std::cout << "calling calcLoudBMD for exp3 cv normal" << std::endl;
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
       }
@@ -3389,11 +3416,8 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut) {
       theta(5, 0) =
           log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0)))
           );  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
-      // theta(4,0) = log(1/(pow(R(i,3),2)*pow(R(i,0),theta(4,0)))); //alpha =
-      // log(sigma0sq/(m0^rho))
       theta(4, 0) =
           log(1 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
-      //      std::cout << "calling calcLoudBMD for exp3 ncv normal" << std::endl;
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
     }
@@ -3401,115 +3425,7 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut) {
-  // Parameters needed for latent slice function
-  //  make some of these enums
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 105;  // continuous_exp5_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
-    }
-
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 104;  // continuous_exp5_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
-    }
-
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    //    std::cout << "calculating priorr" << std::endl;
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0.0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-    //    std::cout<<"normal exp5 priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 104;  // continuous_exp5_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "exp5 model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-    //    std::cout<<"normal ncv exp5 priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
-
+void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -3563,95 +3479,7 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut) {
-  // Parameters needed for latent slice function
-  //  make some of these enums
-  int model_typ = 106;  // continuous_hill_transform
-  int pri_typ = 32;     // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    std::cout << "hill model not available in lognormal" << std::endl;
-    return;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "hill model normal dist does not this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-
-    //    std::cout<<"hill normal priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "hill model normal dist does not this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-
-    //    std::cout<<"hill ncv priorr:"<<std::endl;
-    //    std::cout<<priorr<<std::endl;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
-
+void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -3688,105 +3516,10 @@ void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 }
 
-void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_chill_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   cont_model model = l_hill_efsa;
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 109;  // continuous_hill4_efsa_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "efsa hill model lognormal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 108;  // continuous_hill4_efsa_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "efsa hill model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 108;  // continuous_hill4_efsa_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "efsa hill model ncv dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
 
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -3801,105 +3534,10 @@ void fit_chill_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_cinvexp_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   cont_model model = l_invexp_efsa;
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 111;  // continuous_invexp_efsa_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "invexp model lognormal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 110;  // continuous_invexp_efsa_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "efsa invexp model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 110;  // continuous_invexp_efsa_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "efsa invexp model ncv dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
 
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -3913,105 +3551,10 @@ void fit_cinvexp_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_clog_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   cont_model model = l_lognormal_efsa;
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 113;  // continuous_lognormal_efsa_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "invexp model lognormal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 112;  // continuous_lognormal_efsa_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "efsa invexp model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 112;  // continuous_lognormal_efsa_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "efsa invexp model ncv dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
 
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -4025,105 +3568,10 @@ void fit_clog_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_cgamma_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   cont_model model = l_gamma_efsa;
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 115;  // continuous_lognormal_efsa_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "invexp model lognormal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 114;  // continuous_lognormal_efsa_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "efsa invexp model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 114;  // continuous_lognormal_efsa_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "efsa invexp model ncv dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
 
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -4137,105 +3585,10 @@ void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->parms = R;
 };
 
-void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_clms_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
   cont_model model = l_lms_efsa;
-  int model_typ;
-  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
-  int n_rounds = 2;
-  double LAM = 2.0;
-  int ll_type;
-
-  Eigen::VectorXd init;
-  Eigen::MatrixXd diag;
-  std::vector<bool> isNegative;
-  Eigen::MatrixXd priorr;
-  if (loudIn->dist == distribution::log_normal) {
-    model_typ = 117;  // continuous_lognormal_efsa_transform_log
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 1.5, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 57;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 60;
-    } else {
-      std::cout << "invexp model lognormal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->ssq / (loudIn->N_obs0 - 1)), 1, 5,
-        loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->ssq / (loudIn->N_obs1 - 1)), 1, 2, 0, 2,
-        BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal) {
-    // CV
-    model_typ = 116;  // continuous_lognormal_efsa_transform
-    init.resize(5);
-    init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 56;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 59;
-    } else {
-      std::cout << "efsa invexp model normal dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(5);
-    isNegative = {true, true, false, false, false};
-    diag = Eigen::VectorXd::Constant(5, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(5, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs - 1) / 2.0,
-        loudIn->N_obs * loudIn->ssq / 2.0, BMDS_MISSING, 1;
-  } else if (loudIn->dist == distribution::normal_ncv) {
-    // NCV
-    model_typ = 116;  // continuous_lognormal_efsa_transform
-    init.resize(6);
-    init << loudIn->lmean0, loudIn->lmean1, 2.0, 2.0, 1.0 / loudIn->s0sq, 1.0 / loudIn->s1sq;
-    if (loudIn->datatype == loud_datatype::l_individual) {
-      ll_type = 55;
-    } else if (loudIn->datatype == loud_datatype::l_summary) {
-      ll_type = 58;
-    } else {
-      std::cout << "efsa invexp model ncv dist does not support this datatype" << std::endl;
-    }
-    isNegative.resize(6);
-    isNegative = {true, true, false, false, false, false};
-    diag = Eigen::VectorXd::Constant(6, 1.0).asDiagonal();
-    priorr = Eigen::MatrixXd(6, 5);
-    priorr << 5, loudIn->N_obs0 - 1, loudIn->lmean0, sqrt(loudIn->s0sq / (loudIn->N_obs0 - 1)), 1,
-        5, loudIn->N_obs1 - 1, loudIn->lmean1, sqrt(loudIn->s1sq / (loudIn->N_obs1 - 1)), 1, 2, 0,
-        2, BMDS_MISSING, 1, 2, log(1.6), 0.421, BMDS_MISSING, 1, 4, (loudIn->N_obs0 - 1) / 2.0,
-        loudIn->N_obs0 * loudIn->s0sq / 2.0, BMDS_MISSING, 1, 4, (loudIn->N_obs1 - 1) / 2.0,
-        loudIn->N_obs1 * loudIn->s1sq / 2.0, BMDS_MISSING, 1;
-  }
-
-  double startVal = 0.025;
-  double stopVal = 0.975;
-  double stepSize = 0.025;
-  double numStepsD = (stopVal - startVal) / stepSize + 1;
-  int numSteps = numStepsD;
-
-  Eigen::VectorXd qtiles(numSteps);
-
-  for (int i = 0; i < numSteps; i++) {
-    qtiles(i) = startVal + i * stepSize;
-  }
-
-  Eigen::MatrixXd R = run_latentslice_functional_general(
-      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
-  );
-
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
-  // other calcs
-  loudOut->BMD.resize(R.rows());
 
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
@@ -4391,6 +3744,7 @@ double calcBMD_log_efsa(
       break;
     default:
       std::cout << "Incorrect BMDtype for calcBMD_log_efsa" << std::endl;
+      break;
   }
 
   return bmd;
@@ -4438,6 +3792,7 @@ double calcBMD_gamma_efsa(
       break;
     default:
       std::cout << "Incorrect BMDtype for calcBMD_gamma_efsa" << std::endl;
+      break;
   }
 
   return bmd;
@@ -4487,6 +3842,7 @@ double calcBMD_lms_efsa(
       break;
     default:
       std::cout << "Incorrect BMDtype for calcBMD_lms_efsa" << std::endl;
+      break;
   }
 
   return bmd;
@@ -4516,6 +3872,7 @@ double calcLoudBMD(
       break;
     default:
       std::cout << "Incorrect model for calcLoudBMD" << std::endl;
+      break;
   }
 
   return bmd;
@@ -4550,8 +3907,8 @@ double calcLoudBMD(
       //	   break;
     default:
       std::cout << "Incorrect BMDtype for calcLoudBMD" << std::endl;
+      break;
   }
-  //  std::cout << "returning:" << bmd << std::endl;
   return bmd;
 }
 
@@ -4584,8 +3941,8 @@ double calcLoudBMD(
       //	   break;
     default:
       std::cout << "Incorrect BMDtype for calcLoudBMD" << std::endl;
+      break;
   }
-  //  std::cout << "returning:" << bmd << std::endl;
   return bmd;
 }
 
@@ -4593,7 +3950,6 @@ double pivotal_pvalue(
     Eigen::MatrixXd &R, const struct fitInput *loudIn,  // fitResult *loudOut,
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
 ) {
-  //  std::cout << "inside pivotal_pvalue" << std::endl;
   Eigen::MatrixXd Ruse = R.bottomRows(max(1, loudIn->iter - loudIn->burnin + 1));
   int S = Ruse.rows();
   Eigen::VectorXd Qvals(S);
@@ -4866,6 +4222,15 @@ void pythonBMDSContLoud_dummy(
   pyRes->bmdsRes = bmdsRes;
 }
 
+Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols) {
+  int rows = flatPrior.size() / priorCols;
+  Eigen::MatrixXd prior(rows, priorCols);
+
+  prior = Eigen::Map<Eigen::MatrixXd>(flatPrior.data(), rows, priorCols);
+
+  return prior;
+}
+
 void pythonBMDSLoud_dev(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
@@ -5136,15 +4501,35 @@ void pythonBMDSLoud_dev(
   for (int i = 0; i < pyMA->models.size(); i++) {
     pyRes->models[i].model = pyMA->models[i];
     pyRes->models[i].dist = pyMA->loud_dist_type[i];
+    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    switch (pyMA->loud_dist_type[i]) {
+      case distribution::normal:
+        cvInput.priorr = priorr;
+        break;
+      case distribution::normal_ncv:
+        ncvInput.priorr = priorr;
+        break;
+      case distribution::log_normal:
+        logcvInput.priorr = priorr;
+        break;
+      default:
+        std::cout << "error in dist type for priorr" << std::endl;
+        return;
+        break;
+    }
+
+    // old
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
-          fit_cpower(&cvInput, &cvPowerOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvPowerOut);
           pyRes->models[i].loudRes = cvPowerOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
-          fit_cpower(&ncvInput, &ncvPowerOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvPowerOut);
           pyRes->models[i].loudRes = ncvPowerOut;
         } else {
           std::cout << "power model not available in lognormal distribution" << std::endl;
@@ -5153,41 +4538,49 @@ void pythonBMDSLoud_dev(
       case cont_model::exp_3:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
-          fit_cexp3(&cvInput, &cvExp3Out);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvExp3Out);
           pyRes->models[i].loudRes = cvExp3Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
-          fit_cexp3(&ncvInput, &ncvExp3Out);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvExp3Out);
           pyRes->models[i].loudRes = ncvExp3Out;
         } else {
           pyRes->models[i].nparms = 4;
-          fit_cexp3(&logcvInput, &logcvExp3Out);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvExp3Out);
           pyRes->models[i].loudRes = logcvExp3Out;
         }
         break;
       case cont_model::exp_5:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_cexp5(&cvInput, &cvExp5Out);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvExp5Out);
           pyRes->models[i].loudRes = cvExp5Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_cexp5(&ncvInput, &ncvExp5Out);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvExp5Out);
           pyRes->models[i].loudRes = ncvExp5Out;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_cexp5(&logcvInput, &logcvExp5Out);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvExp5Out);
           pyRes->models[i].loudRes = logcvExp5Out;
         }
         break;
       case cont_model::hill:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_chill(&cvInput, &cvHillOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvHillOut);
           pyRes->models[i].loudRes = cvHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_chill(&ncvInput, &ncvHillOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvHillOut);
           pyRes->models[i].loudRes = ncvHillOut;
         } else {
           std::cout << "hill model not available in lognormal distribution" << std::endl;
@@ -5196,86 +4589,98 @@ void pythonBMDSLoud_dev(
       case cont_model::l_hill_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_chill_efsa(&cvInput, &cvEfsaHillOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvEfsaHillOut);
           pyRes->models[i].loudRes = cvEfsaHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_chill_efsa(&ncvInput, &ncvEfsaHillOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvEfsaHillOut);
           pyRes->models[i].loudRes = ncvEfsaHillOut;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_chill_efsa(&logcvInput, &logcvEfsaHillOut);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvEfsaHillOut);
           pyRes->models[i].loudRes = logcvEfsaHillOut;
         }
         break;
       case cont_model::l_invexp_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_cinvexp_efsa(&cvInput, &cvEfsaInvExpOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvEfsaInvExpOut);
           pyRes->models[i].loudRes = cvEfsaInvExpOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_cinvexp_efsa(&ncvInput, &ncvEfsaInvExpOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvEfsaInvExpOut);
           pyRes->models[i].loudRes = ncvEfsaInvExpOut;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_cinvexp_efsa(&logcvInput, &logcvEfsaInvExpOut);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvEfsaInvExpOut);
           pyRes->models[i].loudRes = logcvEfsaInvExpOut;
         }
         break;
       case cont_model::l_lognormal_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_clog_efsa(&cvInput, &cvEfsaLogOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvEfsaLogOut);
           pyRes->models[i].loudRes = cvEfsaLogOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_clog_efsa(&ncvInput, &ncvEfsaLogOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvEfsaLogOut);
           pyRes->models[i].loudRes = ncvEfsaLogOut;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_clog_efsa(&logcvInput, &logcvEfsaLogOut);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvEfsaLogOut);
           pyRes->models[i].loudRes = logcvEfsaLogOut;
         }
         break;
       case cont_model::l_gamma_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_cgamma_efsa(&cvInput, &cvEfsaGammaOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvEfsaGammaOut);
           pyRes->models[i].loudRes = cvEfsaGammaOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_cgamma_efsa(&ncvInput, &ncvEfsaGammaOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvEfsaGammaOut);
           pyRes->models[i].loudRes = ncvEfsaGammaOut;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_cgamma_efsa(&logcvInput, &logcvEfsaGammaOut);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvEfsaGammaOut);
           pyRes->models[i].loudRes = logcvEfsaGammaOut;
         }
         break;
       case cont_model::l_lms_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          fit_clms_efsa(&cvInput, &cvEfsaLmsOut);
+          cvInput.model = pyMA->models[i];
+          fit_Loud(&cvInput, &cvEfsaLmsOut);
           pyRes->models[i].loudRes = cvEfsaLmsOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          fit_clms_efsa(&ncvInput, &ncvEfsaLmsOut);
+          ncvInput.model = pyMA->models[i];
+          fit_Loud(&ncvInput, &ncvEfsaLmsOut);
           pyRes->models[i].loudRes = ncvEfsaLmsOut;
         } else {
           pyRes->models[i].nparms = 5;
-          fit_clms_efsa(&logcvInput, &logcvEfsaLmsOut);
+          logcvInput.model = pyMA->models[i];
+          fit_Loud(&logcvInput, &logcvEfsaLmsOut);
           pyRes->models[i].loudRes = logcvEfsaLmsOut;
         }
         break;
       default:
         break;
     }
-
-    // printBmdsStruct(&pyRes->models[i].loudRes);
   }
 
-  //  std::cout <<"after model fits"<<std::endl;
   // calculate MA posteriors
   std::vector<double> posterior_probs_waic;
   if (pyMA->weightOption != 2) {
@@ -5297,7 +4702,6 @@ void pythonBMDSLoud_dev(
     }
   }
 
-  //  std::cout<<"after waic"<<std::endl;
   std::vector<double> posterior_probs_int_factor;
   if (pyMA->weightOption != 1) {
     posterior_probs_waic.reserve(pyMA->nmodels);
@@ -5317,7 +4721,6 @@ void pythonBMDSLoud_dev(
     }
   }
 
-  //  std::cout<<"after int_factor"<<std::endl;
   std::vector<double> posterior_probs(pyMA->nmodels);
   switch (pyMA->weightOption) {
     case 1: {
@@ -5344,8 +4747,6 @@ void pythonBMDSLoud_dev(
       break;
     }
   }
-
-  //  std::cout<<"after posterior_probs"<<std::endl;
 
   // calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
@@ -5374,7 +4775,6 @@ void pythonBMDSLoud_dev(
     int result = d(gen);
     bmds_c[i] = lbmd(i, result);
   }
-  //  std::cout<<"after bmds_c"<<std::endl;
 
   // Calc MA bmdl, bmd, bmdu
   // remove nans
@@ -5391,18 +4791,13 @@ void pythonBMDSLoud_dev(
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
   double bmdu = findQuantileVals(bmds_c, 1.0 - pyMA->pyCA.alpha);
 
-  //  std::cout<<"after bmdl, bmdu"<<std::endl;
-
   double bmd = findMedianVal(bmds_c);
-
-  //  std::cout<<"after bmd"<<std::endl;
 
   pyRes->bmdsRes.BMD_MA = bmd;
   pyRes->bmdsRes.BMDL_MA = bmdl;
   pyRes->bmdsRes.BMDU_MA = bmdu;
   pyRes->bmd_dist = bmds_c;
   pyRes->post_probs = posterior_probs;
-  //  std::cout<<"end of LOUD"<<std::endl;
 }
 
 double findMedianVal(std::vector<double> dist) {
