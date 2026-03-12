@@ -10,3 +10,4 @@ void multitumor_eq_constraint_test();
 void cont_AIC_penalty_test();
 void dicho_AIC_penalty_test();
 void nested_AIC_penalty_test();
+void run_loud_model_fit_test();

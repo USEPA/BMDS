@@ -16,6 +16,8 @@ int run_all_unitTests() {
   dicho_AIC_penalty_test();
   cont_AIC_penalty_test();
   nested_AIC_penalty_test();
+  run_loud_model_fit_test();
+
   return 0;
 }
 
@@ -25,6 +27,158 @@ void objfunc_test() {
   // assert(objfunc_bmdl(x, tmp, NULL)==1.5);
   expect_true(objfunc_bmdl(x, tmp, NULL) == 1.5);
 }
+
+
+
+//these tests expect alpha to be returned not ln(alpha) as in BMDS
+void run_loud_model_fit_test(){
+
+  Eigen::MatrixXd Y {
+    {10.61764, 0.8937421, 20},
+    {11.54771, 1.0580638, 20},
+    {12.20492, 1.3528275, 20},
+    {14.73715, 1.0778448, 19},
+    {15.85227, 0.8350199, 19}
+  };
+
+  Eigen::MatrixXd D {
+    {0},{0.125},{0.25},{0.5},{1.0}
+  };
+
+  bool isIncreasing = true;
+
+  struct fitInput fitIn;
+  fitIn.Y = Y; 
+  fitIn.doses = D; 
+  fitIn.datatype == loud_datatype::l_summary;
+
+  fitIn.bmdtype = 2; //stddev
+  fitIn.bmr = 1.0;
+  fitIn.sign = 1.0;
+
+  int iter = 5; //# of rows in R
+  int numParms = -1;
+  Eigen::VectorXd bmd(iter);
+  Eigen::MatrixXd parms;
+
+  struct fitResult fitOut;
+  fitOut.BMD = bmd;
+
+//  ////////////////////
+//  // POWER CV
+//  //////////////////////
+
+  //std_dev
+  fitIn.dist = distribution::normal;
+  const struct fitInput fitInCV_sd = fitIn;
+  numParms = 4;
+  //Eigen::MatrixXd parms(iter, numParms);
+  parms.resize(iter, numParms);
+
+
+  fitOut.parms = parms;
+
+  const Eigen::MatrixXd R_powerCV {
+	  {10.14480, 17.58850, 1.257526, 0.5927195},
+	  {10.14479, 17.58852, 1.257526, 0.5929868},
+	  {10.14479, 17.58851, 1.257526, 0.5928710},
+	  {10.14479, 17.58851, 1.257526, 0.5928589},
+	  {10.14478, 17.58854, 1.257525, 0.5933468}
+//	  {10.74527, 15.81117, 1.298977, 0.6575040},
+//	  {10.74912, 15.81134, 1.296527, 0.6616531},
+//	  {10.74884, 15.81133, 1.296705, 0.6613596},
+//	  {10.75058, 15.81141, 1.295597, 0.6632504},
+//	  {10.75425, 15.81158, 1.293257, 0.6672111}
+  };
+
+  fit_cpower(&fitInCV_sd, &fitOut, R_powerCV);
+
+  const Eigen::MatrixXd powerCVParms{
+	  {10.14480, 7.443703, 1.257526, 1.687139},
+ 	  {10.14479, 7.443726, 1.257526, 1.686378},
+ 	  {10.14479, 7.443716, 1.257526, 1.686707},
+ 	  {10.14479, 7.443715, 1.257526, 1.686742},
+ 	  {10.14478, 7.443757, 1.257525, 1.685355}
+//	  {10.74527, 5.065891, 1.298977, 1.520903},
+//	  {10.74912, 5.062219, 1.296527, 1.511366},
+//	  {10.74884, 5.062487, 1.296705, 1.512037},
+//	  {10.75058, 5.060829, 1.295597, 1.507726},
+//	  {10.75425, 5.057327, 1.293257, 1.498776}
+  };
+
+  const Eigen::VectorXd powerCV_stdev_BMD {{0.2494936, 0.2494482, 0.2494678, 0.2494699, 0.2493870}};
+
+  expect_true(powerCVParms.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(powerCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+
+  //rel_dev
+  fitIn.bmdtype = 3; //reldev
+  fitIn.bmr = 0.1;
+  const struct fitInput fitInCV_rel = fitIn;
+
+  fit_cpower(&fitInCV_rel, &fitOut, R_powerCV);
+  Eigen::VectorXd powerCV_reldev_BMD {{0.2049782, 0.2049775, 0.2049778, 0.2049778, 0.2049766}};
+  expect_true(powerCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+
+//////////////////////
+//POWER NCV
+////////////////////
+  numParms = 5;
+  fitIn.dist = distribution::normal_ncv;
+  fitIn.bmdtype = 2; //stddev
+  fitIn.bmr = 1.0;
+  const struct fitInput fitInNCV_sd = fitIn;
+  const Eigen::MatrixXd R_powerNCV {
+	  {10.39001, 15.60302, 1.515874, 0.3839357, 0.1988224},
+	  {10.39067, 15.60438, 1.515864, 0.3808076, 0.1854814},
+	  {10.39022, 15.60346, 1.515871, 0.3826683, 0.1953143},
+	  {10.39023, 15.60347, 1.515872, 0.3827986, 0.1924049},
+	  {10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668}
+//	  {10.68197, 16.35808, 2.151791, 0.5344425, 1.514895},
+//	  {10.68197, 16.35806, 2.151791, 0.5344394, 1.514895},
+//	  {10.68198, 16.35818, 2.151786, 0.5344703, 1.514898},
+//	  {10.68197, 16.35808, 2.151790, 0.5344447, 1.514895},
+//	  {10.68196, 16.35800, 2.151794, 0.5344219, 1.514893}
+  };
+
+  parms.resize(iter, numParms);
+
+
+  fitOut.parms = parms;
+  
+  fit_cpower(&fitInNCV_sd, &fitOut, R_powerNCV);
+
+  const Eigen::MatrixXd powerNCVParms{
+	  {10.39001, 5.213014, 1.515874, -2.8310805, 1.6183734},
+	  {10.39067, 5.213711, 1.515864, -3.1755334, 1.7689691},
+	  {10.39022, 5.213237, 1.515871, -2.9111840, 1.6539914},
+	  {10.39023, 5.213244, 1.515872, -2.9998844, 1.6917375},
+	  {10.37943, 5.201839, 1.516049,  0.1829478, 0.2849009}
+//	  {10.68197, 5.676107, 2.151791, 6.417124, -2.444777},
+//	  {10.68197, 5.676098, 2.151791, 6.417168, -2.444793},
+//	  {10.68198, 5.676194, 2.151786, 6.416730, -2.444631},
+//	  {10.68197, 5.676114, 2.151790, 6.417093, -2.444765},
+//	  {10.68196, 5.676043, 2.151794, 6.417416, -2.444885}
+  };
+
+  Eigen::VectorXd powerNCV_stdev_BMD {{0.4613986, 0.4626020, 0.4618883, 0.4618363, 0.4459658}};
+
+  expect_true(powerNCVParms.isApprox(fitOut.parms, 1.5e-6));
+
+  
+  //check BMDs - this relies on the parms above being correct
+  expect_true(powerNCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  
+  fitIn.bmdtype = 3; //reldev
+  fitIn.bmr = 0.1;
+  const struct fitInput fitInNCV_rel = fitIn;
+
+  fit_cpower(&fitInNCV_rel, &fitOut, R_powerNCV);
+  Eigen::VectorXd powerNCV_reldev_BMD {{0.3450709, 0.3450523, 0.3450649, 0.3450652, 0.3453699}};
+  expect_true(powerNCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+
+}
+
 
 void Nlogist_probs_test() {
   std::vector<double> Xi = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,

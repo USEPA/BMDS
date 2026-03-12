@@ -2888,13 +2888,13 @@ void bridge_sample(
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-  //      std::cout << "DEBUG R!!!!!!!" << std::endl;
-  //     R <<
-  // 10.81203, 16.05766, 1.1000493, 1.148223,
-  // 10.78729, 16.12128, 0.8909173, 1.314119,
-  // 10.63930, 16.13468, 0.8366445, 1.306490,
-  // 10.47241, 16.07384, 0.6861759, 1.321131,
-  // 10.66946, 16.13336, 0.7635320, 1.293448;
+//        std::cout << "DEBUG R!!!!!!!" << std::endl;
+//       R <<
+//10.39001, 15.60302, 1.515874, 0.3839357, 0.1988224,
+//10.39067, 15.60438, 1.515864, 0.3808076, 0.1854814,
+//10.39022, 15.60346, 1.515871, 0.3826683, 0.1953143,
+//10.39023, 15.60347, 1.515872, 0.3827986, 0.1924049,
+//10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668;
 
   // change from original bridgesource R code
   // now references functional_generalized.cpp model fun with function signature
@@ -3331,6 +3331,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
+
 }
 
 void fit_cpower(
@@ -3343,35 +3344,43 @@ void fit_cpower(
   // power model only has normal distribtion (cv)
   normalPOWER_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
 
+  Eigen::MatrixXd parms;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
   if (bConstVar) {
     // CV
+    parms.resize(R.rows(), 4);
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(4, 1);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);             // m0 to gamma
       theta(1, 0) = R(i, 1) - R(i, 0);   // b to beta
       theta(2, 0) = R(i, 2);             // n to k
-      theta(3, 0) = log(1.0 / R(i, 3));  // alpha = log(1/prec)
+      theta(3, 0) = log(1.0 / R(i, 3));  // alpha = log(1/prec)  //BMDS expects ln(alpha)
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+      parms.row(i) << theta(0,0), theta(1,0), theta(2,0), exp(theta(3,0));  //converts ln(alpha) to alpha
     }
   } else {
     // NCV
+    parms.resize(R.rows(), 5);
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);            // m0 to gamma
       theta(1, 0) = R(i, 1) - R(i, 0);  // b to beta
       theta(2, 0) = R(i, 2);            // n to k
-      theta(4, 0) = log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0))));
-      theta(3, 0) =
-          log(1 / (R(i, 3) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
+
+      theta(3,0) = log(R(i,3)/R(i,4))/log(R(i,1)/R(i,0));
+      theta(4,0) = log(1.0/(R(i,3)*pow(R(i,0),theta(3,0))));  //alpha = log(sigma0sq/(m0^rho))
+      
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+
+      parms.row(i) << theta(0,0), theta(1,0), theta(2,0), theta(4,0), theta(3,0);
     }
   }
 
-  loudOut->parms = R;
+  //loudOut->parms = R;
+  loudOut->parms = parms;
 }
 
 void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
