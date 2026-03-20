@@ -35,6 +35,7 @@ class DichotomousModelAverage:
         average.priors = [model.structs.analysis.prior for model in models]
         average.modelPriors = model_weights
         average.pyDA = analysis
+        print("priors:", average.priors)
 
         bmdsRes = bmdscore.BMDSMA_results()
         bmdsRes.BMD = np.full(average.nmodels, -9999)

@@ -329,6 +329,8 @@ class Session:
             else:
                 raise ValueError("weight_option must be str or int.")
 
+            self.weight_option = weight_option_int
+
         if self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
             prior_classes = {m.settings.priors.prior_class for m in self.models}
             allowed = {PriorClass.bayesian, PriorClass.bayesian_loud}

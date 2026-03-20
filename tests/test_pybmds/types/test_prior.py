@@ -218,8 +218,8 @@ class TestModelPriors:
         assert m0.type is PriorDistribution.Student_t
         assert m1.type is PriorDistribution.Student_t
 
-        # Var0 should be InverseGamma for LOUD CV
-        assert v0.type is PriorDistribution.InverseGamma
+        # Var0 should be Gamma for LOUD CV
+        assert v0.type is PriorDistribution.Gamma
 
         # sanity: df should be > 0, scales should be > 0
         assert m0.initial_value > 0  # df
@@ -247,7 +247,7 @@ class TestModelPriors:
         # Override InvGamma using shape/scale semantics
         priors.update("Var0", shape=2.0, scale=10.0)
         v = priors.get_prior("Var0")
-        assert v.type is PriorDistribution.InverseGamma
+        assert v.type is PriorDistribution.Gamma
         assert v.initial_value == 2.0  # shape
         assert v.stdev == 10.0  # scale
 
@@ -261,8 +261,8 @@ class TestModelPriors:
         v0 = priors.get_prior("Var0")
         v1 = priors.get_prior("Var1")
 
-        assert v0.type is PriorDistribution.InverseGamma
-        assert v1.type is PriorDistribution.InverseGamma
+        assert v0.type is PriorDistribution.Gamma
+        assert v1.type is PriorDistribution.Gamma
         assert v0.initial_value > 0 and v0.stdev > 0
         assert v1.initial_value > 0 and v1.stdev > 0
 
@@ -336,8 +336,8 @@ class TestModelPriors:
         assert "loc=" in table
         assert "scale=" in table
 
-        # Verify InverseGamma variance prior
-        assert "InverseGamma" in table
+        # Verify Gamma variance prior
+        assert "Gamma" in table
         assert "Var" in table
         assert "shape=" in table
         assert "min=" in table
@@ -356,7 +356,7 @@ class TestModelPriors:
         │ m0          │ Student_t      │ df=7.0, loc=9.926400000000001, scale=0.33249228831014155 │
         │ m1          │ Student_t      │ df=5.0, loc=10.85275, scale=0.3087445899660966           │
         │ d           │ Lognormal      │ initial=0.47, stdev=0.421, min=0.0, max=18.0             │
-        │ Var         │ InverseGamma   │ shape=6.0, scale=3.900042756666664, min=0.0, max=10000.0 │
+        │ Var         │ Gamma          │ shape=6.0, scale=3.900042756666664, min=0.0, max=10000.0 │
         ╘═════════════╧════════════════╧══════════════════════════════════════════════════════════╛
         """
         )

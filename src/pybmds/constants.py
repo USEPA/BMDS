@@ -245,10 +245,9 @@ class PriorDistribution(IntEnum):
     Uniform = 0
     Normal = 1
     Lognormal = 2
-    Gamma = 3
-    Beta = 4
+    Beta = 3
+    Gamma = 4
     Student_t = 5
-    InverseGamma = 6
 
 
 class PriorClass(IntEnum):
