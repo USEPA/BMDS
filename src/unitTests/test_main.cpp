@@ -7,5 +7,5 @@
 
 int main() {
   run_all_unitTests();
-//  run_all_integrationTests();
+  run_all_integrationTests();
 }

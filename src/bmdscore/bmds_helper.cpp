@@ -2888,13 +2888,13 @@ void bridge_sample(
     Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-//        std::cout << "DEBUG R!!!!!!!" << std::endl;
-//       R <<
-//10.39001, 15.60302, 1.515874, 0.3839357, 0.1988224,
-//10.39067, 15.60438, 1.515864, 0.3808076, 0.1854814,
-//10.39022, 15.60346, 1.515871, 0.3826683, 0.1953143,
-//10.39023, 15.60347, 1.515872, 0.3827986, 0.1924049,
-//10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668;
+  //        std::cout << "DEBUG R!!!!!!!" << std::endl;
+  //       R <<
+  // 10.39001, 15.60302, 1.515874, 0.3839357, 0.1988224,
+  // 10.39067, 15.60438, 1.515864, 0.3808076, 0.1854814,
+  // 10.39022, 15.60346, 1.515871, 0.3826683, 0.1953143,
+  // 10.39023, 15.60347, 1.515872, 0.3827986, 0.1924049,
+  // 10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668;
 
   // change from original bridgesource R code
   // now references functional_generalized.cpp model fun with function signature
@@ -3331,7 +3331,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
-
 }
 
 void fit_cpower(
@@ -3358,7 +3357,8 @@ void fit_cpower(
       theta(3, 0) = log(1.0 / R(i, 3));  // alpha = log(1/prec)  //BMDS expects ln(alpha)
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-      parms.row(i) << theta(0,0), theta(1,0), theta(2,0), exp(theta(3,0));  //converts ln(alpha) to alpha
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0),
+          exp(theta(3, 0));  // converts ln(alpha) to alpha
     }
   } else {
     // NCV
@@ -3369,17 +3369,18 @@ void fit_cpower(
       theta(1, 0) = R(i, 1) - R(i, 0);  // b to beta
       theta(2, 0) = R(i, 2);            // n to k
 
-      theta(3,0) = log(R(i,3)/R(i,4))/log(R(i,1)/R(i,0));
-      theta(4,0) = log(1.0/(R(i,3)*pow(R(i,0),theta(3,0))));  //alpha = log(sigma0sq/(m0^rho))
-      
+      theta(3, 0) = log(R(i, 3) / R(i, 4)) / log(R(i, 1) / R(i, 0));
+      theta(4, 0) =
+          log(1.0 / (R(i, 3) * pow(R(i, 0), theta(3, 0))));  // alpha = log(sigma0sq/(m0^rho))
+
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
 
-      parms.row(i) << theta(0,0), theta(1,0), theta(2,0), theta(4,0), theta(3,0);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), theta(4, 0);
     }
   }
 
-  //loudOut->parms = R;
+  // loudOut->parms = R;
   loudOut->parms = parms;
 }
 
@@ -3387,73 +3388,83 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  Eigen::MatrixXd parms;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
   if (bConstVar) {
     // CV
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    parms.resize(R.rows(), 4);
     if (loudIn->dist == distribution::log_normal) {
-      lognormalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      lognormalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 3);
       for (int i = 0; i < R.rows(); ++i) {
-        theta(0, 0) = R(i, 0);                                                  // m0
-        theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
-        theta(3, 0) = R(i, 3);                                                  // n
+        theta(0, 0) = exp(R(i, 0));                                                  // m0
+        theta(1, 0) = pow(fabs(log(exp(R(i, 1)) / exp(R(i, 0)))), (1.0 / R(i, 2)));  // b to beta
+        theta(3, 0) = R(i, 2);                                                       // n
         theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), exp(theta(4, 0));
       }
 
     } else {
-      normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+      normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 3);
       for (int i = 0; i < R.rows(); ++i) {
         theta(0, 0) = R(i, 0);                                                  // m0
-        theta(1, 0) = pow(loudIn->sign * log(R(i, 2) / R(i, 1)), 1 / R(i, 3));  // b to beta
+        theta(1, 0) = pow(loudIn->sign * log(R(i, 1) / R(i, 0)), 1 / R(i, 2));  // b to beta
         theta(3, 0) = R(i, 2);                                                  // n
-        theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
+        theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance) //BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), exp(theta(4, 0));
       }
     }
   } else {
     // NCV
-    normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
+    normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 3);
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    parms.resize(R.rows(), 5);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);                                                  // m0
       theta(1, 0) = pow(loudIn->sign * log(R(i, 1) / R(i, 0)), 1 / R(i, 2));  // b to beta
       theta(3, 0) = R(i, 2);                                                  // n
+      theta(4, 0) = log(R(i, 3) / R(i, 4)) /
+                    log(R(i, 1) / R(i, 0));  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
       theta(5, 0) =
-          log(R(i, 3) / (R(i, 4) * log(R(i, 1) / R(i, 0)))
-          );  // rho = log(simga1sq/sigma0sq)/(log(m1/m0)
-      theta(4, 0) =
-          log(1 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
+          log(1.0 / (R(i, 3) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), theta(4, 0), theta(5, 0);
     }
   }
-  loudOut->parms = R;
+  loudOut->parms = parms;
 };
 
 void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  Eigen::MatrixXd parms;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
   if (bConstVar) {
     // CV
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    parms.resize(R.rows(), 5);
     if (loudIn->dist == distribution::log_normal) {
       lognormalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
       for (int i = 0; i < R.rows(); ++i) {
-        theta(0, 0) = R(i, 0);  // m0
-        theta(1, 0) = R(i, 2);  // b to beta
-        theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
-                      (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
-        theta(3, 0) = R(i, 3);                                           // n
-        theta(4, 0) = log(1.0 / R(i, 4));                                // alpha
+        theta(0, 0) = exp(R(i, 0));  // m0
+        theta(1, 0) = R(i, 2);       // b to beta
+        theta(2, 0) =
+            log((exp(R(i, 0)) - exp(R(i, 1)) * exp(pow(R(i, 2), R(i, 3)))) /
+                (exp(R(i, 0)) - exp(R(i, 0)) * exp(pow(R(i, 2), R(i, 3))))
+            );                             // c  note: BMDS expects ln(c)
+        theta(3, 0) = R(i, 3);             // n
+        theta(4, 0) = log(1.0 / R(i, 4));  // alpha note: BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), exp(theta(4, 0));
       }
 
     } else {
@@ -3461,42 +3472,50 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       for (int i = 0; i < R.rows(); ++i) {
         theta(0, 0) = R(i, 0);  // m0
         theta(1, 0) = R(i, 2);  // b to beta
-        theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
-                      (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
-        theta(3, 0) = R(i, 3);                                           // n
-        theta(4, 0) = log(1.0 / R(i, 4));                                // alpha
+        theta(2, 0) =
+            log((R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
+                (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3)))));  // c
+        theta(3, 0) = R(i, 3);                                      // n
+        theta(4, 0) = log(1.0 / R(i, 4));                           // alpha
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), exp(theta(4, 0));
       }
     }
   } else {
     // NCV
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    parms.resize(R.rows(), 6);
     normalEXPONENTIAL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);  // m0
       theta(1, 0) = R(i, 2);  // b to beta
-      theta(2, 0) = (R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
-                    (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3))));  // c
-      theta(3, 0) = R(i, 3);                                           // n
-      theta(5, 0) = log(R(i, 5) / (R(i, 4) * log(R(i, 1) / R(i, 2))));
-      theta(4, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(5, 0))));  // alpha
+      theta(2, 0) =
+          log((R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
+              (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3)))));  // c
+      theta(3, 0) = R(i, 3);                                      // n
+      theta(4, 0) = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      theta(5, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));  // alpha
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+      parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), theta(4, 0),
+          theta(5, 0);
     }
   }
-  loudOut->parms = R;
+  loudOut->parms = parms;
 };
 
 void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
   // convert R (loud approach) to theta (ToxicR) for BMD calc
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  Eigen::MatrixXd parms;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
   if (bConstVar) {
     // CV  (no lognormal for BMDS Hill)
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(5, 1);
+    parms.resize(R.rows(), 5);
     normalHILL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);                                            // m0
@@ -3506,23 +3525,26 @@ void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       theta(4, 0) = log(1.0 / R(i, 4));                                 // alpha
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), exp(theta(4, 0));
     }
   } else {
     // NCV
     Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(6, 1);
+    parms.resize(R.rows(), 6);
     normalHILL_BMD_NC model(loudIn->Y, loudIn->doses, suff_stat, bConstVar, 0);
     for (int i = 0; i < R.rows(); ++i) {
       theta(0, 0) = R(i, 0);                                            // m0
       theta(2, 0) = R(i, 2);                                            // k
       theta(3, 0) = R(i, 3);                                            // n
       theta(1, 0) = (R(i, 1) - R(i, 0)) * (pow(R(i, 2), R(i, 3)) + 1);  // m0 and m1 to nu (v)
-      theta(5, 0) = log(R(i, 5) / (R(i, 4) * log(R(i, 1) / R(i, 2))));
-      theta(4, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(5, 0))));  // alpha
+      theta(4, 0) = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));    // rho
+      theta(5, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));   // alpha
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), theta(4, 0), theta(5, 0);
     }
   }
-  loudOut->parms = R;
+  loudOut->parms = parms;
 }
 
 void fit_chill_efsa(
@@ -3530,17 +3552,67 @@ void fit_chill_efsa(
 ) {
   cont_model model = l_hill_efsa;
 
+  Eigen::MatrixXd parms;
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
+  bool isNormal = true;
 
-  for (int i = 0; i < R.rows(); ++i) {
-    loudOut->BMD(i) = calcLoudBMD(
-        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-    );
+  if (bConstVar) {
+    parms.resize(R.rows(), 5);
+    if (loudIn->dist == distribution::log_normal) {
+      // LogCV
+      isNormal = false;
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = exp(R(i, 0));
+        double m1 = exp(R(i, 1));
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    } else {
+      // CV
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = R(i, 0);
+        double m1 = R(i, 1);
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    }
+  } else {
+    // NCV
+    parms.resize(R.rows(), 6);
+    for (int i = 0; i < R.rows(); ++i) {
+      double m0 = R(i, 0);
+      double m1 = R(i, 1);
+      double b = R(i, 2);
+      double d = R(i, 3);
+      double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
+      double rho = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      double alpha = log(1.0 / (R(i, 4) * pow(R(i, 0), rho)));
+      parms.row(i) << m0, b, c, d, rho, alpha;
+      loudOut->BMD(i) = calcLoudBMD(
+          model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+          loudIn->tailProb
+      );
+    }
   }
-  loudOut->parms = R;
+
+  loudOut->parms = parms;
 };
 
 void fit_cinvexp_efsa(
@@ -3548,16 +3620,66 @@ void fit_cinvexp_efsa(
 ) {
   cont_model model = l_invexp_efsa;
 
+  Eigen::MatrixXd parms;
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
-  for (int i = 0; i < R.rows(); ++i) {
-    loudOut->BMD(i) = calcLoudBMD(
-        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-    );
+  bool isNormal = true;
+
+  if (bConstVar) {
+    parms.resize(R.rows(), 5);
+    if (loudIn->dist == distribution::log_normal) {
+      // LogCV
+      isNormal = false;
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = exp(R(i, 0));
+        double m1 = exp(R(i, 1));
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = (m1 - m0 + m0 * exp(-b)) / (m0 * exp(-b));
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    } else {
+      // CV
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = R(i, 0);
+        double m1 = R(i, 1);
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = (m1 - m0 + m0 * exp(-b)) / (m0 * exp(-b));
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    }
+  } else {
+    // NCV
+    parms.resize(R.rows(), 6);
+    for (int i = 0; i < R.rows(); ++i) {
+      double m0 = R(i, 0);
+      double m1 = R(i, 1);
+      double b = R(i, 2);
+      double d = R(i, 3);
+      double c = (m1 - m0 + m0 * exp(-b)) / (m0 * exp(-b));
+      double rho = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      double alpha = log(1.0 / (R(i, 4) * pow(R(i, 0), rho)));
+      parms.row(i) << m0, b, c, d, rho, alpha;
+      loudOut->BMD(i) = calcLoudBMD(
+          model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+          loudIn->tailProb
+      );
+    }
   }
-  loudOut->parms = R;
+  loudOut->parms = parms;
 };
 
 void fit_clog_efsa(
@@ -3565,16 +3687,70 @@ void fit_clog_efsa(
 ) {
   cont_model model = l_lognormal_efsa;
 
+  Eigen::MatrixXd parms;
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
-  for (int i = 0; i < R.rows(); ++i) {
-    loudOut->BMD(i) = calcLoudBMD(
-        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-    );
+  bool isNormal = true;
+
+  if (bConstVar) {
+    parms.resize(R.rows(), 5);
+    if (loudIn->dist == distribution::log_normal) {
+      // LogCV
+      isNormal = false;
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = exp(R(i, 0));
+        double m1 = exp(R(i, 1));
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double pnorm = gsl_cdf_gaussian_P(log(b), 1.0);
+        double c = (m1 - m0 + m0 * pnorm) / (m0 * pnorm);
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    } else {
+      // CV
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = R(i, 0);
+        double m1 = R(i, 1);
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double pnorm = gsl_cdf_gaussian_P(log(b), 1.0);
+        double c = (m1 - m0 + m0 * pnorm) / (m0 * pnorm);
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    }
+  } else {
+    // NCV
+    parms.resize(R.rows(), 6);
+    for (int i = 0; i < R.rows(); ++i) {
+      double m0 = R(i, 0);
+      double m1 = R(i, 1);
+      double b = R(i, 2);
+      double d = R(i, 3);
+      double pnorm = gsl_cdf_gaussian_P(log(b), 1.0);
+      double c = (m1 - m0 + m0 * pnorm) / (m0 * pnorm);
+      double rho = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      double alpha = log(1.0 / (R(i, 4) * pow(R(i, 0), rho)));
+      parms.row(i) << m0, b, c, d, rho, alpha;
+      loudOut->BMD(i) = calcLoudBMD(
+          model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+          loudIn->tailProb
+      );
+    }
   }
-  loudOut->parms = R;
+
+  loudOut->parms = parms;
 };
 
 void fit_cgamma_efsa(
@@ -3582,16 +3758,70 @@ void fit_cgamma_efsa(
 ) {
   cont_model model = l_gamma_efsa;
 
+  Eigen::MatrixXd parms;
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
-  for (int i = 0; i < R.rows(); ++i) {
-    loudOut->BMD(i) = calcLoudBMD(
-        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-    );
+  bool isNormal = true;
+
+  if (bConstVar) {
+    parms.resize(R.rows(), 5);
+    if (loudIn->dist == distribution::log_normal) {
+      // LogCV
+      isNormal = false;
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = exp(R(i, 0));
+        double m1 = exp(R(i, 1));
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double pgamma = gsl_cdf_gamma_P(b, d, 1.0);
+        double c = (m1 - m0) / (m0 * pgamma) + 1;
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    } else {
+      // CV
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = R(i, 0);
+        double m1 = R(i, 1);
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double pgamma = gsl_cdf_gamma_P(b, d, 1.0);
+        double c = (m1 - m0) / (m0 * pgamma) + 1;
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    }
+  } else {
+    // NCV
+    parms.resize(R.rows(), 6);
+    for (int i = 0; i < R.rows(); ++i) {
+      double m0 = R(i, 0);
+      double m1 = R(i, 1);
+      double b = R(i, 2);
+      double d = R(i, 3);
+      double pgamma = gsl_cdf_gamma_P(b, d, 1.0);
+      double c = (m1 - m0) / (m0 * pgamma) + 1;
+      double rho = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      double alpha = log(1.0 / (R(i, 4) * pow(R(i, 0), rho)));
+      parms.row(i) << m0, b, c, d, rho, alpha;
+      loudOut->BMD(i) = calcLoudBMD(
+          model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+          loudIn->tailProb
+      );
+    }
   }
-  loudOut->parms = R;
+
+  loudOut->parms = parms;
 };
 
 void fit_clms_efsa(
@@ -3599,37 +3829,99 @@ void fit_clms_efsa(
 ) {
   cont_model model = l_lms_efsa;
 
+  Eigen::MatrixXd parms;
   bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
   bool bConstVar = loudIn->dist != distribution::normal_ncv;
   bool isIncreasing = true;
   if (loudIn->sign < 0) isIncreasing = false;
-  for (int i = 0; i < R.rows(); ++i) {
-    loudOut->BMD(i) = calcLoudBMD(
-        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-    );
+  bool isNormal = true;
+
+  if (bConstVar) {
+    parms.resize(R.rows(), 5);
+    if (loudIn->dist == distribution::log_normal) {
+      // LogCV
+      isNormal = false;
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = exp(R(i, 0));
+        double m1 = exp(R(i, 1));
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = (m1 - m0 * exp(-b - d)) / (m0 - m0 * exp(-b - d));
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    } else {
+      // CV
+      for (int i = 0; i < R.rows(); ++i) {
+        double m0 = R(i, 0);
+        double m1 = R(i, 1);
+        double b = R(i, 2);
+        double d = R(i, 3);
+        double c = (m1 - m0 * exp(-b - d)) / (m0 - m0 * exp(-b - d));
+        double alpha = 1.0 / R(i, 4);
+        parms.row(i) << m0, b, c, d, alpha;
+        loudOut->BMD(i) = calcLoudBMD(
+            model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+            loudIn->tailProb
+        );
+      }
+    }
+  } else {
+    // NCV
+    parms.resize(R.rows(), 6);
+    for (int i = 0; i < R.rows(); ++i) {
+      double m0 = R(i, 0);
+      double m1 = R(i, 1);
+      double b = R(i, 2);
+      double d = R(i, 3);
+      double c = (m1 - m0 * exp(-b - d)) / (m0 - m0 * exp(-b - d));
+      double rho = log(R(i, 4) / R(i, 5)) / log(R(i, 1) / R(i, 0));
+      double alpha = log(1.0 / (R(i, 4) * pow(R(i, 0), rho)));
+      parms.row(i) << m0, b, c, d, rho, alpha;
+      loudOut->BMD(i) = calcLoudBMD(
+          model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
+          loudIn->tailProb
+      );
+    }
   }
-  loudOut->parms = R;
+
+  loudOut->parms = parms;
+  //  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
+  //  bool bConstVar = loudIn->dist != distribution::normal_ncv;
+  //  bool isIncreasing = true;
+  //  if (loudIn->sign < 0) isIncreasing = false;
+  //  for (int i = 0; i < R.rows(); ++i) {
+  //    loudOut->BMD(i) = calcLoudBMD(
+  //        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
+  //    );
+  //  }
+  //  loudOut->parms = R;
 };
 
 double calcBMD_hill_efsa(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parms, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
-  double m0 = R(0);
-  double m1 = R(1);
-  double b = R(2);
-  double d = R(3);
-  double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
+  double m0 = parms(0);
+  double b = parms(1);
+  double c = parms(2);
+  double d = parms(3);
   double alpha;
   double rho;
+  double var;
   double dir = 1.0;
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
-    alpha = 1.0 / R(4);
+    alpha = parms(4);
+    var = sqrt(alpha);
   } else {
-    // double rho = log(R(5) / (R(4) * log(R(1) / R(2))));
-    rho = log(R(4) / (R(5) * log(R(1) / R(0))));
-    alpha = log(1.0 / (R(4) * pow(R(0), rho)));  // alpha
+    rho = parms(4);
+    alpha = parms(5);
+    var = sqrt(exp(alpha) * pow(m0, rho));
   }
   double bmd = BMDS_MISSING;
 
@@ -3637,12 +3929,11 @@ double calcBMD_hill_efsa(
     case CONTINUOUS_BMD_ABSOLUTE:
       break;
     case CONTINUOUS_BMD_REL_DEV:
-      bmd = pow((-1 * c * dir + bmr + dir) / (b * bmr), -1.0 / d);
+      bmd = pow(-1 * (-1 * c * dir + bmr + dir) / (pow(b, d) * bmr), -1.0 / d);
       break;
     case CONTINUOUS_BMD_STD_DEV:
       bmd =
-          pow(-1 * (-1 * dir * c * m0 + dir * m0 + sqrt(alpha) * bmr) / (b * sqrt(alpha) * bmr),
-              -1.0 / d);
+          pow(-1 * (-1 * dir * c * m0 + dir * m0 + var * bmr) / (pow(b, d) * var * bmr), -1.0 / d);
       break;
     case CONTINUOUS_BMD_POINT:
       break;
@@ -3658,24 +3949,29 @@ double calcBMD_hill_efsa(
 }
 
 double calcBMD_invexp_efsa(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parms, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
-  double m0 = R(0);
-  double m1 = R(1);
-  double b = R(2);
-  double d = R(3);
-  // double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
-  double c = (m1 - m0 + m0 * exp(-b)) / (m0 * exp(-b));
+  double m0 = parms(0);
+  double b = parms(1);
+  double c = parms(2);
+  double d = parms(3);
   double alpha;
   double rho;
+  double var;
   double dir = 1.0;
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
-    alpha = 1.0 / R(4);
+    alpha = parms(4);
+    if (isNormal) {
+      var = sqrt(alpha);
+    } else {
+      var = sqrt((exp(alpha) - 1.0) * exp(2.0 * log(m0) + alpha));
+    }
   } else {
-    rho = log(R(4) / (R(5) * log(R(1) / R(0))));
-    alpha = log(1.0 / (R(4) * pow(R(0), rho)));  // alpha
+    rho = parms(4);
+    alpha = parms(5);
+    var = sqrt(exp(alpha) * pow(m0, rho));
   }
   double bmd = BMDS_MISSING;
 
@@ -3683,18 +3979,10 @@ double calcBMD_invexp_efsa(
     case CONTINUOUS_BMD_ABSOLUTE:
       break;
     case CONTINUOUS_BMD_REL_DEV:
-      // bmd = pow((-1 * c * dir + bmr + dir) / (b * bmr), -1.0 / d);
-      bmd = pow(b / log(dir * (c / bmr) - dir * (1 / bmr)), 1.0 / d);
+      bmd = pow(b / log(dir * (c / bmr) - dir * (1.0 / bmr)), 1.0 / d);
       break;
     case CONTINUOUS_BMD_STD_DEV:
-      //      bmd =
-      //          pow(-1 * (-1 * dir * c * m0 + dir * m0 + sqrt(alpha) * bmr) / (b * sqrt(alpha) *
-      //          bmr),
-      //              -1.0 / d);
-      bmd =
-          pow(b / log(dir * (m0 * c / (sqrt(exp(alpha) * pow(m0, rho)) * bmr)) -
-                      dir * (m0 / (sqrt(exp(alpha) * pow(m0, rho)) * bmr))),
-              1.0 / d);
+      bmd = pow(b / log(dir * (m0 * c / (var * bmr)) - dir * (m0 / (var * bmr))), 1.0 / d);
       break;
     case CONTINUOUS_BMD_POINT:
       break;
@@ -3710,24 +3998,29 @@ double calcBMD_invexp_efsa(
 }
 
 double calcBMD_log_efsa(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parms, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
-  double m0 = R(0);
-  double m1 = R(1);
-  double b = R(2);
-  double d = R(3);
-  double pnorm = gsl_cdf_gaussian_P(log(b), 1.0);
-  double c = (m1 - m0 + m0 * pnorm) / (m0 * pnorm);
+  double m0 = parms(0);
+  double b = parms(1);
+  double c = parms(2);
+  double d = parms(3);
   double alpha;
   double rho;
+  double var;
   double dir = 1.0;
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
-    alpha = 1.0 / R(4);
+    alpha = parms(4);
+    if (isNormal) {
+      var = sqrt(alpha);
+    } else {
+      var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
+    }
   } else {
-    rho = log(R(4) / (R(5) * log(R(1) / R(0))));
-    alpha = log(1.0 / (R(4) * pow(R(0), rho)));  // alpha
+    rho = parms(4);
+    alpha = parms(5);
+    var = sqrt(exp(alpha) * pow(m0, rho));
   }
   double bmd = BMDS_MISSING;
 
@@ -3739,10 +4032,7 @@ double calcBMD_log_efsa(
       break;
     case CONTINUOUS_BMD_STD_DEV:
       bmd =
-          exp((gsl_cdf_gaussian_Pinv(
-                   (((dir * bmr * sqrt(exp(alpha) * pow(m0, rho)) + m0) / m0) - 1) / (c - 1), 1.0
-               ) -
-               log(b)) /
+          exp((gsl_cdf_gaussian_Pinv((((dir * bmr * var + m0) / m0) - 1) / (c - 1), 1.0) - log(b)) /
               d);
       break;
     case CONTINUOUS_BMD_POINT:
@@ -3760,24 +4050,29 @@ double calcBMD_log_efsa(
 }
 
 double calcBMD_gamma_efsa(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parms, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
-  double m0 = R(0);
-  double m1 = R(1);
-  double b = R(2);
-  double d = R(3);
-  double pgamma = gsl_cdf_gamma_P(b, d, 1.0);
-  double c = (m1 - m0) / (m0 * pgamma) + 1;
+  double m0 = parms(0);
+  double b = parms(1);
+  double c = parms(2);
+  double d = parms(3);
   double alpha;
   double rho;
+  double var;
   double dir = 1.0;
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
-    alpha = 1.0 / R(4);
+    alpha = parms(4);
+    if (isNormal) {
+      var = sqrt(alpha);
+    } else {
+      var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
+    }
   } else {
-    rho = log(R(4) / (R(5) * log(R(1) / R(0))));
-    alpha = log(1.0 / (R(4) * pow(R(0), rho)));  // alpha
+    rho = parms(4);
+    alpha = parms(5);
+    var = sqrt(exp(alpha) * pow(m0, rho));
   }
   double bmd = BMDS_MISSING;
 
@@ -3788,10 +4083,7 @@ double calcBMD_gamma_efsa(
       bmd = gsl_cdf_gamma_Pinv(dir * bmr / (c - 1), d, 1.0) / b;
       break;
     case CONTINUOUS_BMD_STD_DEV:
-      bmd = gsl_cdf_gamma_Pinv(
-                (((dir * bmr * sqrt(exp(alpha) * pow(m0, rho)) + m0) / m0) - 1) / (c - 1), d, 1.0
-            ) /
-            b;
+      bmd = gsl_cdf_gamma_Pinv((((dir * bmr * var + m0) / m0) - 1) / (c - 1), d, 1.0) / b;
       break;
     case CONTINUOUS_BMD_POINT:
       break;
@@ -3808,23 +4100,29 @@ double calcBMD_gamma_efsa(
 }
 
 double calcBMD_lms_efsa(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parms, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
-  double m0 = R(0);
-  double m1 = R(1);
-  double b = R(2);
-  double d = R(3);
-  double c = (m1 - m0 * exp(-b - d)) / (m0 - m0 * exp(-b - d));
+  double m0 = parms(0);
+  double b = parms(1);
+  double c = parms(2);
+  double d = parms(3);
   double alpha;
   double rho;
+  double var;
   double dir = 1.0;
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
-    alpha = 1.0 / R(4);
+    alpha = parms(4);
+    if (isNormal) {
+      var = sqrt(alpha);
+    } else {
+      var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
+    }
   } else {
-    rho = log(R(4) / (R(5) * log(R(1) / R(0))));
-    alpha = log(1.0 / (R(4) * pow(R(0), rho)));  // alpha
+    rho = parms(4);
+    alpha = parms(5);
+    var = sqrt(exp(alpha) * pow(m0, rho));
   }
   double bmd = BMDS_MISSING;
 
@@ -3835,13 +4133,12 @@ double calcBMD_lms_efsa(
       bmd = (-b + sqrt(pow(b, 2) + 4 * d * log((c - 1) / (c - dir * bmr - 1)))) / (2 * d);
       break;
     case CONTINUOUS_BMD_STD_DEV:
-      bmd = (-b + sqrt(
-                      pow(b, 2) +
-                      4 * d *
-                          log((dir * m0 - dir * m0 * c) /
-                              (-dir * m0 * c + dir * m0 + bmr * sqrt(exp(alpha) * pow(m0, rho))))
-                  )) /
-            (2 * d);
+      bmd =
+          (-b + sqrt(
+                    pow(b, 2) +
+                    4 * d * log((dir * m0 - dir * m0 * c) / (-dir * m0 * c + dir * m0 + bmr * var))
+                )) /
+          (2 * d);
       break;
     case CONTINUOUS_BMD_POINT:
       break;
@@ -3859,25 +4156,29 @@ double calcBMD_lms_efsa(
 
 // this is used for non-BMDS models
 double calcLoudBMD(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
-    bool isIncreasing, double tailProb
+    cont_model model, Eigen::VectorXd parm, contbmd BMDtype, double bmr, bool constVar,
+    bool isNormal, bool isIncreasing, double tailProb
 ) {
   double bmd = BMDS_MISSING;
   switch (model) {
     case l_hill_efsa:
-      bmd = calcBMD_hill_efsa(model, R, BMDtype, bmr, constVar, isIncreasing, tailProb);
+      bmd =
+          calcBMD_hill_efsa(model, parm, BMDtype, bmr, constVar, isNormal, isIncreasing, tailProb);
       break;
     case l_invexp_efsa:
-      bmd = calcBMD_invexp_efsa(model, R, BMDtype, bmr, constVar, isIncreasing, tailProb);
+      bmd = calcBMD_invexp_efsa(
+          model, parm, BMDtype, bmr, constVar, isNormal, isIncreasing, tailProb
+      );
       break;
     case l_lognormal_efsa:
-      bmd = calcBMD_log_efsa(model, R, BMDtype, bmr, constVar, isIncreasing, tailProb);
+      bmd = calcBMD_log_efsa(model, parm, BMDtype, bmr, constVar, isNormal, isIncreasing, tailProb);
       break;
     case l_gamma_efsa:
-      bmd = calcBMD_gamma_efsa(model, R, BMDtype, bmr, constVar, isIncreasing, tailProb);
+      bmd =
+          calcBMD_gamma_efsa(model, parm, BMDtype, bmr, constVar, isNormal, isIncreasing, tailProb);
       break;
     case l_lms_efsa:
-      bmd = calcBMD_lms_efsa(model, R, BMDtype, bmr, constVar, isIncreasing, tailProb);
+      bmd = calcBMD_lms_efsa(model, parm, BMDtype, bmr, constVar, isNormal, isIncreasing, tailProb);
       break;
     default:
       std::cout << "Incorrect model for calcLoudBMD" << std::endl;
@@ -3892,7 +4193,6 @@ double calcLoudBMD(
     double tailProb
 ) {
   double bmd = BMDS_MISSING;
-
   switch (BMDtype) {
     case CONTINUOUS_BMD_ABSOLUTE:
       bmd = model.bmd_absolute(theta, bmr, isIncreasing);

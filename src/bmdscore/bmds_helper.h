@@ -883,7 +883,7 @@ double calcLoudBMD(
 );
 
 double calcLoudBMD(
-    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar,
+    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar, bool isNormal,
     bool isIncreasing, double tailProb
 );
 
