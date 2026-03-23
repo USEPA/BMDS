@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from . import __version__, bmdscore, constants, plotting
 from .constants import (
@@ -39,6 +40,7 @@ from .reporting.styling import (
     write_model,
     write_models,
 )
+from .plotting.LOUD import get_model_average_figures
 from .selected import SelectedModel
 from .types import session as schema
 
@@ -444,6 +446,12 @@ class Session:
             return False
         return self.models[0].settings.priors.is_bayesian
 
+    def is_bayesian_loud(self) -> bool:
+        """Determine if models are using the LOUD Bayesian prior."""
+        if not self.is_bayesian():
+            return False
+        return self.models[0].settings.priors.prior_class == PriorClass.bayesian_loud
+
     def dll_version(self) -> str:
         return bmdscore.version()
 
@@ -607,6 +615,31 @@ class Session:
             report.document.add_paragraph("Bayesian Summary", h2)
             write_bayesian_table(report, self)
             plot_dr(report, self)
+
+            # LOUD-specific ArviZ plots
+            if self.is_bayesian_loud():
+                report.document.add_paragraph("Model Averaging Diagnostics (LOUD)", h2)
+                report.document.add_paragraph(
+                    "The following diagnostics summarize the model-averaged posterior "
+                    "distribution of the benchmark dose (BMD) under the LOUD framework."
+                )
+
+                figs = get_model_average_figures(self, n_chains=1)
+
+                report.document.add_paragraph("Posterior distribution of model-averaged BMD")
+                report.document.add_paragraph(add_mpl_figure(report.document, figs["posterior"], 6))
+                plt.close(figs["posterior"])
+
+                report.document.add_paragraph("Trace plot of model-averaged BMD")
+                report.document.add_paragraph(add_mpl_figure(report.document, figs["trace"], 6))
+                plt.close(figs["trace"])
+
+                report.document.add_paragraph(
+                    "Overlay of model-specific and model-averaged BMD distributions"
+                )
+                report.document.add_paragraph(add_mpl_figure(report.document, figs["overlay"], 6))
+                plt.close(figs["overlay"])
+
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
                 fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel())
