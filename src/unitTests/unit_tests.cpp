@@ -16,7 +16,7 @@ int run_all_unitTests() {
   dicho_AIC_penalty_test();
   cont_AIC_penalty_test();
   nested_AIC_penalty_test();
-  //  run_loud_model_fit_test();
+  run_loud_model_fit_test();
 
   return 0;
 }
@@ -261,10 +261,8 @@ void run_loud_model_fit_test() {
   fit_cexp3(&fitInLogCV_sd, &fitOut, R_exp3LogCV);
   expect_true(exp3LogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(exp3LogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
-  //  std::cout<<"expected parms:"<<std::endl<<exp3LogCVParms<<std::endl;
-  //  std::cout<<"actual parms:"<<std::endl<<fitOut.parms<<std::endl;
-  //  std::cout<<"expected BMDs:"<<std::endl<<exp3LogCV_stdev_BMD<<std::endl;
-  //  std::cout<<"actual BMDs:"<<std::endl<<fitOut.BMD<<std::endl;
+  std::cout << "expected BMDs:" << std::endl << exp3LogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_cexp3(&fitInLogCV_rel, &fitOut, R_exp3LogCV);
   expect_true(exp3LogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
@@ -358,7 +356,7 @@ void run_loud_model_fit_test() {
       {5.924718, 2.585508, 3.241374, 0.9598605, 1.356212}
   };
 
-  const Eigen::VectorXd exp5LogCV_stdev_BMD{{}};
+  const Eigen::VectorXd exp5LogCV_stdev_BMD{{0, 0, 0, 0, 0}};
   const Eigen::VectorXd exp5LogCV_reldev_BMD{
       {0.01986262, 0.01962696, 0.01888421, 0.01815240, 0.01551494}
   };
@@ -366,6 +364,8 @@ void run_loud_model_fit_test() {
   fit_cexp5(&fitInLogCV_sd, &fitOut, R_exp5LogCV);
   expect_true(exp5LogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(exp5LogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << exp5LogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_cexp5(&fitInLogCV_rel, &fitOut, R_exp5LogCV);
   expect_true(exp5LogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
@@ -533,15 +533,19 @@ void run_loud_model_fit_test() {
       {26.48417, 4.121061, -1.172655, 0.9165915, 0.4097042}
   };
 
-  const Eigen::VectorXd hill_efsaLogCV_stdev_BMD{{}};
-  const Eigen::VectorXd hill_efsaLogCV_reldev_BMD{{}};
+  const Eigen::VectorXd hill_efsaLogCV_stdev_BMD{{0, 0, 0, 0, 0}};
+  const Eigen::VectorXd hill_efsaLogCV_reldev_BMD{{0, 0, 0, 0, 0}};
 
   fit_chill_efsa(&fitInLogCV_sd, &fitOut, R_hill_efsaLogCV);
   expect_true(hill_efsaLogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(hill_efsaLogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << hill_efsaLogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_chill_efsa(&fitInLogCV_rel, &fitOut, R_hill_efsaLogCV);
   expect_true(hill_efsaLogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << hill_efsaLogCV_reldev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   ////////////////////////
   // INVEXP_EFSA CV
@@ -758,9 +762,13 @@ void run_loud_model_fit_test() {
   fit_clog_efsa(&fitInLogCV_sd, &fitOut, R_log_efsaLogCV);
   expect_true(log_efsaLogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(log_efsaLogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << log_efsaLogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_clog_efsa(&fitInLogCV_rel, &fitOut, R_log_efsaLogCV);
   expect_true(log_efsaLogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << log_efsaLogCV_reldev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   ////////////////////////
   // GAMMA_EFSA CV
@@ -866,9 +874,13 @@ void run_loud_model_fit_test() {
   fit_cgamma_efsa(&fitInLogCV_sd, &fitOut, R_gamma_efsaLogCV);
   expect_true(gamma_efsaLogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(gamma_efsaLogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << gamma_efsaLogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_cgamma_efsa(&fitInLogCV_rel, &fitOut, R_gamma_efsaLogCV);
   expect_true(gamma_efsaLogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << gamma_efsaLogCV_reldev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   ////////////////////////
   // LMS_EFSA CV
@@ -944,7 +956,7 @@ void run_loud_model_fit_test() {
   expect_true(lms_efsaNCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
 
   ////////////////////////
-  // GAMMA_EFSA LOGCV
+  // LMS_EFSA LOGCV
   ///////////////////////
   numParms = 5;
   parms.resize(iter, numParms);
@@ -974,9 +986,13 @@ void run_loud_model_fit_test() {
   fit_clms_efsa(&fitInLogCV_sd, &fitOut, R_lms_efsaLogCV);
   expect_true(lms_efsaLogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(lms_efsaLogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << lms_efsaLogCV_stdev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_clms_efsa(&fitInLogCV_rel, &fitOut, R_lms_efsaLogCV);
   expect_true(lms_efsaLogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
+  std::cout << "expected BMDs:" << std::endl << lms_efsaLogCV_reldev_BMD << std::endl;
+  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   //  std::cout<<"expected parms:"<<std::endl<<exp5LogCVParms<<std::endl;
   //  std::cout<<"actual parms:"<<std::endl<<fitOut.parms<<std::endl;

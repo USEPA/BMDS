@@ -2118,6 +2118,48 @@ void clean_cont_results(
   }
 }
 
+void clean_cont_MA_results(struct python_continuousMA_result *res) {
+  // python_continuousMA_result
+  for (int i = 0; i < res->nmodels; i++) {
+    cleanDouble(&res->post_probs[i]);
+    cleanDouble(&res->bmd_dist[i]);
+    // python_continuous_model_result
+    for (int j = 0; j < res->models[i].parms.size(); j++) {
+      cleanDouble(&res->models[i].parms[j]);
+    }
+    cleanDouble(&res->models[i].ess);
+    cleanDouble(&res->models[i].bmd);
+  }
+
+  struct BMDSMA_results bmdsRes = res->bmdsRes;
+
+  // BMDSMA_results
+  cleanDouble(&bmdsRes.BMD_MA);
+  cleanDouble(&bmdsRes.BMDL_MA);
+  cleanDouble(&bmdsRes.BMDU_MA);
+  for (int i = 0; i < res->nmodels; i++) {
+    cleanDouble(&bmdsRes.BMD[i]);
+    cleanDouble(&bmdsRes.BMDL[i]);
+    cleanDouble(&bmdsRes.BMDU[i]);
+  }
+
+  // Loud fitResult
+  for (int k = 0; k < res->nmodels; k++) {
+    struct fitResult loudRes = res->models[k].loudRes;
+    cleanDouble(&loudRes.int_factor);
+    cleanDouble(&loudRes.waic);
+    cleanDouble(&loudRes.pval);
+    for (int i = 0; i < loudRes.parms.rows(); i++) {
+      for (int j = 0; j < loudRes.parms.cols(); j++) {
+        cleanDouble(&loudRes.parms(i, j));
+      }
+    }
+    for (int i = 0; i < loudRes.BMD.size(); i++) {
+      cleanDouble(&loudRes.BMD[i]);
+    }
+  }
+}
+
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes) {
   // dichotomousMA_result
   for (int i = 0; i < res->nmodels; i++) {
@@ -3401,7 +3443,7 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
         theta(0, 0) = exp(R(i, 0));                                                  // m0
         theta(1, 0) = pow(fabs(log(exp(R(i, 1)) / exp(R(i, 0)))), (1.0 / R(i, 2)));  // b to beta
         theta(3, 0) = R(i, 2);                                                       // n
-        theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance)
+        theta(4, 0) = log(1.0 / R(i, 3));
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
         parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), exp(theta(4, 0));
@@ -3890,16 +3932,6 @@ void fit_clms_efsa(
   }
 
   loudOut->parms = parms;
-  //  bool suff_stat = loudIn->datatype == loud_datatype::l_summary;
-  //  bool bConstVar = loudIn->dist != distribution::normal_ncv;
-  //  bool isIncreasing = true;
-  //  if (loudIn->sign < 0) isIncreasing = false;
-  //  for (int i = 0; i < R.rows(); ++i) {
-  //    loudOut->BMD(i) = calcLoudBMD(
-  //        model, R.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isIncreasing, loudIn->tailProb
-  //    );
-  //  }
-  //  loudOut->parms = R;
 };
 
 double calcBMD_hill_efsa(
@@ -5107,6 +5139,8 @@ void pythonBMDSLoud_dev(
   pyRes->bmdsRes.BMDU_MA = bmdu;
   pyRes->bmd_dist = bmds_c;
   pyRes->post_probs = posterior_probs;
+
+  clean_cont_MA_results(pyRes);
 }
 
 double findMedianVal(std::vector<double> dist) {
