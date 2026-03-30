@@ -9,6 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import matplotlib.pyplot as plt
+from docx.shared import Pt
 
 from . import __version__, bmdscore, constants, plotting
 from .constants import (
@@ -98,6 +99,20 @@ class Session:
             Models.NCTR: nd3.Nctr,
         },
     }
+    continuous_default_models: ClassVar = (
+        Models.Linear,
+        Models.Polynomial,
+        Models.Power,
+        Models.Hill,
+        Models.ExponentialM3,
+        Models.ExponentialM5,
+    )
+    continuous_loud_default_models: ClassVar = (
+        Models.Power,
+        Models.Hill,
+        Models.ExponentialM3,
+        Models.ExponentialM5,
+    )
 
     def _ensure_continuous_ma_models(
         self,
@@ -264,7 +279,17 @@ class Session:
             self.add_model_averaging()
 
     def add_default_models(self, settings: dict | None = None):
-        for name in self.model_options[self.dataset.dtype].keys():
+        if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
+            prior_class = None if settings is None else settings.get("priors")
+            names = (
+                self.continuous_loud_default_models
+                if prior_class == PriorClass.bayesian_loud
+                else self.continuous_default_models
+            )
+        else:
+            names = self.model_options[self.dataset.dtype].keys()
+
+        for name in names:
             model_settings = deepcopy(settings) if settings is not None else None
             if name in Models.VARIABLE_POLYNOMIAL():
                 min_poly_order = 2
@@ -594,6 +619,11 @@ class Session:
         if report is None:
             report = Report.build_default()
 
+        def add_paragraph_with_space_before(text: str = "", style: str | None = None):
+            paragraph = report.document.add_paragraph(text, style)
+            paragraph.paragraph_format.space_before = Pt(6)
+            return paragraph
+
         h1 = report.styles.get_header_style(header_level)
         h2 = report.styles.get_header_style(header_level + 1)
 
@@ -617,28 +647,45 @@ class Session:
             plot_dr(report, self)
 
             # LOUD-specific ArviZ plots
-            if self.is_bayesian_loud():
-                report.document.add_paragraph("Model Averaging Diagnostics (LOUD)", h2)
-                report.document.add_paragraph(
+            if self.is_bayesian_loud() and self.model_average:
+                add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
+                add_paragraph_with_space_before(
                     "The following diagnostics summarize the model-averaged posterior "
                     "distribution of the benchmark dose (BMD) under the LOUD framework."
                 )
 
                 figs = get_model_average_figures(self, n_chains=1)
 
-                report.document.add_paragraph("Posterior distribution of model-averaged BMD")
-                report.document.add_paragraph(add_mpl_figure(report.document, figs["posterior"], 6))
+                add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
+                add_paragraph_with_space_before(
+                    add_mpl_figure(report.document, figs["posterior"], 6)
+                )
                 plt.close(figs["posterior"])
 
-                report.document.add_paragraph("Trace plot of model-averaged BMD")
-                report.document.add_paragraph(add_mpl_figure(report.document, figs["trace"], 6))
+                add_paragraph_with_space_before("Trace plot of model-averaged BMD")
+                add_paragraph_with_space_before(add_mpl_figure(report.document, figs["trace"], 6))
                 plt.close(figs["trace"])
 
-                report.document.add_paragraph(
+                add_paragraph_with_space_before(
                     "Overlay of model-specific and model-averaged BMD distributions"
                 )
-                report.document.add_paragraph(add_mpl_figure(report.document, figs["overlay"], 6))
+                add_paragraph_with_space_before(add_mpl_figure(report.document, figs["overlay"], 6))
                 plt.close(figs["overlay"])
+
+                add_paragraph_with_space_before("Summary statistics for BMD and model-averaged BMD")
+                df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
+
+                add_paragraph_with_space_before("Median-focused summary including model parameters")
+                df_to_table(report, figs["multi_summary"].reset_index().fillna(""))
+
+                trace_names = ", ".join(str(name) for name in figs["trace_multi_var_names"])
+                add_paragraph_with_space_before(
+                    f"Trace diagnostics for the main model-averaging variables: {trace_names}"
+                )
+                add_paragraph_with_space_before(
+                    add_mpl_figure(report.document, figs["trace_multi"], 6.5)
+                )
+                plt.close(figs["trace_multi"])
 
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)

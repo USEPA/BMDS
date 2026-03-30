@@ -324,8 +324,6 @@ class TestModelPriors:
             mp.is_bayesian,
             m.settings.disttype,
         )
-        print("f")
-        print(table)
 
         ## Verify table structure and content for LOUD priors with dataset-informed defaults
         # Verify Student-t priors (m0, m1)

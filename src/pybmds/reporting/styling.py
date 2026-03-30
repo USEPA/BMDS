@@ -21,20 +21,25 @@ if TYPE_CHECKING:
     from ..session import Session
 
 
+def _residual_at_control(gof) -> float:
+    if hasattr(gof, "residual_value"):
+        return gof.residual_value(0)
+    return gof.residual[0]
+
+
 def add_continuous_dataset_footnotes(model: BmdModel, footnotes: TableFootnote):
     if model and model.has_results:
-        p_values = model.results.tests.p_values
         footnotes.add_footnote(
             None,
-            f"Test 1 Dose Response: {four_decimal_formatter(p_values[0])}",
+            f"Test 1 Dose Response: {four_decimal_formatter(model.results.tests.p_value(0))}",
         )
         footnotes.add_footnote(
             None,
-            f"Test 2 Homogeneity of Variance: {four_decimal_formatter(p_values[1])}",
+            f"Test 2 Homogeneity of Variance: {four_decimal_formatter(model.results.tests.p_value(1))}",
         )
         footnotes.add_footnote(
             None,
-            f"Test 3 Variance Model Selection: {four_decimal_formatter(p_values[2])}",
+            f"Test 3 Variance Model Selection: {four_decimal_formatter(model.results.tests.p_value(2))}",
         )
 
 
@@ -369,7 +374,7 @@ def write_frequentist_table(report: Report, session: Session):
         write_cell(tbl.cell(row, 3), model.results.bmdu, body)
         write_cell(tbl.cell(row, 4), model.get_gof_pvalue(), body)
         write_cell(tbl.cell(row, 5), model.results.fit.aic, body)
-        write_cell(tbl.cell(row, 6), model.results.gof.residual[0], body)
+        write_cell(tbl.cell(row, 6), _residual_at_control(model.results.gof), body)
         write_cell(tbl.cell(row, 7), model.results.gof.roi, body)
 
         cell = tbl.cell(row, 8)
@@ -491,7 +496,7 @@ def write_bayesian_table(report: Report, session: Session):
         write_cell(tbl.cell(idx, 4), model.results.bmd, body)
         write_cell(tbl.cell(idx, 5), model.results.bmdu, body)
         write_cell(tbl.cell(idx, 6), model.results.fit.bic_equiv, body)
-        write_cell(tbl.cell(idx, 7), model.results.gof.residual[0], body)
+        write_cell(tbl.cell(idx, 7), _residual_at_control(model.results.gof), body)
         write_cell(tbl.cell(idx, 8), model.results.gof.roi, body)
 
     if ma:
