@@ -2171,7 +2171,6 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
   std::vector<std::vector<double>> ret;
 
   for (int i = 0; i < pyMA->models.size(); i++) {
-    std::cout << "i:" << i << std::endl;
     std::vector<std::vector<double>> tmpPrior;
     int model = pyMA->models[i];
     int dist = pyMA->loud_dist_type[i];
@@ -2299,8 +2298,6 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
     } else {
       std::cout << "error in createDefaultPriors for i:" << i << std::endl;
     }
-    std::cout << "model:" << model << std::endl;
-    std::cout << "prior:" << std::endl;
     for (int j = 0; j < tmpPrior.size(); j++) {
       for (int k = 0; k < tmpPrior[j].size(); k++) {
         std::cout << tmpPrior[j][k] << ",";
@@ -2318,7 +2315,6 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
         count++;
       }
     }
-    std::cout << "flatPrior:" << std::endl;
     for (int j = 0; j < flatPrior.size(); j++) {
       std::cout << flatPrior[j] << ",";
     }

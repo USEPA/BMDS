@@ -3332,13 +3332,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
 
-  // power only has normal model
-  ptr2 model_transform = choose_nonlinearity2(model_typ);
-  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn, model_transform);
-
   // other calcs
   loudOut->BMD.resize(R.rows());
 
@@ -3373,6 +3366,13 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
+
+  // power only has normal model
+  ptr2 model_transform = choose_nonlinearity2(model_typ);
+  bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
+
+  // pivotal pvalue
+  loudOut->pval = pivotal_pvalue(R, loudIn);
 }
 
 void fit_cpower(
@@ -4288,9 +4288,11 @@ double calcLoudBMD(
 }
 
 double pivotal_pvalue(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn,  // fitResult *loudOut,
-    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
+    Eigen::MatrixXd &R, const struct fitInput *loudIn  // fitResult *loudOut,
 ) {
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+
   Eigen::MatrixXd Ruse = R.bottomRows(max(1, loudIn->iter - loudIn->burnin + 1));
   int S = Ruse.rows();
   Eigen::VectorXd Qvals(S);

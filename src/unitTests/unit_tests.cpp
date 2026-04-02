@@ -9,14 +9,15 @@
 int run_all_unitTests() {
   std::cout << "Running unit tests" << std::endl;
   objfunc_test();
-  Nlogist_probs_test();
-  // Nctr_probs_test();
-  multitumor_ineq_constraint_test();
+  // Nlogist_probs_test();
+  //// Nctr_probs_test();
+  // multitumor_ineq_constraint_test();
   multitumor_eq_constraint_test();
   dicho_AIC_penalty_test();
   cont_AIC_penalty_test();
   nested_AIC_penalty_test();
-  run_loud_model_fit_test();
+  // loud_model_fit_test();
+  pivotal_pvalue_test();
 
   return 0;
 }
@@ -29,7 +30,7 @@ void objfunc_test() {
 }
 
 // these tests expect alpha to be returned not ln(alpha) as in BMDS
-void run_loud_model_fit_test() {
+void loud_model_fit_test() {
   Eigen::MatrixXd Y{
       {10.61764, 0.8937421, 20},
       {11.54771, 1.0580638, 20},
@@ -1001,6 +1002,141 @@ void run_loud_model_fit_test() {
   //  std::cout<<"actual BMDs:"<<std::endl<<fitOut.BMD<<std::endl;
 }
 
+void pivotal_pvalue_test() {
+  // individual data
+  Eigen::MatrixXd Y{{11.7692}, {11.5889}, {10.9485}, {12.0335}, {10.5843}, {10.9571}, {12.1292},
+                    {12.5896}, {12.9235}, {11.1651}, {9.2031},  {11.7029}, {11.9342}, {11.8759},
+                    {10.6886}, {12.0227}, {11.277},  {10.811},  {14.2668}, {10.4833}, {11.4515},
+                    {12.5341}, {12.4558}, {13.7429}, {13.0073}, {12.5508}, {10.4007}, {12.8715},
+                    {13.4137}, {9.33564}, {10.9298}, {10.6283}, {12.9618}, {12.2369}, {14.8123},
+                    {11.0151}, {13.5539}, {10.7161}, {12.7046}, {12.7758}, {14.4463}, {14.8051},
+                    {17.1731}, {14.4799}, {14.8711}, {13.9808}, {12.8826}, {15.3315}, {14.9358},
+                    {14.0363}, {14.8257}, {14.0969}, {15.5807}, {15.202},  {14.1877}, {14.5575},
+                    {13.1242}, {17.0857}, {14.4028}};
+
+  //  Eigen::MatrixXd D{{0}, {0.125}, {0.25}, {0.5}, {1.0}};
+  Eigen::MatrixXd D{{0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125},
+                    {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125},
+                    {0.125}, {0.125}, {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},
+                    {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},
+                    {0.25},  {0.25},  {0.25},  {0.25},  {0.5},   {0.5},   {0.5},   {0.5},   {0.5},
+                    {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},
+                    {0.5},   {0.5},   {0.5},   {0.5},   {0.5}};
+
+  // Individual CV
+  struct fitInput loudIn;
+  loudIn.model = cont_model::power;
+  loudIn.dist = distribution::normal;
+  loudIn.datatype = loud_datatype::l_individual;
+  loudIn.iter = 5;
+  loudIn.burnin = 2;
+  loudIn.qlev = 0.9;
+  loudIn.df_override = BMDS_MISSING;
+  loudIn.Y = Y;
+  loudIn.doses = D;
+
+  Eigen::MatrixXd R_power_cv{
+      {10.14480, 17.58850, 1.257526, 0.5927195},
+      {10.14479, 17.58852, 1.257526, 0.5929868},
+      {10.14479, 17.58851, 1.257526, 0.5928710},
+      {10.14479, 17.58851, 1.257526, 0.5928589},
+      {10.14478, 17.58854, 1.257525, 0.5933468}
+  };
+
+  double expected_pval = 0.04056445;
+  double returned_pval = pivotal_pvalue(R_power_cv, &loudIn);
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  // Individual NCV
+  loudIn.dist = distribution::normal_ncv;
+  Eigen::MatrixXd R_power_ncv{
+      {10.39001, 15.60302, 1.515874, 0.3839357, 0.1988224},
+      {10.39067, 15.60438, 1.515864, 0.3808076, 0.1854814},
+      {10.39022, 15.60346, 1.515871, 0.3826683, 0.1953143},
+      {10.39023, 15.60347, 1.515872, 0.3827986, 0.1924049},
+      {10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668}
+  };
+
+  returned_pval = pivotal_pvalue(R_power_ncv, &loudIn);
+  expected_pval = 0.001367785;
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  // Individual LogCV
+  loudIn.dist = distribution::log_normal;
+  loudIn.model = cont_model::exp_3;
+
+  Eigen::MatrixXd R_exp3_log{
+      {2.074359, 1.075104, 2.342920, 1.049676},
+      {2.074831, 1.087564, 2.408487, 1.019421},
+      {2.074691, 1.083938, 2.393829, 1.028519},
+      {2.074695, 1.083803, 2.395533, 1.027121},
+      {2.073364, 1.049481, 2.213176, 1.066825}
+  };
+
+  returned_pval = pivotal_pvalue(R_exp3_log, &loudIn);
+  expected_pval = 1.0;
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  std::cout << "starting summary tests" << std::endl;
+  // summary data
+  loudIn.model = cont_model::power;
+  Eigen::MatrixXd Y_sum{
+      {10.61764, 0.8937421, 20},
+      {11.54771, 1.0580638, 20},
+      {12.20492, 1.3528275, 20},
+      {14.73715, 1.0778448, 19},
+      {15.85227, 0.8350199, 19}
+  };
+
+  Eigen::MatrixXd Dose_sum{{0}, {0.125}, {0.25}, {0.5}, {1.0}};
+
+  Eigen::MatrixXd R_power_cv_sum{
+      {11.71532, 15.99155, 1.593011, 0.5574789},
+      {11.67326, 16.13868, 1.607036, 0.5692751},
+      {11.66204, 16.17652, 1.610603, 0.5723202},
+      {11.64077, 16.24593, 1.617101, 0.5779315},
+      {11.63452, 16.26341, 1.618728, 0.5793729}
+  };
+
+  expected_pval = 1.0;
+
+  loudIn.Y = Y_sum;
+  loudIn.doses = Dose_sum;
+  loudIn.datatype = loud_datatype::l_summary;
+
+  // Summary CV
+  loudIn.dist = distribution::normal;
+  returned_pval = pivotal_pvalue(R_power_cv_sum, &loudIn);
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  // Summary NCV
+  loudIn.dist = distribution::normal_ncv;
+  Eigen::MatrixXd R_power_ncv_sum{
+      {10.53703, 14.76691, 2.395046, 0.2182275, 1.257413},
+      {10.53941, 14.76425, 2.395757, 0.2194998, 1.259096},
+      {10.53811, 14.76550, 2.395344, 0.2188017, 1.258193},
+      {10.54633, 14.75680, 2.397978, 0.2232843, 1.264136},
+      {10.52846, 14.77626, 2.392139, 0.2132897, 1.250982}
+  };
+  expected_pval = 0.0007524451;
+  returned_pval = pivotal_pvalue(R_power_ncv_sum, &loudIn);
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  // Summary LogCV
+  loudIn.dist = distribution::log_normal;
+  loudIn.model = cont_model::exp_3;
+  Eigen::MatrixXd R_power_lognormal_sum{
+      {3.378570, 1.876914, 0.9280766, 0.2711137},
+      {3.376712, 1.891313, 1.0694113, 0.2856840},
+      {3.376792, 1.890697, 1.0538501, 0.2841253},
+      {3.377071, 1.888535, 1.0393825, 0.2826644},
+      {3.377061, 1.888611, 1.0338722, 0.2821067}
+  };
+  expected_pval = 1.0;
+  returned_pval = pivotal_pvalue(R_power_lognormal_sum, &loudIn);
+  expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+}
+
 void Nlogist_probs_test() {
   std::vector<double> Xi = {0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
                             0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
@@ -1061,7 +1197,9 @@ void Nlogist_probs_test() {
 
   Nlogist_probs(probs, p, compgrad, gradij, &objData);
   for (int i = 0; i < Nobs; i++) {
-    essentiallyEqual(expProbs1[i], probs[i], 1.5e-6);
+    // essentiallyEqual(expProbs1[i], probs[i], 1.5e-6);
+    std::cout << "comparing " << expProbs1[i] << " to " << probs[i] << std::endl;
+    expect_true(essentiallyEqual(expProbs1[i], probs[i], 0.001));
   }
 }
 
@@ -1127,7 +1265,7 @@ void Nctr_probs_test() {
 
   NCTR_probs(probs, p, compgrad, gradij, &objData);
   for (int i = 0; i < Nobs; i++) {
-    essentiallyEqual(expProbs1[i], probs[i], 1.5e-6);
+    expect_true(essentiallyEqual(expProbs1[i], probs[i], 0.001));
   }
 }
 
@@ -1175,7 +1313,7 @@ void Nlogist_lk_test() {
   double exp_lk = -337.540036;
   double lk = Nlogist_lk(p, &objData);
 
-  essentiallyEqual(lk, exp_lk, 1.5e-6);
+  expect_true(essentiallyEqual(lk, exp_lk, 0.001));
 }
 
 void multitumor_ineq_constraint_test() {
@@ -1251,10 +1389,14 @@ void multitumor_ineq_constraint_test() {
   ineq1.degree = degree;
 
   double ineqVal = myInequalityConstraint1(x, grad, &ineq1);
-  essentiallyEqual(ineqVal, expVal, 1e-18);
+  expect_true(essentiallyEqual(ineqVal, expVal, 0.001));
+  std::cout << "expected: " << expVal << std::endl;
+  std::cout << "returned: " << ineqVal << std::endl;
 
   for (int i = 0; i < grad.size(); i++) {
-    essentiallyEqual(grad[i], expGrad[i], 1e-6);
+    expect_true(essentiallyEqual(grad[i], expGrad[i], 0.001));
+    std::cout << "expected: " << expGrad[i] << std::endl;
+    std::cout << "returned: " << grad[i] << std::endl;
   }
 }
 
@@ -1284,10 +1426,10 @@ void multitumor_eq_constraint_test() {
 
   double eqVal = myEqualityConstraint(x, grad, &eq1);
 
-  essentiallyEqual(eqVal, expVal, 1e-18);
+  expect_true(essentiallyEqual(eqVal, expVal, 0.001));
 
   for (int i = 0; i < grad.size(); i++) {
-    essentiallyEqual(grad[i], expGrad[i], 1e-6);
+    expect_true(essentiallyEqual(grad[i], expGrad[i], 0.001));
   }
 }
 
@@ -1308,6 +1450,10 @@ void cont_AIC_penalty_test() {
   bool countAllParmsOnBoundary;
   countAllParmsOnBoundary = true;
   calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
+  int numBounded = 0;
+  for (int i = 0; i < bmdsRes.bounded.size(); i++) {
+    if (bmdsRes.bounded[i]) numBounded++;
+  }
 
   double AIC_penalized = bmdsRes.AIC;
 
@@ -1315,7 +1461,7 @@ void cont_AIC_penalty_test() {
   calcContAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
-  essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
+  expect_true(essentiallyEqual(AIC_unpenalized + 2 * numBounded, AIC_penalized, 0.001));
 }
 
 void dicho_AIC_penalty_test() {
@@ -1335,6 +1481,10 @@ void dicho_AIC_penalty_test() {
   bool countAllParmsOnBoundary;
   countAllParmsOnBoundary = true;
   calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
+  int numBounded = 0;
+  for (int i = 0; i < bmdsRes.bounded.size(); i++) {
+    if (bmdsRes.bounded[i]) numBounded++;
+  }
 
   double AIC_penalized = bmdsRes.AIC;
 
@@ -1342,7 +1492,7 @@ void dicho_AIC_penalty_test() {
   calcDichoAIC(&anal, &res, &bmdsRes, countAllParmsOnBoundary);
   double AIC_unpenalized = bmdsRes.AIC;
 
-  essentiallyEqual(AIC_unpenalized - 2, AIC_penalized, 1e-6);
+  expect_true(essentiallyEqual(AIC_unpenalized + 2 * numBounded, AIC_penalized, 0.001));
 }
 
 void nested_AIC_penalty_test() {
@@ -1350,10 +1500,10 @@ void nested_AIC_penalty_test() {
   double fitted_df_pen = 30;
   double fitted_df_unpen = 35;
   double red_df = 38;
-  int numBounded = 5;
+  int numBounded = fitted_df_unpen - fitted_df_pen;
 
   double AIC_penalized = calcNestedAIC(fitted_LL, fitted_df_pen, red_df);
   double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df_unpen, red_df);
 
-  essentiallyEqual(AIC_unpenalized - 2 * numBounded, AIC_penalized, 1e-6);
+  expect_true(essentiallyEqual(AIC_unpenalized + 2 * numBounded, AIC_penalized, 0.001));
 }

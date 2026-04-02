@@ -772,8 +772,7 @@ void bridge_sample(
 );
 
 double pivotal_pvalue(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn,  // fitResult *loudOut,
-    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X)
+    Eigen::MatrixXd &R, const struct fitInput *loudIn  // fitResult *loudOut,
 );
 
 void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
