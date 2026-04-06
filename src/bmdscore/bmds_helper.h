@@ -767,7 +767,7 @@ void SortNestedData(
 
 void bridge_sample(
     Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
-    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
+//    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
