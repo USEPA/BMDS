@@ -6,7 +6,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 from .. import bmdscore, constants
-from ..constants import BOOL_YES_NO, ContinuousModelChoices, Dtype
+from ..constants import BMDS_BLANK_VALUE, BOOL_YES_NO, ContinuousModelChoices, Dtype
 from ..datasets.continuous import ContinuousDatasets
 from ..utils import multi_lstrip, pretty_table, unique_items
 from .common import (
@@ -303,6 +303,22 @@ class ContinuousParameters(BaseModel):
         result = model.structs.result
         summary = result.bmdsRes
         param_names = model.get_param_names()
+
+        disttype = model.settings.disttype
+        renamed = []
+        for name in param_names:
+            if name == "Var0" and disttype in {
+                constants.DistType.normal,
+                constants.DistType.log_normal,
+                constants.DistType.normal_ncv,
+            }:
+                renamed.append("alpha")
+            elif name == "Var1" and disttype == constants.DistType.normal_ncv:
+                renamed.append("rho")
+            else:
+                renamed.append(name)
+
+        param_names = renamed
         priors = cls.get_priors(model)
 
         cov_n = result.nparms
@@ -310,7 +326,7 @@ class ContinuousParameters(BaseModel):
         slice = None
 
         # DLL deletes the c parameter and shifts items down; correct in outputs here
-        if not (model.settings.priors.prior_class is PriorClass.bayesian_loud):
+        if model.settings.priors.prior_class is not PriorClass.bayesian_loud:
             if model.bmd_model_class.id == ContinuousModelChoices.exp_m3.value.id:
                 # do the same for parameter names for consistency
                 c_index = param_names.index("c")
@@ -489,6 +505,9 @@ class ContinuousGof(BaseModel):
     def n(self) -> int:
         return self.dose.size
 
+    def residual_value(self, index: int) -> float:
+        return self.residual[index] if index < len(self.residual) else BMDS_BLANK_VALUE
+
 
 class ContinuousDeviance(BaseModel):
     names: list[str]
@@ -541,6 +560,12 @@ class ContinuousTests(BaseModel):
             data.append([name, ll_ratio, df, p_value])
         return pretty_table(data, headers)
 
+    def p_value(self, index: int) -> float:
+        return self.p_values[index] if index < len(self.p_values) else BMDS_BLANK_VALUE
+
+    def df(self, index: int) -> float:
+        return self.dfs[index] if index < len(self.dfs) else BMDS_BLANK_VALUE
+
 
 class ContinuousPlotting(BaseModel):
     dr_x: NumpyFloatArray
@@ -589,8 +614,8 @@ class ContinuousResult(BaseModel):
             ["BMDU", self.bmdu],
             ["AIC", self.fit.aic],
             ["Log-Likelihood", self.fit.loglikelihood],
-            ["P-Value", self.tests.p_values[3]],
-            ["Model d.f.", self.tests.dfs[3]],
+            ["P-Value", self.tests.p_value(3)],
+            ["Model d.f.", self.tests.df(3)],
         ]
         return pretty_table(data, "")
 
@@ -640,13 +665,13 @@ class ContinuousResult(BaseModel):
             bmdu=self.bmdu,
             aic=self.fit.aic,
             loglikelihood=self.fit.loglikelihood,
-            p_value1=self.tests.p_values[0],
-            p_value2=self.tests.p_values[1],
-            p_value3=self.tests.p_values[2],
-            p_value4=self.tests.p_values[3],
-            model_dof=self.tests.dfs[3],
+            p_value1=self.tests.p_value(0),
+            p_value2=self.tests.p_value(1),
+            p_value3=self.tests.p_value(2),
+            p_value4=self.tests.p_value(3),
+            model_dof=self.tests.df(3),
             residual_of_interest=self.gof.roi,
-            residual_at_lowest_dose=self.gof.residual[0],
+            residual_at_lowest_dose=self.gof.residual_value(0),
         )
 
     def get_parameter(self, parameter: str) -> float:
@@ -661,13 +686,13 @@ class ContinuousResult(BaseModel):
             case "aic":
                 return self.fit.aic
             case "dof":
-                return self.tests.dfs[3]
+                return self.tests.df(3)
             case "pvalue":
-                return self.tests.p_values[3]
+                return self.tests.p_value(3)
             case "roi":
                 return self.gof.roi
             case "roi_control":
-                return self.gof.residual[0]
+                return self.gof.residual_value(0)
             case "n_params":
                 return len(self.parameters.values)
             case _:  # pragma: no cover

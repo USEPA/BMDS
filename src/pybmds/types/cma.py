@@ -53,25 +53,7 @@ class ContinuousModelAverage:
         else:
             raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
 
-        # print("DEBUG CMA:")
-        # print(analysis.samples)
-        # print(" nmodels:", average.nmodels)
-        # print(" len(models):", len(models))
-        # print(" len(average.models):", len(average.models))
-        # print(" len(average.loud_dist_type):", len(average.disttype))
-        # print(" len(average.nparms):", len(average.nparms))
-        # print(" len(average.actual_parms):", len(average.actual_parms))
-        # print(" len(average.prior_cols):", len(average.prior_cols))
-        # print(models)
-
         average.priors = [model.structs.analysis.prior for model in models]
-        print("priors:", average.priors)
-        # for i, m in enumerate(models):
-        #     n = m.structs.result.nparms
-        #     c = m.structs.analysis.prior_cols
-        #     p = average.priors[i]
-        #     print(f"Model {i}: nparms={n}, prior_cols={c}, len(prior)={len(p)}, expected={n * c}")
-        #     assert len(p) == n * c, f"Bad prior length for model {i}"
 
         average.modelPriors = [float(x) for x in model_weights]
         average.pyCA = analysis
@@ -80,8 +62,8 @@ class ContinuousModelAverage:
         bmdsRes.BMD_MA = -9999.0
         bmdsRes.BMDL_MA = -9999.0
         bmdsRes.BMDU_MA = -9999.0
-        # bmdsRes.ebUpper = np.full(analysis.n, -9999)
-        # bmdsRes.ebLower = np.full(analysis.n, -9999)
+        bmdsRes.ebUpper = np.full(analysis.n, -9999)
+        bmdsRes.ebLower = np.full(analysis.n, -9999)
 
         result = bmdscore.python_continuousMA_result()
         result.nmodels = len(models)
@@ -103,22 +85,13 @@ class ContinuousModelAverage:
 
         result.bmdsRes = bmdsRes
 
-        # print("MA analysis:")
-        # bmdscore.print(average, True)
-        # print("CA analysis:")
-        # bmdscore.print(analysis, True)
-        # print("MA result:")
-        # bmdscore.print(result, True)
-
         self.analysis = analysis
         self.average = average
         self.result = result
         self.bmdsRes = result.bmdsRes  # use this version; copied on assignment above
 
     def execute(self) -> "ContinuousModelAverageResult":
-        print("DEBUG: about to call C++ LOUD MA")
         bmdscore.pythonBMDSLoud(self.average, self.result)
-        print("DEBUG: returned from C++ LOUD MA")
         return self
 
     def __str__(self) -> str:
@@ -195,7 +168,6 @@ class ContinuousModelAverageResult(ModelAverageResult):
         bmdsRes = analysis.result.bmdsRes
         bmds = np.asarray([bmdsRes.BMDL_MA, bmdsRes.BMD_MA, bmdsRes.BMDU_MA], dtype=float)
         bmds_ys = np.interp(bmds, dr_x, dr_y)
-        # print(model_bmd)
 
         return cls(
             bmdl=float(bmds[0]),

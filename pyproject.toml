@@ -28,6 +28,7 @@ dependencies = [
   "scipy",
   "tabulate",
   "tqdm",
+  "arviz<1",
 ]
 
 [project.urls]

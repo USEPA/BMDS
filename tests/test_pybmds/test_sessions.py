@@ -1,5 +1,7 @@
 import json
 
+import matplotlib.pyplot as plt
+import pandas as pd
 import pytest
 
 import pybmds
@@ -7,6 +9,38 @@ from pybmds.constants import DistType, Models, PriorClass
 
 
 class TestSession:
+    def test_add_default_models_continuous_uses_legacy_defaults_for_non_loud_priors(
+        self, cdataset3
+    ):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_default_models({"priors": PriorClass.frequentist_restricted})
+
+        model_types = [type(model) for model in session.models]
+        assert len(session.models) == 7
+        assert pybmds.models.continuous.Linear in model_types
+        assert model_types.count(pybmds.models.continuous.Polynomial) == 2
+        assert pybmds.models.continuous.MultiplicativeHill not in model_types
+        assert pybmds.models.continuous.InverseExponential not in model_types
+        assert pybmds.models.continuous.Lognormal not in model_types
+        assert pybmds.models.continuous.Gamma not in model_types
+        assert pybmds.models.continuous.LMS not in model_types
+
+    def test_add_default_models_continuous_excludes_loud_only_models(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_default_models({"priors": PriorClass.bayesian_loud})
+
+        model_types = {type(model) for model in session.models}
+        assert len(session.models) == 4
+        assert pybmds.models.continuous.Linear not in model_types
+        assert pybmds.models.continuous.Polynomial not in model_types
+        assert pybmds.models.continuous.MultiplicativeHill not in model_types
+        assert pybmds.models.continuous.InverseExponential not in model_types
+        assert pybmds.models.continuous.Lognormal not in model_types
+        assert pybmds.models.continuous.Gamma not in model_types
+        assert pybmds.models.continuous.LMS not in model_types
+
     def test_dichotomous(self, ddataset2, rewrite_data_files, data_path):
         # make sure serialize looks correct
         session1 = pybmds.Session(id=1, name="test", description="hello", dataset=ddataset2)
@@ -105,7 +139,6 @@ class TestSession:
     #         session.add_model_averaging()
 
     def test_continuous_ma(self, cdataset3, data_path, rewrite_data_files):
-        print("test_continuous_ma")
         # make sure serialize looks correct
         session1 = pybmds.Session(dataset=cdataset3)
         session1.add_default_bayesian_models()
@@ -146,7 +179,6 @@ class TestSession:
             docx.save(data_path / "reports/session-continuous-ma.docx")
 
     def test_continuous_ma_rejects_bayesian_priors(self, cdataset3):
-        print("test_continuous_ma_rejects_bayesian_priors")
         session = pybmds.Session(dataset=cdataset3)
 
         # Add eligible continuous models with "regular" bayesian priors
@@ -155,11 +187,10 @@ class TestSession:
         )
         session.add_model(Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
 
-        with pytest.raises(ValueError, match="Continuous model averaging requires.*bayesian_loud"):
+        with pytest.raises(ValueError, match=r"Continuous model averaging requires.*bayesian_loud"):
             session.add_model_averaging()
 
     def test_continuous_ma_allows_bayesian_loud_priors(self, cdataset3):
-        print("test_continuous_ma_allows_bayesian_loud_priors")
         session = pybmds.Session(dataset=cdataset3)
 
         session.add_model(
@@ -175,6 +206,107 @@ class TestSession:
 
         assert session.model_average is not None
         assert "bmd" in d["model_average"]["results"]
+
+    def test_continuous_loud_docx_reporting_spacing(self, cdataset3, monkeypatch):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(_session, n_chains=1):
+            assert _session is session
+            assert n_chains == 1
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "trace": fig(),
+                "overlay": fig(),
+                "trace_multi": fig(),
+                "bmd_summary": pd.DataFrame(
+                    {"median": [1.23], "alpha_lower (0.05)": [1.0], "alpha_upper (0.95)": [1.5]},
+                    index=["MA_BMD"],
+                ),
+                "multi_summary": pd.DataFrame(
+                    {"median": [1.23], "ess_bulk": [90.0], "ess_tail": [80.0]},
+                    index=["MA_BMD"],
+                ),
+                "trace_multi_var_names": ["BMD", "MA_BMD", "m0"],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        spacing_by_text = {
+            paragraph.text: paragraph.paragraph_format.space_before.pt
+            if paragraph.paragraph_format.space_before is not None
+            else None
+            for paragraph in docx.paragraphs
+        }
+
+        assert spacing_by_text["Model Averaging Diagnostics (LOUD)"] == 6.0
+        assert spacing_by_text["Posterior distribution of model-averaged BMD"] == 6.0
+        assert spacing_by_text["Trace plot of model-averaged BMD"] == 6.0
+        assert (
+            spacing_by_text["Overlay of model-specific and model-averaged BMD distributions"] == 6.0
+        )
+        assert spacing_by_text["Summary statistics for BMD and model-averaged BMD"] == 6.0
+        assert spacing_by_text["Median-focused summary including model parameters"] == 6.0
+        assert (
+            spacing_by_text[
+                "Trace diagnostics for the main model-averaging variables: BMD, MA_BMD, m0"
+            ]
+            == 6.0
+        )
+
+    def test_continuous_ma_to_df_handles_models_without_toi_tests(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.ExponentialM3,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.MultiplicativeHill,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.ExponentialM3,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.MultiplicativeHill,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.LMS2,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        df = session.to_df()
+
+        blank = pybmds.constants.BMDS_BLANK_VALUE
+        mh_row = df[df.model_name == "Multiplicative Hill"].iloc[0]
+        lms_row = df[df.model_name == "LMS 2-Stage"].iloc[0]
+
+        assert mh_row.p_value1 == blank
+        assert mh_row.p_value4 == blank
+        assert mh_row.model_dof == blank
+        assert lms_row.p_value1 == blank
+        assert lms_row.p_value4 == blank
+        assert lms_row.model_dof == blank
 
     # def test_continuous_cma_with_efsa(self, cdataset3):
     #     print("test_continuous_cma_with_efsa")
@@ -297,7 +429,6 @@ class TestSessionPlot:
 
     @pytest.mark.mpl_image_compare
     def test_continuous_ma_colorize(self, cdataset3):
-        print("test_continuous_ma_colorize")
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
             pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
@@ -311,7 +442,6 @@ class TestSessionPlot:
 
     @pytest.mark.mpl_image_compare
     def test_continuous_ma(self, cdataset3):
-        print("test_continuous_ma")
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
             pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
