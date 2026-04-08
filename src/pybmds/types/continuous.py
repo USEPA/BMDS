@@ -50,8 +50,8 @@ class ContinuousModelSettings(BaseModel):
     tail_prob: Annotated[float, Field(gt=0, lt=1)] = 0.01
     disttype: constants.DistType = constants.DistType.normal
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
-    samples: Annotated[int, Field(ge=0, le=1000)] = 100
-    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
+    samples: Annotated[int, Field(ge=0, le=100000)] = 50000
+    burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     loud_priors_tbl: str | None = None
@@ -259,22 +259,27 @@ class ContinuousModelResult(BaseModel):
     def from_model(cls, model) -> Self:
         result = model.structs.result
         summary = result.bmdsRes
-        arr = np.array(result.bmd_dist, dtype=float).reshape(2, constants.N_BMD_DIST)
-        arr = arr[:, np.isfinite(arr[0, :])]
-        arr = arr[:, arr[0, :] > 0]
+
+        raw_bmd_dist = np.asarray(result.bmd_dist, dtype=float)
+        if raw_bmd_dist.size == 2 * constants.N_BMD_DIST:
+            arr = raw_bmd_dist.reshape(2, constants.N_BMD_DIST)
+            arr = arr[:, np.isfinite(arr[0, :])]
+            arr = arr[:, arr[0, :] > 0]
+        else:
+            arr = np.empty((2, 0), dtype=float)
 
         ll = getattr(getattr(result, "aod", None), "LL", None)
         ll = list(ll) if ll is not None else []
-        loglik = ll[3] if len(ll) >= 4 else (ll[-1] if len(ll) else float("nan"))
+        loglik = ll[3] if len(ll) >= 4 else (ll[-1] if len(ll) else constants.BMDS_BLANK_VALUE)
 
         return ContinuousModelResult(
             dist=result.dist,
-            loglikelihood=loglik,  ## temp fix -- to change
-            aic=summary.AIC,
-            bic_equiv=summary.BIC_equiv,
-            chisq=summary.chisq,
-            model_df=result.model_df,
-            total_df=result.total_df,
+            loglikelihood=loglik,
+            aic=getattr(summary, "AIC", constants.BMDS_BLANK_VALUE),
+            bic_equiv=getattr(summary, "BIC_equiv", constants.BMDS_BLANK_VALUE),
+            chisq=getattr(summary, "chisq", constants.BMDS_BLANK_VALUE),
+            model_df=getattr(result, "model_df", constants.BMDS_BLANK_VALUE),
+            total_df=getattr(result, "total_df", constants.BMDS_BLANK_VALUE),
             bmd_dist=arr,
         )
 
@@ -355,6 +360,50 @@ class ContinuousParameters(BaseModel):
             prior_max_value=priors[4],
         )
 
+    @classmethod
+    def from_loud_draws(cls, model, parm_draws: np.ndarray) -> Self:
+        draws = np.asarray(parm_draws, dtype=float)
+        if draws.ndim == 1:
+            draws = draws.reshape(-1, 1)
+        if draws.ndim != 2:
+            raise ValueError(f"Unsupported LOUD parameter draw shape: {draws.shape}")
+
+        draws = draws[np.isfinite(draws).all(axis=1)]
+        param_names = model.get_param_names()
+        priors = cls.get_priors(model)
+
+        n_params = min(draws.shape[1], len(param_names), priors.shape[1])
+        if n_params == 0:
+            raise ValueError("LOUD parameter draws are empty")
+
+        draws = draws[:, :n_params]
+        param_names = param_names[:n_params]
+        priors = priors[:, :n_params]
+
+        values = np.mean(draws, axis=0)
+        se = np.std(draws, axis=0, ddof=0)
+        lower_ci = np.quantile(draws, 0.025, axis=0)
+        upper_ci = np.quantile(draws, 0.975, axis=0)
+        cov = np.cov(draws, rowvar=False)
+        cov = np.atleast_2d(cov)
+        if cov.shape != (n_params, n_params):
+            cov = np.eye(n_params, dtype=float)
+
+        return cls(
+            names=param_names,
+            values=values,
+            bounded=np.zeros(n_params, dtype=int),
+            se=se,
+            lower_ci=lower_ci,
+            upper_ci=upper_ci,
+            cov=cov,
+            prior_type=priors[0],
+            prior_initial_value=priors[1],
+            prior_stdev=priors[2],
+            prior_min_value=priors[3],
+            prior_max_value=priors[4],
+        )
+
     def tbl(self) -> str:
         headers = "Variable|Estimate|On Bound|Std Error".split("|")
         data = []
@@ -418,19 +467,32 @@ class ContinuousGof(BaseModel):
     def from_model(cls, model) -> Self:
         gof = model.structs.result.gof
         summary = model.structs.result.bmdsRes
-        return ContinuousGof(
-            dose=np.array(gof.dose),
-            size=np.array(gof.size),
-            est_mean=np.array(gof.estMean),
-            calc_mean=np.array(gof.calcMean),
-            obs_mean=np.array(gof.obsMean),
-            est_sd=np.array(gof.estSD),
-            calc_sd=np.array(gof.calcSD),
-            obs_sd=np.array(gof.obsSD),
-            residual=np.array(gof.res),
-            eb_lower=np.array(gof.ebLower),
-            eb_upper=np.array(gof.ebUpper),
-            roi=residual_of_interest(summary.BMD, model.dataset.doses, np.array(gof.res).tolist()),
+
+        dose = np.asarray(getattr(gof, "dose", []), dtype=float)
+        size = np.asarray(getattr(gof, "size", []), dtype=float)
+        est_mean = np.asarray(getattr(gof, "estMean", []), dtype=float)
+        calc_mean = np.asarray(getattr(gof, "calcMean", []), dtype=float)
+        obs_mean = np.asarray(getattr(gof, "obsMean", []), dtype=float)
+        est_sd = np.asarray(getattr(gof, "estSD", []), dtype=float)
+        calc_sd = np.asarray(getattr(gof, "calcSD", []), dtype=float)
+        obs_sd = np.asarray(getattr(gof, "obsSD", []), dtype=float)
+        residual = np.asarray(getattr(gof, "res", []), dtype=float)
+        eb_lower = np.asarray(getattr(gof, "ebLower", []), dtype=float)
+        eb_upper = np.asarray(getattr(gof, "ebUpper", []), dtype=float)
+
+        return cls(
+            dose=dose,
+            size=size,
+            est_mean=est_mean,
+            calc_mean=calc_mean,
+            obs_mean=obs_mean,
+            est_sd=est_sd,
+            calc_sd=calc_sd,
+            obs_sd=obs_sd,
+            residual=residual,
+            eb_lower=eb_lower,
+            eb_upper=eb_upper,
+            roi=residual_of_interest(summary.BMD, model.dataset.doses, residual.tolist()),
         )
 
     def get_tbl_data_means(self, disttype: constants.DistType):
@@ -544,11 +606,15 @@ class ContinuousTests(BaseModel):
     @classmethod
     def from_model(cls, model) -> Self:
         tests = model.structs.result.aod.TOI
+        ll_ratios = list(getattr(tests, "llRatio", []) or [])
+        dfs = list(getattr(tests, "DF", []) or [])
+        p_values = list(getattr(tests, "pVal", []) or [])
+
         return cls(
             names=["Test 1", "Test 2", "Test 3", "Test 4"],
-            ll_ratios=tests.llRatio,
-            dfs=tests.DF,
-            p_values=tests.pVal,
+            ll_ratios=ll_ratios,
+            dfs=dfs,
+            p_values=p_values,
         )
 
     def tbl(self) -> str:

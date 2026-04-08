@@ -1,5 +1,7 @@
+import numpy as np
 from pydantic import Field
 
+from ..constants import PriorClass
 from ..types.cma import ContinuousModelAverage, ContinuousModelAverageResult
 from ..types.continuous import ContinuousModelSettings
 from .base import BmdModelAveraging, BmdModelAveragingSchema, InputModelSettings
@@ -15,8 +17,14 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
             return ContinuousModelSettings.model_validate(settings)
 
     def execute(self) -> ContinuousModelAverageResult:
+        model_indexes = [self.session.models.index(model) for model in self.models]
+        model_weights = np.asarray(self.session.ma_weights, dtype=float)
+        if model_weights.size != len(self.models):
+            model_weights = model_weights[model_indexes]
+            model_weights = model_weights / model_weights.sum()
+
         self.structs = ContinuousModelAverage(
-            self.session.dataset, self.models, self.session.ma_weights, self.session.weight_option
+            self.session.dataset, self.models, model_weights, self.session.weight_option
         )
         avg = self.structs.average  # python_continuousMA_analysis
         n = int(avg.nmodels)
@@ -29,9 +37,26 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
         if len(avg.disttype) != n:
             raise ValueError(f"avg.disttype length {len(avg.disttype)} != nmodels {n}")
         self.structs.execute()
-        return ContinuousModelAverageResult.from_cpp(
+        results = ContinuousModelAverageResult.from_cpp(
             self.structs, [model.results for model in self.models]
         )
+        for idx, model in enumerate(self.models):
+            if model.settings.priors.prior_class is PriorClass.bayesian_loud:
+                results.sync_model_result(model, idx)
+        values = np.asarray([model.results.plotting.dr_y for model in self.models], dtype=float)
+        if values.size:
+            dr_y = results.posteriors @ values
+            bmds = np.asarray([results.bmdl, results.bmd, results.bmdu], dtype=float)
+            bmds_ys = np.interp(bmds, results.dr_x, dr_y)
+            results = results.model_copy(
+                update={
+                    "dr_y": dr_y,
+                    "bmdl_y": float(bmds_ys[0]),
+                    "bmd_y": float(bmds_ys[1]),
+                    "bmdu_y": float(bmds_ys[2]),
+                }
+            )
+        return results
 
     def serialize(self, session) -> "BmdModelAveragingContinuousSchema":
         model_indexes = [session.models.index(model) for model in self.models]

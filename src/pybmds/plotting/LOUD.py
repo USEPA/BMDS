@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import cycle
 from pathlib import Path
 
 import arviz as az
@@ -8,6 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from matplotlib.lines import Line2D
+
+from ..constants import DistType
 
 
 def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
@@ -92,7 +94,7 @@ def model_average_to_inferencedata(
         - built from session.dataset
     """
     ma_result = session.model_average.results
-    models = session.models
+    models = session.model_average.models
 
     model_names = [model.name() for model in models]
     param_names_by_model = [list(model.results.parameters.names) for model in models]
@@ -316,6 +318,9 @@ def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
                 "median": float(np.quantile(draws, 0.5)),
                 lower_label: float(np.quantile(draws, alpha)),
                 upper_label: float(np.quantile(draws, 1 - alpha)),
+                "r_hat": np.nan,
+                "ess_bulk": np.nan,
+                "ess_tail": np.nan,
             }
         )
 
@@ -326,6 +331,9 @@ def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
             "median": ma_quantiles["median"],
             lower_label: ma_quantiles["lower"],
             upper_label: ma_quantiles["upper"],
+            "r_hat": np.nan,
+            "ess_bulk": np.nan,
+            "ess_tail": np.nan,
         }
     )
 
@@ -351,6 +359,7 @@ def _multi_summary_table(
                     "median": [float(np.nanquantile(draws, median_q))],
                     f"eti_{lower_q:.0%}": [float(np.nanquantile(draws, lower_q))],
                     f"eti_{upper_q:.0%}": [float(np.nanquantile(draws, upper_q))],
+                    "r_hat": [np.nan],
                     "ess_bulk": [np.nan],
                     "ess_tail": [np.nan],
                 },
@@ -368,6 +377,7 @@ def _multi_summary_table(
                         "median": float(np.nanquantile(draws, median_q)),
                         f"eti_{lower_q:.0%}": float(np.nanquantile(draws, lower_q)),
                         f"eti_{upper_q:.0%}": float(np.nanquantile(draws, upper_q)),
+                        "r_hat": np.nan,
                         "ess_bulk": np.nan,
                         "ess_tail": np.nan,
                     }
@@ -401,7 +411,7 @@ def _multi_summary_table(
         except ValueError:
             fallback = _fallback_summary(var_name)
             median_parts.append(fallback)
-            ess_parts.append(fallback[["ess_bulk", "ess_tail"]])
+            ess_parts.append(fallback[["r_hat", "ess_bulk", "ess_tail"]])
 
     median_summary = pd.concat(median_parts, axis=0) if median_parts else pd.DataFrame()
     ess_summary = pd.concat(ess_parts, axis=0) if ess_parts else pd.DataFrame()
@@ -412,16 +422,205 @@ def _multi_summary_table(
         ],
         errors="ignore",
     )
-    ess_columns = [column for column in ("ess_bulk", "ess_tail") if column in ess_summary.columns]
+    ess_columns = [
+        column for column in ("r_hat", "ess_bulk", "ess_tail") if column in ess_summary.columns
+    ]
     if ess_columns:
-        median_summary = median_summary.join(ess_summary[ess_columns])
+        ess_to_join = ess_summary[ess_columns].drop(
+            columns=[column for column in ess_columns if column in median_summary.columns],
+            errors="ignore",
+        )
+        if len(ess_to_join.columns) > 0:
+            median_summary = median_summary.join(ess_to_join)
 
     return median_summary
+
+
+def _extract_model_row(summary: pd.DataFrame, var_name: str, model_name: str) -> pd.Series | None:
+    for idx, row in summary.iterrows():
+        label = str(idx)
+        if label == var_name and model_name == "MA_BMD":
+            return row
+        if label == f"{var_name}[{model_name}]":
+            return row
+        if label.startswith(f"{var_name}[") and label.endswith(f":{model_name}]"):
+            return row
+    return None
 
 
 def _drop_empty_summary_rows(df: pd.DataFrame) -> pd.DataFrame:
     # ArviZ can emit rows for parameter/model combinations that are entirely missing.
     return df.dropna(axis=0, how="all")
+
+
+def _disttype_suffix(disttype: DistType | None) -> str:
+    suffix_map = {
+        DistType.normal: "CV",
+        DistType.normal_ncv: "NCV",
+        DistType.log_normal: "Lognormal",
+    }
+    return suffix_map.get(disttype, str(disttype))
+
+
+def _model_color_map(model_names: list[str]) -> dict[str, tuple]:
+    colors = plt.cm.tab10.colors
+    return {model_name: colors[idx % len(colors)] for idx, model_name in enumerate(model_names)}
+
+
+def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: int | None = None):
+    handles = [Line2D([0], [0], color=color, lw=2, label=label) for label, color in items]
+    fig.legend(
+        handles=handles,
+        labels=[label for label, _ in items],
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.98),
+        ncol=ncol or min(4, max(1, len(handles))),
+        frameon=False,
+    )
+
+
+def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
+    model_names = [str(name) for name in idata.posterior.coords["model"].values]
+    color_map = _model_color_map(model_names)
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    for model_name in model_names:
+        draws = np.asarray(
+            idata.posterior["BMD"].sel(model=model_name).values, dtype=float
+        ).reshape(-1)
+        draws = draws[np.isfinite(draws)]
+        if draws.size == 0:
+            continue
+        az.plot_dist(draws, ax=ax, color=color_map[model_name])
+
+    ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
+    ma_draws = ma_draws[np.isfinite(ma_draws)]
+    if ma_draws.size > 0:
+        az.plot_dist(ma_draws, ax=ax, color="black", plot_kwargs={"linewidth": 2.5})
+
+    ax.set_title("BMD distributions")
+    ax.set_ylabel("Density")
+    _add_figure_legend(
+        fig,
+        [(model_name, color_map[model_name]) for model_name in model_names]
+        + [("Model Average", "black")],
+        ncol=min(5, max(1, len(model_names) + 1)),
+    )
+    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.88))
+    return fig
+
+
+def _parameter_group_trace_figure(
+    idata: az.InferenceData,
+    group_name: str,
+    model_names: list[str],
+    param_names: list[str],
+) -> plt.Figure:
+    plot_names = ["BMD", *param_names]
+
+    fig, axes = plt.subplots(
+        len(plot_names),
+        2,
+        figsize=(11, 2.6 * len(plot_names)),
+        squeeze=False,
+    )
+    color_map = _model_color_map(model_names)
+
+    for row, var_name in enumerate(plot_names):
+        ax_dist = axes[row, 0]
+        ax_trace = axes[row, 1]
+
+        for model_name in model_names:
+            values = np.asarray(idata.posterior[var_name].sel(model=model_name).values, dtype=float)
+            draws = values.reshape(-1)
+            draws = draws[np.isfinite(draws)]
+            if draws.size == 0:
+                continue
+
+            az.plot_dist(draws, ax=ax_dist, color=color_map[model_name])
+            ax_trace.plot(draws, color=color_map[model_name], alpha=0.5, linewidth=0.8)
+
+        ax_dist.set_title(var_name)
+        ax_trace.set_title(var_name)
+
+    _add_figure_legend(fig, [(model_name, color_map[model_name]) for model_name in model_names])
+    fig.suptitle(f"{group_name} parameter distributions", y=0.985)
+    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.965))
+    return fig
+
+
+def _parameter_group_records(
+    idata: az.InferenceData,
+    session,
+    hdi_prob: float,
+) -> list[dict[str, object]]:
+    excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
+
+    grouped_models: dict[str, list] = {}
+    for model in session.model_average.models:
+        grouped_models.setdefault(model.bmd_model_class.verbose, []).append(model)
+
+    records: list[dict[str, object]] = []
+    for group_name, models in grouped_models.items():
+        model_names = [model.name() for model in models]
+        param_names: list[str] = []
+        for model in models:
+            for name in model.results.parameters.names:
+                if name not in excluded_vars and name not in param_names:
+                    param_names.append(name)
+
+        rows: list[dict[str, object]] = []
+        summary = _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
+        for model_name in model_names:
+            for param_name in param_names:
+                stats = _extract_model_row(summary, param_name, model_name)
+                if stats is None:
+                    continue
+                rows.append(
+                    {
+                        "Model": _disttype_suffix(
+                            next(
+                                model for model in models if model.name() == model_name
+                            ).settings.disttype
+                        ),
+                        "Parameter": param_name,
+                        **stats.to_dict(),
+                    }
+                )
+
+        if not rows:
+            continue
+
+        figure = _parameter_group_trace_figure(idata, group_name, model_names, param_names)
+        records.append(
+            {
+                "name": group_name,
+                "model_names": model_names,
+                "var_names": param_names,
+                "summary": pd.DataFrame(rows),
+                "trace_figure": figure,
+            }
+        )
+
+    return records
+
+
+def _bmd_diagnostics_table(idata: az.InferenceData, hdi_prob: float) -> pd.DataFrame:
+    summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
+    model_names = list(idata.posterior.coords["model"].values)
+    rows: list[dict[str, object]] = []
+
+    for model_name in model_names:
+        stats = _extract_model_row(summary, "BMD", str(model_name))
+        if stats is None:
+            continue
+        rows.append({"model": str(model_name), **stats.to_dict()})
+
+    ma_stats = _extract_model_row(summary, "MA_BMD", "MA_BMD")
+    if ma_stats is not None:
+        rows.append({"model": "MA_BMD", **ma_stats.to_dict()})
+
+    return pd.DataFrame(rows).set_index("model")
 
 
 def get_model_average_figures(
@@ -431,7 +630,7 @@ def get_model_average_figures(
     idata = model_average_to_inferencedata(session, n_chains=n_chains)
     out: dict[str, plt.Figure | pd.DataFrame | az.InferenceData | float] = {"idata": idata}
 
-    alpha = session.models[0].settings.alpha
+    alpha = session.model_average.models[0].settings.alpha
     out["alpha"] = alpha
     hdi_prob = 1 - (2 * alpha)
     out["hdi_prob"] = hdi_prob
@@ -441,7 +640,7 @@ def get_model_average_figures(
     out["ma_bmd_quantiles"] = ma_bmd_quantiles
     out["ma_bmd_hdi"] = ma_bmd_hdi
 
-    bmd_summary = _bmd_summary_table(idata, alpha)
+    bmd_summary = _bmd_diagnostics_table(idata, hdi_prob)
     out["bmd_summary"] = bmd_summary
 
     param_names = [
@@ -454,6 +653,7 @@ def get_model_average_figures(
 
     multi_summary = _drop_empty_summary_rows(_multi_summary_table(idata, multi_var_names, hdi_prob))
     out["multi_summary"] = multi_summary
+    out["parameter_groups"] = _parameter_group_records(idata, session, hdi_prob)
 
     axes = az.plot_posterior(idata, var_names=["MA_BMD"])
     fig = _figure_from_axes(axes)
@@ -465,48 +665,6 @@ def get_model_average_figures(
     )
     fig.tight_layout()
     out["posterior"] = fig
-
-    axes = az.plot_trace(idata, var_names=["MA_BMD"])
-    fig = _figure_from_axes(axes)
-    _add_ma_bmd_reference_lines(
-        fig,
-        ma_bmd_hdi,
-        lower_label="MA_BMD lower alpha HDI",
-        upper_label="MA_BMD upper alpha HDI",
-    )
-    fig.tight_layout()
-    out["trace"] = fig
-
-    axes = az.plot_trace(idata, var_names=multi_var_names)
-    fig = _figure_from_axes(axes)
-    fig.tight_layout()
-    out["trace_multi"] = fig
-    out["trace_multi_var_names"] = multi_var_names
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    colors = plt.cm.tab10.colors
-    color_cycle = cycle(colors)
-
-    for model_name in idata.posterior.coords["model"].values:
-        color = next(color_cycle)
-        az.plot_dist(
-            idata.posterior["BMD"].sel(model=model_name),
-            ax=ax,
-            label=str(model_name),
-            color=color,
-        )
-
-    az.plot_dist(
-        idata.posterior["MA_BMD"],
-        ax=ax,
-        label="Model Average",
-        color="black",
-        plot_kwargs={"linewidth": 3},
-    )
-
-    ax.legend()
-    ax.set_title("BMD distributions")
-    fig.tight_layout()
-    out["overlay"] = fig
+    out["overlay"] = _bmd_distributions_figure(idata)
 
     return out

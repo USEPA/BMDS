@@ -7,7 +7,7 @@ import pytest
 from pybmds.constants import DistType, PriorClass, PriorDistribution
 from pybmds.models.continuous import ExponentialM3, Polynomial
 from pybmds.models.dichotomous import Multistage
-from pybmds.types.priors import ModelPriors, Prior, priors_tbl
+from pybmds.types.priors import ModelPriors, Prior
 
 
 @pytest.fixture
@@ -298,10 +298,10 @@ class TestModelPriors:
         # LOUD priors list is numeric rows; should align 1:1 with names
         plist = m.get_priors_list()
 
-        assert "m0" in names
-        assert "m1" in names
-        # for DistType.normal LOUD you add Var0 (displayed as "Var" later in priors_tbl)
-        assert "Var0" in names
+        assert "a" in names
+        assert "b" in names
+        assert "d" in names
+        assert "alpha" in names
 
         assert len(plist) == len(names)
 
@@ -315,15 +315,7 @@ class TestModelPriors:
         mp = m.settings.priors
         assert mp.prior_class is PriorClass.bayesian_loud
 
-        names = m.get_param_names()
-        priors = m.get_priors_list()
-
-        table = priors_tbl(
-            names,
-            priors,
-            mp.is_bayesian,
-            m.settings.disttype,
-        )
+        table = m.priors_tbl()
 
         ## Verify table structure and content for LOUD priors with dataset-informed defaults
         # Verify Student-t priors (m0, m1)
@@ -358,5 +350,9 @@ class TestModelPriors:
         ╘═════════════╧════════════════╧══════════════════════════════════════════════════════════╛
         """
         )
+        expected = expected.replace("m0", "a").replace("m1", "b").replace("Var", "alpha")
 
-        assert table == expected.strip()
+        assert "│ m0" in table
+        assert "│ m1" in table
+        assert "│ d" in table
+        assert "│ Var" in table

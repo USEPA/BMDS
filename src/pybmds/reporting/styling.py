@@ -468,6 +468,29 @@ def plot_dr(report: Report, session: Session):
         report.document.add_paragraph(add_mpl_figure(report.document, fig, 6))
 
 
+def _ma_model_bmd_triplet(session: Session, model):
+    ma = session.model_average
+    if ma is None or not ma.has_results:
+        return None
+
+    try:
+        idx = next(i for i, ma_model in enumerate(ma.models) if ma_model is model)
+    except StopIteration:
+        return None
+
+    draws = np.asarray(ma.results.model_bmd_dist[idx], dtype=float)
+    draws = draws[np.isfinite(draws)]
+    if draws.size == 0:
+        return None
+
+    alpha = model.settings.alpha
+    return (
+        float(np.quantile(draws, alpha)),
+        float(np.quantile(draws, 0.5)),
+        float(np.quantile(draws, 1 - alpha)),
+    )
+
+
 def write_bayesian_table(report: Report, session: Session):
     styles = report.styles
     report.document.add_paragraph()
@@ -488,13 +511,37 @@ def write_bayesian_table(report: Report, session: Session):
     write_cell(tbl.cell(0, 7), "Scaled Residual near BMD", style=hdr)
 
     ma = session.model_average
+    ma_weight_lookup = {}
+    if ma:
+        ma_weight_lookup = {
+            id(model): (ma.results.priors[idx], ma.results.posteriors[idx])
+            for idx, model in enumerate(ma.models)
+        }
+
     for idx, model in enumerate(session.models, start=1):
+        prior, posterior = ma_weight_lookup.get(id(model), ("-", "-"))
+        bmdl = model.results.bmdl
+        bmd = model.results.bmd
+        bmdu = model.results.bmdu
+
+        if session.model_average is not None and any(
+            value in (BMDS_BLANK_VALUE, -9999.0) or not np.isfinite(value)
+            for value in (bmdl, bmd, bmdu)
+        ):
+            ma_summary = session.get_model_average_summary_for_model(model)
+            if ma_summary is not None:
+                bmdl = ma_summary.bmdl
+                bmd = ma_summary.bmd
+                bmdu = ma_summary.bmdu
+                prior = ma_summary.prior
+                posterior = ma_summary.posterior
+
         write_cell(tbl.cell(idx, 0), model.name(), body)
-        write_cell(tbl.cell(idx, 1), ma.results.priors[idx - 1] if ma else "-", body)
-        write_cell(tbl.cell(idx, 2), ma.results.posteriors[idx - 1] if ma else "-", body)
-        write_cell(tbl.cell(idx, 3), model.results.bmdl, body)
-        write_cell(tbl.cell(idx, 4), model.results.bmd, body)
-        write_cell(tbl.cell(idx, 5), model.results.bmdu, body)
+        write_cell(tbl.cell(idx, 1), prior, body)
+        write_cell(tbl.cell(idx, 2), posterior, body)
+        write_cell(tbl.cell(idx, 3), bmdl, body)
+        write_cell(tbl.cell(idx, 4), bmd, body)
+        write_cell(tbl.cell(idx, 5), bmdu, body)
         write_cell(tbl.cell(idx, 6), model.results.fit.bic_equiv, body)
         write_cell(tbl.cell(idx, 7), _residual_at_control(model.results.gof), body)
         write_cell(tbl.cell(idx, 8), model.results.gof.roi, body)
@@ -543,7 +590,7 @@ def write_model(
         if bmd_cdf_table:
             report.document.add_paragraph(add_mpl_figure(report.document, model.cdf_plot(), 6))
     report.document.add_paragraph(model.text(), styles.fixed_width)
-    if bmd_cdf_table:
+    if bmd_cdf_table and model.has_results:
         report.document.add_paragraph("CDF:", styles.tbl_body)
         df_to_table(report, model.cdf())
 
