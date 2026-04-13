@@ -5,6 +5,7 @@
 
 #include "assert.h"
 #include "bmds_helper.h"
+#include "functional_generalized.h"
 
 int run_all_unitTests() {
   std::cout << "Running unit tests" << std::endl;
@@ -18,6 +19,8 @@ int run_all_unitTests() {
   nested_AIC_penalty_test();
   // loud_model_fit_test();
   pivotal_pvalue_test();
+  rg_dg_test();
+  bridge_sample_test();
 
   return 0;
 }
@@ -262,8 +265,8 @@ void loud_model_fit_test() {
   fit_cexp3(&fitInLogCV_sd, &fitOut, R_exp3LogCV);
   expect_true(exp3LogCVParms.isApprox(fitOut.parms, 1.5e-6));
   expect_true(exp3LogCV_stdev_BMD.isApprox(fitOut.BMD, 1.5e-6));
-  std::cout << "expected BMDs:" << std::endl << exp3LogCV_stdev_BMD << std::endl;
-  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
+  //  std::cout << "expected BMDs:" << std::endl << exp3LogCV_stdev_BMD << std::endl;
+  //  std::cout << "actual BMDs:" << std::endl << fitOut.BMD << std::endl;
 
   fit_cexp3(&fitInLogCV_rel, &fitOut, R_exp3LogCV);
   expect_true(exp3LogCV_reldev_BMD.isApprox(fitOut.BMD, 1.5e-6));
@@ -1077,7 +1080,6 @@ void pivotal_pvalue_test() {
   expected_pval = 1.0;
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
-  std::cout << "starting summary tests" << std::endl;
   // summary data
   loudIn.model = cont_model::power;
   Eigen::MatrixXd Y_sum{
@@ -1135,6 +1137,133 @@ void pivotal_pvalue_test() {
   expected_pval = 1.0;
   returned_pval = pivotal_pvalue(R_power_lognormal_sum, &loudIn);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+}
+
+void rg_dg_test() {
+  // rg
+  int iter = 5000;
+  //  Eigen::VectorXd log_mu {{11.0558576, 15.5372800, 0.3687901, -0.8283089}};
+  //  Eigen::MatrixXd log_cov {
+  //	  { 7.978730e-12, -3.390675e-08, -2.171972e-09, -2.115609e-07},
+  //	  {-3.390675e-08,  1.440916e-04,  9.230106e-06,  8.990582e-04},
+  //	  {-2.171972e-09,  9.230106e-06,  5.912550e-07,  5.759142e-05},
+  //	  {-2.115609e-07,  8.990582e-04,  5.759142e-05,  5.612043e-03}
+  //
+  //  };
+  Eigen::VectorXd log_mu{{10.1447911, 17.5885148, 0.2291463, -0.5226341}};
+  Eigen::MatrixXd log_cov{
+      {2.258106e-11, -7.429725e-11, 1.092654e-12, -1.905617e-09},
+      {-7.429725e-11, 2.444563e-10, -3.595100e-12, 6.269948e-09},
+      {1.092654e-12, -3.595100e-12, 5.287141e-14, -9.220911e-11},
+      {-1.905617e-09, 6.269948e-09, -9.220911e-11, 1.608151e-07}
+  };
+
+  Eigen::MatrixXd g_estimate(iter, log_mu.size());
+  std::vector<bool> isNegative(log_mu.size());
+  isNegative[0] = true;
+  isNegative[1] = true;
+  for (int i = 2; i < isNegative.size(); i++) {
+    isNegative[i] = false;
+  }
+
+  rg(iter, log_mu, log_cov, isNegative, g_estimate);
+  Eigen::VectorXd means = g_estimate.colwise().mean().transpose();
+
+  Eigen::VectorXd expectedMeans{{10.1447911, 17.5885146, 1.2575260, 0.5929534}};
+  expect_true(expectedMeans.isApprox(means, 1.5e-6));
+
+  // simple dmvnorm test
+  Eigen::MatrixXd x{{0, 0}, {0, 0}, {0, 0}};
+  Eigen::MatrixXd sigma{{4, 2}, {2, 3}};
+  Eigen::VectorXd mu{{1, 2}};
+  Eigen::VectorXd ret(x.rows());
+  dmvnorm(x, mu, sigma, ret, true);
+
+  Eigen::VectorXd expectedRes{{-3.5651, -3.5651, -3.5651}};
+  expect_true(expectedRes.isApprox(ret, 1.5e-6));
+
+  // dg test
+
+  double expectedMean = 78.4598;
+  Eigen::VectorXd ret2(g_estimate.rows());
+  dg(g_estimate, log_mu, log_cov, isNegative, ret2);
+  double mean = ret2.mean();
+  expect_true(essentiallyEqual(expectedMean, mean, 0.001));
+}
+
+void bridge_sample_test() {
+  // individual data
+  Eigen::MatrixXd Y{{11.7692}, {11.5889}, {10.9485}, {12.0335}, {10.5843}, {10.9571}, {12.1292},
+                    {12.5896}, {12.9235}, {11.1651}, {9.2031},  {11.7029}, {11.9342}, {11.8759},
+                    {10.6886}, {12.0227}, {11.277},  {10.811},  {14.2668}, {10.4833}, {11.4515},
+                    {12.5341}, {12.4558}, {13.7429}, {13.0073}, {12.5508}, {10.4007}, {12.8715},
+                    {13.4137}, {9.33564}, {10.9298}, {10.6283}, {12.9618}, {12.2369}, {14.8123},
+                    {11.0151}, {13.5539}, {10.7161}, {12.7046}, {12.7758}, {14.4463}, {14.8051},
+                    {17.1731}, {14.4799}, {14.8711}, {13.9808}, {12.8826}, {15.3315}, {14.9358},
+                    {14.0363}, {14.8257}, {14.0969}, {15.5807}, {15.202},  {14.1877}, {14.5575},
+                    {13.1242}, {17.0857}, {14.4028}};
+
+  Eigen::MatrixXd D{{0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125},
+                    {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125}, {0.125},
+                    {0.125}, {0.125}, {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},
+                    {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},  {0.25},
+                    {0.25},  {0.25},  {0.25},  {0.25},  {0.5},   {0.5},   {0.5},   {0.5},   {0.5},
+                    {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},   {0.5},
+                    {0.5},   {0.5},   {0.5},   {0.5},   {0.5}};
+
+  // Individual CV
+  Eigen::MatrixXd R{
+      {10.14480, 17.58850, 1.257526, 0.5927195},
+      {10.14479, 17.58852, 1.257526, 0.5929868},
+      {10.14479, 17.58851, 1.257526, 0.5928710},
+      {10.14479, 17.58851, 1.257526, 0.5928589},
+      {10.14478, 17.58854, 1.257525, 0.5933468}
+  };
+
+  std::vector<double> mean = {10.6176, 11.5477, 12.2049, 14.7371, 15.8523};
+  std::vector<int> N_obs = {20, 20, 20, 19, 19};
+  std::vector<double> var = {0.798775, 1.1195, 1.83014, 1.16175, 0.697258};
+  double ssq01 = 0.749389;
+  int iter = 5;
+  int burnin = BMDS_MISSING;  // Not used for this test, but needed for constructor function below
+  int bmr = 1;
+  int BMD_type = 2;
+  bool isIncreasing = true;
+  int weightOption = 3;  // WAIC & INT_FACTOR
+
+  struct fitInput cvInput = createFitInput(
+      D, Y, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
+      var[var.size() - 1], N_obs[0] + N_obs[N_obs.size() - 1], ssq01, iter, burnin, bmr,
+      distribution::normal, loud_datatype::l_individual, BMD_type, isIncreasing, weightOption,
+      BMDS_MISSING
+  );
+
+  cvInput.model = cont_model::power;
+  Eigen::MatrixXd priorr{
+      {5, 19.0000000, 10.61764, 0.2050385, 1},
+      {5, 18.0000000, 15.85227, 0.1968161, 1},
+      {2, 0.4700036, 0.42100, BMDS_MISSING, 1},
+      {4, 19.0000000, 14.61307, BMDS_MISSING, 1}
+  };
+
+  struct fitResult cvPowerOut;
+  std::vector<bool> isNegative(priorr.rows());
+  // Eigen::VectorXd init(priorr.rows());
+  // Eigen::MatrixXd diag = Eigen::VectorXd::Constant(priorr.rows(), 1.0).asDiagonal();
+  isNegative[0] = true;
+  isNegative[1] = true;
+  for (int i = 2; i < isNegative.size(); i++) {
+    isNegative[i] = false;
+  }
+
+  bridge_sample(R, &cvInput, &cvPowerOut, priorr, isNegative);
+  double expected_waic = -112.5453;
+  expect_true(essentiallyEqual(expected_waic, cvPowerOut.waic, 0.001));
+
+  double expected_intFactor = -202.7837;
+  expect_true(essentiallyEqual(expected_intFactor, cvPowerOut.int_factor, 0.001));
+  //  std::cout<<"expected:"<<expected_intFactor<<std::endl;
+  //  std::cout<<"actual:"<<cvPowerOut.int_factor<<std::endl;
 }
 
 void Nlogist_probs_test() {

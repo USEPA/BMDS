@@ -12,3 +12,5 @@ void dicho_AIC_penalty_test();
 void nested_AIC_penalty_test();
 void loud_model_fit_test();
 void pivotal_pvalue_test();
+void rg_dg_test();
+void bridge_sample_test();

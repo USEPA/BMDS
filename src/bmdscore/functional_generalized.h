@@ -460,6 +460,20 @@ void dg(
     std::vector<bool>& isNegative, Eigen::VectorXd& ret
 );
 
+void dmvnorm(
+    const Eigen::MatrixXd X, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
+    Eigen::VectorXd& ret, bool log = false
+);
+
+double dmvnorm_vec(
+    const Eigen::VectorXd& x, const Eigen::VectorXd& mu, const Eigen::MatrixXd& sigma
+);
+
+// void solver(const Eigen::MatrixXd A, const Eigen::VectorXd b);
+
+// double dmvnorm(const Eigen::VectorXd& x, const Eigen::VectorXd& mu, const Eigen::MatrixXd&
+// sigma);
+
 double logsumexp(Eigen::VectorXd X);
 
 double pdf_t_location_scale(double x, double df, double mu, double sigma);

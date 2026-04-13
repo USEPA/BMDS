@@ -1793,39 +1793,54 @@ void rg(
   }
 }
 
+// returns log_density
+void dmvnorm(
+    const Eigen::MatrixXd x, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
+    Eigen::VectorXd& ret, bool retLog
+) {
+  Eigen::LLT<Eigen::MatrixXd> llt(sigma);
+
+  int n = sigma.rows();
+  Eigen::MatrixXd sigma_inv = llt.solve(Eigen::MatrixXd::Identity(n, n));
+
+  double sumlog = -1.0 * llt.matrixL().toDenseMatrix().diagonal().array().log().sum();
+  double addConst = -0.5 * x.cols() * log(2.0 * M_PI);
+
+  // iterate through each row
+  for (int i = 0; i < x.rows(); ++i) {
+    Eigen::VectorXd row = x.row(i);
+    Eigen::VectorXd diff = row - mu;
+
+    double quadform = diff.transpose() * (sigma_inv * diff);
+
+    double log_density = -0.5 * quadform + addConst + sumlog;
+
+    if (!retLog) log_density = exp(log_density);
+    ret(i) = log_density;
+  }
+}
+
 void dg(
     const Eigen::MatrixXd x, const Eigen::VectorXd mu, const Eigen::MatrixXd sigma,
     std::vector<bool>& isNegative, Eigen::VectorXd& ret
 ) {
-  double det_cov = sigma.determinant();
-
-  Eigen::LDLT<Eigen::MatrixXd> ldlt(sigma);
-
-  for (int i = 0; i < x.rows(); ++i) {
-    Eigen::VectorXd tmpX = x.row(i);
-    for (int j = 0; j < tmpX.size(); ++j) {
-      if (!isNegative[j]) {
-        tmpX[j] = log(tmpX[j]);
-      }
+  Eigen::MatrixXd tmpX = x;
+  for (int i = 0; i < isNegative.size(); ++i) {
+    if (!isNegative[i]) {
+      tmpX.col(i) = tmpX.col(i).array().log();
     }
-    int k = tmpX.size();
-    Eigen::VectorXd x_minus_mu = tmpX - mu;
-
-    double mahalanobis_squared = x_minus_mu.transpose() * ldlt.solve(x_minus_mu);
-
-    double normalizer = 1.0 / (sqrt(pow(2.0 * M_PI, k) * det_cov));
-
-    double log_density = log(normalizer * exp(-0.5 * mahalanobis_squared));
-
-    double adjustment = 0.0;
-    tmpX = x.row(i);  // reset to original x
-    for (int j = 0; j < tmpX.size(); ++j) {
-      if (!isNegative[j]) {
-        adjustment += log(1 / tmpX(j));
-      }
-    }
-    ret[i] = log_density + adjustment;
   }
+
+  dmvnorm(tmpX, mu, sigma, ret, true);
+
+  Eigen::VectorXd adjustment = Eigen::VectorXd::Zero(x.rows());
+  for (int i = 0; i < isNegative.size(); ++i) {
+    if (!isNegative[i]) {
+      adjustment(i) += log(1 / x(i));
+    }
+  }
+
+  ret = ret + adjustment;
 }
 
 double pdf_t_location_scale(double x, double df, double mu, double sigma) {
