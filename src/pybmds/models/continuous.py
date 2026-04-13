@@ -7,11 +7,41 @@ from ..datasets.continuous import ContinuousDatasets
 from ..exceptions import ConfigurationException
 from ..types.continuous import ContinuousAnalysis, ContinuousModelSettings, ContinuousResult
 from ..types.priors import ModelPriors, get_continuous_prior
+from ..utils import multi_lstrip
 from .base import BmdModel, BmdModelSchema, InputModelSettings
 
 
 class BmdModelContinuous(BmdModel):
     bmd_model_class: ContinuousModel
+
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+
+        session = getattr(self, "session", None)
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and session is not None:
+            summary = session.get_model_average_summary_for_model(self)
+            if summary is not None:
+                return multi_lstrip(
+                    f"""
+                Modeling Summary:
+                {self.results.tbl()}
+
+                Model Parameters:
+                {self.results.parameters.tbl()}
+
+                LOUD Model-Average Weights:
+                Prior Weight: {summary.prior}
+                Posterior Weight: {summary.posterior}
+
+                Model-specific BMD values shown above are taken from the LOUD
+                model averaging result for this model. Standalone parameter,
+                goodness-of-fit, and likelihood details are shown only when they
+                are available from the individual-model execution path.
+                """
+                )
+
+        return super().results_text()
 
     def get_model_settings(
         self,
@@ -119,14 +149,13 @@ class BmdModelContinuous(BmdModel):
     def get_param_names(self) -> list[str]:
         mp = self.settings.priors
         if isinstance(mp, ModelPriors) and mp.prior_class is PriorClass.bayesian_loud:
-            names = [p.name for p in mp.priors]
+            names = list(self.bmd_model_class.params)
             if self.__class__.__name__ == "ExponentialM3":
                 names = [n for n in names if n != "c"]
 
-            var_names = [p.name for p in (mp.variance_priors or [])]
-            if self.settings.disttype != DistType.normal_ncv and var_names:
-                var_names = [var_names[0]]
-
+            var_names = (
+                ["alpha", "rho"] if self.settings.disttype == DistType.normal_ncv else ["alpha"]
+            )
             return names + var_names
         names = list(self.bmd_model_class.params)
         names.extend(self.get_variance_param_names())
@@ -139,7 +168,7 @@ class BmdModelContinuous(BmdModel):
             return [self.bmd_model_class.variance_params[1]]
 
     def get_gof_pvalue(self) -> float:
-        return self.results.tests.p_values[3]
+        return self.results.tests.p_value(3)
 
     def get_priors_list(self) -> list[list]:
         degree = self.settings.degree if self.degree_required else None

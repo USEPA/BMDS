@@ -5,10 +5,10 @@ from copy import copy, deepcopy
 from itertools import cycle
 from typing import Any, ClassVar
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import matplotlib.pyplot as plt
 from docx.shared import Pt
 
 from . import __version__, bmdscore, constants, plotting
@@ -26,6 +26,7 @@ from .models import continuous as c3
 from .models import dichotomous as d3
 from .models import nested_dichotomous as nd3
 from .models.base import BmdModel, BmdModelAveraging, BmdModelAveragingSchema, BmdModelSchema
+from .plotting.LOUD import get_model_average_figures
 from .recommender import Recommender, RecommenderSettings
 from .reporting.styling import (
     Report,
@@ -41,7 +42,6 @@ from .reporting.styling import (
     write_model,
     write_models,
 )
-from .plotting.LOUD import get_model_average_figures
 from .selected import SelectedModel
 from .types import session as schema
 
@@ -113,6 +113,11 @@ class Session:
         Models.ExponentialM3,
         Models.ExponentialM5,
     )
+    continuous_disttype_suffixes: ClassVar = {
+        DistType.normal: "CV",
+        DistType.normal_ncv: "NCV",
+        DistType.log_normal: "Lognormal",
+    }
 
     def _ensure_continuous_ma_models(
         self,
@@ -141,8 +146,12 @@ class Session:
                 else:
                     model_settings = deepcopy(settings)
                     model_settings["disttype"] = dt
-                    model_settings.setdefault("name", f"{Model.__name__} ({suffix[dt]})")
-                    self.models.append(Model(self.dataset, settings=model_settings))
+                    model_settings.setdefault(
+                        "name", f"{Model.bmd_model_class.verbose} ({suffix[dt]})"
+                    )
+                    instance = Model(self.dataset, settings=model_settings)
+                    instance.session = self
+                    self.models.append(instance)
 
         # BMDS models
         _add(c3.Power, [DistType.normal, DistType.normal_ncv])
@@ -186,6 +195,7 @@ class Session:
         self.models: list[BmdModel] = []
         self.ma_weights: npt.NDArray | None = None
         self.model_average: BmdModelAveraging | None = None
+        self._exclude_additive_hill_from_default_efsa_ma: bool = False
         self.weight_option: int = 1
         self.recommendation_settings: RecommenderSettings | None = recommendation_settings
         self.recommender: Recommender | None = None
@@ -261,6 +271,7 @@ class Session:
             raise ValueError("include_efsa is only supported for continuous datasets.")
 
         if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
+            self._exclude_additive_hill_from_default_efsa_ma = bool(include_efsa)
             # BMDS CMA defaults (with variance variants)
             self._ensure_continuous_ma_models(settings=settings, include_efsa=include_efsa)
 
@@ -304,8 +315,20 @@ class Session:
                 self.add_model(name, settings=model_settings)
 
     def add_model(self, name, settings=None):
+        if (
+            self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL)
+            and isinstance(settings, dict)
+            and "disttype" in settings
+            and not settings.get("name")
+        ):
+            settings = deepcopy(settings)
+            suffix = self.continuous_disttype_suffixes.get(settings["disttype"])
+            if suffix:
+                Model = self.model_options[self.dataset.dtype][name]
+                settings["name"] = f"{Model.bmd_model_class.verbose} ({suffix})"
         Model = self.model_options[self.dataset.dtype][name]
         instance = Model(dataset=self.dataset, settings=settings)
+        instance.session = self
         self.models.append(instance)
 
     def set_ma_weights(self, weights: npt.ArrayLike | None = None):
@@ -402,9 +425,8 @@ class Session:
                     "Call add_default_bayesian_models(...) or add models manually before add_model_averaging()."
                 )
 
-            # if EFSA/PROAST suite is present, remove additive Hill from MA
-            has_efsa = any(isinstance(m, allowed_efsa) for m in ma_models)
-            if has_efsa:
+            # Only the default LOUD+EFSA session builder excludes additive Hill.
+            if self._exclude_additive_hill_from_default_efsa_ma:
                 ma_models = [m for m in ma_models if not isinstance(m, c3.Hill)]
 
             prior_classes = {m.settings.priors.prior_class for m in ma_models}
@@ -479,6 +501,19 @@ class Session:
 
     def dll_version(self) -> str:
         return bmdscore.version()
+
+    def get_model_average_summary_for_model(self, model):
+        if self.model_average is None or not self.model_average.has_results:
+            return None
+
+        try:
+            idx = next(
+                i for i, ma_model in enumerate(self.model_average.models) if ma_model is model
+            )
+        except StopIteration:
+            return None
+
+        return self.model_average.results.model_summary(idx, model.settings.alpha)
 
     # serializing
     # -----------
@@ -599,6 +634,8 @@ class Session:
         all_models: bool = False,
         bmd_cdf_table: bool = False,
         session_inputs_table: bool = False,
+        parameter_tables: bool = True,
+        parameter_visualizations: bool = False,
     ):
         """Return a Document object with the session executed
 
@@ -612,6 +649,9 @@ class Session:
             session_inputs_table (bool, default False): Write an inputs table for a session,
                 assuming a single model's input settings are representative of all models in a
                 session, which may not always be true
+            parameter_tables (bool, default True): Include grouped LOUD parameter tables
+            parameter_visualizations (bool, default False): Include grouped LOUD parameter
+                visualization figures in the report
 
         Returns:
             A python docx.Document object with content added.
@@ -662,10 +702,6 @@ class Session:
                 )
                 plt.close(figs["posterior"])
 
-                add_paragraph_with_space_before("Trace plot of model-averaged BMD")
-                add_paragraph_with_space_before(add_mpl_figure(report.document, figs["trace"], 6))
-                plt.close(figs["trace"])
-
                 add_paragraph_with_space_before(
                     "Overlay of model-specific and model-averaged BMD distributions"
                 )
@@ -675,17 +711,23 @@ class Session:
                 add_paragraph_with_space_before("Summary statistics for BMD and model-averaged BMD")
                 df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
 
-                add_paragraph_with_space_before("Median-focused summary including model parameters")
-                df_to_table(report, figs["multi_summary"].reset_index().fillna(""))
+                for group in figs["parameter_groups"]:
+                    group_figure = group.get("trace_figure")
 
-                trace_names = ", ".join(str(name) for name in figs["trace_multi_var_names"])
-                add_paragraph_with_space_before(
-                    f"Trace diagnostics for the main model-averaging variables: {trace_names}"
-                )
-                add_paragraph_with_space_before(
-                    add_mpl_figure(report.document, figs["trace_multi"], 6.5)
-                )
-                plt.close(figs["trace_multi"])
+                    if parameter_tables:
+                        add_paragraph_with_space_before(f"{group['name']} model parameters")
+                        df_to_table(report, group["summary"].fillna(""))
+
+                    if parameter_visualizations and group_figure is not None:
+                        add_paragraph_with_space_before(
+                            f"{group['name']} model parameter visualizations"
+                        )
+                        add_paragraph_with_space_before(
+                            add_mpl_figure(report.document, group_figure, 7.0)
+                        )
+
+                    if group_figure is not None:
+                        plt.close(group_figure)
 
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)

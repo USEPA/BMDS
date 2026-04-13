@@ -11,11 +11,11 @@ from pydantic import BaseModel
 
 from .. import plotting
 from ..constants import BmdModelSchema as BmdModelClass
-from ..constants import Dtype
+from ..constants import ContinuousModelChoices, DistType, Dtype, PriorClass
 from ..datasets.base import DatasetType
-from ..types.priors import ModelPriors, priors_tbl as priors_tbl_fn
+from ..types.priors import ModelPriors
+from ..types.priors import priors_tbl as priors_tbl_fn
 from ..utils import get_version, multi_lstrip
-from ..constants import DistType, PriorClass, ContinuousModelChoices
 
 if TYPE_CHECKING:
     from ..session import Session
@@ -27,10 +27,37 @@ logger = logging.getLogger(__name__)
 InputModelSettings = dict | BaseModel | None
 
 
-def cdf_df(arr: np.ndarray) -> pd.DataFrame:
-    df = pd.DataFrame(data=arr.T, columns=["BMD", "Percentile"])
-    df["Percentile"] = df.Percentile * 100
-    return df[["Percentile", "BMD"]]
+def cdf_df(arr: np.ndarray, n_points: int = 200) -> pd.DataFrame:
+    arr = np.asarray(arr, dtype=float)
+
+    # Existing BMDS-style CDF format:
+    # row 0 = BMD values, row 1 = cumulative probabilities
+    if arr.ndim == 2 and 2 in arr.shape:
+        if arr.shape[0] == 2:
+            values = arr.T
+        else:
+            values = arr
+        df = pd.DataFrame(data=values, columns=["BMD", "Percentile"])
+        df["Percentile"] = df["Percentile"] * 100
+        return df[["Percentile", "BMD"]]
+
+    # LOUD posterior draws: convert raw draws into an empirical CDF with n_points rows
+    if arr.ndim == 1:
+        draws = arr[np.isfinite(arr)]
+        if draws.size == 0:
+            return pd.DataFrame(columns=["Percentile", "BMD"])
+
+        percentiles = np.linspace(0.5, 99.5, n_points)
+        bmd_values = np.percentile(draws, percentiles)
+
+        return pd.DataFrame(
+            {
+                "Percentile": percentiles,
+                "BMD": bmd_values,
+            }
+        )
+
+    raise ValueError(f"Unsupported CDF input shape: {arr.shape}")
 
 
 def cdf_plot(
@@ -75,6 +102,7 @@ class BmdModel(abc.ABC):
         self.settings = self.get_model_settings(dataset, settings)
         self.structs: NamedTuple | None = None  # used for model averaging
         self.results: BaseModel | None = None
+        self.session: Session | None = None
 
     def name(self) -> str:
         # return name of model; may be setting-specific
@@ -105,11 +133,16 @@ class BmdModel(abc.ABC):
         version = f"Version: pybmds {version.python} (bmdscore {version.dll})"
         settings = self.model_settings_text()
         if self.has_results:
-            results = self.results.text(self.dataset, self.settings)
+            results = self.results_text()
         else:
             results = "Model has not successfully executed; no results available."
 
         return "\n\n".join([title, version, settings, results]) + "\n"
+
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+        return self.results.text(self.dataset, self.settings)
 
     def priors_tbl(self) -> str:
         """Show prior or parameter boundary testing."""

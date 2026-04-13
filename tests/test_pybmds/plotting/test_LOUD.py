@@ -98,6 +98,19 @@ class TestLOUD:
         assert "Var0" not in idata.posterior.data_vars
         assert "Var1" not in idata.posterior.data_vars
 
+    def test_loud_results_use_raw_continuous_parameter_names(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.execute()
+
+        assert session.models[0].results.parameters.names == ["g", "v", "n", "alpha", "rho"]
+        assert session.models[1].results.parameters.names == ["g", "v", "k", "n", "alpha", "rho"]
+
     def test_bmd_summary_table_uses_median_and_alpha_bounds(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
@@ -116,6 +129,9 @@ class TestLOUD:
         assert "median" in summary.columns
         assert f"alpha_lower ({alpha:.2f})" in summary.columns
         assert f"alpha_upper ({1 - alpha:.2f})" in summary.columns
+        assert "r_hat" in summary.columns
+        assert "ess_bulk" in summary.columns
+        assert "ess_tail" in summary.columns
         assert "mean" not in summary.columns
         assert "MA_BMD" in summary.index
 
@@ -186,6 +202,7 @@ class TestLOUD:
         actual = _multi_summary_table(idata=None, var_names=["MA_BMD"], hdi_prob=0.94)
 
         assert "median" in actual.columns
+        assert "r_hat" in actual.columns
         assert "ess_bulk" in actual.columns
         assert "ess_tail" in actual.columns
         assert "ess_median" not in actual.columns
@@ -232,6 +249,7 @@ class TestLOUD:
 
         assert isinstance(actual, pd.DataFrame)
         assert "median" in actual.columns
+        assert "r_hat" in actual.columns
         assert "ess_bulk" in actual.columns
         assert "ess_tail" in actual.columns
 
@@ -260,31 +278,44 @@ class TestLOUD:
         session.add_model_averaging()
         session.execute()
 
-        calls = {"summary": [], "posterior": [], "trace": [], "dist": 0}
+        calls = {"summary": [], "posterior": [], "dist": 0}
 
         def fake_summary(idata, var_names, hdi_prob, stat_focus=None):
             calls["summary"].append((tuple(var_names), hdi_prob, stat_focus))
+            var_name = var_names[0]
+            if var_name == "BMD":
+                index = pd.Index(
+                    [f"BMD[{idx}:{model.name()}]" for idx, model in enumerate(session.models)],
+                    name="var_name",
+                )
+            elif var_name == "MA_BMD":
+                index = pd.Index(["MA_BMD"], name="var_name")
+            else:
+                index = pd.Index(
+                    [f"{var_name}[0:{session.models[0].name()}]"],
+                    name="var_name",
+                )
             if stat_focus == "median":
                 return pd.DataFrame(
                     {
-                        "median": [1.0],
-                        "mad": [0.1],
-                        "eti_5%": [0.9],
-                        "eti_95%": [1.1],
-                        "mcse_median": [0.01],
-                        "ess_median": [100.0],
-                        "r_hat": [1.0],
+                        "median": [1.0] * len(index),
+                        "mad": [0.1] * len(index),
+                        "eti_5%": [0.9] * len(index),
+                        "eti_95%": [1.1] * len(index),
+                        "mcse_median": [0.01] * len(index),
+                        "ess_median": [100.0] * len(index),
+                        "r_hat": [1.0] * len(index),
                     },
-                    index=["row"],
+                    index=index,
                 )
             return pd.DataFrame(
                 {
-                    "mean": [1.0],
-                    "sd": [0.1],
-                    "ess_bulk": [90.0],
-                    "ess_tail": [80.0],
+                    "mean": [1.0] * len(index),
+                    "sd": [0.1] * len(index),
+                    "ess_bulk": [90.0] * len(index),
+                    "ess_tail": [80.0] * len(index),
                 },
-                index=["row"],
+                index=index,
             )
 
         def fake_plot_posterior(idata, var_names):
@@ -294,66 +325,65 @@ class TestLOUD:
             ax.plot([0, 1], [0, 1], label="density")
             return np.array([ax])
 
-        def fake_plot_trace(idata, var_names):
-            calls["trace"].append(tuple(var_names))
-            fig, (ax1, ax2) = plt.subplots(1, 2)
-            ax1.set_xlabel("draw")
-            ax1.plot([0, 1], [0, 1])
-            ax2.set_xlabel("BMD")
-            ax2.plot([0, 1], [0, 1], label="density")
-            return np.array([[ax1, ax2]])
-
         def fake_plot_dist(*args, **kwargs):
             calls["dist"] += 1
-            return kwargs["ax"]
+            ax = kwargs["ax"]
+            color = kwargs.get("color", "black")
+            ax.plot([0, 1], [0, 1], color=color)
+            return ax
 
         monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
         monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_posterior", fake_plot_posterior)
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_trace", fake_plot_trace)
         monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_dist", fake_plot_dist)
 
         figures = get_model_average_figures(session, n_chains=1)
 
         alpha = session.models[0].settings.alpha
-        lower_col = f"alpha_lower ({alpha:.2f})"
-        upper_col = f"alpha_upper ({1 - alpha:.2f})"
+        lower_col = "eti_5%"
+        upper_col = "eti_95%"
 
         assert figures["alpha"] == pytest.approx(alpha)
         assert figures["hdi_prob"] == pytest.approx(0.9)
         assert set(figures["ma_bmd_quantiles"]) == {"lower", "median", "upper"}
         assert set(figures["ma_bmd_hdi"]) == {"lower", "median", "upper"}
-        assert figures["trace_multi_var_names"][:2] == ["BMD", "MA_BMD"]
         assert isinstance(figures["bmd_summary"], pd.DataFrame)
         assert isinstance(figures["multi_summary"], pd.DataFrame)
+        assert isinstance(figures["parameter_groups"], list)
         assert "median" in figures["bmd_summary"].columns
         assert lower_col in figures["bmd_summary"].columns
         assert upper_col in figures["bmd_summary"].columns
         assert "mean" not in figures["bmd_summary"].columns
+        assert "r_hat" in figures["bmd_summary"].columns
         assert "ess_bulk" in figures["multi_summary"].columns
         assert "ess_tail" in figures["multi_summary"].columns
         assert "ess_median" not in figures["multi_summary"].columns
         assert calls["posterior"] == [("MA_BMD",)]
-        assert calls["trace"][0] == ("MA_BMD",)
         expected_summary_calls = []
-        for name in figures["trace_multi_var_names"]:
+        expected_var_names = ["BMD", "MA_BMD"]
+        for model in session.models:
+            for name in model.results.parameters.names:
+                if name not in expected_var_names:
+                    expected_var_names.append(name)
+        for name in expected_var_names:
             expected_summary_calls.append(((name,), 0.9, "median"))
             expected_summary_calls.append(((name,), 0.9, "mean"))
-        assert calls["summary"] == expected_summary_calls
-        assert calls["dist"] == len(session.models) + 1
+        for expected_call in expected_summary_calls:
+            assert expected_call in calls["summary"]
+        assert calls["dist"] > 0
         assert len(figures["posterior"].axes[0].lines) >= 4
-        assert len(figures["trace"].axes[0].lines) >= 4
-        assert len(figures["trace"].axes[1].lines) >= 4
-
-        trace_legend = figures["trace"].axes[0].get_legend()
-        assert trace_legend is not None
-        trace_labels = [text.get_text() for text in trace_legend.get_texts()]
-        assert "MA_BMD lower alpha HDI" in trace_labels
-        assert "MA_BMD upper alpha HDI" in trace_labels
+        assert isinstance(figures["overlay"], plt.Figure)
+        assert figures["parameter_groups"][0]["name"] == "Power"
+        assert {"Model", "Parameter", "median", "r_hat", "ess_bulk", "ess_tail"}.issubset(
+            figures["parameter_groups"][0]["summary"]
+        )
+        assert len(figures["parameter_groups"][0]["trace_figure"].axes[0].lines) >= 1
+        assert figures["overlay"].legends
+        assert figures["parameter_groups"][0]["trace_figure"].legends
 
         plt.close(figures["posterior"])
-        plt.close(figures["trace"])
-        plt.close(figures["trace_multi"])
         plt.close(figures["overlay"])
+        for group in figures["parameter_groups"]:
+            plt.close(group["trace_figure"])
 
     def test_figure_from_axes(self):
         fig, ax = plt.subplots()

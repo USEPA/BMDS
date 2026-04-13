@@ -1,17 +1,26 @@
+import warnings
 from typing import Self
 
 import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel
 
-from .. import bmdscore
+from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
-from .common import inspect_cpp_obj
-from .continuous import NumpyFloatArray
+from .common import clean_array, inspect_cpp_obj
+from .continuous import ContinuousParameters, NumpyFloatArray
 
 
 class ModelAverageResult(BaseModel):
     pass
+
+
+class ModelAveragePerModelSummary(BaseModel):
+    bmdl: float
+    bmd: float
+    bmdu: float
+    prior: float
+    posterior: float
 
 
 class ContinuousModelAverage:
@@ -62,6 +71,9 @@ class ContinuousModelAverage:
         bmdsRes.BMD_MA = -9999.0
         bmdsRes.BMDL_MA = -9999.0
         bmdsRes.BMDU_MA = -9999.0
+        bmdsRes.BMD = np.full(len(models), -9999.0)
+        bmdsRes.BMDL = np.full(len(models), -9999.0)
+        bmdsRes.BMDU = np.full(len(models), -9999.0)
         bmdsRes.ebUpper = np.full(analysis.n, -9999)
         bmdsRes.ebLower = np.full(analysis.n, -9999)
 
@@ -198,4 +210,82 @@ class ContinuousModelAverageResult(ModelAverageResult):
         d.update(
             model_prior=self.priors[index],
             model_posterior=self.posteriors[index],
+        )
+
+    def model_summary(self, index: int, alpha: float) -> ModelAveragePerModelSummary:
+        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
+        draws = draws[np.isfinite(draws)]
+
+        prior = float(self.priors[index])
+        posterior = float(self.posteriors[index])
+
+        if draws.size == 0:
+            return ModelAveragePerModelSummary(
+                bmdl=-9999.0,
+                bmd=-9999.0,
+                bmdu=-9999.0,
+                prior=prior,
+                posterior=posterior,
+            )
+
+        return ModelAveragePerModelSummary(
+            bmdl=float(np.quantile(draws, alpha)),
+            bmd=float(np.quantile(draws, 0.5)),
+            bmdu=float(np.quantile(draws, 1 - alpha)),
+            prior=prior,
+            posterior=posterior,
+        )
+
+    def sync_model_result(self, model, index: int) -> None:
+        """
+        Update a bayesian LOUD model's public result object so downstream callers
+        can use the per-model outputs stored in the LOUD MA result container.
+        """
+        if model.results is None:
+            return
+
+        summary = self.model_summary(index, model.settings.alpha)
+        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
+        draws = draws[np.isfinite(draws)]
+        parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
+        parameters = model.results.parameters
+        if parm_draws.size:
+            parameters = ContinuousParameters.from_loud_draws(model, parm_draws)
+
+        fit = model.results.fit.model_copy(update={"bmd_dist": draws})
+
+        extra_values = [summary.bmd] if summary.bmd >= 0 else []
+        dr_x = model.dataset.dose_linspace(extra_values=extra_values)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*invalid value encountered.*")
+            warnings.filterwarnings("ignore", message=".*divide by zero encountered.*")
+            dr_y = clean_array(model.dr_curve(dr_x, parameters.values))
+
+        xs = np.asarray([summary.bmdl, summary.bmd, summary.bmdu], dtype=float)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*invalid value encountered.*")
+            warnings.filterwarnings("ignore", message=".*divide by zero encountered.*")
+            critical_ys = clean_array(model.dr_curve(xs, parameters.values))
+        critical_ys[critical_ys <= 0] = constants.BMDS_BLANK_VALUE
+
+        plotting = model.results.plotting.model_copy(
+            update={
+                "dr_x": dr_x,
+                "dr_y": dr_y,
+                "bmdl_y": float(critical_ys[0]),
+                "bmd_y": float(critical_ys[1]),
+                "bmdu_y": float(critical_ys[2]),
+            }
+        )
+
+        model.results = model.results.model_copy(
+            update={
+                "bmdl": summary.bmdl,
+                "bmd": summary.bmd,
+                "bmdu": summary.bmdu,
+                "has_completed": True,
+                "fit": fit,
+                "parameters": parameters,
+                "plotting": plotting,
+            }
         )
