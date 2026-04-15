@@ -4563,7 +4563,7 @@ void pythonBMDSLoud_dev(
   }
 
   bool isIncreasing = pyMA->pyCA.isIncreasing;
-  if (&pyMA->pyCA.detectAdvDir) {
+  if (pyMA->pyCA.detectAdvDir) {
     // this will override isIncreasing
     determineAdvDir(&pyMA->pyCA);
   }
