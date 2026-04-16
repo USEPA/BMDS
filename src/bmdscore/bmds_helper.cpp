@@ -3263,7 +3263,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       case cont_model::l_lognormal_efsa:
       case cont_model::l_gamma_efsa:
       case cont_model::l_lms_efsa:
-        init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->s0sq;
+        init << loudIn->lmean0, loudIn->lmean1, 1.5, 2.0, loudIn->ssq;
         break;
       default:
         std::cout << "error in init for fit_Loud" << std::endl;
