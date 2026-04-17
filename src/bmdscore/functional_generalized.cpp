@@ -725,6 +725,11 @@ Eigen::VectorXd continuous_gamma_efsa_transform(
   double b = params[2];
   double d = params[3];
 
+  // ensure shape parm > 0
+  if (d <= 0) {
+    d = 1e-8;
+  }
+
   // double pg = R::pgamma(b, d, 1.0, true, false);  // pgamma(b, d, scale=1)
   double pg = gsl_cdf_gamma_P(b, d, 1.0);  // pgamma(b, d, scale=1)
   double c = (m1 - m0) / (m0 * pg) + 1.0;
@@ -751,6 +756,11 @@ Eigen::VectorXd continuous_gamma_efsa_transform_log(
   double m1 = std::exp(params[1]);
   double b = params[2];
   double d = params[3];
+
+  // ensure shape parm > 0
+  if (d <= 0) {
+    d = 1e-8;
+  }
 
   // double pg = R::pgamma(b, d, 1.0, true, false);
   double pg = gsl_cdf_gamma_P(b, d, 1.0);
