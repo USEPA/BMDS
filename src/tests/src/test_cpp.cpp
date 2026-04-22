@@ -21,6 +21,7 @@ void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
 void runPythonContLoud();
+void runPythonDichoLoud();
 void runPythonMultitumorAnalysis();
 void runTestMultitumorModel();
 void runPythonNestedAnalysis();
@@ -51,7 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  runPythonContLoud();
+  //  runPythonContLoud();
+  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2323,6 +2325,185 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
   }
 
   return ret;
+}
+
+std::vector<std::vector<double>> createDefaultDichoPriors(struct python_dichotomousMA_analysis *pyMA
+) {
+  std::vector<double> rowA = {4, 1.0, 1.0, BMDS_MISSING, 1};
+  std::vector<double> rowB = {4, 1.5, 1.0, BMDS_MISSING, 1};
+  std::vector<double> rowC = {4, 2.5, 1.0, BMDS_MISSING, 1};
+  std::vector<double> rowD = {3, 1, 1, BMDS_MISSING, 1};
+  std::vector<double> rowE1 = {2, log(2.0), 0.5, BMDS_MISSING, 1};
+  std::vector<double> rowE2 = {2, log(2.0), sqrt(0.18), BMDS_MISSING, 1};
+  std::vector<double> rowF = {3, 0.5, 0.5, BMDS_MISSING, 1};
+  std::vector<double> rowG = {1, 0, 0.5, BMDS_MISSING, 1};
+
+  std::vector<std::vector<double>> ret;
+
+  for (int i = 0; i < pyMA->models.size(); i++) {
+    std::vector<std::vector<double>> tmpPrior;
+
+    switch (pyMA->models[i]) {
+      case (dich_model::d_hill):
+        tmpPrior.push_back(rowF);
+        tmpPrior.push_back(rowF);
+        tmpPrior.push_back(rowG);
+        tmpPrior.push_back(rowE1);
+        break;
+      case (dich_model::d_gamma):
+      case (dich_model::d_weibull):
+        tmpPrior.push_back(rowA);
+        tmpPrior.push_back(rowB);
+        tmpPrior.push_back(rowC);
+        tmpPrior.push_back(rowE2);
+        break;
+      case (dich_model::d_logistic):
+      case (dich_model::d_probit):
+      case (dich_model::d_qlinear):
+        tmpPrior.push_back(rowA);
+        tmpPrior.push_back(rowB);
+        tmpPrior.push_back(rowC);
+        break;
+      case (dich_model::d_loglogistic):
+      case (dich_model::d_logprobit):
+        tmpPrior.push_back(rowA);
+        tmpPrior.push_back(rowB);
+        tmpPrior.push_back(rowC);
+        tmpPrior.push_back(rowE1);
+        break;
+      case (dich_model::d_multistage):
+        tmpPrior.push_back(rowA);
+        tmpPrior.push_back(rowB);
+        tmpPrior.push_back(rowC);
+        tmpPrior.push_back(rowD);
+        break;
+    }
+
+    // flatten the vector
+    int priorCols = pyMA->prior_cols[i];
+    int numEntries = priorCols * tmpPrior.size();
+    std::vector<double> flatPrior(numEntries);
+    int count = 0;
+    for (int k = 0; k < priorCols; k++) {
+      for (int j = 0; j < tmpPrior.size(); j++) {
+        flatPrior[count] = tmpPrior[j][k];
+        count++;
+      }
+    }
+    ret.push_back(flatPrior);
+  }
+
+  return ret;
+}
+
+void runPythonDichoLoud() {
+  // enum dich_model {
+  // d_hill = 1,
+  // d_gamma = 2,
+  // d_logistic = 3,
+  // d_loglogistic = 4,
+  // d_logprobit = 5,
+  // d_multistage = 6,
+  // d_probit = 7,
+  // d_qlinear = 8,
+  // d_weibull = 9
+
+  std::vector<int> models = {8, 8};
+
+  //  D100
+  double D[] = {0, 5.1, 21.9, 46.5};
+  double Y[] = {5, 5, 9, 17};
+  double N[] = {60, 60, 60, 60};
+
+  int BMD_type = 1;  // 1 = extra ; added otherwise
+  double BMR = 0.1;
+  double alpha = 0.05;
+  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+
+  int iter = 50;
+  int burnin = 20;
+
+  /////////////////////////////////////////////////
+  ////END USER INPUT
+  ////////////////////////////////////////////////////
+
+  int datatype = l_dichotomous;
+
+  int numDataRows = sizeof(D) / sizeof(D[0]);
+
+  // check data array sizes for consistency
+  size_t numElementsY = sizeof(Y) / sizeof(Y[0]);
+  size_t numElementsN = sizeof(N) / sizeof(N[0]);
+  if (numDataRows != numElementsY || numElementsY != numElementsN) {
+    printf("Number of data elements are not consistent\nExiting Code\n");
+    exit(-1);
+  }
+
+  int nmodels = models.size();
+
+  struct python_dichotomous_analysis anal;
+  anal.BMD_type = BMD_type;
+  anal.BMR = BMR;
+  anal.alpha = alpha;
+  anal.Y.assign(Y, Y + numDataRows);
+  anal.n_group.assign(N, N + numDataRows);
+  anal.doses.assign(D, D + numDataRows);
+  anal.n = numDataRows;
+  anal.samples = iter;
+  anal.burnin = burnin;
+
+  int prCols = 5;
+
+  std::vector<int> priorCols(nmodels, prCols);
+  std::vector<int> numParms;
+  std::vector<std::vector<double>> pr;
+  double *prArray;
+
+  ///////////
+  std::vector<double> curPR;
+  int prSize;
+
+  struct python_dichotomousMA_analysis ma_info;
+  ma_info.actual_parms = numParms;
+  ma_info.prior_cols = priorCols;
+  ma_info.models = models;
+  ma_info.datatype = datatype;
+  ma_info.weightOption = weightOption;
+  // ma_info.modelPriors = modelPriors;
+  ma_info.nmodels = nmodels;
+  ma_info.pyDA = anal;
+  // assign default priors
+  ma_info.priors = createDefaultDichoPriors(&ma_info);
+
+  for (int i = 0; i < nmodels; i++) {
+    int prSize = ma_info.priors[i].size();
+    numParms.push_back(prSize / prCols);
+  }
+
+  std::vector<python_dichotomous_model_result> res(numModels);
+  for (int i = 0; i < nmodels; i++) {
+    res[i].model = models[i];
+    res[i].nparms = numParms[i];
+  }
+
+  struct python_dichotomousMA_result ma_res;
+  ma_res.nmodels = nmodels;
+  ma_res.models = res;
+  // ma_res.dist_numE = dist_numE;
+
+  struct BMDSMA_results bmdsRes;
+  bmdsRes.BMD.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(numModels, BMDS_MISSING);
+  bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
+  bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
+  bmdsRes.BMD_MA = BMDS_MISSING;
+  bmdsRes.BMDL_MA = BMDS_MISSING;
+  bmdsRes.BMDU_MA = BMDS_MISSING;
+
+  ma_res.bmdsRes = bmdsRes;
+
+  pythonBMDSLoud_dich(&ma_info, &ma_res);
 }
 
 void runPythonContLoud() {

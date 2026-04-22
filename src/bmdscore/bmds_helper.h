@@ -298,7 +298,12 @@ struct python_dichotomousMA_analysis {
                                     // presently there are only 5
   std::vector<int> models;          // list of models this is defined by dich_model.
   std::vector<double> modelPriors;  // prior probability on the model
+
   struct python_dichotomous_analysis pyDA;
+
+  // LOUD properties
+  int weightOption;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;      // is this needed????                  // uses loud_datatype enum
 };
 
 struct python_dichotomousMA_result {
@@ -795,6 +800,10 @@ void fit_clms_efsa(
     const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
 );
 
+void fit_qlinear(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 
 // void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -839,21 +848,29 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
+#ifdef __cplusplus
+}
+#endif
+
 void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
-void pythonBMDSLoud_dev(
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud_dich_entry(
+    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
+);
+
+void pythonBMDSLoud_cont(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void pythonBMDSLoud_dich(
+    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
 );
 
 void pythonBMDSContLoud_dummy(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
 
@@ -886,9 +903,13 @@ double calcLoudBMD(
     bool isIncreasing, double tailProb
 );
 
+double calcLoudBMD(
+    binomialBMD *model, Eigen::MatrixXd theta, int BMD_type, double bmr, Eigen::MatrixXd X
+);
+
 double findMedianVal(std::vector<double> dist);
 
-int getLoudModelType(int model, int distType);
+int getLoudModelType(int model, int distType, int dataType);
 
 int getLoudLLType(int distType, int dataType);
 

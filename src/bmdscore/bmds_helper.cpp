@@ -2916,7 +2916,7 @@ Eigen::VectorXd loud_likelihood(
     }
   } else if (datatype == loud_datatype::l_dichotomous) {
     for (int i = 0; i < mu.rows(); i++) {
-      loglik(i) = log(gsl_ran_binomial_pdf(parms(i, 0), mu(i), parms(i, 1)));
+      loglik(i) = log(gsl_ran_binomial_pdf(parms(0), mu(i), parms(1)));
     }
   } else {
     std::cout << "Error in loud_likelihood.  Unknown datatype." << std::endl;
@@ -2930,7 +2930,7 @@ void bridge_sample(
     //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-  int model_typ = getLoudModelType(loudIn->model, loudIn->dist);
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
   // change from original bridgesource R code
@@ -2940,13 +2940,10 @@ void bridge_sample(
   int N = loudIn->Y.rows();
   Eigen::VectorXd mu(S);
   Eigen::MatrixXd loglik_mat(S, N);
-  //  std::cout<<"before loglik_mat"<<std::endl;
   for (int i = 0; i < S; i++) {
     mu = model_fun(R.row(i), loudIn->doses);
     loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
   }
-
-  //  std::cout<<"after loglik_mat"<<std::endl;
 
   double waic = BMDS_MISSING;
   if (loudIn->weightOption != 2) {
@@ -3104,75 +3101,112 @@ double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &row) {
   return B;
 }
 
-int getLoudModelType(int model, int distType) {
+int getLoudModelType(int model, int distType, int dataType) {
   int modelType = BMDS_MISSING;
-  switch (model) {
-    case cont_model::power:
-      if (distType == distribution::log_normal) {
-        std::cout << "log_normal dist not available for power model" << std::endl;
-      } else {
-        modelType = 103;
-      }
-      break;
-    case cont_model::exp_3:
-      if (distType == distribution::log_normal) {
-        modelType = 107;
-      } else {
-        modelType = 102;
-      }
-      break;
-    case cont_model::exp_5:
-      if (distType == distribution::log_normal) {
-        modelType = 105;
-      } else {
-        modelType = 104;
-      }
-      break;
-    case cont_model::hill:
-      if (distType == distribution::log_normal) {
-        std::cout << "log_normal dist not available for hill model" << std::endl;
-      } else {
-        modelType = 106;
-      }
-      break;
-    case cont_model::l_hill_efsa:
-      if (distType == distribution::log_normal) {
-        modelType = 109;
-      } else {
-        modelType = 108;
-      }
-      break;
-    case cont_model::l_invexp_efsa:
-      if (distType == distribution::log_normal) {
-        modelType = 111;
-      } else {
-        modelType = 110;
-      }
-      break;
-    case cont_model::l_lognormal_efsa:
-      if (distType == distribution::log_normal) {
-        modelType = 113;
-      } else {
-        modelType = 112;
-      }
-      break;
-    case cont_model::l_gamma_efsa:
-      if (distType == distribution::log_normal) {
-        modelType = 115;
-      } else {
-        modelType = 114;
-      }
-      break;
-    case cont_model::l_lms_efsa:
-      if (distType == distribution::log_normal) {
-        modelType = 117;
-      } else {
-        modelType = 116;
-      }
-      break;
-    default:
-      std::cout << "error in getModelAndLLType" << std::endl;
-      break;
+
+  if (dataType == loud_datatype::l_individual || dataType == loud_datatype::l_summary) {
+    switch (model) {
+      case cont_model::power:
+        if (distType == distribution::log_normal) {
+          std::cout << "log_normal dist not available for power model" << std::endl;
+        } else {
+          modelType = 103;
+        }
+        break;
+      case cont_model::exp_3:
+        if (distType == distribution::log_normal) {
+          modelType = 107;
+        } else {
+          modelType = 102;
+        }
+        break;
+      case cont_model::exp_5:
+        if (distType == distribution::log_normal) {
+          modelType = 105;
+        } else {
+          modelType = 104;
+        }
+        break;
+      case cont_model::hill:
+        if (distType == distribution::log_normal) {
+          std::cout << "log_normal dist not available for hill model" << std::endl;
+        } else {
+          modelType = 106;
+        }
+        break;
+      case cont_model::l_hill_efsa:
+        if (distType == distribution::log_normal) {
+          modelType = 109;
+        } else {
+          modelType = 108;
+        }
+        break;
+      case cont_model::l_invexp_efsa:
+        if (distType == distribution::log_normal) {
+          modelType = 111;
+        } else {
+          modelType = 110;
+        }
+        break;
+      case cont_model::l_lognormal_efsa:
+        if (distType == distribution::log_normal) {
+          modelType = 113;
+        } else {
+          modelType = 112;
+        }
+        break;
+      case cont_model::l_gamma_efsa:
+        if (distType == distribution::log_normal) {
+          modelType = 115;
+        } else {
+          modelType = 114;
+        }
+        break;
+      case cont_model::l_lms_efsa:
+        if (distType == distribution::log_normal) {
+          modelType = 117;
+        } else {
+          modelType = 116;
+        }
+        break;
+      default:
+        std::cout << "error in getLoudModelType" << std::endl;
+        break;
+    }
+  } else if (loud_datatype::l_dichotomous) {
+    switch (model) {
+      case (dich_model::d_qlinear):
+        modelType = 17;
+        break;
+      case (dich_model::d_logistic):
+        modelType = 10;
+        break;
+      case (dich_model::d_probit):
+        modelType = 16;
+        break;
+      case (dich_model::d_multistage):
+        modelType = 18;
+        break;
+      case (dich_model::d_loglogistic):
+        modelType = 14;
+        break;
+      case (dich_model::d_logprobit):
+        modelType = 15;
+        break;
+      case (dich_model::d_hill):
+        modelType = 13;
+        break;
+      case (dich_model::d_weibull):
+        modelType = 11;
+        break;
+      case (dich_model::d_gamma):
+        modelType = 12;
+        break;
+    }
+  } else if (loud_datatype::l_nested) {
+    std::cout << "Loud nested not implemented" << std::endl;
+  } else {
+    std::cout << "error in getLoudModelType" << std::endl;
   }
   return modelType;
 }
@@ -3202,13 +3236,119 @@ int getLoudLLType(int distType, int dataType) {
         std::cout << "invalid distType in getModelAndLLType" << std::endl;
       }
       break;
+      // Eigen::MatrixXd R = run_latentslice_functional_general(
+      //     loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
+      //     n_rounds, qtiles, LAM, pri_typ, ll_type
+      //);
+    case loud_datatype::l_dichotomous:
+      llType = 77;
+      break;
+    case loud_datatype::l_nested:
+      std::cout << "Loud nested not implemented" << std::endl;
+      break;
     default:
-      std::cout << "wrong dataType in getModelAndLLType" << std::endl;
+      std::cout << "wrong dataType in getLLType" << std::endl;
       break;
   }
   return llType;
 }
 
+// LOUD fits for dichotomous models
+void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
+  // Parameters needed for latent slice function
+  int pri_typ = 32;  // specifies neg_log_prior in run latent slice
+  int n_rounds = 2;
+  double LAM = 2.0;
+
+  int ll_type = getLoudLLType(loudIn->dist, loudIn->datatype);
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
+
+  Eigen::MatrixXd priorr = loudIn->priorr;
+  Eigen::VectorXd init(priorr.rows());
+  Eigen::MatrixXd diag = Eigen::VectorXd::Constant(priorr.rows(), 1.0).asDiagonal();
+  std::vector<bool> isNegative(priorr.rows());
+  for (int i = 0; i < isNegative.size(); i++) {
+    isNegative[i] = false;
+  }
+
+  switch (loudIn->model) {
+    case (dich_model::d_qlinear):
+      init << 0.25, 0.5, 1;
+      break;
+    case (dich_model::d_logistic):
+      init << 0.25, 0.5, 1.0;
+      break;
+    case (dich_model::d_probit):
+      init << 0.25, 0.5, 2;
+      break;
+    case (dich_model::d_multistage):
+      init << 0.25, 0.5, 0.5, 0.5;
+      break;
+    case (dich_model::d_loglogistic):
+      init << 1, 1.5, 10, 0.2;
+      break;
+    case (dich_model::d_logprobit):
+      init << 0.1, 1.5, 3, 1.5;
+      break;
+    case (dich_model::d_hill):
+      init << 0.25, 0.5, 3, 1.0;
+      break;
+    case (dich_model::d_weibull):
+      init << 0.25, 0.5, 3, 4;
+      break;
+    case (dich_model::d_gamma):
+      init << 1, 1, 1, 3;
+      break;
+  }
+
+  double startVal = 0.025;
+  double stopVal = 0.975;
+  double stepSize = 0.025;
+  double numStepsD = (stopVal - startVal) / stepSize + 1;
+  int numSteps = numStepsD;
+
+  Eigen::VectorXd qtiles(numSteps);
+
+  for (int i = 0; i < numSteps; i++) {
+    qtiles(i) = startVal + i * stepSize;
+  }
+
+  Eigen::MatrixXd R = run_latentslice_functional_general(
+      loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
+      n_rounds, qtiles, LAM, pri_typ, ll_type
+  );
+
+  loudOut->BMD.resize(R.rows());
+
+  switch (loudIn->model) {
+    case (dich_model::d_qlinear):
+      fit_qlinear(loudIn, loudOut, R);
+      break;
+    case (dich_model::d_logistic):
+      break;
+    case (dich_model::d_probit):
+      break;
+    case (dich_model::d_multistage):
+      break;
+    case (dich_model::d_loglogistic):
+      break;
+    case (dich_model::d_logprobit):
+      break;
+    case (dich_model::d_hill):
+      break;
+    case (dich_model::d_weibull):
+      break;
+    case (dich_model::d_gamma):
+      break;
+  }
+
+  bridge_sample(R, loudIn, loudOut, priorr, isNegative);
+
+  // pivotal pvalue
+  loudOut->pval = pivotal_pvalue(R, loudIn);
+}
+
+// LOUD fits for continuous models
 void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   // Parameters needed for latent slice function
   int pri_typ = 32;  // specifies neg_log_prior in run latent slice
@@ -3226,7 +3366,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   }
 
   int ll_type = getLoudLLType(loudIn->dist, loudIn->datatype);
-  int model_typ = getLoudModelType(loudIn->model, loudIn->dist);
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
 
   // Need to fix this for all models not just power
   if (loudIn->dist == distribution::log_normal) {
@@ -3303,6 +3443,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
     qtiles(i) = startVal + i * stepSize;
   }
 
+  std::cout << "calling run_latentslice" << std::endl;
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
@@ -3313,36 +3454,46 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   // end common code
 
+  std::cout << "calling model fits" << std::endl;
   switch (loudIn->model) {
     case cont_model::power:
+      std::cout << "fitting power model" << std::endl;
       fit_cpower(loudIn, loudOut, R);
       break;
     case cont_model::exp_3:
+      std::cout << "fitting exp3 model" << std::endl;
       fit_cexp3(loudIn, loudOut, R);
       break;
     case cont_model::exp_5:
+      std::cout << "fitting exp5 model" << std::endl;
       fit_cexp5(loudIn, loudOut, R);
       break;
     case cont_model::hill:
+      std::cout << "fitting hill model" << std::endl;
       fit_chill(loudIn, loudOut, R);
       break;
     case cont_model::l_hill_efsa:
+      std::cout << "fitting hill_efsa model" << std::endl;
       fit_chill_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_invexp_efsa:
+      std::cout << "fitting invexp_efsa model" << std::endl;
       fit_cinvexp_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_lognormal_efsa:
+      std::cout << "fitting lognormal_efsa model" << std::endl;
       fit_clog_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_gamma_efsa:
+      std::cout << "fitting gamma_efsa model" << std::endl;
       fit_cgamma_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_lms_efsa:
+      std::cout << "fitting lms_efsa model" << std::endl;
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
-
+  std::cout << "after model fits" << std::endl;
   // power only has normal model
   // ptr2 model_transform = choose_nonlinearity2(model_typ);
   // bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
@@ -3350,6 +3501,53 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   // pivotal pvalue
   loudOut->pval = pivotal_pvalue(R, loudIn);
+}
+
+void fit_qlinear(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  // how to calc mean
+  //  Eigen::MatrixXd mean_d;
+  //  Eigen::MatrixXd parms(3, 1);
+  //  mean_d = X_compute_mean<dich_qlinearModelNC>(loudIn->Y, loudIn->doses, parms);
+
+  int nparms = 2;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_qlinearModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_qlinearModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+    double g = p_zero;
+    double b = -1.0 * log((1 - p_one) / (1 - p_zero));
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
 }
 
 void fit_cpower(
@@ -4197,6 +4395,7 @@ double calcLoudBMD(
   return bmd;
 }
 
+// bmds normal models
 double calcLoudBMD(
     normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
     double tailProb
@@ -4230,6 +4429,7 @@ double calcLoudBMD(
   return bmd;
 }
 
+// bmds lognormal models
 double calcLoudBMD(
     lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
     double tailProb
@@ -4264,10 +4464,27 @@ double calcLoudBMD(
   return bmd;
 }
 
+// bmds dichotomous models
+double calcLoudBMD(
+    binomialBMD *model, Eigen::MatrixXd theta, int BMD_type, double bmr, Eigen::MatrixXd X
+) {
+  double bmd = BMDS_MISSING;
+
+  switch (BMD_type) {
+    case 1:  // extra
+      bmd = model->compute_BMD_EXTRA_NC(theta, bmr);
+      break;
+    default:  // added
+      bmd = model->compute_BMD_ADDED_NC(theta, bmr);
+      break;
+  }
+  return bmd;
+}
+
 double pivotal_pvalue(
     Eigen::MatrixXd &R, const struct fitInput *loudIn  // fitResult *loudOut,
 ) {
-  int model_typ = getLoudModelType(loudIn->model, loudIn->dist);
+  int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
   Eigen::MatrixXd Ruse = R.bottomRows(max(1, loudIn->iter - loudIn->burnin + 1));
@@ -4323,7 +4540,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
   // pythonBMDSContLoud_dummy(pyMA, pyRes);
-  pythonBMDSLoud_dev(pyMA, pyRes);
+  pythonBMDSLoud_cont(pyMA, pyRes);
+}
+
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud_dich_entry(
+    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
+) {
+  // pythonBMDSContLoud_dummy(pyMA, pyRes);
+  pythonBMDSLoud_dich(pyMA, pyRes);
 }
 
 // dummy results for Loud methods
@@ -4551,7 +4775,55 @@ Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols) {
   return prior;
 }
 
-void pythonBMDSLoud_dev(
+void pythonBMDSLoud_dich(
+    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
+) {
+  std::cout << "inside pythonBMDSLoud_dich" << std::endl;
+
+  // Eigen::VectorXd D(pyMA->pyDA.doses);
+  Eigen::VectorXd D1 =
+      Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.doses.data(), pyMA->pyDA.doses.size());
+  Eigen::VectorXd N =
+      Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.n_group.data(), pyMA->pyDA.n_group.size());
+  Eigen::VectorXd Y1 = Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.Y.data(), pyMA->pyDA.Y.size());
+  //   Eigen::VectorXd N(pyMA->pyDA.n_group);
+  //   Eigen::VectorXd Y1(pyMA->pyDA.Y);
+
+  Eigen::MatrixXd D(D1.size(), 1);
+  D.col(0) = D1;
+  Eigen::MatrixXd Y(Y1.size(), 2);
+  Y.col(0) = Y1;
+  Y.col(1) = N;
+
+  struct fitInput loudIn = createFitInput(
+      D, Y, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING,
+      BMDS_MISSING, BMDS_MISSING, pyMA->pyDA.samples, pyMA->pyDA.burnin, pyMA->pyDA.BMR,
+      BMDS_MISSING, pyMA->datatype, pyMA->pyDA.BMD_type, true, pyMA->weightOption, BMDS_MISSING
+  );
+
+  int numModels = pyMA->models.size();
+  for (int i = 0; i < numModels; i++) {
+    // std::cout<<"prior_cols:"<<pyMA->prior_cols[i]<<std::endl;
+    // std::cout<<"flat prior"<<std::endl;
+    // for (int j=0;j<pyMA->priors[i].size();j++){
+    //   std::cout<<pyMA->priors[i][j]<<std::endl;
+    // }
+    // std::cout<<"b4 priorr expansion"<<std::endl;
+    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    loudIn.priorr = priorr;
+    loudIn.model = pyMA->models[i];
+
+    // std::cout<<"priorr:"<<std::endl<<priorr<<std::endl;
+
+    struct fitResult loudOut;
+
+    fit_Loud_dicho(&loudIn, &loudOut);
+  }
+
+  std::cout << "end pythonBMDSLoud_dich" << std::endl;
+}
+
+void pythonBMDSLoud_cont(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
   // validate models and dist types
@@ -4567,6 +4839,9 @@ void pythonBMDSLoud_dev(
     // this will override isIncreasing
     determineAdvDir(&pyMA->pyCA);
   }
+  std::cout << "isIncreasing:" << (isIncreasing ? "True" : "False") << std::endl;
+  std::cout << "Overriding isIncreasing" << std::endl;
+  isIncreasing = true;
 
   std::vector<int> N_obs;
   std::vector<double> mean;
@@ -5096,6 +5371,10 @@ void pythonBMDSLoud_dev(
     lbmd.col(i) = pyRes->models[i].loudRes.BMD;
   }
 
+  std::cout << "posterior probs" << std::endl;
+  for (int i = 0; i < posterior_probs.size(); i++) {
+    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
+  }
   // sample from lbmd using posterior_probs
   // seed the generator
   std::random_device rd;
@@ -5117,8 +5396,15 @@ void pythonBMDSLoud_dev(
       ),
       bmds_c.end()
   );
+  std::cout << "original bmd_dist size:" << iter << std::endl;
+  std::cout << "new size:" << bmds_c.size() << std::endl;
   // sort data
   std::sort(bmds_c.begin(), bmds_c.end());
+
+  std::cout << std::endl << "bmds_c:" << std::endl;
+  for (int i = 0; i < bmds_c.size(); i++) {
+    std::cout << "i:" << i << ", " << bmds_c[i] << std::endl;
+  }
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
