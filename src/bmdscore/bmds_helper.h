@@ -284,6 +284,7 @@ struct python_dichotomous_model_result {
   struct dichotomous_GOF gof;
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
+  struct fitResult loudRes;
 
   double getSRAtDose(double targetDose, std::vector<double> doses);
 };
@@ -586,19 +587,6 @@ void calcContAIC(
 
 double calcNestedAIC(double fitted_LL, double fitted_df, double red_df);
 
-void clean_dicho_results(
-    struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
-    struct dicho_AOD *aod
-);
-void clean_cont_results(
-    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
-    struct continuous_GOF *gof
-);
-void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
-
-void clean_multitumor_results(struct python_multitumor_result *res);
-
-void clean_nested_results(struct python_nested_result *res);
 
 void convertFromPythonDichoAnalysis(
     struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal
@@ -883,6 +871,10 @@ double getQVals(
     int datatype
 );
 
+void calcLoudWeights(std::vector<double> &weights);
+
+void calcLoudPosteriors(std::vector<double> &waic, std::vector<double> &int_factor, std::vector<double> &posterior_probs, int weightOption);
+
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
     double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
@@ -1000,3 +992,21 @@ std::string printBmdsStruct(struct fitResult *out, bool print = true);
 std::string printBmdsStruct(struct python_continuousMA_analysis *pyAnal, bool print = true);
 
 std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print = true);
+
+
+void clean_dicho_results(
+    struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
+    struct dicho_AOD *aod
+);
+void clean_cont_results(
+    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
+    struct continuous_GOF *gof
+);
+void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
+void clean_dicho_MA_results(struct python_dichotomousMA_result *res);
+
+void clean_multitumor_results(struct python_multitumor_result *res);
+
+void clean_nested_results(struct python_nested_result *res);
+
+void clean_cont_MA_results(struct python_continuousMA_result *res);

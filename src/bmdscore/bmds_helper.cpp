@@ -2118,6 +2118,7 @@ void clean_cont_results(
   }
 }
 
+//used for LOUD results
 void clean_cont_MA_results(struct python_continuousMA_result *res) {
   // python_continuousMA_result
   for (int i = 0; i < res->nmodels; i++) {
@@ -2159,6 +2160,53 @@ void clean_cont_MA_results(struct python_continuousMA_result *res) {
     }
   }
 }
+
+//used for LOUD results
+void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
+
+  // python_dichotomousMA_result
+  for (int i = 0; i < res->nmodels; i++) {
+    cleanDouble(&res->post_probs[i]);
+    cleanDouble(&res->bmd_dist[i]);
+    // python_continuous_model_result
+    for (int j = 0; j < res->models[i].parms.size(); j++) {
+      cleanDouble(&res->models[i].parms[j]);
+    }
+    cleanDouble(&res->models[i].ess);
+    cleanDouble(&res->models[i].bmd);
+  }
+
+  struct BMDSMA_results bmdsRes = res->bmdsRes;
+
+  // BMDSMA_results
+  cleanDouble(&bmdsRes.BMD_MA);
+  cleanDouble(&bmdsRes.BMDL_MA);
+  cleanDouble(&bmdsRes.BMDU_MA);
+  for (int i = 0; i < res->nmodels; i++) {
+    cleanDouble(&bmdsRes.BMD[i]);
+    cleanDouble(&bmdsRes.BMDL[i]);
+    cleanDouble(&bmdsRes.BMDU[i]);
+  }
+
+  // Loud fitResult
+  for (int k = 0; k < res->nmodels; k++) {
+    struct fitResult loudRes = res->models[k].loudRes;
+    cleanDouble(&loudRes.int_factor);
+    cleanDouble(&loudRes.waic);
+    cleanDouble(&loudRes.pval);
+    for (int i = 0; i < loudRes.parms.rows(); i++) {
+      for (int j = 0; j < loudRes.parms.cols(); j++) {
+        cleanDouble(&loudRes.parms(i, j));
+      }
+    }
+    for (int i = 0; i < loudRes.BMD.size(); i++) {
+      cleanDouble(&loudRes.BMD[i]);
+    }
+  }
+  
+
+}
+
 
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes) {
   // dichotomousMA_result
@@ -2916,7 +2964,7 @@ Eigen::VectorXd loud_likelihood(
     }
   } else if (datatype == loud_datatype::l_dichotomous) {
     for (int i = 0; i < mu.rows(); i++) {
-      loglik(i) = log(gsl_ran_binomial_pdf(parms(0), mu(i), parms(1)));
+      loglik(i) = log(gsl_ran_binomial_pdf(Y(i,0), mu(i), Y(i,1)));
     }
   } else {
     std::cout << "Error in loud_likelihood.  Unknown datatype." << std::endl;
@@ -2930,6 +2978,7 @@ void bridge_sample(
     //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
+
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -2945,6 +2994,7 @@ void bridge_sample(
     loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
   }
 
+  //WAIC calculation
   double waic = BMDS_MISSING;
   if (loudIn->weightOption != 2) {
     double lppd = 0.0;
@@ -2975,6 +3025,7 @@ void bridge_sample(
 
   // TODO possible check for NaNs in isNegative
 
+  //int_factor calculation
   double int_factor = BMDS_MISSING;
   if (loudIn->weightOption != 1) {
     Eigen::MatrixXd tR = R;
@@ -2994,8 +3045,6 @@ void bridge_sample(
     Eigen::MatrixXd g_estimate(loudIn->iter, log_mu.size());
 
     rg(loudIn->iter, log_mu, log_cov, isNegative, g_estimate);
-
-    // std::cout<<"g_estimate:"<<std::endl<<g_estimate<<std::endl;
 
     Eigen::VectorXd A = Eigen::VectorXd::Zero(R.rows());
     Eigen::VectorXd post = Eigen::VectorXd::Zero(R.rows());
@@ -4803,25 +4852,161 @@ void pythonBMDSLoud_dich(
 
   int numModels = pyMA->models.size();
   for (int i = 0; i < numModels; i++) {
-    // std::cout<<"prior_cols:"<<pyMA->prior_cols[i]<<std::endl;
-    // std::cout<<"flat prior"<<std::endl;
-    // for (int j=0;j<pyMA->priors[i].size();j++){
-    //   std::cout<<pyMA->priors[i][j]<<std::endl;
-    // }
-    // std::cout<<"b4 priorr expansion"<<std::endl;
     Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
     loudIn.priorr = priorr;
     loudIn.model = pyMA->models[i];
-
-    // std::cout<<"priorr:"<<std::endl<<priorr<<std::endl;
+    pyRes->models[i].bmdsRes.validResult = false;
 
     struct fitResult loudOut;
 
     fit_Loud_dicho(&loudIn, &loudOut);
+
+    pyRes->models[i].loudRes = loudOut;
+    pyRes->models[i].nparms = loudOut.parms.cols();
+    pyRes->models[i].model = pyMA->models[i];
+    pyRes->models[i].bmdsRes.validResult = true;
   }
+
+  std::cout<<"nmodels:"<<pyMA->nmodels<<std::endl;
+  std::vector<double>posterior_probs(pyMA->nmodels);
+  std::vector<double> posterior_probs_waic;
+  std::vector<double> posterior_probs_int_factor;
+  posterior_probs_waic.reserve(pyMA->nmodels);
+  posterior_probs_int_factor.reserve(pyMA->nmodels);
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
+    posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
+  }
+
+  calcLoudPosteriors(posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption);
+  std::cout << "posterior probs" << std::endl;
+  for (int i = 0; i < posterior_probs.size(); i++) {
+    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
+  }
+
+  int iter = pyMA->pyDA.samples;
+
+  //TODO Move this to separate method 
+  // calc individual model bmdl, bmd, bmdu
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    std::vector<double> bmd_dist;
+    bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
+    Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) = pyRes->models[i].loudRes.BMD;
+    double bmdl = findQuantileVals(bmd_dist, pyMA->pyDA.alpha);
+    double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyDA.alpha);
+    double bmd = findMedianVal(bmd_dist);
+  }
+
+  Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    lbmd.col(i) = pyRes->models[i].loudRes.BMD;
+  }
+
+  // sample from lbmd using posterior_probs
+  // seed the generator
+  std::random_device rd;
+  // define a random number generator
+  std::mt19937 gen(rd());
+  // define weight distribution
+  std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
+  std::vector<double> bmds_c(iter);
+  for (int i = 0; i < iter; i++) {
+    int result = d(gen);
+    bmds_c[i] = lbmd(i, result);
+  }
+
+  // Calc MA bmdl, bmd, bmdu
+  // remove nans
+  bmds_c.erase(
+      std::remove_if(
+          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
+      ),
+      bmds_c.end()
+  );
+  // sort data
+  std::sort(bmds_c.begin(), bmds_c.end());
+
+  // find bmdl, bmdu
+  double bmdl = findQuantileVals(bmds_c, pyMA->pyDA.alpha);
+  double bmdu = findQuantileVals(bmds_c, 1.0 - pyMA->pyDA.alpha);
+
+  double bmd = findMedianVal(bmds_c);
+
+  pyRes->bmdsRes.BMD_MA = bmd;
+  pyRes->bmdsRes.BMDL_MA = bmdl;
+  pyRes->bmdsRes.BMDU_MA = bmdu;
+  pyRes->bmd_dist = bmds_c;
+  pyRes->post_probs = posterior_probs;
+
+  clean_dicho_MA_results(pyRes);
 
   std::cout << "end pythonBMDSLoud_dich" << std::endl;
 }
+
+void calcLoudWeights(std::vector<double> &weights){
+
+    double max_weight = *std::max_element(weights.begin(), weights.end());
+
+    double tmpExpSum = 0;
+    for (int i = 0; i < weights.size(); i++) {
+      weights[i] -= max_weight;
+      weights[i] = exp(weights[i]);
+      tmpExpSum += weights[i];
+    }
+    for (int i = 0; i < weights.size(); i++) {
+      weights[i] = weights[i] / tmpExpSum;
+    }
+  
+
+}
+
+void calcLoudPosteriors(std::vector<double> &waic, std::vector<double> &int_factor, std::vector<double> &posterior_probs, int weightOption){
+
+  
+  int nmodels;
+  //waic calcs
+  if (weightOption != 2) {
+     nmodels = waic.size();
+     calcLoudWeights(waic);
+  }
+
+  //int_factor calcs
+  if (weightOption != 1) {
+     nmodels = int_factor.size();
+     calcLoudWeights(int_factor);
+  }
+
+  switch (weightOption) {
+    case 1: {
+      posterior_probs = waic;
+      break;
+    }
+    case 2: {
+      posterior_probs = int_factor;
+      break;
+    }
+    case 3: {
+      int nmodels = waic.size();
+      double tmpSum = 0;
+      for (int i = 0; i < nmodels; i++) {
+        posterior_probs[i] = 0.5 * (waic[i] + int_factor[i]);
+        tmpSum += posterior_probs[i];
+      }
+      for (int i = 0; i < nmodels; i++) {
+        posterior_probs[i] /= tmpSum;
+      }
+      break;
+    }
+    default: {
+      std::cout << "incorrect weight option for Loud approach" << std::endl;
+      break;
+    }
+  }
+
+
+}
+
+
 
 void pythonBMDSLoud_cont(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
@@ -5289,71 +5474,20 @@ void pythonBMDSLoud_cont(
     pyRes->models[i].bmdsRes.validResult = true;
   }
 
-  // calculate MA posteriors
+  std::vector<double>posterior_probs(pyMA->nmodels);
   std::vector<double> posterior_probs_waic;
-  if (pyMA->weightOption != 2) {
-    posterior_probs_waic.reserve(pyMA->nmodels);
-    for (int i = 0; i < pyMA->nmodels; i++) {
-      posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
-    }
-
-    double max_waic = *std::max_element(posterior_probs_waic.begin(), posterior_probs_waic.end());
-
-    double tmpExpSum = 0;
-    for (int i = 0; i < posterior_probs_waic.size(); i++) {
-      posterior_probs_waic[i] -= max_waic;
-      posterior_probs_waic[i] = exp(posterior_probs_waic[i]);
-      tmpExpSum += posterior_probs_waic[i];
-    }
-    for (int i = 0; i < posterior_probs_waic.size(); i++) {
-      posterior_probs_waic[i] = posterior_probs_waic[i] / tmpExpSum;
-    }
-  }
-
   std::vector<double> posterior_probs_int_factor;
-  if (pyMA->weightOption != 1) {
-    posterior_probs_waic.reserve(pyMA->nmodels);
-    for (int i = 0; i < pyMA->nmodels; i++) {
-      posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
-    }
-    double max_int_factor =
-        *(std::max_element(posterior_probs_int_factor.begin(), posterior_probs_int_factor.end()));
-    double tmpExpSum = 0;
-    for (int i = 0; i < posterior_probs_int_factor.size(); i++) {
-      posterior_probs_int_factor[i] -= max_int_factor;
-      posterior_probs_int_factor[i] = exp(posterior_probs_int_factor[i]);
-      tmpExpSum += posterior_probs_int_factor[i];
-    }
-    for (int i = 0; i < posterior_probs_int_factor.size(); i++) {
-      posterior_probs_int_factor[i] = posterior_probs_int_factor[i] / tmpExpSum;
-    }
+  posterior_probs_waic.reserve(pyMA->nmodels);
+  posterior_probs_int_factor.reserve(pyMA->nmodels);
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
+    posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
   }
+  calcLoudPosteriors(posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption);
 
-  std::vector<double> posterior_probs(pyMA->nmodels);
-  switch (pyMA->weightOption) {
-    case 1: {
-      posterior_probs = posterior_probs_waic;
-      break;
-    }
-    case 2: {
-      posterior_probs = posterior_probs_int_factor;
-      break;
-    }
-    case 3: {
-      double tmpSum = 0;
-      for (int i = 0; i < pyMA->nmodels; i++) {
-        posterior_probs[i] = 0.5 * (posterior_probs_waic[i] + posterior_probs_int_factor[i]);
-        tmpSum += posterior_probs[i];
-      }
-      for (int i = 0; i < pyMA->nmodels; i++) {
-        posterior_probs[i] /= tmpSum;
-      }
-      break;
-    }
-    default: {
-      std::cout << "incorrect weight option for Loud approach" << std::endl;
-      break;
-    }
+  std::cout << "posterior probs" << std::endl;
+  for (int i = 0; i < posterior_probs.size(); i++) {
+    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
   }
 
   // calc individual model bmdl, bmd, bmdu
@@ -5371,10 +5505,6 @@ void pythonBMDSLoud_cont(
     lbmd.col(i) = pyRes->models[i].loudRes.BMD;
   }
 
-  std::cout << "posterior probs" << std::endl;
-  for (int i = 0; i < posterior_probs.size(); i++) {
-    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
-  }
   // sample from lbmd using posterior_probs
   // seed the generator
   std::random_device rd;
