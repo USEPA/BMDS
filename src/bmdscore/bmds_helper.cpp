@@ -2118,7 +2118,7 @@ void clean_cont_results(
   }
 }
 
-//used for LOUD results
+// used for LOUD results
 void clean_cont_MA_results(struct python_continuousMA_result *res) {
   // python_continuousMA_result
   for (int i = 0; i < res->nmodels; i++) {
@@ -2161,9 +2161,8 @@ void clean_cont_MA_results(struct python_continuousMA_result *res) {
   }
 }
 
-//used for LOUD results
+// used for LOUD results
 void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
-
   // python_dichotomousMA_result
   for (int i = 0; i < res->nmodels; i++) {
     cleanDouble(&res->post_probs[i]);
@@ -2203,10 +2202,7 @@ void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
       cleanDouble(&loudRes.BMD[i]);
     }
   }
-  
-
 }
-
 
 void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes) {
   // dichotomousMA_result
@@ -2964,7 +2960,7 @@ Eigen::VectorXd loud_likelihood(
     }
   } else if (datatype == loud_datatype::l_dichotomous) {
     for (int i = 0; i < mu.rows(); i++) {
-      loglik(i) = log(gsl_ran_binomial_pdf(Y(i,0), mu(i), Y(i,1)));
+      loglik(i) = log(gsl_ran_binomial_pdf(Y(i, 0), mu(i), Y(i, 1)));
     }
   } else {
     std::cout << "Error in loud_likelihood.  Unknown datatype." << std::endl;
@@ -2978,7 +2974,6 @@ void bridge_sample(
     //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
-
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -2994,7 +2989,7 @@ void bridge_sample(
     loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
   }
 
-  //WAIC calculation
+  // WAIC calculation
   double waic = BMDS_MISSING;
   if (loudIn->weightOption != 2) {
     double lppd = 0.0;
@@ -3025,7 +3020,7 @@ void bridge_sample(
 
   // TODO possible check for NaNs in isNegative
 
-  //int_factor calculation
+  // int_factor calculation
   double int_factor = BMDS_MISSING;
   if (loudIn->weightOption != 1) {
     Eigen::MatrixXd tR = R;
@@ -3374,20 +3369,29 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_qlinear(loudIn, loudOut, R);
       break;
     case (dich_model::d_logistic):
+      // needs fixing
+      fit_logistic(loudIn, loudOut, R);
       break;
     case (dich_model::d_probit):
+      fit_probit(loudIn, loudOut, R);
       break;
     case (dich_model::d_multistage):
+      fit_mstage2(loudIn, loudOut, R);
       break;
     case (dich_model::d_loglogistic):
+      fit_loglogistic(loudIn, loudOut, R);
       break;
     case (dich_model::d_logprobit):
+      fit_logprobit(loudIn, loudOut, R);
       break;
     case (dich_model::d_hill):
+      fit_dhill(loudIn, loudOut, R);
       break;
     case (dich_model::d_weibull):
+      fit_weibull(loudIn, loudOut, R);
       break;
     case (dich_model::d_gamma):
+      fit_dgamma(loudIn, loudOut, R);
       break;
   }
 
@@ -3589,6 +3593,353 @@ void fit_qlinear(
     // BMDS expects logit(g)
     theta(0, 0) = log(g / (1 - g));
     theta(1, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_logistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 2;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_logisticModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_logisticModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+
+    double a = log(p_zero / (1 - p_zero));
+    double b = log(p_one / (1 - p_one)) - a;
+
+    // BMDS expects exact same parms
+    theta(0, 0) = a;
+    theta(1, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_probit(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 2;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_probitModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_probitModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+
+    double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
+    double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
+
+    // BMDS expects same parms
+    theta(0, 0) = a;
+    theta(1, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_mstage2(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 3;
+  int degree = 2;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+
+  dich_multistageNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_multistageNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a11 = R(i, 0);
+    double b11 = R(i, 1);
+    double c11 = R(i, 2);
+    double y1 = R(i, 3);
+
+    double sum = a11 + b11 + c11;
+    double p_zero = a11 / sum;
+    double p_one = (a11 + b11) / sum;
+    double g = p_zero;
+    double b1 = -1.0 * (y1)*log((1 - p_one) / (1 - p_zero));
+    double b2 = -1.0 * (1.0 - y1) * log((1 - p_one) / (1 - p_zero));
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = b1;
+    theta(2, 0) = b2;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_loglogistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 3;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_loglogisticModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_loglogisticModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double a2 = R(i, 1);
+    double a3 = R(i, 2);
+    double b = R(i, 3);
+
+    double sum = a1 + a2 + a3;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + a2) / sum;
+
+    double g = p_zero;
+    double a = -1.0 * log((1 - p_one) / (p_one - p_zero));
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = a;
+    theta(2, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_logprobit(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 3;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_logProbitModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_logProbitModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+    double b = R(i, 3);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+
+    double g = p_zero;
+    double a = gsl_cdf_gaussian_Pinv((p_one - p_zero) / (1 - p_zero), 1.0);
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = a;
+    theta(2, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R) {
+  int nparms = 4;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_hillModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_hillModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double g = R(i, 0);
+    double v = R(i, 1);
+    double a = R(i, 2);
+    double b = R(i, 3);
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = log(v / (1 - v));
+    theta(2, 0) = a;
+    theta(3, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_weibull(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 3;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_weibullModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_weibullModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+    double g = R(i, 3);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+    double a = p_zero;
+    double b = -1.0 * log((1 - p_one) / (1 - p_zero));
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = a;
+    theta(1, 0) = b;
+
+    Eigen::MatrixXd X(loudIn->doses.rows(), 2);
+    X.col(0) = loudIn->doses;
+    X.col(1) = loudIn->doses;
+
+    loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
+    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+  }
+}
+
+void fit_dgamma(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+) {
+  int nparms = 3;
+  std::vector<bool> fixedB;
+  std::vector<double> fixedV;
+  for (int i = 0; i < nparms; i++) {
+    fixedB.push_back(false);
+    fixedV.push_back(0.0);
+  }
+  double degree = BMDS_MISSING;
+
+  dich_gammaModelNC dichotomousM(loudIn->Y, loudIn->doses, degree);
+  IDPrior model_prior(loudIn->priorr);
+  dBMDModel<dich_gammaModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
+
+  loudOut->parms.resize(R.rows(), 2);
+  Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
+  for (int i = 0; i < R.rows(); ++i) {
+    double a1 = R(i, 0);
+    double b1 = R(i, 1);
+    double c1 = R(i, 2);
+    double alpha = R(i, 3);
+
+    double sum = a1 + b1 + c1;
+    double p_zero = a1 / sum;
+    double p_one = (a1 + b1) / sum;
+
+    double g = p_zero;
+    double b = gsl_cdf_gamma_Pinv((p_one - p_zero) / (1 - p_zero), alpha, 1.0);
+
+    // BMDS expects logit(g)
+    theta(0, 0) = log(g / (1 - g));
+    theta(1, 0) = alpha;
+    theta(2, 0) = b;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -4827,8 +5178,6 @@ Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols) {
 void pythonBMDSLoud_dich(
     struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
 ) {
-  std::cout << "inside pythonBMDSLoud_dich" << std::endl;
-
   // Eigen::VectorXd D(pyMA->pyDA.doses);
   Eigen::VectorXd D1 =
       Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.doses.data(), pyMA->pyDA.doses.size());
@@ -4867,8 +5216,7 @@ void pythonBMDSLoud_dich(
     pyRes->models[i].bmdsRes.validResult = true;
   }
 
-  std::cout<<"nmodels:"<<pyMA->nmodels<<std::endl;
-  std::vector<double>posterior_probs(pyMA->nmodels);
+  std::vector<double> posterior_probs(pyMA->nmodels);
   std::vector<double> posterior_probs_waic;
   std::vector<double> posterior_probs_int_factor;
   posterior_probs_waic.reserve(pyMA->nmodels);
@@ -4878,16 +5226,14 @@ void pythonBMDSLoud_dich(
     posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
   }
 
-  calcLoudPosteriors(posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption);
-  std::cout << "posterior probs" << std::endl;
-  for (int i = 0; i < posterior_probs.size(); i++) {
-    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
-  }
+  calcLoudPosteriors(
+      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
+  );
 
   int iter = pyMA->pyDA.samples;
 
-  //TODO Move this to separate method 
-  // calc individual model bmdl, bmd, bmdu
+  // TODO Move this to separate method
+  //  calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
     std::vector<double> bmd_dist;
     bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
@@ -4939,41 +5285,37 @@ void pythonBMDSLoud_dich(
   pyRes->post_probs = posterior_probs;
 
   clean_dicho_MA_results(pyRes);
-
-  std::cout << "end pythonBMDSLoud_dich" << std::endl;
 }
 
-void calcLoudWeights(std::vector<double> &weights){
+void calcLoudWeights(std::vector<double> &weights) {
+  double max_weight = *std::max_element(weights.begin(), weights.end());
 
-    double max_weight = *std::max_element(weights.begin(), weights.end());
-
-    double tmpExpSum = 0;
-    for (int i = 0; i < weights.size(); i++) {
-      weights[i] -= max_weight;
-      weights[i] = exp(weights[i]);
-      tmpExpSum += weights[i];
-    }
-    for (int i = 0; i < weights.size(); i++) {
-      weights[i] = weights[i] / tmpExpSum;
-    }
-  
-
+  double tmpExpSum = 0;
+  for (int i = 0; i < weights.size(); i++) {
+    weights[i] -= max_weight;
+    weights[i] = exp(weights[i]);
+    tmpExpSum += weights[i];
+  }
+  for (int i = 0; i < weights.size(); i++) {
+    weights[i] = weights[i] / tmpExpSum;
+  }
 }
 
-void calcLoudPosteriors(std::vector<double> &waic, std::vector<double> &int_factor, std::vector<double> &posterior_probs, int weightOption){
-
-  
+void calcLoudPosteriors(
+    std::vector<double> &waic, std::vector<double> &int_factor,
+    std::vector<double> &posterior_probs, int weightOption
+) {
   int nmodels;
-  //waic calcs
+  // waic calcs
   if (weightOption != 2) {
-     nmodels = waic.size();
-     calcLoudWeights(waic);
+    nmodels = waic.size();
+    calcLoudWeights(waic);
   }
 
-  //int_factor calcs
+  // int_factor calcs
   if (weightOption != 1) {
-     nmodels = int_factor.size();
-     calcLoudWeights(int_factor);
+    nmodels = int_factor.size();
+    calcLoudWeights(int_factor);
   }
 
   switch (weightOption) {
@@ -5002,11 +5344,7 @@ void calcLoudPosteriors(std::vector<double> &waic, std::vector<double> &int_fact
       break;
     }
   }
-
-
 }
-
-
 
 void pythonBMDSLoud_cont(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
@@ -5474,7 +5812,7 @@ void pythonBMDSLoud_cont(
     pyRes->models[i].bmdsRes.validResult = true;
   }
 
-  std::vector<double>posterior_probs(pyMA->nmodels);
+  std::vector<double> posterior_probs(pyMA->nmodels);
   std::vector<double> posterior_probs_waic;
   std::vector<double> posterior_probs_int_factor;
   posterior_probs_waic.reserve(pyMA->nmodels);
@@ -5483,7 +5821,9 @@ void pythonBMDSLoud_cont(
     posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
     posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
   }
-  calcLoudPosteriors(posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption);
+  calcLoudPosteriors(
+      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
+  );
 
   std::cout << "posterior probs" << std::endl;
   for (int i = 0; i < posterior_probs.size(); i++) {

@@ -2408,12 +2408,27 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  std::vector<int> models = {8, 8};
+  std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
-  //  D100
-  double D[] = {0, 5.1, 21.9, 46.5};
-  double Y[] = {5, 5, 9, 17};
-  double N[] = {60, 60, 60, 60};
+  // data_M3
+  double D[] = {0.0, 0.25, 0.5, 1.0};
+  double Y[] = {2, 0, 9, 10};
+  double N[] = {10, 10, 10, 10};
+
+  // Dichotomous.dax Effect 1
+  // double D[] = {0, 50, 100, 150, 200};
+  // double Y[] = {0, 5, 30, 65, 90};
+  // double N[] = {100, 100, 100, 100, 100};
+
+  ////Dichotomous.dax Effect 2
+  // double D[] = {0,50, 100, 150, 200};
+  // double Y[] = {5, 10, 33, 67, 93};
+  // double N[] = {100, 100, 100, 100, 100};
+
+  ////  D100
+  // double D[] = {0, 5.1, 21.9, 46.5};
+  // double Y[] = {5, 5, 9, 17};
+  // double N[] = {60, 60, 60, 60};
 
   int BMD_type = 1;  // 1 = extra ; added otherwise
   double BMR = 0.1;
@@ -2442,7 +2457,6 @@ void runPythonDichoLoud() {
   int nmodels = models.size();
 
   struct python_dichotomous_analysis anal;
-  anal.BMD_type = BMD_type;
   anal.BMR = BMR;
   anal.alpha = alpha;
   anal.Y.assign(Y, Y + numDataRows);
@@ -2504,6 +2518,9 @@ void runPythonDichoLoud() {
   ma_res.bmdsRes = bmdsRes;
 
   pythonBMDSLoud_dich(&ma_info, &ma_res);
+
+  std::cout << "Test output:" << std::endl;
+  printBmdsStruct(&ma_res);
 }
 
 void runPythonContLoud() {

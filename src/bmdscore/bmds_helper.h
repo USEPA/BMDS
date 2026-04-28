@@ -295,9 +295,12 @@ struct python_dichotomousMA_analysis {
                                             // priors[i] is the prior array for the ith model ect
   std::vector<int> nparms;                  // parameters in each model
   std::vector<int> actual_parms;            // actual number of parameters in the model
-  std::vector<int> prior_cols;      // columns in the prior if there are 'more' in the future
-                                    // presently there are only 5
-  std::vector<int> models;          // list of models this is defined by dich_model.
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                                // presently there are only 5
+  std::vector<int> models;      // list of models this is defined by dich_model.
+  std::vector<int>
+      loud_bmd_type;  // list of bmd types corresponding to each model for loud approach
+
   std::vector<double> modelPriors;  // prior probability on the model
 
   struct python_dichotomous_analysis pyDA;
@@ -587,7 +590,6 @@ void calcContAIC(
 
 double calcNestedAIC(double fitted_LL, double fitted_df, double red_df);
 
-
 void convertFromPythonDichoAnalysis(
     struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal
 );
@@ -792,6 +794,32 @@ void fit_qlinear(
     const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
 );
 
+void fit_logistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_probit(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
+void fit_mstage2(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_loglogistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_logprobit(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
+void fit_weibull(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_dgamma(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
 double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
 
 // void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
@@ -873,7 +901,10 @@ double getQVals(
 
 void calcLoudWeights(std::vector<double> &weights);
 
-void calcLoudPosteriors(std::vector<double> &waic, std::vector<double> &int_factor, std::vector<double> &posterior_probs, int weightOption);
+void calcLoudPosteriors(
+    std::vector<double> &waic, std::vector<double> &int_factor,
+    std::vector<double> &posterior_probs, int weightOption
+);
 
 struct fitInput createFitInput(
     Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
@@ -992,7 +1023,6 @@ std::string printBmdsStruct(struct fitResult *out, bool print = true);
 std::string printBmdsStruct(struct python_continuousMA_analysis *pyAnal, bool print = true);
 
 std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print = true);
-
 
 void clean_dicho_results(
     struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
