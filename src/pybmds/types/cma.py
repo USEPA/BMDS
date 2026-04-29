@@ -38,6 +38,8 @@ class ContinuousModelAverage:
         analysis.alpha = first.alpha
         analysis.suff_stat = first.suff_stat
         analysis.disttype = first.disttype
+        analysis.isIncreasing = first.isIncreasing
+        analysis.detectAdvDir = first.detectAdvDir
         analysis.samples = first.samples
         analysis.burnin = first.burnin
         analysis.Y = dataset.means

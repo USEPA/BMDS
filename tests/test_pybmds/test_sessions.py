@@ -139,6 +139,52 @@ class TestSession:
         with pytest.raises(ValueError, match="same prior_class|requires all models"):
             session.add_model_averaging()
 
+    def test_dichotomous_loud_ma_docx_includes_loud_diagnostics(self, ddataset2, monkeypatch):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+
+        def fake_get_model_average_figures(_session, n_chains=1):
+            assert _session is session
+            assert n_chains == 1
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [],
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Model Averaging Diagnostics (LOUD)" in paragraph_text
+        assert "Posterior distribution of model-averaged BMD" in paragraph_text
+        assert "Overlay of model-specific and model-averaged BMD distributions" in paragraph_text
+        assert "Summary statistics for BMD and model-averaged BMD" in paragraph_text
+
+    def test_dichotomous_bayesian_ma_docx_does_not_include_loud_diagnostics(
+        self, ddataset2, monkeypatch
+    ):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian)
+
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Model Averaging Diagnostics (LOUD)" not in paragraph_text
+
     def test_continuous_ma(self, cdataset3, data_path, rewrite_data_files):
         # make sure serialize looks correct
         session1 = pybmds.Session(dataset=cdataset3)

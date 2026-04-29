@@ -93,7 +93,7 @@ def set_column_width(column, size_in_inches: float):
 
 def add_mpl_figure(document, fig, size_in_inches: float):
     with BytesIO() as f:
-        fig.savefig(f)
+        fig.savefig(f, bbox_inches="tight")
         document.add_picture(f, width=Inches(size_in_inches))
     fig.clf()
     close_figure(fig)

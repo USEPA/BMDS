@@ -63,6 +63,13 @@ class BmdModelDichotomous(BmdModel):
         inputs = self._build_inputs()
         structs = inputs.to_cpp()
         self.structs = structs
+        if (
+            self.settings.priors.prior_class is PriorClass.bayesian_loud
+            and getattr(self, "session", None) is not None
+            and self.session.model_average is not None
+        ):
+            self.results = None
+            return self.results
         self.structs.execute()
         if slope_factor:
             bmr = self.structs.analysis.BMR
