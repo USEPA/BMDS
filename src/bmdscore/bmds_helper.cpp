@@ -4939,6 +4939,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   Y.col(0) = Y1;
   Y.col(1) = N;
 
+  //scale dose
+  double max_dose = D.maxCoeff();
+  D = (1/max_dose) * D;
+
   struct fitInput loudIn = createFitInput(
       D, Y, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING,
       BMDS_MISSING, BMDS_MISSING, pyMA->pyDA.samples, pyMA->pyDA.burnin, pyMA->pyDA.BMR,
@@ -4977,6 +4981,25 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   );
 
   int iter = pyMA->pyDA.samples;
+
+
+  //unscale bmd and parms
+  for (int i=0; i< pyMA->nmodels; i++){
+     fitResult fitRes = pyRes->models[i].loudRes;
+     fitRes.BMD *= max_dose; 
+     //std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+     Eigen::MatrixXd parms = fitRes.parms.transpose();
+     //std::cout<<"parms:"<<std::endl<<parms<<std::endl;
+     for(int j=0; j<fitRes.parms.cols(); j++){
+	Eigen::MatrixXd parmCol = parms.col(j);
+        rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
+	parms.col(j) = parmCol;
+     }
+     fitRes.parms = parms.transpose();
+     //std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+  }
+
+
 
   // TODO Move this to separate method
   //  calc individual model bmdl, bmd, bmdu
