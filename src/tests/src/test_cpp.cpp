@@ -2408,7 +2408,8 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
+  std::vector<int> models = {8, 3};
+  // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
   // data_M3
   double D[] = {0.0, 0.25, 0.5, 1.0};
@@ -2489,6 +2490,13 @@ void runPythonDichoLoud() {
   // assign default priors
   ma_info.priors = createDefaultDichoPriors(&ma_info);
 
+  // for (int i = 0; i < ma_info.priors.size(); i++) {
+  //   std::cout << "model i:" << i << std::endl;
+  //   for (int j = 0; j < ma_info.priors[i].size(); j++) {
+  //     std::cout << ma_info.priors[i][j] << ", " << std::endl;
+  //   }
+  // }
+
   for (int i = 0; i < nmodels; i++) {
     int prSize = ma_info.priors[i].size();
     numParms.push_back(prSize / prCols);
@@ -2517,7 +2525,7 @@ void runPythonDichoLoud() {
 
   ma_res.bmdsRes = bmdsRes;
 
-  pythonBMDSLoud_dich(&ma_info, &ma_res);
+  pythonBMDSLoud(&ma_info, &ma_res);
 
   std::cout << "Test output:" << std::endl;
   printBmdsStruct(&ma_res);

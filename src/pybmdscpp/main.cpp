@@ -50,35 +50,6 @@ PYBIND11_MODULE(bmdscore, m) {
       .value("l_lms_efsa", l_lms_efsa, "loud lms efsa model enum")
       .export_values();
 
-  //  py::enum_<loud_cont_model>(
-  //      m, "loud_cont_model", py::arithmetic(), "Loud continuous model enumeration"
-  //  )
-  //      .value("l_exp_3", l_exp_3, "loud exponential 3 model enum")
-  //      .value("l_exp_5", l_exp_5, "loud exponential 5 model enum")
-  //      .value("l_power", l_power, "loud power model enum")
-  //      .value("l_hill", l_hill, "loud hill model enum")
-  //      .value("l_poly", l_poly, "loud polynomial modle enum")
-  //      .value("l_hill_efsa", l_hill_efsa, "loud hill EFSA model enum")
-  //      .value("l_invexp_efsa", l_invexp_efsa, "loud inverse exponential EFSA model enum")
-  //      .value("l_lognormal_efsa", l_lognormal_efsa, "loud lognormal EFSA model enum")
-  //      .value("l_gamma_efsa", l_gamma_efsa, "loud gamma EFSA model enum")
-  //      .value("l_lms_efsa", l_lms_efsa, "loud linearized multistage EFSA model enum")
-  //      .export_values();
-  //
-  //  py::enum_<loud_dich_model>(
-  //      m, "loud_dich_model", py::arithmetic(), "Loud dichotomous model enumeration"
-  //  )
-  //      .value("l_logistic", l_logistic, "loud logistic model enum")
-  //      .value("l_weibull", l_weibull, "loud weibull model enum")
-  //      .value("l_gamma", l_gamma, "loud gamma model enum")
-  //      .value("l_dhill", l_dhill, "loud hill model enum")
-  //      .value("l_loglogistic", l_loglogistic, "loud loglogistic model enum")
-  //      .value("l_logprobit", l_logprobit, "loud logprobit model enum")
-  //      .value("l_probit", l_probit, "loud probit model enum")
-  //      .value("l_qlinear", l_qlinear, "loud quantal linear model enum")
-  //      .value("l_multistage", l_multistage, "loud multistage model enum")
-  //      .export_values();
-
   py::enum_<loud_datatype>(m, "loud_datatype", py::arithmetic(), "Loud datatype enumeration")
       .value("l_summary", l_summary, "loud summary data")
       .value("l_individual", l_individual, "loud individual data")
@@ -272,7 +243,9 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("prior_cols", &python_dichotomousMA_analysis::prior_cols)
       .def_readwrite("models", &python_dichotomousMA_analysis::models)
       .def_readwrite("modelPriors", &python_dichotomousMA_analysis::modelPriors)
-      .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA);
+      .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA)
+      .def_readwrite("weightOption", &python_dichotomousMA_analysis::weightOption)
+      .def_readwrite("datatype", &python_dichotomousMA_analysis::datatype);
 
   py::class_<python_dichotomousMA_result>(m, "python_dichotomousMA_result")
       .def(py::init<>())
@@ -435,11 +408,6 @@ PYBIND11_MODULE(bmdscore, m) {
   );
 
   m.def(
-      "pythonBMDSLoud", &pythonBMDSLoud, "Entry point to run BMDS continuous LOUD MA",
-      py::arg("python_continuousMA_analysis"), py::arg("python_continuousMA_result")
-  );
-
-  m.def(
       "pythonBMDSMultitumor", &pythonBMDSMultitumor, "Entry point to run Multitumor analysis",
       py::arg("python_multitumor_analysis"), py::arg("python_multitumor_result")
   );
@@ -447,6 +415,24 @@ PYBIND11_MODULE(bmdscore, m) {
   m.def(
       "pythonBMDSNested", &pythonBMDSNested, "Entry point to run Nested analysis",
       py::arg("python_nested_analysis"), py::arg("python_nested_result")
+  );
+
+  //  m.def(
+  //      "pythonBMDSLoud", &pythonBMDSLoud, "Entry point to run BMDS continuous LOUD MA",
+  //      py::arg("python_continuousMA_analysis"), py::arg("python_continuousMA_result")
+  //  );
+
+  m.def(
+      "pythonBMDSLoud",
+      overload_cast_<python_continuousMA_analysis*, python_continuousMA_result*>()(&pythonBMDSLoud),
+      "Overloaded method to run BMDS Loud Approach"
+  );
+
+  m.def(
+      "pythonBMDSLoud",
+      overload_cast_<python_dichotomousMA_analysis*, python_dichotomousMA_result*>()(&pythonBMDSLoud
+      ),
+      "Overloaded method to run BMDS Loud Approach"
   );
 
   m.def(

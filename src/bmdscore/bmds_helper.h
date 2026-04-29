@@ -34,31 +34,6 @@ extern std::string BMDS_VERSION;
 
 enum nested_model { nlogistic = 1, nctr = 2 };
 
-// enum loud_cont_model {
-//   l_exp_3 = 1,
-//   l_exp_5 = 2,
-//   l_power = 3,
-//   l_hill = 4,
-//   l_poly = 5,
-//   l_hill_efsa = 6,
-//   l_invexp_efsa = 7,
-//   l_lognormal_efsa = 8,
-//   l_gamma_efsa = 9,
-//   l_lms_efsa = 10
-// };
-//
-// enum loud_dich_model {
-//   l_logistic = 1,
-//   l_weibull = 2,
-//   l_gamma = 3,
-//   l_dhill = 4,
-//   l_loglogistic = 5,
-//   l_logprobit = 6,
-//   l_probit = 7,
-//   l_qlinear = 8,
-//   l_multistage = 9
-// };
-
 enum loud_datatype { l_summary = 1, l_individual = 2, l_nested = 3, l_dichotomous = 4 };
 
 // BMDS helper structures
@@ -872,20 +847,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
-void BMDS_ENTRY_API __stdcall pythonBMDSLoud_dich_entry(
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
-);
-
-void pythonBMDSLoud_cont(
-    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
-);
-
-void pythonBMDSLoud_dich(
-    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
-);
-
-void pythonBMDSContLoud_dummy(
-    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 );
 
 Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
