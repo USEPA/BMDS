@@ -232,7 +232,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("aod", &python_dichotomous_model_result::aod)
       .def_readwrite(
           "gof_chi_sqr_statistic", &python_dichotomous_model_result::gof_chi_sqr_statistic
-      );
+      )
+      .def_readwrite("loudRes", &python_dichotomous_model_result::loudRes);
 
   py::class_<python_dichotomousMA_analysis>(m, "python_dichotomousMA_analysis")
       .def(py::init<>())
