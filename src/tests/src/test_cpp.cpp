@@ -52,8 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  //  runPythonContLoud();
-  runPythonDichoLoud();
+  runPythonContLoud();
+  //  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2300,12 +2300,12 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
     } else {
       std::cout << "error in createDefaultPriors for i:" << i << std::endl;
     }
-    for (int j = 0; j < tmpPrior.size(); j++) {
-      for (int k = 0; k < tmpPrior[j].size(); k++) {
-        std::cout << tmpPrior[j][k] << ",";
-      }
-      std::cout << std::endl;
-    }
+    //    for (int j = 0; j < tmpPrior.size(); j++) {
+    //      for (int k = 0; k < tmpPrior[j].size(); k++) {
+    //        std::cout << tmpPrior[j][k] << ",";
+    //      }
+    //      std::cout << std::endl;
+    //    }
     // flatten the vector
     int priorCols = pyMA->prior_cols[i];
     int numEntries = priorCols * tmpPrior.size();
@@ -2317,10 +2317,10 @@ std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_
         count++;
       }
     }
-    for (int j = 0; j < flatPrior.size(); j++) {
-      std::cout << flatPrior[j] << ",";
-    }
-    std::cout << std::endl;
+    //    for (int j = 0; j < flatPrior.size(); j++) {
+    //      std::cout << flatPrior[j] << ",";
+    //    }
+    //    std::cout << std::endl;
     ret.push_back(flatPrior);
   }
 
@@ -2502,7 +2502,8 @@ void runPythonDichoLoud() {
     numParms.push_back(prSize / prCols);
   }
 
-  std::vector<python_dichotomous_model_result> res(numModels);
+  // std::vector<python_dichotomous_model_result> res(numModels);
+  std::vector<python_dichotomous_model_result> res(nmodels);
   for (int i = 0; i < nmodels; i++) {
     res[i].model = models[i];
     res[i].nparms = numParms[i];
@@ -2514,9 +2515,9 @@ void runPythonDichoLoud() {
   // ma_res.dist_numE = dist_numE;
 
   struct BMDSMA_results bmdsRes;
-  bmdsRes.BMD.assign(numModels, BMDS_MISSING);
-  bmdsRes.BMDL.assign(numModels, BMDS_MISSING);
-  bmdsRes.BMDU.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(nmodels, BMDS_MISSING);
   bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
   bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
   bmdsRes.BMD_MA = BMDS_MISSING;
@@ -2622,6 +2623,7 @@ void runPythonContLoud() {
   int datatype = loud_datatype::l_individual;
   //  bool isIncreasing = true;
 
+  int nmodels = models.size();
   int numDataRows = sizeof(D) / sizeof(D[0]);
 
   // check data array sizes for consistency
@@ -2675,13 +2677,13 @@ void runPythonContLoud() {
   //  anal.samples = 0;  // num MCMC samples
   //  anal.tail_prob = 0.01;
   anal.suff_stat = suffStat;
-  //  anal.isIncreasing = isIncreasing;
+  anal.isIncreasing = isIncreasing;
   //  anal.parms = numParms;
   //  anal.prior_cols = prCols;
   //  anal.transform_dose = 0;
   //  anal.prior.assign(prior, prior + anal.prior_cols * anal.parms);
   //  anal.restricted = restricted;
-  //  anal.detectAdvDir = detectAdvDir;
+  anal.detectAdvDir = detectAdvDir;
   anal.samples = iter;
   anal.burnin = burnin;
 
@@ -2699,19 +2701,19 @@ void runPythonContLoud() {
 
   ma_info.models = models;
   ma_info.loud_dist_type = dists;
-  ma_info.nmodels = models.size();
-  ma_info.prior_cols = std::vector<int>(ma_info.nmodels, 5);
+  ma_info.nmodels = nmodels;
+  ma_info.prior_cols = std::vector<int>(nmodels, 5);
 
-  std::vector<python_continuous_model_result> res(models.size());
+  std::vector<python_continuous_model_result> res(nmodels);
   //  for (int i = 0; i < models.size(); i++) {
   //    res[i].model = models[i];
   //    res[i].dist = dists[i];
   //  }
 
   struct BMDSMA_results bmdsRes;
-  bmdsRes.BMD.assign(numModels, BMDS_MISSING);
-  bmdsRes.BMDL.assign(numModels, BMDS_MISSING);
-  bmdsRes.BMDU.assign(numModels, BMDS_MISSING);
+  bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(nmodels, BMDS_MISSING);
   bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
   bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
   bmdsRes.BMD_MA = BMDS_MISSING;
@@ -2719,7 +2721,7 @@ void runPythonContLoud() {
   bmdsRes.BMDU_MA = BMDS_MISSING;
 
   struct python_continuousMA_result ma_res;
-  ma_res.nmodels = models.size();
+  ma_res.nmodels = nmodels;
   ma_res.models = res;
   ma_res.bmdsRes = bmdsRes;
 

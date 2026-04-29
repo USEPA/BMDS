@@ -3496,7 +3496,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
     qtiles(i) = startVal + i * stepSize;
   }
 
-  std::cout << "calling run_latentslice" << std::endl;
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
@@ -3507,46 +3506,35 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   // end common code
 
-  std::cout << "calling model fits" << std::endl;
   switch (loudIn->model) {
     case cont_model::power:
-      std::cout << "fitting power model" << std::endl;
       fit_cpower(loudIn, loudOut, R);
       break;
     case cont_model::exp_3:
-      std::cout << "fitting exp3 model" << std::endl;
       fit_cexp3(loudIn, loudOut, R);
       break;
     case cont_model::exp_5:
-      std::cout << "fitting exp5 model" << std::endl;
       fit_cexp5(loudIn, loudOut, R);
       break;
     case cont_model::hill:
-      std::cout << "fitting hill model" << std::endl;
       fit_chill(loudIn, loudOut, R);
       break;
     case cont_model::l_hill_efsa:
-      std::cout << "fitting hill_efsa model" << std::endl;
       fit_chill_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_invexp_efsa:
-      std::cout << "fitting invexp_efsa model" << std::endl;
       fit_cinvexp_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_lognormal_efsa:
-      std::cout << "fitting lognormal_efsa model" << std::endl;
       fit_clog_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_gamma_efsa:
-      std::cout << "fitting gamma_efsa model" << std::endl;
       fit_cgamma_efsa(loudIn, loudOut, R);
       break;
     case cont_model::l_lms_efsa:
-      std::cout << "fitting lms_efsa model" << std::endl;
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
-  std::cout << "after model fits" << std::endl;
   // power only has normal model
   // ptr2 model_transform = choose_nonlinearity2(model_typ);
   // bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
@@ -4881,9 +4869,7 @@ double calcLoudBMD(
   return bmd;
 }
 
-double pivotal_pvalue(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn  // fitResult *loudOut,
-) {
+double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -4915,13 +4901,6 @@ double pivotal_pvalue(
     mu = model_fun(Ruse.row(i), loudIn->doses);
     Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu, loudIn->dist, loudIn->datatype);
   }
-  //  std::cout << "N:" << N << ", S:" << S << std::endl;
-  //  std::cout << "df_val:" << df_val << std::endl;
-  //
-  //  std::cout << "mu:" << std::endl;
-  //  std::cout << mu << std::endl;
-  //  std::cout << "Qvals:" << std::endl;
-  //  std::cout << Qvals << std::endl;
 
   int m = ceil(loudIn->qlev * S) - 1;  //-1 needed due to 0 indexing
   std::nth_element(Qvals.begin(), Qvals.begin() + m, Qvals.end());
@@ -4948,14 +4927,11 @@ Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols) {
 void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
 ) {
-  // Eigen::VectorXd D(pyMA->pyDA.doses);
   Eigen::VectorXd D1 =
       Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.doses.data(), pyMA->pyDA.doses.size());
   Eigen::VectorXd N =
       Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.n_group.data(), pyMA->pyDA.n_group.size());
   Eigen::VectorXd Y1 = Eigen::Map<Eigen::VectorXd>(pyMA->pyDA.Y.data(), pyMA->pyDA.Y.size());
-  //   Eigen::VectorXd N(pyMA->pyDA.n_group);
-  //   Eigen::VectorXd Y1(pyMA->pyDA.Y);
 
   Eigen::MatrixXd D(D1.size(), 1);
   D.col(0) = D1;
@@ -5011,6 +4987,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     double bmdl = findQuantileVals(bmd_dist, pyMA->pyDA.alpha);
     double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyDA.alpha);
     double bmd = findMedianVal(bmd_dist);
+    pyRes->bmdsRes.BMD[i] = bmd;
+    pyRes->bmdsRes.BMDL[i] = bmdl;
+    pyRes->bmdsRes.BMDU[i] = bmdu;
   }
 
   Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
@@ -5116,7 +5095,7 @@ void calcLoudPosteriors(
   }
 }
 
-// entry point for Loud methods
+// entry point for continuous Loud methods
 void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
 ) {
@@ -5133,9 +5112,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     // this will override isIncreasing
     determineAdvDir(&pyMA->pyCA);
   }
-  std::cout << "isIncreasing:" << (isIncreasing ? "True" : "False") << std::endl;
-  std::cout << "Overriding isIncreasing" << std::endl;
-  isIncreasing = true;
 
   std::vector<int> N_obs;
   std::vector<double> mean;
@@ -5178,24 +5154,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     std::cout << "datatype not supported" << std::endl;
   }
 
-  //  std::cout<<"N_obs:"<<std::endl;
-  //  for (const auto& num : N_obs) {
-  //    std::cout << num << " ";
-  //  }
-  //  std::cout << std::endl;
-  //
-  //  std::cout<<"mean:"<<std::endl;
-  //  for (const auto& num : mean) {
-  //    std::cout << num << " ";
-  //  }
-  //  std::cout << std::endl;
-  //
-  //  std::cout<<"logMean:"<<std::endl;
-  //  for (const auto& num : logMean) {
-  //    std::cout << num << " ";
-  //  }
-  //  std::cout << std::endl;
-
   // variances
   std::vector<double> sumsq;
   std::vector<double> logSumsq;
@@ -5228,18 +5186,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     std::cout << "datatype not supported" << std::endl;
   }
 
-  //  std::cout<<"var:"<<std::endl;
-  //  for (const auto& num : var) {
-  //    std::cout << num << " ";
-  //  }
-  //  std::cout << std::endl;
-  //
-  //  std::cout<<"logVar:"<<std::endl;
-  //  for (const auto& num : logVar) {
-  //    std::cout << num << " ";
-  //  }
-  //  std::cout << std::endl;
-
   double numerator = 0.0;
   double denominator = 0.0;
   double numerator2 = 0.0;
@@ -5250,12 +5196,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     denominator += N_obs[i] - 1;
   }
 
-  //  std::cout<<"numerator:"<<numerator<<std::endl;
-  //  std::cout<<"denominator:"<<denominator<<std::endl;
-
   double ssq = numerator / denominator;
-
-  //  std::cout<<"ssq:"<<ssq<<std::endl;
 
   double num_01 = (N_obs[0] - 1) * var[0] + (N_obs[N_obs.size() - 1] - 1) * var[var.size() - 1];
   double den_01 = (N_obs[0] - 1) + (N_obs[N_obs.size() - 1] - 1);
@@ -5263,16 +5204,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   double ssq01 = num_01 / den_01;
   int N_obs01 = N_obs[0] + N_obs[N_obs.size() - 1];
 
-  //  std::cout<<"num_01:"<<num_01<<std::endl;
-  //  std::cout<<"den_01:"<<den_01<<std::endl;
-  //  std::cout<<"ssq01:"<<ssq01<<std::endl;
-  //  std::cout<<"N_obs01:"<<N_obs01<<std::endl;
-
   // log scale version
   double ssq_log01 =
       ((N_obs[0] - 1) * logVar[0] + (N_obs[N_obs.size() - 1] - 1) * logVar[logVar.size() - 1]) /
       den_01;
-  //  std::cout<<"ssq_log01:"<<ssq_log01<<std::endl;
 
   // define post data - skip dose group 0 and N
   int postStartInd;
@@ -5326,28 +5261,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   int iter = pyMA->pyCA.samples;
   int burnin = pyMA->pyCA.burnin;
 
-  //  std::cout << "doses_post:" << std::endl;
-  //  std::cout << doses_post << std::endl;
-  //  std::cout << "Y_post:" << std::endl;
-  //  std::cout << Y_post << std::endl;
-  //
-  //  std::cout <<"mean:" << std::endl;
-  //  for (int i=0; i<mean.size(); i++){
-  //    std::cout<<mean[i]<<std::endl;
-  //  }
-  //  std::cout<<"N_obs:" << std::endl;
-  //  for (int i=0; i<N_obs.size(); i++){
-  //    std::cout<<N_obs[i]<<std::endl;
-  //  }
-  //  std::cout<<"var:"<<std::endl;
-  //  for (int i=0; i<var.size(); i++){
-  //    std::cout<<var[i]<<std::endl;
-  //  }
-  //  std::cout<<"ssq01:"<<ssq01<<std::endl;
-  //  std::cout<<"iter:"<<iter<<std::endl;
-  //  std::cout<<"burnin:"<<burnin<<std::endl;
-  //  std::cout<<"bmr:"<<bmr<<std::endl;
-
   struct fitInput cvInput = createFitInput(
       doses_post, Y_post, mean[0], mean[mean.size() - 1], N_obs[0], N_obs[N_obs.size() - 1], var[0],
       var[var.size() - 1], N_obs[0] + N_obs[N_obs.size() - 1], ssq01, iter, burnin, bmr,
@@ -5372,7 +5285,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // add logic here if all model results are not needed
   struct fitResult cvPowerOut;
   struct fitResult ncvPowerOut;
-  // struct fitResult logcvPowerOut;
   struct fitResult cvExp3Out;
   struct fitResult ncvExp3Out;
   struct fitResult logcvExp3Out;
@@ -5381,7 +5293,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   struct fitResult logcvExp5Out;
   struct fitResult cvHillOut;
   struct fitResult ncvHillOut;
-  // struct fitResult logcvHillOut;
   struct fitResult cvEfsaHillOut;
   struct fitResult ncvEfsaHillOut;
   struct fitResult logcvEfsaHillOut;
@@ -5419,7 +5330,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         break;
     }
 
-    // old
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
@@ -5596,11 +5506,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
   );
 
-  std::cout << "posterior probs" << std::endl;
-  for (int i = 0; i < posterior_probs.size(); i++) {
-    std::cout << "i:" << i << ", " << posterior_probs[i] << std::endl;
-  }
-
   // calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
     std::vector<double> bmd_dist;
@@ -5609,6 +5514,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     double bmdl = findQuantileVals(bmd_dist, pyMA->pyCA.alpha);
     double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyCA.alpha);
     double bmd = findMedianVal(bmd_dist);
+    pyRes->bmdsRes.BMD[i] = bmd;
+    pyRes->bmdsRes.BMDL[i] = bmdl;
+    pyRes->bmdsRes.BMDU[i] = bmdu;
   }
 
   Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
@@ -5637,15 +5545,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       ),
       bmds_c.end()
   );
-  std::cout << "original bmd_dist size:" << iter << std::endl;
-  std::cout << "new size:" << bmds_c.size() << std::endl;
   // sort data
   std::sort(bmds_c.begin(), bmds_c.end());
-
-  std::cout << std::endl << "bmds_c:" << std::endl;
-  for (int i = 0; i < bmds_c.size(); i++) {
-    std::cout << "i:" << i << ", " << bmds_c[i] << std::endl;
-  }
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
