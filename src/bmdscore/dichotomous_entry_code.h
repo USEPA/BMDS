@@ -75,7 +75,7 @@ Eigen::MatrixXd X_cov(Eigen::MatrixXd theta, Eigen::MatrixXd Y, Eigen::MatrixXd 
   return rValue.asDiagonal().inverse();
 }
 
-void rescale(Eigen::MatrixXd *parms, dich_model model, double max_dose); 
+void rescale(Eigen::MatrixXd *parms, dich_model model, double max_dose);
 
 /* Function: estimate_ma_mcmc
  * Purpose:  This function performs a dichotomous Model Average (MA) for dichotomous

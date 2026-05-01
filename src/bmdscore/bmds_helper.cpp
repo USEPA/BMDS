@@ -3539,7 +3539,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   // ptr2 model_transform = choose_nonlinearity2(model_typ);
   // bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
   bridge_sample(R, loudIn, loudOut, priorr, isNegative);
-
   // pivotal pvalue
   loudOut->pval = pivotal_pvalue(R, loudIn);
 }
@@ -4939,9 +4938,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   Y.col(0) = Y1;
   Y.col(1) = N;
 
-  //scale dose
+  // scale dose
   double max_dose = D.maxCoeff();
-  D = (1/max_dose) * D;
+  D = (1 / max_dose) * D;
 
   struct fitInput loudIn = createFitInput(
       D, Y, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING,
@@ -4982,24 +4981,21 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   int iter = pyMA->pyDA.samples;
 
-
-  //unscale bmd and parms
-  for (int i=0; i< pyMA->nmodels; i++){
-     fitResult fitRes = pyRes->models[i].loudRes;
-     fitRes.BMD *= max_dose; 
-     //std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
-     Eigen::MatrixXd parms = fitRes.parms.transpose();
-     //std::cout<<"parms:"<<std::endl<<parms<<std::endl;
-     for(int j=0; j<fitRes.parms.cols(); j++){
-	Eigen::MatrixXd parmCol = parms.col(j);
-        rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
-	parms.col(j) = parmCol;
-     }
-     fitRes.parms = parms.transpose();
-     //std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+  // unscale bmd and parms
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    fitResult fitRes = pyRes->models[i].loudRes;
+    fitRes.BMD *= max_dose;
+    // std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+    Eigen::MatrixXd parms = fitRes.parms.transpose();
+    // std::cout<<"parms:"<<std::endl<<parms<<std::endl;
+    for (int j = 0; j < fitRes.parms.cols(); j++) {
+      Eigen::MatrixXd parmCol = parms.col(j);
+      rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
+      parms.col(j) = parmCol;
+    }
+    fitRes.parms = parms.transpose();
+    // std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
   }
-
-
 
   // TODO Move this to separate method
   //  calc individual model bmdl, bmd, bmdu
@@ -5130,6 +5126,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     return;
   }
 
+  Eigen::VectorXd D1 =
+      Eigen::Map<Eigen::VectorXd>(pyMA->pyCA.doses.data(), pyMA->pyCA.doses.size());
+
+  Eigen::MatrixXd D(D1.size(), 1);
+  D.col(0) = D1;
+
+  // scale dose
+  double max_dose = D.maxCoeff();
+  D = (1 / max_dose) * D;
+
   bool isIncreasing = pyMA->pyCA.isIncreasing;
   if (pyMA->pyCA.detectAdvDir) {
     // this will override isIncreasing
@@ -5145,9 +5151,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   int count = 0;
 
   if (pyMA->datatype == loud_datatype::l_individual) {
-    double curDose = pyMA->pyCA.doses[0];
+    double curDose = D(0);
     for (int i = 0; i < pyMA->pyCA.n; i++) {
-      if (pyMA->pyCA.doses[i] == curDose) {
+      if (D(i) == curDose) {
         count++;
         tmpMean += pyMA->pyCA.Y[i];
         tmpLogMean += std::log(pyMA->pyCA.Y[i]);
@@ -5155,7 +5161,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         N_obs.push_back(count);
         mean.push_back(tmpMean / count);
         logMean.push_back(tmpLogMean / count);
-        curDose = pyMA->pyCA.doses[i];
+        curDose = D(i);
         count = 1;
         tmpMean = pyMA->pyCA.Y[i];
         tmpLogMean = std::log(pyMA->pyCA.Y[i]);
@@ -5528,6 +5534,25 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   calcLoudPosteriors(
       posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
   );
+
+  // unscale bmd and parms
+  for (int i = 0; i < pyMA->nmodels; i++) {
+    fitResult fitRes = pyRes->models[i].loudRes;
+    fitRes.BMD *= max_dose;
+    //     std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+    Eigen::MatrixXd parms = fitRes.parms.transpose();
+    //     std::cout<<"parms:"<<std::endl<<parms<<std::endl;
+    for (int j = 0; j < fitRes.parms.cols(); j++) {
+      Eigen::MatrixXd parmCol = parms.col(j);
+      // degree is hardcoded as -9999, since there is no poly LOUD model
+      rescale_parms(
+          parmCol, (cont_model)pyRes->models[i].model, max_dose, 1.0, false, BMDS_MISSING
+      );
+      parms.col(j) = parmCol;
+    }
+    fitRes.parms = parms.transpose();
+    //     std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+  }
 
   // calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
