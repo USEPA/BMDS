@@ -78,6 +78,29 @@ class TestLOUD:
         assert "alpha" in idata.posterior.data_vars
         assert "Var0" not in idata.posterior.data_vars
 
+    def test_dichotomous_loud_model_average_to_inferencedata(self):
+        dataset = pybmds.DichotomousDataset(
+            doses=[0, 0.25, 0.75, 0.85, 1],
+            ns=[20, 20, 20, 20, 20],
+            incidences=[0, 1, 7, 15, 19],
+        )
+        session = pybmds.Session(dataset=dataset)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+        session.execute()
+
+        idata = model_average_to_inferencedata(session, n_chains=1)
+
+        assert set(["BMD", "MA_BMD", "model_weights", "n_param"]).issubset(
+            idata.posterior.data_vars
+        )
+        assert list(idata.posterior.coords["model"].values) == [
+            model.name() for model in session.models
+        ]
+        assert idata.observed_data.attrs["dtype"] == "dichotomous"
+        assert idata.posterior["MA_BMD"].shape[0] == 1
+        assert idata.posterior["BMD"].shape[2] == len(session.models)
+        assert idata.posterior["BMD"].shape[1] == len(session.model_average.results.bmd_dist)
+
     def test_model_average_to_inferencedata_renames_nonconstant_variance_parameters(
         self, cdataset3
     ):

@@ -156,26 +156,26 @@ class ModelPriors(BaseModel):
             s2 = ((df0 * s0**2) + (df1 * s1**2)) / (df0 + df1)
             if p := _p("Var0"):
                 p.type = PriorDistribution.Gamma
-                p.initial_value = (df0 + df1) / 2  # shape
-                p.stdev = s2 * (df0 + df1) / 2  # scale
+                p.initial_value = (n0 + n1 - 1) / 2  # shape
+                p.stdev = s2 * (n0 + n1) / 2  # scale
 
         elif dist_type is DistType.normal_ncv:
             if p := _p("Var0"):
                 p.type = PriorDistribution.Gamma
                 p.initial_value = df0 / 2
-                p.stdev = (s0**2) * df0 / 2
+                p.stdev = (s0**2) * n0 / 2
 
             if p := _p("Var1"):
                 p.type = PriorDistribution.Gamma
                 p.initial_value = df1 / 2
-                p.stdev = (s1**2) * df1 / 2
+                p.stdev = (s1**2) * n1 / 2
 
         elif dist_type is DistType.log_normal:
             s2log = ((df0 * varlog0) + (df1 * varlog1)) / (df0 + df1)
             if p := _p("Var0"):
                 p.type = PriorDistribution.Gamma
-                p.initial_value = (df0 + df1) / 2
-                p.stdev = s2log * (df0 + df1) / 2
+                p.initial_value = (n0 + n1 - 1) / 2
+                p.stdev = s2log * (n0 + n1) / 2
             if p := _p("Var1"):
                 self.variance_priors.remove(p)
 

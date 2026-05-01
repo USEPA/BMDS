@@ -11,6 +11,8 @@ from matplotlib.lines import Line2D
 
 from ..constants import DistType
 
+az._log.disabled = True
+
 
 def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
     arr = np.asarray(arr, dtype=float)
@@ -474,7 +476,7 @@ def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: in
         labels=[label for label, _ in items],
         loc="upper center",
         bbox_to_anchor=(0.5, 0.98),
-        ncol=ncol or min(4, max(1, len(handles))),
+        ncol=ncol or min(3, max(1, len(handles))),
         frameon=False,
     )
 
@@ -482,7 +484,7 @@ def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: in
 def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
     model_names = [str(name) for name in idata.posterior.coords["model"].values]
     color_map = _model_color_map(model_names)
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(8, 6.5))
 
     for model_name in model_names:
         draws = np.asarray(
@@ -498,7 +500,7 @@ def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
     if ma_draws.size > 0:
         az.plot_dist(ma_draws, ax=ax, color="black", plot_kwargs={"linewidth": 2.5})
 
-    ax.set_title("BMD distributions")
+    ax.set_title("BMD distributions", pad=6)
     ax.set_ylabel("Density")
     _add_figure_legend(
         fig,
@@ -506,7 +508,7 @@ def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
         + [("Model Average", "black")],
         ncol=min(5, max(1, len(model_names) + 1)),
     )
-    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.88))
+    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.80))
     return fig
 
 
@@ -579,9 +581,13 @@ def _parameter_group_records(
                 rows.append(
                     {
                         "Model": _disttype_suffix(
-                            next(
-                                model for model in models if model.name() == model_name
-                            ).settings.disttype
+                            getattr(
+                                next(
+                                    model for model in models if model.name() == model_name
+                                ).settings,
+                                "disttype",
+                                None,
+                            )
                         ),
                         "Parameter": param_name,
                         **stats.to_dict(),
