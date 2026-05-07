@@ -218,7 +218,7 @@ class TestJonckheere:
             seed=123,
         )
 
-        assert result.approach == Approach.permtuation
+        assert result.approach == Approach.permutation
         assert result.p_value < 0.05
 
     def test_permutation_decreasing_trend_small_pvalue(self):
@@ -261,5 +261,5 @@ class TestJonckheere:
             seed=123,
         )
 
-        assert result.approach == Approach.permtuation
+        assert result.approach == Approach.permutation
         assert result.p_value < 0.05
