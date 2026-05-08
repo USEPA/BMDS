@@ -3878,12 +3878,12 @@ void fit_weibull(
     double a1 = R(i, 0);
     double b1 = R(i, 1);
     double c1 = R(i, 2);
-    double g = R(i, 3);
+    double a = R(i, 3);
 
     double sum = a1 + b1 + c1;
     double p_zero = a1 / sum;
     double p_one = (a1 + b1) / sum;
-    double a = p_zero;
+    double g = p_zero;
     double b = -1.0 * log((1 - p_one) / (1 - p_zero));
 
     // BMDS expects logit(g)
