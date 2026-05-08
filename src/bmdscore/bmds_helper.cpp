@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <numeric>
 // #include <cmath>
+#include <chrono>
 #include <nlopt.hpp>
 
 #include "analysis_of_deviance.h"
@@ -3047,7 +3048,8 @@ void bridge_sample(
       Eigen::VectorXd row = R.row(i);
       double post_B = prior_v(priorr, row);
       mu = model_fun(row, loudIn->doses);
-      A = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
+      // A = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
+      A = loglik_mat.row(i);
       post(i) = A.sum();
       post(i) += post_B;
     }
@@ -3496,10 +3498,16 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
     qtiles(i) = startVal + i * stepSize;
   }
 
+  auto start = std::chrono::steady_clock::now();
+
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
+
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time for latent slice:" << duration.count() << " ms" << std::endl;
 
   // other calcs
   loudOut->BMD.resize(R.rows());
@@ -3564,7 +3572,7 @@ void fit_qlinear(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_qlinearModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3586,7 +3594,7 @@ void fit_qlinear(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, b;
   }
 }
 
@@ -3606,7 +3614,7 @@ void fit_logistic(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_logisticModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3629,7 +3637,7 @@ void fit_logistic(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << a, b;
   }
 }
 
@@ -3649,7 +3657,7 @@ void fit_probit(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_probitModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3672,7 +3680,7 @@ void fit_probit(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << a, b;
   }
 }
 
@@ -3692,7 +3700,7 @@ void fit_mstage2(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_multistageNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a11 = R(i, 0);
@@ -3717,7 +3725,7 @@ void fit_mstage2(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, b1, b2;
   }
 }
 
@@ -3737,7 +3745,7 @@ void fit_loglogistic(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_loglogisticModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3762,7 +3770,7 @@ void fit_loglogistic(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, a, b;
   }
 }
 
@@ -3782,7 +3790,7 @@ void fit_logprobit(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_logProbitModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3807,7 +3815,7 @@ void fit_logprobit(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, a, b;
   }
 }
 
@@ -3825,7 +3833,7 @@ void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const E
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_hillModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double g = R(i, 0);
@@ -3844,7 +3852,7 @@ void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const E
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, v, a, b;
   }
 }
 
@@ -3864,7 +3872,7 @@ void fit_weibull(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_weibullModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3881,14 +3889,14 @@ void fit_weibull(
     // BMDS expects logit(g)
     theta(0, 0) = log(g / (1 - g));
     theta(1, 0) = a;
-    theta(1, 0) = b;
+    theta(2, 0) = b;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, a, b;
   }
 }
 
@@ -3908,7 +3916,7 @@ void fit_dgamma(
   IDPrior model_prior(loudIn->priorr);
   dBMDModel<dich_gammaModelNC, IDPrior> model(dichotomousM, model_prior, fixedB, fixedV);
 
-  loudOut->parms.resize(R.rows(), 2);
+  loudOut->parms.resize(R.rows(), nparms);
   Eigen::MatrixXd theta = Eigen::MatrixXd::Zero(nparms, 1);
   for (int i = 0; i < R.rows(); ++i) {
     double a1 = R(i, 0);
@@ -3933,7 +3941,7 @@ void fit_dgamma(
     X.col(1) = loudIn->doses;
 
     loudOut->BMD(i) = calcLoudBMD(&dichotomousM, theta, loudIn->bmdtype, loudIn->bmr, X);
-    loudOut->parms.row(i) << theta(0, 0), theta(1, 0);
+    loudOut->parms.row(i) << g, alpha, b;
   }
 }
 
@@ -4985,16 +4993,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < pyMA->nmodels; i++) {
     fitResult fitRes = pyRes->models[i].loudRes;
     fitRes.BMD *= max_dose;
-    // std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
     Eigen::MatrixXd parms = fitRes.parms.transpose();
-    // std::cout<<"parms:"<<std::endl<<parms<<std::endl;
+    // rescale fitResult parms
     for (int j = 0; j < fitRes.parms.cols(); j++) {
       Eigen::MatrixXd parmCol = parms.col(j);
       rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
       parms.col(j) = parmCol;
     }
     fitRes.parms = parms.transpose();
-    // std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
+    // std::cout<<"final fitRes.parms for
+    // model:"<<pyRes->models[i].model<<std::endl<<fitRes.parms<<std::endl;
   }
 
   // TODO Move this to separate method
