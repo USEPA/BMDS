@@ -37,8 +37,8 @@ class DichotomousModelSettings(BaseModel):
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
     bmr_type: DichotomousRiskType = DichotomousRiskType.ExtraRisk
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # multistage only
-    samples: Annotated[int, Field(ge=10, le=1000)] = 100
-    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
+    samples: Annotated[int, Field(ge=0, le=100000)] = 50000
+    burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     count_all_parameters_on_boundary: bool = False
 

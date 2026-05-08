@@ -119,6 +119,15 @@ class TestDichotomousMa:
 
         docx = session.to_docx(citation=False, bmd_cdf_table=False)
         paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+        parameter_model_labels = [
+            row.cells[0].text
+            for table in docx.tables
+            if len(table.rows) > 1
+            and [cell.text for cell in table.rows[0].cells[:2]] == ["Model", "Parameter"]
+            for row in table.rows[1:]
+        ]
 
         assert "Model Averaging Diagnostics (LOUD)" in paragraph_text
         assert len(docx.tables) > 0
+        assert "None" not in parameter_model_labels
+        assert any(label in parameter_model_labels for label in ["Logistic", "Weibull"])
