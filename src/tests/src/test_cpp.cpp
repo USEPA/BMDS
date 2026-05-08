@@ -52,8 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  runPythonContLoud();
-  //  runPythonDichoLoud();
+  //  runPythonContLoud();
+  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2408,7 +2408,7 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  std::vector<int> models = {8, 3};
+  std::vector<int> models = {9};
   // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
   // data_M3
@@ -2526,6 +2526,7 @@ void runPythonDichoLoud() {
 
   ma_res.bmdsRes = bmdsRes;
 
+  std::cout << "calling pythonBMDSLoud" << std::endl;
   pythonBMDSLoud(&ma_info, &ma_res);
 
   std::cout << "Test output:" << std::endl;
@@ -2548,10 +2549,10 @@ void runPythonContLoud() {
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
                       // hybrid_added   from src/include/cmodeldefs.h
-  int iter = 5;
-  int burnin = 2;
+  int iter = 50000;
+  int burnin = 20000;
 
-  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int priorCols = 5;
 
   // define models to run
@@ -2571,8 +2572,10 @@ void runPythonContLoud() {
   //  normal = 1, normal_ncv = 2, log_normal = 3
 
   // testing
-  std::vector<int> models = {8, 8};
-  std::vector<int> dists = {1, 2};
+  // std::vector<int> models = {8, 8};
+  // std::vector<int> dists = {1, 2};
+  std::vector<int> models = {8};
+  std::vector<int> dists = {1};
   // kitchen sink
   // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
   //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
@@ -2728,7 +2731,7 @@ void runPythonContLoud() {
   ma_info.priors = createDefaultPriors(&ma_info);
   pythonBMDSLoud(&ma_info, &ma_res);
 
-  printBmdsStruct(&ma_res);
+  // printBmdsStruct(&ma_res);
 }
 
 void runOldContAnalysis() {

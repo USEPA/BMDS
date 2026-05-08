@@ -17,7 +17,8 @@ int run_all_unitTests() {
   dicho_AIC_penalty_test();
   cont_AIC_penalty_test();
   nested_AIC_penalty_test();
-  // loud_model_fit_test();
+  // cont_loud_model_fit_test();
+  dicho_loud_model_fit_test();
   pivotal_pvalue_test();
   rg_dg_test();
   bridge_sample_test();
@@ -32,8 +33,284 @@ void objfunc_test() {
   expect_true(objfunc_bmdl(x, tmp, NULL) == 1.5);
 }
 
+void dicho_loud_model_fit_test() {
+  Eigen::MatrixXd Y{{2, 10}, {0, 10}, {9, 10}, {10, 10}};
+
+  Eigen::MatrixXd D{{0}, {0}, {0.25}, {0.5}, {1.0}};
+
+  struct fitInput fitIn;
+  fitIn.Y = Y;
+  fitIn.doses = D;
+  fitIn.datatype = loud_datatype::l_dichotomous;
+
+  fitIn.bmdtype = 1;  // 1 = extra ; added otherwise
+  fitIn.bmr = 0.1;
+
+  int iter = 5;  // # of rows in R
+  int numParms = -1;
+
+  Eigen::VectorXd bmd(iter);
+  Eigen::MatrixXd parms;
+
+  struct fitResult fitOut;
+  fitOut.BMD = bmd;
+
+  // QLINEAR
+  const Eigen::MatrixXd R_qlinear{
+      {1.4420926, 3.446933, 1.7256582},
+      {1.6642870, 3.081530, 1.0784842},
+      {1.7704071, 2.648559, 1.5812958},
+      {0.8703697, 4.126367, 0.4432010},
+      {0.8644686, 3.296346, 0.3468643}
+  };
+
+  const Eigen::MatrixXd parms_qlinear{
+      {0.2180138, 1.0977652},
+      {0.2857488, 1.3499620},
+      {0.2950550, 0.9839231},
+      {0.1599963, 2.3331505},
+      {0.1917769, 2.3516868}
+  };
+
+  const Eigen::VectorXd BMD_qlinear{{0.09597727, 0.07804702, 0.10708207, 0.04515805, 0.04480210}};
+
+  numParms = parms_qlinear.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_qlinear(&fitIn, &fitOut, R_qlinear);
+
+  expect_true(parms_qlinear.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_qlinear.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Logistic
+  const Eigen::MatrixXd R_logistic{
+      {0.6726732, 1.679524, 0.4848529},
+      {0.6941349, 2.382565, 0.4983413},
+      {0.7223239, 2.342939, 0.2171483},
+      {0.2957612, 2.701273, 0.3539663},
+      {0.4041959, 2.978572, 0.2713297}
+
+  };
+
+  const Eigen::MatrixXd parms_logistic{
+      {-1.168628, 2.747888},
+      {-1.423194, 3.243522},
+      {-1.265323, 3.912631},
+      {-2.335061, 4.471238},
+      {-2.084480, 4.607595}
+  };
+
+  const Eigen::VectorXd BMD_logistic{{0.1398612, 0.1395135, 0.1044659, 0.1822487, 0.1509225}};
+
+  numParms = parms_logistic.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_logistic(&fitIn, &fitOut, R_logistic);
+
+  expect_true(parms_logistic.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_logistic.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Probit
+  const Eigen::MatrixXd R_probit{
+      {0.6942345, 3.4937914, 0.5898628},
+      {0.5902350, 3.5207400, 0.6307254},
+      {0.8536257, 4.6657479, 1.0910242},
+      {1.2049330, 5.2710791, 0.8344146},
+      {0.9692136, 0.9741358, 0.6661034}
+  };
+
+  const Eigen::MatrixXd parms_probit{
+      {-1.0567996, 2.214678},
+      {-1.1528913, 2.265135},
+      {-1.1304953, 2.104421},
+      {-0.9748236, 2.179623},
+      {-0.3280840, 0.986095}
+  };
+
+  const Eigen::VectorXd BMD_probit{{0.1447121, 0.1560583, 0.1641656, 0.1353929, 0.1648932}};
+
+  numParms = parms_probit.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_probit(&fitIn, &fitOut, R_probit);
+
+  expect_true(parms_probit.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_probit.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Mstage2
+  const Eigen::MatrixXd R_mstage2{
+      {0.6788134, 3.604108, 1.0704448, 0.4912015},
+      {0.9514867, 3.854400, 0.9993588, 0.2770512},
+      {0.6459280, 5.656038, 0.6612409, 0.1375121},
+      {0.6913127, 6.061237, 0.6292018, 0.1160686},
+      {0.9342977, 5.710257, 0.5344535, 0.4637425}
+  };
+
+  const Eigen::MatrixXd parms_mstage2{
+      {0.12680123, 0.7240601, 0.7499991},
+      {0.16390121, 0.4378502, 1.1425445},
+      {0.09276301, 0.3103545, 1.9465710},
+      {0.09365158, 0.2743843, 2.0895984},
+      {0.13014301, 1.1399928, 1.3182525}
+  };
+
+  const Eigen::VectorXd BMD_mstage2{{0.12842868, 0.16745746, 0.16621102, 0.16829386, 0.08421996}};
+
+  numParms = parms_mstage2.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_mstage2(&fitIn, &fitOut, R_mstage2);
+
+  expect_true(parms_mstage2.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_mstage2.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Loglogistic
+  const Eigen::MatrixXd R_loglogistic{
+      {0.4300198, 2.574260, 0.7936150, 1.627801},
+      {0.8013843, 3.043759, 0.4048359, 2.250533},
+      {0.7590375, 3.995049, 0.2609827, 2.294265},
+      {1.4462175, 4.395465, 0.4198194, 2.461597},
+      {1.2609728, 4.619500, 0.2187056, 2.356580}
+  };
+
+  const Eigen::MatrixXd parms_loglogistic{
+      {0.1132258, 1.176719, 1.627801},
+      {0.1885619, 2.017367, 2.250533},
+      {0.1513513, 2.728357, 2.294265},
+      {0.2309697, 2.348504, 2.461597},
+      {0.2067447, 3.050315, 2.356580}
+  };
+
+  const Eigen::VectorXd BMD_loglogistic{{0.1258455, 0.1537068, 0.1168446, 0.1577635, 0.1078773}};
+
+  numParms = parms_loglogistic.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_loglogistic(&fitIn, &fitOut, R_loglogistic);
+
+  expect_true(parms_loglogistic.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_loglogistic.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Logprobit
+  const Eigen::MatrixXd R_logprobit{
+      {0.2432275, 2.293367, 0.31586361, 1.663363},
+      {0.3478518, 2.673354, 0.34672000, 1.717312},
+      {0.3634574, 2.775057, 0.35165604, 1.602705},
+      {0.3526258, 2.375655, 0.34214157, 1.566058},
+      {0.4888883, 2.767868, 0.04354112, 2.509254}
+  };
+
+  const Eigen::MatrixXd parms_logprobit{
+      {0.08526946, 1.169723, 1.663363},
+      {0.10328370, 1.201363, 1.717312},
+      {0.10413742, 1.213506, 1.602705},
+      {0.11484603, 1.146040, 1.566058},
+      {0.14813459, 2.157399, 2.509254}
+  };
+
+  const Eigen::VectorXd BMD_logprobit{{0.2290797, 0.2355542, 0.2108140, 0.2122206, 0.2539781}};
+
+  numParms = parms_logprobit.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_logprobit(&fitIn, &fitOut, R_logprobit);
+
+  expect_true(parms_logprobit.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_logprobit.isApprox(fitOut.BMD, 1.5e-6));
+
+  // DHill
+  const Eigen::MatrixXd R_dhill{
+      {0.1369812, 0.9424855, 0.9423848, 2.008455},
+      {0.1561788, 0.9676349, 0.8850810, 1.667696},
+      {0.1539500, 0.9671256, 0.8906318, 1.649271},
+      {0.1684538, 0.9379079, 0.9077965, 1.629195},
+      {0.2569901, 0.9323692, 0.4914366, 1.777714}
+  };
+
+  const Eigen::MatrixXd parms_dhill{
+      {0.1369812, 0.9424855, 0.9423848, 2.008455},
+      {0.1561788, 0.9676349, 0.8850810, 1.667696},
+      {0.1539500, 0.9671256, 0.8906318, 1.649271},
+      {0.1684538, 0.9379079, 0.9077965, 1.629195},
+      {0.2569901, 0.9323692, 0.4914366, 1.777714}
+  };
+
+  const Eigen::VectorXd BMD_dhill{{0.2164673, 0.1610112, 0.1572855, 0.1553642, 0.2302745}};
+
+  numParms = parms_dhill.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_dhill(&fitIn, &fitOut, R_dhill);
+
+  expect_true(parms_dhill.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_dhill.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Weibull
+  const Eigen::MatrixXd R_weibull{
+      {0.6783885, 4.921979, 0.7402839, 2.262244},
+      {0.6519385, 5.115077, 0.2039971, 2.200412},
+      {0.6313350, 5.102036, 0.2686074, 2.084397},
+      {0.1813064, 2.513915, 0.1258766, 2.475641},
+      {0.3451823, 2.463386, 0.3229572, 2.252823}
+  };
+
+  const Eigen::MatrixXd parms_weibull{
+      {0.10699035, 2.262244, 2.034545},
+      {0.10918392, 2.200412, 3.260949},
+      {0.10518781, 2.084397, 2.995452},
+      {0.06426803, 2.475641, 3.043153},
+      {0.11022816, 2.252823, 2.154966}
+  };
+
+  const Eigen::VectorXd BMD_weibull{{0.2701662, 0.2101606, 0.2006964, 0.2570353, 0.2619201}};
+
+  numParms = 3;
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_weibull(&fitIn, &fitOut, R_weibull);
+
+  expect_true(parms_weibull.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_weibull.isApprox(fitOut.BMD, 1.5e-6));
+
+  // Dgamma
+  const Eigen::MatrixXd R_dgamma{
+      {2.525968, 4.259757, 1.1667072, 1.700972},
+      {1.319188, 5.250598, 0.6553346, 2.335863},
+      {1.346608, 3.702852, 0.7797684, 2.431674},
+      {1.399347, 3.423509, 1.0257794, 2.131211},
+      {1.679361, 3.545789, 0.9825722, 2.205226}
+  };
+
+  const Eigen::MatrixXd parms_dgamma{
+      {0.3176346, 1.700972, 2.504417},
+      {0.1825836, 2.335863, 4.243680},
+      {0.2310097, 2.431674, 3.756709},
+      {0.2392604, 2.131211, 2.970455},
+      {0.2705277, 2.205226, 3.149770}
+  };
+
+  const Eigen::VectorXd BMD_dgamma{{0.1531364, 0.1678831, 0.2039658, 0.2022576, 0.2033906}};
+
+  numParms = parms_dgamma.cols();
+  parms.resize(iter, numParms);
+
+  fitOut.parms = parms;
+  fit_dgamma(&fitIn, &fitOut, R_dgamma);
+
+  expect_true(parms_dgamma.isApprox(fitOut.parms, 1.5e-6));
+  expect_true(BMD_dgamma.isApprox(fitOut.BMD, 1.5e-6));
+}
+
 // these tests expect alpha to be returned not ln(alpha) as in BMDS
-void loud_model_fit_test() {
+void cont_loud_model_fit_test() {
   Eigen::MatrixXd Y{
       {10.61764, 0.8937421, 20},
       {11.54771, 1.0580638, 20},
@@ -1188,6 +1465,7 @@ void rg_dg_test() {
   Eigen::VectorXd ret2(g_estimate.rows());
   dg(g_estimate, log_mu, log_cov, isNegative, ret2);
   double mean = ret2.mean();
+  std::cout << "expectedMean:" << expectedMean << ", returnedMean:" << mean << std::endl;
   expect_true(essentiallyEqual(expectedMean, mean, 0.001));
 }
 
@@ -1261,6 +1539,8 @@ void bridge_sample_test() {
   expect_true(essentiallyEqual(expected_waic, cvPowerOut.waic, 0.001));
 
   double expected_intFactor = -202.7837;
+  std::cout << "expected_intFactor:" << expected_intFactor
+            << ", result int_factor:" << cvPowerOut.int_factor << std::endl;
   expect_true(essentiallyEqual(expected_intFactor, cvPowerOut.int_factor, 0.001));
   //  std::cout<<"expected:"<<expected_intFactor<<std::endl;
   //  std::cout<<"actual:"<<cvPowerOut.int_factor<<std::endl;
