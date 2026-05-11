@@ -464,6 +464,13 @@ def _disttype_suffix(disttype: DistType | None) -> str:
     return suffix_map.get(disttype, str(disttype))
 
 
+def _parameter_group_model_label(model) -> str:
+    disttype = getattr(model.settings, "disttype", None)
+    if disttype is not None:
+        return _disttype_suffix(disttype)
+    return model.name()
+
+
 def _model_color_map(model_names: list[str]) -> dict[str, tuple]:
     colors = plt.cm.tab10.colors
     return {model_name: colors[idx % len(colors)] for idx, model_name in enumerate(model_names)}
@@ -580,14 +587,8 @@ def _parameter_group_records(
                     continue
                 rows.append(
                     {
-                        "Model": _disttype_suffix(
-                            getattr(
-                                next(
-                                    model for model in models if model.name() == model_name
-                                ).settings,
-                                "disttype",
-                                None,
-                            )
+                        "Model": _parameter_group_model_label(
+                            next(model for model in models if model.name() == model_name)
                         ),
                         "Parameter": param_name,
                         **stats.to_dict(),
