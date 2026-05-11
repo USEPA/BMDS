@@ -139,7 +139,7 @@ Eigen::VectorXd binomial_cprobit(const Eigen::VectorXd& params, const Eigen::Mat
   // double a = R::qnorm(p_zero,0,1,true,false);
   // double b = R::qnorm(p_one ,0,1,true,false) - a;
   double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
-  double b = gsl_cdf_gaussian_Pinv(p_one, 1.0);
+  double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
 
   Eigen::VectorXd out = X.col(0);
 
