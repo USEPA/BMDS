@@ -240,74 +240,69 @@ def _ma_bmd_hdi(idata: az.InferenceData, hdi_prob: float) -> dict[str, float]:
     }
 
 
-def _add_ma_bmd_reference_lines(
-    fig: plt.Figure,
+def _ma_bmd_posterior_figure(
+    idata: az.InferenceData,
     stats: dict[str, float],
-    lower_label: str,
-    upper_label: str,
-):
-    labels = {
-        "lower": lower_label,
-        "median": "MA_BMD median",
-        "upper": upper_label,
-    }
-    colors = {
-        "lower": "#B04A3A",
-        "median": "#111111",
-        "upper": "#2A7F62",
-    }
-    linestyles = {
-        "lower": "--",
-        "median": "-",
-        "upper": "--",
-    }
+) -> plt.Figure:
+    ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
+    ma_draws = ma_draws[np.isfinite(ma_draws)]
 
-    for ax in fig.axes:
-        if not ax.has_data():
-            continue
+    fig, ax = plt.subplots(figsize=(8, 5))
+    if ma_draws.size > 0:
+        az.plot_dist(ma_draws, ax=ax, color="black", plot_kwargs={"linewidth": 2.5})
 
-        xlabel = (ax.get_xlabel() or "").lower()
-        ylabel = (ax.get_ylabel() or "").lower()
-        title = (ax.get_title() or "").lower()
-        is_trace_axis = "draw" in xlabel or "draw" in ylabel or "trace" in title
-        is_distribution_axis = "ma_bmd" in title or "bmd" in xlabel or "density" in ylabel
-
-        if is_trace_axis:
-            for key in ("lower", "median", "upper"):
-                ax.axhline(
-                    stats[key],
-                    color=colors[key],
-                    linestyle=linestyles[key],
-                    linewidth=1.25,
-                    alpha=0.9,
-                )
-        elif is_distribution_axis:
-            for key in ("lower", "median", "upper"):
-                ax.axvline(
-                    stats[key],
-                    color=colors[key],
-                    linestyle=linestyles[key],
-                    linewidth=1.25,
-                    alpha=0.9,
-                    label=labels[key],
-                )
-
-    handles: list = []
-    labels: list[str] = []
-    for ax in fig.axes:
-        ax_handles, ax_labels = ax.get_legend_handles_labels()
-        handles.extend(ax_handles)
-        labels.extend(ax_labels)
-
-    if handles and fig.axes:
-        by_label = dict(zip(labels, handles, strict=False))
-        fig.axes[0].legend(by_label.values(), by_label.keys())
+    ax.axvline(
+        stats["lower"],
+        color="#B04A3A",
+        linestyle="--",
+        linewidth=1.5,
+        alpha=0.9,
+        label="BMDL",
+    )
+    ax.axvline(
+        stats["upper"],
+        color="#2A7F62",
+        linestyle="--",
+        linewidth=1.5,
+        alpha=0.9,
+        label="BMDU",
+    )
+    ax.axvline(
+        stats["median"],
+        color="#111111",
+        linestyle="-",
+        linewidth=1.5,
+        alpha=0.9,
+        label="BMD",
+    )
+    text_y_positions = {"lower": 0.82, "median": 0.90, "upper": 0.74}
+    labels = {"lower": "BMDL", "median": "BMD", "upper": "BMDU"}
+    for key in ("lower", "median", "upper"):
+        ax.annotate(
+            f"{labels[key]}: {stats[key]:.4g}",
+            xy=(stats[key], text_y_positions[key]),
+            xycoords=("data", "axes fraction"),
+            xytext=(6, 0),
+            textcoords="offset points",
+            ha="left",
+            va="center",
+            fontsize=10,
+            bbox={
+                "boxstyle": "round,pad=0.2",
+                "facecolor": "white",
+                "alpha": 0.85,
+                "edgecolor": "none",
+            },
+        )
+    ax.set_title("Model-averaged BMD distribution", pad=6)
+    ax.set_xlabel("BMD")
+    ax.set_ylabel("Density")
+    ax.legend()
+    fig.tight_layout()
+    return fig
 
 
 def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
-    lower_label = f"alpha_lower ({alpha:.2f})"
-    upper_label = f"alpha_upper ({1 - alpha:.2f})"
-
     records: list[dict[str, float | str]] = []
     model_names = list(idata.posterior.coords["model"].values)
     bmd = np.asarray(idata.posterior["BMD"].values, dtype=float)
@@ -317,9 +312,9 @@ def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
         records.append(
             {
                 "model": str(model_name),
-                "median": float(np.quantile(draws, 0.5)),
-                lower_label: float(np.quantile(draws, alpha)),
-                upper_label: float(np.quantile(draws, 1 - alpha)),
+                "BMD": float(np.quantile(draws, 0.5)),
+                "BMDL": float(np.quantile(draws, alpha)),
+                "BMDU": float(np.quantile(draws, 1 - alpha)),
                 "r_hat": np.nan,
                 "ess_bulk": np.nan,
                 "ess_tail": np.nan,
@@ -330,16 +325,53 @@ def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
     records.append(
         {
             "model": "MA_BMD",
-            "median": ma_quantiles["median"],
-            lower_label: ma_quantiles["lower"],
-            upper_label: ma_quantiles["upper"],
+            "BMD": ma_quantiles["median"],
+            "BMDL": ma_quantiles["lower"],
+            "BMDU": ma_quantiles["upper"],
             "r_hat": np.nan,
             "ess_bulk": np.nan,
             "ess_tail": np.nan,
         }
     )
 
-    return pd.DataFrame.from_records(records).set_index("model")
+    return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
+
+
+def _percent_label_from_eti_column(column: str) -> str:
+    return column.removeprefix("eti_")
+
+
+def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> pd.DataFrame:
+    rename: dict[str, str] = {}
+    if "median" in summary.columns:
+        rename["median"] = "BMD" if bmd_labels else "Median"
+
+    readable_labels = {
+        "mad": "Median Absolute Deviation",
+        "mcse_median": "Markov Chain Standard Error (Median)",
+        "r_hat": "R-hat",
+        "ess_bulk": "Bulk Effective Sample Size",
+        "ess_tail": "Tail Effective Sample Size",
+    }
+    rename.update(
+        {column: label for column, label in readable_labels.items() if column in summary.columns}
+    )
+
+    eti_columns = [column for column in summary.columns if column.startswith("eti_")]
+    if len(eti_columns) >= 2:
+        eti_columns = sorted(
+            eti_columns,
+            key=lambda column: float(column.removeprefix("eti_").removesuffix("%")),
+        )
+        if bmd_labels:
+            rename[eti_columns[0]] = "BMDL"
+            rename[eti_columns[-1]] = "BMDU"
+        else:
+            rename.update(
+                {column: _percent_label_from_eti_column(column) for column in eti_columns}
+            )
+
+    return summary.rename(columns=rename)
 
 
 def _multi_summary_table(
@@ -472,8 +504,22 @@ def _parameter_group_model_label(model) -> str:
 
 
 def _model_color_map(model_names: list[str]) -> dict[str, tuple]:
+    bmds_colors = {
+        "Hill": "#d62728",
+        "Gamma": "#1f77b4",
+        "Logistic": "#2ca02c",
+        "LogLogistic": "#9467bd",
+        "LogProbit": "#ff7f0e",
+        "Multistage 2": "#e7ba52",
+        "Probit": "#8c564b",
+        "Quantal Linear": "#e377c2",
+        "Weibull": "#7f7f7f",
+    }
     colors = plt.cm.tab10.colors
-    return {model_name: colors[idx % len(colors)] for idx, model_name in enumerate(model_names)}
+    return {
+        model_name: bmds_colors.get(model_name, colors[idx % len(colors)])
+        for idx, model_name in enumerate(model_names)
+    }
 
 
 def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: int | None = None):
@@ -524,6 +570,7 @@ def _parameter_group_trace_figure(
     group_name: str,
     model_names: list[str],
     param_names: list[str],
+    color_map: dict[str, tuple | str],
 ) -> plt.Figure:
     plot_names = ["BMD", *param_names]
 
@@ -533,8 +580,6 @@ def _parameter_group_trace_figure(
         figsize=(11, 2.6 * len(plot_names)),
         squeeze=False,
     )
-    color_map = _model_color_map(model_names)
-
     for row, var_name in enumerate(plot_names):
         ax_dist = axes[row, 0]
         ax_trace = axes[row, 1]
@@ -564,6 +609,8 @@ def _parameter_group_records(
     hdi_prob: float,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
+    all_model_names = [model.name() for model in session.model_average.models]
+    color_map = _model_color_map(all_model_names)
 
     grouped_models: dict[str, list] = {}
     for model in session.model_average.models:
@@ -580,6 +627,7 @@ def _parameter_group_records(
 
         rows: list[dict[str, object]] = []
         summary = _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
+        summary = _rename_summary_columns(summary)
         for model_name in model_names:
             for param_name in param_names:
                 stats = _extract_model_row(summary, param_name, model_name)
@@ -598,7 +646,9 @@ def _parameter_group_records(
         if not rows:
             continue
 
-        figure = _parameter_group_trace_figure(idata, group_name, model_names, param_names)
+        figure = _parameter_group_trace_figure(
+            idata, group_name, model_names, param_names, color_map
+        )
         records.append(
             {
                 "name": group_name,
@@ -614,6 +664,7 @@ def _parameter_group_records(
 
 def _bmd_diagnostics_table(idata: az.InferenceData, hdi_prob: float) -> pd.DataFrame:
     summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
+    summary = _rename_summary_columns(summary, bmd_labels=True)
     model_names = list(idata.posterior.coords["model"].values)
     rows: list[dict[str, object]] = []
 
@@ -662,16 +713,7 @@ def get_model_average_figures(
     out["multi_summary"] = multi_summary
     out["parameter_groups"] = _parameter_group_records(idata, session, hdi_prob)
 
-    axes = az.plot_posterior(idata, var_names=["MA_BMD"])
-    fig = _figure_from_axes(axes)
-    _add_ma_bmd_reference_lines(
-        fig,
-        ma_bmd_hdi,
-        lower_label="MA_BMD lower alpha HDI",
-        upper_label="MA_BMD upper alpha HDI",
-    )
-    fig.tight_layout()
-    out["posterior"] = fig
+    out["posterior"] = _ma_bmd_posterior_figure(idata, ma_bmd_quantiles)
     out["overlay"] = _bmd_distributions_figure(idata)
 
     return out

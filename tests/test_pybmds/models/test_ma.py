@@ -131,3 +131,24 @@ class TestDichotomousMa:
         assert len(docx.tables) > 0
         assert "None" not in parameter_model_labels
         assert any(label in parameter_model_labels for label in ["Logistic", "Weibull"])
+
+    def test_dichotomous_loud_ma_all_models_report_uses_loud_model_results(self):
+        session = pybmds.Session(dataset=loud_dma_dataset())
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+        session.execute()
+
+        docx = session.to_docx(citation=False, all_models=True, bmd_cdf_table=True)
+        paragraph_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
+
+        assert "Individual Model Results" in paragraph_text
+        assert "LOUD Model-Average Weights" in paragraph_text
+
+        for idx, model in enumerate(session.models):
+            summary = session.model_average.results.model_summary(idx, model.settings.alpha)
+            assert model.results.bmdl == pytest.approx(summary.bmdl)
+            assert model.results.bmd == pytest.approx(summary.bmd)
+            assert model.results.bmdu == pytest.approx(summary.bmdu)
+            assert model.results.gof.p_value == pytest.approx(
+                session.model_average.results.model_p_values[idx]
+            )
+            assert len(model.results.fit.bmd_dist) > 0

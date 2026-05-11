@@ -3,7 +3,7 @@ from typing import Self
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
@@ -133,6 +133,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
     posteriors: NumpyFloatArray
     model_bmd_dist: list[NumpyFloatArray]
     model_parm_dist: list[NumpyFloatArray]
+    model_p_values: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
@@ -142,9 +143,11 @@ class ContinuousModelAverageResult(ModelAverageResult):
 
         model_bmd: list[np.ndarray] = []
         model_parms: list[np.ndarray] = []
+        model_p_values: list[float] = []
 
         for m in analysis.result.models:
             lr = m.loudRes  # fitResult
+            model_p_values.append(float(getattr(lr, "pval", constants.BMDS_BLANK_VALUE)))
 
             b_raw = np.asarray(lr.BMD, dtype=float)
             n_draw = b_raw.size
@@ -193,6 +196,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
             bmd_dist=ma_bmd,
             model_bmd_dist=model_bmd,
             model_parm_dist=model_parms,
+            model_p_values=model_p_values,
             priors=priors,
             posteriors=posteriors,
             dr_x=dr_x,
@@ -255,6 +259,11 @@ class ContinuousModelAverageResult(ModelAverageResult):
             parameters = ContinuousParameters.from_loud_draws(model, parm_draws)
 
         fit = model.results.fit.model_copy(update={"bmd_dist": draws})
+        p_value = (
+            self.model_p_values[index]
+            if index < len(self.model_p_values)
+            else constants.BMDS_BLANK_VALUE
+        )
 
         extra_values = [summary.bmd] if summary.bmd >= 0 else []
         dr_x = model.dataset.dose_linspace(extra_values=extra_values)
@@ -289,5 +298,6 @@ class ContinuousModelAverageResult(ModelAverageResult):
                 "fit": fit,
                 "parameters": parameters,
                 "plotting": plotting,
+                "summary_p_value": p_value,
             }
         )

@@ -8,11 +8,41 @@ from ..constants import DichotomousModel, DichotomousModelChoices, PriorClass
 from ..datasets import DichotomousDataset
 from ..types.dichotomous import DichotomousAnalysis, DichotomousModelSettings, DichotomousResult
 from ..types.priors import ModelPriors, get_dichotomous_prior, multistage_cancer_prior
+from ..utils import multi_lstrip
 from .base import BmdModel, BmdModelSchema, InputModelSettings
 
 
 class BmdModelDichotomous(BmdModel):
     bmd_model_class: DichotomousModel
+
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+
+        session = getattr(self, "session", None)
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and session is not None:
+            summary = session.get_model_average_summary_for_model(self)
+            if summary is not None:
+                return multi_lstrip(
+                    f"""
+                Modeling Summary:
+                {self.results.tbl()}
+
+                Model Parameters:
+                {self.results.parameters.tbl()}
+
+                LOUD Model-Average Weights:
+                Prior Weight: {summary.prior}
+                Posterior Weight: {summary.posterior}
+
+                Model-specific BMD values shown above are taken from the LOUD
+                model averaging result for this model. Standalone parameter,
+                goodness-of-fit, and likelihood details are shown only when they
+                are available from the individual-model execution path.
+                """
+                )
+
+        return super().results_text()
 
     def get_model_settings(
         self, dataset: DichotomousDataset, settings: InputModelSettings

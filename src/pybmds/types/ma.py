@@ -133,6 +133,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
     posteriors: NumpyFloatArray
     model_bmd_dist: list[NumpyFloatArray] = Field(default_factory=list)
     model_parm_dist: list[NumpyFloatArray] = Field(default_factory=list)
+    model_p_values: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
@@ -180,9 +181,11 @@ class DichotomousModelAverageResult(ModelAverageResult):
         posteriors = np.array(analysis.result.post_probs)
         model_bmd: list[np.ndarray] = []
         model_parms: list[np.ndarray] = []
+        model_p_values: list[float] = []
         if is_loud:
             n_draws = arr.size
             for result in analysis.result.models:
+                model_p_values.append(float(getattr(result.loudRes, "pval", BMDS_BLANK_VALUE)))
                 bmd_draws = np.asarray(result.loudRes.BMD, dtype=float)
                 n_draw = bmd_draws.size
                 model_bmd.append(cls._resize_draws(bmd_draws, n_draws))
@@ -239,6 +242,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             posteriors=posteriors,
             model_bmd_dist=model_bmd,
             model_parm_dist=model_parms,
+            model_p_values=model_p_values,
             dr_x=dr_x,
             dr_y=dr_y,
         )
@@ -338,7 +342,9 @@ class DichotomousModelAverageResult(ModelAverageResult):
             eb_lower=[BMDS_BLANK_VALUE] * n,
             eb_upper=[BMDS_BLANK_VALUE] * n,
             test_statistic=BMDS_BLANK_VALUE,
-            p_value=getattr(model.structs.result.loudRes, "pval", BMDS_BLANK_VALUE),
+            p_value=(
+                self.model_p_values[index] if index < len(self.model_p_values) else BMDS_BLANK_VALUE
+            ),
             roi=BMDS_BLANK_VALUE,
             df=BMDS_BLANK_VALUE,
         )
