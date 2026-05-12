@@ -1844,9 +1844,11 @@ void dg(
   dmvnorm(tmpX, mu, sigma, ret, true);
 
   Eigen::VectorXd adjustment = Eigen::VectorXd::Zero(x.rows());
-  for (int i = 0; i < isNegative.size(); ++i) {
-    if (!isNegative[i]) {
-      adjustment(i) += log(1 / x(i));
+  for (int i=0; i<x.rows(); i++){
+    for (int j=0; j<isNegative.size(); j++){
+       if (!isNegative[j]){
+         adjustment(i) += log(1/x(i,j));
+       }
     }
   }
 
