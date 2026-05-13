@@ -3988,7 +3988,8 @@ void fit_cpower(
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
 
-      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), theta(4, 0);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0),
+          exp(theta(4, 0));  // return alpha
     }
   }
 
@@ -4049,7 +4050,7 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
       parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), theta(4, 0),
-          theta(5, 0);  // return alpha for NCV dist
+          exp(theta(5, 0));  // return alpha for NCV dist
     }
   }
   loudOut->parms = parms;
@@ -4116,7 +4117,7 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
       parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), theta(4, 0),
-          theta(5, 0);  // return alpha for NCV dist
+          exp(theta(5, 0));  // return alpha for NCV dist
     }
   }
   loudOut->parms = parms;
@@ -4158,7 +4159,8 @@ void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       theta(5, 0) = log(1.0 / (R(i, 4) * pow(R(i, 0), theta(4, 0))));   // alpha
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), theta(4, 0), theta(5, 0);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(2, 0), theta(3, 0), theta(4, 0),
+          exp(theta(5, 0));
     }
   }
   loudOut->parms = parms;
