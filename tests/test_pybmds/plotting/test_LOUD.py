@@ -14,7 +14,9 @@ from pybmds.plotting.LOUD import (
     _figure_from_axes,
     _ma_bmd_hdi,
     _ma_bmd_quantiles,
+    _model_color_map,
     _multi_summary_table,
+    _parameter_group_trace_figure,
     _reshape_draws,
     get_model_average_figures,
     model_average_to_inferencedata,
@@ -22,6 +24,54 @@ from pybmds.plotting.LOUD import (
 
 
 class TestLOUD:
+    def test_model_color_map_matches_bmds_dichotomous_legend(self):
+        colors = _model_color_map(
+            [
+                "Hill",
+                "Gamma",
+                "Logistic",
+                "LogLogistic",
+                "LogProbit",
+                "Multistage 2",
+                "Probit",
+                "Quantal Linear",
+                "Weibull",
+            ]
+        )
+
+        assert colors == {
+            "Hill": "#d62728",
+            "Gamma": "#1f77b4",
+            "Logistic": "#2ca02c",
+            "LogLogistic": "#9467bd",
+            "LogProbit": "#ff7f0e",
+            "Multistage 2": "#e7ba52",
+            "Probit": "#8c564b",
+            "Quantal Linear": "#e377c2",
+            "Weibull": "#7f7f7f",
+        }
+
+    def test_parameter_trace_uses_global_model_colors(self):
+        model_names = ["Power (CV)", "Hill (CV)"]
+        coords = {"chain": [0], "draw": [0, 1, 2], "model": model_names}
+        posterior = {
+            "BMD": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
+            "a": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
+        }
+        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        color_map = _model_color_map(model_names)
+
+        fig = _parameter_group_trace_figure(
+            idata=idata,
+            group_name="Hill",
+            model_names=["Hill (CV)"],
+            param_names=["a"],
+            color_map=color_map,
+        )
+
+        assert fig.axes[1].lines[0].get_color() == color_map["Hill (CV)"]
+        plt.close(fig)
+
     def test_reshape_draws(self):
         arr = np.arange(12, dtype=float).reshape(6, 2)
 
@@ -134,7 +184,7 @@ class TestLOUD:
         assert session.models[0].results.parameters.names == ["g", "v", "n", "alpha", "rho"]
         assert session.models[1].results.parameters.names == ["g", "v", "k", "n", "alpha", "rho"]
 
-    def test_bmd_summary_table_uses_median_and_alpha_bounds(self, cdataset3):
+    def test_bmd_summary_table_uses_bmd_labels(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
             Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
@@ -149,12 +199,13 @@ class TestLOUD:
         idata = model_average_to_inferencedata(session, n_chains=1)
         summary = _bmd_summary_table(idata, alpha)
 
-        assert "median" in summary.columns
-        assert f"alpha_lower ({alpha:.2f})" in summary.columns
-        assert f"alpha_upper ({1 - alpha:.2f})" in summary.columns
-        assert "r_hat" in summary.columns
-        assert "ess_bulk" in summary.columns
-        assert "ess_tail" in summary.columns
+        assert "BMD" in summary.columns
+        assert "BMDL" in summary.columns
+        assert "BMDU" in summary.columns
+        assert "R-hat" in summary.columns
+        assert "Bulk Effective Sample Size" in summary.columns
+        assert "Tail Effective Sample Size" in summary.columns
+        assert "median" not in summary.columns
         assert "mean" not in summary.columns
         assert "MA_BMD" in summary.index
 
@@ -301,7 +352,7 @@ class TestLOUD:
         session.add_model_averaging()
         session.execute()
 
-        calls = {"summary": [], "posterior": [], "dist": 0}
+        calls = {"summary": [], "dist": 0}
 
         def fake_summary(idata, var_names, hdi_prob, stat_focus=None):
             calls["summary"].append((tuple(var_names), hdi_prob, stat_focus))
@@ -341,13 +392,6 @@ class TestLOUD:
                 index=index,
             )
 
-        def fake_plot_posterior(idata, var_names):
-            calls["posterior"].append(tuple(var_names))
-            fig, ax = plt.subplots()
-            ax.set_xlabel("BMD")
-            ax.plot([0, 1], [0, 1], label="density")
-            return np.array([ax])
-
         def fake_plot_dist(*args, **kwargs):
             calls["dist"] += 1
             ax = kwargs["ax"]
@@ -356,15 +400,11 @@ class TestLOUD:
             return ax
 
         monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_posterior", fake_plot_posterior)
         monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_dist", fake_plot_dist)
 
         figures = get_model_average_figures(session, n_chains=1)
 
         alpha = session.models[0].settings.alpha
-        lower_col = "eti_5%"
-        upper_col = "eti_95%"
-
         assert figures["alpha"] == pytest.approx(alpha)
         assert figures["hdi_prob"] == pytest.approx(0.9)
         assert set(figures["ma_bmd_quantiles"]) == {"lower", "median", "upper"}
@@ -372,15 +412,19 @@ class TestLOUD:
         assert isinstance(figures["bmd_summary"], pd.DataFrame)
         assert isinstance(figures["multi_summary"], pd.DataFrame)
         assert isinstance(figures["parameter_groups"], list)
-        assert "median" in figures["bmd_summary"].columns
-        assert lower_col in figures["bmd_summary"].columns
-        assert upper_col in figures["bmd_summary"].columns
+        assert "BMD" in figures["bmd_summary"].columns
+        assert "BMDL" in figures["bmd_summary"].columns
+        assert "BMDU" in figures["bmd_summary"].columns
+        assert "median" not in figures["bmd_summary"].columns
+        assert "eti_5%" not in figures["bmd_summary"].columns
+        assert "eti_95%" not in figures["bmd_summary"].columns
         assert "mean" not in figures["bmd_summary"].columns
-        assert "r_hat" in figures["bmd_summary"].columns
+        assert "R-hat" in figures["bmd_summary"].columns
+        assert "Bulk Effective Sample Size" in figures["bmd_summary"].columns
+        assert "Tail Effective Sample Size" in figures["bmd_summary"].columns
         assert "ess_bulk" in figures["multi_summary"].columns
         assert "ess_tail" in figures["multi_summary"].columns
         assert "ess_median" not in figures["multi_summary"].columns
-        assert calls["posterior"] == [("MA_BMD",)]
         expected_summary_calls = []
         expected_var_names = ["BMD", "MA_BMD"]
         for model in session.models:
@@ -393,15 +437,32 @@ class TestLOUD:
         for expected_call in expected_summary_calls:
             assert expected_call in calls["summary"]
         assert calls["dist"] > 0
-        assert len(figures["posterior"].axes[0].lines) >= 4
+        posterior_ax = figures["posterior"].axes[0]
+        legend_labels = [text.get_text() for text in posterior_ax.get_legend().get_texts()]
+        assert legend_labels == ["BMDL", "BMDU", "BMD"]
+        assert len(posterior_ax.lines) == 4
+        annotation_text = [text.get_text() for text in posterior_ax.texts]
+        assert any(text.startswith("BMDL:") for text in annotation_text)
+        assert any(text.startswith("BMD:") for text in annotation_text)
+        assert any(text.startswith("BMDU:") for text in annotation_text)
         assert isinstance(figures["overlay"], plt.Figure)
         assert figures["parameter_groups"][0]["name"] == "Power"
-        assert {"Model", "Parameter", "median", "r_hat", "ess_bulk", "ess_tail"}.issubset(
-            figures["parameter_groups"][0]["summary"]
+        assert {"Model", "Parameter", "Median", "R-hat"}.issubset(
+            figures["parameter_groups"][0]["summary"].columns
         )
         assert len(figures["parameter_groups"][0]["trace_figure"].axes[0].lines) >= 1
         assert figures["overlay"].legends
         assert figures["parameter_groups"][0]["trace_figure"].legends
+        parameter_summary = figures["parameter_groups"][0]["summary"]
+        assert "Median Absolute Deviation" in parameter_summary.columns
+        assert "Markov Chain Standard Error (Median)" in parameter_summary.columns
+        assert "Bulk Effective Sample Size" in parameter_summary.columns
+        assert "Tail Effective Sample Size" in parameter_summary.columns
+        assert "5%" in parameter_summary.columns
+        assert "95%" in parameter_summary.columns
+        assert "mad" not in parameter_summary.columns
+        assert "mcse_median" not in parameter_summary.columns
+        assert "eti_5%" not in parameter_summary.columns
 
         plt.close(figures["posterior"])
         plt.close(figures["overlay"])

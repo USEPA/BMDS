@@ -10,6 +10,31 @@ from pybmds.constants import DistType, Models, PriorClass
 
 
 class TestSession:
+    @staticmethod
+    def _settings_table(docx):
+        for table in docx.tables:
+            if len(table.rows) > 0 and table.cell(0, 0).text == "Setting":
+                return {row.cells[0].text: row.cells[1].text for row in table.rows}
+        raise AssertionError("Settings table not found")
+
+    @staticmethod
+    def _stub_loud_report_sections(monkeypatch):
+        def fig():
+            return plt.figure()
+
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            pybmds.session,
+            "get_model_average_figures",
+            lambda *args, **kwargs: {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [],
+            },
+        )
+
     def test_add_default_models_continuous_uses_legacy_defaults_for_non_loud_priors(
         self, cdataset3
     ):
@@ -138,6 +163,40 @@ class TestSession:
 
         with pytest.raises(ValueError, match="same prior_class|requires all models"):
             session.add_model_averaging()
+
+    def test_dichotomous_loud_settings_table_includes_modeling_type_and_weight_option(
+        self, ddataset2, monkeypatch
+    ):
+        self._stub_loud_report_sections(monkeypatch)
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(
+            prior_class=PriorClass.bayesian_loud, weight_option="bridge_sampling"
+        )
+
+        docx = session.to_docx(session_inputs_table=True, citation=False)
+        settings = self._settings_table(docx)
+
+        assert settings["Modeling Type"] == "Bayesian LOUD"
+        assert settings["Weight Option"] == "Bridge Sampling"
+
+    def test_continuous_loud_settings_table_includes_modeling_type_and_weight_option(
+        self, cdataset3, monkeypatch
+    ):
+        self._stub_loud_report_sections(monkeypatch)
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging(weight_option=1)
+
+        docx = session.to_docx(session_inputs_table=True, citation=False)
+        settings = self._settings_table(docx)
+
+        assert settings["Modeling Type"] == "Bayesian LOUD"
+        assert settings["Weight Option"] == "WAIC"
 
     def test_dichotomous_loud_ma_docx_includes_loud_diagnostics(self, ddataset2, monkeypatch):
         session = pybmds.Session(dataset=ddataset2)
@@ -350,6 +409,10 @@ class TestSession:
             model.name(): session.model_average.results.model_summary(idx, model.settings.alpha)
             for idx, model in enumerate(session.model_average.models)
         }
+        p_value_lookup = {
+            model.name(): session.model_average.results.model_p_values[idx]
+            for idx, model in enumerate(session.model_average.models)
+        }
 
         for model in session.models:
             assert model.has_results is True
@@ -360,6 +423,7 @@ class TestSession:
             assert model.results.bmdl == pytest.approx(summary.bmdl)
             assert model.results.bmd == pytest.approx(summary.bmd)
             assert model.results.bmdu == pytest.approx(summary.bmdu)
+            assert model.results.summary_p_value == pytest.approx(p_value_lookup[model.name()])
             assert len(model.results.fit.bmd_dist) > 0
             assert len(model.results.parameters.names) == len(model.results.parameters.values)
             assert len(model.results.parameters.names) == len(model.results.parameters.se)

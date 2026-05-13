@@ -314,6 +314,14 @@ def write_inputs_table(report: Report, session: Session):
     results = session.models[0].results if len(session.models) > 0 else None
     settings = [model.settings for model in session.models]
     content = session.models[0].settings.docx_table_data(settings, results)
+    if session.is_bayesian_loud():
+        content["Modeling Type"] = "Bayesian LOUD"
+        if session.model_average is not None:
+            content["Weight Option"] = {
+                1: "WAIC",
+                2: "Bridge Sampling",
+                3: "Average",
+            }.get(session.weight_option, str(session.weight_option))
     tbl = report.document.add_table(len(content), 2, style=styles.table)
     for idx, (key, value) in enumerate(content.items()):
         write_cell(tbl.cell(idx, 0), key, style=hdr)
@@ -498,7 +506,9 @@ def write_bayesian_table(report: Report, session: Session):
     body = report.styles.tbl_body
 
     footnotes = TableFootnote()
-    tbl = report.document.add_table(len(session.models) + 1, 9, style=styles.table)
+    is_loud = session.is_bayesian_loud()
+    n_cols = 8 if is_loud else 9
+    tbl = report.document.add_table(len(session.models) + 1, n_cols, style=styles.table)
 
     write_cell(tbl.cell(0, 0), "Model", style=hdr)
     write_cell(tbl.cell(0, 1), "Prior Weights", style=hdr)
@@ -506,9 +516,13 @@ def write_bayesian_table(report: Report, session: Session):
     write_cell(tbl.cell(0, 3), "BMDL", style=hdr)
     write_cell(tbl.cell(0, 4), "BMD", style=hdr)
     write_cell(tbl.cell(0, 5), "BMDU", style=hdr)
-    write_cell(tbl.cell(0, 6), "Unnormalized Log Posterior Probability", style=hdr)
-    write_cell(tbl.cell(0, 8), "Scaled Residual at Control", style=hdr)
-    write_cell(tbl.cell(0, 7), "Scaled Residual near BMD", style=hdr)
+    if is_loud:
+        write_cell(tbl.cell(0, 6), "Scaled Residual at Control", style=hdr)
+        write_cell(tbl.cell(0, 7), "Scaled Residual near BMD", style=hdr)
+    else:
+        write_cell(tbl.cell(0, 6), "Unnormalized Log Posterior Probability", style=hdr)
+        write_cell(tbl.cell(0, 8), "Scaled Residual at Control", style=hdr)
+        write_cell(tbl.cell(0, 7), "Scaled Residual near BMD", style=hdr)
 
     ma = session.model_average
     ma_weight_lookup = {}
@@ -542,9 +556,13 @@ def write_bayesian_table(report: Report, session: Session):
         write_cell(tbl.cell(idx, 3), bmdl, body)
         write_cell(tbl.cell(idx, 4), bmd, body)
         write_cell(tbl.cell(idx, 5), bmdu, body)
-        write_cell(tbl.cell(idx, 6), model.results.fit.bic_equiv, body)
-        write_cell(tbl.cell(idx, 7), _residual_at_control(model.results.gof), body)
-        write_cell(tbl.cell(idx, 8), model.results.gof.roi, body)
+        if is_loud:
+            write_cell(tbl.cell(idx, 6), _residual_at_control(model.results.gof), body)
+            write_cell(tbl.cell(idx, 7), model.results.gof.roi, body)
+        else:
+            write_cell(tbl.cell(idx, 6), model.results.fit.bic_equiv, body)
+            write_cell(tbl.cell(idx, 7), _residual_at_control(model.results.gof), body)
+            write_cell(tbl.cell(idx, 8), model.results.gof.roi, body)
 
     if ma:
         idx = len(tbl.rows)
@@ -557,10 +575,15 @@ def write_bayesian_table(report: Report, session: Session):
         write_cell(tbl.cell(idx, 5), ma.results.bmdu, body)
         write_cell(tbl.cell(idx, 6), "-", body)
         write_cell(tbl.cell(idx, 7), "-", body)
-        write_cell(tbl.cell(idx, 8), "-", body)
+        if not is_loud:
+            write_cell(tbl.cell(idx, 8), "-", body)
 
     # set column width
-    widths = np.array([1.1, 0.9, 0.9, 0.9, 0.9, 0.9, 1, 1, 1])
+    widths = (
+        np.array([1.1, 0.9, 0.9, 0.9, 0.9, 0.9, 1, 1])
+        if is_loud
+        else np.array([1.1, 0.9, 0.9, 0.9, 0.9, 0.9, 1, 1, 1])
+    )
     widths = widths / (widths.sum() / report.styles.portrait_width)
     for width, col in zip(widths, tbl.columns, strict=True):
         set_column_width(col, width)

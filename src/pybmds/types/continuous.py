@@ -672,15 +672,19 @@ class ContinuousResult(BaseModel):
     deviance: ContinuousDeviance
     tests: ContinuousTests
     plotting: ContinuousPlotting
+    summary_p_value: float | None = None
 
     def tbl(self) -> str:
+        p_value = (
+            self.summary_p_value if self.summary_p_value is not None else self.tests.p_value(3)
+        )
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],
             ["BMDU", self.bmdu],
             ["AIC", self.fit.aic],
             ["Log-Likelihood", self.fit.loglikelihood],
-            ["P-Value", self.tests.p_value(3)],
+            ["P-Value", p_value],
             ["Model d.f.", self.tests.df(3)],
         ]
         return pretty_table(data, "")
