@@ -3498,16 +3498,16 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
     qtiles(i) = startVal + i * stepSize;
   }
 
-  auto start = std::chrono::steady_clock::now();
+  // auto start = std::chrono::steady_clock::now();
 
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
       n_rounds, qtiles, LAM, pri_typ, ll_type
   );
 
-  auto end = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "Time for latent slice:" << duration.count() << " ms" << std::endl;
+  // auto end = std::chrono::steady_clock::now();
+  // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  // std::cout << "Time for latent slice:" << duration.count() << " ms" << std::endl;
 
   // other calcs
   loudOut->BMD.resize(R.rows());
@@ -4013,10 +4013,11 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
         theta(0, 0) = exp(R(i, 0));                                                  // m0
         theta(1, 0) = pow(fabs(log(exp(R(i, 1)) / exp(R(i, 0)))), (1.0 / R(i, 2)));  // b to beta
         theta(3, 0) = R(i, 2);                                                       // n
-        theta(4, 0) = log(1.0 / R(i, 3));
+        theta(4, 0) = log(1.0 / R(i, 3));  // BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), exp(theta(4, 0));
+        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0),
+            theta(4, 0);  // return ln(alpha) for log dist
       }
 
     } else {
@@ -4028,7 +4029,8 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
         theta(4, 0) = log(1.0 / R(i, 3));  // alpha->log(1/variance) //BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), exp(theta(4, 0));
+        parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0),
+            exp(theta(4, 0));  // return alpha for CV dist
       }
     }
   } else {
@@ -4046,7 +4048,8 @@ void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const E
           log(1.0 / (R(i, 3) * pow(R(i, 0), theta(4, 0))));  // alpha = log(sigma0sq/(m0^rho))
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-      parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), theta(4, 0), theta(5, 0);
+      parms.row(i) << theta(0, 0), theta(1, 0), theta(3, 0), theta(4, 0),
+          theta(5, 0);  // return alpha for NCV dist
     }
   }
   loudOut->parms = parms;
@@ -4076,7 +4079,8 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const E
         theta(4, 0) = log(1.0 / R(i, 4));  // alpha note: BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), exp(theta(4, 0));
+        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0),
+            theta(4, 0);  // return ln(alpha) for log dist
       }
 
     } else {
@@ -4088,10 +4092,11 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const E
             log((R(i, 0) - R(i, 1) * exp(pow(R(i, 2), R(i, 3)))) /
                 (R(i, 0) - R(i, 0) * exp(pow(R(i, 2), R(i, 3)))));  // c
         theta(3, 0) = R(i, 3);                                      // n
-        theta(4, 0) = log(1.0 / R(i, 4));                           // alpha
+        theta(4, 0) = log(1.0 / R(i, 4));                           // BMDS expects ln(alpha)
         loudOut->BMD(i) =
             calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
-        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), exp(theta(4, 0));
+        parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0),
+            exp(theta(4, 0));  // return alpha for CV dist
       }
     }
   } else {
@@ -4111,7 +4116,7 @@ void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const E
       loudOut->BMD(i) =
           calcLoudBMD(model, theta, loudIn->bmdtype, loudIn->bmr, isIncreasing, loudIn->tailProb);
       parms.row(i) << theta(0, 0), theta(1, 0), exp(theta(2, 0)), theta(3, 0), theta(4, 0),
-          theta(5, 0);
+          theta(5, 0);  // return alpha for NCV dist
     }
   }
   loudOut->parms = parms;
@@ -4183,7 +4188,7 @@ void fit_chill_efsa(
         double d = R(i, 3);
         double c = ((m1 - m0) / m0) * (pow(b, d) + 1) + 1;
         double alpha = 1.0 / R(i, 4);
-        parms.row(i) << m0, b, c, d, alpha;
+        parms.row(i) << m0, b, c, d, log(alpha);  // return ln(alpha) for log dist
         loudOut->BMD(i) = calcLoudBMD(
             model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
             loudIn->tailProb
@@ -4251,7 +4256,7 @@ void fit_cinvexp_efsa(
         double d = R(i, 3);
         double c = (m1 - m0 + m0 * exp(-b)) / (m0 * exp(-b));
         double alpha = 1.0 / R(i, 4);
-        parms.row(i) << m0, b, c, d, alpha;
+        parms.row(i) << m0, b, c, d, log(alpha);  // return ln(alpha) for log dist
         loudOut->BMD(i) = calcLoudBMD(
             model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
             loudIn->tailProb
@@ -4319,7 +4324,7 @@ void fit_clog_efsa(
         double pnorm = gsl_cdf_gaussian_P(log(b), 1.0);
         double c = (m1 - m0 + m0 * pnorm) / (m0 * pnorm);
         double alpha = 1.0 / R(i, 4);
-        parms.row(i) << m0, b, c, d, alpha;
+        parms.row(i) << m0, b, c, d, log(alpha);  // return ln(alpha) for log dist
         loudOut->BMD(i) = calcLoudBMD(
             model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
             loudIn->tailProb
@@ -4390,7 +4395,7 @@ void fit_cgamma_efsa(
         double pgamma = gsl_cdf_gamma_P(b, d, 1.0);
         double c = (m1 - m0) / (m0 * pgamma) + 1;
         double alpha = 1.0 / R(i, 4);
-        parms.row(i) << m0, b, c, d, alpha;
+        parms.row(i) << m0, b, c, d, log(alpha);  // return ln(alpha) for log dist
         loudOut->BMD(i) = calcLoudBMD(
             model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
             loudIn->tailProb
@@ -4460,7 +4465,7 @@ void fit_clms_efsa(
         double d = R(i, 3);
         double c = (m1 - m0 * exp(-b - d)) / (m0 - m0 * exp(-b - d));
         double alpha = 1.0 / R(i, 4);
-        parms.row(i) << m0, b, c, d, alpha;
+        parms.row(i) << m0, b, c, d, log(alpha);  // return ln(alpha) for log dist
         loudOut->BMD(i) = calcLoudBMD(
             model, parms.row(i), loudIn->bmdtype, loudIn->bmr, bConstVar, isNormal, isIncreasing,
             loudIn->tailProb
@@ -5593,6 +5598,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     bmds_c[i] = lbmd(i, result);
   }
 
+  // save an unaltered copy for return
+  std::vector<double> bmd_ma_ret(bmds_c);
+
   // Calc MA bmdl, bmd, bmdu
   // remove nans
   bmds_c.erase(
@@ -5613,7 +5621,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   pyRes->bmdsRes.BMD_MA = bmd;
   pyRes->bmdsRes.BMDL_MA = bmdl;
   pyRes->bmdsRes.BMDU_MA = bmdu;
-  pyRes->bmd_dist = bmds_c;
+  pyRes->bmd_dist = bmd_ma_ret;
   pyRes->post_probs = posterior_probs;
 
   clean_cont_MA_results(pyRes);
@@ -9542,9 +9550,12 @@ std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print
     ss << std::endl;
   }
 
-  // ind model res ss << std::endl << "models" << std::endl; for (int i = 0; i
-  // < pyRes->nmodels; i++) { ss << "model:" << i << std::endl; ss <<
-  // printBmdsStruct(&pyRes->models[i], false); }
+  // ind model res
+  ss << std::endl << "models" << std::endl;
+  for (int i = 0; i < pyRes->nmodels; i++) {
+    ss << "model:" << i << std::endl;
+    ss << printBmdsStruct(&pyRes->models[i], false);
+  }
 
   if (print) std::cout << ss.str() << std::endl;
 
