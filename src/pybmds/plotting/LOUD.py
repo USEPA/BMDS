@@ -577,7 +577,7 @@ def _parameter_group_trace_figure(
     fig, axes = plt.subplots(
         len(plot_names),
         2,
-        figsize=(11, 2.6 * len(plot_names)),
+        figsize=(11, 2.0 * len(plot_names)),
         squeeze=False,
     )
     for row, var_name in enumerate(plot_names):

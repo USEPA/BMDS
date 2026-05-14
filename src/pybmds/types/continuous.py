@@ -56,6 +56,7 @@ class ContinuousModelSettings(BaseModel):
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     loud_priors_tbl: str | None = None
     count_all_parameters_on_boundary: bool = False
+    verbose_name: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 

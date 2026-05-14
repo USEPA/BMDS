@@ -154,7 +154,7 @@ class BmdModelContinuous(BmdModel):
                 names = [n for n in names if n != "c"]
 
             var_names = (
-                ["alpha", "rho"] if self.settings.disttype == DistType.normal_ncv else ["alpha"]
+                ["rho", "alpha"] if self.settings.disttype == DistType.normal_ncv else ["alpha"]
             )
             return names + var_names
         names = list(self.bmd_model_class.params)
