@@ -963,13 +963,13 @@ void runPythonDichoAnalysis() {
   // USER INPUT
   ///////////////////////////////
 
-  enum dich_model model = d_multistage;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
-                                         // d_logprobit=5, d_multistage=6,d_probit=7,
-                                         // d_qlinear=8,d_weibull=9
-  int modelType = 1;                     // 1 = frequentist, 2 = bayesian
-  bool restricted = true;                // only used for frequentist models
-  int BMD_type = 1;                      // 1 = extra ; added otherwise
-  int degree = 2;                        // for multistage only
+  enum dich_model model = d_qlinear;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+                                      // d_logprobit=5, d_multistage=6,d_probit=7,
+                                      // d_qlinear=8,d_weibull=9
+  int modelType = 1;                  // 1 = frequentist, 2 = bayesian
+  bool restricted = false;            // only used for frequentist models
+  int BMD_type = 1;                   // 1 = extra ; added otherwise
+  int degree = 2;                     // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
   double countAllParmsOnBoundary = false;
@@ -2396,6 +2396,25 @@ std::vector<std::vector<double>> createDefaultDichoPriors(struct python_dichotom
   return ret;
 }
 
+Eigen::VectorXd colwiseMedian(const Eigen::MatrixXd &mat) {
+  Eigen::VectorXd medians(mat.cols());
+  for (int i = 0; i < mat.cols(); ++i) {
+    // Copy column to a vector
+    std::vector<double> col(mat.col(i).data(), mat.col(i).data() + mat.rows());
+
+    // Sort to find median
+    std::sort(col.begin(), col.end());
+
+    // Calculate median
+    if (col.size() % 2 == 0) {
+      medians(i) = (col[col.size() / 2 - 1] + col[col.size() / 2]) / 2.0;
+    } else {
+      medians(i) = col[col.size() / 2];
+    }
+  }
+  return medians;
+}
+
 void runPythonDichoLoud() {
   // enum dich_model {
   // d_hill = 1,
@@ -2408,13 +2427,18 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  std::vector<int> models = {9};
+  std::vector<int> models = {8};
   // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
   // data_M3
   double D[] = {0.0, 0.25, 0.5, 1.0};
   double Y[] = {2, 0, 9, 10};
   double N[] = {10, 10, 10, 10};
+
+  //// Mary debug
+  // double D[] = {0.0, 0.25, 0.5, 0.75, 1.0};
+  // double Y[] = {0, 3, 10, 15, 19};
+  // double N[] = {20, 20, 20, 20, 20};
 
   // Dichotomous.dax Effect 1
   // double D[] = {0, 50, 100, 150, 200};
@@ -2434,10 +2458,10 @@ void runPythonDichoLoud() {
   int BMD_type = 1;  // 1 = extra ; added otherwise
   double BMR = 0.1;
   double alpha = 0.05;
-  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
 
-  int iter = 50;
-  int burnin = 20;
+  int iter = 5;
+  int burnin = 2;
 
   /////////////////////////////////////////////////
   ////END USER INPUT
@@ -2479,7 +2503,8 @@ void runPythonDichoLoud() {
   int prSize;
 
   struct python_dichotomousMA_analysis ma_info;
-  ma_info.actual_parms = numParms;
+  // ma_info.nparms = numParms;
+  // ma_info.actual_parms = actualParms;
   ma_info.prior_cols = priorCols;
   ma_info.models = models;
   ma_info.datatype = datatype;
@@ -2490,17 +2515,12 @@ void runPythonDichoLoud() {
   // assign default priors
   ma_info.priors = createDefaultDichoPriors(&ma_info);
 
-  // for (int i = 0; i < ma_info.priors.size(); i++) {
-  //   std::cout << "model i:" << i << std::endl;
-  //   for (int j = 0; j < ma_info.priors[i].size(); j++) {
-  //     std::cout << ma_info.priors[i][j] << ", " << std::endl;
-  //   }
-  // }
-
   for (int i = 0; i < nmodels; i++) {
     int prSize = ma_info.priors[i].size();
     numParms.push_back(prSize / prCols);
   }
+
+  ma_info.actual_parms = numParms;
 
   // std::vector<python_dichotomous_model_result> res(numModels);
   std::vector<python_dichotomous_model_result> res(nmodels);
@@ -2526,11 +2546,15 @@ void runPythonDichoLoud() {
 
   ma_res.bmdsRes = bmdsRes;
 
-  std::cout << "calling pythonBMDSLoud" << std::endl;
   pythonBMDSLoud(&ma_info, &ma_res);
 
   std::cout << "Test output:" << std::endl;
   printBmdsStruct(&ma_res);
+
+  // Eigen::VectorXd medians = colwiseMedian(ma_res.models[0].loudRes.parms);
+  // std::cout << "medians:" << medians << std::endl;
+  // Eigen::VectorXd means = ma_res.models[0].loudRes.parms.colwise().mean();
+  // std::cout << "means:" << means << std::endl;
 }
 
 void runPythonContLoud() {
@@ -2539,8 +2563,8 @@ void runPythonContLoud() {
   bool isIncreasing;
 
   // TODO make sure all user settings are passed and used correctly
-  enum distribution dist = normal;  // normal, normal_ncv, log_normal
-  bool detectAdvDir = true;         // if false then need to set isIncreasing
+  enum distribution dist = normal_ncv;  // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;             // if false then need to set isIncreasing
   // bool countAllParmsOnBoundary = true;
 
   // int degree = 2;  // for polynomial only
@@ -2549,8 +2573,8 @@ void runPythonContLoud() {
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
                       // hybrid_added   from src/include/cmodeldefs.h
-  int iter = 50000;
-  int burnin = 20000;
+  int iter = 5;
+  int burnin = 2;
 
   int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int priorCols = 5;
@@ -2574,8 +2598,8 @@ void runPythonContLoud() {
   // testing
   // std::vector<int> models = {8, 8};
   // std::vector<int> dists = {1, 2};
-  std::vector<int> models = {8};
-  std::vector<int> dists = {1};
+  std::vector<int> models = {3};
+  std::vector<int> dists = {2};
   // kitchen sink
   // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
   //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
@@ -2656,7 +2680,7 @@ void runPythonContLoud() {
     anal.sd.assign(SD, SD + numDataRows);
   }
   anal.doses.assign(D, D + numDataRows);
-  anal.disttype = dist;
+  // anal.disttype = dist;
   if (!detectAdvDir) {
     anal.isIncreasing = isIncreasing;
   }
@@ -2731,7 +2755,7 @@ void runPythonContLoud() {
   ma_info.priors = createDefaultPriors(&ma_info);
   pythonBMDSLoud(&ma_info, &ma_res);
 
-  // printBmdsStruct(&ma_res);
+  printBmdsStruct(&ma_res);
 }
 
 void runOldContAnalysis() {

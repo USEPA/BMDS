@@ -26,27 +26,6 @@ int run_all_unitTests() {
   return 0;
 }
 
-double get_median(Eigen::VectorXd v) {
-  // Sort elements using standard library algorithms
-  std::sort(v.data(), v.data() + v.size());
-
-  int size = v.size();
-  if (size == 0) return 0;
-  if (size % 2 == 0) {
-    return (v[size / 2 - 1] + v[size / 2]) / 2.0;
-  } else {
-    return v[size / 2];
-  }
-}
-
-Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd& mat) {
-  Eigen::RowVectorXd medians(mat.cols());
-  for (int i = 0; i < mat.cols(); ++i) {
-    medians(i) = get_median(mat.col(i));
-  }
-  return medians;
-}
-
 void objfunc_test() {
   std::vector<double> x{1.5, 2.0, 3.2};
   std::vector<double> tmp;
@@ -77,6 +56,7 @@ void dicho_loud_model_fit_test() {
   fitOut.BMD = bmd;
 
   // QLINEAR
+  fitIn.model = dich_model::d_qlinear;
   const Eigen::MatrixXd R_qlinear{
       {1.4420926, 3.446933, 1.7256582},
       {1.6642870, 3.081530, 1.0784842},
@@ -105,6 +85,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_qlinear.isApprox(fitOut.BMD, 1.5e-6));
 
   // Logistic
+  fitIn.model = dich_model::d_logistic;
   const Eigen::MatrixXd R_logistic{
       {0.6726732, 1.679524, 0.4848529},
       {0.6941349, 2.382565, 0.4983413},
@@ -134,6 +115,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_logistic.isApprox(fitOut.BMD, 1.5e-6));
 
   // Probit
+  fitIn.model = dich_model::d_probit;
   const Eigen::MatrixXd R_probit{
       {0.6942345, 3.4937914, 0.5898628},
       {0.5902350, 3.5207400, 0.6307254},
@@ -162,6 +144,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_probit.isApprox(fitOut.BMD, 1.5e-6));
 
   // Mstage2
+  fitIn.model = dich_model::d_multistage;
   const Eigen::MatrixXd R_mstage2{
       {0.6788134, 3.604108, 1.0704448, 0.4912015},
       {0.9514867, 3.854400, 0.9993588, 0.2770512},
@@ -190,6 +173,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_mstage2.isApprox(fitOut.BMD, 1.5e-6));
 
   // Loglogistic
+  fitIn.model = dich_model::d_loglogistic;
   const Eigen::MatrixXd R_loglogistic{
       {0.4300198, 2.574260, 0.7936150, 1.627801},
       {0.8013843, 3.043759, 0.4048359, 2.250533},
@@ -218,6 +202,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_loglogistic.isApprox(fitOut.BMD, 1.5e-6));
 
   // Logprobit
+  fitIn.model = dich_model::d_logprobit;
   const Eigen::MatrixXd R_logprobit{
       {0.2432275, 2.293367, 0.31586361, 1.663363},
       {0.3478518, 2.673354, 0.34672000, 1.717312},
@@ -246,6 +231,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_logprobit.isApprox(fitOut.BMD, 1.5e-6));
 
   // DHill
+  fitIn.model = dich_model::d_hill;
   const Eigen::MatrixXd R_dhill{
       {0.1369812, 0.9424855, 0.9423848, 2.008455},
       {0.1561788, 0.9676349, 0.8850810, 1.667696},
@@ -274,6 +260,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_dhill.isApprox(fitOut.BMD, 1.5e-6));
 
   // Weibull
+  fitIn.model = dich_model::d_weibull;
   const Eigen::MatrixXd R_weibull{
       {0.6783885, 4.921979, 0.7402839, 2.262244},
       {0.6519385, 5.115077, 0.2039971, 2.200412},
@@ -302,6 +289,7 @@ void dicho_loud_model_fit_test() {
   expect_true(BMD_weibull.isApprox(fitOut.BMD, 1.5e-6));
 
   // Dgamma
+  fitIn.model = dich_model::d_gamma;
   const Eigen::MatrixXd R_dgamma{
       {2.525968, 4.259757, 1.1667072, 1.700972},
       {1.319188, 5.250598, 0.6553346, 2.335863},

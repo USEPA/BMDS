@@ -519,6 +519,8 @@ void cleanDouble(double *val);
 void rescale_dichoParms(int model, double *parms);
 void rescale_contParms(struct continuous_analysis *CA, double *parms);
 
+void scale_dichoParms(int model, Eigen::VectorXd &parms);
+
 void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results *bmdsRes);
 void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes);
 
@@ -839,6 +841,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
+void additional_dicho_calcs(
+    struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
+    struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
+    bool *countAllParmsOnBoundary
+);
+
 #ifdef __cplusplus
 }
 #endif
@@ -1003,3 +1011,7 @@ void clean_multitumor_results(struct python_multitumor_result *res);
 void clean_nested_results(struct python_nested_result *res);
 
 void clean_cont_MA_results(struct python_continuousMA_result *res);
+
+double get_median(Eigen::VectorXd v);
+
+Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat);

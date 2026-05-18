@@ -1095,153 +1095,7 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
 
   estimate_sm_laplace_dicho(anal, res, true);
 
-  struct dichotomous_PGOF_data gofData;
-  gofData.n = anal->n;
-  gofData.Y = anal->Y;
-  gofData.model = anal->model;
-  gofData.model_df = res->model_df;
-  gofData.est_parms = res->parms;
-  gofData.doses = anal->doses;
-  gofData.n_group = anal->n_group;
-  gofData.parms = anal->parms;
-
-  struct dichotomous_PGOF_result gofRes;
-  double *gofExpected = (double *)malloc(anal->n * sizeof(double));
-  double *gofResidual = (double *)malloc(anal->n * sizeof(double));
-  double gofTestStat = BMDS_MISSING;
-  double gofPVal = BMDS_MISSING;
-  double gofDF = BMDS_MISSING;
-  double *ebUpper = (double *)malloc(anal->n * sizeof(double));
-  double *ebLower = (double *)malloc(anal->n * sizeof(double));
-  gofRes.n = anal->n;
-  gofRes.expected = gofExpected;
-  gofRes.residual = gofResidual;
-  gofRes.test_statistic = gofTestStat;
-
-  gofRes.p_value = gofPVal;
-  gofRes.df = gofDF;
-
-  compute_dichotomous_pearson_GOF(&gofData, &gofRes);
-
-  gof->test_statistic = gofRes.test_statistic;
-
-  // these will be updated later with bounded parm info
-  gof->p_value = gofRes.p_value;
-  gof->df = gofRes.df;
-
-  gof->n = gofRes.n;
-  for (int i = 0; i < gofRes.n; i++) {
-    gof->expected.push_back(gofRes.expected[i]);
-    gof->residual.push_back(gofRes.residual[i]);
-  }
-
-  // do error bar calcs
-  double pHat;
-  double z;
-  double eb1;
-  double eb2;
-  double ebDenom;
-  double gofAlpha = 0.05;                          // Alpha value for 95% confidence limit
-  z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2);  // Z score
-  for (int i = 0; i < gof->n; i++) {
-    pHat = anal->Y[i] / anal->n_group[i];  // observed probability
-    eb1 = (2 * anal->Y[i] + z * z);
-    eb2 =
-        z *
-        sqrt(z * z - (2 + 1 / anal->n_group[i]) + 4 * pHat * ((anal->n_group[i] - anal->Y[i]) + 1));
-    ebDenom = 2.0 * (anal->n_group[i] + z * z);
-    gof->ebLower.push_back((eb1 - 1 - eb2) / ebDenom);
-    gof->ebUpper.push_back((eb1 + 1 + eb2) / ebDenom);
-  }
-
-  // calculate model chi^2 value
-  bmdsRes->chisq = 0.0;
-  for (int i = 0; i < gofRes.n; i++) {
-    bmdsRes->chisq += gofRes.residual[i] * gofRes.residual[i];
-  }
-
-  // calculate bayesian BIC_equiv
-  Eigen::MatrixXd cov(res->nparms, res->nparms);
-  int row = 0;
-  int col = 0;
-  for (int i = 0; i < res->nparms * res->nparms; i++) {
-    col = i / res->nparms;
-    row = i - col * res->nparms;
-    cov(row, col) = res->cov[i];
-  }
-
-  bmdsRes->BIC_equiv =
-      res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
-  bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
-
-  // calculate dichtomous analysis of deviance
-  struct dichotomous_aod aod;
-  double A1 = BMDS_MISSING;
-  int N1 = BMDS_MISSING;
-  double A2 = BMDS_MISSING;
-  int N2 = BMDS_MISSING;
-  aod.A1 = A1;
-  aod.N1 = N1;
-  aod.A2 = A2;
-  aod.N2 = N2;
-
-  calc_dichoAOD(anal, res, bmdsRes, bmdsAOD, &aod);
-
-  rescale_dichoParms(anal->model, res->parms);
-
-  double estParmCount = 0;
-
-  collect_dicho_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
-
-  calcDichoAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
-  // incorporate affect of bounded parameters
-  int bounded = 0;
-  for (int i = 0; i < anal->parms; i++) {
-    if (bmdsRes->bounded[i]) {
-      bounded++;
-    }
-  }
-
-  if (*countAllParmsOnBoundary) {
-    bmdsAOD->nFit = anal->parms;  // number of estimated parameter
-  } else {
-    bmdsAOD->nFit = anal->parms - bounded;  // number of estimated parameter
-  }
-  bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  // nObs - nEstParms
-
-  if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
-    bmdsAOD->pvFit = BMDS_MISSING;
-  } else {
-    bmdsAOD->pvFit = 1.0 - gsl_cdf_chisq_P(bmdsAOD->devFit, bmdsAOD->dfFit);
-  }
-
-  // update df for frequentist models only
-  if (anal->prior[1] == 0) {
-    // frequentist
-    gofRes.df = bmdsAOD->dfFit;
-  }
-  gof->df = gofRes.df;
-
-  if (gof->df > 0.0) {
-    gofRes.p_value = 1.0 - gsl_cdf_chisq_P(bmdsRes->chisq, gof->df);
-  } else {
-    gofRes.p_value = 1.0;
-  }
-
-  if (gof->df <= 0.0) {
-    gof->p_value = BMDS_MISSING;
-  } else {
-    gof->p_value = gofRes.p_value;
-  }
-
-  for (int i = 0; i < anal->parms; i++) {
-    // std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
-    bmdsRes->stdErr.push_back(BMDS_MISSING);
-    bmdsRes->lowerConf.push_back(BMDS_MISSING);
-    bmdsRes->upperConf.push_back(BMDS_MISSING);
-  }
-
-  calcParmCIs_dicho(res, bmdsRes);
+  additional_dicho_calcs(anal, res, gof, bmdsRes, bmdsAOD, countAllParmsOnBoundary);
 
   // compare Matt's BMD to BMD from CDF
   if (abs(bmdsRes->BMD - res->bmd) > BMDS_EPS) {
@@ -1317,6 +1171,29 @@ void rescale_dichoParms(int model, double *parms) {
       // rescale background and v parameter
       parms[0] = 1.0 / (1.0 + exp(-1.0 * parms[0]));
       parms[1] = 1.0 / (1.0 + exp(-1.0 * parms[1]));
+      break;
+    default:
+      break;
+  }
+}
+// tranform paramters from LOUD to BMDS form where using a logit transformation
+// needed for BMDS calcs
+// void scale_dichoParms(int model, std::vector<double> &parms){
+void scale_dichoParms(int model, Eigen::VectorXd &parms) {
+  switch (model) {
+    case dich_model::d_multistage:
+    case dich_model::d_weibull:
+    case dich_model::d_gamma:
+    case dich_model::d_loglogistic:
+    case dich_model::d_qlinear:
+    case dich_model::d_logprobit:
+      // rescale background parameter
+      parms(0) = log(parms(0) / (1 - parms(0)));
+      break;
+    case dich_model::d_hill:
+      // rescale background and v parameter
+      parms(0) = log(parms(0) / (1 - parms(0)));
+      parms(1) = log(parms(1) / (1 - parms(1)));
       break;
     default:
       break;
@@ -3551,6 +3428,161 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   loudOut->pval = pivotal_pvalue(R, loudIn);
 }
 
+void additional_dicho_calcs(
+    struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
+    struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
+    bool *countAllParmsOnBoundary
+) {
+  struct dichotomous_PGOF_data gofData;
+  gofData.n = anal->n;
+  gofData.Y = anal->Y;
+
+  gofData.model = anal->model;
+  gofData.model_df = res->model_df;
+  gofData.est_parms = res->parms;
+  gofData.doses = anal->doses;
+  gofData.n_group = anal->n_group;
+  gofData.parms = anal->parms;
+
+  struct dichotomous_PGOF_result gofRes;
+  double *gofExpected = (double *)malloc(anal->n * sizeof(double));
+  double *gofResidual = (double *)malloc(anal->n * sizeof(double));
+  double gofTestStat = BMDS_MISSING;
+  double gofPVal = BMDS_MISSING;
+  double gofDF = BMDS_MISSING;
+  double *ebUpper = (double *)malloc(anal->n * sizeof(double));
+  double *ebLower = (double *)malloc(anal->n * sizeof(double));
+  gofRes.n = anal->n;
+  gofRes.expected = gofExpected;
+  gofRes.residual = gofResidual;
+  gofRes.test_statistic = gofTestStat;
+
+  gofRes.p_value = gofPVal;
+  gofRes.df = gofDF;
+
+  compute_dichotomous_pearson_GOF(&gofData, &gofRes);
+
+  gof->test_statistic = gofRes.test_statistic;
+
+  // these will be updated later with bounded parm info
+  gof->p_value = gofRes.p_value;
+  gof->df = gofRes.df;
+
+  gof->n = gofRes.n;
+  for (int i = 0; i < gofRes.n; i++) {
+    gof->expected.push_back(gofRes.expected[i]);
+    gof->residual.push_back(gofRes.residual[i]);
+  }
+
+  // do error bar calcs
+  double pHat;
+  double z;
+  double eb1;
+  double eb2;
+  double ebDenom;
+  double gofAlpha = 0.05;                          // Alpha value for 95% confidence limit
+  z = gsl_cdf_ugaussian_Pinv(1.0 - gofAlpha / 2);  // Z score
+  for (int i = 0; i < gof->n; i++) {
+    pHat = anal->Y[i] / anal->n_group[i];  // observed probability
+    eb1 = (2 * anal->Y[i] + z * z);
+    eb2 =
+        z *
+        sqrt(z * z - (2 + 1 / anal->n_group[i]) + 4 * pHat * ((anal->n_group[i] - anal->Y[i]) + 1));
+    ebDenom = 2.0 * (anal->n_group[i] + z * z);
+    gof->ebLower.push_back((eb1 - 1 - eb2) / ebDenom);
+    gof->ebUpper.push_back((eb1 + 1 + eb2) / ebDenom);
+  }
+
+  // calculate model chi^2 value
+  bmdsRes->chisq = 0.0;
+  for (int i = 0; i < gofRes.n; i++) {
+    bmdsRes->chisq += gofRes.residual[i] * gofRes.residual[i];
+  }
+
+  // calculate bayesian BIC_equiv
+  Eigen::MatrixXd cov(res->nparms, res->nparms);
+  int row = 0;
+  int col = 0;
+  for (int i = 0; i < res->nparms * res->nparms; i++) {
+    col = i / res->nparms;
+    row = i - col * res->nparms;
+    cov(row, col) = res->cov[i];
+  }
+
+  bmdsRes->BIC_equiv =
+      res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
+  bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
+
+  // calculate dichtomous analysis of deviance
+  struct dichotomous_aod aod;
+  double A1 = BMDS_MISSING;
+  int N1 = BMDS_MISSING;
+  double A2 = BMDS_MISSING;
+  int N2 = BMDS_MISSING;
+  aod.A1 = A1;
+  aod.N1 = N1;
+  aod.A2 = A2;
+  aod.N2 = N2;
+
+  calc_dichoAOD(anal, res, bmdsRes, bmdsAOD, &aod);
+
+  rescale_dichoParms(anal->model, res->parms);
+
+  double estParmCount = 0;
+
+  collect_dicho_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
+
+  calcDichoAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
+  // incorporate affect of bounded parameters
+  int bounded = 0;
+  for (int i = 0; i < anal->parms; i++) {
+    if (bmdsRes->bounded[i]) {
+      bounded++;
+    }
+  }
+
+  if (*countAllParmsOnBoundary) {
+    bmdsAOD->nFit = anal->parms;  // number of estimated parameter
+  } else {
+    bmdsAOD->nFit = anal->parms - bounded;  // number of estimated parameter
+  }
+  bmdsAOD->dfFit = anal->n - bmdsAOD->nFit;  // nObs - nEstParms
+
+  if (bmdsAOD->devFit < 0 || bmdsAOD->dfFit < 0) {
+    bmdsAOD->pvFit = BMDS_MISSING;
+  } else {
+    bmdsAOD->pvFit = 1.0 - gsl_cdf_chisq_P(bmdsAOD->devFit, bmdsAOD->dfFit);
+  }
+
+  // update df for frequentist models only
+  if (anal->prior[1] == 0) {
+    // frequentist
+    gofRes.df = bmdsAOD->dfFit;
+  }
+  gof->df = gofRes.df;
+
+  if (gof->df > 0.0) {
+    gofRes.p_value = 1.0 - gsl_cdf_chisq_P(bmdsRes->chisq, gof->df);
+  } else {
+    gofRes.p_value = 1.0;
+  }
+
+  if (gof->df <= 0.0) {
+    gof->p_value = BMDS_MISSING;
+  } else {
+    gof->p_value = gofRes.p_value;
+  }
+
+  for (int i = 0; i < anal->parms; i++) {
+    // std err is sqrt of covariance diagonals unless parameter hit a bound, then report NA
+    bmdsRes->stdErr.push_back(BMDS_MISSING);
+    bmdsRes->lowerConf.push_back(BMDS_MISSING);
+    bmdsRes->upperConf.push_back(BMDS_MISSING);
+  }
+
+  calcParmCIs_dicho(res, bmdsRes);
+}
+
 void fit_qlinear(
     const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
 ) {
@@ -3585,9 +3617,10 @@ void fit_qlinear(
     double g = p_zero;
     double b = -1.0 * log((1 - p_one) / (1 - p_zero));
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3628,9 +3661,10 @@ void fit_logistic(
     double a = log(p_zero / (1 - p_zero));
     double b = log(p_one / (1 - p_one)) - a;
 
-    // BMDS expects exact same parms
-    theta(0, 0) = a;
-    theta(1, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3671,9 +3705,10 @@ void fit_probit(
     double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
     double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
 
-    // BMDS expects same parms
-    theta(0, 0) = a;
-    theta(1, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3715,10 +3750,10 @@ void fit_mstage2(
     double b1 = -1.0 * (y1)*log((1 - p_one) / (1 - p_zero));
     double b2 = -1.0 * (1.0 - y1) * log((1 - p_one) / (1 - p_zero));
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = b1;
-    theta(2, 0) = b2;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, b1, b2}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3760,10 +3795,10 @@ void fit_loglogistic(
     double g = p_zero;
     double a = -1.0 * log((1 - p_one) / (p_one - p_zero));
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = a;
-    theta(2, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3805,10 +3840,10 @@ void fit_logprobit(
     double g = p_zero;
     double a = gsl_cdf_gaussian_Pinv((p_one - p_zero) / (1 - p_zero), 1.0);
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = a;
-    theta(2, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3841,11 +3876,10 @@ void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const E
     double a = R(i, 2);
     double b = R(i, 3);
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = log(v / (1 - v));
-    theta(2, 0) = a;
-    theta(3, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, v, a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3886,10 +3920,10 @@ void fit_weibull(
     double g = p_zero;
     double b = -1.0 * log((1 - p_one) / (1 - p_zero));
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = a;
-    theta(2, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, a, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -3931,10 +3965,10 @@ void fit_dgamma(
     double g = p_zero;
     double b = gsl_cdf_gamma_Pinv((p_one - p_zero) / (1 - p_zero), alpha, 1.0);
 
-    // BMDS expects logit(g)
-    theta(0, 0) = log(g / (1 - g));
-    theta(1, 0) = alpha;
-    theta(2, 0) = b;
+    // scale parms for BMDS/ToxicR
+    Eigen::VectorXd scaledParms{{g, alpha, b}};
+    scale_dichoParms(loudIn->model, scaledParms);
+    theta.col(0) = scaledParms;
 
     Eigen::MatrixXd X(loudIn->doses.rows(), 2);
     X.col(0) = loudIn->doses;
@@ -4978,6 +5012,43 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].nparms = loudOut.parms.cols();
     pyRes->models[i].model = pyMA->models[i];
     pyRes->models[i].bmdsRes.validResult = true;
+    pyRes->models[i].dist_numE = loudOut.BMD.size();
+
+    // GOF calcs
+    int n = D1.size();
+    struct dichotomous_analysis anal;
+    anal.Y = new double[n];
+    anal.doses = new double[n];
+    anal.n_group = new double[n];
+    anal.prior = new double[pyMA->actual_parms[i] * pyMA->pyDA.prior_cols];
+    anal.model = pyMA->models[i];
+    anal.parms = pyMA->actual_parms[i];
+
+    struct dichotomous_model_result res;
+    int nparms = pyRes->models[i].nparms;
+    res.parms = new double[nparms];
+    res.cov = new double[nparms * nparms];
+    res.bmd_dist = new double[pyRes->dist_numE];
+
+    // set res.parms to col means for individual model parms
+    // TODO check to make sure we should use mean instead of median
+    Eigen::VectorXd parmVec = colwise_median(loudOut.parms);
+
+    // res.parms = parmVec.data();
+    res.nparms = parmVec.size();
+    std::vector<double> parmVec2(parmVec.data(), parmVec.data() + parmVec.size());
+    std::copy(parmVec2.begin(), parmVec2.end(), res.parms);
+
+    convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
+    // model and parms must be added
+    anal.model = pyMA->models[i];
+    anal.parms = pyMA->actual_parms[i];
+
+    convertFromPythonDichoRes(&res, &pyRes->models[i]);
+    additional_dicho_calcs(
+        &anal, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
+        &pyMA->pyDA.countAllParmsOnBoundary
+    );
   }
 
   std::vector<double> posterior_probs(pyMA->nmodels);
@@ -9348,6 +9419,12 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   const int largeColWidth = 14;
   std::stringstream ss;
 
+  // set boolean for LOUD vs BMDS
+  bool isLOUD = false;
+  if (pyRes->loudRes.parms.rows() > 0) {
+    isLOUD = true;
+  }
+
   ss << std::endl << "Struct: python_dichotomous_model_result" << std::endl;
   ss << "model:" << pyRes->model << std::endl;
   ss << "nparms:" << pyRes->nparms << std::endl;
@@ -9376,14 +9453,18 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   ss << printBmdsStruct(&pyRes->gof, false);
   ss << printBmdsStruct(&pyRes->aod, false);
 
-  ss << std::endl << "bmd_dist" << std::endl;
-  printElement(ss, "Percentile", largeColWidth);
-  printElement(ss, "Value", largeColWidth);
-  ss << std::endl;
-  for (int i = 0; i < pyRes->dist_numE; i++) {
-    printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
-    printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+  if (isLOUD) {
+    ss << printBmdsStruct(&pyRes->loudRes, false);
+  } else {
+    ss << std::endl << "bmd_dist" << std::endl;
     ss << std::endl;
+    printElement(ss, "Percentile", largeColWidth);
+    printElement(ss, "Value", largeColWidth);
+    for (int i = 0; i < pyRes->dist_numE; i++) {
+      printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
+      printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+      ss << std::endl;
+    }
   }
 
   if (print) std::cout << ss.str() << std::endl;
@@ -9730,4 +9811,25 @@ std::string printBmdsStruct(struct python_nested_result *pyRes, bool print) {
   if (print) std::cout << ss.str() << std::endl;
 
   return ss.str();
+}
+
+double get_median(Eigen::VectorXd v) {
+  // Sort elements using standard library algorithms
+  std::sort(v.data(), v.data() + v.size());
+
+  int size = v.size();
+  if (size == 0) return 0;
+  if (size % 2 == 0) {
+    return (v[size / 2 - 1] + v[size / 2]) / 2.0;
+  } else {
+    return v[size / 2];
+  }
+}
+
+Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat) {
+  Eigen::RowVectorXd medians(mat.cols());
+  for (int i = 0; i < mat.cols(); ++i) {
+    medians(i) = get_median(mat.col(i));
+  }
+  return medians;
 }
