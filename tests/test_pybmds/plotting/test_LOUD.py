@@ -19,6 +19,7 @@ from pybmds.plotting.LOUD import (
     _ma_bmd_quantiles,
     _model_color_map,
     _multi_summary_table,
+    _parameter_group_records,
     _parameter_group_trace_figure,
     _reshape_draws,
     get_model_average_figures,
@@ -74,6 +75,135 @@ class TestLOUD:
 
         assert fig.axes[1].lines[0].get_color() == color_map["Hill (CV)"]
         plt.close(fig)
+
+    def test_parameter_groups_keep_lognormal_log_alpha_with_model_parameters(self):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Multiplicative Hill")
+
+            def __init__(self, name, disttype, parameter_names):
+                self._name = name
+                self.settings = SimpleNamespace(disttype=disttype)
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=parameter_names))
+
+            def name(self):
+                return self._name
+
+        models = [
+            FakeModel("Multiplicative Hill (CV)", DistType.normal, ["a", "alpha"]),
+            FakeModel(
+                "Multiplicative Hill (Lognormal)",
+                DistType.log_normal,
+                ["a", "log-alpha"],
+            ),
+        ]
+        session = SimpleNamespace(model_average=SimpleNamespace(models=models))
+        coords = {
+            "chain": [0],
+            "draw": [0, 1, 2],
+            "model": [model.name() for model in models],
+        }
+        posterior = {
+            "BMD": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
+            "a": (("chain", "draw", "model"), np.arange(10, 16, dtype=float).reshape(1, 3, 2)),
+            "alpha": (
+                ("chain", "draw", "model"),
+                np.arange(16, 22, dtype=float).reshape(1, 3, 2),
+            ),
+            "log-alpha": (
+                ("chain", "draw", "model"),
+                np.arange(20, 26, dtype=float).reshape(1, 3, 2),
+            ),
+        }
+        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+
+        records = _parameter_group_records(idata, session, hdi_prob=0.9)
+
+        assert [record["name"] for record in records] == ["Multiplicative Hill"]
+        main_summary = records[0]["summary"]
+        assert ((main_summary["Model"] == "CV") & (main_summary["Parameter"] == "alpha")).any()
+        assert (
+            (main_summary["Model"] == "Lognormal") & (main_summary["Parameter"] == "log-alpha")
+        ).any()
+
+        for record in records:
+            plt.close(record["trace_figure"])
+
+    def test_parameter_groups_can_expand_by_individual_model(self):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Power")
+
+            def __init__(self, name, disttype):
+                self._name = name
+                self.settings = SimpleNamespace(disttype=disttype)
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g", "alpha"]))
+
+            def name(self):
+                return self._name
+
+        models = [
+            FakeModel("Power (CV)", DistType.normal),
+            FakeModel("Power (NCV)", DistType.normal_ncv),
+        ]
+        session = SimpleNamespace(model_average=SimpleNamespace(models=models))
+        coords = {
+            "chain": [0],
+            "draw": [0, 1, 2],
+            "model": [model.name() for model in models],
+        }
+        posterior = {
+            "BMD": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
+            "g": (("chain", "draw", "model"), np.arange(10, 16, dtype=float).reshape(1, 3, 2)),
+            "alpha": (
+                ("chain", "draw", "model"),
+                np.arange(20, 26, dtype=float).reshape(1, 3, 2),
+            ),
+        }
+        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+
+        records = _parameter_group_records(idata, session, hdi_prob=0.9, compressed=False)
+
+        assert [record["name"] for record in records] == ["Power CV", "Power NCV"]
+        for record, expected_model in zip(records, ["CV", "NCV"], strict=True):
+            assert record["summary"]["Model"].unique().tolist() == [expected_model]
+            assert record["var_names"] == ["g", "alpha"]
+            plt.close(record["trace_figure"])
+
+    def test_parameter_group_figures_do_not_trigger_pyplot_open_warning(self, recwarn):
+        idata = az.InferenceData(
+            posterior=xr.Dataset(
+                {
+                    "BMD": (
+                        ("chain", "draw", "model"),
+                        np.arange(3, dtype=float).reshape(1, 3, 1),
+                    ),
+                    "g": (
+                        ("chain", "draw", "model"),
+                        np.arange(3, dtype=float).reshape(1, 3, 1),
+                    ),
+                },
+                coords={"chain": [0], "draw": [0, 1, 2], "model": ["Power (CV)"]},
+            )
+        )
+        color_map = {"Power (CV)": "black"}
+
+        with plt.rc_context({"figure.max_open_warning": 1}):
+            figures = [
+                _parameter_group_trace_figure(
+                    idata=idata,
+                    group_name=f"Power {idx}",
+                    model_names=["Power (CV)"],
+                    param_names=["g"],
+                    color_map=color_map,
+                )
+                for idx in range(3)
+            ]
+
+        messages = [str(warning.message) for warning in recwarn]
+        assert not any(
+            "More than" in message and "figures have been opened" in message for message in messages
+        )
+        for fig in figures:
+            plt.close(fig)
 
     def test_reshape_draws(self):
         arr = np.arange(12, dtype=float).reshape(6, 2)

@@ -122,12 +122,12 @@ class Session:
     def _ensure_continuous_ma_models(
         self,
         settings: dict | None = None,
-        include_efsa: bool = False,
+        include_extended: bool = False,
     ):
         """
         Ensure that all continuous models required for CMA exist in session.models.
         BMDS models are always included: Power, Hill (CV + NCV)Exp3, Exp5 (CV + NCV + Lognormal)
-        EFSA models are included ONLY if include_efsa=True
+        EFSA models are included ONLY if include_extended=True
         """
         settings = deepcopy(settings) if settings else {}
 
@@ -155,7 +155,7 @@ class Session:
 
         # BMDS models
         _add(c3.Power, [DistType.normal, DistType.normal_ncv])
-        if not include_efsa:
+        if not include_extended:
             _add(c3.Hill, [DistType.normal, DistType.normal_ncv])
         _add(
             c3.ExponentialM3,
@@ -167,7 +167,7 @@ class Session:
         )
 
         # EFSA models (opt-in only)
-        if include_efsa:
+        if include_extended:
             for Model in (
                 c3.MultiplicativeHill,
                 c3.InverseExponential,
@@ -205,7 +205,7 @@ class Session:
         self,
         settings: dict | None = None,
         model_average: bool = True,
-        include_efsa: bool = False,
+        include_extended: bool = False,
         prior_class: PriorClass | None = None,
         weight_option: str | int | None = None,
     ):
@@ -264,16 +264,16 @@ class Session:
 
         self.weight_option = weight_option_int
 
-        if include_efsa and self.dataset.dtype not in (
+        if include_extended and self.dataset.dtype not in (
             Dtype.CONTINUOUS,
             Dtype.CONTINUOUS_INDIVIDUAL,
         ):
-            raise ValueError("include_efsa is only supported for continuous datasets.")
+            raise ValueError("include_extended is only supported for continuous datasets.")
 
         if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
-            self._exclude_additive_hill_from_default_efsa_ma = bool(include_efsa)
+            self._exclude_additive_hill_from_default_efsa_ma = bool(include_extended)
             # BMDS CMA defaults (with variance variants)
-            self._ensure_continuous_ma_models(settings=settings, include_efsa=include_efsa)
+            self._ensure_continuous_ma_models(settings=settings, include_extended=include_extended)
 
         else:
             for name in self.model_options[self.dataset.dtype].keys():
@@ -636,6 +636,7 @@ class Session:
         session_inputs_table: bool = False,
         parameter_tables: bool = True,
         parameter_visualizations: bool = False,
+        compressed: bool = True,
     ):
         """Return a Document object with the session executed
 
@@ -652,6 +653,8 @@ class Session:
             parameter_tables (bool, default True): Include grouped LOUD parameter tables
             parameter_visualizations (bool, default False): Include grouped LOUD parameter
                 visualization figures in the report
+            compressed (bool, default True): Group LOUD parameter tables and visualizations by
+                model family. If False, separate tables and visualizations by individual model.
 
         Returns:
             A python docx.Document object with content added.
@@ -694,7 +697,7 @@ class Session:
                     "distribution of the benchmark dose (BMD) under the LOUD framework."
                 )
 
-                figs = get_model_average_figures(self, n_chains=1)
+                figs = get_model_average_figures(self, n_chains=1, compressed=compressed)
 
                 add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
                 add_paragraph_with_space_before(

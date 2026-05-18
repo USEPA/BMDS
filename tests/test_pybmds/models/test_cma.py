@@ -93,7 +93,15 @@ class TestContinuousMa:
         assert np.isinf(result.model_bmd_dist[0][1])
 
         payload = result.model_dump()
-        assert payload["bmd_dist"] == [0.1, 0.3]
-        assert payload["model_bmd_dist"] == [[0.1]]
-        assert payload["model_parm_dist"] == [[[1.0, 2.0]]]
+        assert payload["bmd_dist"] == [0.1, None, 0.3]
+        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
         assert isinstance(json.dumps(payload, allow_nan=False), str)
+
+        rehydrated = ContinuousModelAverageResult.model_validate(payload)
+        assert len(rehydrated.bmd_dist) == 3
+        assert len(rehydrated.model_bmd_dist[0]) == 3
+        assert rehydrated.model_parm_dist[0].shape == (3, 2)
+        assert np.isnan(rehydrated.bmd_dist[1])
+        assert np.isnan(rehydrated.model_bmd_dist[0][1])
+        assert np.isnan(rehydrated.model_parm_dist[0][1, 0])

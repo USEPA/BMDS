@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
 from ..constants import DistType
@@ -668,26 +669,31 @@ def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
     return fig
 
 
+def _parameter_figure_height(n_rows: int) -> float:
+    row_height = 2.5 if n_rows <= 4 else 2.25 if n_rows <= 7 else 2
+    return min(11.0, max(8.0, row_height * n_rows))
+
+
 def _parameter_group_trace_figure(
     idata: az.InferenceData,
     group_name: str,
     model_names: list[str],
     param_names: list[str],
     color_map: dict[str, tuple | str],
+    param_model_names: dict[str, set[str]] | None = None,
 ) -> plt.Figure:
     plot_names = ["BMD", *param_names]
 
-    fig, axes = plt.subplots(
-        len(plot_names),
-        2,
-        figsize=(11, 2.0 * len(plot_names)),
-        squeeze=False,
-    )
+    fig = Figure(figsize=(11, _parameter_figure_height(len(plot_names))))
+    axes = fig.subplots(len(plot_names), 2, squeeze=False)
     for row, var_name in enumerate(plot_names):
         ax_dist = axes[row, 0]
         ax_trace = axes[row, 1]
 
         for model_name in model_names:
+            if var_name != "BMD" and param_model_names is not None:
+                if model_name not in param_model_names.get(var_name, set()):
+                    continue
             values = np.asarray(idata.posterior[var_name].sel(model=model_name).values, dtype=float)
             draws = values.reshape(-1)
             draws = draws[np.isfinite(draws)]
@@ -710,6 +716,7 @@ def _parameter_group_records(
     idata: az.InferenceData,
     session,
     hdi_prob: float,
+    compressed: bool = True,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
@@ -717,49 +724,70 @@ def _parameter_group_records(
 
     grouped_models: dict[str, list] = {}
     for model in session.model_average.models:
-        grouped_models.setdefault(model.bmd_model_class.verbose, []).append(model)
+        if compressed:
+            group_name = model.bmd_model_class.verbose
+        else:
+            group_name = f"{model.bmd_model_class.verbose} {_parameter_group_model_label(model)}"
+        grouped_models.setdefault(group_name, []).append(model)
 
     records: list[dict[str, object]] = []
     for group_name, models in grouped_models.items():
-        model_names = [model.name() for model in models]
-        param_names: list[str] = []
-        for model in models:
-            for name in model.results.parameters.names:
-                if name not in excluded_vars and name not in param_names:
-                    param_names.append(name)
 
-        rows: list[dict[str, object]] = []
-        summary = _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
-        summary = _rename_summary_columns(summary)
-        for model_name in model_names:
-            for param_name in param_names:
-                stats = _extract_model_row(summary, param_name, model_name)
-                if stats is None:
-                    continue
-                rows.append(
-                    {
-                        "Model": _parameter_group_model_label(
-                            next(model for model in models if model.name() == model_name)
-                        ),
-                        "Parameter": param_name,
-                        **stats.to_dict(),
-                    }
-                )
+        def add_record(record_name: str, record_models: list, include_param) -> None:
+            model_names = [model.name() for model in record_models]
+            param_names: list[str] = []
+            param_model_names: dict[str, set[str]] = {}
+            for model in record_models:
+                model_name = model.name()
+                for name in model.results.parameters.names:
+                    if name in excluded_vars or not include_param(model, name):
+                        continue
+                    if name not in param_names:
+                        param_names.append(name)
+                    param_model_names.setdefault(name, set()).add(model_name)
 
-        if not rows:
-            continue
+            if not param_names:
+                return
 
-        figure = _parameter_group_trace_figure(
-            idata, group_name, model_names, param_names, color_map
-        )
-        records.append(
-            {
-                "name": group_name,
-                "model_names": model_names,
-                "var_names": param_names,
-                "summary": pd.DataFrame(rows),
-                "trace_figure": figure,
-            }
+            rows: list[dict[str, object]] = []
+            summary = _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
+            summary = _rename_summary_columns(summary)
+            for model in record_models:
+                model_name = model.name()
+                for param_name in param_names:
+                    if model_name not in param_model_names.get(param_name, set()):
+                        continue
+                    stats = _extract_model_row(summary, param_name, model_name)
+                    if stats is None:
+                        continue
+                    rows.append(
+                        {
+                            "Model": _parameter_group_model_label(model),
+                            "Parameter": param_name,
+                            **stats.to_dict(),
+                        }
+                    )
+
+            if not rows:
+                return
+
+            figure = _parameter_group_trace_figure(
+                idata, record_name, model_names, param_names, color_map, param_model_names
+            )
+            records.append(
+                {
+                    "name": record_name,
+                    "model_names": model_names,
+                    "var_names": param_names,
+                    "summary": pd.DataFrame(rows),
+                    "trace_figure": figure,
+                }
+            )
+
+        add_record(
+            group_name,
+            models,
+            lambda model, name: True,
         )
 
     return records
@@ -787,6 +815,7 @@ def _bmd_diagnostics_table(idata: az.InferenceData, hdi_prob: float) -> pd.DataF
 def get_model_average_figures(
     session,
     n_chains: int = 1,
+    compressed: bool = True,
 ) -> dict[str, plt.Figure | pd.DataFrame | az.InferenceData | float]:
     idata = model_average_to_inferencedata(session, n_chains=n_chains)
     out: dict[str, plt.Figure | pd.DataFrame | az.InferenceData | float] = {"idata": idata}
@@ -814,7 +843,9 @@ def get_model_average_figures(
 
     multi_summary = _drop_empty_summary_rows(_multi_summary_table(idata, multi_var_names, hdi_prob))
     out["multi_summary"] = multi_summary
-    out["parameter_groups"] = _parameter_group_records(idata, session, hdi_prob)
+    out["parameter_groups"] = _parameter_group_records(
+        idata, session, hdi_prob, compressed=compressed
+    )
 
     out["posterior"] = _ma_bmd_posterior_figure(idata, ma_bmd_quantiles)
     out["overlay"] = _bmd_distributions_figure(idata)

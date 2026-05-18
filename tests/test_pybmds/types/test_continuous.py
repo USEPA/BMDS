@@ -82,16 +82,16 @@ class TestContinuousParameters:
         model = continuous.ExponentialM3(cdataset, settings=dict(disttype=DistType.normal))
         res = model.execute()
         # param names for prior are as expected
-        assert model.get_param_names() == ["a", "b", "c", "d", "log-alpha"]
+        assert model.get_param_names() == ["a", "b", "c", "d", "alpha"]
         # but outputs have been shifted
-        assert res.parameters.names == ["a", "b", "d", "log-alpha"]
+        assert res.parameters.names == ["a", "b", "d", "alpha"]
 
         model = continuous.ExponentialM3(cdataset, settings=dict(disttype=DistType.normal_ncv))
         res = model.execute()
         # param names for prior are as expected
-        assert model.get_param_names() == ["a", "b", "c", "d", "rho", "log-alpha"]
+        assert model.get_param_names() == ["a", "b", "c", "d", "rho", "alpha"]
         # but outputs have been shifted
-        assert res.parameters.names == ["a", "b", "d", "rho", "log-alpha"]
+        assert res.parameters.names == ["a", "b", "d", "rho", "alpha"]
 
         # confirm arrays all the same length after changes
         params = res.parameters

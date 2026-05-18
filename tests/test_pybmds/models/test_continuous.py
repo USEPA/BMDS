@@ -97,6 +97,24 @@ class TestBmdModelContinuous:
         )
         assert model.get_param_names() == ["g", "b1", "b2", "b3", "rho", "alpha"]
 
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal_ncv, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "rho", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.log_normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "log-alpha"]
+
     def test_report(self, cdataset2):
         model = continuous.Hill(dataset=cdataset2)
         text = model.text()

@@ -202,7 +202,7 @@ class TestSession:
         session = pybmds.Session(dataset=ddataset2)
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
 
-        def fake_get_model_average_figures(_session, n_chains=1):
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
             assert _session is session
             assert n_chains == 1
 
@@ -357,7 +357,7 @@ class TestSession:
             "Inverse Exponential (NCV)",
         ]
 
-        def fake_get_model_average_figures(_session, n_chains=1):
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
             assert _session is session
             assert n_chains == 1
 
@@ -430,14 +430,14 @@ class TestSession:
             assert np.isfinite(model.results.plotting.dr_y).all()
             assert np.unique(model.results.plotting.dr_y).size > 1
 
-    def test_continuous_ma_default_include_efsa_excludes_existing_hill(self, cdataset3):
+    def test_continuous_ma_default_include_extended_excludes_existing_hill(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
             Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
         )
 
         session.add_default_bayesian_models(
-            include_efsa=True,
+            include_extended=True,
             model_average=False,
             prior_class=PriorClass.bayesian_loud,
         )
@@ -449,7 +449,7 @@ class TestSession:
     def test_to_docx_all_models_skips_cdf_for_unsuccessful_models(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_default_bayesian_models(
-            include_efsa=True,
+            include_extended=True,
             model_average=False,
             prior_class=PriorClass.bayesian_loud,
         )
@@ -472,7 +472,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1):
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
             assert _session is session
             assert n_chains == 1
 
@@ -583,7 +583,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1):
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
             def fig():
                 return plt.figure()
 
@@ -621,6 +621,59 @@ class TestSession:
         assert "Power model parameters" in paragraph_text
         assert "Power model parameter visualizations" in paragraph_text
 
+    def test_to_docx_can_expand_loud_parameters_by_model(self, monkeypatch, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+            assert compressed is False
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [
+                    {
+                        "name": "Power CV",
+                        "summary": pd.DataFrame({"Model": ["CV"], "Parameter": ["g"]}),
+                        "trace_figure": fig(),
+                    },
+                    {
+                        "name": "Power NCV",
+                        "summary": pd.DataFrame({"Model": ["NCV"], "Parameter": ["g"]}),
+                        "trace_figure": fig(),
+                    },
+                ],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(
+            citation=False,
+            parameter_visualizations=True,
+            compressed=False,
+        )
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Power CV model parameters" in paragraph_text
+        assert "Power NCV model parameters" in paragraph_text
+        assert "Power CV model parameter visualizations" in paragraph_text
+        assert "Power NCV model parameter visualizations" in paragraph_text
+
     def test_to_docx_can_hide_parameter_tables(self, monkeypatch, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
@@ -629,7 +682,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1):
+        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
             def fig():
                 return plt.figure()
 
@@ -686,7 +739,7 @@ class TestSession:
     def test_continuous_cma_with_efsa(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
 
-        session.add_default_bayesian_models(include_efsa=True)
+        session.add_default_bayesian_models(include_extended=True)
         assert getattr(session, "models", None) is not None
         assert len(session.models) > 0, "No models were added to the session"
 

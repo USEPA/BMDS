@@ -315,10 +315,11 @@ class ContinuousParameters(BaseModel):
         for name in param_names:
             if name == "Var0" and disttype in {
                 constants.DistType.normal,
-                constants.DistType.log_normal,
                 constants.DistType.normal_ncv,
             }:
                 renamed.append("alpha")
+            elif name == "Var0" and disttype == constants.DistType.log_normal:
+                renamed.append("log-alpha")
             elif name == "Var1" and disttype == constants.DistType.normal_ncv:
                 renamed.append("rho")
             else:

@@ -153,19 +153,17 @@ class BmdModelContinuous(BmdModel):
             if self.__class__.__name__ == "ExponentialM3":
                 names = [n for n in names if n != "c"]
 
-            var_names = (
-                ["rho", "alpha"] if self.settings.disttype == DistType.normal_ncv else ["alpha"]
-            )
-            return names + var_names
+            return names + self.get_variance_param_names()
         names = list(self.bmd_model_class.params)
         names.extend(self.get_variance_param_names())
         return names
 
     def get_variance_param_names(self):
         if self.settings.disttype == DistType.normal_ncv:
-            return list(self.bmd_model_class.variance_params)
-        else:
-            return [self.bmd_model_class.variance_params[1]]
+            return ["rho", "alpha"]
+        if self.settings.disttype == DistType.log_normal:
+            return ["log-alpha"]
+        return ["alpha"]
 
     def get_gof_pvalue(self) -> float:
         return self.results.tests.p_value(3)
