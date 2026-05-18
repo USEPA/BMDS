@@ -5342,7 +5342,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<double> std_post;
   std::vector<double> N_post;
   for (int i = postStartInd; i < postEndInd; i++) {
-    doses_posttmp.push_back(pyMA->pyCA.doses[i]);
+    doses_posttmp.push_back(D(i));
     Y_posttmp.push_back(pyMA->pyCA.Y[i]);
     logY_post.push_back(log(pyMA->pyCA.Y[i]));
   }
