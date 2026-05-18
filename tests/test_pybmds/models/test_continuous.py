@@ -61,7 +61,7 @@ class TestPriorOverrides:
             continuous.MultiplicativeHill,
             continuous.InverseExponential,
             continuous.Lognormal,
-            continuous.Gamma,
+            continuous.ContinuousGamma,
             continuous.LMS,
         ]:
             for prior_class in [
@@ -119,7 +119,7 @@ class TestBmdModelContinuous:
             (continuous.MultiplicativeHill, PriorClass.bayesian_loud),
             (continuous.InverseExponential, PriorClass.bayesian_loud),
             (continuous.Lognormal, PriorClass.bayesian_loud),
-            (continuous.Gamma, PriorClass.bayesian_loud),
+            (continuous.ContinuousGamma, PriorClass.bayesian_loud),
             (continuous.LMS, PriorClass.bayesian_loud),
         ]:
             assert Model(cdataset2).settings.priors.prior_class is prior_class

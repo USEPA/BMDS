@@ -49,7 +49,7 @@ class TestSession:
         assert pybmds.models.continuous.MultiplicativeHill not in model_types
         assert pybmds.models.continuous.InverseExponential not in model_types
         assert pybmds.models.continuous.Lognormal not in model_types
-        assert pybmds.models.continuous.Gamma not in model_types
+        assert pybmds.models.continuous.ContinuousGamma not in model_types
         assert pybmds.models.continuous.LMS not in model_types
 
     def test_add_default_models_continuous_excludes_loud_only_models(self, cdataset3):
@@ -64,7 +64,7 @@ class TestSession:
         assert pybmds.models.continuous.MultiplicativeHill not in model_types
         assert pybmds.models.continuous.InverseExponential not in model_types
         assert pybmds.models.continuous.Lognormal not in model_types
-        assert pybmds.models.continuous.Gamma not in model_types
+        assert pybmds.models.continuous.ContinuousGamma not in model_types
         assert pybmds.models.continuous.LMS not in model_types
 
     def test_dichotomous(self, ddataset2, rewrite_data_files, data_path):

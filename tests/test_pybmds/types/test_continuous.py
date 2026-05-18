@@ -1,9 +1,14 @@
+import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from pybmds.constants import DistType
+from pybmds.constants import DistType, PriorClass
 from pybmds.models import continuous
-from pybmds.types.continuous import ContinuousModelSettings, ContinuousRiskType
+from pybmds.types.continuous import (
+    ContinuousModelSettings,
+    ContinuousParameters,
+    ContinuousRiskType,
+)
 
 
 class TestContinuousModelSettings:
@@ -49,6 +54,25 @@ class TestContinuousGof:
 
 
 class TestContinuousParameters:
+    def test_from_loud_draws_uses_joint_median_draw(self, cdataset):
+        model = continuous.Power(
+            cdataset,
+            settings=dict(disttype=DistType.normal, priors=PriorClass.bayesian_loud),
+        )
+        draws = np.array(
+            [
+                [0.0, 0.0, 0.0, 0.0],
+                [10.0, 10.0, 10.0, 10.0],
+                [100.0, 1.0, 100.0, 1.0],
+            ]
+        )
+
+        params = ContinuousParameters.from_loud_draws(model, draws)
+
+        assert any(np.array_equal(params.values, draw) for draw in draws)
+        assert not np.allclose(params.values, np.mean(draws, axis=0))
+        assert not np.allclose(params.values, np.median(draws, axis=0))
+
     def test_exp3(self, cdataset):
         """
         Edge case for exp3 - the dll expects a prior for the c parameter, but the

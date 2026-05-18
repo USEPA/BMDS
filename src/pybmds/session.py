@@ -78,7 +78,7 @@ class Session:
             Models.MultiplicativeHill: c3.MultiplicativeHill,
             Models.InverseExponential: c3.InverseExponential,
             Models.Lognormal: c3.Lognormal,
-            Models.Gamma: c3.Gamma,
+            Models.ContinuousGamma: c3.ContinuousGamma,
             Models.LMS2: c3.LMS,
         },
         Dtype.CONTINUOUS_INDIVIDUAL: {
@@ -91,7 +91,7 @@ class Session:
             Models.MultiplicativeHill: c3.MultiplicativeHill,
             Models.InverseExponential: c3.InverseExponential,
             Models.Lognormal: c3.Lognormal,
-            Models.Gamma: c3.Gamma,
+            Models.ContinuousGamma: c3.ContinuousGamma,
             Models.LMS2: c3.LMS,
         },
         Dtype.NESTED_DICHOTOMOUS: {
@@ -172,7 +172,7 @@ class Session:
                 c3.MultiplicativeHill,
                 c3.InverseExponential,
                 c3.Lognormal,
-                c3.Gamma,
+                c3.ContinuousGamma,
                 c3.LMS,
             ):
                 _add(
@@ -412,7 +412,7 @@ class Session:
                 c3.MultiplicativeHill,
                 c3.InverseExponential,
                 c3.Lognormal,
-                c3.Gamma,
+                c3.ContinuousGamma,
                 c3.LMS,
             )
 

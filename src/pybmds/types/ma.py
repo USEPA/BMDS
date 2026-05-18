@@ -3,7 +3,7 @@ from typing import Self
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 from .. import bmdscore, constants
 from ..constants import BMDS_BLANK_VALUE, PriorClass
@@ -136,6 +136,58 @@ class DichotomousModelAverageResult(ModelAverageResult):
     model_p_values: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
+
+    @staticmethod
+    def _finite_draws(draws) -> list[float]:
+        arr = np.asarray(draws, dtype=float)
+        return arr[np.isfinite(arr)].tolist()
+
+    @staticmethod
+    def _finite_draw_rows(draws, mask: np.ndarray | None = None) -> list:
+        arr = np.asarray(draws, dtype=float)
+        if arr.ndim == 1:
+            row_mask = np.isfinite(arr)
+        else:
+            row_mask = np.isfinite(arr).all(axis=1)
+
+        if mask is not None and mask.size == row_mask.size:
+            row_mask &= mask
+
+        return arr[row_mask].tolist()
+
+    @staticmethod
+    def _finite_row_mask(draws) -> np.ndarray:
+        arr = np.asarray(draws, dtype=float)
+        if arr.ndim == 1:
+            return np.isfinite(arr)
+        return np.isfinite(arr).all(axis=1)
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler):
+        data = handler(self)
+
+        bmd_dist = np.asarray(self.bmd_dist, dtype=float)
+        if bmd_dist.ndim == 1:
+            data["bmd_dist"] = self._finite_draws(self.bmd_dist)
+
+        if self.model_bmd_dist and self.model_parm_dist:
+            clean_model_bmd = []
+            clean_model_parms = []
+            for bmd_draws, parm_draws in zip(
+                self.model_bmd_dist, self.model_parm_dist, strict=True
+            ):
+                bmd_arr = np.asarray(bmd_draws, dtype=float)
+                mask = np.isfinite(bmd_arr)
+                parm_mask = self._finite_row_mask(parm_draws)
+                if mask.size == parm_mask.size:
+                    mask &= parm_mask
+                clean_model_bmd.append(bmd_arr[mask].tolist())
+                clean_model_parms.append(self._finite_draw_rows(parm_draws, mask))
+
+            data["model_bmd_dist"] = clean_model_bmd
+            data["model_parm_dist"] = clean_model_parms
+
+        return data
 
     @staticmethod
     def _param_names(model, n_params: int) -> list[str]:

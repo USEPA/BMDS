@@ -23,6 +23,12 @@ def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
     return arr.reshape((n_chains, draws_per_chain) + arr.shape[1:])
 
 
+def _nan_nonfinite(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float).copy()
+    arr[~np.isfinite(arr)] = np.nan
+    return arr
+
+
 def _build_observed_data(dataset) -> xr.Dataset:
     """
     Build ArviZ observed_data from a pybmds dataset.
@@ -118,8 +124,8 @@ def model_average_to_inferencedata(
     for model_idx, (bmds, parms, pnames) in enumerate(
         zip(ma_result.model_bmd_dist, ma_result.model_parm_dist, param_names_by_model, strict=True)
     ):
-        bmds = np.asarray(bmds, dtype=float)
-        parms = np.asarray(parms, dtype=float)
+        bmds = _nan_nonfinite(bmds)
+        parms = _nan_nonfinite(parms)
 
         if len(bmds) != n_draws:
             raise ValueError(
@@ -149,6 +155,9 @@ def model_average_to_inferencedata(
             global_idx = all_param_names.index(pname)
             model_params[:, model_idx, global_idx] = parms[:, param_idx]
 
+    ma_bmd = _nan_nonfinite(ma_result.bmd_dist)
+    posteriors = _nan_nonfinite(ma_result.posteriors)
+
     posterior_raw = xr.Dataset(
         data_vars={
             "params": (
@@ -161,11 +170,11 @@ def model_average_to_inferencedata(
             ),
             "MA_BMD": (
                 ("chain", "draw"),
-                _reshape_draws(np.asarray(ma_result.bmd_dist, dtype=float), n_chains),
+                _reshape_draws(ma_bmd, n_chains),
             ),
             "weights": (
                 ("model",),
-                np.asarray(ma_result.posteriors, dtype=float),
+                posteriors,
             ),
             "n_param": (
                 ("model",),
@@ -223,19 +232,21 @@ def _figure_from_axes(axes):
 
 def _ma_bmd_quantiles(idata: az.InferenceData, alpha: float) -> dict[str, float]:
     ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
+    ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
     return {
-        "lower": float(np.quantile(ma_bmd, alpha)),
-        "median": float(np.quantile(ma_bmd, 0.5)),
-        "upper": float(np.quantile(ma_bmd, 1 - alpha)),
+        "lower": float(np.nanquantile(ma_bmd, alpha)),
+        "median": float(np.nanquantile(ma_bmd, 0.5)),
+        "upper": float(np.nanquantile(ma_bmd, 1 - alpha)),
     }
 
 
 def _ma_bmd_hdi(idata: az.InferenceData, hdi_prob: float) -> dict[str, float]:
     ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
+    ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
     lower, upper = np.asarray(az.hdi(ma_bmd, hdi_prob=hdi_prob), dtype=float)
     return {
         "lower": float(lower),
-        "median": float(np.quantile(ma_bmd, 0.5)),
+        "median": float(np.nanquantile(ma_bmd, 0.5)),
         "upper": float(upper),
     }
 
@@ -309,12 +320,13 @@ def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
 
     for model_idx, model_name in enumerate(model_names):
         draws = bmd[:, :, model_idx].reshape(-1)
+        draws = draws[np.isfinite(draws)]
         records.append(
             {
                 "model": str(model_name),
-                "BMD": float(np.quantile(draws, 0.5)),
-                "BMDL": float(np.quantile(draws, alpha)),
-                "BMDU": float(np.quantile(draws, 1 - alpha)),
+                "BMD": float(np.nanquantile(draws, 0.5)),
+                "BMDL": float(np.nanquantile(draws, alpha)),
+                "BMDU": float(np.nanquantile(draws, 1 - alpha)),
                 "r_hat": np.nan,
                 "ess_bulk": np.nan,
                 "ess_tail": np.nan,
@@ -374,11 +386,102 @@ def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> 
     return summary.rename(columns=rename)
 
 
+def _summary_from_draws(
+    draws: np.ndarray, var_name: str, label: str, hdi_prob: float
+) -> pd.DataFrame:
+    draws = np.asarray(draws, dtype=float).reshape(-1)
+    draws = draws[np.isfinite(draws)]
+    if draws.size == 0:
+        return pd.DataFrame()
+
+    dataset = xr.Dataset(
+        {var_name: (("chain", "draw"), draws.reshape(1, draws.size))},
+        coords={"chain": [0], "draw": np.arange(draws.size)},
+    )
+    idata = az.InferenceData(posterior=dataset)
+
+    try:
+        median_summary = az.summary(
+            idata,
+            var_names=[var_name],
+            hdi_prob=hdi_prob,
+            stat_focus="median",
+        )
+        ess_summary = az.summary(
+            idata,
+            var_names=[var_name],
+            hdi_prob=hdi_prob,
+            stat_focus="mean",
+        )
+        median_summary = median_summary.iloc[[0]].copy()
+        ess_summary = ess_summary.iloc[[0]].copy()
+        median_summary.index = pd.Index([label], name="var_name")
+        ess_summary.index = pd.Index([label], name="var_name")
+        median_summary = median_summary.drop(
+            columns=[
+                column
+                for column in ("ess_median", "ess_tail", "ess_bulk")
+                if column in median_summary
+            ],
+            errors="ignore",
+        )
+        ess_columns = [
+            column for column in ("r_hat", "ess_bulk", "ess_tail") if column in ess_summary.columns
+        ]
+        if ess_columns:
+            median_summary = median_summary.join(
+                ess_summary[ess_columns].drop(
+                    columns=[column for column in ess_columns if column in median_summary.columns],
+                    errors="ignore",
+                )
+            )
+        return median_summary
+    except ValueError:
+        alpha = (1 - hdi_prob) / 2
+        return pd.DataFrame(
+            {
+                "median": [float(np.nanquantile(draws, 0.5))],
+                f"eti_{alpha:.0%}": [float(np.nanquantile(draws, alpha))],
+                f"eti_{1 - alpha:.0%}": [float(np.nanquantile(draws, 1 - alpha))],
+                "r_hat": [np.nan],
+                "ess_bulk": [np.nan],
+                "ess_tail": [np.nan],
+            },
+            index=pd.Index([label], name="var_name"),
+        )
+
+
+def _finite_summary_table(idata: az.InferenceData, var_names: list[str], hdi_prob: float):
+    parts: list[pd.DataFrame] = []
+    model_labels = (
+        list(idata.posterior.coords["model"].values) if "model" in idata.posterior.coords else []
+    )
+
+    for var_name in var_names:
+        values = np.asarray(idata.posterior[var_name].values, dtype=float)
+        if values.ndim == 2:
+            parts.append(_summary_from_draws(values, var_name, var_name, hdi_prob))
+        elif values.ndim == 3:
+            for model_idx, model_name in enumerate(model_labels):
+                label = f"{var_name}[{model_idx}:{model_name}]"
+                parts.append(
+                    _summary_from_draws(values[:, :, model_idx], var_name, label, hdi_prob)
+                )
+        else:
+            raise ValueError(f"Unsupported posterior shape for {var_name}: {values.shape}")
+
+    parts = [part for part in parts if not part.empty]
+    return pd.concat(parts, axis=0) if parts else pd.DataFrame()
+
+
 def _multi_summary_table(
     idata: az.InferenceData,
     var_names: list[str],
     hdi_prob: float,
 ) -> pd.DataFrame:
+    if idata is not None:
+        return _finite_summary_table(idata, var_names, hdi_prob)
+
     def _fallback_summary(var_name: str) -> pd.DataFrame:
         values = np.asarray(idata.posterior[var_name].values, dtype=float)
         median_q = 0.5

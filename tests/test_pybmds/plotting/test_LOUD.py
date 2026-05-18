@@ -1,3 +1,6 @@
+import warnings
+from types import SimpleNamespace
+
 import arviz as az
 import matplotlib.pyplot as plt
 import numpy as np
@@ -128,6 +131,60 @@ class TestLOUD:
         assert "alpha" in idata.posterior.data_vars
         assert "Var0" not in idata.posterior.data_vars
 
+    def test_model_average_to_inferencedata_replaces_infinite_draws(self):
+        class FakeModel:
+            results = SimpleNamespace(parameters=SimpleNamespace(names=["a"]))
+
+            def name(self):
+                return "Fake"
+
+        session = SimpleNamespace(
+            dataset=SimpleNamespace(
+                doses=[0, 1],
+                ns=[10, 10],
+                means=[1.0, 2.0],
+                stdevs=[0.1, 0.2],
+            ),
+            model_average=SimpleNamespace(
+                models=[FakeModel()],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([1.0, np.inf, 3.0]),
+                    model_bmd_dist=[np.array([1.0, -np.inf, 3.0])],
+                    model_parm_dist=[np.array([[1.0], [np.inf], [3.0]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        idata = model_average_to_inferencedata(session, n_chains=1)
+
+        assert np.isnan(idata.posterior["MA_BMD"].values[0, 1])
+        assert np.isnan(idata.posterior["BMD"].values[0, 1, 0])
+        assert np.isnan(idata.posterior["a"].values[0, 1, 0])
+
+    def test_multi_summary_table_skips_missing_slices_without_runtime_warnings(self):
+        posterior = {
+            "a": (
+                ("chain", "draw", "model"),
+                np.array([[[1.0, np.nan], [2.0, np.nan], [3.0, np.nan]]]),
+            ),
+            "BMD": (
+                ("chain", "draw", "model"),
+                np.array([[[1.0, np.inf], [2.0, 4.0], [3.0, 5.0]]]),
+            ),
+        }
+        coords = {"chain": [0], "draw": np.arange(3), "model": ["A", "B"]}
+        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", RuntimeWarning)
+            actual = _multi_summary_table(idata=idata, var_names=["a", "BMD"], hdi_prob=0.9)
+
+        assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
+        assert "a[0:A]" in actual.index
+        assert "a[1:B]" not in actual.index
+        assert "BMD[1:B]" in actual.index
+
     def test_dichotomous_loud_model_average_to_inferencedata(self):
         dataset = pybmds.DichotomousDataset(
             doses=[0, 0.25, 0.75, 0.85, 1],
@@ -181,8 +238,8 @@ class TestLOUD:
         )
         session.execute()
 
-        assert session.models[0].results.parameters.names == ["g", "v", "n", "alpha", "rho"]
-        assert session.models[1].results.parameters.names == ["g", "v", "k", "n", "alpha", "rho"]
+        assert session.models[0].results.parameters.names == ["g", "v", "n", "rho", "alpha"]
+        assert session.models[1].results.parameters.names == ["g", "v", "k", "n", "rho", "alpha"]
 
     def test_bmd_summary_table_uses_bmd_labels(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)

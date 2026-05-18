@@ -362,6 +362,16 @@ class ContinuousParameters(BaseModel):
         )
 
     @classmethod
+    def _median_draw(cls, draws: np.ndarray) -> np.ndarray:
+        median = np.median(draws, axis=0)
+        q25, q75 = np.quantile(draws, [0.25, 0.75], axis=0)
+        scale = q75 - q25
+        scale[scale <= 0] = np.std(draws, axis=0, ddof=0)[scale <= 0]
+        scale[scale <= 0] = 1.0
+        distances = np.linalg.norm((draws - median) / scale, axis=1)
+        return draws[int(np.argmin(distances))]
+
+    @classmethod
     def from_loud_draws(cls, model, parm_draws: np.ndarray) -> Self:
         draws = np.asarray(parm_draws, dtype=float)
         if draws.ndim == 1:
@@ -381,7 +391,7 @@ class ContinuousParameters(BaseModel):
         param_names = param_names[:n_params]
         priors = priors[:, :n_params]
 
-        values = np.mean(draws, axis=0)
+        values = cls._median_draw(draws)
         se = np.std(draws, axis=0, ddof=0)
         lower_ci = np.quantile(draws, 0.025, axis=0)
         upper_ci = np.quantile(draws, 0.975, axis=0)

@@ -3,7 +3,7 @@ from typing import Self
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
@@ -137,6 +137,52 @@ class ContinuousModelAverageResult(ModelAverageResult):
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
+    @staticmethod
+    def _finite_draws(draws) -> list[float]:
+        arr = np.asarray(draws, dtype=float)
+        return arr[np.isfinite(arr)].tolist()
+
+    @staticmethod
+    def _finite_draw_rows(draws, mask: np.ndarray | None = None) -> list:
+        arr = np.asarray(draws, dtype=float)
+        if arr.ndim == 1:
+            row_mask = np.isfinite(arr)
+        else:
+            row_mask = np.isfinite(arr).all(axis=1)
+
+        if mask is not None and mask.size == row_mask.size:
+            row_mask &= mask
+
+        return arr[row_mask].tolist()
+
+    @staticmethod
+    def _finite_row_mask(draws) -> np.ndarray:
+        arr = np.asarray(draws, dtype=float)
+        if arr.ndim == 1:
+            return np.isfinite(arr)
+        return np.isfinite(arr).all(axis=1)
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler):
+        data = handler(self)
+
+        data["bmd_dist"] = self._finite_draws(self.bmd_dist)
+
+        clean_model_bmd = []
+        clean_model_parms = []
+        for bmd_draws, parm_draws in zip(self.model_bmd_dist, self.model_parm_dist, strict=True):
+            bmd_arr = np.asarray(bmd_draws, dtype=float)
+            mask = np.isfinite(bmd_arr)
+            parm_mask = self._finite_row_mask(parm_draws)
+            if mask.size == parm_mask.size:
+                mask &= parm_mask
+            clean_model_bmd.append(bmd_arr[mask].tolist())
+            clean_model_parms.append(self._finite_draw_rows(parm_draws, mask))
+
+        data["model_bmd_dist"] = clean_model_bmd
+        data["model_parm_dist"] = clean_model_parms
+        return data
+
     @classmethod
     def from_cpp(cls, analysis: ContinuousModelAverage, model_results) -> Self:
         ma_bmd = np.asarray(analysis.result.bmd_dist, dtype=float)
@@ -161,11 +207,6 @@ class ContinuousModelAverageResult(ModelAverageResult):
                 p = p.reshape(n_draw, p.size // n_draw)
             elif p.ndim == 2 and n_draw > 0 and p.shape[0] != n_draw and p.shape[1] == n_draw:
                 p = p.T
-
-            if p.ndim == 2:
-                p = p[np.isfinite(p).all(axis=1)]
-            else:
-                p = p[np.isfinite(p)]
 
             model_parms.append(p)
 

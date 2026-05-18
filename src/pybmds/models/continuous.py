@@ -450,7 +450,7 @@ class Lognormal(BmdModelContinuous):
         return a * (1 + (c - 1.0) * norm.cdf(np.log(b) + d * np.log(doses)))
 
 
-class Gamma(BmdModelContinuous):
+class ContinuousGamma(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.cont_gamma.value
 
     def get_default_prior_class(self) -> PriorClass:
@@ -466,7 +466,7 @@ class Gamma(BmdModelContinuous):
             PriorClass.frequentist_unrestricted,
         ):
             raise ConfigurationException(
-                "The Gamma model cannot be fit using maximum likelihood estimation"
+                "The Continuous Gamma model cannot be fit using maximum likelihood estimation"
             )
 
         return model_settings
@@ -516,7 +516,7 @@ _bmd_model_map = {
     ContinuousModelChoices.mult_hill.value.id: MultiplicativeHill,
     ContinuousModelChoices.inverse_exp.value.id: InverseExponential,
     ContinuousModelChoices.lognormal.value.id: Lognormal,
-    ContinuousModelChoices.cont_gamma.value.id: Gamma,
+    ContinuousModelChoices.cont_gamma.value.id: ContinuousGamma,
     ContinuousModelChoices.lms.value.id: LMS,
 }
 
