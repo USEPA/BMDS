@@ -5634,10 +5634,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < pyMA->nmodels; i++) {
     fitResult fitRes = pyRes->models[i].loudRes;
     fitRes.BMD *= max_dose;
-    //     std::cout<<"fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
     Eigen::MatrixXd parms = fitRes.parms.transpose();
-    //     std::cout<<"parms:"<<std::endl<<parms<<std::endl;
-    for (int j = 0; j < fitRes.parms.cols(); j++) {
+    for (int j = 0; j < parms.cols(); j++) {
       Eigen::MatrixXd parmCol = parms.col(j);
       // degree is hardcoded as -9999, since there is no poly LOUD model
       rescale_parms(
@@ -5646,7 +5644,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       parms.col(j) = parmCol;
     }
     fitRes.parms = parms.transpose();
-    //     std::cout<<"final fitRes.parms:"<<std::endl<<fitRes.parms<<std::endl;
   }
 
   // calc individual model bmdl, bmd, bmdu
