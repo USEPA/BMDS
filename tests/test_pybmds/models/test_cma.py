@@ -5,11 +5,32 @@ import numpy as np
 
 import pybmds
 from pybmds.constants import DistType, PriorClass
-from pybmds.types.cma import ContinuousModelAverageResult
+from pybmds.types.cma import ContinuousModelAverage, ContinuousModelAverageResult
 
 
 ## TO DO - to change when we have actual results from models
 class TestContinuousMa:
+    def test_continuous_individual_loud_ma_uses_individual_data(self, cidataset):
+        session = pybmds.Session(dataset=cidataset)
+        session.add_model(pybmds.Models.Power, {"priors": PriorClass.bayesian_loud})
+        session.models[0].settings.samples = 20
+        session.models[0].settings.burnin = 5
+        session.models[0].execute()
+        session.add_model_averaging()
+
+        structs = ContinuousModelAverage(
+            session.dataset,
+            session.model_average.models,
+            session.ma_weights,
+            session.weight_option,
+        )
+
+        assert structs.analysis.n == len(cidataset.individual_doses)
+        assert structs.analysis.doses == cidataset.individual_doses
+        assert structs.analysis.Y == cidataset.responses
+        assert structs.analysis.sd == []
+        assert structs.analysis.n_group == []
+
     def test_continuous_ma_session(self, cdataset3):
         # check execution and it can be json serialized
         session = pybmds.Session(dataset=cdataset3)
