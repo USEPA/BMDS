@@ -4560,7 +4560,12 @@ double calcBMD_hill_efsa(
   if (!isIncreasing) dir = -1.0;
   if (constVar) {
     alpha = parms(4);
-    var = sqrt(alpha);
+    if (isNormal) {
+      var = sqrt(alpha);
+    } else {
+      alpha = exp(alpha);  // convert log-alpha to alpha
+      var = sqrt((exp(alpha) - 1.0) * exp(2.0 * log(m0) + alpha));
+    }
   } else {
     rho = parms(4);
     alpha = parms(5);
@@ -4609,6 +4614,7 @@ double calcBMD_invexp_efsa(
     if (isNormal) {
       var = sqrt(alpha);
     } else {
+      alpha = exp(alpha);  // convert log-alpha to alpha
       var = sqrt((exp(alpha) - 1.0) * exp(2.0 * log(m0) + alpha));
     }
   } else {
@@ -4658,6 +4664,7 @@ double calcBMD_log_efsa(
     if (isNormal) {
       var = sqrt(alpha);
     } else {
+      alpha = exp(alpha);  // convert log-alpha to alpha
       var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
     }
   } else {
@@ -4710,6 +4717,7 @@ double calcBMD_gamma_efsa(
     if (isNormal) {
       var = sqrt(alpha);
     } else {
+      alpha = exp(alpha);  // convert log-alpha to alpha
       var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
     }
   } else {
@@ -4760,6 +4768,7 @@ double calcBMD_lms_efsa(
     if (isNormal) {
       var = sqrt(alpha);
     } else {
+      alpha = exp(alpha);  // convert log-alpha to alpha
       var = sqrt((exp(alpha) - 1) * exp(2 * log(m0) + alpha));
     }
   } else {
