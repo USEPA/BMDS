@@ -1,9 +1,11 @@
 import json
+from types import SimpleNamespace
 
 import numpy as np
 
 import pybmds
 from pybmds.constants import DistType, PriorClass
+from pybmds.types.cma import ContinuousModelAverageResult
 
 
 ## TO DO - to change when we have actual results from models
@@ -48,3 +50,58 @@ class TestContinuousMa:
         session.execute()
         assert np.allclose(session.model_average.results.priors, [0.9, 0.1])
         assert np.allclose(session.model_average.results.posteriors, [0.0043, 0.9957], atol=0.05)
+
+    def test_loud_ma_preserves_nonfinite_parameter_draw_rows(self):
+        analysis = SimpleNamespace(
+            result=SimpleNamespace(
+                bmd_dist=np.array([0.1, np.inf, 0.3]),
+                post_probs=np.array([1.0]),
+                bmdsRes=SimpleNamespace(BMDL_MA=0.1, BMD_MA=0.2, BMDU_MA=0.3),
+                models=[
+                    SimpleNamespace(
+                        loudRes=SimpleNamespace(
+                            BMD=np.array([0.1, np.inf, 0.3]),
+                            parms=np.array(
+                                [
+                                    [1.0, 2.0],
+                                    [np.nan, 3.0],
+                                    [4.0, np.inf],
+                                ]
+                            ),
+                            pval=0.5,
+                        )
+                    )
+                ],
+            ),
+            average=SimpleNamespace(modelPriors=np.array([1.0])),
+        )
+        model_results = [
+            SimpleNamespace(
+                plotting=SimpleNamespace(
+                    dr_x=np.array([0.0, 1.0]),
+                    dr_y=np.array([10.0, 9.0]),
+                )
+            )
+        ]
+
+        result = ContinuousModelAverageResult.from_cpp(analysis, model_results)
+
+        assert result.model_parm_dist[0].shape == (3, 2)
+        assert np.isnan(result.model_parm_dist[0][1, 0])
+        assert np.isinf(result.model_parm_dist[0][2, 1])
+        assert np.isinf(result.bmd_dist[1])
+        assert np.isinf(result.model_bmd_dist[0][1])
+
+        payload = result.model_dump()
+        assert payload["bmd_dist"] == [0.1, None, 0.3]
+        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
+        assert isinstance(json.dumps(payload, allow_nan=False), str)
+
+        rehydrated = ContinuousModelAverageResult.model_validate(payload)
+        assert len(rehydrated.bmd_dist) == 3
+        assert len(rehydrated.model_bmd_dist[0]) == 3
+        assert rehydrated.model_parm_dist[0].shape == (3, 2)
+        assert np.isnan(rehydrated.bmd_dist[1])
+        assert np.isnan(rehydrated.model_bmd_dist[0][1])
+        assert np.isnan(rehydrated.model_parm_dist[0][1, 0])

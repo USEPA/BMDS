@@ -3,7 +3,7 @@ from typing import Self
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 from .. import bmdscore, constants
 from ..constants import BMDS_BLANK_VALUE, PriorClass
@@ -136,6 +136,29 @@ class DichotomousModelAverageResult(ModelAverageResult):
     model_p_values: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
+
+    @staticmethod
+    def _json_safe_draws(draws) -> list:
+        arr = np.asarray(draws, dtype=float)
+        values = arr.astype(object)
+        values[~np.isfinite(arr)] = None
+        return values.tolist()
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler):
+        data = handler(self)
+
+        bmd_dist = np.asarray(self.bmd_dist, dtype=float)
+        if bmd_dist.ndim == 1:
+            data["bmd_dist"] = self._json_safe_draws(self.bmd_dist)
+
+        if self.model_bmd_dist and self.model_parm_dist:
+            data["model_bmd_dist"] = [self._json_safe_draws(draws) for draws in self.model_bmd_dist]
+            data["model_parm_dist"] = [
+                self._json_safe_draws(draws) for draws in self.model_parm_dist
+            ]
+
+        return data
 
     @staticmethod
     def _param_names(model, n_params: int) -> list[str]:

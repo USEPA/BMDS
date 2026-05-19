@@ -121,6 +121,9 @@ class BatchSession(BatchBase):
         all_models: bool = False,
         bmd_cdf_table: bool = False,
         session_inputs_table: bool = False,
+        parameter_tables: bool = True,
+        parameter_visualizations: bool = False,
+        compressed: bool = True,
     ):
         """Append each session to a single document
 
@@ -134,6 +137,11 @@ class BatchSession(BatchBase):
             session_inputs_table (bool, default False): Write an inputs table for a session,
                 assuming a single model's input settings are representative of all models in a
                 session, which may not always be true
+            parameter_tables (bool, default True): Include grouped LOUD parameter tables
+            parameter_visualizations (bool, default False): Include grouped LOUD parameter
+                visualization figures in the report
+            compressed (bool, default True): Group LOUD parameter tables and visualizations by
+                model family. If False, separate tables and visualizations by individual model.
 
         Returns:
             A python docx.Document object with content added.
@@ -150,6 +158,9 @@ class BatchSession(BatchBase):
                 all_models=all_models,
                 bmd_cdf_table=bmd_cdf_table,
                 session_inputs_table=session_inputs_table,
+                parameter_tables=parameter_tables,
+                parameter_visualizations=parameter_visualizations,
+                compressed=compressed,
             )
 
         if citation and len(self.sessions) > 0:

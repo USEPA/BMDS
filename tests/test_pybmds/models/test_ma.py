@@ -5,7 +5,7 @@ import pytest
 
 import pybmds
 from pybmds.constants import PriorClass
-from pybmds.types.ma import DichotomousModelAverage
+from pybmds.types.ma import DichotomousModelAverage, DichotomousModelAverageResult
 
 
 def loud_dma_dataset():
@@ -152,3 +152,47 @@ class TestDichotomousMa:
                 session.model_average.results.model_p_values[idx]
             )
             assert len(model.results.fit.bmd_dist) > 0
+
+    def test_loud_ma_serializes_finite_draws_for_json(self):
+        result = DichotomousModelAverageResult(
+            bmdl=0.1,
+            bmd=0.2,
+            bmdu=0.3,
+            bmdl_y=0.01,
+            bmd_y=0.02,
+            bmdu_y=0.03,
+            bmd_dist=np.array([0.1, np.inf, 0.3]),
+            priors=np.array([1.0]),
+            posteriors=np.array([1.0]),
+            model_bmd_dist=[np.array([0.1, np.inf, 0.3])],
+            model_parm_dist=[
+                np.array(
+                    [
+                        [1.0, 2.0],
+                        [np.nan, 3.0],
+                        [4.0, np.inf],
+                    ]
+                )
+            ],
+            model_p_values=[0.5],
+            dr_x=np.array([0.0, 1.0]),
+            dr_y=np.array([0.0, 1.0]),
+        )
+
+        assert np.isinf(result.bmd_dist[1])
+        assert np.isinf(result.model_bmd_dist[0][1])
+        assert np.isnan(result.model_parm_dist[0][1, 0])
+
+        payload = result.model_dump()
+        assert payload["bmd_dist"] == [0.1, None, 0.3]
+        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
+        assert isinstance(json.dumps(payload, allow_nan=False), str)
+
+        rehydrated = DichotomousModelAverageResult.model_validate(payload)
+        assert len(rehydrated.bmd_dist) == 3
+        assert len(rehydrated.model_bmd_dist[0]) == 3
+        assert rehydrated.model_parm_dist[0].shape == (3, 2)
+        assert np.isnan(rehydrated.bmd_dist[1])
+        assert np.isnan(rehydrated.model_bmd_dist[0][1])
+        assert np.isnan(rehydrated.model_parm_dist[0][1, 0])

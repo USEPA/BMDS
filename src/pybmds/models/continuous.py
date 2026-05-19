@@ -153,19 +153,17 @@ class BmdModelContinuous(BmdModel):
             if self.__class__.__name__ == "ExponentialM3":
                 names = [n for n in names if n != "c"]
 
-            var_names = (
-                ["alpha", "rho"] if self.settings.disttype == DistType.normal_ncv else ["alpha"]
-            )
-            return names + var_names
+            return names + self.get_variance_param_names()
         names = list(self.bmd_model_class.params)
         names.extend(self.get_variance_param_names())
         return names
 
     def get_variance_param_names(self):
         if self.settings.disttype == DistType.normal_ncv:
-            return list(self.bmd_model_class.variance_params)
-        else:
-            return [self.bmd_model_class.variance_params[1]]
+            return ["rho", "alpha"]
+        if self.settings.disttype == DistType.log_normal:
+            return ["log-alpha"]
+        return ["alpha"]
 
     def get_gof_pvalue(self) -> float:
         return self.results.tests.p_value(3)
@@ -450,7 +448,7 @@ class Lognormal(BmdModelContinuous):
         return a * (1 + (c - 1.0) * norm.cdf(np.log(b) + d * np.log(doses)))
 
 
-class Gamma(BmdModelContinuous):
+class ContinuousGamma(BmdModelContinuous):
     bmd_model_class = ContinuousModelChoices.cont_gamma.value
 
     def get_default_prior_class(self) -> PriorClass:
@@ -466,7 +464,7 @@ class Gamma(BmdModelContinuous):
             PriorClass.frequentist_unrestricted,
         ):
             raise ConfigurationException(
-                "The Gamma model cannot be fit using maximum likelihood estimation"
+                "The Continuous Gamma model cannot be fit using maximum likelihood estimation"
             )
 
         return model_settings
@@ -516,7 +514,7 @@ _bmd_model_map = {
     ContinuousModelChoices.mult_hill.value.id: MultiplicativeHill,
     ContinuousModelChoices.inverse_exp.value.id: InverseExponential,
     ContinuousModelChoices.lognormal.value.id: Lognormal,
-    ContinuousModelChoices.cont_gamma.value.id: Gamma,
+    ContinuousModelChoices.cont_gamma.value.id: ContinuousGamma,
     ContinuousModelChoices.lms.value.id: LMS,
 }
 

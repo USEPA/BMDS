@@ -3,7 +3,7 @@ from typing import Self
 
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
@@ -137,6 +137,22 @@ class ContinuousModelAverageResult(ModelAverageResult):
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
+    @staticmethod
+    def _json_safe_draws(draws) -> list:
+        arr = np.asarray(draws, dtype=float)
+        values = arr.astype(object)
+        values[~np.isfinite(arr)] = None
+        return values.tolist()
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler):
+        data = handler(self)
+
+        data["bmd_dist"] = self._json_safe_draws(self.bmd_dist)
+        data["model_bmd_dist"] = [self._json_safe_draws(draws) for draws in self.model_bmd_dist]
+        data["model_parm_dist"] = [self._json_safe_draws(draws) for draws in self.model_parm_dist]
+        return data
+
     @classmethod
     def from_cpp(cls, analysis: ContinuousModelAverage, model_results) -> Self:
         ma_bmd = np.asarray(analysis.result.bmd_dist, dtype=float)
@@ -161,11 +177,6 @@ class ContinuousModelAverageResult(ModelAverageResult):
                 p = p.reshape(n_draw, p.size // n_draw)
             elif p.ndim == 2 and n_draw > 0 and p.shape[0] != n_draw and p.shape[1] == n_draw:
                 p = p.T
-
-            if p.ndim == 2:
-                p = p[np.isfinite(p).all(axis=1)]
-            else:
-                p = p[np.isfinite(p)]
 
             model_parms.append(p)
 

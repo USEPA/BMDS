@@ -61,7 +61,7 @@ class TestPriorOverrides:
             continuous.MultiplicativeHill,
             continuous.InverseExponential,
             continuous.Lognormal,
-            continuous.Gamma,
+            continuous.ContinuousGamma,
             continuous.LMS,
         ]:
             for prior_class in [
@@ -97,6 +97,24 @@ class TestBmdModelContinuous:
         )
         assert model.get_param_names() == ["g", "b1", "b2", "b3", "rho", "alpha"]
 
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal_ncv, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "rho", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.log_normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "log-alpha"]
+
     def test_report(self, cdataset2):
         model = continuous.Hill(dataset=cdataset2)
         text = model.text()
@@ -119,7 +137,7 @@ class TestBmdModelContinuous:
             (continuous.MultiplicativeHill, PriorClass.bayesian_loud),
             (continuous.InverseExponential, PriorClass.bayesian_loud),
             (continuous.Lognormal, PriorClass.bayesian_loud),
-            (continuous.Gamma, PriorClass.bayesian_loud),
+            (continuous.ContinuousGamma, PriorClass.bayesian_loud),
             (continuous.LMS, PriorClass.bayesian_loud),
         ]:
             assert Model(cdataset2).settings.priors.prior_class is prior_class
