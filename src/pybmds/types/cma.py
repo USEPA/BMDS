@@ -42,11 +42,20 @@ class ContinuousModelAverage:
         analysis.detectAdvDir = first.detectAdvDir
         analysis.samples = first.samples
         analysis.burnin = first.burnin
-        analysis.Y = dataset.means
-        analysis.sd = dataset.stdevs
-        analysis.n_group = dataset.ns
-        analysis.doses = dataset.doses
-        analysis.n = dataset.num_dose_groups
+        if analysis.suff_stat is True:
+            analysis.Y = dataset.means
+            analysis.sd = dataset.stdevs
+            analysis.n_group = dataset.ns
+            analysis.doses = dataset.doses
+            analysis.n = dataset.num_dose_groups
+        elif analysis.suff_stat is False:
+            analysis.Y = dataset.responses
+            analysis.sd = []
+            analysis.n_group = []
+            analysis.doses = dataset.individual_doses
+            analysis.n = len(dataset.individual_doses)
+        else:
+            raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
 
         average = bmdscore.python_continuousMA_analysis()
         average.nmodels = len(models)
@@ -61,8 +70,6 @@ class ContinuousModelAverage:
             average.datatype = bmdscore.loud_datatype.l_summary
         elif analysis.suff_stat is False:
             average.datatype = bmdscore.loud_datatype.l_individual
-        else:
-            raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
 
         average.priors = [model.structs.analysis.prior for model in models]
 

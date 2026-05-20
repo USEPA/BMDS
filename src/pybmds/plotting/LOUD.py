@@ -30,6 +30,23 @@ def _nan_nonfinite(arr: np.ndarray) -> np.ndarray:
     return arr
 
 
+def _pad_draws(arr: np.ndarray, n_draws: int) -> np.ndarray:
+    arr = _nan_nonfinite(arr)
+    if arr.ndim == 1:
+        out = np.full(n_draws, np.nan, dtype=float)
+        rows = min(arr.shape[0], n_draws)
+        out[:rows] = arr[:rows]
+        return out
+
+    if arr.ndim == 2:
+        out = np.full((n_draws, arr.shape[1]), np.nan, dtype=float)
+        rows = min(arr.shape[0], n_draws)
+        out[:rows, :] = arr[:rows, :]
+        return out
+
+    raise ValueError(f"Unsupported draw shape: {arr.shape}")
+
+
 def _build_observed_data(dataset) -> xr.Dataset:
     """
     Build ArviZ observed_data from a pybmds dataset.
@@ -114,7 +131,11 @@ def model_average_to_inferencedata(
             if name not in all_param_names:
                 all_param_names.append(name)
 
-    n_draws = len(ma_result.bmd_dist)
+    ma_bmd = _nan_nonfinite(ma_result.bmd_dist)
+    model_bmd_draws = [_nan_nonfinite(bmds) for bmds in ma_result.model_bmd_dist]
+    model_parm_draws = [_nan_nonfinite(parms) for parms in ma_result.model_parm_dist]
+
+    n_draws = max([len(ma_bmd)] + [len(bmds) for bmds in model_bmd_draws])
     n_models = len(model_names)
     n_params = len(all_param_names)
 
@@ -123,24 +144,17 @@ def model_average_to_inferencedata(
     n_param_by_model = np.zeros(n_models, dtype=int)
 
     for model_idx, (bmds, parms, pnames) in enumerate(
-        zip(ma_result.model_bmd_dist, ma_result.model_parm_dist, param_names_by_model, strict=True)
+        zip(model_bmd_draws, model_parm_draws, param_names_by_model, strict=True)
     ):
-        bmds = _nan_nonfinite(bmds)
-        parms = _nan_nonfinite(parms)
-
-        if len(bmds) != n_draws:
-            raise ValueError(
-                f"Model {model_names[model_idx]!r} has {len(bmds)} BMD draws, expected {n_draws}."
-            )
-
         if parms.ndim != 2:
             raise ValueError(
                 f"Model {model_names[model_idx]!r} parameter draws must be 2D; got shape {parms.shape}."
             )
 
-        if parms.shape[0] != n_draws:
+        if len(bmds) != parms.shape[0]:
             raise ValueError(
-                f"Model {model_names[model_idx]!r} has {parms.shape[0]} parameter draws, expected {n_draws}."
+                f"Model {model_names[model_idx]!r} has {len(bmds)} BMD draws but "
+                f"{parms.shape[0]} parameter draws."
             )
 
         if parms.shape[1] != len(pnames):
@@ -149,6 +163,8 @@ def model_average_to_inferencedata(
                 f"{len(pnames)} names."
             )
 
+        bmds = _pad_draws(bmds, n_draws)
+        parms = _pad_draws(parms, n_draws)
         model_bmd[:, model_idx] = bmds
         n_param_by_model[model_idx] = len(pnames)
 
@@ -156,7 +172,7 @@ def model_average_to_inferencedata(
             global_idx = all_param_names.index(pname)
             model_params[:, model_idx, global_idx] = parms[:, param_idx]
 
-    ma_bmd = _nan_nonfinite(ma_result.bmd_dist)
+    ma_bmd = _pad_draws(ma_bmd, n_draws)
     posteriors = _nan_nonfinite(ma_result.posteriors)
 
     posterior_raw = xr.Dataset(

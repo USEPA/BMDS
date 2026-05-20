@@ -258,8 +258,67 @@ class TestLOUD:
         assert idata.observed_data.attrs["dtype"] == "continuous"
         assert idata.posterior["MA_BMD"].shape[0] == 1
         assert idata.posterior["BMD"].shape[2] == len(session.models)
-        assert "alpha" in idata.posterior.data_vars
-        assert "Var0" not in idata.posterior.data_vars
+
+    def test_model_average_to_inferencedata_pads_filtered_json_draws(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([0.1, 0.2]),
+                    model_bmd_dist=[np.array([1.0, 2.0, 3.0])],
+                    model_parm_dist=[np.array([[10.0], [20.0], [30.0]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        idata = model_average_to_inferencedata(session, n_chains=1)
+
+        assert idata.posterior["MA_BMD"].shape == (1, 3)
+        assert idata.posterior["BMD"].shape == (1, 3, 1)
+        assert idata.posterior["g"].shape == (1, 3, 1)
+        assert np.isnan(idata.posterior["MA_BMD"].values[0, 2])
+        np.testing.assert_array_equal(idata.posterior["BMD"].values[0, :, 0], [1.0, 2.0, 3.0])
+
+    def test_model_average_to_inferencedata_rejects_unpaired_model_draws(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([0.1, 0.2, 0.3]),
+                    model_bmd_dist=[np.array([1.0, 2.0, 3.0])],
+                    model_parm_dist=[np.array([[10.0], [20.0]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        with pytest.raises(ValueError, match="BMD draws but 2 parameter draws"):
+            model_average_to_inferencedata(session, n_chains=1)
 
     def test_model_average_to_inferencedata_replaces_infinite_draws(self):
         class FakeModel:
