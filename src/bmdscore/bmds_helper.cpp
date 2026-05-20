@@ -5078,18 +5078,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   // unscale bmd and parms
   for (int i = 0; i < pyMA->nmodels; i++) {
-    fitResult fitRes = pyRes->models[i].loudRes;
-    fitRes.BMD *= max_dose;
-    Eigen::MatrixXd parms = fitRes.parms.transpose();
+    fitResult *fitRes = &pyRes->models[i].loudRes;
+    fitRes->BMD *= max_dose;
+    Eigen::MatrixXd parms = fitRes->parms.transpose();
     // rescale fitResult parms
-    for (int j = 0; j < fitRes.parms.cols(); j++) {
+    for (int j = 0; j < parms.cols(); j++) {
       Eigen::MatrixXd parmCol = parms.col(j);
       rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
       parms.col(j) = parmCol;
     }
-    fitRes.parms = parms.transpose();
-    // std::cout<<"final fitRes.parms for
-    // model:"<<pyRes->models[i].model<<std::endl<<fitRes.parms<<std::endl;
+    pyRes->models[i].loudRes.parms = parms.transpose();
   }
 
   // TODO Move this to separate method
@@ -5632,18 +5630,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   // unscale bmd and parms
   for (int i = 0; i < pyMA->nmodels; i++) {
-    fitResult fitRes = pyRes->models[i].loudRes;
-    fitRes.BMD *= max_dose;
-    Eigen::MatrixXd parms = fitRes.parms.transpose();
+    fitResult *fitRes = &pyRes->models[i].loudRes;
+    fitRes->BMD *= max_dose;
+    Eigen::MatrixXd parms = fitRes->parms.transpose();
     for (int j = 0; j < parms.cols(); j++) {
       Eigen::MatrixXd parmCol = parms.col(j);
       // degree is hardcoded as -9999, since there is no poly LOUD model
-      rescale_parms(
+      parms.col(j) = rescale_parms(
           parmCol, (cont_model)pyRes->models[i].model, max_dose, 1.0, false, BMDS_MISSING
       );
-      parms.col(j) = parmCol;
     }
-    fitRes.parms = parms.transpose();
+    pyRes->models[i].loudRes.parms = parms.transpose();
   }
 
   // calc individual model bmdl, bmd, bmdu
