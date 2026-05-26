@@ -1337,121 +1337,7 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
 
   estimate_sm_laplace_cont(anal, res);
 
-  // if not suff_stat, then convert
-  struct continuous_analysis GOFanal;
-  // arrays are needed for conversion to suff_stat
-  double *doses = (double *)malloc(anal->n * sizeof(double));
-  double *means = (double *)malloc(anal->n * sizeof(double));
-  double *n_group = (double *)malloc(anal->n * sizeof(double));
-  double *sd = (double *)malloc(anal->n * sizeof(double));
-  for (int i = 0; i < anal->n; i++) {
-    means[i] = anal->Y[i];
-    doses[i] = anal->doses[i];
-  }
-  bool isIncreasing = true;
-  double BMR = BMDS_MISSING;
-  double tail_prob = BMDS_MISSING;
-  int disttype = BMDS_MISSING;
-  double alpha = BMDS_MISSING;
-  int samples = BMDS_MISSING;
-  int degree = BMDS_MISSING;
-  int burnin = BMDS_MISSING;
-  int parms = BMDS_MISSING;
-  int prior_cols = BMDS_MISSING;
-
-  if (anal->suff_stat) {
-    GOFanal = *anal;
-  } else {
-    // copy analysis and convert to suff_stat
-    GOFanal.n = anal->n;
-    GOFanal.doses = doses;
-    GOFanal.Y = means;
-    GOFanal.n_group = n_group;
-    GOFanal.sd = sd;
-    GOFanal.isIncreasing = isIncreasing;
-    GOFanal.BMR = BMR;
-    GOFanal.tail_prob = tail_prob;
-    GOFanal.disttype = disttype;
-    GOFanal.alpha = alpha;
-    GOFanal.samples = samples;
-    GOFanal.degree = degree;
-    GOFanal.burnin = burnin;
-    GOFanal.parms = parms;
-    GOFanal.prior_cols = prior_cols;
-    GOFanal.disttype = distribution::normal;  // needed for all distrubutions to avoid error in ln
-                                              // conversion to suff_stats
-    bmdsConvertSStat(anal, &GOFanal, true);
-  }
-
-  continuous_expected_result GOFres;
-  GOFres.n = GOFanal.n;
-  GOFres.expected = new double[GOFanal.n];
-  GOFres.sd = new double[GOFanal.n];
-
-  continuous_expectation(&GOFanal, res, &GOFres);
-
-  for (int i = 0; i < GOFanal.n; i++) {
-    gof->dose.push_back(GOFanal.doses[i]);
-    gof->size.push_back(GOFanal.n_group[i]);
-    gof->estMean.push_back(GOFres.expected[i]);
-    gof->obsMean.push_back(GOFanal.Y[i]);
-    gof->estSD.push_back(GOFres.sd[i]);
-    gof->obsSD.push_back(GOFanal.sd[i]);
-    gof->res.push_back(sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-  }
-  gof->n = GOFanal.n;
-  if (anal->disttype == distribution::log_normal) {
-    for (int i = 0; i < GOFanal.n; i++) {
-      gof->calcMean.push_back(
-          exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2)
-      );
-      gof->calcSD.push_back(exp(sqrt(log(1.0 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)))));
-    }
-    for (int i = 0; i < GOFanal.n; i++) {
-      gof->estMean[i] = (exp(gof->estMean[i] + pow(exp(res->parms[res->nparms - 1]), 2) / 2));
-      gof->estSD[i] = exp(gof->estSD[i]);
-      gof->res[i] = (sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
-    }
-  } else {
-    for (int i = 0; i < GOFanal.n; i++) {
-      gof->calcMean.push_back(GOFanal.Y[i]);
-      gof->calcSD.push_back(GOFanal.sd[i]);
-    }
-  }
-
-  double ebUpper, ebLower;
-  for (int i = 0; i < GOFanal.n; i++) {
-    ebLower = gof->calcMean[i] +
-              gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i] / sqrt(gof->size[i]));
-    ebUpper = gof->calcMean[i] +
-              gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i] / sqrt(gof->size[i]));
-    gof->ebLower.push_back(ebLower);
-    gof->ebUpper.push_back(ebUpper);
-  }
-  // calculate bayesian BIC_equiv
-  Eigen::MatrixXd cov(res->nparms, res->nparms);
-  int row = 0;
-  int col = 0;
-  for (int i = 0; i < res->nparms * res->nparms; i++) {
-    col = i / res->nparms;
-    row = i - col * res->nparms;
-    cov(row, col) = res->cov[i];
-  }
-
-  bmdsRes->BIC_equiv =
-      res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
-  bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
-  collect_cont_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
-
-  calcContAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
-
-  aod->LL.resize(5);
-  aod->nParms.resize(5);
-  aod->AIC.resize(5);
-  aod->TOI.llRatio.resize(4);
-  aod->TOI.DF.resize(4);
-  aod->TOI.pVal.resize(4);
-  calc_contAOD(anal, &GOFanal, res, bmdsRes, aod, *countAllParmsOnBoundary);
+  additional_cont_calcs(anal, res, gof, bmdsRes, aod, countAllParmsOnBoundary);
 
   rescale_contParms(anal, res->parms);
 
@@ -1493,8 +1379,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
   // std::cout << "Min: " << min << std::endl;
   // std::cout << "Max: " << max << std::endl;
   // std::cout << "Condition number: " << max/min << std::endl;
-  delete[] GOFres.expected;
-  delete[] GOFres.sd;
+  //  delete[] GOFres.expected;
+  //  delete[] GOFres.sd;
 }
 
 void rescale_contParms(struct continuous_analysis *CA, double *parms) {
@@ -2304,6 +2190,7 @@ void convertFromPythonDichoMARes(
 void convertFromPythonContAnalysis(
     struct continuous_analysis *anal, struct python_continuous_analysis *pyAnal
 ) {
+  // std::cout<<"inside convertFromPythonContAnalysis"<<std::endl;
   anal->model = pyAnal->model;
   anal->n = pyAnal->n;
   anal->BMD_type = pyAnal->BMD_type;
@@ -2320,6 +2207,7 @@ void convertFromPythonContAnalysis(
   anal->transform_dose = pyAnal->transform_dose;
   anal->suff_stat = pyAnal->suff_stat;
 
+  // std::cout<<"before validation"<<std::endl;
   bool validated = false;
   if (pyAnal->suff_stat) {
     validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size() &&
@@ -2328,18 +2216,25 @@ void convertFromPythonContAnalysis(
     validated = pyAnal->n == pyAnal->doses.size() && pyAnal->doses.size() == pyAnal->Y.size();
   }
 
+  // std::cout<<"b4 dose & Y"<<std::endl;
   if (validated) {
     for (int i = 0; i < pyAnal->n; i++) {
       anal->Y[i] = pyAnal->Y[i];
       anal->doses[i] = pyAnal->doses[i];
     }
   }
+  // std::cout<<"b4 suff_stat"<<std::endl;
   if (validated && pyAnal->suff_stat) {
     for (int i = 0; i < pyAnal->n; i++) {
+      // std::cout<<"i:"<<i<<std::endl;
+      // std::cout<<"pyAnal-n_group:"<<pyAnal->n_group[i]<<std::endl;
       anal->n_group[i] = pyAnal->n_group[i];
+      // std::cout<<"after n_group"<<std::endl;
       anal->sd[i] = pyAnal->sd[i];
+      // std::cout<<"after sd"<<std::endl;
     }
   }
+  // std::cout<<"b4 prior"<<std::endl;
   if (pyAnal->prior.size() > 0) {
     for (int i = 0; i < pyAnal->prior.size(); i++) {
       anal->prior[i] = pyAnal->prior[i];
@@ -3426,6 +3321,132 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
   bridge_sample(R, loudIn, loudOut, priorr, isNegative);
   // pivotal pvalue
   loudOut->pval = pivotal_pvalue(R, loudIn);
+}
+
+void additional_cont_calcs(
+    struct continuous_analysis *anal, struct continuous_model_result *res,
+    struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
+    bool *countAllParmsOnBoundary
+) {
+  // if not suff_stat, then convert
+  struct continuous_analysis GOFanal;
+  // arrays are needed for conversion to suff_stat
+  double *doses = (double *)malloc(anal->n * sizeof(double));
+  double *means = (double *)malloc(anal->n * sizeof(double));
+  double *n_group = (double *)malloc(anal->n * sizeof(double));
+  double *sd = (double *)malloc(anal->n * sizeof(double));
+  for (int i = 0; i < anal->n; i++) {
+    means[i] = anal->Y[i];
+    doses[i] = anal->doses[i];
+  }
+  bool isIncreasing = true;
+  double BMR = BMDS_MISSING;
+  double tail_prob = BMDS_MISSING;
+  int disttype = BMDS_MISSING;
+  double alpha = BMDS_MISSING;
+  int samples = BMDS_MISSING;
+  int degree = BMDS_MISSING;
+  int burnin = BMDS_MISSING;
+  int parms = BMDS_MISSING;
+  int prior_cols = BMDS_MISSING;
+
+  if (anal->suff_stat) {
+    GOFanal = *anal;
+  } else {
+    // copy analysis and convert to suff_stat
+    GOFanal.n = anal->n;
+    GOFanal.doses = doses;
+    GOFanal.Y = means;
+    GOFanal.n_group = n_group;
+    GOFanal.sd = sd;
+    GOFanal.isIncreasing = isIncreasing;
+    GOFanal.BMR = BMR;
+    GOFanal.tail_prob = tail_prob;
+    GOFanal.disttype = disttype;
+    GOFanal.alpha = alpha;
+    GOFanal.samples = samples;
+    GOFanal.degree = degree;
+    GOFanal.burnin = burnin;
+    GOFanal.parms = parms;
+    GOFanal.prior_cols = prior_cols;
+    GOFanal.disttype = distribution::normal;  // needed for all distrubutions to avoid error in ln
+                                              // conversion to suff_stats
+    bmdsConvertSStat(anal, &GOFanal, true);
+    GOFanal.suff_stat = true;
+  }
+
+  continuous_expected_result GOFres;
+  GOFres.n = GOFanal.n;
+  GOFres.expected = new double[GOFanal.n];
+  GOFres.sd = new double[GOFanal.n];
+
+  continuous_expectation(&GOFanal, res, &GOFres);
+
+  for (int i = 0; i < GOFanal.n; i++) {
+    gof->dose.push_back(GOFanal.doses[i]);
+    gof->size.push_back(GOFanal.n_group[i]);
+    gof->estMean.push_back(GOFres.expected[i]);
+    gof->obsMean.push_back(GOFanal.Y[i]);
+    gof->estSD.push_back(GOFres.sd[i]);
+    gof->obsSD.push_back(GOFanal.sd[i]);
+    gof->res.push_back(sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
+  }
+  gof->n = GOFanal.n;
+  if (GOFanal.disttype == distribution::log_normal) {
+    for (int i = 0; i < GOFanal.n; i++) {
+      gof->calcMean.push_back(
+          exp(log(GOFanal.Y[i]) - log(1 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)) / 2)
+      );
+      gof->calcSD.push_back(exp(sqrt(log(1.0 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)))));
+    }
+    for (int i = 0; i < GOFanal.n; i++) {
+      gof->estMean[i] = (exp(gof->estMean[i] + pow(exp(res->parms[res->nparms - 1]), 2) / 2));
+      gof->estSD[i] = exp(gof->estSD[i]);
+      gof->res[i] = (sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
+    }
+  } else {
+    for (int i = 0; i < GOFanal.n; i++) {
+      gof->calcMean.push_back(GOFanal.Y[i]);
+      gof->calcSD.push_back(GOFanal.sd[i]);
+    }
+  }
+
+  double ebUpper, ebLower;
+  for (int i = 0; i < GOFanal.n; i++) {
+    ebLower = gof->calcMean[i] +
+              gsl_cdf_tdist_Pinv(0.025, gof->n - 1) * (gof->obsSD[i] / sqrt(gof->size[i]));
+    ebUpper = gof->calcMean[i] +
+              gsl_cdf_tdist_Pinv(0.975, gof->n - 1) * (gof->obsSD[i] / sqrt(gof->size[i]));
+    gof->ebLower.push_back(ebLower);
+    gof->ebUpper.push_back(ebUpper);
+  }
+  // calculate bayesian BIC_equiv
+  Eigen::MatrixXd cov(res->nparms, res->nparms);
+  int row = 0;
+  int col = 0;
+  for (int i = 0; i < res->nparms * res->nparms; i++) {
+    col = i / res->nparms;
+    row = i - col * res->nparms;
+    cov(row, col) = res->cov[i];
+  }
+
+  bmdsRes->BIC_equiv =
+      res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
+  bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
+  collect_cont_bmd_values(&GOFanal, res, bmdsRes, *countAllParmsOnBoundary);
+
+  calcContAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
+
+  aod->LL.resize(5);
+  aod->nParms.resize(5);
+  aod->AIC.resize(5);
+  aod->TOI.llRatio.resize(4);
+  aod->TOI.DF.resize(4);
+  aod->TOI.pVal.resize(4);
+  calc_contAOD(anal, &GOFanal, res, bmdsRes, aod, *countAllParmsOnBoundary);
+
+  delete[] GOFres.expected;
+  delete[] GOFres.sd;
 }
 
 void additional_dicho_calcs(
@@ -5090,18 +5111,22 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].loudRes.parms = parms.transpose();
   }
 
-  // TODO Move this to separate method
   //  calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
     std::vector<double> bmd_dist;
     bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) = pyRes->models[i].loudRes.BMD;
-    double bmdl = findQuantileVals(bmd_dist, pyMA->pyDA.alpha);
-    double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyDA.alpha);
-    double bmd = findMedianVal(bmd_dist);
+    std::vector<double> sorted_bmd(bmd_dist);
+    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    double bmdl = findQuantileVals(sorted_bmd, pyMA->pyDA.alpha);
+    double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyDA.alpha);
+    double bmd = findMedianVal(sorted_bmd);
     pyRes->bmdsRes.BMD[i] = bmd;
     pyRes->bmdsRes.BMDL[i] = bmdl;
     pyRes->bmdsRes.BMDU[i] = bmdu;
+    pyRes->models[i].bmdsRes.BMD = bmd;
+    pyRes->models[i].bmdsRes.BMDL = bmdl;
+    pyRes->models[i].bmdsRes.BMDU = bmdu;
   }
 
   Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
@@ -5431,6 +5456,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   struct fitResult ncvEfsaLmsOut;
   struct fitResult logcvEfsaLmsOut;
 
+  // required for additional calcs
+  continuous_analysis CA;
+  std::vector<double> CA_Y(n);
+  std::vector<double> CA_doses(n);
+  std::vector<double> CA_n_group(n);
+  std::vector<double> CA_sd(n);
+  CA.Y = CA_Y.data();
+  CA.doses = CA_doses.data();
+  CA.n_group = CA_n_group.data();
+  CA.sd = CA_sd.data();
+
+  convertFromPythonContAnalysis(&CA, &pyMA->pyCA);
+
   for (int i = 0; i < pyMA->models.size(); i++) {
     pyRes->models[i].bmdsRes.validResult = false;
     pyRes->models[i].model = pyMA->models[i];
@@ -5613,6 +5651,27 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         break;
     }
     pyRes->models[i].bmdsRes.validResult = true;
+
+    // convert python_continuous_analysis to continuous_analysis
+
+    CA.prior = pyMA->priors[i].data();
+    CA.parms = pyRes->models[i].nparms;
+
+    continuous_model_result res;
+    convertFromPythonContRes(&res, &pyRes->models[i]);
+
+    additional_cont_calcs(
+        &CA, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
+        &pyMA->pyCA.countAllParmsOnBoundary
+    );
+
+    for (int j = 0; j < res.nparms; j++) {
+      pyRes->models[i].bmdsRes.stdErr.push_back(BMDS_MISSING);
+      pyRes->models[i].bmdsRes.lowerConf.push_back(BMDS_MISSING);
+      pyRes->models[i].bmdsRes.upperConf.push_back(BMDS_MISSING);
+    }
+
+    // calcParmCIs_cont(&res, &pyRes->models[i].bmdsRes);
   }
 
   std::vector<double> posterior_probs(pyMA->nmodels);
@@ -5648,12 +5707,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     std::vector<double> bmd_dist;
     bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) = pyRes->models[i].loudRes.BMD;
-    double bmdl = findQuantileVals(bmd_dist, pyMA->pyCA.alpha);
-    double bmdu = findQuantileVals(bmd_dist, 1.0 - pyMA->pyCA.alpha);
-    double bmd = findMedianVal(bmd_dist);
+    std::vector<double> sorted_bmd(bmd_dist);
+    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    double bmdl = findQuantileVals(sorted_bmd, pyMA->pyCA.alpha);
+    double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyCA.alpha);
+    double bmd = findMedianVal(sorted_bmd);
     pyRes->bmdsRes.BMD[i] = bmd;
     pyRes->bmdsRes.BMDL[i] = bmdl;
     pyRes->bmdsRes.BMDU[i] = bmdu;
+    pyRes->models[i].bmdsRes.BMD = bmd;
+    pyRes->models[i].bmdsRes.BMDL = bmdl;
+    pyRes->models[i].bmdsRes.BMDU = bmdu;
   }
 
   Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
@@ -9324,6 +9388,12 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
 
   std::stringstream ss;
 
+  // set boolean for LOUD vs BMDS
+  bool isLOUD = false;
+  if (pyRes->loudRes.parms.rows() > 0) {
+    isLOUD = true;
+  }
+
   ss << std::endl << "Struct: python_continuous_model_result" << std::endl;
   ss << "model:" << pyRes->model << std::endl;
   ss << "dist:" << pyRes->dist << std::endl;
@@ -9355,17 +9425,19 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
     ss << printBmdsStruct(&pyRes->aod, false);
   }
 
-  ss << std::endl << "bmd_dist" << std::endl;
-  printElement(ss, "Percentile", largeColWidth);
-  printElement(ss, "Value", largeColWidth);
-  ss << std::endl;
-  for (int i = 0; i < pyRes->dist_numE; i++) {
-    printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
-    printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+  if (isLOUD) {
+    ss << printBmdsStruct(&pyRes->loudRes, false);
+  } else {
+    ss << std::endl << "bmd_dist" << std::endl;
+    printElement(ss, "Percentile", largeColWidth);
+    printElement(ss, "Value", largeColWidth);
     ss << std::endl;
+    for (int i = 0; i < pyRes->dist_numE; i++) {
+      printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
+      printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+      ss << std::endl;
+    }
   }
-
-  ss << printBmdsStruct(&pyRes->loudRes, false);
 
   if (print) std::cout << ss.str() << std::endl;
 

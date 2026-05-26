@@ -847,6 +847,12 @@ void additional_dicho_calcs(
     bool *countAllParmsOnBoundary
 );
 
+void additional_cont_calcs(
+    struct continuous_analysis *GOFanal, struct continuous_model_result *res,
+    struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *bmdsAOD,
+    bool *countAllParmsOnBoundary
+);
+
 #ifdef __cplusplus
 }
 #endif
