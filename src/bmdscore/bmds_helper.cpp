@@ -108,8 +108,10 @@ void calcContAIC(
     upperBound[i] = anal->prior[4 * anal->parms + i];
   }
   // scale priors as needed
-  rescale_contParms(anal, lowerBound);
-  rescale_contParms(anal, upperBound);
+  rescale_contParms(anal->model, anal->parms, lowerBound);
+  rescale_contParms(anal->model, anal->parms, upperBound);
+  // rescale_contParms(anal, lowerBound);
+  // rescale_contParms(anal, upperBound);
 
   if (anal->model == cont_model::exp_3) {
     for (int i = 2; i < anal->parms - 1; i++) {
@@ -1339,7 +1341,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
 
   additional_cont_calcs(anal, res, gof, bmdsRes, aod, countAllParmsOnBoundary);
 
-  rescale_contParms(anal, res->parms);
+  rescale_contParms(anal->model, anal->parms, res->parms);
+  // rescale_contParms(anal, res->parms);
 
   for (int i = 0; i < anal->parms; i++) {
     bmdsRes->stdErr.push_back(BMDS_MISSING);
@@ -1383,16 +1386,19 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
   //  delete[] GOFres.sd;
 }
 
-void rescale_contParms(struct continuous_analysis *CA, double *parms) {
-  // rescale alpha parameter for all continuous models
-  // assumes alpha parameter is always last
-  switch (CA->model) {
+void rescale_contParms(int model, int nparms, double *parms) {
+  // void rescale_contParms(struct continuous_analysis *CA, double *parms) {
+  //  rescale alpha parameter for all continuous models
+  //  assumes alpha parameter is always last
+  switch (model) {
+      // switch (CA->model) {
     case cont_model::hill:
     case cont_model::power:
     case cont_model::funl:
     case cont_model::polynomial:
       // rescale alpha
-      parms[CA->parms - 1] = exp(parms[CA->parms - 1]);
+      parms[nparms - 1] = exp(parms[nparms - 1]);
+      // parms[CA->parms - 1] = exp(parms[CA->parms - 1]);
       break;
     case cont_model::exp_5:
       parms[2] = exp(parms[2]);
@@ -3315,6 +3321,20 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
+
+  // calc LL here!!!
+  // Eigen::VectorXd parmVec = colwise_median(loudOut->parms);
+  Eigen::VectorXd parmVec = colwise_median(R);
+  std::cout << "R parms:" << parmVec << std::endl;
+  // Eigen::VectorXd parmVec2 = colwise_median(loudOut->parms);
+  // std::cout<<"loudOut parms:"<<parmVec2<<std::endl;
+  LogLikeFunction logli = getLogLikeFunc(ll_type);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+
+  loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
+
+  std::cout << "FOUND LL:" << loudOut->ll << std::endl;
+
   // power only has normal model
   // ptr2 model_transform = choose_nonlinearity2(model_typ);
   // bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
@@ -3379,6 +3399,11 @@ void additional_cont_calcs(
   GOFres.n = GOFanal.n;
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
+
+  std::cout << "DEBUG GOF calcs" << std::endl;
+  for (int i = 0; i < GOFanal.n; i++) {
+    std::cout << "i:" << i << ", dose:" << GOFanal.doses[i] << std::endl;
+  }
 
   continuous_expectation(&GOFanal, res, &GOFres);
 
@@ -5469,6 +5494,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   convertFromPythonContAnalysis(&CA, &pyMA->pyCA);
 
+  // ensure we are using scaled doses
+  for (int i = 0; i < D.rows(); i++) {
+    CA.doses[i] = D(i);
+  }
+
+  int model_typ;
+  fitInput loudIn;
+  fitResult loudOut;
   for (int i = 0; i < pyMA->models.size(); i++) {
     pyRes->models[i].bmdsRes.validResult = false;
     pyRes->models[i].model = pyMA->models[i];
@@ -5476,32 +5509,30 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
     switch (pyMA->loud_dist_type[i]) {
       case distribution::normal:
-        cvInput.priorr = priorr;
+        loudIn = cvInput;
         break;
       case distribution::normal_ncv:
-        ncvInput.priorr = priorr;
+        loudIn = ncvInput;
         break;
       case distribution::log_normal:
-        logcvInput.priorr = priorr;
+        loudIn = logcvInput;
         break;
       default:
         std::cout << "error in dist type for priorr" << std::endl;
         return;
         break;
     }
+    loudIn.priorr = priorr;
+    loudIn.model = pyMA->models[i];
 
     switch (pyMA->models[i]) {
       case cont_model::power:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvPowerOut);
-          pyRes->models[i].loudRes = cvPowerOut;
+          loudOut = cvPowerOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvPowerOut);
-          pyRes->models[i].loudRes = ncvPowerOut;
+          loudOut = ncvPowerOut;
         } else {
           std::cout << "power model not available in lognormal distribution" << std::endl;
         }
@@ -5509,50 +5540,34 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::exp_3:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 4;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvExp3Out);
-          pyRes->models[i].loudRes = cvExp3Out;
+          loudOut = cvExp3Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 5;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvExp3Out);
-          pyRes->models[i].loudRes = ncvExp3Out;
+          loudOut = ncvExp3Out;
         } else {
           pyRes->models[i].nparms = 4;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvExp3Out);
-          pyRes->models[i].loudRes = logcvExp3Out;
+          loudOut = logcvExp3Out;
         }
         break;
       case cont_model::exp_5:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvExp5Out);
-          pyRes->models[i].loudRes = cvExp5Out;
+          loudOut = cvExp5Out;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvExp5Out);
-          pyRes->models[i].loudRes = ncvExp5Out;
+          loudOut = ncvExp5Out;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvExp5Out);
-          pyRes->models[i].loudRes = logcvExp5Out;
+          loudOut = logcvExp5Out;
         }
         break;
       case cont_model::hill:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvHillOut);
-          pyRes->models[i].loudRes = cvHillOut;
+          loudOut = cvHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvHillOut);
-          pyRes->models[i].loudRes = ncvHillOut;
+          loudOut = ncvHillOut;
         } else {
           std::cout << "hill model not available in lognormal distribution" << std::endl;
         }
@@ -5560,96 +5575,68 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::l_hill_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvEfsaHillOut);
-          pyRes->models[i].loudRes = cvEfsaHillOut;
+          loudOut = cvEfsaHillOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvEfsaHillOut);
-          pyRes->models[i].loudRes = ncvEfsaHillOut;
+          loudOut = ncvEfsaHillOut;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvEfsaHillOut);
-          pyRes->models[i].loudRes = logcvEfsaHillOut;
+          loudOut = logcvEfsaHillOut;
         }
         break;
       case cont_model::l_invexp_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvEfsaInvExpOut);
-          pyRes->models[i].loudRes = cvEfsaInvExpOut;
+          loudOut = cvEfsaInvExpOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvEfsaInvExpOut);
-          pyRes->models[i].loudRes = ncvEfsaInvExpOut;
+          loudOut = ncvEfsaInvExpOut;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvEfsaInvExpOut);
-          pyRes->models[i].loudRes = logcvEfsaInvExpOut;
+          loudOut = logcvEfsaInvExpOut;
         }
         break;
       case cont_model::l_lognormal_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvEfsaLogOut);
-          pyRes->models[i].loudRes = cvEfsaLogOut;
+          loudOut = cvEfsaLogOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvEfsaLogOut);
-          pyRes->models[i].loudRes = ncvEfsaLogOut;
+          loudOut = ncvEfsaLogOut;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvEfsaLogOut);
-          pyRes->models[i].loudRes = logcvEfsaLogOut;
+          loudOut = logcvEfsaLogOut;
         }
         break;
       case cont_model::l_gamma_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvEfsaGammaOut);
-          pyRes->models[i].loudRes = cvEfsaGammaOut;
+          loudOut = cvEfsaGammaOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvEfsaGammaOut);
-          pyRes->models[i].loudRes = ncvEfsaGammaOut;
+          loudOut = ncvEfsaGammaOut;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvEfsaGammaOut);
-          pyRes->models[i].loudRes = logcvEfsaGammaOut;
+          loudOut = logcvEfsaGammaOut;
         }
         break;
       case cont_model::l_lms_efsa:
         if (pyMA->loud_dist_type[i] == distribution::normal) {
           pyRes->models[i].nparms = 5;
-          cvInput.model = pyMA->models[i];
-          fit_Loud(&cvInput, &cvEfsaLmsOut);
-          pyRes->models[i].loudRes = cvEfsaLmsOut;
+          loudOut = cvEfsaLmsOut;
         } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
           pyRes->models[i].nparms = 6;
-          ncvInput.model = pyMA->models[i];
-          fit_Loud(&ncvInput, &ncvEfsaLmsOut);
-          pyRes->models[i].loudRes = ncvEfsaLmsOut;
+          loudOut = ncvEfsaLmsOut;
         } else {
           pyRes->models[i].nparms = 5;
-          logcvInput.model = pyMA->models[i];
-          fit_Loud(&logcvInput, &logcvEfsaLmsOut);
-          pyRes->models[i].loudRes = logcvEfsaLmsOut;
+          loudOut = logcvEfsaLmsOut;
         }
         break;
       default:
         break;
     }
+    fit_Loud(&loudIn, &loudOut);
+    pyRes->models[i].loudRes = loudOut;
     pyRes->models[i].bmdsRes.validResult = true;
 
     // convert python_continuous_analysis to continuous_analysis
@@ -5658,7 +5645,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     CA.parms = pyRes->models[i].nparms;
 
     continuous_model_result res;
+    res.parms = new double[pyRes->models[i].nparms];
     convertFromPythonContRes(&res, &pyRes->models[i]);
+    res.max = pyRes->models[i].loudRes.ll;
+
+    Eigen::VectorXd retParms = colwise_median(pyRes->models[i].loudRes.parms);
+    std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
+    std::copy(retParms2.begin(), retParms2.end(), res.parms);
 
     additional_cont_calcs(
         &CA, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
@@ -5670,6 +5663,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].bmdsRes.lowerConf.push_back(BMDS_MISSING);
       pyRes->models[i].bmdsRes.upperConf.push_back(BMDS_MISSING);
     }
+
+    //    Eigen::VectorXd retParms = colwise_median(pyRes->models[i].loudRes.parms);
+    //    std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
+    //    std::copy(retParms2.begin(), retParms2.end(), res.parms);
+
+    // add back to python result struct
+    convertToPythonContRes(&res, &pyRes->models[i]);
 
     // calcParmCIs_cont(&res, &pyRes->models[i].bmdsRes);
   }

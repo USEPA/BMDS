@@ -1378,7 +1378,8 @@ double ll_poisson(
 // }
 
 double ll_continuous(
-    Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
+    const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
+    const ptr2& nly
 ) {
   double m0 = params[0];
   double m1 = params[1];
@@ -1459,7 +1460,8 @@ double ll_continuous_summary(
 // }
 
 double ll_continuous_cv(
-    Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
+    const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
+    const ptr2& nly
 ) {
   double prec0 = params[params.size() - 1];
   double var = 1.0 / prec0;
@@ -1741,35 +1743,35 @@ Eigen::MatrixXd run_latentslice_functional_general(
   return init_samps;
 }
 
-// LogLikeFunction getLogLikeFunc(int ll_type) {
-//   std::function<
-//       double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
-//       logli;
-//
-//   if (ll_type == 55) {
-//     logli = ll_continuous;
-//   } else if (ll_type == 56) {
-//     logli = ll_continuous_cv;
-//   } else if (ll_type == 57) {
-//     logli = ll_lognormal_cv;
-//   } else if (ll_type == 58) {
-//     logli = ll_continuous_summary;
-//   } else if (ll_type == 59) {
-//     logli = ll_continuous_cv_summary;
-//   } else if (ll_type == 60) {
-//     logli = ll_lognormal_cv_summary;
-//   } else if (ll_type == 61) {
-//     logli = ll_nested_cv;
-//   } else if (ll_type == 62) {
-//     logli = ll_nested_ncv;
-//   } else if (ll_type == 66) {
-//     logli = ll_poisson;
-//   } else {
-//     logli = ll_binomial;
-//   }
-//
-//   return logli;
-// }
+LogLikeFunction getLogLikeFunc(int ll_type) {
+  std::function<
+      double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
+      logli;
+
+  if (ll_type == 55) {
+    logli = ll_continuous;
+  } else if (ll_type == 56) {
+    logli = ll_continuous_cv;
+  } else if (ll_type == 57) {
+    logli = ll_lognormal_cv;
+  } else if (ll_type == 58) {
+    logli = ll_continuous_summary;
+  } else if (ll_type == 59) {
+    logli = ll_continuous_cv_summary;
+  } else if (ll_type == 60) {
+    logli = ll_lognormal_cv_summary;
+  } else if (ll_type == 61) {
+    logli = ll_nested_cv;
+  } else if (ll_type == 62) {
+    logli = ll_nested_ncv;
+  } else if (ll_type == 66) {
+    logli = ll_poisson;
+  } else {
+    logli = ll_binomial;
+  }
+
+  return logli;
+}
 
 void rg(
     int iter, Eigen::VectorXd mu, Eigen::MatrixXd sigma, std::vector<bool>& isNegative,

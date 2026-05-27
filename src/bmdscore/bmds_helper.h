@@ -220,6 +220,7 @@ struct fitResult {
   double waic;
   Eigen::VectorXd BMD;
   // Eigen::MatrixXd R;
+  double ll;
   double pval;
 };
 
@@ -517,7 +518,8 @@ extern "C" {
 void cleanDouble(double *val);
 
 void rescale_dichoParms(int model, double *parms);
-void rescale_contParms(struct continuous_analysis *CA, double *parms);
+void rescale_contParms(int model, int nparms, double *parms);
+// void rescale_contParms(struct continuous_analysis *CA, double *parms);
 
 void scale_dichoParms(int model, Eigen::VectorXd &parms);
 
