@@ -3175,6 +3175,13 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
       break;
   }
 
+  // calc LL
+  Eigen::VectorXd parmVec = colwise_median(R);
+  LogLikeFunction logli = getLogLikeFunc(ll_type);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+
+  loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
+
   bridge_sample(R, loudIn, loudOut, priorr, isNegative);
 
   // pivotal pvalue
@@ -3322,22 +3329,13 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
       break;
   }
 
-  // calc LL here!!!
-  // Eigen::VectorXd parmVec = colwise_median(loudOut->parms);
+  // calc LL
   Eigen::VectorXd parmVec = colwise_median(R);
-  std::cout << "R parms:" << parmVec << std::endl;
-  // Eigen::VectorXd parmVec2 = colwise_median(loudOut->parms);
-  // std::cout<<"loudOut parms:"<<parmVec2<<std::endl;
   LogLikeFunction logli = getLogLikeFunc(ll_type);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
   loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
 
-  std::cout << "FOUND LL:" << loudOut->ll << std::endl;
-
-  // power only has normal model
-  // ptr2 model_transform = choose_nonlinearity2(model_typ);
-  // bridge_sample(R, loudIn, loudOut, model_transform, priorr, isNegative);
   bridge_sample(R, loudIn, loudOut, priorr, isNegative);
   // pivotal pvalue
   loudOut->pval = pivotal_pvalue(R, loudIn);
@@ -3400,11 +3398,7 @@ void additional_cont_calcs(
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
 
-  std::cout << "DEBUG GOF calcs" << std::endl;
-  for (int i = 0; i < GOFanal.n; i++) {
-    std::cout << "i:" << i << ", dose:" << GOFanal.doses[i] << std::endl;
-  }
-
+  // TODO need to branch this to handle non-BMDS models
   continuous_expectation(&GOFanal, res, &GOFres);
 
   for (int i = 0; i < GOFanal.n; i++) {
@@ -5052,14 +5046,28 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       BMDS_MISSING, pyMA->datatype, pyMA->pyDA.BMD_type, true, pyMA->weightOption, BMDS_MISSING
   );
 
+  // required for additional calcs
+  int n = D.size();
+  struct dichotomous_analysis anal;
+  anal.Y = new double[n];
+  anal.doses = new double[n];
+  anal.n_group = new double[n];
+  // anal.prior = new double[pyMA->actual_parms[i] * pyMA->pyDA.prior_cols];
+  // anal.model = pyMA->models[i];
+  // anal.parms = pyMA->actual_parms[i];
+
+  // ensure we are using scaled doses
+  for (int i = 0; i < D.rows(); i++) {
+    anal.doses[i] = D(i);
+  }
+
+  struct fitResult loudOut;
   int numModels = pyMA->models.size();
   for (int i = 0; i < numModels; i++) {
     Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
     loudIn.priorr = priorr;
     loudIn.model = pyMA->models[i];
     pyRes->models[i].bmdsRes.validResult = false;
-
-    struct fitResult loudOut;
 
     fit_Loud_dicho(&loudIn, &loudOut);
 
@@ -5070,31 +5078,28 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].dist_numE = loudOut.BMD.size();
 
     // GOF calcs
-    int n = D1.size();
-    struct dichotomous_analysis anal;
-    anal.Y = new double[n];
-    anal.doses = new double[n];
-    anal.n_group = new double[n];
-    anal.prior = new double[pyMA->actual_parms[i] * pyMA->pyDA.prior_cols];
     anal.model = pyMA->models[i];
-    anal.parms = pyMA->actual_parms[i];
+    anal.parms = pyRes->models[i].nparms;
+    anal.prior = pyMA->priors[i].data();
 
     struct dichotomous_model_result res;
     int nparms = pyRes->models[i].nparms;
     res.parms = new double[nparms];
+    res.nparms = nparms;
     res.cov = new double[nparms * nparms];
     res.bmd_dist = new double[pyRes->dist_numE];
 
+    convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
+    res.max = pyRes->models[i].loudRes.ll;
+
     // set res.parms to col means for individual model parms
     // TODO check to make sure we should use mean instead of median
-    Eigen::VectorXd parmVec = colwise_median(loudOut.parms);
+    Eigen::VectorXd retParms = colwise_median(loudOut.parms);
 
-    // res.parms = parmVec.data();
-    res.nparms = parmVec.size();
-    std::vector<double> parmVec2(parmVec.data(), parmVec.data() + parmVec.size());
-    std::copy(parmVec2.begin(), parmVec2.end(), res.parms);
+    // res.nparms = parmVec.size();
+    std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
+    std::copy(retParms2.begin(), retParms2.end(), res.parms);
 
-    convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
     // model and parms must be added
     anal.model = pyMA->models[i];
     anal.parms = pyMA->actual_parms[i];
@@ -5104,6 +5109,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         &anal, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
         &pyMA->pyDA.countAllParmsOnBoundary
     );
+
+    // add back to python result struct
+    convertToPythonDichoRes(&res, &pyRes->models[i]);
   }
 
   std::vector<double> posterior_probs(pyMA->nmodels);
@@ -5524,6 +5532,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     }
     loudIn.priorr = priorr;
     loudIn.model = pyMA->models[i];
+    CA.model = static_cast<cont_model>(pyMA->models[i]);
 
     switch (pyMA->models[i]) {
       case cont_model::power:
