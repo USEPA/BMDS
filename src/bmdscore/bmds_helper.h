@@ -846,13 +846,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
 void additional_dicho_calcs(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
-    bool *countAllParmsOnBoundary
+    bool *countAllParmsOnBoundary, bool *isLoud
 );
 
 void additional_cont_calcs(
     struct continuous_analysis *GOFanal, struct continuous_model_result *res,
     struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *bmdsAOD,
-    bool *countAllParmsOnBoundary
+    bool *countAllParmsOnBoundary, bool *isLoud
 );
 
 #ifdef __cplusplus

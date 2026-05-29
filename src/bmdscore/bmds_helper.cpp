@@ -1097,7 +1097,8 @@ void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
 
   estimate_sm_laplace_dicho(anal, res, true);
 
-  additional_dicho_calcs(anal, res, gof, bmdsRes, bmdsAOD, countAllParmsOnBoundary);
+  bool isLoud = false;
+  additional_dicho_calcs(anal, res, gof, bmdsRes, bmdsAOD, countAllParmsOnBoundary, &isLoud);
 
   // compare Matt's BMD to BMD from CDF
   if (abs(bmdsRes->BMD - res->bmd) > BMDS_EPS) {
@@ -1339,7 +1340,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
 
   estimate_sm_laplace_cont(anal, res);
 
-  additional_cont_calcs(anal, res, gof, bmdsRes, aod, countAllParmsOnBoundary);
+  bool isLoud = false;
+  additional_cont_calcs(anal, res, gof, bmdsRes, aod, countAllParmsOnBoundary, &isLoud);
 
   rescale_contParms(anal->model, anal->parms, res->parms);
   // rescale_contParms(anal, res->parms);
@@ -3149,7 +3151,6 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_qlinear(loudIn, loudOut, R);
       break;
     case (dich_model::d_logistic):
-      // needs fixing
       fit_logistic(loudIn, loudOut, R);
       break;
     case (dich_model::d_probit):
@@ -3344,7 +3345,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 void additional_cont_calcs(
     struct continuous_analysis *anal, struct continuous_model_result *res,
     struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
-    bool *countAllParmsOnBoundary
+    bool *countAllParmsOnBoundary, bool *isLoud
 ) {
   // if not suff_stat, then convert
   struct continuous_analysis GOFanal;
@@ -3439,30 +3440,38 @@ void additional_cont_calcs(
     gof->ebLower.push_back(ebLower);
     gof->ebUpper.push_back(ebUpper);
   }
-  // calculate bayesian BIC_equiv
-  Eigen::MatrixXd cov(res->nparms, res->nparms);
-  int row = 0;
-  int col = 0;
-  for (int i = 0; i < res->nparms * res->nparms; i++) {
-    col = i / res->nparms;
-    row = i - col * res->nparms;
-    cov(row, col) = res->cov[i];
+
+  if (isLoud) {
+    bmdsRes->BIC_equiv = BMDS_MISSING;
+    bmdsRes->AIC = BMDS_MISSING;
+    bmdsRes->BMD = BMDS_MISSING;
+    bmdsRes->BMDL = BMDS_MISSING;
+    bmdsRes->BMDU = BMDS_MISSING;
+  } else {
+    // calculate bayesian BIC_equiv
+    Eigen::MatrixXd cov(res->nparms, res->nparms);
+    int row = 0;
+    int col = 0;
+    for (int i = 0; i < res->nparms * res->nparms; i++) {
+      col = i / res->nparms;
+      row = i - col * res->nparms;
+      cov(row, col) = res->cov[i];
+    }
+    bmdsRes->BIC_equiv =
+        res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
+    bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
+    collect_cont_bmd_values(&GOFanal, res, bmdsRes, *countAllParmsOnBoundary);
+
+    calcContAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
+
+    aod->LL.resize(5);
+    aod->nParms.resize(5);
+    aod->AIC.resize(5);
+    aod->TOI.llRatio.resize(4);
+    aod->TOI.DF.resize(4);
+    aod->TOI.pVal.resize(4);
+    calc_contAOD(anal, &GOFanal, res, bmdsRes, aod, *countAllParmsOnBoundary);
   }
-
-  bmdsRes->BIC_equiv =
-      res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
-  bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
-  collect_cont_bmd_values(&GOFanal, res, bmdsRes, *countAllParmsOnBoundary);
-
-  calcContAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
-
-  aod->LL.resize(5);
-  aod->nParms.resize(5);
-  aod->AIC.resize(5);
-  aod->TOI.llRatio.resize(4);
-  aod->TOI.DF.resize(4);
-  aod->TOI.pVal.resize(4);
-  calc_contAOD(anal, &GOFanal, res, bmdsRes, aod, *countAllParmsOnBoundary);
 
   delete[] GOFres.expected;
   delete[] GOFres.sd;
@@ -3471,7 +3480,7 @@ void additional_cont_calcs(
 void additional_dicho_calcs(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
-    bool *countAllParmsOnBoundary
+    bool *countAllParmsOnBoundary, bool *isLoud
 ) {
   struct dichotomous_PGOF_data gofData;
   gofData.n = anal->n;
@@ -3533,6 +3542,10 @@ void additional_dicho_calcs(
     gof->ebUpper.push_back((eb1 + 1 + eb2) / ebDenom);
   }
 
+  // if (isLoud){
+  //   bmdsRes->BIC_equiv = BMDS_MISSING;
+  // } else {
+
   // calculate model chi^2 value
   bmdsRes->chisq = 0.0;
   for (int i = 0; i < gofRes.n; i++) {
@@ -3552,6 +3565,7 @@ void additional_dicho_calcs(
   bmdsRes->BIC_equiv =
       res->nparms / 2.0 * log(2.0 * M_PI) + res->max + 0.5 * log(max(0.0, cov.determinant()));
   bmdsRes->BIC_equiv = -1 * bmdsRes->BIC_equiv;
+  //}
 
   // calculate dichtomous analysis of deviance
   struct dichotomous_aod aod;
@@ -3573,6 +3587,7 @@ void additional_dicho_calcs(
   collect_dicho_bmd_values(anal, res, bmdsRes, *countAllParmsOnBoundary);
 
   calcDichoAIC(anal, res, bmdsRes, *countAllParmsOnBoundary);
+
   // incorporate affect of bounded parameters
   int bounded = 0;
   for (int i = 0; i < anal->parms; i++) {
@@ -5105,9 +5120,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     anal.parms = pyMA->actual_parms[i];
 
     convertFromPythonDichoRes(&res, &pyRes->models[i]);
+    res.max = pyRes->models[i].loudRes.ll;
+
+    bool isLoud = true;
     additional_dicho_calcs(
         &anal, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
-        &pyMA->pyDA.countAllParmsOnBoundary
+        &pyMA->pyDA.countAllParmsOnBoundary, &isLoud
     );
 
     // add back to python result struct
@@ -5158,6 +5176,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->bmdsRes.BMDL[i] = bmdl;
     pyRes->bmdsRes.BMDU[i] = bmdu;
     pyRes->models[i].bmdsRes.BMD = bmd;
+    pyRes->models[i].bmd = bmd;
     pyRes->models[i].bmdsRes.BMDL = bmdl;
     pyRes->models[i].bmdsRes.BMDU = bmdu;
   }
@@ -5180,6 +5199,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     bmds_c[i] = lbmd(i, result);
   }
 
+  // save an unaltered copy for return
+  std::vector<double> bmd_ma_ret(bmds_c);
+
   // Calc MA bmdl, bmd, bmdu
   // remove nans
   bmds_c.erase(
@@ -5200,10 +5222,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   pyRes->bmdsRes.BMD_MA = bmd;
   pyRes->bmdsRes.BMDL_MA = bmdl;
   pyRes->bmdsRes.BMDU_MA = bmdu;
-  pyRes->bmd_dist = bmds_c;
+  pyRes->bmd_dist = bmd_ma_ret;
+  // pyRes->bmd_dist = bmds_c;
   pyRes->post_probs = posterior_probs;
 
   clean_dicho_MA_results(pyRes);
+  //
+  // for (int i = 0; i < numModels; i++) {
+  //   std::cout<<"python res max:"<<pyRes->models[i].max<<std::endl;
+  // }
 }
 
 void calcLoudWeights(std::vector<double> &weights) {
@@ -5689,9 +5716,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
     std::copy(retParms2.begin(), retParms2.end(), res.parms);
 
+    bool isLoud = true;
     additional_cont_calcs(
         &CA, &res, &pyRes->models[i].gof, &pyRes->models[i].bmdsRes, &pyRes->models[i].aod,
-        &pyMA->pyCA.countAllParmsOnBoundary
+        &pyMA->pyCA.countAllParmsOnBoundary, &isLoud
     );
 
     for (int j = 0; j < res.nparms; j++) {
@@ -5807,8 +5835,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].model_df = BMDS_MISSING;
     pyRes->models[i].total_df = BMDS_MISSING;
     pyRes->models[i].bmdsRes.chisq = BMDS_MISSING;
-    pyRes->models[i].bmdsRes.AIC = BMDS_MISSING;
-    pyRes->models[i].bmdsRes.BIC_equiv = BMDS_MISSING;
     pyRes->models[i].bmdsRes.slopeFactor = BMDS_MISSING;
   }
 }
@@ -9365,6 +9391,7 @@ std::string printBmdsStruct(struct fitResult *out, bool print) {
   ss << "int_factor:" << out->int_factor << std::endl;
   ss << "waic:" << out->waic << std::endl;
   ss << "BMD:" << out->BMD << std::endl;
+  ss << "ll:" << out->ll << std::endl;
   // ss << "R:" << out->R << std::endl;
 
   if (print) std::cout << ss.str() << std::endl;
