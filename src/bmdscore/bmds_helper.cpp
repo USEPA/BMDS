@@ -5652,6 +5652,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     CA.prior = pyMA->priors[i].data();
     CA.parms = pyRes->models[i].nparms;
+    CA.disttype = pyMA->loud_dist_type[i];
 
     continuous_model_result res;
     res.parms = new double[pyRes->models[i].nparms];
@@ -5659,6 +5660,32 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     res.max = pyRes->models[i].loudRes.ll;
 
     Eigen::VectorXd retParms = colwise_median(pyRes->models[i].loudRes.parms);
+
+    // logic here to handle log(alpha) return values
+    switch (pyMA->models[i]) {
+      case cont_model::power:
+      case cont_model::exp_3:
+      case cont_model::exp_5:
+      case cont_model::hill:
+        if (loudIn.dist != distribution::log_normal) {
+          // BMDS CV and NCV models return exp(ln(alpha))
+          // BMDS expects ln(alpha)
+          retParms(retParms.size() - 1) = log(retParms(retParms.size() - 1));
+        }
+        break;
+      case cont_model::l_hill_efsa:
+      case cont_model::l_invexp_efsa:
+      case cont_model::l_lognormal_efsa:
+      case cont_model::l_gamma_efsa:
+      case cont_model::l_lms_efsa:
+        if (loudIn.dist == distribution::log_normal) {
+          // EFSA lognormal models models return ln(alpha)
+          // EFSA expects alpha
+          retParms(retParms.size() - 1) = exp(retParms(retParms.size() - 1));
+        }
+        break;
+    }
+
     std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
     std::copy(retParms2.begin(), retParms2.end(), res.parms);
 
