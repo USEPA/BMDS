@@ -5752,6 +5752,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->bmdsRes.BMDL[i] = bmdl;
     pyRes->bmdsRes.BMDU[i] = bmdu;
     pyRes->models[i].bmdsRes.BMD = bmd;
+    pyRes->models[i].bmd = bmd;
     pyRes->models[i].bmdsRes.BMDL = bmdl;
     pyRes->models[i].bmdsRes.BMDU = bmdu;
   }
@@ -5801,6 +5802,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   pyRes->post_probs = posterior_probs;
 
   clean_cont_MA_results(pyRes);
+  // set unused properties to -9999
+  for (int i = 0; i < pyRes->models.size(); i++) {
+    pyRes->models[i].model_df = BMDS_MISSING;
+    pyRes->models[i].total_df = BMDS_MISSING;
+    pyRes->models[i].bmdsRes.chisq = BMDS_MISSING;
+    pyRes->models[i].bmdsRes.AIC = BMDS_MISSING;
+    pyRes->models[i].bmdsRes.BIC_equiv = BMDS_MISSING;
+    pyRes->models[i].bmdsRes.slopeFactor = BMDS_MISSING;
+  }
 }
 
 double findMedianVal(std::vector<double> dist) {
