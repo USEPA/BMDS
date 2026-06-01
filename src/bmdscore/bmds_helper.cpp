@@ -5864,10 +5864,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
   );
 
-  // unscale bmd and parms
+  // unscale bmd and parms, etc
   for (int i = 0; i < pyMA->nmodels; i++) {
     fitResult *fitRes = &pyRes->models[i].loudRes;
     fitRes->BMD *= max_dose;
+    for (int j = 0; j < pyRes->models[i].gof.dose.size(); j++) {
+      pyRes->models[i].gof.dose[j] *= max_dose;
+    }
     Eigen::MatrixXd parms = fitRes->parms.transpose();
     for (int j = 0; j < parms.cols(); j++) {
       Eigen::MatrixXd parmCol = parms.col(j);
