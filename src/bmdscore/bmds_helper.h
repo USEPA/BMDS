@@ -219,7 +219,7 @@ struct fitResult {
   double int_factor;
   double waic;
   Eigen::VectorXd BMD;
-  // Eigen::MatrixXd R;
+  Eigen::VectorXd R;
   double ll;
   double pval;
 };
@@ -853,6 +853,10 @@ void additional_cont_calcs(
     struct continuous_analysis *GOFanal, struct continuous_model_result *res,
     struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *bmdsAOD,
     bool *countAllParmsOnBoundary, bool *isLoud
+);
+void continuous_expectation_LOUD(
+    const continuous_analysis *CA, const continuous_model_result *MR,
+    continuous_expected_result *expected
 );
 
 #ifdef __cplusplus

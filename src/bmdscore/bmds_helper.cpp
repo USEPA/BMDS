@@ -12,6 +12,7 @@
 // #include <cmath>
 #include <chrono>
 #include <nlopt.hpp>
+#include <set>
 
 #include "analysis_of_deviance.h"
 #include "bmds_helper.h"
@@ -3334,6 +3335,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   // calc LL
   Eigen::VectorXd parmVec = colwise_median(R);
+  loudOut->R = parmVec;
   LogLikeFunction logli = getLogLikeFunc(ll_type);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -3402,7 +3404,11 @@ void additional_cont_calcs(
   GOFres.sd = new double[GOFanal.n];
 
   // TODO need to branch this to handle non-BMDS models
-  continuous_expectation(&GOFanal, res, &GOFres);
+  if (!*isLoud) {
+    continuous_expectation(&GOFanal, res, &GOFres);
+  } else {
+    continuous_expectation_LOUD(&GOFanal, res, &GOFres);
+  }
 
   for (int i = 0; i < GOFanal.n; i++) {
     gof->dose.push_back(GOFanal.doses[i]);
@@ -3477,6 +3483,95 @@ void additional_cont_calcs(
 
   delete[] GOFres.expected;
   delete[] GOFres.sd;
+}
+
+void continuous_expectation_LOUD(
+    const continuous_analysis *CA, const continuous_model_result *MR,
+    continuous_expected_result *expected
+) {
+  loud_datatype dtype;
+  if (CA->suff_stat) {
+    dtype = loud_datatype::l_summary;
+  } else {
+    dtype = loud_datatype::l_individual;
+  }
+
+  int dist = CA->disttype;
+  int model = CA->model;
+
+  int model_typ = getLoudModelType(model, dist, dtype);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+  int ll_type = getLoudLLType(dist, dtype);
+  LogLikeFunction logli = getLogLikeFunc(ll_type);
+
+  Eigen::VectorXd doses = Eigen::Map<Eigen::VectorXd>(CA->doses, CA->n);
+  Eigen::VectorXd parms = Eigen::Map<Eigen::VectorXd>(MR->parms, MR->nparms);
+
+  Eigen::MatrixXd Y(CA->n, 3);
+  Y.col(0) = Eigen::Map<Eigen::VectorXd>(CA->Y, CA->n);
+  if (CA->suff_stat) {
+    Y.col(1) = Eigen::Map<Eigen::VectorXd>(CA->sd, CA->n);
+    Y.col(2) = Eigen::Map<Eigen::VectorXd>(CA->n_group, CA->n);
+  }
+
+  // get unique doses in case of individual data
+  std::set<double> doses_set(doses.data(), doses.data() + doses.size());
+  std::vector<double> unique_doses(doses_set.begin(), doses_set.end());
+  Eigen::VectorXd uniqueDoses =
+      Eigen::Map<Eigen::VectorXd>(unique_doses.data(), unique_doses.size());
+  Eigen::VectorXd mu = model_fun(parms, uniqueDoses);
+
+  double ll = logli(parms, doses, Y, model_fun);
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  bool bConstVar = (CA->disttype != distribution::normal_ncv);
+  double neg_like;
+
+  double m0 = parms(0);
+  double alpha;
+  double rho;
+  Eigen::VectorXd sd(CA->n);
+
+  // handle differences in alpha parms as defined by R, parms vector for LoudRes
+  switch (CA->model) {
+    case cont_model::power:
+    case cont_model::exp_3:
+    case cont_model::hill:
+    case cont_model::exp_5:
+      if (bConstVar) {
+        alpha = parms(4);
+      } else {
+        alpha = parms(5);
+        // rho = ???;
+      }
+      break;
+    case cont_model::l_hill_efsa:
+    case cont_model::l_invexp_efsa:
+    case cont_model::l_lognormal_efsa:
+    case cont_model::l_gamma_efsa:
+    case cont_model::l_lms_efsa:
+      if (bConstVar) {
+        alpha = 1.0 / parms(4);
+      } else {
+        rho = log(parms(4) / parms(5)) / log(parms(1) / parms(0));
+        alpha = log(1.0 / (parms(4) * pow(parms(0), rho)));
+      }
+      break;
+  }
+
+  if (bConstVar) {
+    //    alpha = parms(4);
+    sd.fill(sqrt(alpha));
+  } else {
+    //    alpha = parms(5);
+    sd = sqrt(alpha * mu.array().pow(rho));
+  }
+
+  for (int i = 0; i < expected->n; i++) {
+    expected->expected[i] = mu(i);
+    expected->sd[i] = sd(i);
+  }
+  expected->like = ll;
 }
 
 void additional_dicho_calcs(
@@ -5691,13 +5786,16 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     convertFromPythonContRes(&res, &pyRes->models[i]);
     res.max = pyRes->models[i].loudRes.ll;
 
-    Eigen::VectorXd retParms = colwise_median(pyRes->models[i].loudRes.parms);
+    // Need R vector from fit_Loud for EFSA models
+    // Need colwise median of parms Matrix for BMDS models
+    Eigen::VectorXd retParms;
 
     // logic here to handle log(alpha) return values
     switch (pyMA->models[i]) {
       case cont_model::power:
       case cont_model::exp_3:
       case cont_model::hill:
+        retParms = colwise_median(pyRes->models[i].loudRes.parms);
         if (loudIn.dist != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -5705,6 +5803,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         }
         break;
       case cont_model::exp_5:
+        retParms = colwise_median(pyRes->models[i].loudRes.parms);
         if (loudIn.dist != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -5718,11 +5817,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::l_lognormal_efsa:
       case cont_model::l_gamma_efsa:
       case cont_model::l_lms_efsa:
-        if (loudIn.dist == distribution::log_normal) {
-          // EFSA lognormal models models return ln(alpha)
-          // EFSA expects alpha
-          retParms(retParms.size() - 1) = exp(retParms(retParms.size() - 1));
-        }
+        retParms = pyRes->models[i].loudRes.R;
+        //    if (loudIn.dist == distribution::log_normal) {
+        //      // EFSA lognormal models models return ln(alpha)
+        //      // EFSA expects alpha
+        //      retParms(retParms.size() - 1) = exp(retParms(retParms.size() - 1));
+        //    }
         break;
     }
 
