@@ -5697,13 +5697,21 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     switch (pyMA->models[i]) {
       case cont_model::power:
       case cont_model::exp_3:
-      case cont_model::exp_5:
       case cont_model::hill:
         if (loudIn.dist != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
           retParms(retParms.size() - 1) = log(retParms(retParms.size() - 1));
         }
+        break;
+      case cont_model::exp_5:
+        if (loudIn.dist != distribution::log_normal) {
+          // BMDS CV and NCV models return exp(ln(alpha))
+          // BMDS expects ln(alpha)
+          retParms(retParms.size() - 1) = log(retParms(retParms.size() - 1));
+        }
+        // BMDS expects log(c)
+        retParms(2) = log(retParms(2));
         break;
       case cont_model::l_hill_efsa:
       case cont_model::l_invexp_efsa:
