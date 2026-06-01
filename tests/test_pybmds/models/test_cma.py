@@ -15,7 +15,7 @@ class TestContinuousMa:
         session.add_model(pybmds.Models.Power, {"priors": PriorClass.bayesian_loud})
         session.models[0].settings.samples = 20
         session.models[0].settings.burnin = 5
-        session.models[0].execute()
+        session.models[0].prepare_for_loud_model_average()
         session.add_model_averaging()
 
         structs = ContinuousModelAverage(

@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..constants import BMDS_BLANK_VALUE, BOOL_YES_NO, ContinuousModelChoices, Dtype
 from ..datasets.continuous import ContinuousDatasets
-from ..utils import multi_lstrip, pretty_table, unique_items
+from ..utils import ff, multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     CONTINUOUS_TEST_FOOTNOTES,
@@ -19,6 +19,28 @@ from .common import (
     residual_of_interest,
 )
 from .priors import ModelPriors, PriorClass, PriorDistribution
+
+
+def _display_blank_value(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+    return value
+
+
+def _display_loud_summary_value(value):
+    value = _display_blank_value(value)
+    if isinstance(value, float):
+        return ff(value)
+    return value
+
+
+def _display_loud_loglikelihood(value):
+    value = _display_blank_value(value)
+    if isinstance(value, float):
+        return ff(-abs(value))
+    return value
 
 
 class ContinuousRiskType(IntEnum):
@@ -347,10 +369,14 @@ class ContinuousParameters(BaseModel):
                 # remove final element for some params (stdErr, lowerConf, upperConf)
                 slice = -1
 
+        bounded = np.asarray(summary.bounded, dtype=float)
+        if slice is not None:
+            bounded = bounded[:slice]
+
         return cls(
             names=param_names,
             values=result.parms,
-            bounded=summary.bounded,
+            bounded=bounded,
             se=summary.stdErr[:slice],
             lower_ci=summary.lowerConf[:slice],
             upper_ci=summary.upperConf[:slice],
@@ -477,9 +503,11 @@ class ContinuousGof(BaseModel):
 
     @classmethod
     def from_model(cls, model) -> Self:
-        gof = model.structs.result.gof
         summary = model.structs.result.bmdsRes
+        return cls.from_cpp(model.structs.result.gof, summary.BMD, model.dataset.doses)
 
+    @classmethod
+    def from_cpp(cls, gof, bmd: float, doses: list[float]) -> Self:
         dose = np.asarray(getattr(gof, "dose", []), dtype=float)
         size = np.asarray(getattr(gof, "size", []), dtype=float)
         est_mean = np.asarray(getattr(gof, "estMean", []), dtype=float)
@@ -504,7 +532,7 @@ class ContinuousGof(BaseModel):
             residual=residual,
             eb_lower=eb_lower,
             eb_upper=eb_upper,
-            roi=residual_of_interest(summary.BMD, model.dataset.doses, residual.tolist()),
+            roi=residual_of_interest(bmd, doses, residual.tolist()),
         )
 
     def get_tbl_data_means(self, disttype: constants.DistType):
@@ -569,6 +597,8 @@ class ContinuousGof(BaseModel):
     def tbl(self, disttype: constants.DistType) -> str:
         mean_headers, mean_data = self.get_tbl_data_means(disttype)
         sd_headers, sd_data = self.get_tbl_data_sds(disttype)
+        mean_data = [tuple(_display_blank_value(value) for value in row) for row in mean_data]
+        sd_data = [tuple(_display_blank_value(value) for value in row) for row in sd_data]
         return "\n".join(
             [
                 pretty_table(mean_data, mean_headers.split("|")),
@@ -685,18 +715,28 @@ class ContinuousResult(BaseModel):
     tests: ContinuousTests
     plotting: ContinuousPlotting
     summary_p_value: float | None = None
+    summary_waic: float | None = None
 
     def tbl(self) -> str:
-        p_value = (
-            self.summary_p_value if self.summary_p_value is not None else self.tests.p_value(3)
-        )
+        if self.summary_p_value is not None:
+            data = [
+                ["BMD", _display_loud_summary_value(self.bmd)],
+                ["BMDL", _display_loud_summary_value(self.bmdl)],
+                ["BMDU", _display_loud_summary_value(self.bmdu)],
+                ["Log-Likelihood", _display_loud_loglikelihood(self.fit.loglikelihood)],
+                ["P-Value", _display_loud_summary_value(self.summary_p_value)],
+            ]
+            if self.summary_waic is not None:
+                data.append(["WAIC", _display_loud_summary_value(self.summary_waic)])
+            return pretty_table(data, "")
+
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],
             ["BMDU", self.bmdu],
             ["AIC", self.fit.aic],
             ["Log-Likelihood", self.fit.loglikelihood],
-            ["P-Value", p_value],
+            ["P-Value", self.tests.p_value(3)],
             ["Model d.f.", self.tests.df(3)],
         ]
         return pretty_table(data, "")

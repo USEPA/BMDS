@@ -134,6 +134,8 @@ class DichotomousModelAverageResult(ModelAverageResult):
     model_bmd_dist: list[NumpyFloatArray] = Field(default_factory=list)
     model_parm_dist: list[NumpyFloatArray] = Field(default_factory=list)
     model_p_values: list[float] = Field(default_factory=list)
+    model_waics: list[float] = Field(default_factory=list)
+    model_loglikelihoods: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
@@ -205,15 +207,20 @@ class DichotomousModelAverageResult(ModelAverageResult):
         model_bmd: list[np.ndarray] = []
         model_parms: list[np.ndarray] = []
         model_p_values: list[float] = []
+        model_waics: list[float] = []
+        model_loglikelihoods: list[float] = []
         if is_loud:
             n_draws = arr.size
             for result in analysis.result.models:
-                model_p_values.append(float(getattr(result.loudRes, "pval", BMDS_BLANK_VALUE)))
-                bmd_draws = np.asarray(result.loudRes.BMD, dtype=float)
+                loud = result.loudRes
+                model_p_values.append(float(getattr(loud, "pval", BMDS_BLANK_VALUE)))
+                model_waics.append(float(getattr(loud, "waic", BMDS_BLANK_VALUE)))
+                model_loglikelihoods.append(float(getattr(loud, "ll", BMDS_BLANK_VALUE)))
+                bmd_draws = np.asarray(loud.BMD, dtype=float)
                 n_draw = bmd_draws.size
                 model_bmd.append(cls._resize_draws(bmd_draws, n_draws))
 
-                parm_draws = np.asarray(result.loudRes.parms, dtype=float)
+                parm_draws = np.asarray(loud.parms, dtype=float)
                 if parm_draws.ndim == 1 and n_draw > 0 and parm_draws.size % n_draw == 0:
                     parm_draws = parm_draws.reshape(n_draw, parm_draws.size // n_draw)
                 elif (
@@ -266,6 +273,8 @@ class DichotomousModelAverageResult(ModelAverageResult):
             model_bmd_dist=model_bmd,
             model_parm_dist=model_parms,
             model_p_values=model_p_values,
+            model_waics=model_waics,
+            model_loglikelihoods=model_loglikelihoods,
             dr_x=dr_x,
             dr_y=dr_y,
         )
@@ -349,7 +358,11 @@ class DichotomousModelAverageResult(ModelAverageResult):
         )
 
         fit = DichotomousModelResult(
-            loglikelihood=BMDS_BLANK_VALUE,
+            loglikelihood=(
+                self.model_loglikelihoods[index]
+                if index < len(self.model_loglikelihoods)
+                else BMDS_BLANK_VALUE
+            ),
             aic=BMDS_BLANK_VALUE,
             bic_equiv=BMDS_BLANK_VALUE,
             chisq=BMDS_BLANK_VALUE,
@@ -418,4 +431,10 @@ class DichotomousModelAverageResult(ModelAverageResult):
             parameters=parameters,
             deviance=deviance,
             plotting=plotting,
+            summary_p_value=(
+                self.model_p_values[index] if index < len(self.model_p_values) else BMDS_BLANK_VALUE
+            ),
+            summary_waic=(
+                self.model_waics[index] if index < len(self.model_waics) else BMDS_BLANK_VALUE
+            ),
         )

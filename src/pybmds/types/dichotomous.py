@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .. import bmdscore, constants
 from ..constants import BOOL_YES_NO, DichotomousModelChoices
 from ..datasets import DichotomousDataset
-from ..utils import multi_lstrip, pretty_table, unique_items
+from ..utils import ff, multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     NumpyFloatArray,
@@ -18,6 +18,24 @@ from .common import (
     residual_of_interest,
 )
 from .priors import ModelPriors, PriorClass, PriorDistribution
+
+
+def _display_loud_summary_value(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == constants.BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+        return ff(value)
+    return value
+
+
+def _display_loud_loglikelihood(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == constants.BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+        return ff(-abs(value))
+    return value
 
 
 class DichotomousRiskType(IntEnum):
@@ -412,6 +430,8 @@ class DichotomousResult(BaseModel):
     parameters: DichotomousParameters
     deviance: DichotomousAnalysisOfDeviance
     plotting: DichotomousPlotting
+    summary_p_value: float | None = None
+    summary_waic: float | None = None
 
     @classmethod
     def from_model(cls, model) -> Self:
@@ -453,6 +473,18 @@ class DichotomousResult(BaseModel):
         )
 
     def tbl(self) -> str:
+        if self.summary_p_value is not None:
+            data = [
+                ["BMD", _display_loud_summary_value(self.bmd)],
+                ["BMDL", _display_loud_summary_value(self.bmdl)],
+                ["BMDU", _display_loud_summary_value(self.bmdu)],
+                ["Log-Likelihood", _display_loud_loglikelihood(self.fit.loglikelihood)],
+                ["P-Value", _display_loud_summary_value(self.summary_p_value)],
+            ]
+            if self.summary_waic is not None:
+                data.append(["WAIC", _display_loud_summary_value(self.summary_waic)])
+            return pretty_table(data, "")
+
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],

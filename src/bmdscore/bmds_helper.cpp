@@ -1351,6 +1351,8 @@ void BMDS_ENTRY_API __stdcall runBMDSContAnalysis(
     bmdsRes->lowerConf.push_back(BMDS_MISSING);
     bmdsRes->upperConf.push_back(BMDS_MISSING);
   }
+  bmdsRes->bounded.resize(anal->parms);
+  fill(bmdsRes->bounded.begin(), bmdsRes->bounded.end(), false);
 
   calcParmCIs_cont(res, bmdsRes);
 
@@ -3441,7 +3443,7 @@ void additional_cont_calcs(
     gof->ebUpper.push_back(ebUpper);
   }
 
-  if (isLoud) {
+  if (*isLoud) {
     bmdsRes->BIC_equiv = BMDS_MISSING;
     bmdsRes->AIC = BMDS_MISSING;
     bmdsRes->BMD = BMDS_MISSING;
@@ -5090,7 +5092,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].nparms = loudOut.parms.cols();
     pyRes->models[i].model = pyMA->models[i];
     pyRes->models[i].bmdsRes.validResult = true;
-    pyRes->models[i].dist_numE = loudOut.BMD.size();
+    pyRes->models[i].dist_numE = 0;
 
     // GOF calcs
     anal.model = pyMA->models[i];
@@ -5102,7 +5104,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     res.parms = new double[nparms];
     res.nparms = nparms;
     res.cov = new double[nparms * nparms];
-    res.bmd_dist = new double[pyRes->dist_numE];
+    res.bmd_dist = new double[1];
 
     convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
     res.max = pyRes->models[i].loudRes.ll;
@@ -5683,6 +5685,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     continuous_model_result res;
     res.parms = new double[pyRes->models[i].nparms];
+    res.cov = new double[pyRes->models[i].nparms * pyRes->models[i].nparms];
+    res.bmd_dist = new double[1];
+    pyRes->models[i].dist_numE = 0;
     convertFromPythonContRes(&res, &pyRes->models[i]);
     res.max = pyRes->models[i].loudRes.ll;
 

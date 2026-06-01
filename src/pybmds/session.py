@@ -441,9 +441,24 @@ class Session:
         self.model_average = instance
 
     def execute(self):
+        loud_cma_models = set()
+        if (
+            self.model_average is not None
+            and self.dataset.dtype
+            in (constants.Dtype.CONTINUOUS, constants.Dtype.CONTINUOUS_INDIVIDUAL)
+            and all(
+                model.settings.priors.prior_class is PriorClass.bayesian_loud
+                for model in self.model_average.models
+            )
+        ):
+            loud_cma_models = set(self.model_average.models)
+
         # execute individual models
         for model in self.models:
-            model.execute_job()
+            if model in loud_cma_models:
+                model.prepare_for_loud_model_average()
+            else:
+                model.execute_job()
 
         # execute model average
         if self.model_average is not None:

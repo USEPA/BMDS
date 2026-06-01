@@ -50,6 +50,15 @@ class BMDS_results:
     def __init__(self) -> None: ...
     def setSlopeFactor(self, arg0: typing.SupportsFloat) -> None: ...
 
+class fitResult:
+    BMD: list[float]
+    int_factor: float
+    ll: float
+    parms: list[float]
+    pval: float
+    waic: float
+    def __init__(self) -> None: ...
+
 class cont_model:
     __members__: ClassVar[dict] = ...  # read-only
     __entries: ClassVar[dict] = ...
@@ -289,6 +298,7 @@ class python_continuous_model_result:
     dist: int
     dist_numE: int
     gof: continuous_GOF
+    loudRes: fitResult
     max: float
     model: int
     model_df: float
@@ -345,6 +355,7 @@ class python_dichotomous_model_result:
     gof: dichotomous_GOF
     gof_chi_sqr_statistic: float
     gof_p_value: float
+    loudRes: fitResult
     max: float
     model: int
     model_df: float

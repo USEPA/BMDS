@@ -31,14 +31,15 @@ class BmdModelDichotomous(BmdModel):
                 Model Parameters:
                 {self.results.parameters.tbl()}
 
+                Goodness of Fit:
+                {self.results.gof.tbl(self.dataset)}
+
                 LOUD Model-Average Weights:
                 Prior Weight: {summary.prior}
                 Posterior Weight: {summary.posterior}
 
                 Model-specific BMD values shown above are taken from the LOUD
-                model averaging result for this model. Standalone parameter,
-                goodness-of-fit, and likelihood details are shown only when they
-                are available from the individual-model execution path.
+                model averaging result for this model.
                 """
                 )
 

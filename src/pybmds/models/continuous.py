@@ -30,14 +30,15 @@ class BmdModelContinuous(BmdModel):
                 Model Parameters:
                 {self.results.parameters.tbl()}
 
+                Goodness of Fit:
+                {self.results.gof.tbl(disttype=self.settings.disttype)}
+
                 LOUD Model-Average Weights:
                 Prior Weight: {summary.prior}
                 Posterior Weight: {summary.posterior}
 
                 Model-specific BMD values shown above are taken from the LOUD
-                model averaging result for this model. Standalone parameter,
-                goodness-of-fit, and likelihood details are shown only when they
-                are available from the individual-model execution path.
+                model averaging result for this model.
                 """
                 )
 
@@ -131,6 +132,11 @@ class BmdModelContinuous(BmdModel):
         self.structs.execute()
         self.results = ContinuousResult.from_model(self)
         return self.results
+
+    def prepare_for_loud_model_average(self):
+        inputs = self._build_inputs()
+        self.structs = inputs.to_cpp()
+        self.results = None
 
     def get_default_model_degree(self, dataset) -> int:
         return 0

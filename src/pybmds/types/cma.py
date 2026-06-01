@@ -8,7 +8,16 @@ from pydantic import BaseModel, Field, model_serializer
 from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
 from .common import clean_array, inspect_cpp_obj
-from .continuous import ContinuousParameters, NumpyFloatArray
+from .continuous import (
+    ContinuousDeviance,
+    ContinuousGof,
+    ContinuousModelResult,
+    ContinuousParameters,
+    ContinuousPlotting,
+    ContinuousResult,
+    ContinuousTests,
+    NumpyFloatArray,
+)
 
 
 class ModelAverageResult(BaseModel):
@@ -141,6 +150,8 @@ class ContinuousModelAverageResult(ModelAverageResult):
     model_bmd_dist: list[NumpyFloatArray]
     model_parm_dist: list[NumpyFloatArray]
     model_p_values: list[float] = Field(default_factory=list)
+    model_waics: list[float] = Field(default_factory=list)
+    model_loglikelihoods: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
@@ -161,16 +172,20 @@ class ContinuousModelAverageResult(ModelAverageResult):
         return data
 
     @classmethod
-    def from_cpp(cls, analysis: ContinuousModelAverage, model_results) -> Self:
+    def from_cpp(cls, analysis: ContinuousModelAverage, model_results=None) -> Self:
         ma_bmd = np.asarray(analysis.result.bmd_dist, dtype=float)
 
         model_bmd: list[np.ndarray] = []
         model_parms: list[np.ndarray] = []
         model_p_values: list[float] = []
+        model_waics: list[float] = []
+        model_loglikelihoods: list[float] = []
 
         for m in analysis.result.models:
             lr = m.loudRes  # fitResult
             model_p_values.append(float(getattr(lr, "pval", constants.BMDS_BLANK_VALUE)))
+            model_waics.append(float(getattr(lr, "waic", constants.BMDS_BLANK_VALUE)))
+            model_loglikelihoods.append(float(getattr(lr, "ll", constants.BMDS_BLANK_VALUE)))
 
             b_raw = np.asarray(lr.BMD, dtype=float)
             n_draw = b_raw.size
@@ -192,16 +207,19 @@ class ContinuousModelAverageResult(ModelAverageResult):
         if posteriors.size == 0:
             raise RuntimeError("C++ MA did not populate post_probs (empty).")
 
-        values = np.asarray([r.plotting.dr_y for r in model_results], dtype=float)
-        dr_x = np.asarray(model_results[0].plotting.dr_x, dtype=float)
-
-        if posteriors.size != values.shape[0]:
-            raise RuntimeError(f"post_probs ({posteriors.size}) != nmodels ({values.shape[0]}).")
-
-        dr_y = posteriors @ values
-
         bmdsRes = analysis.result.bmdsRes
         bmds = np.asarray([bmdsRes.BMDL_MA, bmdsRes.BMD_MA, bmdsRes.BMDU_MA], dtype=float)
+        if model_results is not None:
+            values = np.asarray([r.plotting.dr_y for r in model_results], dtype=float)
+            dr_x = np.asarray(model_results[0].plotting.dr_x, dtype=float)
+            if posteriors.size != values.shape[0]:
+                raise RuntimeError(
+                    f"post_probs ({posteriors.size}) != nmodels ({values.shape[0]})."
+                )
+            dr_y = posteriors @ values
+        else:
+            dr_x = np.asarray(analysis.analysis.doses, dtype=float)
+            dr_y = np.full(dr_x.shape, constants.BMDS_BLANK_VALUE, dtype=float)
         bmds_ys = np.interp(bmds, dr_x, dr_y)
 
         return cls(
@@ -215,6 +233,8 @@ class ContinuousModelAverageResult(ModelAverageResult):
             model_bmd_dist=model_bmd,
             model_parm_dist=model_parms,
             model_p_values=model_p_values,
+            model_waics=model_waics,
+            model_loglikelihoods=model_loglikelihoods,
             priors=priors,
             posteriors=posteriors,
             dr_x=dr_x,
@@ -260,28 +280,83 @@ class ContinuousModelAverageResult(ModelAverageResult):
             posterior=posterior,
         )
 
-    def sync_model_result(self, model, index: int) -> None:
+    def sync_model_result(self, model, index: int, cpp_result=None) -> None:
         """
         Update a bayesian LOUD model's public result object so downstream callers
         can use the per-model outputs stored in the LOUD MA result container.
         """
-        if model.results is None:
-            return
-
         summary = self.model_summary(index, model.settings.alpha)
         draws = np.asarray(self.model_bmd_dist[index], dtype=float)
         draws = draws[np.isfinite(draws)]
         parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
-        parameters = model.results.parameters
         if parm_draws.size:
             parameters = ContinuousParameters.from_loud_draws(model, parm_draws)
+        elif model.results is not None:
+            parameters = model.results.parameters
+        else:
+            raise RuntimeError(f"LOUD did not return parameter draws for {model.name()}.")
 
-        fit = model.results.fit.model_copy(update={"bmd_dist": draws})
+        if model.results is None:
+            n = len(model.dataset.doses)
+            empty = np.full(n, constants.BMDS_BLANK_VALUE, dtype=float)
+            fit = ContinuousModelResult(
+                dist=int(model.settings.disttype.value),
+                loglikelihood=constants.BMDS_BLANK_VALUE,
+                aic=constants.BMDS_BLANK_VALUE,
+                bic_equiv=constants.BMDS_BLANK_VALUE,
+                chisq=constants.BMDS_BLANK_VALUE,
+                model_df=constants.BMDS_BLANK_VALUE,
+                total_df=constants.BMDS_BLANK_VALUE,
+                bmd_dist=draws,
+            )
+            if cpp_result is not None:
+                gof = ContinuousGof.from_cpp(cpp_result.gof, summary.bmd, model.dataset.doses)
+            else:
+                gof = ContinuousGof(
+                    dose=np.asarray(model.dataset.doses, dtype=float),
+                    size=np.asarray(model.dataset.ns, dtype=float),
+                    est_mean=empty,
+                    calc_mean=empty,
+                    obs_mean=np.asarray(model.dataset.means, dtype=float),
+                    est_sd=empty,
+                    calc_sd=empty,
+                    obs_sd=np.asarray(model.dataset.stdevs, dtype=float),
+                    residual=empty,
+                    eb_lower=empty,
+                    eb_upper=empty,
+                    roi=constants.BMDS_BLANK_VALUE,
+                )
+            deviance = ContinuousDeviance(names=[], loglikelihoods=[], num_params=[], aics=[])
+            tests = ContinuousTests(
+                names=["Test 1", "Test 2", "Test 3", "Test 4"],
+                ll_ratios=[constants.BMDS_BLANK_VALUE] * 4,
+                dfs=[constants.BMDS_BLANK_VALUE] * 4,
+                p_values=[constants.BMDS_BLANK_VALUE] * 4,
+            )
+        else:
+            fit = model.results.fit.model_copy(update={"bmd_dist": draws})
+            gof = (
+                ContinuousGof.from_cpp(cpp_result.gof, summary.bmd, model.dataset.doses)
+                if cpp_result is not None
+                else model.results.gof
+            )
+            deviance = model.results.deviance
+            tests = model.results.tests
+
         p_value = (
             self.model_p_values[index]
             if index < len(self.model_p_values)
             else constants.BMDS_BLANK_VALUE
         )
+        waic = (
+            self.model_waics[index] if index < len(self.model_waics) else constants.BMDS_BLANK_VALUE
+        )
+        loglikelihood = (
+            self.model_loglikelihoods[index]
+            if index < len(self.model_loglikelihoods)
+            else constants.BMDS_BLANK_VALUE
+        )
+        fit = fit.model_copy(update={"loglikelihood": loglikelihood})
 
         extra_values = [summary.bmd] if summary.bmd >= 0 else []
         dr_x = model.dataset.dose_linspace(extra_values=extra_values)
@@ -297,25 +372,25 @@ class ContinuousModelAverageResult(ModelAverageResult):
             critical_ys = clean_array(model.dr_curve(xs, parameters.values))
         critical_ys[critical_ys <= 0] = constants.BMDS_BLANK_VALUE
 
-        plotting = model.results.plotting.model_copy(
-            update={
-                "dr_x": dr_x,
-                "dr_y": dr_y,
-                "bmdl_y": float(critical_ys[0]),
-                "bmd_y": float(critical_ys[1]),
-                "bmdu_y": float(critical_ys[2]),
-            }
+        plotting = ContinuousPlotting(
+            dr_x=dr_x,
+            dr_y=dr_y,
+            bmdl_y=float(critical_ys[0]),
+            bmd_y=float(critical_ys[1]),
+            bmdu_y=float(critical_ys[2]),
         )
 
-        model.results = model.results.model_copy(
-            update={
-                "bmdl": summary.bmdl,
-                "bmd": summary.bmd,
-                "bmdu": summary.bmdu,
-                "has_completed": True,
-                "fit": fit,
-                "parameters": parameters,
-                "plotting": plotting,
-                "summary_p_value": p_value,
-            }
+        model.results = ContinuousResult(
+            bmdl=summary.bmdl,
+            bmd=summary.bmd,
+            bmdu=summary.bmdu,
+            has_completed=True,
+            fit=fit,
+            gof=gof,
+            parameters=parameters,
+            deviance=deviance,
+            tests=tests,
+            plotting=plotting,
+            summary_p_value=p_value,
+            summary_waic=waic,
         )

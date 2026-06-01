@@ -192,6 +192,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("int_factor", &fitResult::int_factor)
       .def_readwrite("waic", &fitResult::waic)
       .def_readwrite("BMD", &fitResult::BMD)
+      .def_readwrite("ll", &fitResult::ll)
       .def_readwrite("pval", &fitResult::pval);
 
   py::class_<python_dichotomous_analysis>(m, "python_dichotomous_analysis")

@@ -534,6 +534,36 @@ class TestSession:
         assert spacing_by_text["Power model parameters"] == 6.0
         assert "Power model parameter visualizations" not in spacing_by_text
 
+    def test_continuous_loud_docx_uses_model_gof_values(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        docx = session.to_docx(citation=False, all_models=True, bmd_cdf_table=False)
+        bayesian_table = next(
+            table
+            for table in docx.tables
+            if table.rows[0].cells[0].text == "Model"
+            and table.rows[0].cells[1].text == "Prior Weights"
+        )
+
+        for row in bayesian_table.rows[1:3]:
+            assert row.cells[6].text != "-"
+            assert row.cells[7].text != "-"
+
+        text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
+        assert "Log-Likelihood" in text
+        assert any("Log-Likelihood" in line and "-" in line for line in text.splitlines())
+        assert "Model Fitted Mean" in text
+        assert "Model Fitted SD" in text
+        assert "-9999" not in text
+
     def test_continuous_ma_to_df_handles_models_without_toi_tests(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
         session.add_model(
