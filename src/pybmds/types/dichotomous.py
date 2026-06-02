@@ -57,6 +57,8 @@ class DichotomousModelSettings(BaseModel):
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # multistage only
     samples: Annotated[int, Field(ge=0, le=100000)] = 50000
     burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
+    n_chains: Annotated[int, Field(ge=1, le=4)] = 1
+    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] | None = None
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     count_all_parameters_on_boundary: bool = False
 
@@ -123,6 +125,8 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
+    n_chains: int
+    seed: int | None
     count_all_parameters_on_boundary: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -155,6 +159,10 @@ class DichotomousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.samples = self.samples
         analysis.burnin = self.burnin
+        if hasattr(analysis, "n_chains"):
+            analysis.n_chains = self.n_chains
+        if self.seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = self.seed
         analysis.parms = self.num_params
         analysis.prior_cols = constants.NUM_PRIOR_COLS
         analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
@@ -234,9 +242,12 @@ class DichotomousPgofResult(BaseModel):
     @classmethod
     def from_model(cls, model):
         result = model.structs.result
-        gof = result.gof
         summary = result.bmdsRes
-        roi = residual_of_interest(summary.BMD, model.dataset.doses, gof.residual)
+        return cls.from_cpp(result.gof, summary.BMD, model.dataset.doses)
+
+    @classmethod
+    def from_cpp(cls, gof, bmd: float, doses: list[float]):
+        roi = residual_of_interest(bmd, doses, gof.residual)
         return cls(
             expected=gof.expected,
             residual=gof.residual,

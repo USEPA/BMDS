@@ -50,6 +50,32 @@ class TestDichotomousMa:
         assert np.allclose(session.model_average.results.priors, [0.9, 0.1])
         assert np.allclose(session.model_average.results.posteriors, [0.53, 0.47], atol=0.05)
 
+    def test_dichotomous_loud_bridge_weights_are_reported(self):
+        dataset = pybmds.DichotomousDataset(
+            doses=[0, 0.25, 0.5, 0.75, 1],
+            ns=[20, 20, 20, 20, 20],
+            incidences=[0, 3, 10, 15, 19],
+        )
+        session = pybmds.Session(dataset=dataset)
+        session.add_default_bayesian_models(
+            prior_class=PriorClass.bayesian_loud, weight_option="bridge"
+        )
+        session.execute()
+
+        posteriors = session.model_average.results.posteriors
+        assert np.isfinite(posteriors).all()
+        assert posteriors.sum() == pytest.approx(1)
+
+        docx = session.to_docx(citation=False)
+        bayesian_table = next(
+            table
+            for table in docx.tables
+            if table.rows[0].cells[0].text == "Model"
+            and table.rows[0].cells[2].text == "Posterior Weights"
+        )
+        for row in bayesian_table.rows[1:-1]:
+            assert row.cells[2].text != "-"
+
     def test_dichotomous_ma_datatype_matches_prior_class(self, ddataset2):
         session = pybmds.Session(dataset=ddataset2)
         session.add_model(pybmds.Models.Logistic, {"priors": PriorClass.bayesian})
@@ -78,6 +104,27 @@ class TestDichotomousMa:
             session.model_average.settings.priors.prior_class,
         )
         assert session.model_average.structs.average.datatype == 4
+
+    def test_loud_mcmc_settings_are_staged_for_dichotomous_ma(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(
+            pybmds.Models.Logistic,
+            {"priors": PriorClass.bayesian_loud, "n_chains": 4, "seed": 123},
+        )
+        session.add_model(pybmds.Models.Probit, {"priors": PriorClass.bayesian_loud})
+        session.add_model_averaging()
+        for model in session.models:
+            model.execute_job()
+
+        structs = DichotomousModelAverage(
+            session.dataset,
+            session.model_average.models,
+            session.ma_weights,
+            session.model_average.settings.priors.prior_class,
+        )
+
+        assert structs.n_chains == 4
+        assert structs.seed == 123
 
     def test_dichotomous_loud_ma_session_syncs_results(self):
         session = pybmds.Session(dataset=loud_dma_dataset())

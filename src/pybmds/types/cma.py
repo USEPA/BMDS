@@ -65,6 +65,12 @@ class ContinuousModelAverage:
             analysis.n = len(dataset.individual_doses)
         else:
             raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
+        n_chains = models[0].settings.n_chains
+        seed = models[0].settings.seed
+        if hasattr(analysis, "n_chains"):
+            analysis.n_chains = n_chains
+        if seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = seed
 
         average = bmdscore.python_continuousMA_analysis()
         average.nmodels = len(models)
@@ -84,6 +90,10 @@ class ContinuousModelAverage:
 
         average.modelPriors = [float(x) for x in model_weights]
         average.pyCA = analysis
+        if hasattr(average, "n_chains"):
+            average.n_chains = n_chains
+        if seed is not None and hasattr(average, "seed"):
+            average.seed = seed
 
         bmdsRes = bmdscore.BMDSMA_results()
         bmdsRes.BMD_MA = -9999.0
@@ -118,6 +128,8 @@ class ContinuousModelAverage:
         self.analysis = analysis
         self.average = average
         self.result = result
+        self.n_chains = n_chains
+        self.seed = seed
         self.bmdsRes = result.bmdsRes  # use this version; copied on assignment above
 
     def execute(self) -> "ContinuousModelAverageResult":

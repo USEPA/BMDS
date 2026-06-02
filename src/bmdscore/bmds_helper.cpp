@@ -3403,8 +3403,22 @@ void additional_cont_calcs(
   GOFres.expected = new double[GOFanal.n];
   GOFres.sd = new double[GOFanal.n];
 
-  // TODO need to branch this to handle non-BMDS models
-  if (!*isLoud) {
+  bool useBmdsExpectation = !*isLoud;
+  if (*isLoud) {
+    switch (GOFanal.model) {
+      case cont_model::power:
+      case cont_model::hill:
+      case cont_model::exp_3:
+      case cont_model::exp_5:
+        useBmdsExpectation = true;
+        break;
+      default:
+        useBmdsExpectation = false;
+        break;
+    }
+  }
+
+  if (useBmdsExpectation) {
     continuous_expectation(&GOFanal, res, &GOFres);
   } else {
     continuous_expectation_LOUD(&GOFanal, res, &GOFres);
@@ -3428,8 +3442,10 @@ void additional_cont_calcs(
       gof->calcSD.push_back(exp(sqrt(log(1.0 + pow(GOFanal.sd[i] / GOFanal.Y[i], 2.0)))));
     }
     for (int i = 0; i < GOFanal.n; i++) {
-      gof->estMean[i] = (exp(gof->estMean[i] + pow(exp(res->parms[res->nparms - 1]), 2) / 2));
-      gof->estSD[i] = exp(gof->estSD[i]);
+      double log_mean = gof->estMean[i];
+      double alpha = pow(gof->estSD[i], 2);
+      gof->estMean[i] = exp(log_mean + alpha / 2.0);
+      gof->estSD[i] = sqrt((exp(alpha) - 1.0) * exp(2.0 * log_mean + alpha));
       gof->res[i] = (sqrt(gof->size[i]) * (gof->obsMean[i] - gof->estMean[i]) / gof->estSD[i]);
     }
   } else {
@@ -3535,14 +3551,21 @@ void continuous_expectation_LOUD(
   // handle differences in alpha parms as defined by R, parms vector for LoudRes
   switch (CA->model) {
     case cont_model::power:
-    case cont_model::exp_3:
+      if (bConstVar) {
+        alpha = exp(parms(3));
+      } else {
+        rho = parms(3);
+        alpha = exp(parms(4));
+      }
+      break;
     case cont_model::hill:
+    case cont_model::exp_3:
     case cont_model::exp_5:
       if (bConstVar) {
-        alpha = parms(4);
+        alpha = exp(parms(4));
       } else {
-        alpha = parms(5);
-        // rho = ???;
+        rho = parms(4);
+        alpha = exp(parms(5));
       }
       break;
     case cont_model::l_hill_efsa:
@@ -3554,7 +3577,7 @@ void continuous_expectation_LOUD(
         alpha = 1.0 / parms(4);
       } else {
         rho = log(parms(4) / parms(5)) / log(parms(1) / parms(0));
-        alpha = log(1.0 / (parms(4) * pow(parms(0), rho)));
+        alpha = 1.0 / (parms(4) * pow(parms(0), rho));
       }
       break;
   }

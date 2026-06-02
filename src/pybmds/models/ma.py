@@ -30,7 +30,7 @@ class BmdModelAveragingDichotomous(BmdModelAveraging):
         )
         if is_loud:
             for idx, model in enumerate(self.models):
-                results.sync_model_result(model, idx)
+                results.sync_model_result(model, idx, self.structs.result.models[idx])
         return results
 
     def serialize(self, session) -> "BmdModelAveragingDichotomousSchema":

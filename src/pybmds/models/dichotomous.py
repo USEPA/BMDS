@@ -79,6 +79,8 @@ class BmdModelDichotomous(BmdModel):
             degree=self.settings.degree,
             samples=self.settings.samples,
             burnin=self.settings.burnin,
+            n_chains=self.settings.n_chains,
+            seed=self.settings.seed,
             count_all_parameters_on_boundary=self.settings.count_all_parameters_on_boundary,
         )
 

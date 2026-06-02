@@ -30,3 +30,14 @@ class TestDichotomousModelSettings:
     def test_no_extra(self):
         with pytest.raises(ValidationError):
             DichotomousModelSettings(foo=123)
+
+    def test_loud_mcmc_settings(self):
+        settings = DichotomousModelSettings(n_chains=4, seed=123)
+        assert settings.n_chains == 4
+        assert settings.seed == 123
+
+        with pytest.raises(ValidationError):
+            DichotomousModelSettings(n_chains=0)
+
+        with pytest.raises(ValidationError):
+            DichotomousModelSettings(seed=-1)

@@ -74,6 +74,8 @@ class ContinuousModelSettings(BaseModel):
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
     samples: Annotated[int, Field(ge=0, le=100000)] = 50000
     burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
+    n_chains: Annotated[int, Field(ge=1, le=4)] = 1
+    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] | None = None
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     loud_priors_tbl: str | None = None
@@ -176,6 +178,8 @@ class ContinuousAnalysis(BaseModel):
     alpha: float
     samples: int
     burnin: int
+    n_chains: int
+    seed: int | None
     degree: int
     count_all_parameters_on_boundary: bool
 
@@ -215,6 +219,10 @@ class ContinuousAnalysis(BaseModel):
         analysis.alpha = self.alpha
         analysis.samples = self.samples
         analysis.burnin = self.burnin
+        if hasattr(analysis, "n_chains"):
+            analysis.n_chains = self.n_chains
+        if self.seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = self.seed
         analysis.tail_prob = self.tail_prob
         analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
 

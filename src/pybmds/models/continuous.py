@@ -121,6 +121,8 @@ class BmdModelContinuous(BmdModel):
             disttype=self.settings.disttype,
             samples=self.settings.samples,
             burnin=self.settings.burnin,
+            n_chains=self.settings.n_chains,
+            seed=self.settings.seed,
             degree=self.settings.degree,
             count_all_parameters_on_boundary=self.settings.count_all_parameters_on_boundary,
         )

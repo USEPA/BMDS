@@ -33,6 +33,17 @@ class TestContinuousModelSettings:
         with pytest.raises(ValidationError):
             ContinuousModelSettings(foo=123)
 
+    def test_loud_mcmc_settings(self):
+        settings = ContinuousModelSettings(n_chains=4, seed=123)
+        assert settings.n_chains == 4
+        assert settings.seed == 123
+
+        with pytest.raises(ValidationError):
+            ContinuousModelSettings(n_chains=0)
+
+        with pytest.raises(ValidationError):
+            ContinuousModelSettings(seed=-1)
+
 
 class TestContinuousGof:
     def test_collapse(self, cdataset, cidataset):

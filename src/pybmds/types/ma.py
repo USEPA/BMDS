@@ -53,6 +53,12 @@ class DichotomousModelAverage:
         analysis.n_group = dataset.ns
         analysis.doses = dataset.doses
         analysis.n = dataset.num_dose_groups
+        n_chains = models[0].settings.n_chains
+        seed = models[0].settings.seed
+        if hasattr(analysis, "n_chains"):
+            analysis.n_chains = n_chains
+        if seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = seed
 
         average = bmdscore.python_dichotomousMA_analysis()
         average.nmodels = len(models)
@@ -69,6 +75,10 @@ class DichotomousModelAverage:
             if prior_class is PriorClass.bayesian_loud
             else 0
         )
+        if hasattr(average, "n_chains"):
+            average.n_chains = n_chains
+        if seed is not None and hasattr(average, "seed"):
+            average.seed = seed
 
         bmdsRes = bmdscore.BMDSMA_results()
         bmdsRes.BMD = np.full(average.nmodels, -9999)
@@ -100,6 +110,8 @@ class DichotomousModelAverage:
         self.analysis = analysis
         self.average = average
         self.result = result
+        self.n_chains = n_chains
+        self.seed = seed
         self.bmdsRes = result.bmdsRes  # use this version; copied on assignment above
 
     def execute(self) -> "DichotomousModelAverageResult":
@@ -135,6 +147,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
     model_parm_dist: list[NumpyFloatArray] = Field(default_factory=list)
     model_p_values: list[float] = Field(default_factory=list)
     model_waics: list[float] = Field(default_factory=list)
+    model_int_factors: list[float] = Field(default_factory=list)
     model_loglikelihoods: list[float] = Field(default_factory=list)
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
@@ -189,6 +202,54 @@ class DichotomousModelAverageResult(ModelAverageResult):
         out[:rows, :] = draws[:rows, :]
         return out
 
+    @staticmethod
+    def _loud_weights(scores: list[float]) -> np.ndarray:
+        scores = np.asarray(scores, dtype=float)
+        valid = np.isfinite(scores) & (scores != BMDS_BLANK_VALUE)
+        weights = np.zeros(scores.size, dtype=float)
+        if not valid.any():
+            return np.full(scores.size, BMDS_BLANK_VALUE, dtype=float)
+        finite_scores = scores[valid]
+        weights[valid] = np.exp(finite_scores - finite_scores.max())
+        weights_sum = weights.sum()
+        if weights_sum <= 0 or not np.isfinite(weights_sum):
+            return np.full(scores.size, BMDS_BLANK_VALUE, dtype=float)
+        return weights / weights_sum
+
+    @classmethod
+    def _loud_posteriors(
+        cls,
+        posteriors: np.ndarray,
+        weight_option: int,
+        waics: list[float],
+        int_factors: list[float],
+    ) -> np.ndarray:
+        valid = (
+            np.isfinite(posteriors)
+            & (posteriors != BMDS_BLANK_VALUE)
+            & (posteriors >= 0)
+            & (posteriors <= 1)
+        )
+        if valid.any() and np.isclose(posteriors[valid].sum(), 1.0):
+            return posteriors
+
+        if weight_option == 1:
+            return cls._loud_weights(waics)
+        if weight_option == 2:
+            return cls._loud_weights(int_factors)
+
+        waic_weights = cls._loud_weights(waics)
+        int_factor_weights = cls._loud_weights(int_factors)
+        usable = [
+            weights
+            for weights in (waic_weights, int_factor_weights)
+            if np.isfinite(weights).any() and (weights != BMDS_BLANK_VALUE).any()
+        ]
+        if not usable:
+            return np.full(posteriors.size, BMDS_BLANK_VALUE, dtype=float)
+        posteriors = np.mean(usable, axis=0)
+        return posteriors / posteriors.sum()
+
     @classmethod
     def from_cpp(cls, analysis: DichotomousModelAverage, model_results) -> Self:
         # only keep positive finite values
@@ -208,6 +269,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
         model_parms: list[np.ndarray] = []
         model_p_values: list[float] = []
         model_waics: list[float] = []
+        model_int_factors: list[float] = []
         model_loglikelihoods: list[float] = []
         if is_loud:
             n_draws = arr.size
@@ -215,6 +277,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
                 loud = result.loudRes
                 model_p_values.append(float(getattr(loud, "pval", BMDS_BLANK_VALUE)))
                 model_waics.append(float(getattr(loud, "waic", BMDS_BLANK_VALUE)))
+                model_int_factors.append(float(getattr(loud, "int_factor", BMDS_BLANK_VALUE)))
                 model_loglikelihoods.append(float(getattr(loud, "ll", BMDS_BLANK_VALUE)))
                 bmd_draws = np.asarray(loud.BMD, dtype=float)
                 n_draw = bmd_draws.size
@@ -233,6 +296,9 @@ class DichotomousModelAverageResult(ModelAverageResult):
                 model_parms.append(cls._resize_draws(parm_draws, n_draws))
 
         if is_loud:
+            posteriors = cls._loud_posteriors(
+                posteriors, analysis.average.weightOption, model_waics, model_int_factors
+            )
             models = model_results
             dr_x = np.asarray(models[0].dataset.dose_linspace(), dtype=float)
             values = []
@@ -274,6 +340,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             model_parm_dist=model_parms,
             model_p_values=model_p_values,
             model_waics=model_waics,
+            model_int_factors=model_int_factors,
             model_loglikelihoods=model_loglikelihoods,
             dr_x=dr_x,
             dr_y=dr_y,
@@ -315,7 +382,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             posterior=posterior,
         )
 
-    def sync_model_result(self, model, index: int) -> None:
+    def sync_model_result(self, model, index: int, cpp_result=None) -> None:
         summary = self.model_summary(index, model.settings.alpha)
         draws = np.asarray(self.model_bmd_dist[index], dtype=float)
         draws = draws[np.isfinite(draws)]
@@ -371,19 +438,27 @@ class DichotomousModelAverageResult(ModelAverageResult):
             bmd_dist=draws,
         )
 
-        n = model.dataset.num_dose_groups
-        gof = DichotomousPgofResult(
-            expected=[BMDS_BLANK_VALUE] * n,
-            residual=[BMDS_BLANK_VALUE] * n,
-            eb_lower=[BMDS_BLANK_VALUE] * n,
-            eb_upper=[BMDS_BLANK_VALUE] * n,
-            test_statistic=BMDS_BLANK_VALUE,
-            p_value=(
+        if cpp_result is not None:
+            gof = DichotomousPgofResult.from_cpp(cpp_result.gof, summary.bmd, model.dataset.doses)
+            gof.p_value = (
                 self.model_p_values[index] if index < len(self.model_p_values) else BMDS_BLANK_VALUE
-            ),
-            roi=BMDS_BLANK_VALUE,
-            df=BMDS_BLANK_VALUE,
-        )
+            )
+        else:
+            n = model.dataset.num_dose_groups
+            gof = DichotomousPgofResult(
+                expected=[BMDS_BLANK_VALUE] * n,
+                residual=[BMDS_BLANK_VALUE] * n,
+                eb_lower=[BMDS_BLANK_VALUE] * n,
+                eb_upper=[BMDS_BLANK_VALUE] * n,
+                test_statistic=BMDS_BLANK_VALUE,
+                p_value=(
+                    self.model_p_values[index]
+                    if index < len(self.model_p_values)
+                    else BMDS_BLANK_VALUE
+                ),
+                roi=BMDS_BLANK_VALUE,
+                df=BMDS_BLANK_VALUE,
+            )
 
         deviance = DichotomousAnalysisOfDeviance(
             names=["Full model", "Fitted model", "Reduced model"],

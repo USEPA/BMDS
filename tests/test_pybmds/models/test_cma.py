@@ -31,6 +31,31 @@ class TestContinuousMa:
         assert structs.analysis.sd == []
         assert structs.analysis.n_group == []
 
+    def test_loud_mcmc_settings_are_staged_for_continuous_ma(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.Power,
+            {
+                "disttype": DistType.normal,
+                "priors": PriorClass.bayesian_loud,
+                "n_chains": 4,
+                "seed": 123,
+            },
+        )
+        session.models[0].prepare_for_loud_model_average()
+        session.add_model_averaging()
+
+        structs = ContinuousModelAverage(
+            session.dataset,
+            session.model_average.models,
+            session.ma_weights,
+            session.weight_option,
+        )
+
+        assert structs.n_chains == 4
+        assert structs.seed == 123
+        assert structs.average.seed == 123
+
     def test_continuous_ma_session(self, cdataset3):
         # check execution and it can be json serialized
         session = pybmds.Session(dataset=cdataset3)
