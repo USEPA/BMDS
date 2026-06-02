@@ -5231,6 +5231,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     // TODO check to make sure we should use mean instead of median
     Eigen::VectorXd retParms = colwise_median(loudOut.parms);
 
+    // need to rescale for BMDS form
+    scale_dichoParms(pyMA->models[i], retParms);
+
     // res.nparms = parmVec.size();
     std::vector<double> retParms2(retParms.data(), retParms.data() + retParms.size());
     std::copy(retParms2.begin(), retParms2.end(), res.parms);
@@ -9814,6 +9817,10 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
   const int largeColWidth = 14;
   std::stringstream ss;
 
+  bool isLOUD = false;
+  if (pyRes->bmd_dist.size() != 2 * pyRes->dist_numE) {
+    isLOUD = true;
+  }
   ss << std::endl << "Struct: python_dichotomousMA_result" << std::endl;
 
   ss << "nmodels:" << pyRes->nmodels << std::endl;
@@ -9825,15 +9832,28 @@ std::string printBmdsStruct(struct python_dichotomousMA_result *pyRes, bool prin
 
   ss << printBmdsStruct(&pyRes->bmdsRes, false);
 
-  // bmd_dist
-  ss << std::endl << "bmd_dist" << std::endl;
-  printElement(ss, "Percentile", largeColWidth);
-  printElement(ss, "Value", largeColWidth);
-  ss << std::endl;
-  for (int i = 0; i < pyRes->dist_numE; i++) {
-    printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
-    printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+  if (isLOUD) {
+    ss << std::endl << "post_probs" << std::endl;
+    for (int i = 0; i < pyRes->post_probs.size(); i++) {
+      printElement(ss, pyRes->post_probs[i], largeColWidth);
+      ss << std::endl;
+    }
+    ss << std::endl << "bmd_dist" << std::endl;
+    for (int i = 0; i < pyRes->bmd_dist.size(); i++) {
+      printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+      ss << std::endl;
+    }
+  } else {
+    // bmd_dist
+    ss << std::endl << "bmd_dist" << std::endl;
+    printElement(ss, "Percentile", largeColWidth);
+    printElement(ss, "Value", largeColWidth);
     ss << std::endl;
+    for (int i = 0; i < pyRes->dist_numE; i++) {
+      printElement(ss, pyRes->bmd_dist[i + pyRes->dist_numE], largeColWidth);
+      printElement(ss, pyRes->bmd_dist[i], largeColWidth);
+      ss << std::endl;
+    }
   }
 
   // ind model res
