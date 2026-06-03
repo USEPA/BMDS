@@ -5209,8 +5209,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].loudRes = loudOut;
     pyRes->models[i].nparms = loudOut.parms.cols();
     pyRes->models[i].model = pyMA->models[i];
-    pyRes->models[i].bmdsRes.validResult = true;
     pyRes->models[i].dist_numE = 0;
+
+    Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
+    if (nan_count <= loudOut.BMD.size() / 2) {
+      pyRes->models[i].bmdsRes.validResult = true;
+    }
 
     // GOF calcs
     anal.model = pyMA->models[i];
@@ -5796,7 +5800,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     }
     fit_Loud(&loudIn, &loudOut);
     pyRes->models[i].loudRes = loudOut;
-    pyRes->models[i].bmdsRes.validResult = true;
+    Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
+    if (nan_count <= loudOut.BMD.size() / 2) {
+      pyRes->models[i].bmdsRes.validResult = true;
+    }
 
     // convert python_continuous_analysis to continuous_analysis
 
@@ -9874,6 +9881,10 @@ std::string printBmdsStruct(struct python_continuousMA_analysis *pyMA, bool prin
 
   ss << std::endl << "Struct: python_continuousMA_analysis" << std::endl;
   ss << "nmodels:" << pyMA->nmodels << std::endl;
+
+  for (int i = 0; i < pyRes->post_probs.size(); i++) {
+    ss << "model:" << i << ", post_probs:" << pyRes->post_probs[i] << std::endl;
+  }
 
   bool printNparms = false;
   if (pyMA->nparms.size() > 0) {
