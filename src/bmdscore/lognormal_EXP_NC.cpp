@@ -615,6 +615,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_absolute(
                       // search for the BMD return INFINITY.
   }
   double test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+  niter = 0;
   while (fabs(test) > 1e-7) {  // zero in on the BMD
     if (test > 0) {
       max = mid;
@@ -626,6 +627,11 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_absolute(
     t_mean = mean(theta, d);
     t_mean = exp(t_mean.array());
     test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+    niter++;
+    if (niter > 100) {
+      // failed and could not find a BMD
+      return std::nan("-1");
+    }
   }
   return mid;
 }
