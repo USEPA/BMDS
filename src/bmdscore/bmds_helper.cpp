@@ -5197,6 +5197,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   }
 
   struct fitResult loudOut;
+  std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
   for (int i = 0; i < numModels; i++) {
     Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
@@ -5214,6 +5215,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= loudOut.BMD.size() / 2) {
       pyRes->models[i].bmdsRes.validResult = true;
+      isValid[i] = true;
     }
 
     // GOF calcs
@@ -5270,7 +5272,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   }
 
   calcLoudPosteriors(
-      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
+      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption, isValid
   );
 
   int iter = pyMA->pyDA.samples;
@@ -5360,13 +5362,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // }
 }
 
-void calcLoudWeights(std::vector<double> &weights) {
+void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid) {
   double max_weight = *std::max_element(weights.begin(), weights.end());
 
   double tmpExpSum = 0;
   for (int i = 0; i < weights.size(); i++) {
     weights[i] -= max_weight;
     weights[i] = exp(weights[i]);
+    if (!isValid[i]) {
+      std::cout << "i:" << i << " is not valid" << std::endl;
+      weights[i] = 0.0;
+    }
     tmpExpSum += weights[i];
   }
   for (int i = 0; i < weights.size(); i++) {
@@ -5376,19 +5382,19 @@ void calcLoudWeights(std::vector<double> &weights) {
 
 void calcLoudPosteriors(
     std::vector<double> &waic, std::vector<double> &int_factor,
-    std::vector<double> &posterior_probs, int weightOption
+    std::vector<double> &posterior_probs, int weightOption, std::vector<bool> &isValid
 ) {
   int nmodels;
   // waic calcs
   if (weightOption != 2) {
     nmodels = waic.size();
-    calcLoudWeights(waic);
+    calcLoudWeights(waic, isValid);
   }
 
   // int_factor calcs
   if (weightOption != 1) {
     nmodels = int_factor.size();
-    calcLoudWeights(int_factor);
+    calcLoudWeights(int_factor, isValid);
   }
 
   switch (weightOption) {
@@ -5664,6 +5670,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   int model_typ;
   fitInput loudIn;
   fitResult loudOut;
+  std::vector<bool> isValid(pyMA->models.size(), false);
   for (int i = 0; i < pyMA->models.size(); i++) {
     pyRes->models[i].bmdsRes.validResult = false;
     pyRes->models[i].model = pyMA->models[i];
@@ -5803,6 +5810,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= loudOut.BMD.size() / 2) {
       pyRes->models[i].bmdsRes.validResult = true;
+      isValid[i] = true;
     }
 
     // convert python_continuous_analysis to continuous_analysis
@@ -5894,7 +5902,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
   }
   calcLoudPosteriors(
-      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption
+      posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption, isValid
   );
 
   // unscale bmd and parms, etc

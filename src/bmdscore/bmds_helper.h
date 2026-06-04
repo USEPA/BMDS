@@ -882,11 +882,11 @@ double getQVals(
     int datatype
 );
 
-void calcLoudWeights(std::vector<double> &weights);
+void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid);
 
 void calcLoudPosteriors(
     std::vector<double> &waic, std::vector<double> &int_factor,
-    std::vector<double> &posterior_probs, int weightOption
+    std::vector<double> &posterior_probs, int weightOption, std::vector<bool> &isValid
 );
 
 struct fitInput createFitInput(
