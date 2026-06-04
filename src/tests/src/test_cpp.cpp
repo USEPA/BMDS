@@ -52,8 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  //  runPythonContLoud();
-  runPythonDichoLoud();
+  runPythonContLoud();
+  //  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2427,8 +2427,8 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  std::vector<int> models = {8};
-  // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
+  // std::vector<int> models = {3};
+  std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
   // data_M3
   double D[] = {0.0, 0.25, 0.5, 1.0};
@@ -2563,8 +2563,8 @@ void runPythonContLoud() {
   bool isIncreasing;
 
   // TODO make sure all user settings are passed and used correctly
-  enum distribution dist = normal_ncv;  // normal, normal_ncv, log_normal
-  bool detectAdvDir = true;             // if false then need to set isIncreasing
+  // enum distribution dist = normal;  // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;  // if false then need to set isIncreasing
   // bool countAllParmsOnBoundary = true;
 
   // int degree = 2;  // for polynomial only
@@ -2573,10 +2573,10 @@ void runPythonContLoud() {
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
                       // hybrid_added   from src/include/cmodeldefs.h
-  int iter = 5;
-  int burnin = 2;
+  int iter = 50;
+  int burnin = 20;
 
-  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int priorCols = 5;
 
   // define models to run
@@ -2598,9 +2598,13 @@ void runPythonContLoud() {
   // testing
   // std::vector<int> models = {8, 8};
   // std::vector<int> dists = {1, 2};
-  std::vector<int> models = {3};
-  std::vector<int> dists = {2};
+  // std::vector<int> models = {5};
+  // std::vector<int> dists = {3};
   // kitchen sink
+  std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+                             21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+                            1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
   // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
   //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
   // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
@@ -2611,7 +2615,8 @@ void runPythonContLoud() {
   // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
 
   // summary data
-  // double D[] = {0, 0.125, 0.25, 0.5, 1.0};
+  //// double D[] = {0, 0.125, 0.25, 0.5, 1.0};
+  // double D[] = {0, 125, 250, 500, 1000};
   // double Y[] = {10.61764, 11.54771, 12.20492, 14.73715, 15.85227};
   // double N[] = {20, 20, 20, 19, 19};
   // double SD[] = {0.8937421, 1.0580638, 1.3528275, 1.0778448, 0.8350199};
@@ -2619,36 +2624,45 @@ void runPythonContLoud() {
   // int datatype = loud_datatype::l_summary;
   // isIncreasing = true;
 
-  // individual data
-  double D[] = {0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-                0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.125, 0.125,
-                0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125,
-                0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.250, 0.250, 0.250, 0.250,
-                0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250,
-                0.250, 0.250, 0.250, 0.250, 0.250, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
-                0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
-                0.500, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
-                1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000};
+  // Mary debug data
+  double D[] = {0, 25, 50, 75, 100};
+  double Y[] = {6, 8, 13, 25, 30};
+  double N[] = {20, 20, 20, 20, 20};
+  double SD[] = {4, 4.3, 3.8, 4.4, 3.7};
+  bool suffStat = true;
+  int datatype = loud_datatype::l_summary;
+  isIncreasing = true;
 
-  double Y[] = {10.859490, 10.990850, 9.975845,  10.167415, 11.600947, 8.908355,  12.766907,
-                9.793314,  10.357511, 10.556906, 11.129513, 10.706564, 9.744599,  10.219390,
-                9.633552,  10.696789, 12.251775, 10.436382, 11.082718, 10.474072, 11.769161,
-                11.588864, 10.948461, 12.033503, 10.584272, 10.957064, 12.129170, 12.589572,
-                12.923549, 11.165075, 9.203102,  11.702857, 11.934181, 11.875876, 10.688606,
-                12.022749, 11.276965, 10.810963, 14.266820, 10.483300, 11.451485, 12.534117,
-                12.455834, 13.742919, 13.007306, 12.550801, 10.400657, 12.871480, 13.413661,
-                9.335636,  10.929786, 10.628343, 12.961808, 12.236850, 14.812280, 11.015145,
-                13.553928, 10.716097, 12.704578, 12.775769, 14.446332, 14.805081, 17.173102,
-                14.479885, 14.871077, 13.980834, 12.882616, 15.331523, 14.935816, 14.036283,
-                14.825733, 14.096924, 15.580711, 15.202018, 14.187712, 14.557464, 13.124163,
-                17.085746, 14.402763, 16.220990, 15.640171, 17.003492, 15.824510, 15.376245,
-                15.997810, 15.718334, 16.092409, 14.568786, 15.414712, 15.568454, 14.780717,
-                14.737647, 17.006861, 17.090000, 17.079688, 15.623780, 14.735885, 16.712593};
-  double N[1];
-  double SD[1];
-  bool suffStat = false;
-  int datatype = loud_datatype::l_individual;
-  //  bool isIncreasing = true;
+  // individual data
+  // double D[] = {0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+  //              0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.125, 0.125,
+  //              0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125,
+  //              0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.250, 0.250, 0.250, 0.250,
+  //              0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250,
+  //              0.250, 0.250, 0.250, 0.250, 0.250, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+  //              0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+  //              0.500, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+  //              1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000};
+
+  // double Y[] = {10.859490, 10.990850, 9.975845,  10.167415, 11.600947, 8.908355,  12.766907,
+  //               9.793314,  10.357511, 10.556906, 11.129513, 10.706564, 9.744599,  10.219390,
+  //               9.633552,  10.696789, 12.251775, 10.436382, 11.082718, 10.474072, 11.769161,
+  //               11.588864, 10.948461, 12.033503, 10.584272, 10.957064, 12.129170, 12.589572,
+  //               12.923549, 11.165075, 9.203102,  11.702857, 11.934181, 11.875876, 10.688606,
+  //               12.022749, 11.276965, 10.810963, 14.266820, 10.483300, 11.451485, 12.534117,
+  //               12.455834, 13.742919, 13.007306, 12.550801, 10.400657, 12.871480, 13.413661,
+  //               9.335636,  10.929786, 10.628343, 12.961808, 12.236850, 14.812280, 11.015145,
+  //               13.553928, 10.716097, 12.704578, 12.775769, 14.446332, 14.805081, 17.173102,
+  //               14.479885, 14.871077, 13.980834, 12.882616, 15.331523, 14.935816, 14.036283,
+  //               14.825733, 14.096924, 15.580711, 15.202018, 14.187712, 14.557464, 13.124163,
+  //               17.085746, 14.402763, 16.220990, 15.640171, 17.003492, 15.824510, 15.376245,
+  //               15.997810, 15.718334, 16.092409, 14.568786, 15.414712, 15.568454, 14.780717,
+  //               14.737647, 17.006861, 17.090000, 17.079688, 15.623780, 14.735885, 16.712593};
+  // double N[1];
+  // double SD[1];
+  // bool suffStat = false;
+  // int datatype = loud_datatype::l_individual;
+  // isIncreasing = true;
 
   int nmodels = models.size();
   int numDataRows = sizeof(D) / sizeof(D[0]);
@@ -2736,6 +2750,11 @@ void runPythonContLoud() {
   //    res[i].model = models[i];
   //    res[i].dist = dists[i];
   //  }
+  std::vector<std::vector<double>> parms;
+  for (int i = 0; i < nmodels; i++) {
+    std::vector<double> newParms;
+    res[i].parms = newParms;
+  }
 
   struct BMDSMA_results bmdsRes;
   bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
@@ -2755,7 +2774,9 @@ void runPythonContLoud() {
   ma_info.priors = createDefaultPriors(&ma_info);
   pythonBMDSLoud(&ma_info, &ma_res);
 
+  std::cout << "calling print" << std::endl;
   printBmdsStruct(&ma_res);
+  std::cout << "after print" << std::endl;
 }
 
 void runOldContAnalysis() {
@@ -3862,11 +3883,11 @@ void runPythonContAnalysis() {
   // USER INPUT
   //////////////////////////////
 
-  enum cont_model model = polynomial;  // hill, exp_3, exp_5, power, funl, polynomial
-  int modelType = 1;                   // 1 = frequentist, 2 = bayesian
-  bool restricted = true;              // only used for frequentist models
-  enum distribution dist = normal;     // normal, normal_ncv, log_normal
-  bool detectAdvDir = true;            // if false then need to set isIncreasing
+  enum cont_model model = power;    // hill, exp_3, exp_5, power, funl, polynomial
+  int modelType = 1;                // 1 = frequentist, 2 = bayesian
+  bool restricted = true;           // only used for frequentist models
+  enum distribution dist = normal;  // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;         // if false then need to set isIncreasing
   bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
@@ -3890,13 +3911,14 @@ void runPythonContAnalysis() {
   // isIncreasing = false;
 
   // continuous2.dax
-  // double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
-  //               30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
-  // double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
-  //               50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
-  // double N[1];
-  // double SD[1];
-  // isIncreasing = true;
+  suffStat = false;
+  double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
+                30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
+  double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
+                50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
+  double N[1];
+  double SD[1];
+  isIncreasing = true;
 
   // continuous3.dax
   //  double D[] = {0,35,105,316,625};
@@ -4153,10 +4175,10 @@ void runPythonContAnalysis() {
   //  double N[] = {20, 20, 20};
   //  double SD[] = {2.23, 1.47, 1.56};
 
-  double D[] = {0, 50, 100, 150};
-  double Y[] = {10, 15, 20, 25};
-  double N[] = {10, 10, 10, 10};
-  double SD[] = {2, 3, 4, 5};
+  // double D[] = {0, 50, 100, 150};
+  // double Y[] = {10, 15, 20, 25};
+  // double N[] = {10, 10, 10, 10};
+  // double SD[] = {2, 3, 4, 5};
 
   /////////////////////////////////////////////////
   // END USER INPUT
