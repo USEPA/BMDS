@@ -51,6 +51,25 @@ class TestBmdModelDichotomous:
         text = model.text()
         assert "Gamma" in text
         assert "Goodness of Fit:" in text
+        assert "Analysis of Deviance:" in text
+
+    def test_standalone_loud(self, ddataset2):
+        model = dichotomous.Logistic(
+            dataset=ddataset2,
+            settings={"priors": PriorClass.bayesian_loud, "samples": 500, "burnin": 50},
+        )
+
+        result = model.execute()
+
+        assert result is model.results
+        assert model.has_results is True
+        assert model.session is None
+        assert result.bmd > 0
+        assert "Model has not successfully executed" not in model.text()
+        assert "Analysis of Deviance:" not in model.text()
+        assert "Analysis of Deviance:" not in result.text(model.dataset, model.settings)
+        probabilities = model.dr_curve(np.asarray(model.dataset.doses), result.parameters.values)
+        assert result.gof.expected == pytest.approx(probabilities * np.asarray(model.dataset.ns))
 
     def test_risk_type(self, ddataset2):
         # extra (default)

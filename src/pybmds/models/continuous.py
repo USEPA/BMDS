@@ -128,6 +128,11 @@ class BmdModelContinuous(BmdModel):
         )
 
     def execute(self) -> ContinuousResult:
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and (
+            self.session is None or self.session.model_average is None
+        ):
+            return self._execute_standalone_loud()
+
         inputs = self._build_inputs()
         structs = inputs.to_cpp()
         self.structs = structs

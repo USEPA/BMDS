@@ -802,10 +802,13 @@ class Session:
         else:
             color_cycle = cycle(["#ababab"])
             line_cycle = cycle(["solid"])
-        for i, model in enumerate(self.models):
+        plotted_models = 0
+        for model in self.models:
+            if not model.has_results:
+                continue
             if colorize:
                 label = model.name()
-            elif i == 0:
+            elif plotted_models == 0:
                 label = "Individual Model"
             else:
                 label = None
@@ -818,6 +821,7 @@ class Session:
                 zorder=100,
                 lw=2,
             )
+            plotted_models += 1
         if has_ma:
             ma = self.model_average
             ax.plot(

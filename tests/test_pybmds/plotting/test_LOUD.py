@@ -1,7 +1,6 @@
 import warnings
 from types import SimpleNamespace
 
-import arviz as az
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -25,6 +24,10 @@ from pybmds.plotting.LOUD import (
     get_model_average_figures,
     model_average_to_inferencedata,
 )
+
+
+def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
+    return xr.DataTree.from_dict(groups)
 
 
 class TestLOUD:
@@ -62,7 +65,7 @@ class TestLOUD:
             "BMD": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
             "a": (("chain", "draw", "model"), np.arange(6, dtype=float).reshape(1, 3, 2)),
         }
-        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
         color_map = _model_color_map(model_names)
 
         fig = _parameter_group_trace_figure(
@@ -114,7 +117,7 @@ class TestLOUD:
                 np.arange(20, 26, dtype=float).reshape(1, 3, 2),
             ),
         }
-        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
 
         records = _parameter_group_records(idata, session, hdi_prob=0.9)
 
@@ -158,7 +161,7 @@ class TestLOUD:
                 np.arange(20, 26, dtype=float).reshape(1, 3, 2),
             ),
         }
-        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
 
         records = _parameter_group_records(idata, session, hdi_prob=0.9, compressed=False)
 
@@ -169,7 +172,7 @@ class TestLOUD:
             plt.close(record["trace_figure"])
 
     def test_parameter_group_figures_do_not_trigger_pyplot_open_warning(self, recwarn):
-        idata = az.InferenceData(
+        idata = _data_tree(
             posterior=xr.Dataset(
                 {
                     "BMD": (
@@ -249,6 +252,7 @@ class TestLOUD:
 
         idata = model_average_to_inferencedata(session, n_chains=1)
 
+        assert isinstance(idata, xr.DataTree)
         assert set(["BMD", "MA_BMD", "model_weights", "n_param"]).issubset(
             idata.posterior.data_vars
         )
@@ -363,7 +367,7 @@ class TestLOUD:
             ),
         }
         coords = {"chain": [0], "draw": np.arange(3), "model": ["A", "B"]}
-        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
 
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", RuntimeWarning)
@@ -517,7 +521,7 @@ class TestLOUD:
                 index=expected_index,
             )
 
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
+        monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", fake_summary)
 
         actual = _multi_summary_table(idata=None, var_names=["MA_BMD"], hdi_prob=0.94)
 
@@ -541,7 +545,7 @@ class TestLOUD:
                 index=pd.Index([var_names[0]], name="var_name"),
             )
 
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
+        monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", fake_summary)
 
         actual = _multi_summary_table(
             idata=None, var_names=["BMD", "MA_BMD", "alpha"], hdi_prob=0.9
@@ -563,7 +567,7 @@ class TestLOUD:
             "MA_BMD": (("chain", "draw"), np.arange(4, dtype=float).reshape(1, 4)),
         }
         coords = {"chain": [0], "draw": np.arange(4), "model": ["A", "B", "C"]}
-        idata = az.InferenceData(posterior=xr.Dataset(posterior, coords=coords))
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
 
         actual = _multi_summary_table(idata=idata, var_names=["BMD", "MA_BMD"], hdi_prob=0.9)
 
@@ -645,8 +649,8 @@ class TestLOUD:
             ax.plot([0, 1], [0, 1], color=color)
             return ax
 
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
-        monkeypatch.setattr("pybmds.plotting.LOUD.az.plot_dist", fake_plot_dist)
+        monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", fake_summary)
+        monkeypatch.setattr("pybmds.plotting.LOUD._plot_dist", fake_plot_dist)
 
         figures = get_model_average_figures(session, n_chains=1)
 

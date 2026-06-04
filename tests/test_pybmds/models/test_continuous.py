@@ -125,6 +125,30 @@ class TestBmdModelContinuous:
         text = model.text()
         assert "Hill" in text
         assert "Goodness of Fit:" in text
+        assert "Likelihoods:" in text
+        assert "Tests of Mean and Variance Fits:" in text
+
+    def test_standalone_loud(self, cdataset2):
+        model = continuous.Power(
+            dataset=cdataset2,
+            settings={
+                "disttype": DistType.normal,
+                "priors": PriorClass.bayesian_loud,
+                "samples": 500,
+                "burnin": 50,
+            },
+        )
+
+        result = model.execute()
+
+        assert result is model.results
+        assert model.has_results is True
+        assert model.session is None
+        assert result.bmd > 0
+        assert "Model has not successfully executed" not in model.text()
+        assert "Likelihoods:" not in model.text()
+        assert "Tests of Mean and Variance Fits:" not in model.text()
+        assert "Likelihoods:" not in result.text(model.dataset, model.settings)
 
     def test_default_prior_class(self, cdataset2):
         for Model, prior_class in [

@@ -5233,6 +5233,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
     res.max = pyRes->models[i].loudRes.ll;
 
+    // LOUD parameter estimates currently correspond to the scaled dose domain.
+    // convertFromPythonDichoAnalysis restores the original doses, so reset them
+    // before calculating model-specific goodness of fit.
+    for (int j = 0; j < D.rows(); j++) {
+      anal.doses[j] = D(j);
+    }
+
     // set res.parms to col means for individual model parms
     // TODO check to make sure we should use mean instead of median
     Eigen::VectorXd retParms = colwise_median(loudOut.parms);

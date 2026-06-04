@@ -73,7 +73,7 @@ class ContinuousModelSettings(BaseModel):
     disttype: constants.DistType = constants.DistType.normal
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
     samples: Annotated[int, Field(ge=0, le=100000)] = 50000
-    burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
+    burnin: Annotated[int, Field(ge=5, le=20000)] = 5000
     n_chains: Annotated[int, Field(ge=1, le=4)] = 1
     seed: Annotated[int, Field(ge=0, le=2_147_483_647)] = 0
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
@@ -750,6 +750,20 @@ class ContinuousResult(BaseModel):
         return pretty_table(data, "")
 
     def text(self, dataset: ContinuousDatasets, settings: ContinuousModelSettings) -> str:
+        if settings.priors.prior_class is PriorClass.bayesian_loud:
+            return multi_lstrip(
+                f"""
+            Modeling Summary:
+            {self.tbl()}
+
+            Model Parameters:
+            {self.parameters.tbl()}
+
+            Goodness of Fit:
+            {self.gof.tbl(disttype=settings.disttype)}
+            """
+            )
+
         return multi_lstrip(
             f"""
         Modeling Summary:

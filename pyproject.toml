@@ -27,7 +27,9 @@ dependencies = [
   "scipy",
   "tabulate",
   "tqdm",
-  "arviz<1",
+  "xarray>=2024.11",
+  "arviz>=0.22,<1; python_version < '3.12'",
+  "arviz>=1,<2; python_version >= '3.12'",
 ]
 
 [project.urls]
@@ -87,7 +89,7 @@ addopts = "--mpl-baseline-path=tests/test_pybmds/data/mpl"
 python_files = ["test_*.py"]
 
 [tool.ruff]
-exclude = ["docs"]
+exclude = ["docs", ".venv", "build", "dist"]
 line-length = 100
 lint.select = ["F", "E", "W", "I", "UP", "S", "B", "T20", "ERA", "NPY", "RUF", "PTH"]
 lint.ignore = ["E501"]
@@ -140,6 +142,8 @@ help = "Check Python formatting issues"
 sequence = [
   {cmd = "ruff format . --check"},
   {cmd = "ruff check . --fix --show-fixes"},
+  {cmd = "ruff format src test --check"},
+  {cmd = "ruff check src tests"},
 ]
 
 [tool.poe.tasks.build]

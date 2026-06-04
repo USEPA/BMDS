@@ -446,7 +446,7 @@ class TestSession:
         assert "Hill (CV)" in [model.name() for model in session.models]
         assert "Hill (CV)" not in [model.name() for model in session.model_average.models]
 
-    def test_to_docx_all_models_skips_cdf_for_unsuccessful_models(self, cdataset3):
+    def test_to_docx_all_models_skips_cdf_for_unsuccessful_models(self, cdataset3, monkeypatch):
         session = pybmds.Session(dataset=cdataset3)
         session.add_default_bayesian_models(
             include_extended=True,
@@ -455,7 +455,13 @@ class TestSession:
         )
         session.execute()
 
-        assert any(not model.has_results for model in session.models)
+        unsuccessful_model = session.models[-1]
+        unsuccessful_model.results = None
+        monkeypatch.setattr(
+            unsuccessful_model,
+            "cdf_plot",
+            lambda: pytest.fail("CDF plot should not be generated for an unsuccessful model"),
+        )
 
         docx = session.to_docx(citation=False, all_models=True, bmd_cdf_table=True)
 

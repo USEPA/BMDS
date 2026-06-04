@@ -56,7 +56,7 @@ class DichotomousModelSettings(BaseModel):
     bmr_type: DichotomousRiskType = DichotomousRiskType.ExtraRisk
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # multistage only
     samples: Annotated[int, Field(ge=0, le=100000)] = 50000
-    burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
+    burnin: Annotated[int, Field(ge=5, le=20000)] = 5000
     n_chains: Annotated[int, Field(ge=1, le=4)] = 1
     seed: Annotated[int, Field(ge=0, le=2_147_483_647)] = 0
     priors: PriorClass | ModelPriors | None = None  # if None; default used
@@ -467,6 +467,20 @@ class DichotomousResult(BaseModel):
         )
 
     def text(self, dataset: DichotomousDataset, settings: DichotomousModelSettings) -> str:
+        if settings.priors.prior_class is PriorClass.bayesian_loud:
+            return multi_lstrip(
+                f"""
+            Modeling Summary:
+            {self.tbl()}
+
+            Model Parameters:
+            {self.parameters.tbl()}
+
+            Goodness of Fit:
+            {self.gof.tbl(dataset)}
+            """
+            )
+
         return multi_lstrip(
             f"""
         Modeling Summary:

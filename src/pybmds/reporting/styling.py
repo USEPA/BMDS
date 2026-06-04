@@ -534,9 +534,19 @@ def write_bayesian_table(report: Report, session: Session):
 
     for idx, model in enumerate(session.models, start=1):
         prior, posterior = ma_weight_lookup.get(id(model), ("-", "-"))
-        bmdl = model.results.bmdl
-        bmd = model.results.bmd
-        bmdu = model.results.bmdu
+        results = model.results
+
+        write_cell(tbl.cell(idx, 0), model.name(), body)
+        write_cell(tbl.cell(idx, 1), prior, body)
+        write_cell(tbl.cell(idx, 2), posterior, body)
+        if not getattr(model, "has_results", results is not None):
+            for col_idx in range(3, n_cols):
+                write_cell(tbl.cell(idx, col_idx), "-", body)
+            continue
+
+        bmdl = results.bmdl
+        bmd = results.bmd
+        bmdu = results.bmdu
 
         if session.model_average is not None and any(
             value in (BMDS_BLANK_VALUE, -9999.0) or not np.isfinite(value)
@@ -550,19 +560,16 @@ def write_bayesian_table(report: Report, session: Session):
                 prior = ma_summary.prior
                 posterior = ma_summary.posterior
 
-        write_cell(tbl.cell(idx, 0), model.name(), body)
-        write_cell(tbl.cell(idx, 1), prior, body)
-        write_cell(tbl.cell(idx, 2), posterior, body)
         write_cell(tbl.cell(idx, 3), bmdl, body)
         write_cell(tbl.cell(idx, 4), bmd, body)
         write_cell(tbl.cell(idx, 5), bmdu, body)
         if is_loud:
-            write_cell(tbl.cell(idx, 6), _residual_at_control(model.results.gof), body)
-            write_cell(tbl.cell(idx, 7), model.results.gof.roi, body)
+            write_cell(tbl.cell(idx, 6), _residual_at_control(results.gof), body)
+            write_cell(tbl.cell(idx, 7), results.gof.roi, body)
         else:
-            write_cell(tbl.cell(idx, 6), model.results.fit.bic_equiv, body)
-            write_cell(tbl.cell(idx, 7), _residual_at_control(model.results.gof), body)
-            write_cell(tbl.cell(idx, 8), model.results.gof.roi, body)
+            write_cell(tbl.cell(idx, 6), results.fit.bic_equiv, body)
+            write_cell(tbl.cell(idx, 7), _residual_at_control(results.gof), body)
+            write_cell(tbl.cell(idx, 8), results.gof.roi, body)
 
     if ma:
         idx = len(tbl.rows)

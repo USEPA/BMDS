@@ -123,6 +123,24 @@ class BmdModel(abc.ABC):
     def execute_job(self):
         self.execute()
 
+    def _execute_standalone_loud(self) -> BaseModel:
+        """Execute a LOUD model through an internal one-model averaging session."""
+        from ..session import Session
+
+        original_session = self.session
+        session = Session(dataset=self.dataset)
+        session.models = [self]
+        self.session = session
+        try:
+            session.add_model_averaging()
+            session.execute()
+        finally:
+            self.session = original_session
+
+        if self.results is None:  # pragma: no cover
+            raise RuntimeError("Standalone LOUD execution did not return model results.")
+        return self.results
+
     @abc.abstractmethod
     def serialize(self) -> BaseModel: ...
 

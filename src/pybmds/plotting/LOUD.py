@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 
 import arviz as az
@@ -9,10 +10,78 @@ import pandas as pd
 import xarray as xr
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from scipy.stats import gaussian_kde
 
 from ..constants import DistType
 
-az._log.disabled = True
+if hasattr(az, "_log"):
+    az._log.disabled = True
+
+_ARVIZ_USES_DATATREE = "ci_prob" in inspect.signature(az.summary).parameters
+
+
+def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
+    """Build an ArviZ-compatible DataTree from xarray datasets."""
+    return xr.DataTree.from_dict(groups)
+
+
+def _arviz_hdi(draws: np.ndarray, hdi_prob: float) -> np.ndarray:
+    """Call either the ArviZ 0.x or 1.x HDI API."""
+    if _ARVIZ_USES_DATATREE:
+        return np.asarray(az.hdi(draws, prob=hdi_prob), dtype=float)
+    return np.asarray(az.hdi(draws, hdi_prob=hdi_prob), dtype=float)
+
+
+def _arviz_summary(
+    data: xr.DataTree | None,
+    var_names: list[str],
+    hdi_prob: float,
+    stat_focus: str,
+) -> pd.DataFrame:
+    """Call either the ArviZ 0.x or 1.x summary API."""
+    if not _ARVIZ_USES_DATATREE:
+        legacy_data = (
+            None
+            if data is None
+            else az.InferenceData(
+                **{name: node.to_dataset() for name, node in data.children.items()}
+            )
+        )
+        return az.summary(
+            legacy_data,
+            var_names=var_names,
+            hdi_prob=hdi_prob,
+            stat_focus=stat_focus,
+        )
+
+    kind = "all_median" if stat_focus == "median" else "all"
+    return az.summary(
+        data,
+        var_names=var_names,
+        ci_prob=hdi_prob,
+        ci_kind="eti",
+        kind=kind,
+        round_to="none",
+    )
+
+
+def _plot_dist(
+    draws: np.ndarray,
+    ax: plt.Axes,
+    color: str | tuple,
+    linewidth: float = 1.5,
+) -> plt.Axes:
+    """Plot a one-dimensional density without relying on ArviZ's plotting API."""
+    draws = np.asarray(draws, dtype=float)
+    draws = draws[np.isfinite(draws)]
+    if draws.size < 2 or np.unique(draws).size < 2:
+        ax.hist(draws, density=True, color=color, alpha=0.35)
+        return ax
+
+    density = gaussian_kde(draws)
+    x = np.linspace(draws.min(), draws.max(), 200)
+    ax.plot(x, density(x), color=color, linewidth=linewidth)
+    return ax
 
 
 def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
@@ -104,10 +173,10 @@ def model_average_to_inferencedata(
     session,
     n_chains: int = 1,
     path: str | Path | None = None,
-) -> az.InferenceData:
+) -> xr.DataTree:
     """
-    Convert a pybmds session with continuous model averaging results into an
-    ArviZ InferenceData object.
+    Convert a pybmds session with model averaging results into an
+    ArviZ-compatible xarray DataTree.
 
     Posterior group:
         - one variable per pybmds parameter name as returned by model results
@@ -226,7 +295,7 @@ def model_average_to_inferencedata(
 
     observed_data = _build_observed_data(session.dataset)
 
-    idata = az.InferenceData(
+    idata = _data_tree(
         posterior=model_coord_posterior,
         observed_data=observed_data,
     )
@@ -247,7 +316,7 @@ def _figure_from_axes(axes):
     return ax.figure
 
 
-def _ma_bmd_quantiles(idata: az.InferenceData, alpha: float) -> dict[str, float]:
+def _ma_bmd_quantiles(idata: xr.DataTree, alpha: float) -> dict[str, float]:
     ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
     ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
     return {
@@ -257,10 +326,10 @@ def _ma_bmd_quantiles(idata: az.InferenceData, alpha: float) -> dict[str, float]
     }
 
 
-def _ma_bmd_hdi(idata: az.InferenceData, hdi_prob: float) -> dict[str, float]:
+def _ma_bmd_hdi(idata: xr.DataTree, hdi_prob: float) -> dict[str, float]:
     ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
     ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
-    lower, upper = np.asarray(az.hdi(ma_bmd, hdi_prob=hdi_prob), dtype=float)
+    lower, upper = _arviz_hdi(ma_bmd, hdi_prob)
     return {
         "lower": float(lower),
         "median": float(np.nanquantile(ma_bmd, 0.5)),
@@ -269,7 +338,7 @@ def _ma_bmd_hdi(idata: az.InferenceData, hdi_prob: float) -> dict[str, float]:
 
 
 def _ma_bmd_posterior_figure(
-    idata: az.InferenceData,
+    idata: xr.DataTree,
     stats: dict[str, float],
 ) -> plt.Figure:
     ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
@@ -277,7 +346,7 @@ def _ma_bmd_posterior_figure(
 
     fig, ax = plt.subplots(figsize=(8, 5))
     if ma_draws.size > 0:
-        az.plot_dist(ma_draws, ax=ax, color="black", plot_kwargs={"linewidth": 2.5})
+        _plot_dist(ma_draws, ax=ax, color="black", linewidth=2.5)
 
     ax.axvline(
         stats["lower"],
@@ -330,7 +399,7 @@ def _ma_bmd_posterior_figure(
     return fig
 
 
-def _bmd_summary_table(idata: az.InferenceData, alpha: float) -> pd.DataFrame:
+def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     records: list[dict[str, float | str]] = []
     model_names = list(idata.posterior.coords["model"].values)
     bmd = np.asarray(idata.posterior["BMD"].values, dtype=float)
@@ -415,21 +484,11 @@ def _summary_from_draws(
         {var_name: (("chain", "draw"), draws.reshape(1, draws.size))},
         coords={"chain": [0], "draw": np.arange(draws.size)},
     )
-    idata = az.InferenceData(posterior=dataset)
+    idata = _data_tree(posterior=dataset)
 
     try:
-        median_summary = az.summary(
-            idata,
-            var_names=[var_name],
-            hdi_prob=hdi_prob,
-            stat_focus="median",
-        )
-        ess_summary = az.summary(
-            idata,
-            var_names=[var_name],
-            hdi_prob=hdi_prob,
-            stat_focus="mean",
-        )
+        median_summary = _arviz_summary(idata, [var_name], hdi_prob, "median")
+        ess_summary = _arviz_summary(idata, [var_name], hdi_prob, "mean")
         median_summary = median_summary.iloc[[0]].copy()
         ess_summary = ess_summary.iloc[[0]].copy()
         median_summary.index = pd.Index([label], name="var_name")
@@ -468,7 +527,7 @@ def _summary_from_draws(
         )
 
 
-def _finite_summary_table(idata: az.InferenceData, var_names: list[str], hdi_prob: float):
+def _finite_summary_table(idata: xr.DataTree, var_names: list[str], hdi_prob: float):
     parts: list[pd.DataFrame] = []
     model_labels = (
         list(idata.posterior.coords["model"].values) if "model" in idata.posterior.coords else []
@@ -492,7 +551,7 @@ def _finite_summary_table(idata: az.InferenceData, var_names: list[str], hdi_pro
 
 
 def _multi_summary_table(
-    idata: az.InferenceData,
+    idata: xr.DataTree,
     var_names: list[str],
     hdi_prob: float,
 ) -> pd.DataFrame:
@@ -546,22 +605,8 @@ def _multi_summary_table(
 
     for var_name in var_names:
         try:
-            median_parts.append(
-                az.summary(
-                    idata,
-                    var_names=[var_name],
-                    hdi_prob=hdi_prob,
-                    stat_focus="median",
-                )
-            )
-            ess_parts.append(
-                az.summary(
-                    idata,
-                    var_names=[var_name],
-                    hdi_prob=hdi_prob,
-                    stat_focus="mean",
-                )
-            )
+            median_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "median"))
+            ess_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "mean"))
         except ValueError:
             fallback = _fallback_summary(var_name)
             median_parts.append(fallback)
@@ -654,7 +699,7 @@ def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: in
     )
 
 
-def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
+def _bmd_distributions_figure(idata: xr.DataTree) -> plt.Figure:
     model_names = [str(name) for name in idata.posterior.coords["model"].values]
     color_map = _model_color_map(model_names)
     fig, ax = plt.subplots(figsize=(8, 6.5))
@@ -666,12 +711,12 @@ def _bmd_distributions_figure(idata: az.InferenceData) -> plt.Figure:
         draws = draws[np.isfinite(draws)]
         if draws.size == 0:
             continue
-        az.plot_dist(draws, ax=ax, color=color_map[model_name])
+        _plot_dist(draws, ax=ax, color=color_map[model_name])
 
     ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
     ma_draws = ma_draws[np.isfinite(ma_draws)]
     if ma_draws.size > 0:
-        az.plot_dist(ma_draws, ax=ax, color="black", plot_kwargs={"linewidth": 2.5})
+        _plot_dist(ma_draws, ax=ax, color="black", linewidth=2.5)
 
     ax.set_title("BMD distributions", pad=6)
     ax.set_ylabel("Density")
@@ -691,7 +736,7 @@ def _parameter_figure_height(n_rows: int) -> float:
 
 
 def _parameter_group_trace_figure(
-    idata: az.InferenceData,
+    idata: xr.DataTree,
     group_name: str,
     model_names: list[str],
     param_names: list[str],
@@ -716,7 +761,7 @@ def _parameter_group_trace_figure(
             if draws.size == 0:
                 continue
 
-            az.plot_dist(draws, ax=ax_dist, color=color_map[model_name])
+            _plot_dist(draws, ax=ax_dist, color=color_map[model_name])
             ax_trace.plot(draws, color=color_map[model_name], alpha=0.5, linewidth=0.8)
 
         ax_dist.set_title(var_name)
@@ -729,7 +774,7 @@ def _parameter_group_trace_figure(
 
 
 def _parameter_group_records(
-    idata: az.InferenceData,
+    idata: xr.DataTree,
     session,
     hdi_prob: float,
     compressed: bool = True,
@@ -809,7 +854,7 @@ def _parameter_group_records(
     return records
 
 
-def _bmd_diagnostics_table(idata: az.InferenceData, hdi_prob: float) -> pd.DataFrame:
+def _bmd_diagnostics_table(idata: xr.DataTree, hdi_prob: float) -> pd.DataFrame:
     summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
     summary = _rename_summary_columns(summary, bmd_labels=True)
     model_names = list(idata.posterior.coords["model"].values)
@@ -832,9 +877,9 @@ def get_model_average_figures(
     session,
     n_chains: int = 1,
     compressed: bool = True,
-) -> dict[str, plt.Figure | pd.DataFrame | az.InferenceData | float]:
+) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
     idata = model_average_to_inferencedata(session, n_chains=n_chains)
-    out: dict[str, plt.Figure | pd.DataFrame | az.InferenceData | float] = {"idata": idata}
+    out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
 
     alpha = session.model_average.models[0].settings.alpha
     out["alpha"] = alpha
