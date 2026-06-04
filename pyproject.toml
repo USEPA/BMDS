@@ -139,7 +139,7 @@ sequence = [
 help = "Check Python formatting issues"
 sequence = [
   {cmd = "ruff format . --check"},
-  {cmd = "ruff check ."},
+  {cmd = "ruff check . --fix --show-fixes"},
 ]
 
 [tool.poe.tasks.build]
