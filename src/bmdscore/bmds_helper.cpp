@@ -9882,10 +9882,6 @@ std::string printBmdsStruct(struct python_continuousMA_analysis *pyMA, bool prin
   ss << std::endl << "Struct: python_continuousMA_analysis" << std::endl;
   ss << "nmodels:" << pyMA->nmodels << std::endl;
 
-  for (int i = 0; i < pyRes->post_probs.size(); i++) {
-    ss << "model:" << i << ", post_probs:" << pyRes->post_probs[i] << std::endl;
-  }
-
   bool printNparms = false;
   if (pyMA->nparms.size() > 0) {
     printNparms = true;
