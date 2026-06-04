@@ -58,7 +58,7 @@ class DichotomousModelSettings(BaseModel):
     samples: Annotated[int, Field(ge=0, le=100000)] = 50000
     burnin: Annotated[int, Field(ge=5, le=100000)] = 5000
     n_chains: Annotated[int, Field(ge=1, le=4)] = 1
-    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] | None = None
+    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] = 0
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     count_all_parameters_on_boundary: bool = False
 
