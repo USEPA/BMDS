@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 from pathlib import Path
 
 import arviz as az
@@ -435,8 +436,24 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
 
 
-def _percent_label_from_eti_column(column: str) -> str:
-    return column.removeprefix("eti_")
+def _format_percent_label(percent: float) -> str:
+    return f"{percent:g}%"
+
+
+def _eti_column_info(column: str) -> tuple[float, str] | None:
+    old_style_match = re.fullmatch(r"eti_(\d+(?:\.\d+)?)%", column)
+    if old_style_match:
+        percent = float(old_style_match.group(1))
+        return percent, _format_percent_label(percent)
+
+    new_style_match = re.fullmatch(r"eti(\d+(?:\.\d+)?)_(lb|ub)", column)
+    if new_style_match:
+        interval_width = float(new_style_match.group(1))
+        lower_percent = (100 - interval_width) / 2
+        percent = lower_percent if new_style_match.group(2) == "lb" else 100 - lower_percent
+        return percent, _format_percent_label(percent)
+
+    return None
 
 
 def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> pd.DataFrame:
@@ -455,19 +472,17 @@ def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> 
         {column: label for column, label in readable_labels.items() if column in summary.columns}
     )
 
-    eti_columns = [column for column in summary.columns if column.startswith("eti_")]
+    eti_column_info = {
+        column: info for column in summary.columns if (info := _eti_column_info(column)) is not None
+    }
+    eti_columns = list(eti_column_info)
     if len(eti_columns) >= 2:
-        eti_columns = sorted(
-            eti_columns,
-            key=lambda column: float(column.removeprefix("eti_").removesuffix("%")),
-        )
+        eti_columns = sorted(eti_columns, key=lambda column: eti_column_info[column][0])
         if bmd_labels:
             rename[eti_columns[0]] = "BMDL"
             rename[eti_columns[-1]] = "BMDU"
         else:
-            rename.update(
-                {column: _percent_label_from_eti_column(column) for column in eti_columns}
-            )
+            rename.update({column: eti_column_info[column][1] for column in eti_columns})
 
     return summary.rename(columns=rename)
 
