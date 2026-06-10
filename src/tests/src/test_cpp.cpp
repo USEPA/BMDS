@@ -52,8 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  runPythonContLoud();
-  //  runPythonDichoLoud();
+  //  runPythonContLoud();
+  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2048,354 +2048,6 @@ void runPythonDichoMA() {
   printBmdsStruct(&ma_res);
 }
 
-std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_analysis *pyMA) {
-  std::vector<int> N_obs;
-  std::vector<double> mean;
-  std::vector<double> logMean;
-  int n;  // total number of observations across all dose groups
-  double tmpMean = 0.0;
-  double tmpLogMean = 0.0;
-  int count = 0;
-
-  if (pyMA->datatype == loud_datatype::l_individual) {
-    double curDose = pyMA->pyCA.doses[0];
-    for (int i = 0; i < pyMA->pyCA.n; i++) {
-      if (pyMA->pyCA.doses[i] == curDose) {
-        count++;
-        tmpMean += pyMA->pyCA.Y[i];
-        tmpLogMean += std::log(pyMA->pyCA.Y[i]);
-      } else {
-        N_obs.push_back(count);
-        mean.push_back(tmpMean / count);
-        logMean.push_back(tmpLogMean / count);
-        curDose = pyMA->pyCA.doses[i];
-        count = 1;
-        tmpMean = pyMA->pyCA.Y[i];
-        tmpLogMean = std::log(pyMA->pyCA.Y[i]);
-      }
-    }
-    n = pyMA->pyCA.n;
-    N_obs.push_back(count);
-    mean.push_back(tmpMean / count);
-    logMean.push_back(tmpLogMean / count);
-  } else if (pyMA->datatype == loud_datatype::l_summary) {
-    mean = pyMA->pyCA.Y;
-    n = 0;
-    for (int i = 0; i < pyMA->pyCA.n; i++) {
-      logMean.push_back(log(pyMA->pyCA.Y[i]));
-      N_obs.push_back(pyMA->pyCA.n_group[i]);
-      n += pyMA->pyCA.n_group[i];
-    }
-  } else {
-    std::cout << "datatype not supported" << std::endl;
-  }
-
-  // variances
-  std::vector<double> sumsq;
-  std::vector<double> logSumsq;
-  std::vector<double> var;
-  std::vector<double> logVar;
-  double sums = 0.0;
-  double logSums = 0.0;
-  if (pyMA->datatype == loud_datatype::l_individual) {
-    count = 0;
-    for (int i = 0; i < N_obs.size(); i++) {
-      for (int j = 0; j < N_obs[i]; j++) {
-        sums += std::pow(pyMA->pyCA.Y[count] - mean[i], 2);
-        logSums += std::pow(std::log(pyMA->pyCA.Y[count]) - logMean[i], 2);
-        count++;
-      }
-      sumsq.push_back(sums);
-      logSumsq.push_back(logSums);
-
-      var.push_back(sums / (N_obs[i] - 1));
-      logVar.push_back(logSums / (N_obs[i] - 1));
-      sums = 0.0;
-      logSums = 0.0;
-    }
-  } else if (pyMA->datatype == loud_datatype::l_summary) {
-    for (int i = 0; i < pyMA->pyCA.n; i++) {
-      var.push_back(pow(pyMA->pyCA.sd[i], 2));
-      logVar.push_back(log(1 + pow(pyMA->pyCA.sd[i], 2) / pow(pyMA->pyCA.Y[i], 2)));
-    }
-  } else {
-    std::cout << "datatype not supported" << std::endl;
-  }
-
-  double numerator = 0.0;
-  double denominator = 0.0;
-  double numerator2 = 0.0;
-  double denominator2 = 0.0;
-  int loopSize;
-  for (int i = 0; i < N_obs.size(); i++) {
-    numerator += (N_obs[i] - 1) * var[i];
-    denominator += N_obs[i] - 1;
-  }
-
-  //  std::cout<<"numerator:"<<numerator<<std::endl;
-  //  std::cout<<"denominator:"<<denominator<<std::endl;
-
-  double ssq = numerator / denominator;
-
-  //  std::cout<<"ssq:"<<ssq<<std::endl;
-
-  double num_01 = (N_obs[0] - 1) * var[0] + (N_obs[N_obs.size() - 1] - 1) * var[var.size() - 1];
-  double den_01 = (N_obs[0] - 1) + (N_obs[N_obs.size() - 1] - 1);
-
-  double ssq01 = num_01 / den_01;
-  int N_obs01 = N_obs[0] + N_obs[N_obs.size() - 1];
-  // log scale version
-  double ssq_log01 =
-      ((N_obs[0] - 1) * logVar[0] + (N_obs[N_obs.size() - 1] - 1) * logVar[logVar.size() - 1]) /
-      den_01;
-
-  int N0 = N_obs[0];
-  int N1 = N_obs[N_obs.size() - 1];
-  int N = N0 + N1;
-  double s0sq = var[0];
-  double s1sq = var[var.size() - 1];
-  double logmean0 = logMean[0];
-  double logmean1 = logMean[logMean.size() - 1];
-  double mean0 = mean[0];
-  double mean1 = mean[mean.size() - 1];
-
-  std::vector<double> rowA = {5, N0 - 1.0, mean0, sqrt(s0sq / (N0 - 1)), 1};
-  std::vector<double> rowB = {5, N1 - 1.0, mean1, sqrt(s1sq / (N1 - 1)), 1};
-  std::vector<double> rowAlog = {5, N0 - 1.0, logmean0, sqrt(ssq_log01 / (N0 - 1)), 1};
-  std::vector<double> rowBlog = {5, N1 - 1.0, logmean1, sqrt(ssq_log01 / (N1 - 1)), 1};
-  std::vector<double> rowC1 = {2, log(1.6), 0.421, BMDS_MISSING, 1};
-  std::vector<double> rowC2 = {2, 0, 2, BMDS_MISSING, 1};
-  std::vector<double> rowD1 = {4, (N - 1) / 2.0, N * ssq01 / 2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD2 = {4, (N0 - 1) / 2.0, N0 * s0sq / 2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD3 = {4, (N1 - 1) / 2.0, N1 * s1sq / 2.0, BMDS_MISSING, 1};
-  std::vector<double> rowD4 = {4, (N - 1) / 2.0, N * ssq_log01 / 2.0, BMDS_MISSING, 1};
-
-  std::vector<std::vector<double>> ret;
-
-  for (int i = 0; i < pyMA->models.size(); i++) {
-    std::vector<std::vector<double>> tmpPrior;
-    int model = pyMA->models[i];
-    int dist = pyMA->loud_dist_type[i];
-    if (dist == distribution::log_normal) {
-      tmpPrior.push_back(rowAlog);
-      tmpPrior.push_back(rowBlog);
-      switch (model) {
-        case (cont_model::power):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_3):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_5):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::hill):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_hill_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_invexp_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lognormal_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_gamma_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lms_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC2);
-          break;
-      }
-      tmpPrior.push_back(rowD4);
-    } else if (dist == distribution::normal) {
-      tmpPrior.push_back(rowA);
-      tmpPrior.push_back(rowB);
-      switch (model) {
-        case (cont_model::power):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_3):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_5):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::hill):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_hill_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_invexp_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lognormal_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_gamma_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lms_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC2);
-          break;
-      }
-      tmpPrior.push_back(rowD1);
-    } else if (dist == distribution::normal_ncv) {
-      tmpPrior.push_back(rowA);
-      tmpPrior.push_back(rowB);
-      switch (model) {
-        case (cont_model::power):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_3):
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::exp_5):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::hill):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_hill_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_invexp_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lognormal_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_gamma_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC1);
-          break;
-        case (cont_model::l_lms_efsa):
-          tmpPrior.push_back(rowC2);
-          tmpPrior.push_back(rowC2);
-          break;
-      }
-      tmpPrior.push_back(rowD2);
-      tmpPrior.push_back(rowD3);
-    } else {
-      std::cout << "error in createDefaultPriors for i:" << i << std::endl;
-    }
-    //    for (int j = 0; j < tmpPrior.size(); j++) {
-    //      for (int k = 0; k < tmpPrior[j].size(); k++) {
-    //        std::cout << tmpPrior[j][k] << ",";
-    //      }
-    //      std::cout << std::endl;
-    //    }
-    // flatten the vector
-    int priorCols = pyMA->prior_cols[i];
-    int numEntries = priorCols * tmpPrior.size();
-    std::vector<double> flatPrior(numEntries);
-    int count = 0;
-    for (int k = 0; k < priorCols; k++) {
-      for (int j = 0; j < tmpPrior.size(); j++) {
-        flatPrior[count] = tmpPrior[j][k];
-        count++;
-      }
-    }
-    //    for (int j = 0; j < flatPrior.size(); j++) {
-    //      std::cout << flatPrior[j] << ",";
-    //    }
-    //    std::cout << std::endl;
-    ret.push_back(flatPrior);
-  }
-
-  return ret;
-}
-
-std::vector<std::vector<double>> createDefaultDichoPriors(struct python_dichotomousMA_analysis *pyMA
-) {
-  std::vector<double> rowA = {4, 1.0, 1.0, BMDS_MISSING, 1};
-  std::vector<double> rowB = {4, 1.5, 1.0, BMDS_MISSING, 1};
-  std::vector<double> rowC = {4, 2.5, 1.0, BMDS_MISSING, 1};
-  std::vector<double> rowD = {3, 1, 1, BMDS_MISSING, 1};
-  std::vector<double> rowE1 = {2, log(2.0), 0.5, BMDS_MISSING, 1};
-  std::vector<double> rowE2 = {2, log(2.0), sqrt(0.18), BMDS_MISSING, 1};
-  std::vector<double> rowF = {3, 0.5, 0.5, BMDS_MISSING, 1};
-  std::vector<double> rowG = {1, 0, 0.5, BMDS_MISSING, 1};
-
-  std::vector<std::vector<double>> ret;
-
-  for (int i = 0; i < pyMA->models.size(); i++) {
-    std::vector<std::vector<double>> tmpPrior;
-
-    switch (pyMA->models[i]) {
-      case (dich_model::d_hill):
-        tmpPrior.push_back(rowF);
-        tmpPrior.push_back(rowF);
-        tmpPrior.push_back(rowG);
-        tmpPrior.push_back(rowE1);
-        break;
-      case (dich_model::d_gamma):
-      case (dich_model::d_weibull):
-        tmpPrior.push_back(rowA);
-        tmpPrior.push_back(rowB);
-        tmpPrior.push_back(rowC);
-        tmpPrior.push_back(rowE2);
-        break;
-      case (dich_model::d_logistic):
-      case (dich_model::d_probit):
-      case (dich_model::d_qlinear):
-        tmpPrior.push_back(rowA);
-        tmpPrior.push_back(rowB);
-        tmpPrior.push_back(rowC);
-        break;
-      case (dich_model::d_loglogistic):
-      case (dich_model::d_logprobit):
-        tmpPrior.push_back(rowA);
-        tmpPrior.push_back(rowB);
-        tmpPrior.push_back(rowC);
-        tmpPrior.push_back(rowE1);
-        break;
-      case (dich_model::d_multistage):
-        tmpPrior.push_back(rowA);
-        tmpPrior.push_back(rowB);
-        tmpPrior.push_back(rowC);
-        tmpPrior.push_back(rowD);
-        break;
-    }
-
-    // flatten the vector
-    int priorCols = pyMA->prior_cols[i];
-    int numEntries = priorCols * tmpPrior.size();
-    std::vector<double> flatPrior(numEntries);
-    int count = 0;
-    for (int k = 0; k < priorCols; k++) {
-      for (int j = 0; j < tmpPrior.size(); j++) {
-        flatPrior[count] = tmpPrior[j][k];
-        count++;
-      }
-    }
-    ret.push_back(flatPrior);
-  }
-
-  return ret;
-}
-
 Eigen::VectorXd colwiseMedian(const Eigen::MatrixXd &mat) {
   Eigen::VectorXd medians(mat.cols());
   for (int i = 0; i < mat.cols(); ++i) {
@@ -2427,13 +2079,13 @@ void runPythonDichoLoud() {
   // d_qlinear = 8,
   // d_weibull = 9
 
-  // std::vector<int> models = {3};
-  std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
+  std::vector<int> models = {3};
+  // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
 
-  // data_M3
-  double D[] = {0.0, 0.25, 0.5, 1.0};
-  double Y[] = {2, 0, 9, 10};
-  double N[] = {10, 10, 10, 10};
+  //// data_M3
+  // double D[] = {0.0, 0.25, 0.5, 1.0};
+  // double Y[] = {2, 0, 9, 10};
+  // double N[] = {10, 10, 10, 10};
 
   //// Mary debug
   // double D[] = {0.0, 0.25, 0.5, 0.75, 1.0};
@@ -2441,9 +2093,9 @@ void runPythonDichoLoud() {
   // double N[] = {20, 20, 20, 20, 20};
 
   // Dichotomous.dax Effect 1
-  // double D[] = {0, 50, 100, 150, 200};
-  // double Y[] = {0, 5, 30, 65, 90};
-  // double N[] = {100, 100, 100, 100, 100};
+  double D[] = {0, 50, 100, 150, 200};
+  double Y[] = {0, 5, 30, 65, 90};
+  double N[] = {100, 100, 100, 100, 100};
 
   ////Dichotomous.dax Effect 2
   // double D[] = {0,50, 100, 150, 200};
@@ -2774,9 +2426,7 @@ void runPythonContLoud() {
   ma_info.priors = createDefaultPriors(&ma_info);
   pythonBMDSLoud(&ma_info, &ma_res);
 
-  std::cout << "calling print" << std::endl;
   printBmdsStruct(&ma_res);
-  std::cout << "after print" << std::endl;
 }
 
 void runOldContAnalysis() {

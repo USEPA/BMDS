@@ -922,6 +922,11 @@ int getLoudLLType(int distType, int dataType);
 // overloaded functions
 void determineAdvDir(struct python_continuous_analysis *pyAnal);
 
+std::vector<std::vector<double>> createDefaultDichoPriors(struct python_dichotomousMA_analysis *pyMA
+);
+
+std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_analysis *pyMA);
+
 // overloaded print statements
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
     struct BMDS_results *bmdsRes, bool print = true
