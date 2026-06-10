@@ -51,9 +51,9 @@ class RaoScott:
     def __init__(self, dataset: DichotomousDataset, species: Species):
         self.dataset = dataset
         self.species = species
-        self.df = self.calculate_zero_mask()
+        self.df = self.calculate_design_effects_with_limit()
 
-    def calculate_zero_mask(self) -> pd.DataFrame:
+    def calculate_design_effects_with_limit(self) -> pd.DataFrame:
         df = pd.DataFrame(
             {
                 "dose": self.dataset.doses,
@@ -72,7 +72,7 @@ class RaoScott:
         df["design_o"] = np.nan
         df["design_avg"] = np.nan
 
-        # Only calculate design effects where fraction_affected is not zero
+        # Calculate design effects for nonzero fraction_affected
         if nonzero_mask.any():
             p_ls = self.adjustment_parameters[(self.species, Regression.least_square)]
             p_or = self.adjustment_parameters[(self.species, Regression.orthogonal)]
@@ -88,12 +88,22 @@ class RaoScott:
                 nonzero_mask, ["design_ls", "design_o"]
             ].mean(axis=1)
 
-        # For zero_mask, set design_ls and design_o to 1, and design_avg to 1 as well
+        # For zero_mask, set design_ls, design_o, and design_avg to 1
         df.loc[zero_mask, "design_ls"] = 1
         df.loc[zero_mask, "design_o"] = 1
         df.loc[zero_mask, "design_avg"] = 1
 
-        # Now calculate adjusted columns using design_avg (which is 1 for zero_mask)
+        # Detect and identify dose groups where the original design effect was less than 1
+        df["design_ls_below_1"] = (df["design_ls"] < 1) & df["design_ls"].notna()
+        df["design_o_below_1"] = (df["design_o"] < 1) & df["design_o"].notna()
+        df["design_avg_below_1"] = (df["design_avg"] < 1) & df["design_avg"].notna()
+
+        # Apply lower limit of 1 to the design effects
+        df["design_ls"] = df["design_ls"].clip(lower=1)
+        df["design_o"] = df["design_o"].clip(lower=1)
+        df["design_avg"] = df["design_avg"].clip(lower=1)
+
+        # Calculate adjusted columns using design_avg
         df["incidence_adjusted"] = df["incidence"] / df["design_avg"]
         df["n_adjusted"] = df["n"] / df["design_avg"]
 
@@ -207,11 +217,25 @@ class RaoScott:
             "Fox JF, Hogan KA, Davis A. Dose-Response Modeling with Summary Data from Developmental Toxicity Studies. Risk Anal. 2017 May;37(5):905-917. PMID: 27567129. DOI: 10.1111/risa.12667."
         )
         report.document.add_paragraph("")
-        # Check summary table to see if any row in the Incidence column contains either a integer 0 and string "0"
+
+        # Check if any design effects were clipped to 1
+        if (
+            self.df["design_avg_below_1"].any()
+            or self.df["design_ls_below_1"].any()
+            or self.df["design_o_below_1"].any()
+        ):
+            footnote_text = (
+                "Note: One or more dose groups had a design effect < 1. "
+                "To prevent adjusted values greater than their original value, "
+                "a lower limit of 1 was applied to the design effect."
+            )
+            report.document.add_paragraph(footnote_text)
+
+        # Check summary table to see if any row in the Incidence column contains either an integer 0 or string "0"
         incidence_col = summary["Incidence"]
         has_zero = ((incidence_col == 0) | (incidence_col == "0")).any()
         if has_zero:
-            footnote_text = "Note: One or more dose groups have a fraction affected equal to zero and therefore the design effect was set equal to 1; incidences and Ns were thus not adjusted for those dose groups."
+            footnote_text = "Note: One or more dose groups have a fraction affected equal to zero; for these dose groups, no scaling was performed and the design effect was set equal to 1."
             report.document.add_paragraph(footnote_text)
 
         return report.document

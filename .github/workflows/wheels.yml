@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2022, macos-14]
     steps:
       - uses: actions/checkout@v4
 
@@ -46,9 +46,9 @@ jobs:
           echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           echo $VCPKG_HOST_TRIPLET
 
-      - uses: pypa/cibuildwheel@v3.1.3
+      - uses: pypa/cibuildwheel@v3.3.0
         env:
-          CIBW_BUILD: "cp311-* cp312-* cp313-*"
+          CIBW_BUILD: "cp311-* cp312-* cp313-* cp314-*"
           CIBW_SKIP: "*musllinux* *win32*"
           CIBW_TEST_COMMAND: pytest {project}/tests
           CIBW_TEST_EXTRAS: dev
