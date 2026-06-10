@@ -20,6 +20,8 @@ int run_all_unitTests() {
   // cont_loud_model_fit_test();
   dicho_loud_model_fit_test();
   pivotal_pvalue_test();
+  additional_cont_calcs_test();
+  additional_dicho_calcs_test();
   // rg_dg_test();
   // bridge_sample_test();
 
@@ -1915,4 +1917,145 @@ void nested_AIC_penalty_test() {
   double AIC_unpenalized = calcNestedAIC(fitted_LL, fitted_df_unpen, red_df);
 
   expect_true(essentiallyEqual(AIC_unpenalized + 2 * numBounded, AIC_penalized, 0.001));
+}
+
+void additional_cont_calcs_test() {}
+
+void additional_dicho_calcs_test() {
+  struct dichotomous_analysis anal;
+  struct dichotomous_model_result res;
+  struct dichotomous_GOF gof;
+  struct BMDS_results bmdsRes;
+  struct dicho_AOD bmdsAOD;
+  bool countAllParmsOnBoundary = false;
+  bool isLoud = false;
+
+  anal.model = 8;
+  anal.n = 5;
+  double Y[] = {0, 5, 30, 65, 90};
+  double doses[] = {0, 50, 100, 150, 200};
+  double n_group[] = {100, 100, 100, 100, 100};
+  anal.prior_cols = 5;
+  double prior[] = {0, 0, 0, 0, 0, 0, -18, 0, 18, 100};
+  anal.BMD_type = 1;
+  anal.BMR = 0.1;
+  anal.alpha = 0.05;
+  anal.degree = 2;
+  anal.samples = 0;
+  anal.burnin = 0;
+  anal.parms = 2;
+  anal.Y = Y;
+  anal.doses = doses;
+  anal.n_group = n_group;
+  anal.prior = prior;
+
+  res.model = 8;
+  res.nparms = 2;
+  double parms[] = {-18, 0.00595948};
+  res.parms = parms;
+  double cov[] = {3.03852e-09, -1.89595e-18, -1.89595e-18, 2.02955e-07};
+  res.cov = cov;
+  res.max = 210.797;
+  res.dist_numE = 200;
+  res.model_df = 2;
+  res.total_df = 0;
+  res.bmd = 17.6795;
+  res.gof_p_value = 0;
+  res.gof_chi_sqr_statistic = 0;
+  double bmd_dist[] = {
+      0,       0,       0,       15.0551, 15.1706, 15.2835, 15.3813,  15.4611,  15.5282,  15.5877,
+      15.6446, 15.7011, 15.7525, 15.7992, 15.8423, 15.8829, 15.9219,  15.9603,  15.9988,  16.0355,
+      16.0703, 16.1034, 16.1351, 16.1655, 16.195,  16.2237, 16.252,   16.28,    16.3081,  16.3357,
+      16.3625, 16.3885, 16.4137, 16.4383, 16.4623, 16.4859, 16.509,   16.5317,  16.5541,  16.5764,
+      16.5985, 16.6205, 16.6425, 16.6643, 16.6857, 16.7067, 16.7274,  16.7478,  16.7679,  16.7878,
+      16.8074, 16.8268, 16.846,  16.8651, 16.884,  16.9029, 16.9217,  16.9404,  16.9591,  16.9778,
+      16.9964, 17.0148, 17.0331, 17.0512, 17.0692, 17.087,  17.1047,  17.1223,  17.1397,  17.1571,
+      17.1744, 17.1916, 17.2088, 17.226,  17.2431, 17.2602, 17.2772,  17.2943,  17.3114,  17.3286,
+      17.3456, 17.3626, 17.3795, 17.3963, 17.4131, 17.4298, 17.4465,  17.4631,  17.4797,  17.4963,
+      17.5128, 17.5294, 17.5459, 17.5625, 17.5791, 17.5957, 17.6123,  17.629,   17.6458,  17.6626,
+      17.6795, 17.6964, 17.7133, 17.7301, 17.7469, 17.7638, 17.7806,  17.7974,  17.8143,  17.8312,
+      17.8481, 17.8651, 17.8821, 17.8992, 17.9164, 17.9337, 17.9511,  17.9685,  17.9861,  18.0039,
+      18.0217, 18.0397, 18.0577, 18.0758, 18.0938, 18.1119, 18.1301,  18.1483,  18.1666,  18.185,
+      18.2035, 18.2222, 18.241,  18.2599, 18.2791, 18.2984, 18.3179,  18.3377,  18.3577,  18.3779,
+      18.3984, 18.419,  18.4396, 18.4603, 18.4811, 18.502,  18.5231,  18.5444,  18.5659,  18.5877,
+      18.6098, 18.6323, 18.6551, 18.6783, 18.702,  18.7262, 18.7508,  18.7759,  18.8011,  18.8264,
+      18.8519, 18.8776, 18.9037, 18.9303, 18.9575, 18.9853, 19.0138,  19.0431,  19.0734,  19.1046,
+      19.137,  19.1698, 19.2028, 19.2361, 19.27,   19.3049, 19.341,   19.3785,  19.4179,  19.4594,
+      19.5031, 19.5489, 19.5947, 19.6414, 19.69,   19.7416, 19.7972,  19.8579,  19.9244,  19.9922,
+      20.0622, 20.1391, 20.2273, 20.3313, 20.4541, 20.587,  INFINITY, INFINITY, INFINITY, INFINITY,
+      0,       0.005,   0.01,    0.015,   0.02,    0.025,   0.03,     0.035,    0.04,     0.045,
+      0.05,    0.055,   0.06,    0.065,   0.07,    0.075,   0.08,     0.085,    0.09,     0.095,
+      0.1,     0.105,   0.11,    0.115,   0.12,    0.125,   0.13,     0.135,    0.14,     0.145,
+      0.15,    0.155,   0.16,    0.165,   0.17,    0.175,   0.18,     0.185,    0.19,     0.195,
+      0.2,     0.205,   0.21,    0.215,   0.22,    0.225,   0.23,     0.235,    0.24,     0.245,
+      0.25,    0.255,   0.26,    0.265,   0.27,    0.275,   0.28,     0.285,    0.29,     0.295,
+      0.3,     0.305,   0.31,    0.315,   0.32,    0.325,   0.33,     0.335,    0.34,     0.345,
+      0.35,    0.355,   0.36,    0.365,   0.37,    0.375,   0.38,     0.385,    0.39,     0.395,
+      0.4,     0.405,   0.41,    0.415,   0.42,    0.425,   0.43,     0.435,    0.44,     0.445,
+      0.45,    0.455,   0.46,    0.465,   0.47,    0.475,   0.48,     0.485,    0.49,     0.495,
+      0.5,     0.505,   0.51,    0.515,   0.52,    0.525,   0.53,     0.535,    0.54,     0.545,
+      0.55,    0.555,   0.56,    0.565,   0.57,    0.575,   0.58,     0.585,    0.59,     0.595,
+      0.6,     0.605,   0.61,    0.615,   0.62,    0.625,   0.63,     0.635,    0.64,     0.645,
+      0.65,    0.655,   0.66,    0.665,   0.67,    0.675,   0.68,     0.685,    0.69,     0.695,
+      0.7,     0.705,   0.71,    0.715,   0.72,    0.725,   0.73,     0.735,    0.74,     0.745,
+      0.75,    0.755,   0.76,    0.765,   0.77,    0.775,   0.78,     0.785,    0.79,     0.795,
+      0.8,     0.805,   0.81,    0.815,   0.82,    0.825,   0.83,     0.835,    0.84,     0.845,
+      0.85,    0.855,   0.86,    0.865,   0.87,    0.875,   0.88,     0.885,    0.89,     0.895,
+      0.9,     0.905,   0.91,    0.915,   0.92,    0.925,   0.93,     0.935,    0.94,     0.945,
+      0.95,    0.955,   0.96,    0.965,   0.97,    0.975,   0.98,     0.985,    0.99,     0.995,
+  };
+  res.bmd_dist = bmd_dist;
+
+  bmdsRes.bounded.push_back(false);
+  bmdsRes.bounded.push_back(false);
+
+  additional_dicho_calcs(&anal, &res, &gof, &bmdsRes, &bmdsAOD, &countAllParmsOnBoundary, &isLoud);
+
+  double expBMD = 17.6795;
+  double expBMDL = 15.6446;
+  double expBMDU = 20.0622;
+  expect_true(essentiallyEqual(bmdsRes.BMD, expBMD, 1e-4));
+  expect_true(essentiallyEqual(bmdsRes.BMDL, expBMDL, 1e-4));
+  expect_true(essentiallyEqual(bmdsRes.BMDU, expBMDU, 1e-4));
+
+  std::vector<double> gofExpected = {1.523e-06, 25.7679, 44.896, 59.0952, 69.6355};
+  std::vector<double> gofRes = {-0.0012341, -4.74851, -2.99485, 1.201, 4.42869};
+  for (int i = 0; i < gofExpected.size(); i++) {
+    expect_true(essentiallyEqual(gof.expected[i], gofExpected[i], 1e-4));
+    expect_true(essentiallyEqual(gof.residual[i], gofRes[i], 1e-4));
+  }
+
+  double expAIC = 423.594;
+  double expBIC = -195.124;
+  double expChisq = 52.5732;
+
+  expect_true(essentiallyEqual(bmdsRes.AIC, expAIC, 1e-3));
+  expect_true(essentiallyEqual(bmdsRes.BIC_equiv, expBIC, 1e-3));
+  expect_true(essentiallyEqual(bmdsRes.chisq, expChisq, 1e-3));
+
+  double expFullLL = -178.191;
+  int expNFull = 5;
+  double expRedLL = -332.032;
+  int expNRed = 1;
+  double expFitLL = -210.797;
+  int expNFit = 1;
+  double expDevFit = 65.212;
+  double expDevRed = 307.682;
+  int expDFFit = 4;
+  int expDFRed = 4;
+  double expPVFit = 2.32148e-13;
+  double expPVRed = 0;
+
+  expect_true(essentiallyEqual(bmdsAOD.fullLL, expFullLL, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.nFull, expNFull, 1));
+  expect_true(essentiallyEqual(bmdsAOD.redLL, expRedLL, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.nRed, expNRed, 1));
+  expect_true(essentiallyEqual(bmdsAOD.fittedLL, expFitLL, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.nFit, expNFit, 1));
+  expect_true(essentiallyEqual(bmdsAOD.devFit, expDevFit, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.devRed, expDevRed, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.dfFit, expDFFit, 1));
+  expect_true(essentiallyEqual(bmdsAOD.dfRed, expDFRed, 1));
+  expect_true(essentiallyEqual(bmdsAOD.pvFit, expPVFit, 1e-3));
+  expect_true(essentiallyEqual(bmdsAOD.pvRed, expPVRed, 1e-3));
 }

@@ -9289,7 +9289,11 @@ std::string printBmdsStruct(struct BMDS_results *bmdsRes, bool print) {
 
   for (int i = 0; i < bmdsRes->bounded.size(); i++) {
     printElement(ss, (bmdsRes->bounded[i] ? "true" : "false"), colWidth);
-    printElement(ss, bmdsRes->stdErr[i], colWidth);
+    if (bmdsRes->bounded.size() == bmdsRes->stdErr.size()) {
+      printElement(ss, bmdsRes->stdErr[i], colWidth);
+    } else {
+      printElement(ss, "NA", colWidth);
+    }
     if (bmdsRes->lowerConf.size() > 0) {
       printElement(ss, bmdsRes->lowerConf[i], colWidth);
       printElement(ss, bmdsRes->upperConf[i], colWidth);
