@@ -143,7 +143,7 @@ help = "Check Python formatting issues"
 sequence = [
   {cmd = "ruff format . --check"},
   {cmd = "ruff check . --fix --show-fixes"},
-  {cmd = "ruff format src test --check"},
+  {cmd = "ruff format src tests --check"},
   {cmd = "ruff check src tests"},
 ]
 
