@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "test_func.h"
 
 int run_all_unitTests();
@@ -15,3 +17,5 @@ void dicho_loud_model_fit_test();
 void pivotal_pvalue_test();
 void rg_dg_test();
 void bridge_sample_test();
+void additional_cont_calcs_test();
+void additional_dicho_calcs_test();
