@@ -3,7 +3,7 @@ name = "pybmds"
 license = "MIT"
 authors = [
   {name = "BMDS Development Team"},
-  {name = "Andy Shapiro", email = "shapiro.andy@epa.gov"},
+  {name = "Allen Davis", email = "davis.allen@epa.gov"},
   {name = "Cody Simmons", email = "simmons.cody@epa.gov"},
 ]
 readme = "README.md"
@@ -14,6 +14,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering",
 ]
 requires-python = ">=3.11"
@@ -21,7 +22,7 @@ dependencies = [
   "matplotlib>=3.7",
   "numpy",
   "openpyxl",
-  "pandas>=2",
+  "pandas<3",
   "pydantic>=2",
   "python-docx",
   "scipy",

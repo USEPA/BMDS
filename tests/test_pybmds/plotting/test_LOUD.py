@@ -20,6 +20,7 @@ from pybmds.plotting.LOUD import (
     _multi_summary_table,
     _parameter_group_records,
     _parameter_group_trace_figure,
+    _rename_summary_columns,
     _reshape_draws,
     get_model_average_figures,
     model_average_to_inferencedata,
@@ -458,6 +459,40 @@ class TestLOUD:
         assert "median" not in summary.columns
         assert "mean" not in summary.columns
         assert "MA_BMD" in summary.index
+
+    def test_rename_summary_columns_handles_arviz_datatree_eti_labels(self):
+        summary = pd.DataFrame(
+            {
+                "median": [1.0],
+                "eti90_lb": [0.5],
+                "eti90_ub": [1.5],
+            }
+        )
+
+        actual = _rename_summary_columns(summary)
+
+        assert "Median" in actual.columns
+        assert "5%" in actual.columns
+        assert "95%" in actual.columns
+        assert "eti90_lb" not in actual.columns
+        assert "eti90_ub" not in actual.columns
+
+    def test_rename_summary_columns_handles_arviz_datatree_eti_labels_for_bmd(self):
+        summary = pd.DataFrame(
+            {
+                "median": [1.0],
+                "eti90_lb": [0.5],
+                "eti90_ub": [1.5],
+            }
+        )
+
+        actual = _rename_summary_columns(summary, bmd_labels=True)
+
+        assert "BMD" in actual.columns
+        assert "BMDL" in actual.columns
+        assert "BMDU" in actual.columns
+        assert "eti90_lb" not in actual.columns
+        assert "eti90_ub" not in actual.columns
 
     def test_ma_bmd_quantiles(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
