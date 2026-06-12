@@ -10,6 +10,7 @@ import xarray as xr
 import pybmds
 from pybmds.constants import DistType, Models, PriorClass
 from pybmds.plotting.LOUD import (
+    _RHAT_SINGLE_CHAIN_FOOTNOTE,
     _bmd_summary_table,
     _build_observed_data,
     _drop_empty_summary_rows,
@@ -704,9 +705,12 @@ class TestLOUD:
         assert "eti_5%" not in figures["bmd_summary"].columns
         assert "eti_95%" not in figures["bmd_summary"].columns
         assert "mean" not in figures["bmd_summary"].columns
-        assert "R-hat" in figures["bmd_summary"].columns
+        assert "R-hat" not in figures["bmd_summary"].columns
+        assert figures["bmd_summary"].attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
         assert "Bulk Effective Sample Size" in figures["bmd_summary"].columns
         assert "Tail Effective Sample Size" in figures["bmd_summary"].columns
+        assert "r_hat" not in figures["multi_summary"].columns
+        assert figures["multi_summary"].attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
         assert "ess_bulk" in figures["multi_summary"].columns
         assert "ess_tail" in figures["multi_summary"].columns
         assert "ess_median" not in figures["multi_summary"].columns
@@ -732,9 +736,13 @@ class TestLOUD:
         assert any(text.startswith("BMDU:") for text in annotation_text)
         assert isinstance(figures["overlay"], plt.Figure)
         assert figures["parameter_groups"][0]["name"] == "Power"
-        assert {"Model", "Parameter", "Median", "R-hat"}.issubset(
+        assert {"Model", "Parameter", "Median"}.issubset(
             figures["parameter_groups"][0]["summary"].columns
         )
+        assert "R-hat" not in figures["parameter_groups"][0]["summary"].columns
+        assert figures["parameter_groups"][0]["summary"].attrs["footnotes"] == [
+            _RHAT_SINGLE_CHAIN_FOOTNOTE
+        ]
         assert len(figures["parameter_groups"][0]["trace_figure"].axes[0].lines) >= 1
         assert figures["overlay"].legends
         assert figures["parameter_groups"][0]["trace_figure"].legends

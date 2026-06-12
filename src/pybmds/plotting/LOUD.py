@@ -19,6 +19,9 @@ if hasattr(az, "_log"):
     az._log.disabled = True
 
 _ARVIZ_USES_DATATREE = "ci_prob" in inspect.signature(az.summary).parameters
+_RHAT_SINGLE_CHAIN_FOOTNOTE = (
+    "R-hat statistic is calculated only when more than 1 Markov chain is used."
+)
 
 
 def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
@@ -487,6 +490,15 @@ def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> 
     return summary.rename(columns=rename)
 
 
+def _hide_rhat_for_single_chain(summary: pd.DataFrame) -> pd.DataFrame:
+    summary = summary.drop(columns=["r_hat", "R-hat"], errors="ignore")
+    footnotes = list(summary.attrs.get("footnotes", []))
+    if _RHAT_SINGLE_CHAIN_FOOTNOTE not in footnotes:
+        footnotes.append(_RHAT_SINGLE_CHAIN_FOOTNOTE)
+    summary.attrs["footnotes"] = footnotes
+    return summary
+
+
 def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
@@ -895,6 +907,7 @@ def get_model_average_figures(
 ) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
     idata = model_average_to_inferencedata(session, n_chains=n_chains)
     out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
+    single_chain = len(idata.posterior.coords["chain"]) == 1
 
     alpha = session.model_average.models[0].settings.alpha
     out["alpha"] = alpha
@@ -907,6 +920,8 @@ def get_model_average_figures(
     out["ma_bmd_hdi"] = ma_bmd_hdi
 
     bmd_summary = _bmd_diagnostics_table(idata, hdi_prob)
+    if single_chain:
+        bmd_summary = _hide_rhat_for_single_chain(bmd_summary)
     out["bmd_summary"] = bmd_summary
 
     param_names = [
@@ -918,10 +933,14 @@ def get_model_average_figures(
     multi_var_names = ["BMD", "MA_BMD", *param_names]
 
     multi_summary = _drop_empty_summary_rows(_multi_summary_table(idata, multi_var_names, hdi_prob))
+    if single_chain:
+        multi_summary = _hide_rhat_for_single_chain(multi_summary)
     out["multi_summary"] = multi_summary
-    out["parameter_groups"] = _parameter_group_records(
-        idata, session, hdi_prob, compressed=compressed
-    )
+    parameter_groups = _parameter_group_records(idata, session, hdi_prob, compressed=compressed)
+    if single_chain:
+        for group in parameter_groups:
+            group["summary"] = _hide_rhat_for_single_chain(group["summary"])
+    out["parameter_groups"] = parameter_groups
 
     out["posterior"] = _ma_bmd_posterior_figure(idata, ma_bmd_quantiles)
     out["overlay"] = _bmd_distributions_figure(idata)
