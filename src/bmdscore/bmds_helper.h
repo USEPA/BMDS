@@ -279,7 +279,9 @@ struct python_dichotomousMA_analysis {
       loud_bmd_type;  // list of bmd types corresponding to each model for loud approach
 
   std::vector<double> modelPriors;  // prior probability on the model
-  long seed;
+  long seed = BMDS_MISSING;         // BMDS_MISSING (default)- seed set by time clock
+                                    // 0 - seed set to alorithm default
+                                    // >0 - user specified seed
 
   struct python_dichotomous_analysis pyDA;
 
@@ -357,7 +359,9 @@ struct python_continuousMA_analysis {
   std::vector<double> modelPriors;  // prior probability on the model
   int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int datatype;                     // uses loud_datatype enum
-  long seed;
+  long seed = BMDS_MISSING;         // BMDS_MISSING (default)- seed set by time clock
+                                    // 0 - seed set to alorithm default
+                                    // >0 - user specified seed
   struct python_continuous_analysis pyCA;
 };
 

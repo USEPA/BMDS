@@ -3084,7 +3084,7 @@ int getLoudLLType(int distType, int dataType) {
 }
 
 // LOUD fits for dichotomous models
-void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut, long seed) {
   // Parameters needed for latent slice function
   int pri_typ = 32;  // specifies neg_log_prior in run latent slice
   int n_rounds = 2;
@@ -3145,7 +3145,7 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
+      n_rounds, qtiles, LAM, pri_typ, ll_type, seed
   );
 
   loudOut->BMD.resize(R.rows());
@@ -3183,7 +3183,7 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
 }
 
 // LOUD fits for continuous models
-void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
+void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut, long seed) {
   // Parameters needed for latent slice function
   int pri_typ = 32;  // specifies neg_log_prior in run latent slice
   int n_rounds = 2;
@@ -3281,7 +3281,7 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut) {
 
   Eigen::MatrixXd R = run_latentslice_functional_general(
       loudIn->doses, loudIn->Y, init, diag, priorr, model_typ, loudIn->burnin, loudIn->iter,
-      n_rounds, qtiles, LAM, pri_typ, ll_type
+      n_rounds, qtiles, LAM, pri_typ, ll_type, seed
   );
 
   // auto end = std::chrono::steady_clock::now();
@@ -5166,6 +5166,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   D = (1 / max_dose) * D;
 
   loud_datatype datatype = loud_datatype::l_dichotomous;
+  // set seed from time clock if default seed=0 is specified
+  if (pyMA->seed == BMDS_MISSING) {
+    pyMA->seed = time(NULL);
+  }
 
   struct fitInput loudIn = createFitInput(
       D, Y, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING,
@@ -5193,6 +5197,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
   struct fitResult loudOut;
+  long seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyDA.chains);
     pyRes->models[i].loudRes = loudRes;
@@ -5202,12 +5207,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       loudIn.model = pyMA->models[i];
       pyRes->models[i].bmdsRes.validResult = false;
 
-      fit_Loud_dicho(&loudIn, &loudOut);
+      fit_Loud_dicho(&loudIn, &loudOut, seed);
 
       pyRes->models[i].loudRes[chain] = loudOut;
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
+      seed += 1;  // iterate random seed by 1 for each chain
     }
   }
 
@@ -5362,9 +5368,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   }
   // sample from lbmd using posterior_probs
   // seed the generator
-  std::random_device rd;
+  // std::random_device rd;
   // define a random number generator
-  std::mt19937 gen(rd());
+  // std::mt19937 gen(rd());
+  std::mt19937 gen(seed);
   // define weight distribution
   std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
   // std::vector<double> bmds_c(iter*chains);
@@ -5476,6 +5483,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         << "Error in Loud analysis.  Number of models does not equal number of distribution types"
         << std::endl;
     return;
+  }
+
+  // set seed from time clock if default seed=0 is specified
+  if (pyMA->seed == BMDS_MISSING) {
+    pyMA->seed = time(NULL);
   }
 
   Eigen::VectorXd D1 =
@@ -5846,7 +5858,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       default:
         break;
     }
-    fit_Loud(&loudIn, &loudOut);
+    fit_Loud(&loudIn, &loudOut, pyMA->seed);
     pyRes->models[i].loudRes = loudOut;
     Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= loudOut.BMD.size() / 2) {

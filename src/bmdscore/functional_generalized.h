@@ -447,7 +447,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
     const Eigen::MatrixXd& cov, const Eigen::MatrixXd& priorr, int model_typ, int burnin_samples,
     int keep_samples, int nrounds,
     // const Rcpp::NumericVector qtiles,
-    const Eigen::VectorXd& qtiles, double LAM, int pri_typ, int ll_typ
+    const Eigen::VectorXd& qtiles, double LAM, int pri_typ, int ll_typ, long seed
 );
 
 void rg(

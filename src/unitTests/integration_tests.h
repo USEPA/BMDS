@@ -36,6 +36,7 @@ void createMultitumorAnalysis(
 );
 void createDichoLoudAnalysisStructs(
     std::vector<int> &models, int BMD_type, double BMR, double alpha, int weightOption, int iter,
-    int burnin, int chains, std::vector<double> &D, std::vector<double> &Y, std::vector<double> &N,
-    python_dichotomousMA_analysis *ma_info, python_dichotomousMA_result *ma_res
+    int burnin, int chains, long seed, std::vector<double> &D, std::vector<double> &Y,
+    std::vector<double> &N, python_dichotomousMA_analysis *ma_info,
+    python_dichotomousMA_result *ma_res
 );

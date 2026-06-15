@@ -159,11 +159,13 @@ void runDichoLoudAnalysis() {
   int iter = 5;
   int burnin = 2;
   int chains = 1;
+  long seed = 0;
 
   struct python_dichotomousMA_analysis ma_info;
   struct python_dichotomousMA_result ma_res;
   createDichoLoudAnalysisStructs(
-      models, BMD_type, BMR, alpha, weightOption, iter, burnin, chains, D, Y, N, &ma_info, &ma_res
+      models, BMD_type, BMR, alpha, weightOption, iter, burnin, chains, seed, D, Y, N, &ma_info,
+      &ma_res
   );
 
   pythonBMDSLoud(&ma_info, &ma_res);
@@ -1065,8 +1067,9 @@ void createContAnalysisStructs(
 
 void createDichoLoudAnalysisStructs(
     std::vector<int> &models, int BMD_type, double BMR, double alpha, int weightOption, int iter,
-    int burnin, int chains, std::vector<double> &D, std::vector<double> &Y, std::vector<double> &N,
-    python_dichotomousMA_analysis *ma_info, python_dichotomousMA_result *ma_res
+    int burnin, int chains, long seed, std::vector<double> &D, std::vector<double> &Y,
+    std::vector<double> &N, python_dichotomousMA_analysis *ma_info,
+    python_dichotomousMA_result *ma_res
 ) {
   int datatype = l_dichotomous;
   int numDataRows = sizeof(D) / sizeof(D[0]);
@@ -1096,6 +1099,7 @@ void createDichoLoudAnalysisStructs(
   ma_info->models = models;
   // ma_info->datatype = datatype;
   ma_info->weightOption = weightOption;
+  ma_info->seed = seed;
   ma_info->nmodels = nmodels;
   ma_info->pyDA = anal;
   // assign default priors

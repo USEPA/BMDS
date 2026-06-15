@@ -1050,7 +1050,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
     std::function<
         double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
         lll,
-    std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priii, const ptr2& nonlinn
+    std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priii, const ptr2& nonlinn,
+    long seed
 ) {
   // std::function<double(Eigen::VectorXd &, const Eigen::MatrixXd& ,const Eigen::VectorXd &)>
   // target= &posterior_d_cpp;
@@ -1091,6 +1092,7 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   double W = 0.0;
   double Wnew = 0.0;
   gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
+  gsl_rng_set(r, seed);
 
   for (auto i = 0; i < nsamples; i++) {
     cut = targett(theta_cur, X, Y, priorr, lll, priii, nonlinn);
@@ -1168,7 +1170,8 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
     std::function<
         double(Eigen::VectorXd, const Eigen::MatrixXd&, const Eigen::MatrixXd&, const ptr2&)>
         lll,
-    std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priii, const ptr2& nonlinn
+    std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priii, const ptr2& nonlinn,
+    long seed
 ) {
   Eigen::MatrixXd returnSamples = Eigen::MatrixXd::Zero(nsamples, Ycur.size());
 
@@ -1192,6 +1195,7 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
   double W = 0.0;
   double Wnew = 0.0;
   gsl_rng* r = gsl_rng_alloc(gsl_rng_default);
+  gsl_rng_set(r, seed);
 
   for (auto i = 0; i < nsamples; i++) {
     // cut = as<double>(target(Ycur, X, Y));
@@ -1671,7 +1675,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
     const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const Eigen::VectorXd& initial_val,
     const Eigen::MatrixXd& cov, const Eigen::MatrixXd& priorr, int model_typ, int burnin_samples,
     int keep_samples, int nrounds, const Eigen::VectorXd& qtiles, double LAM, int pri_typ,
-    int ll_typ
+    int ll_typ, long seed
 ) {
   // get the nonlinearity type (1 = Hill, 2 = Power, 3 = Exponential, 5 = Logistic, otherwise use
   // Linear)
@@ -1716,7 +1720,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
 
   // initial run
   Eigen::MatrixXd init_samps = initial_slice_sampler_cpp3(
-      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn
+      Y, initial_val, postt, priorr, cov, X, burnin_samples, LAM, logli, priii, nonlinn, seed
   );
   Eigen::MatrixXd beta_return;
   Eigen::MatrixXd knot_return;
@@ -1730,7 +1734,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
     Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
     init_samps = transformed_slice_sampler_cpp3(
         Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, burnin_samples, LAM,
-        logli, priii, nonlinn
+        logli, priii, nonlinn, seed
     );
   }
   compute_transform_f_lag1_cpp3(init_samps, qtiles, beta_return, knot_return);
@@ -1738,7 +1742,7 @@ Eigen::MatrixXd run_latentslice_functional_general(
   Eigen::VectorXd new_start = init_samps.row(burnin_samples - 1);
   init_samps = transformed_slice_sampler_cpp3(
       Y, new_start, postt, priorr, colm, tempp, beta_return, knot_return, X, keep_samples, LAM,
-      logli, priii, nonlinn
+      logli, priii, nonlinn, seed
   );
   return init_samps;
 }
