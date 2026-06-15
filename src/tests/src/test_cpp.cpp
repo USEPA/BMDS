@@ -2161,7 +2161,7 @@ void runPythonDichoLoud() {
   // ma_info.actual_parms = actualParms;
   ma_info.prior_cols = priorCols;
   ma_info.models = models;
-  ma_info.datatype = datatype;
+  // ma_info.datatype = datatype;
   ma_info.weightOption = weightOption;
   // ma_info.modelPriors = modelPriors;
   ma_info.nmodels = nmodels;

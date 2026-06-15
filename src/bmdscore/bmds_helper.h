@@ -214,7 +214,6 @@ struct fitInput {
 
 // result struct for LOUD CMA
 struct fitResult {
-  // Eigen::VectorXd parms;
   Eigen::MatrixXd parms;
   double int_factor;
   double waic;
@@ -280,12 +279,12 @@ struct python_dichotomousMA_analysis {
       loud_bmd_type;  // list of bmd types corresponding to each model for loud approach
 
   std::vector<double> modelPriors;  // prior probability on the model
+  long seed;
 
   struct python_dichotomous_analysis pyDA;
 
   // LOUD properties
   int weightOption;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
-  int datatype;      // is this needed????                  // uses loud_datatype enum
 };
 
 struct python_dichotomousMA_result {

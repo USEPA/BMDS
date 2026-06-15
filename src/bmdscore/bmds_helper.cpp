@@ -5165,10 +5165,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   double max_dose = D.maxCoeff();
   D = (1 / max_dose) * D;
 
+  loud_datatype datatype = loud_datatype::l_dichotomous;
+
   struct fitInput loudIn = createFitInput(
       D, Y, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING, BMDS_MISSING,
       BMDS_MISSING, BMDS_MISSING, pyMA->pyDA.samples, pyMA->pyDA.burnin, pyMA->pyDA.BMR,
-      BMDS_MISSING, pyMA->datatype, pyMA->pyDA.BMD_type, true, pyMA->weightOption, BMDS_MISSING
+      BMDS_MISSING, datatype, pyMA->pyDA.BMD_type, true, pyMA->weightOption, BMDS_MISSING
   );
 
   // required for additional calcs
@@ -5236,8 +5238,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     }
 
     // bridge sample, pivotal pvalue and loglike calcs for each model (combined chains)
-    int ll_type = getLoudLLType(BMDS_MISSING, pyMA->datatype);
-    int model_typ = getLoudModelType(pyRes->models[i].model, BMDS_MISSING, pyMA->datatype);
+    int ll_type = getLoudLLType(BMDS_MISSING, datatype);
+    int model_typ = getLoudModelType(pyRes->models[i].model, BMDS_MISSING, datatype);
     Eigen::VectorXd parmVec = colwise_median(combLoudRes->R);
     LogLikeFunction logli = getLogLikeFunc(ll_type);
     ptr2 model_fun = choose_nonlinearity2(model_typ);

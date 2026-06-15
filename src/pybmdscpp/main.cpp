@@ -209,6 +209,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("degree", &python_dichotomous_analysis::degree)
       .def_readwrite("samples", &python_dichotomous_analysis::samples)
       .def_readwrite("burnin", &python_dichotomous_analysis::burnin)
+      .def_readwrite("chains", &python_dichotomous_analysis::chains)
       .def_readwrite("parms", &python_dichotomous_analysis::parms)
       .def_readwrite("prior_cols", &python_dichotomous_analysis::prior_cols)
       .def_readwrite(
@@ -234,7 +235,8 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite(
           "gof_chi_sqr_statistic", &python_dichotomous_model_result::gof_chi_sqr_statistic
       )
-      .def_readwrite("loudRes", &python_dichotomous_model_result::loudRes);
+      .def_readwrite("loudRes", &python_dichotomous_model_result::loudRes)
+      .def_readwrite("combinedLoudRes", &python_dichotomous_model_result::combinedLoudRes);
 
   py::class_<python_dichotomousMA_analysis>(m, "python_dichotomousMA_analysis")
       .def(py::init<>())
@@ -247,7 +249,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("modelPriors", &python_dichotomousMA_analysis::modelPriors)
       .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA)
       .def_readwrite("weightOption", &python_dichotomousMA_analysis::weightOption)
-      .def_readwrite("datatype", &python_dichotomousMA_analysis::datatype);
+      .def_readwrite("seed", &python_dichotomousMA_analysis::seed);
 
   py::class_<python_dichotomousMA_result>(m, "python_dichotomousMA_result")
       .def(py::init<>())
