@@ -649,3 +649,6 @@ def df_to_table(report: Report, df: pd.DataFrame):
     for i, row in enumerate(data["data"]):
         for j, value in enumerate(row):
             write_cell(cells[(i + 1) * n_col + j], value, style=body)
+
+    for footnote in df.attrs.get("footnotes", []):
+        report.document.add_paragraph(str(footnote), report.styles.tbl_footnote)

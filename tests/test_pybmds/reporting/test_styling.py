@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 
-from pybmds.reporting.styling import Report, write_bayesian_table, write_dataset_table
+import pandas as pd
+
+from pybmds.reporting.styling import Report, df_to_table, write_bayesian_table, write_dataset_table
 
 
 def test_write_dataset_table(cdataset, cidataset, ddataset, nd_dataset):
@@ -12,6 +14,18 @@ def test_write_dataset_table(cdataset, cidataset, ddataset, nd_dataset):
     write_dataset_table(report, ddataset, True)
     write_dataset_table(report, ddataset, False)
     write_dataset_table(report, nd_dataset, False)
+
+
+def test_df_to_table_writes_dataframe_footnotes():
+    report = Report.build_default()
+    df = pd.DataFrame({"Model": ["A"], "BMD": [1.0]})
+    df.attrs["footnotes"] = ["R-hat statistic is calculated only when more than 1 Markov chain is used."]
+
+    df_to_table(report, df)
+
+    assert report.document.paragraphs[-1].text == (
+        "R-hat statistic is calculated only when more than 1 Markov chain is used."
+    )
 
 
 def _bayesian_summary_headers(is_loud: bool) -> list[str]:
