@@ -2114,6 +2114,7 @@ void runPythonDichoLoud() {
 
   int iter = 5;
   int burnin = 2;
+  int chains = 4;
 
   /////////////////////////////////////////////////
   ////END USER INPUT
@@ -2142,6 +2143,7 @@ void runPythonDichoLoud() {
   anal.n = numDataRows;
   anal.samples = iter;
   anal.burnin = burnin;
+  anal.chains = chains;
 
   int prCols = 5;
 

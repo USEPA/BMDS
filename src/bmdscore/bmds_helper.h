@@ -219,7 +219,7 @@ struct fitResult {
   double int_factor;
   double waic;
   Eigen::VectorXd BMD;
-  Eigen::VectorXd R;
+  Eigen::MatrixXd R;
   double ll;
   double pval;
 };
@@ -233,10 +233,11 @@ struct python_dichotomous_analysis {
   std::vector<double> prior;    // a column order matrix (parms x prior_cols)
   int BMD_type;                 // 1 = extra ; added otherwise
   double BMR;
-  double alpha;                  // alpha of the analysis
-  int degree;                    // degree of polynomial used only  multistage
-  int samples;                   // number of MCMC samples.
-  int burnin;                    // size of burin
+  double alpha;  // alpha of the analysis
+  int degree;    // degree of polynomial used only  multistage
+  int samples;   // number of MCMC samples.
+  int burnin;    // size of burin
+  int chains;
   int parms;                     // number of parameters in the model
   int prior_cols;                // colunns in the prior
   bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF,
@@ -260,7 +261,8 @@ struct python_dichotomous_model_result {
   struct dichotomous_GOF gof;
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
-  struct fitResult loudRes;
+  struct fitResult combinedLoudRes;
+  std::vector<fitResult> loudRes;  // one for each chain
 
   double getSRAtDose(double targetDose, std::vector<double> doses);
 };

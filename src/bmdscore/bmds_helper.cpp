@@ -1964,17 +1964,20 @@ void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
 
   // Loud fitResult
   for (int k = 0; k < res->nmodels; k++) {
-    struct fitResult loudRes = res->models[k].loudRes;
-    cleanDouble(&loudRes.int_factor);
-    cleanDouble(&loudRes.waic);
-    cleanDouble(&loudRes.pval);
-    for (int i = 0; i < loudRes.parms.rows(); i++) {
-      for (int j = 0; j < loudRes.parms.cols(); j++) {
-        cleanDouble(&loudRes.parms(i, j));
+    int chains = res->models[k].loudRes.size();
+    for (int chain = 0; chain < chains; chain++) {
+      struct fitResult loudRes = res->models[k].loudRes[chain];
+      cleanDouble(&loudRes.int_factor);
+      cleanDouble(&loudRes.waic);
+      cleanDouble(&loudRes.pval);
+      for (int i = 0; i < loudRes.parms.rows(); i++) {
+        for (int j = 0; j < loudRes.parms.cols(); j++) {
+          cleanDouble(&loudRes.parms(i, j));
+        }
       }
-    }
-    for (int i = 0; i < loudRes.BMD.size(); i++) {
-      cleanDouble(&loudRes.BMD[i]);
+      for (int i = 0; i < loudRes.BMD.size(); i++) {
+        cleanDouble(&loudRes.BMD[i]);
+      }
     }
   }
 }
@@ -2853,8 +2856,6 @@ void bridge_sample(
 
     dg(g_estimate, log_mu, log_cov, isNegative, g_g);
     dg(R, log_mu, log_cov, isNegative, g_post);
-    // std::cout<<"g_g:"<<std::endl<<g_g<<std::endl;
-    // std::cout<<"g_post:"<<std::endl<<g_post<<std::endl;
 
     double p1 = 0.01;
     double log_p1 = 0.0;
@@ -3148,6 +3149,7 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
   );
 
   loudOut->BMD.resize(R.rows());
+  loudOut->R = R;
 
   switch (loudIn->model) {
     case (dich_model::d_qlinear):
@@ -3178,18 +3180,6 @@ void fit_Loud_dicho(const struct fitInput *loudIn, struct fitResult *loudOut) {
       fit_dgamma(loudIn, loudOut, R);
       break;
   }
-
-  // calc LL
-  Eigen::VectorXd parmVec = colwise_median(R);
-  LogLikeFunction logli = getLogLikeFunc(ll_type);
-  ptr2 model_fun = choose_nonlinearity2(model_typ);
-
-  loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
-
-  bridge_sample(R, loudIn, loudOut, priorr, isNegative);
-
-  // pivotal pvalue
-  loudOut->pval = pivotal_pvalue(R, loudIn);
 }
 
 // LOUD fits for continuous models
@@ -5187,51 +5177,99 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   anal.Y = new double[n];
   anal.doses = new double[n];
   anal.n_group = new double[n];
-  // anal.prior = new double[pyMA->actual_parms[i] * pyMA->pyDA.prior_cols];
-  // anal.model = pyMA->models[i];
-  // anal.parms = pyMA->actual_parms[i];
 
   // ensure we are using scaled doses
   for (int i = 0; i < D.rows(); i++) {
     anal.doses[i] = D(i);
   }
 
-  struct fitResult loudOut;
+  int samples = pyMA->pyDA.samples;
+  int chains = pyMA->pyDA.chains;
+  // total iterations (combined chains)
+  int iter = samples * chains;  // pyMA->pyDA.samples;
+
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
+  struct fitResult loudOut;
   for (int i = 0; i < numModels; i++) {
-    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
-    loudIn.priorr = priorr;
-    loudIn.model = pyMA->models[i];
-    pyRes->models[i].bmdsRes.validResult = false;
+    std::vector<fitResult> loudRes(pyMA->pyDA.chains);
+    pyRes->models[i].loudRes = loudRes;
+    for (int chain = 0; chain < chains; chain++) {
+      Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+      loudIn.priorr = priorr;
+      loudIn.model = pyMA->models[i];
+      pyRes->models[i].bmdsRes.validResult = false;
 
-    fit_Loud_dicho(&loudIn, &loudOut);
+      fit_Loud_dicho(&loudIn, &loudOut);
 
-    pyRes->models[i].loudRes = loudOut;
-    pyRes->models[i].nparms = loudOut.parms.cols();
-    pyRes->models[i].model = pyMA->models[i];
-    pyRes->models[i].dist_numE = 0;
+      pyRes->models[i].loudRes[chain] = loudOut;
+      pyRes->models[i].nparms = loudOut.parms.cols();
+      pyRes->models[i].model = pyMA->models[i];
+      pyRes->models[i].dist_numE = 0;
+    }
+  }
 
-    Eigen::Index nan_count = loudOut.BMD.array().isNaN().cast<int>().sum();
-    if (nan_count <= loudOut.BMD.size() / 2) {
+  for (int i = 0; i < numModels; i++) {
+    // combine chains by model
+    int nparms = pyRes->models[i].nparms;
+    int rcols = pyRes->models[i].loudRes[0].R.cols();
+
+    fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
+    combLoudRes->R.resize(iter, rcols);
+    combLoudRes->BMD.resize(iter);
+    combLoudRes->parms.resize(iter, nparms);
+    int current_row = 0;
+    for (int chain = 0; chain < pyRes->models[i].loudRes.size(); chain++) {
+      fitResult *chainLoudRes = &pyRes->models[i].loudRes[chain];
+      combLoudRes->R.block(current_row, 0, samples, rcols) = chainLoudRes->R;
+      combLoudRes->BMD.segment(current_row, samples) = chainLoudRes->BMD;
+      combLoudRes->parms.block(current_row, 0, samples, nparms) = chainLoudRes->parms;
+      current_row += samples;
+    }
+
+    // do we evaluate validity by chain or by model?
+    // Expect to do this by model after chains are combined, so this needs to move
+    Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
+    if (nan_count <= combLoudRes->BMD.size() / 2) {
       pyRes->models[i].bmdsRes.validResult = true;
       isValid[i] = true;
     }
 
+    // bridge sample, pivotal pvalue and loglike calcs for each model (combined chains)
+    int ll_type = getLoudLLType(BMDS_MISSING, pyMA->datatype);
+    int model_typ = getLoudModelType(pyRes->models[i].model, BMDS_MISSING, pyMA->datatype);
+    Eigen::VectorXd parmVec = colwise_median(combLoudRes->R);
+    LogLikeFunction logli = getLogLikeFunc(ll_type);
+    ptr2 model_fun = choose_nonlinearity2(model_typ);
+
+    combLoudRes->ll = logli(parmVec, loudIn.doses, loudIn.Y, model_fun);
+
+    // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
+    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    loudIn.model = pyMA->models[i];
+    loudIn.priorr = priorr;
+    loudIn.iter = iter;
+    // isNegative is repeated also
+    std::vector<bool> isNegative(priorr.rows());
+    for (int i = 0; i < isNegative.size(); i++) {
+      isNegative[i] = false;
+    }
+    // loudIn already has priorr, so no need to pass separately
+    bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
+    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+
     // GOF calcs
     anal.model = pyMA->models[i];
-    anal.parms = pyRes->models[i].nparms;
+    anal.parms = nparms;
     anal.prior = pyMA->priors[i].data();
 
     struct dichotomous_model_result res;
-    int nparms = pyRes->models[i].nparms;
     res.parms = new double[nparms];
     res.nparms = nparms;
     res.cov = new double[nparms * nparms];
     res.bmd_dist = new double[1];
 
     convertFromPythonDichoAnalysis(&anal, &pyMA->pyDA);
-    res.max = pyRes->models[i].loudRes.ll;
 
     // LOUD parameter estimates currently correspond to the scaled dose domain.
     // convertFromPythonDichoAnalysis restores the original doses, so reset them
@@ -5242,7 +5280,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // set res.parms to col means for individual model parms
     // TODO check to make sure we should use mean instead of median
-    Eigen::VectorXd retParms = colwise_median(loudOut.parms);
+    Eigen::VectorXd retParms = colwise_median(combLoudRes->parms);
 
     // need to rescale for BMDS form
     scale_dichoParms(pyMA->models[i], retParms);
@@ -5256,7 +5294,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     anal.parms = pyMA->actual_parms[i];
 
     convertFromPythonDichoRes(&res, &pyRes->models[i]);
-    res.max = pyRes->models[i].loudRes.ll;
+    res.max = combLoudRes->ll;
 
     bool isLoud = true;
     additional_dicho_calcs(
@@ -5274,19 +5312,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   posterior_probs_waic.reserve(pyMA->nmodels);
   posterior_probs_int_factor.reserve(pyMA->nmodels);
   for (int i = 0; i < pyMA->nmodels; i++) {
-    posterior_probs_waic.push_back(pyRes->models[i].loudRes.waic);
-    posterior_probs_int_factor.push_back(pyRes->models[i].loudRes.int_factor);
+    posterior_probs_waic.push_back(pyRes->models[i].combinedLoudRes.waic);
+    posterior_probs_int_factor.push_back(pyRes->models[i].combinedLoudRes.int_factor);
   }
 
   calcLoudPosteriors(
       posterior_probs_waic, posterior_probs_int_factor, posterior_probs, pyMA->weightOption, isValid
   );
 
-  int iter = pyMA->pyDA.samples;
-
   // unscale bmd and parms
   for (int i = 0; i < pyMA->nmodels; i++) {
-    fitResult *fitRes = &pyRes->models[i].loudRes;
+    fitResult *fitRes = &pyRes->models[i].combinedLoudRes;
     fitRes->BMD *= max_dose;
     Eigen::MatrixXd parms = fitRes->parms.transpose();
     // rescale fitResult parms
@@ -5295,14 +5331,15 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       rescale(&parmCol, (dich_model)pyRes->models[i].model, max_dose);
       parms.col(j) = parmCol;
     }
-    pyRes->models[i].loudRes.parms = parms.transpose();
+    pyRes->models[i].combinedLoudRes.parms = parms.transpose();
   }
 
   //  calc individual model bmdl, bmd, bmdu
   for (int i = 0; i < pyMA->nmodels; i++) {
     std::vector<double> bmd_dist;
-    bmd_dist.resize(pyRes->models[i].loudRes.BMD.size());
-    Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) = pyRes->models[i].loudRes.BMD;
+    bmd_dist.resize(pyRes->models[i].combinedLoudRes.BMD.size());
+    Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) =
+        pyRes->models[i].combinedLoudRes.BMD;
     std::vector<double> sorted_bmd(bmd_dist);
     std::sort(sorted_bmd.begin(), sorted_bmd.end());
     double bmdl = findQuantileVals(sorted_bmd, pyMA->pyDA.alpha);
@@ -5316,12 +5353,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     pyRes->models[i].bmdsRes.BMDL = bmdl;
     pyRes->models[i].bmdsRes.BMDU = bmdu;
   }
-
+  // Eigen::MatrixXd lbmd(iter*chains, pyMA->nmodels);
   Eigen::MatrixXd lbmd(iter, pyMA->nmodels);
   for (int i = 0; i < pyMA->nmodels; i++) {
-    lbmd.col(i) = pyRes->models[i].loudRes.BMD;
+    lbmd.col(i) = pyRes->models[i].combinedLoudRes.BMD;
   }
-
   // sample from lbmd using posterior_probs
   // seed the generator
   std::random_device rd;
@@ -5329,7 +5365,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::mt19937 gen(rd());
   // define weight distribution
   std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
+  // std::vector<double> bmds_c(iter*chains);
   std::vector<double> bmds_c(iter);
+  // for (int i = 0; i < iter*chains; i++) {
   for (int i = 0; i < iter; i++) {
     int result = d(gen);
     bmds_c[i] = lbmd(i, result);
@@ -5359,14 +5397,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   pyRes->bmdsRes.BMDL_MA = bmdl;
   pyRes->bmdsRes.BMDU_MA = bmdu;
   pyRes->bmd_dist = bmd_ma_ret;
-  // pyRes->bmd_dist = bmds_c;
   pyRes->post_probs = posterior_probs;
 
   clean_dicho_MA_results(pyRes);
-  //
-  // for (int i = 0; i < numModels; i++) {
-  //   std::cout<<"python res max:"<<pyRes->models[i].max<<std::endl;
-  // }
 }
 
 void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid) {
@@ -5377,7 +5410,6 @@ void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid) {
     weights[i] -= max_weight;
     weights[i] = exp(weights[i]);
     if (!isValid[i]) {
-      std::cout << "i:" << i << " is not valid" << std::endl;
       weights[i] = 0.0;
     }
     tmpExpSum += weights[i];
@@ -10081,9 +10113,11 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   std::stringstream ss;
 
   // set boolean for LOUD vs BMDS
+  int chains = 1;
   bool isLOUD = false;
-  if (pyRes->loudRes.parms.rows() > 0) {
+  if (pyRes->loudRes[0].parms.rows() > 0) {
     isLOUD = true;
+    chains = pyRes->loudRes.size();
   }
 
   ss << std::endl << "Struct: python_dichotomous_model_result" << std::endl;
@@ -10115,7 +10149,12 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   ss << printBmdsStruct(&pyRes->aod, false);
 
   if (isLOUD) {
-    ss << printBmdsStruct(&pyRes->loudRes, false);
+    ss << std::endl << "combined:";
+    ss << printBmdsStruct(&pyRes->combinedLoudRes, false);
+    for (int chain = 0; chain < chains; chain++) {
+      ss << std::endl << "chain:" << chain;
+      ss << printBmdsStruct(&pyRes->loudRes[chain], false);
+    }
   } else {
     ss << std::endl << "bmd_dist" << std::endl;
     ss << std::endl;
