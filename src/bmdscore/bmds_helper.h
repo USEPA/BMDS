@@ -314,10 +314,11 @@ struct python_continuous_analysis {
   double tail_prob;             // tail probability
   int disttype;                 // Distribution type defined in the enum distribution
   double alpha;                 // specified alpha
-  int samples;                  // number of MCMC samples.
   int degree;                   // if polynomial it is the degree
+  int samples;                  // number of MCMC samples.
   int burnin;                   // burn in
-  int parms;                    // number of parameters
+  int chains;
+  int parms;  // number of parameters
   int prior_cols;
   int transform_dose;  // Use the arc-sin-hyperbolic inverse to transform dose.
   bool restricted;
@@ -342,7 +343,8 @@ struct python_continuous_model_result {
   struct continuous_GOF gof;
   struct BMDS_results bmdsRes;
   struct continuous_AOD aod;
-  struct fitResult loudRes;
+  std::vector<fitResult> loudRes;
+  struct fitResult combinedLoudRes;
 };
 
 struct python_continuousMA_analysis {

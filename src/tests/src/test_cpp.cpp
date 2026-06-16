@@ -52,8 +52,8 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
-  //  runPythonContLoud();
-  runPythonDichoLoud();
+  runPythonContLoud();
+  //  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
   //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
@@ -2227,8 +2227,10 @@ void runPythonContLoud() {
   double BMRF = 1.0;  // 1.0;
   int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
                       // hybrid_added   from src/include/cmodeldefs.h
-  int iter = 50;
-  int burnin = 20;
+  int iter = 5;
+  int burnin = 2;
+  int chains = 4;
+  long seed = 0;
 
   int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
   int priorCols = 5;
@@ -2250,15 +2252,15 @@ void runPythonContLoud() {
   //  normal = 1, normal_ncv = 2, log_normal = 3
 
   // testing
-  // std::vector<int> models = {8, 8};
-  // std::vector<int> dists = {1, 2};
-  // std::vector<int> models = {5};
-  // std::vector<int> dists = {3};
+  std::vector<int> models = {8, 8};
+  std::vector<int> dists = {1, 2};
+  // std::vector<int> models = {8};
+  // std::vector<int> dists = {1};
   // kitchen sink
-  std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
-                             21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
-  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
-                            1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+  // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+  //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+  //                          1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
   // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
   //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
   // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
@@ -2381,6 +2383,7 @@ void runPythonContLoud() {
   anal.detectAdvDir = detectAdvDir;
   anal.samples = iter;
   anal.burnin = burnin;
+  anal.chains = chains;
 
   struct python_continuousMA_analysis ma_info;
   // ma_info.actual_parms = numParms;
@@ -2398,6 +2401,7 @@ void runPythonContLoud() {
   ma_info.loud_dist_type = dists;
   ma_info.nmodels = nmodels;
   ma_info.prior_cols = std::vector<int>(nmodels, 5);
+  ma_info.seed = seed;
 
   std::vector<python_continuous_model_result> res(nmodels);
   //  for (int i = 0; i < models.size(); i++) {

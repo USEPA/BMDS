@@ -276,9 +276,10 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("tail_prob", &python_continuous_analysis::tail_prob)
       .def_readwrite("disttype", &python_continuous_analysis::disttype)
       .def_readwrite("alpha", &python_continuous_analysis::alpha)
-      .def_readwrite("samples", &python_continuous_analysis::samples)
       .def_readwrite("degree", &python_continuous_analysis::degree)
+      .def_readwrite("samples", &python_continuous_analysis::samples)
       .def_readwrite("burnin", &python_continuous_analysis::burnin)
+      .def_readwrite("chains", &python_continuous_analysis::chains)
       .def_readwrite("parms", &python_continuous_analysis::parms)
       .def_readwrite("prior_cols", &python_continuous_analysis::prior_cols)
       .def_readwrite("transform_dose", &python_continuous_analysis::transform_dose)
@@ -304,6 +305,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("gof", &python_continuous_model_result::gof)
       .def_readwrite("bmdsRes", &python_continuous_model_result::bmdsRes)
       .def_readwrite("aod", &python_continuous_model_result::aod)
+      .def_readwrite("combinedLoudRes", &python_continuous_model_result::combinedLoudRes)
       .def_readwrite("loudRes", &python_continuous_model_result::loudRes);
 
   py::class_<python_continuousMA_analysis>(m, "python_continuousMA_analysis")
