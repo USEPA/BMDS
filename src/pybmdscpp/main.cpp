@@ -249,6 +249,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("modelPriors", &python_dichotomousMA_analysis::modelPriors)
       .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA)
       .def_readwrite("weightOption", &python_dichotomousMA_analysis::weightOption)
+      .def_readwrite("datatype", &python_dichotomousMA_analysis::datatype)
       .def_readwrite("seed", &python_dichotomousMA_analysis::seed);
 
   py::class_<python_dichotomousMA_result>(m, "python_dichotomousMA_result")

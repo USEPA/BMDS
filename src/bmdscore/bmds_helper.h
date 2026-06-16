@@ -287,6 +287,7 @@ struct python_dichotomousMA_analysis {
 
   // LOUD properties
   int weightOption;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;
 };
 
 struct python_dichotomousMA_result {
