@@ -19,7 +19,9 @@ def test_write_dataset_table(cdataset, cidataset, ddataset, nd_dataset):
 def test_df_to_table_writes_dataframe_footnotes():
     report = Report.build_default()
     df = pd.DataFrame({"Model": ["A"], "BMD": [1.0]})
-    df.attrs["footnotes"] = ["R-hat statistic is calculated only when more than 1 Markov chain is used."]
+    df.attrs["footnotes"] = [
+        "R-hat statistic is calculated only when more than 1 Markov chain is used."
+    ]
 
     df_to_table(report, df)
 
