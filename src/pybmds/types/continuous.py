@@ -439,11 +439,13 @@ class ContinuousParameters(BaseModel):
         param_names = param_names[:n_params]
         priors = priors[:, :n_params]
 
-        values = cls._median_draw(draws)
-        se = np.std(draws, axis=0, ddof=0)
-        lower_ci = np.quantile(draws, 0.025, axis=0)
-        upper_ci = np.quantile(draws, 0.975, axis=0)
-        cov = np.cov(draws, rowvar=False)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            values = cls._median_draw(draws)
+            se = np.std(draws, axis=0, ddof=0)
+            lower_ci = np.quantile(draws, 0.025, axis=0)
+            upper_ci = np.quantile(draws, 0.975, axis=0)
+            cov = np.cov(draws, rowvar=False)
         cov = np.atleast_2d(cov)
         if cov.shape != (n_params, n_params):
             cov = np.eye(n_params, dtype=float)

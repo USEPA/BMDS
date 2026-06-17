@@ -5410,16 +5410,30 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 }
 
 void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid) {
-  double max_weight = *std::max_element(weights.begin(), weights.end());
+  std::vector<bool> usable(weights.size(), false);
+  double max_weight = -DBL_MAX;
+
+  for (int i = 0; i < weights.size(); i++) {
+    usable[i] = isValid[i] && std::isfinite(weights[i]) && weights[i] != BMDS_MISSING;
+    if (usable[i] && weights[i] > max_weight) {
+      max_weight = weights[i];
+    }
+  }
 
   double tmpExpSum = 0;
   for (int i = 0; i < weights.size(); i++) {
-    weights[i] -= max_weight;
-    weights[i] = exp(weights[i]);
-    if (!isValid[i]) {
+    if (usable[i]) {
+      weights[i] = exp(weights[i] - max_weight);
+    } else {
       weights[i] = 0.0;
     }
     tmpExpSum += weights[i];
+  }
+  if (tmpExpSum <= 0.0 || !std::isfinite(tmpExpSum)) {
+    for (int i = 0; i < weights.size(); i++) {
+      weights[i] = BMDS_MISSING;
+    }
+    return;
   }
   for (int i = 0; i < weights.size(); i++) {
     weights[i] = weights[i] / tmpExpSum;
@@ -5456,8 +5470,18 @@ void calcLoudPosteriors(
       int nmodels = waic.size();
       double tmpSum = 0;
       for (int i = 0; i < nmodels; i++) {
-        posterior_probs[i] = 0.5 * (waic[i] + int_factor[i]);
+        double waic_weight =
+            std::isfinite(waic[i]) && waic[i] != BMDS_MISSING ? waic[i] : 0.0;
+        double int_factor_weight =
+            std::isfinite(int_factor[i]) && int_factor[i] != BMDS_MISSING ? int_factor[i] : 0.0;
+        posterior_probs[i] = 0.5 * (waic_weight + int_factor_weight);
         tmpSum += posterior_probs[i];
+      }
+      if (tmpSum <= 0.0 || !std::isfinite(tmpSum)) {
+        for (int i = 0; i < nmodels; i++) {
+          posterior_probs[i] = BMDS_MISSING;
+        }
+        break;
       }
       for (int i = 0; i < nmodels; i++) {
         posterior_probs[i] /= tmpSum;

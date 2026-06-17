@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import re
+import warnings
 from pathlib import Path
 
 import arviz as az
@@ -22,6 +23,7 @@ _ARVIZ_USES_DATATREE = "ci_prob" in inspect.signature(az.summary).parameters
 _RHAT_SINGLE_CHAIN_FOOTNOTE = (
     "R-hat statistic is calculated only when more than 1 Markov chain is used."
 )
+_PLOT_ABS_LIMIT = 1e100
 
 
 def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
@@ -43,30 +45,32 @@ def _arviz_summary(
     stat_focus: str,
 ) -> pd.DataFrame:
     """Call either the ArviZ 0.x or 1.x summary API."""
-    if not _ARVIZ_USES_DATATREE:
-        legacy_data = (
-            None
-            if data is None
-            else az.InferenceData(
-                **{name: node.to_dataset() for name, node in data.children.items()}
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        if not _ARVIZ_USES_DATATREE:
+            legacy_data = (
+                None
+                if data is None
+                else az.InferenceData(
+                    **{name: node.to_dataset() for name, node in data.children.items()}
+                )
             )
-        )
-        return az.summary(
-            legacy_data,
-            var_names=var_names,
-            hdi_prob=hdi_prob,
-            stat_focus=stat_focus,
-        )
+            return az.summary(
+                legacy_data,
+                var_names=var_names,
+                hdi_prob=hdi_prob,
+                stat_focus=stat_focus,
+            )
 
-    kind = "all_median" if stat_focus == "median" else "all"
-    return az.summary(
-        data,
-        var_names=var_names,
-        ci_prob=hdi_prob,
-        ci_kind="eti",
-        kind=kind,
-        round_to="none",
-    )
+        kind = "all_median" if stat_focus == "median" else "all"
+        return az.summary(
+            data,
+            var_names=var_names,
+            ci_prob=hdi_prob,
+            ci_kind="eti",
+            kind=kind,
+            round_to="none",
+        )
 
 
 def _plot_dist(
@@ -76,16 +80,42 @@ def _plot_dist(
     linewidth: float = 1.5,
 ) -> plt.Axes:
     """Plot a one-dimensional density without relying on ArviZ's plotting API."""
-    draws = np.asarray(draws, dtype=float)
-    draws = draws[np.isfinite(draws)]
+    draws = _plot_safe_values(draws)
+    if draws.size == 0:
+        return ax
     if draws.size < 2 or np.unique(draws).size < 2:
         ax.hist(draws, density=True, color=color, alpha=0.35)
         return ax
 
-    density = gaussian_kde(draws)
-    x = np.linspace(draws.min(), draws.max(), 200)
-    ax.plot(x, density(x), color=color, linewidth=linewidth)
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            density = gaussian_kde(draws)
+            x = np.linspace(draws.min(), draws.max(), 200)
+            y = density(x)
+    except (ValueError, np.linalg.LinAlgError):
+        ax.hist(draws, density=True, color=color, alpha=0.35)
+        return ax
+
+    ax.plot(x, y, color=color, linewidth=linewidth)
     return ax
+
+
+def _plot_safe_values(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=float)
+    values = values[np.isfinite(values)]
+    return values[np.abs(values) <= _PLOT_ABS_LIMIT]
+
+
+def _is_plot_safe_value(value: float) -> bool:
+    return np.isfinite(value) and abs(value) <= _PLOT_ABS_LIMIT
+
+
+def _safe_tight_layout(fig: plt.Figure, *args, **kwargs) -> None:
+    try:
+        fig.tight_layout(*args, **kwargs)
+    except (OverflowError, ValueError):
+        return None
 
 
 def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
@@ -157,18 +187,19 @@ def _build_observed_data(dataset) -> xr.Dataset:
     """
     Build ArviZ observed_data from a pybmds dataset.
 
-    Supports both dichotomous and continuous grouped datasets.
+    Supports dichotomous, continuous grouped, and continuous individual datasets.
     Produces a structure like:
 
     /observed_data
-      Dimensions: (dose_group: N)
+      Dimensions: (dose_group: N[, observation: M])
       Coordinates:
         dose_group
+        observation
       Data variables:
         dose
         ...
       Attributes:
-        dtype: dichotomous|continuous
+        dtype: dichotomous|continuous|continuous_individual
     """
     if not hasattr(dataset, "doses"):
         raise ValueError("session.dataset must have a 'doses' attribute.")
@@ -183,6 +214,23 @@ def _build_observed_data(dataset) -> xr.Dataset:
     )
 
     observed["dose"] = ("dose_group", doses)
+
+    # Continuous individual dataset
+    if hasattr(dataset, "individual_doses") and hasattr(dataset, "responses"):
+        individual_doses = np.asarray(dataset.individual_doses, dtype=float)
+        responses = np.asarray(dataset.responses, dtype=float)
+        n_observations = len(individual_doses)
+
+        observed = observed.assign_coords(
+            observation=np.arange(n_observations, dtype=int),
+        )
+        observed["n"] = ("dose_group", np.asarray(dataset.ns, dtype=int))
+        observed["mean"] = ("dose_group", np.asarray(dataset.means, dtype=float))
+        observed["stdev"] = ("dose_group", np.asarray(dataset.stdevs, dtype=float))
+        observed["individual_dose"] = ("observation", individual_doses)
+        observed["response"] = ("observation", responses)
+        observed.attrs["dtype"] = "continuous_individual"
+        return observed
 
     # Dichotomous dataset
     if hasattr(dataset, "incidences") and hasattr(dataset, "ns"):
@@ -202,7 +250,8 @@ def _build_observed_data(dataset) -> xr.Dataset:
     raise ValueError(
         "Unsupported dataset type. Expected either:\n"
         "- dichotomous: doses, ns, incidences\n"
-        "- continuous: doses, ns, means, stdevs"
+        "- continuous: doses, ns, means, stdevs\n"
+        "- continuous individual: individual_doses, responses"
     )
 
 
@@ -391,33 +440,28 @@ def _ma_bmd_posterior_figure(
     if ma_draws.size > 0:
         _plot_dist(ma_draws, ax=ax, color="black", linewidth=2.5)
 
-    ax.axvline(
-        stats["lower"],
-        color="#B04A3A",
-        linestyle="--",
-        linewidth=1.5,
-        alpha=0.9,
-        label="BMDL",
-    )
-    ax.axvline(
-        stats["upper"],
-        color="#2A7F62",
-        linestyle="--",
-        linewidth=1.5,
-        alpha=0.9,
-        label="BMDU",
-    )
-    ax.axvline(
-        stats["median"],
-        color="#111111",
-        linestyle="-",
-        linewidth=1.5,
-        alpha=0.9,
-        label="BMD",
-    )
+    marker_styles = {
+        "lower": {"color": "#B04A3A", "linestyle": "--", "label": "BMDL"},
+        "upper": {"color": "#2A7F62", "linestyle": "--", "label": "BMDU"},
+        "median": {"color": "#111111", "linestyle": "-", "label": "BMD"},
+    }
+    for key, style in marker_styles.items():
+        if not _is_plot_safe_value(stats[key]):
+            continue
+        ax.axvline(
+            stats[key],
+            color=style["color"],
+            linestyle=style["linestyle"],
+            linewidth=1.5,
+            alpha=0.9,
+            label=style["label"],
+        )
+
     text_y_positions = {"lower": 0.82, "median": 0.90, "upper": 0.74}
     labels = {"lower": "BMDL", "median": "BMD", "upper": "BMDU"}
     for key in ("lower", "median", "upper"):
+        if not _is_plot_safe_value(stats[key]):
+            continue
         ax.annotate(
             f"{labels[key]}: {stats[key]:.4g}",
             xy=(stats[key], text_y_positions[key]),
@@ -437,8 +481,9 @@ def _ma_bmd_posterior_figure(
     ax.set_title("Model-averaged BMD distribution", pad=6)
     ax.set_xlabel("BMD")
     ax.set_ylabel("Density")
-    ax.legend()
-    fig.tight_layout()
+    if ax.get_legend_handles_labels()[0]:
+        ax.legend()
+    _safe_tight_layout(fig)
     return fig
 
 
@@ -450,6 +495,8 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     for model_idx, model_name in enumerate(model_names):
         draws = bmd[:, :, model_idx].reshape(-1)
         draws = draws[np.isfinite(draws)]
+        if draws.size == 0:
+            continue
         records.append(
             {
                 "model": str(model_name),
@@ -463,17 +510,31 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         )
 
     ma_quantiles = _ma_bmd_quantiles(idata, alpha)
-    records.append(
-        {
-            "model": "MA_BMD",
-            "BMD": ma_quantiles["median"],
-            "BMDL": ma_quantiles["lower"],
-            "BMDU": ma_quantiles["upper"],
-            "r_hat": np.nan,
-            "ess_bulk": np.nan,
-            "ess_tail": np.nan,
-        }
-    )
+    if all(np.isfinite(ma_quantiles[key]) for key in ("median", "lower", "upper")):
+        records.append(
+            {
+                "model": "MA_BMD",
+                "BMD": ma_quantiles["median"],
+                "BMDL": ma_quantiles["lower"],
+                "BMDU": ma_quantiles["upper"],
+                "r_hat": np.nan,
+                "ess_bulk": np.nan,
+                "ess_tail": np.nan,
+            }
+        )
+
+    if not records:
+        return pd.DataFrame(
+            columns=[
+                "BMD",
+                "BMDL",
+                "BMDU",
+                "R-hat",
+                "Bulk Effective Sample Size",
+                "Tail Effective Sample Size",
+            ],
+            index=pd.Index([], name="model"),
+        )
 
     return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
 
@@ -754,7 +815,7 @@ def _bmd_distributions_figure(idata: xr.DataTree) -> plt.Figure:
         + [("Model Average", "black")],
         ncol=min(5, max(1, len(model_names) + 1)),
     )
-    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.80))
+    _safe_tight_layout(fig, rect=(0.03, 0.03, 0.97, 0.80))
     return fig
 
 
@@ -784,8 +845,7 @@ def _parameter_group_trace_figure(
                 if model_name not in param_model_names.get(var_name, set()):
                     continue
             values = np.asarray(idata.posterior[var_name].sel(model=model_name).values, dtype=float)
-            draws = values.reshape(-1)
-            draws = draws[np.isfinite(draws)]
+            draws = _plot_safe_values(values.reshape(-1))
             if draws.size == 0:
                 continue
 
@@ -797,7 +857,7 @@ def _parameter_group_trace_figure(
 
     _add_figure_legend(fig, [(model_name, color_map[model_name]) for model_name in model_names])
     fig.suptitle(f"{group_name} parameter distributions", y=0.985)
-    fig.tight_layout(rect=(0.03, 0.03, 0.97, 0.965))
+    _safe_tight_layout(fig, rect=(0.03, 0.03, 0.97, 0.965))
     return fig
 
 
@@ -898,7 +958,11 @@ def _bmd_diagnostics_table(idata: xr.DataTree, hdi_prob: float) -> pd.DataFrame:
     if ma_stats is not None:
         rows.append({"model": "MA_BMD", **ma_stats.to_dict()})
 
-    return pd.DataFrame(rows).set_index("model")
+    if rows:
+        return pd.DataFrame(rows).set_index("model")
+
+    alpha = (1 - hdi_prob) / 2
+    return _bmd_summary_table(idata, alpha)
 
 
 def get_model_average_figures(

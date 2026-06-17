@@ -1,7 +1,7 @@
 import numpy as np
 from pydantic import Field
 
-from ..constants import PriorClass
+from ..constants import BMDS_BLANK_VALUE, PriorClass
 from ..types.cma import ContinuousModelAverage, ContinuousModelAverageResult
 from ..types.continuous import ContinuousModelSettings
 from .base import BmdModelAveraging, BmdModelAveragingSchema, InputModelSettings
@@ -50,8 +50,15 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
             ],
             dtype=float,
         )
-        if values.size:
-            dr_y = results.posteriors @ values
+        posteriors = np.asarray(results.posteriors, dtype=float)
+        valid_posteriors = (
+            np.isfinite(posteriors) & (posteriors >= 0) & (posteriors != BMDS_BLANK_VALUE)
+        )
+        if values.size and valid_posteriors.any() and posteriors[valid_posteriors].sum() > 0:
+            weights = posteriors.copy()
+            weights[~valid_posteriors] = 0.0
+            weights = weights / weights.sum()
+            dr_y = weights @ values
             bmds = np.asarray([results.bmdl, results.bmd, results.bmdu], dtype=float)
             bmds_ys = np.interp(bmds, dr_x, dr_y)
             results = results.model_copy(

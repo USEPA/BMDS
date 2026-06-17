@@ -155,6 +155,47 @@ class TestContinuousMa:
         assert np.isnan(rehydrated.model_bmd_dist[0][1])
         assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
 
+    def test_loud_ma_recovers_blank_posteriors_from_waic(self):
+        analysis = SimpleNamespace(
+            result=SimpleNamespace(
+                bmd_dist=np.array([0.1, 0.2, 0.3]),
+                post_probs=np.array([-9999.0, -9999.0]),
+                bmdsRes=SimpleNamespace(BMDL_MA=0.1, BMD_MA=0.2, BMDU_MA=0.3),
+                models=[
+                    SimpleNamespace(
+                        loudRes=SimpleNamespace(
+                            BMD=np.array([0.1, 0.2, 0.3]),
+                            parms=np.array([[1.0], [1.0], [1.0]]),
+                            pval=0.5,
+                            waic=0.0,
+                        )
+                    ),
+                    SimpleNamespace(
+                        loudRes=SimpleNamespace(
+                            BMD=np.array([0.1, 0.2, 0.3]),
+                            parms=np.array([[2.0], [2.0], [2.0]]),
+                            pval=0.5,
+                            waic=-2.0,
+                        )
+                    ),
+                ],
+            ),
+            average=SimpleNamespace(modelPriors=np.array([0.5, 0.5])),
+        )
+        model_results = [
+            SimpleNamespace(plotting=SimpleNamespace(dr_x=np.array([0.0, 1.0]), dr_y=np.ones(2))),
+            SimpleNamespace(
+                plotting=SimpleNamespace(dr_x=np.array([0.0, 1.0]), dr_y=np.full(2, 3.0))
+            ),
+        ]
+
+        result = ContinuousModelAverageResult.from_cpp(analysis, model_results)
+
+        expected = np.exp([0.0, -2.0])
+        expected = expected / expected.sum()
+        np.testing.assert_allclose(result.posteriors, expected)
+        np.testing.assert_allclose(result.dr_y, expected @ np.array([[1.0, 1.0], [3.0, 3.0]]))
+
     def test_loud_draw_helpers_cover_chain_and_fallback_shapes(self):
         chains = [
             SimpleNamespace(BMD=np.array([1.0, 2.0]), parms=np.array([1.0, 2.0, 3.0, 4.0])),

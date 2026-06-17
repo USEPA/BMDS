@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -111,6 +113,26 @@ class TestContinuousParameters:
         assert any(np.array_equal(params.values, draw) for draw in draws)
         assert not np.allclose(params.values, np.mean(draws, axis=0))
         assert not np.allclose(params.values, np.median(draws, axis=0))
+
+    def test_from_loud_draws_suppresses_extreme_draw_warnings(self, cdataset):
+        model = continuous.Power(
+            cdataset,
+            settings=dict(disttype=DistType.normal, priors=PriorClass.bayesian_loud),
+        )
+        draws = np.array(
+            [
+                [1e200, 1e200, 1e200, 1e200],
+                [1.1e200, 1.1e200, 1.1e200, 1.1e200],
+                [1.2e200, 1.2e200, 1.2e200, 1.2e200],
+            ]
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", RuntimeWarning)
+            params = ContinuousParameters.from_loud_draws(model, draws)
+
+        assert len(params.values) == 4
+        assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
 
     def test_exp3(self, cdataset):
         """

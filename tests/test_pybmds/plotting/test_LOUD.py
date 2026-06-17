@@ -293,6 +293,34 @@ class TestLOUD:
         assert ax.patches
         plt.close(fig)
 
+        fig, ax = plt.subplots()
+
+        def raise_kde(*args, **kwargs):
+            raise ValueError("array must not contain infs or NaNs")
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.gaussian_kde", raise_kde)
+        _plot_dist(np.array([1.0, 2.0, 3.0]), ax=ax, color="black")
+        assert ax.patches
+        plt.close(fig)
+
+        fig, ax = plt.subplots()
+
+        class WarningKde:
+            def __init__(self, draws):
+                warnings.warn("overflow encountered in dot", RuntimeWarning, stacklevel=2)
+
+            def __call__(self, x):
+                warnings.warn("overflow encountered in square", RuntimeWarning, stacklevel=2)
+                return np.ones_like(x, dtype=float)
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.gaussian_kde", WarningKde)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", RuntimeWarning)
+            _plot_dist(np.array([1.0, 2.0, 3.0]), ax=ax, color="black")
+        assert ax.lines
+        assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
+        plt.close(fig)
+
         already_shaped = np.arange(6, dtype=float).reshape(2, 3)
         np.testing.assert_array_equal(_reshape_draws(already_shaped, n_chains=2), already_shaped)
         assert _pad_draws(np.ones((2, 1, 1)), 3).shape == (3, 1, 1)
@@ -367,6 +395,26 @@ class TestLOUD:
         _arviz_summary(legacy_idata, ["x"], 0.9, "median")
         assert seen["legacy"] == (["x"], 0.9, "median", "FakeInferenceData")
 
+    def test_arviz_summary_suppresses_runtime_warnings(self, monkeypatch):
+        def fake_summary(*args, **kwargs):
+            warnings.warn("overflow encountered in square", RuntimeWarning, stacklevel=2)
+            return pd.DataFrame({"median": [1.0]}, index=["x"])
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
+        idata = _data_tree(
+            posterior=xr.Dataset(
+                {"x": (("chain", "draw"), np.array([[1.0, 2.0]]))},
+                coords={"chain": [0], "draw": [0, 1]},
+            )
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", RuntimeWarning)
+            actual = _arviz_summary(idata, ["x"], 0.9, "median")
+
+        assert actual.loc["x", "median"] == 1.0
+        assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
+
     def test_summary_helpers_empty_and_error_branches(self, monkeypatch):
         assert _summary_from_draws(np.array([np.nan]), "x", "x", 0.9).empty
         with pytest.raises(ValueError, match="Unsupported draw shape"):
@@ -410,6 +458,61 @@ class TestLOUD:
             plt.close(group["trace_figure"])
         plt.close(posterior)
         plt.close(overlay)
+
+    def test_bmd_diagnostics_falls_back_when_summary_has_no_rows(self, monkeypatch):
+        idata = _fake_loud_idata(n_chains=1)
+        monkeypatch.setattr(
+            "pybmds.plotting.LOUD._multi_summary_table",
+            lambda *args, **kwargs: pd.DataFrame(),
+        )
+
+        bmd_summary = _bmd_diagnostics_table(idata, hdi_prob=0.9)
+
+        assert list(bmd_summary.index) == ["Power (CV)", "Hill (NCV)", "MA_BMD"]
+        assert bmd_summary.loc["MA_BMD", "BMD"] == pytest.approx(11.5)
+
+    def test_loud_figures_skip_values_too_large_for_matplotlib_layout(self):
+        huge = 1e200
+        model_names = ["Power"]
+        idata = _data_tree(
+            posterior=xr.Dataset(
+                {
+                    "BMD": (
+                        ("chain", "draw", "model"),
+                        np.array([[[huge], [huge * 1.1], [huge * 1.2]]]),
+                    ),
+                    "MA_BMD": (
+                        ("chain", "draw"),
+                        np.array([[huge, huge * 1.1, huge * 1.2]]),
+                    ),
+                    "g": (
+                        ("chain", "draw", "model"),
+                        np.array([[[huge], [huge * 1.1], [huge * 1.2]]]),
+                    ),
+                },
+                coords={"chain": [0], "draw": [0, 1, 2], "model": model_names},
+            )
+        )
+
+        posterior = _ma_bmd_posterior_figure(
+            idata,
+            {"lower": huge, "median": huge * 1.1, "upper": huge * 1.2},
+        )
+        overlay = _bmd_distributions_figure(idata)
+        trace = _parameter_group_trace_figure(
+            idata=idata,
+            group_name="Power",
+            model_names=model_names,
+            param_names=["g"],
+            color_map={"Power": "black"},
+        )
+
+        assert posterior.axes
+        assert overlay.axes
+        assert trace.axes
+        plt.close(posterior)
+        plt.close(overlay)
+        plt.close(trace)
 
     def test_get_model_average_figures_hides_single_chain_rhat(self, monkeypatch):
         idata = _fake_loud_idata(n_chains=1)
@@ -469,6 +572,22 @@ class TestLOUD:
         np.testing.assert_array_equal(observed["dose"].values, np.asarray(cdataset3.doses))
         np.testing.assert_array_equal(observed["mean"].values, np.asarray(cdataset3.means))
         np.testing.assert_array_equal(observed["stdev"].values, np.asarray(cdataset3.stdevs))
+
+    def test_build_observed_data_continuous_individual(self, cidataset):
+        observed = _build_observed_data(cidataset)
+
+        assert observed.attrs["dtype"] == "continuous_individual"
+        assert observed.sizes["dose_group"] == len(cidataset.doses)
+        assert observed.sizes["observation"] == len(cidataset.individual_doses)
+        np.testing.assert_array_equal(observed["dose"].values, np.asarray(cidataset.doses))
+        np.testing.assert_array_equal(observed["n"].values, np.asarray(cidataset.ns))
+        np.testing.assert_array_equal(observed["mean"].values, np.asarray(cidataset.means))
+        np.testing.assert_array_equal(observed["stdev"].values, np.asarray(cidataset.stdevs))
+        np.testing.assert_array_equal(
+            observed["individual_dose"].values,
+            np.asarray(cidataset.individual_doses),
+        )
+        np.testing.assert_array_equal(observed["response"].values, np.asarray(cidataset.responses))
 
     def test_model_average_to_inferencedata(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)

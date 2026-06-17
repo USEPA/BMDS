@@ -181,6 +181,33 @@ class ContinuousModelAverageResult(ModelAverageResult):
         return draws.reshape(n_chains, n // n_chains)
 
     @staticmethod
+    def _loud_weights(scores: list[float]) -> np.ndarray:
+        scores = np.asarray(scores, dtype=float)
+        valid = np.isfinite(scores) & (scores != constants.BMDS_BLANK_VALUE)
+        weights = np.zeros(scores.size, dtype=float)
+        if not valid.any():
+            return np.full(scores.size, constants.BMDS_BLANK_VALUE, dtype=float)
+        finite_scores = scores[valid]
+        weights[valid] = np.exp(finite_scores - finite_scores.max())
+        weights_sum = weights.sum()
+        if weights_sum <= 0 or not np.isfinite(weights_sum):
+            return np.full(scores.size, constants.BMDS_BLANK_VALUE, dtype=float)
+        return weights / weights_sum
+
+    @classmethod
+    def _loud_posteriors(cls, posteriors: np.ndarray, waics: list[float]) -> np.ndarray:
+        posteriors = np.asarray(posteriors, dtype=float)
+        valid = (
+            np.isfinite(posteriors)
+            & (posteriors != constants.BMDS_BLANK_VALUE)
+            & (posteriors >= 0)
+            & (posteriors <= 1)
+        )
+        if valid.any() and np.isclose(posteriors[valid].sum(), 1.0):
+            return posteriors
+        return cls._loud_weights(waics)
+
+    @staticmethod
     def _combined_loud_result(result):
         combined = getattr(result, "combinedLoudRes", None)
         if combined is not None and np.asarray(getattr(combined, "BMD", []), dtype=float).size:
@@ -252,6 +279,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
         posteriors = np.asarray(analysis.result.post_probs, dtype=float)
         if posteriors.size == 0:
             raise RuntimeError("C++ MA did not populate post_probs (empty).")
+        posteriors = cls._loud_posteriors(posteriors, model_waics)
 
         bmdsRes = analysis.result.bmdsRes
         bmds = np.asarray([bmdsRes.BMDL_MA, bmdsRes.BMD_MA, bmdsRes.BMDU_MA], dtype=float)
