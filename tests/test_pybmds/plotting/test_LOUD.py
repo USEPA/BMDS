@@ -14,14 +14,19 @@ from pybmds.plotting.LOUD import (
     _arviz_hdi,
     _arviz_summary,
     _as_chain_draws,
+    _bmd_diagnostics_table,
+    _bmd_distributions_figure,
     _bmd_summary_table,
     _build_observed_data,
     _drop_empty_summary_rows,
+    _extract_model_row,
     _figure_from_axes,
     _finite_summary_table,
     _flatten_chain_draws,
+    _hide_rhat_for_single_chain,
     _infer_n_chains,
     _ma_bmd_hdi,
+    _ma_bmd_posterior_figure,
     _ma_bmd_quantiles,
     _model_color_map,
     _multi_summary_table,
@@ -40,6 +45,55 @@ from pybmds.plotting.LOUD import (
 
 def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
     return xr.DataTree.from_dict(groups)
+
+
+def _fake_loud_idata(n_chains=2):
+    model_names = ["Power (CV)", "Hill (NCV)"]
+    n_draws = 4
+    shape = (n_chains, n_draws, len(model_names))
+    coords = {"chain": np.arange(n_chains), "draw": np.arange(n_draws), "model": model_names}
+    posterior = xr.Dataset(
+        {
+            "BMD": (
+                ("chain", "draw", "model"),
+                np.arange(np.prod(shape), dtype=float).reshape(shape) + 1,
+            ),
+            "MA_BMD": (
+                ("chain", "draw"),
+                np.arange(n_chains * n_draws, dtype=float).reshape(n_chains, n_draws) + 10,
+            ),
+            "g": (
+                ("chain", "draw", "model"),
+                np.arange(np.prod(shape), dtype=float).reshape(shape) + 20,
+            ),
+            "alpha": (
+                ("chain", "draw", "model"),
+                np.arange(np.prod(shape), dtype=float).reshape(shape) + 40,
+            ),
+            "model_weights": (("model",), np.array([0.25, 0.75])),
+            "n_param": (("model",), np.array([2, 2])),
+        },
+        coords=coords,
+    )
+    return _data_tree(posterior=posterior)
+
+
+def _fake_loud_session():
+    class FakeModel:
+        def __init__(self, name, verbose, disttype):
+            self._name = name
+            self.bmd_model_class = SimpleNamespace(verbose=verbose)
+            self.settings = SimpleNamespace(alpha=0.05, disttype=disttype)
+            self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g", "alpha"]))
+
+        def name(self):
+            return self._name
+
+    models = [
+        FakeModel("Power (CV)", "Power", DistType.normal),
+        FakeModel("Hill (NCV)", "Hill", DistType.normal_ncv),
+    ]
+    return SimpleNamespace(model_average=SimpleNamespace(models=models))
 
 
 class TestLOUD:
@@ -333,6 +387,70 @@ class TestLOUD:
         )
         with pytest.raises(ValueError, match="Unsupported posterior shape"):
             _finite_summary_table(idata, ["x"], 0.9)
+
+    def test_loud_diagnostics_and_figures_with_synthetic_idata(self):
+        idata = _fake_loud_idata(n_chains=2)
+        session = _fake_loud_session()
+
+        bmd_summary = _bmd_diagnostics_table(idata, hdi_prob=0.9)
+        assert list(bmd_summary.index) == ["Power (CV)", "Hill (NCV)", "MA_BMD"]
+        assert "BMD" in bmd_summary.columns
+
+        parameter_groups = _parameter_group_records(idata, session, hdi_prob=0.9)
+        assert [group["name"] for group in parameter_groups] == ["Power", "Hill"]
+        assert parameter_groups[0]["summary"]["Model"].tolist() == ["CV", "CV"]
+
+        stats = _ma_bmd_quantiles(idata, alpha=0.05)
+        posterior = _ma_bmd_posterior_figure(idata, stats)
+        overlay = _bmd_distributions_figure(idata)
+        assert posterior.axes[0].get_xlabel() == "BMD"
+        assert overlay.axes[0].get_title() == "BMD distributions"
+
+        for group in parameter_groups:
+            plt.close(group["trace_figure"])
+        plt.close(posterior)
+        plt.close(overlay)
+
+    def test_get_model_average_figures_hides_single_chain_rhat(self, monkeypatch):
+        idata = _fake_loud_idata(n_chains=1)
+        session = _fake_loud_session()
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.model_average_to_inferencedata", lambda _: idata)
+
+        figures = get_model_average_figures(session, compressed=False)
+
+        assert figures["bmd_summary"].attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
+        assert figures["multi_summary"].attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
+        assert "R-hat" not in figures["bmd_summary"].columns
+        assert all(
+            group["summary"].attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
+            for group in figures["parameter_groups"]
+        )
+        assert [group["name"] for group in figures["parameter_groups"]] == [
+            "Power CV",
+            "Hill NCV",
+        ]
+
+        for key in ("posterior", "overlay"):
+            plt.close(figures[key])
+        for group in figures["parameter_groups"]:
+            plt.close(group["trace_figure"])
+
+    def test_loud_row_extraction_and_rhat_footnote_helpers(self):
+        summary = pd.DataFrame(
+            {"r_hat": [1.0, 1.1, 1.2], "value": [1.0, 2.0, 3.0]},
+            index=["x", "x[Hill]", "x[0:Power]"],
+        )
+
+        assert _extract_model_row(summary, "x", "MA_BMD")["value"] == 1.0
+        assert _extract_model_row(summary, "x", "Hill")["value"] == 2.0
+        assert _extract_model_row(summary, "x", "Power")["value"] == 3.0
+        assert _extract_model_row(summary, "x", "Gamma") is None
+
+        hidden = _hide_rhat_for_single_chain(summary)
+        hidden = _hide_rhat_for_single_chain(hidden)
+        assert "r_hat" not in hidden.columns
+        assert hidden.attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
 
     def test_build_observed_data_dichotomous(self, ddataset2):
         observed = _build_observed_data(ddataset2)
