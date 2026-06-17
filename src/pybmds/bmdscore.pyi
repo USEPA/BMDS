@@ -52,6 +52,7 @@ class BMDS_results:
 
 class fitResult:
     BMD: list[float]
+    R: list[float]
     int_factor: float
     ll: float
     parms: list[float]
@@ -269,6 +270,7 @@ class python_continuous_analysis:
     Y: list[float]
     alpha: float
     burnin: int
+    chains: int
     degree: int
     detectAdvDir: bool
     disttype: int
@@ -298,7 +300,8 @@ class python_continuous_model_result:
     dist: int
     dist_numE: int
     gof: continuous_GOF
-    loudRes: fitResult
+    combinedLoudRes: fitResult
+    loudRes: list[fitResult]
     max: float
     model: int
     model_df: float
@@ -316,6 +319,9 @@ class python_dichotomousMA_analysis:
     prior_cols: list[int]
     priors: list[list[float]]
     pyDA: python_dichotomous_analysis
+    seed: int
+    datatype: int
+    weightOption: int
     def __init__(self) -> None: ...
 
 class python_dichotomousMA_result:
@@ -333,13 +339,14 @@ class python_dichotomous_analysis:
     Y: list[float]
     alpha: float
     burnin: int
+    chains: int
     degree: int
     doses: list[float]
     model: int
     n: int
     n_group: list[float]
     parms: int
-    C: bool
+    countAllParmsOnBoundary: bool
     prior: list[float]
     prior_cols: int
     samples: int
@@ -355,13 +362,38 @@ class python_dichotomous_model_result:
     gof: dichotomous_GOF
     gof_chi_sqr_statistic: float
     gof_p_value: float
-    loudRes: fitResult
+    combinedLoudRes: fitResult
+    loudRes: list[fitResult]
     max: float
     model: int
     model_df: float
     nparms: int
     parms: list[float]
     total_df: float
+    def __init__(self) -> None: ...
+
+class python_continuousMA_analysis:
+    actual_parms: list[int]
+    datatype: int
+    disttype: list[int]
+    modelPriors: list[float]
+    models: list[int]
+    nmodels: int
+    nparms: list[int]
+    prior_cols: list[int]
+    priors: list[list[float]]
+    pyCA: python_continuous_analysis
+    seed: int
+    weightOption: int
+    def __init__(self) -> None: ...
+
+class python_continuousMA_result:
+    bmd_dist: list[float]
+    bmdsRes: BMDSMA_results
+    dist_numE: int
+    models: list[python_continuous_model_result]
+    nmodels: int
+    post_probs: list[float]
     def __init__(self) -> None: ...
 
 class python_multitumor_analysis:

@@ -55,8 +55,8 @@ class DichotomousModelAverage:
         analysis.n = dataset.num_dose_groups
         n_chains = models[0].settings.n_chains
         seed = models[0].settings.seed
-        if hasattr(analysis, "n_chains"):
-            analysis.n_chains = n_chains
+        if hasattr(analysis, "chains"):
+            analysis.chains = n_chains
         if seed is not None and hasattr(analysis, "seed"):
             analysis.seed = seed
 
@@ -75,8 +75,6 @@ class DichotomousModelAverage:
             if prior_class is PriorClass.bayesian_loud
             else 0
         )
-        if hasattr(average, "n_chains"):
-            average.n_chains = n_chains
         if seed is not None and hasattr(average, "seed"):
             average.seed = seed
 
@@ -92,16 +90,9 @@ class DichotomousModelAverage:
         result.dist_numE = 200
         result.post_probs = [0.0] * result.nmodels
         if prior_class is PriorClass.bayesian_loud:
-            result.bmd_dist = [0.0] * int(analysis.samples)
             result.models = [
                 bmdscore.python_dichotomous_model_result() for _ in range(result.nmodels)
             ]
-            for i, model in enumerate(models):
-                nparms = int(model.structs.result.nparms)
-                iters = int(analysis.samples)
-                loud = result.models[i].loudRes
-                loud.parms = [0.0] * (nparms * iters)
-                loud.BMD = [0.0] * iters
         else:
             result.bmd_dist = [0.0] * (2 * result.dist_numE)
             result.models = [model.structs.result for model in models]
@@ -216,6 +207,62 @@ class DichotomousModelAverageResult(ModelAverageResult):
             return np.full(scores.size, BMDS_BLANK_VALUE, dtype=float)
         return weights / weights_sum
 
+    @staticmethod
+    def _reshape_flat_draws(draws: np.ndarray, n_chains: int) -> np.ndarray:
+        draws = np.asarray(draws, dtype=float)
+        if draws.ndim != 1 or n_chains <= 1:
+            return draws
+        n = draws.shape[0]
+        if n % n_chains != 0:
+            return draws
+        return draws.reshape(n_chains, n // n_chains)
+
+    @staticmethod
+    def _combined_loud_result(result):
+        combined = getattr(result, "combinedLoudRes", None)
+        if combined is not None and np.asarray(getattr(combined, "BMD", []), dtype=float).size:
+            return combined
+
+        loud_res = getattr(result, "loudRes", None)
+        if isinstance(loud_res, list) and loud_res:
+            return loud_res
+        return loud_res
+
+    @classmethod
+    def _loud_draws(cls, loud, n_chains: int) -> tuple[np.ndarray, np.ndarray]:
+        if isinstance(loud, list):
+            bmd_by_chain = [np.asarray(chain.BMD, dtype=float) for chain in loud]
+            parm_by_chain = []
+            for chain, bmd in zip(loud, bmd_by_chain, strict=True):
+                parms = np.asarray(chain.parms, dtype=float)
+                if parms.ndim == 1 and bmd.size > 0 and parms.size % bmd.size == 0:
+                    parms = parms.reshape(bmd.size, parms.size // bmd.size)
+                elif (
+                    parms.ndim == 2
+                    and bmd.size > 0
+                    and parms.shape[0] != bmd.size
+                    and parms.shape[1] == bmd.size
+                ):
+                    parms = parms.T
+                parm_by_chain.append(parms)
+            return np.asarray(bmd_by_chain, dtype=float), np.asarray(parm_by_chain, dtype=float)
+
+        bmd_draws = np.asarray(getattr(loud, "BMD", []), dtype=float)
+        n_draw = bmd_draws.size
+        parm_draws = np.asarray(getattr(loud, "parms", []), dtype=float)
+        if parm_draws.ndim == 1 and n_draw > 0 and parm_draws.size % n_draw == 0:
+            parm_draws = parm_draws.reshape(n_draw, parm_draws.size // n_draw)
+        elif (
+            parm_draws.ndim == 2
+            and n_draw > 0
+            and parm_draws.shape[0] != n_draw
+            and parm_draws.shape[1] == n_draw
+        ):
+            parm_draws = parm_draws.T
+        return cls._reshape_flat_draws(bmd_draws, n_chains), cls._reshape_flat_draws(
+            parm_draws, n_chains
+        )
+
     @classmethod
     def _loud_posteriors(
         cls,
@@ -255,8 +302,10 @@ class DichotomousModelAverageResult(ModelAverageResult):
         # only keep positive finite values
         is_loud = analysis.average.datatype == bmdscore.loud_datatype.l_dichotomous.value
         if is_loud:
-            arr = np.asarray(analysis.result.bmd_dist, dtype=float)
-            arr = arr[np.isfinite(arr)]
+            n_chains = int(getattr(analysis, "n_chains", 1) or 1)
+            arr = cls._reshape_flat_draws(
+                np.asarray(analysis.result.bmd_dist, dtype=float), n_chains
+            )
         else:
             arr = np.array(analysis.result.bmd_dist).reshape(2, analysis.result.dist_numE).T
             arr = arr[np.isfinite(arr[:, 0])]
@@ -272,28 +321,15 @@ class DichotomousModelAverageResult(ModelAverageResult):
         model_int_factors: list[float] = []
         model_loglikelihoods: list[float] = []
         if is_loud:
-            n_draws = arr.size
             for result in analysis.result.models:
-                loud = result.loudRes
+                loud = cls._combined_loud_result(result)
                 model_p_values.append(float(getattr(loud, "pval", BMDS_BLANK_VALUE)))
                 model_waics.append(float(getattr(loud, "waic", BMDS_BLANK_VALUE)))
                 model_int_factors.append(float(getattr(loud, "int_factor", BMDS_BLANK_VALUE)))
                 model_loglikelihoods.append(float(getattr(loud, "ll", BMDS_BLANK_VALUE)))
-                bmd_draws = np.asarray(loud.BMD, dtype=float)
-                n_draw = bmd_draws.size
-                model_bmd.append(cls._resize_draws(bmd_draws, n_draws))
-
-                parm_draws = np.asarray(loud.parms, dtype=float)
-                if parm_draws.ndim == 1 and n_draw > 0 and parm_draws.size % n_draw == 0:
-                    parm_draws = parm_draws.reshape(n_draw, parm_draws.size // n_draw)
-                elif (
-                    parm_draws.ndim == 2
-                    and n_draw > 0
-                    and parm_draws.shape[0] != n_draw
-                    and parm_draws.shape[1] == n_draw
-                ):
-                    parm_draws = parm_draws.T
-                model_parms.append(cls._resize_draws(parm_draws, n_draws))
+                bmd_draws, parm_draws = cls._loud_draws(loud, n_chains)
+                model_bmd.append(bmd_draws)
+                model_parms.append(parm_draws)
 
         if is_loud:
             posteriors = cls._loud_posteriors(
@@ -304,7 +340,8 @@ class DichotomousModelAverageResult(ModelAverageResult):
             values = []
             valid_posteriors = []
             for idx, (model, parm_draws) in enumerate(zip(models, model_parms, strict=True)):
-                finite_parm_draws = parm_draws[np.isfinite(parm_draws).all(axis=1)]
+                finite_parm_draws = parm_draws.reshape(-1, parm_draws.shape[-1])
+                finite_parm_draws = finite_parm_draws[np.isfinite(finite_parm_draws).all(axis=1)]
                 params = (
                     np.nanmedian(finite_parm_draws, axis=0)
                     if finite_parm_draws.size
@@ -387,9 +424,10 @@ class DichotomousModelAverageResult(ModelAverageResult):
         draws = np.asarray(self.model_bmd_dist[index], dtype=float)
         draws = draws[np.isfinite(draws)]
         raw_parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
-        if raw_parm_draws.ndim == 2:
-            n_params = raw_parm_draws.shape[1]
-            parm_draws = raw_parm_draws[np.isfinite(raw_parm_draws).all(axis=1)]
+        if raw_parm_draws.ndim >= 2:
+            n_params = raw_parm_draws.shape[-1]
+            flat_parm_draws = raw_parm_draws.reshape(-1, n_params)
+            parm_draws = flat_parm_draws[np.isfinite(flat_parm_draws).all(axis=1)]
         else:
             n_params = raw_parm_draws.size
             parm_draws = raw_parm_draws[np.isfinite(raw_parm_draws)]

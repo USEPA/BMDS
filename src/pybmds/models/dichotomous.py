@@ -65,6 +65,13 @@ class BmdModelDichotomous(BmdModel):
             model_settings.priors = get_dichotomous_prior(
                 self.bmd_model_class, prior_class=prior_class
             )
+        if model_settings.priors.prior_class is PriorClass.bayesian_loud:
+            model_settings = DichotomousModelSettings.model_validate(
+                {
+                    field: getattr(model_settings, field)
+                    for field in DichotomousModelSettings.model_fields
+                }
+            )
 
         return model_settings
 

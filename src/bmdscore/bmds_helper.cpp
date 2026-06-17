@@ -2940,9 +2940,7 @@ int getLoudModelType(int model, int distType, int dataType) {
   if (dataType == loud_datatype::l_individual || dataType == loud_datatype::l_summary) {
     switch (model) {
       case cont_model::power:
-        if (distType == distribution::log_normal) {
-          std::cout << "log_normal dist not available for power model" << std::endl;
-        } else {
+        if (distType != distribution::log_normal) {
           modelType = 103;
         }
         break;
@@ -2961,9 +2959,7 @@ int getLoudModelType(int model, int distType, int dataType) {
         }
         break;
       case cont_model::hill:
-        if (distType == distribution::log_normal) {
-          std::cout << "log_normal dist not available for hill model" << std::endl;
-        } else {
+        if (distType != distribution::log_normal) {
           modelType = 106;
         }
         break;
@@ -3208,7 +3204,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut, long see
   // Need to fix this for all models not just power
   if (loudIn->dist == distribution::log_normal) {
     if (loudIn->model == cont_model::power || loudIn->model == cont_model::hill) {
-      std::cout << "lognormal distribution not available for this model" << std::endl;
       return;
     }
     switch (loudIn->model) {
@@ -5769,8 +5764,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
           } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
             // pyRes->models[i].nparms = 5;
             loudOut = ncvPowerOut;
-          } else {
-            std::cout << "power model not available in lognormal distribution" << std::endl;
           }
           break;
         case cont_model::exp_3:
@@ -5804,8 +5797,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
           } else if (pyMA->loud_dist_type[i] == distribution::normal_ncv) {
             // pyRes->models[i].nparms = 6;
             loudOut = ncvHillOut;
-          } else {
-            std::cout << "hill model not available in lognormal distribution" << std::endl;
           }
           break;
         case cont_model::l_hill_efsa:
@@ -5871,9 +5862,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         default:
           break;
       }
-      fit_Loud(&loudIn, &loudOut, pyMA->seed);
+      fit_Loud(&loudIn, &loudOut, seed);
       pyRes->models[i].loudRes[chain] = loudOut;
-      std::cout << "chain R:" << std::endl << pyRes->models[i].loudRes[chain].R << std::endl;
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
@@ -5973,7 +5963,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::l_lognormal_efsa:
       case cont_model::l_gamma_efsa:
       case cont_model::l_lms_efsa:
-        retParms = pyRes->models[i].combinedLoudRes.R;
+        retParms = colwise_median(pyRes->models[i].combinedLoudRes.R);
         //    if (loudIn.dist == distribution::log_normal) {
         //      // EFSA lognormal models models return ln(alpha)
         //      // EFSA expects alpha
@@ -10087,7 +10077,7 @@ std::string printBmdsStruct(struct python_continuous_model_result *pyRes, bool p
   // set boolean for LOUD vs BMDS
   int chains = 1;
   bool isLOUD = false;
-  if (pyRes->loudRes[0].parms.rows() > 0) {
+  if (!pyRes->loudRes.empty() && pyRes->loudRes[0].parms.rows() > 0) {
     isLOUD = true;
     chains = pyRes->loudRes.size();
   }
@@ -10200,7 +10190,7 @@ std::string printBmdsStruct(struct python_dichotomous_model_result *pyRes, bool 
   // set boolean for LOUD vs BMDS
   int chains = 1;
   bool isLOUD = false;
-  if (pyRes->loudRes[0].parms.rows() > 0) {
+  if (!pyRes->loudRes.empty() && pyRes->loudRes[0].parms.rows() > 0) {
     isLOUD = true;
     chains = pyRes->loudRes.size();
   }

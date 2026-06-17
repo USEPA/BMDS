@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from pybmds.constants import PriorClass
 from pybmds.models import dichotomous
 from pybmds.types.dichotomous import DichotomousModelSettings, DichotomousRiskType
 
@@ -41,3 +42,31 @@ class TestDichotomousModelSettings:
 
         with pytest.raises(ValidationError):
             DichotomousModelSettings(seed=-1)
+
+    def test_loud_mcmc_sample_limits(self):
+        settings = DichotomousModelSettings(
+            priors=PriorClass.bayesian_loud,
+            samples=25_000,
+            burnin=5_000,
+            n_chains=4,
+        )
+        assert settings.samples == 25_000
+        assert settings.burnin == 5_000
+        assert settings.n_chains == 4
+
+        with pytest.raises(ValidationError, match="less than or equal to 100000"):
+            DichotomousModelSettings(priors=PriorClass.bayesian_loud, samples=100_001)
+
+        with pytest.raises(ValidationError, match="total samples across all chains"):
+            DichotomousModelSettings(
+                priors=PriorClass.bayesian_loud,
+                samples=25_001,
+                n_chains=4,
+            )
+
+        with pytest.raises(ValidationError, match="LOUD burnin cannot exceed 20%"):
+            DichotomousModelSettings(
+                priors=PriorClass.bayesian_loud,
+                samples=10_000,
+                burnin=2_001,
+            )

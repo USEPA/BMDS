@@ -90,6 +90,8 @@ def _plot_dist(
 
 def _reshape_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
     arr = np.asarray(arr, dtype=float)
+    if arr.ndim >= 2 and arr.shape[0] == n_chains:
+        return arr
     n = arr.shape[0]
     if n % n_chains != 0:
         raise ValueError(f"{n=} must be divisible by {n_chains=}.")
@@ -117,7 +119,38 @@ def _pad_draws(arr: np.ndarray, n_draws: int) -> np.ndarray:
         out[:rows, :] = arr[:rows, :]
         return out
 
+    if arr.ndim == 3:
+        out = np.full((n_draws, arr.shape[1], arr.shape[2]), np.nan, dtype=float)
+        rows = min(arr.shape[0], n_draws)
+        out[:rows, :, :] = arr[:rows, :, :]
+        return out
+
     raise ValueError(f"Unsupported draw shape: {arr.shape}")
+
+
+def _as_chain_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
+    arr = _nan_nonfinite(arr)
+    if arr.ndim == 1:
+        return _reshape_draws(arr, n_chains)
+    if arr.ndim >= 2 and arr.shape[0] == n_chains:
+        return arr
+    return _reshape_draws(arr, n_chains)
+
+
+def _flatten_chain_draws(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    if arr.ndim <= 1:
+        return arr
+    return arr.reshape((-1,) + arr.shape[2:])
+
+
+def _infer_n_chains(session) -> int:
+    structs = getattr(session.model_average, "structs", None)
+    n_chains = getattr(structs, "n_chains", None)
+    if n_chains is None and session.model_average.models:
+        settings = getattr(session.model_average.models[0], "settings", None)
+        n_chains = getattr(settings, "n_chains", None)
+    return int(n_chains or 1)
 
 
 def _build_observed_data(dataset) -> xr.Dataset:
@@ -175,7 +208,6 @@ def _build_observed_data(dataset) -> xr.Dataset:
 
 def model_average_to_inferencedata(
     session,
-    n_chains: int = 1,
     path: str | Path | None = None,
 ) -> xr.DataTree:
     """
@@ -192,6 +224,8 @@ def model_average_to_inferencedata(
     Observed data group:
         - built from session.dataset
     """
+    n_chains = _infer_n_chains(session)
+
     ma_result = session.model_average.results
     models = session.model_average.models
 
@@ -204,11 +238,12 @@ def model_average_to_inferencedata(
             if name not in all_param_names:
                 all_param_names.append(name)
 
-    ma_bmd = _nan_nonfinite(ma_result.bmd_dist)
-    model_bmd_draws = [_nan_nonfinite(bmds) for bmds in ma_result.model_bmd_dist]
-    model_parm_draws = [_nan_nonfinite(parms) for parms in ma_result.model_parm_dist]
+    ma_bmd_chains = _as_chain_draws(ma_result.bmd_dist, n_chains)
+    model_bmd_chains = [_as_chain_draws(bmds, n_chains) for bmds in ma_result.model_bmd_dist]
+    model_parm_chains = [_as_chain_draws(parms, n_chains) for parms in ma_result.model_parm_dist]
 
-    n_draws = max([len(ma_bmd)] + [len(bmds) for bmds in model_bmd_draws])
+    draws_per_chain = max([ma_bmd_chains.shape[1]] + [bmds.shape[1] for bmds in model_bmd_chains])
+    n_draws = draws_per_chain * n_chains
     n_models = len(model_names)
     n_params = len(all_param_names)
 
@@ -217,27 +252,31 @@ def model_average_to_inferencedata(
     n_param_by_model = np.zeros(n_models, dtype=int)
 
     for model_idx, (bmds, parms, pnames) in enumerate(
-        zip(model_bmd_draws, model_parm_draws, param_names_by_model, strict=True)
+        zip(model_bmd_chains, model_parm_chains, param_names_by_model, strict=True)
     ):
-        if parms.ndim != 2:
+        flat_bmds = _flatten_chain_draws(bmds)
+        flat_parms = _flatten_chain_draws(parms)
+
+        if flat_parms.ndim != 2:
             raise ValueError(
-                f"Model {model_names[model_idx]!r} parameter draws must be 2D; got shape {parms.shape}."
+                f"Model {model_names[model_idx]!r} parameter draws must be 2D after "
+                f"flattening chains; got shape {flat_parms.shape}."
             )
 
-        if len(bmds) != parms.shape[0]:
+        if len(flat_bmds) != flat_parms.shape[0]:
             raise ValueError(
-                f"Model {model_names[model_idx]!r} has {len(bmds)} BMD draws but "
-                f"{parms.shape[0]} parameter draws."
+                f"Model {model_names[model_idx]!r} has {len(flat_bmds)} BMD draws but "
+                f"{flat_parms.shape[0]} parameter draws."
             )
 
-        if parms.shape[1] != len(pnames):
+        if flat_parms.shape[1] != len(pnames):
             raise ValueError(
-                f"Model {model_names[model_idx]!r} has {parms.shape[1]} parameters but "
+                f"Model {model_names[model_idx]!r} has {flat_parms.shape[1]} parameters but "
                 f"{len(pnames)} names."
             )
 
-        bmds = _pad_draws(bmds, n_draws)
-        parms = _pad_draws(parms, n_draws)
+        bmds = _pad_draws(flat_bmds, n_draws)
+        parms = _pad_draws(flat_parms, n_draws)
         model_bmd[:, model_idx] = bmds
         n_param_by_model[model_idx] = len(pnames)
 
@@ -245,7 +284,7 @@ def model_average_to_inferencedata(
             global_idx = all_param_names.index(pname)
             model_params[:, model_idx, global_idx] = parms[:, param_idx]
 
-    ma_bmd = _pad_draws(ma_bmd, n_draws)
+    ma_bmd = _pad_draws(_flatten_chain_draws(ma_bmd_chains), n_draws)
     posteriors = _nan_nonfinite(ma_result.posteriors)
 
     posterior_raw = xr.Dataset(
@@ -502,14 +541,23 @@ def _hide_rhat_for_single_chain(summary: pd.DataFrame) -> pd.DataFrame:
 def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
-    draws = np.asarray(draws, dtype=float).reshape(-1)
-    draws = draws[np.isfinite(draws)]
-    if draws.size == 0:
+    draws = _nan_nonfinite(draws)
+    if not np.isfinite(draws).any():
         return pd.DataFrame()
+    flat_draws = draws[np.isfinite(draws)]
+    if draws.ndim == 1:
+        summary_draws = draws.reshape(1, draws.size)
+    elif draws.ndim == 2:
+        summary_draws = draws
+    else:
+        raise ValueError(f"Unsupported draw shape for summary: {draws.shape}")
 
     dataset = xr.Dataset(
-        {var_name: (("chain", "draw"), draws.reshape(1, draws.size))},
-        coords={"chain": [0], "draw": np.arange(draws.size)},
+        {var_name: (("chain", "draw"), summary_draws)},
+        coords={
+            "chain": np.arange(summary_draws.shape[0]),
+            "draw": np.arange(summary_draws.shape[1]),
+        },
     )
     idata = _data_tree(posterior=dataset)
 
@@ -543,9 +591,9 @@ def _summary_from_draws(
         alpha = (1 - hdi_prob) / 2
         return pd.DataFrame(
             {
-                "median": [float(np.nanquantile(draws, 0.5))],
-                f"eti_{alpha:.0%}": [float(np.nanquantile(draws, alpha))],
-                f"eti_{1 - alpha:.0%}": [float(np.nanquantile(draws, 1 - alpha))],
+                "median": [float(np.nanquantile(flat_draws, 0.5))],
+                f"eti_{alpha:.0%}": [float(np.nanquantile(flat_draws, alpha))],
+                f"eti_{1 - alpha:.0%}": [float(np.nanquantile(flat_draws, 1 - alpha))],
                 "r_hat": [np.nan],
                 "ess_bulk": [np.nan],
                 "ess_tail": [np.nan],
@@ -585,59 +633,12 @@ def _multi_summary_table(
     if idata is not None:
         return _finite_summary_table(idata, var_names, hdi_prob)
 
-    def _fallback_summary(var_name: str) -> pd.DataFrame:
-        values = np.asarray(idata.posterior[var_name].values, dtype=float)
-        median_q = 0.5
-        alpha = (1 - hdi_prob) / 2
-        lower_q = alpha
-        upper_q = 1 - alpha
-
-        if values.ndim == 2:
-            draws = values.reshape(-1)
-            return pd.DataFrame(
-                {
-                    "median": [float(np.nanquantile(draws, median_q))],
-                    f"eti_{lower_q:.0%}": [float(np.nanquantile(draws, lower_q))],
-                    f"eti_{upper_q:.0%}": [float(np.nanquantile(draws, upper_q))],
-                    "r_hat": [np.nan],
-                    "ess_bulk": [np.nan],
-                    "ess_tail": [np.nan],
-                },
-                index=pd.Index([var_name], name="var_name"),
-            )
-
-        if values.ndim == 3:
-            rows = []
-            labels = []
-            model_labels = list(idata.posterior.coords["model"].values)
-            for model_idx, model_name in enumerate(model_labels):
-                draws = values[:, :, model_idx].reshape(-1)
-                rows.append(
-                    {
-                        "median": float(np.nanquantile(draws, median_q)),
-                        f"eti_{lower_q:.0%}": float(np.nanquantile(draws, lower_q)),
-                        f"eti_{upper_q:.0%}": float(np.nanquantile(draws, upper_q)),
-                        "r_hat": np.nan,
-                        "ess_bulk": np.nan,
-                        "ess_tail": np.nan,
-                    }
-                )
-                labels.append(f"{var_name}[{model_idx}:{model_name}]")
-            return pd.DataFrame(rows, index=pd.Index(labels, name="var_name"))
-
-        raise ValueError(f"Unsupported posterior shape for {var_name}: {values.shape}")
-
     median_parts: list[pd.DataFrame] = []
     ess_parts: list[pd.DataFrame] = []
 
     for var_name in var_names:
-        try:
-            median_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "median"))
-            ess_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "mean"))
-        except ValueError:
-            fallback = _fallback_summary(var_name)
-            median_parts.append(fallback)
-            ess_parts.append(fallback[["r_hat", "ess_bulk", "ess_tail"]])
+        median_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "median"))
+        ess_parts.append(_arviz_summary(idata, [var_name], hdi_prob, "mean"))
 
     median_summary = pd.concat(median_parts, axis=0) if median_parts else pd.DataFrame()
     ess_summary = pd.concat(ess_parts, axis=0) if ess_parts else pd.DataFrame()
@@ -902,10 +903,9 @@ def _bmd_diagnostics_table(idata: xr.DataTree, hdi_prob: float) -> pd.DataFrame:
 
 def get_model_average_figures(
     session,
-    n_chains: int = 1,
     compressed: bool = True,
 ) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
-    idata = model_average_to_inferencedata(session, n_chains=n_chains)
+    idata = model_average_to_inferencedata(session)
     out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
     single_chain = len(idata.posterior.coords["chain"]) == 1
 

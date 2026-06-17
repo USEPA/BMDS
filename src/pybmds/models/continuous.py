@@ -98,6 +98,12 @@ class BmdModelContinuous(BmdModel):
                 model_settings.samples = 500
             if model_settings.burnin is None:
                 model_settings.burnin = 50
+            model_settings = ContinuousModelSettings.model_validate(
+                {
+                    field: getattr(model_settings, field)
+                    for field in ContinuousModelSettings.model_fields
+                }
+            )
 
         return model_settings
 

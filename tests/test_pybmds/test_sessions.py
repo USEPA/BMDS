@@ -202,9 +202,8 @@ class TestSession:
         session = pybmds.Session(dataset=ddataset2)
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             assert _session is session
-            assert n_chains == 1
 
             def fig():
                 return plt.figure()
@@ -357,9 +356,8 @@ class TestSession:
             "Inverse Exponential (NCV)",
         ]
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             assert _session is session
-            assert n_chains == 1
 
             def fig():
                 return plt.figure()
@@ -478,9 +476,8 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             assert _session is session
-            assert n_chains == 1
 
             def fig():
                 return plt.figure()
@@ -619,7 +616,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             def fig():
                 return plt.figure()
 
@@ -668,7 +665,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             assert compressed is False
 
             def fig():
@@ -718,7 +715,7 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, n_chains=1, compressed=True):
+        def fake_get_model_average_figures(_session, compressed=True):
             def fig():
                 return plt.figure()
 

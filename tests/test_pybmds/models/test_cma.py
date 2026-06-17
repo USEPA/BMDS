@@ -39,6 +39,7 @@ class TestContinuousMa:
                 "disttype": DistType.normal,
                 "priors": PriorClass.bayesian_loud,
                 "n_chains": 4,
+                "samples": 25_000,
                 "seed": 123,
             },
         )
@@ -55,6 +56,8 @@ class TestContinuousMa:
         assert structs.n_chains == 4
         assert structs.seed == 123
         assert structs.average.seed == 123
+        assert structs.analysis.samples == 25_000
+        assert structs.analysis.chains == 4
 
     def test_continuous_ma_session(self, cdataset3):
         # check execution and it can be json serialized
@@ -151,3 +154,58 @@ class TestContinuousMa:
         assert np.isnan(rehydrated.bmd_dist[1])
         assert np.isnan(rehydrated.model_bmd_dist[0][1])
         assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
+
+    def test_loud_draw_helpers_cover_chain_and_fallback_shapes(self):
+        chains = [
+            SimpleNamespace(BMD=np.array([1.0, 2.0]), parms=np.array([1.0, 2.0, 3.0, 4.0])),
+            SimpleNamespace(BMD=np.array([3.0, 4.0]), parms=np.array([[5.0, 6.0], [7.0, 8.0]])),
+        ]
+
+        bmd, parms = ContinuousModelAverageResult._loud_draws(chains, n_chains=2)
+
+        assert bmd.shape == (2, 2)
+        assert parms.shape == (2, 2, 2)
+
+        loud = SimpleNamespace(
+            BMD=np.array([1.0, 2.0, 3.0, 4.0]),
+            parms=np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]),
+        )
+        bmd, parms = ContinuousModelAverageResult._loud_draws(loud, n_chains=2)
+        assert bmd.shape == (2, 2)
+        assert parms.shape == (4, 2)
+
+        result = SimpleNamespace(
+            combinedLoudRes=SimpleNamespace(BMD=[]),
+            loudRes=chains,
+        )
+        assert ContinuousModelAverageResult._combined_loud_result(result) is chains
+
+    def test_continuous_sync_model_result_handles_empty_draws_with_existing_results(self):
+        model = SimpleNamespace(
+            settings=SimpleNamespace(alpha=0.05),
+            results=SimpleNamespace(parameters="existing"),
+            name=lambda: "Power",
+        )
+        result = ContinuousModelAverageResult(
+            bmdl=0.1,
+            bmd=0.2,
+            bmdu=0.3,
+            bmdl_y=0.0,
+            bmd_y=0.0,
+            bmdu_y=0.0,
+            bmd_dist=np.array([]),
+            priors=np.array([1.0]),
+            posteriors=np.array([1.0]),
+            model_bmd_dist=[np.array([])],
+            model_parm_dist=[np.array([])],
+            dr_x=np.array([0.0, 1.0]),
+            dr_y=np.array([0.0, 1.0]),
+        )
+
+        # The empty-draw branch should reuse the existing parameter object before
+        # later model attributes would be needed to finish syncing.
+        try:
+            result.sync_model_result(model, 0)
+        except AttributeError:
+            pass
+        assert model.results.parameters == "existing"

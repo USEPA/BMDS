@@ -67,8 +67,8 @@ class ContinuousModelAverage:
             raise ValueError(f"Unsupported dataset dtype: {dataset.dtype}")
         n_chains = models[0].settings.n_chains
         seed = models[0].settings.seed
-        if hasattr(analysis, "n_chains"):
-            analysis.n_chains = n_chains
+        if hasattr(analysis, "chains"):
+            analysis.chains = n_chains
         if seed is not None and hasattr(analysis, "seed"):
             analysis.seed = seed
 
@@ -90,8 +90,6 @@ class ContinuousModelAverage:
 
         average.modelPriors = [float(x) for x in model_weights]
         average.pyCA = analysis
-        if hasattr(average, "n_chains"):
-            average.n_chains = n_chains
         if seed is not None and hasattr(average, "seed"):
             average.seed = seed
 
@@ -110,18 +108,7 @@ class ContinuousModelAverage:
         result.dist_numE = 200
 
         result.post_probs = [0.0] * result.nmodels
-        result.bmd_dist = [0.0] * int(analysis.samples)
         result.models = [bmdscore.python_continuous_model_result() for _ in range(result.nmodels)]
-
-        for i, m in enumerate(models):
-            nparms = int(m.structs.result.nparms)
-            iters = int(analysis.samples)
-
-            loud = result.models[i].loudRes
-
-            loud.parms = [0.0] * (nparms * iters)
-
-            loud.BMD = [0.0] * iters
 
         result.bmdsRes = bmdsRes
 
@@ -183,9 +170,68 @@ class ContinuousModelAverageResult(ModelAverageResult):
         data["model_parm_dist"] = [self._json_safe_draws(draws) for draws in self.model_parm_dist]
         return data
 
+    @staticmethod
+    def _reshape_flat_draws(draws: np.ndarray, n_chains: int) -> np.ndarray:
+        draws = np.asarray(draws, dtype=float)
+        if draws.ndim != 1 or n_chains <= 1:
+            return draws
+        n = draws.shape[0]
+        if n % n_chains != 0:
+            return draws
+        return draws.reshape(n_chains, n // n_chains)
+
+    @staticmethod
+    def _combined_loud_result(result):
+        combined = getattr(result, "combinedLoudRes", None)
+        if combined is not None and np.asarray(getattr(combined, "BMD", []), dtype=float).size:
+            return combined
+
+        loud_res = getattr(result, "loudRes", None)
+        if isinstance(loud_res, list) and loud_res:
+            return loud_res
+        return loud_res
+
+    @classmethod
+    def _loud_draws(cls, loud, n_chains: int) -> tuple[np.ndarray, np.ndarray]:
+        if isinstance(loud, list):
+            bmd_by_chain = [np.asarray(chain.BMD, dtype=float) for chain in loud]
+            parm_by_chain = []
+            for chain, bmd in zip(loud, bmd_by_chain, strict=True):
+                parms = np.asarray(chain.parms, dtype=float)
+                if parms.ndim == 1 and bmd.size > 0 and parms.size % bmd.size == 0:
+                    parms = parms.reshape(bmd.size, parms.size // bmd.size)
+                elif (
+                    parms.ndim == 2
+                    and bmd.size > 0
+                    and parms.shape[0] != bmd.size
+                    and parms.shape[1] == bmd.size
+                ):
+                    parms = parms.T
+                parm_by_chain.append(parms)
+            return np.asarray(bmd_by_chain, dtype=float), np.asarray(parm_by_chain, dtype=float)
+
+        bmd_draws = np.asarray(getattr(loud, "BMD", []), dtype=float)
+        n_draw = bmd_draws.size
+        parm_draws = np.asarray(getattr(loud, "parms", []), dtype=float)
+        if parm_draws.ndim == 1 and n_draw > 0 and parm_draws.size % n_draw == 0:
+            parm_draws = parm_draws.reshape(n_draw, parm_draws.size // n_draw)
+        elif (
+            parm_draws.ndim == 2
+            and n_draw > 0
+            and parm_draws.shape[0] != n_draw
+            and parm_draws.shape[1] == n_draw
+        ):
+            parm_draws = parm_draws.T
+        return cls._reshape_flat_draws(bmd_draws, n_chains), cls._reshape_flat_draws(
+            parm_draws, n_chains
+        )
+
     @classmethod
     def from_cpp(cls, analysis: ContinuousModelAverage, model_results=None) -> Self:
-        ma_bmd = np.asarray(analysis.result.bmd_dist, dtype=float)
+        n_chains = int(getattr(analysis, "n_chains", 1) or 1)
+        ma_bmd = cls._reshape_flat_draws(
+            np.asarray(analysis.result.bmd_dist, dtype=float), n_chains
+        )
 
         model_bmd: list[np.ndarray] = []
         model_parms: list[np.ndarray] = []
@@ -194,25 +240,13 @@ class ContinuousModelAverageResult(ModelAverageResult):
         model_loglikelihoods: list[float] = []
 
         for m in analysis.result.models:
-            lr = m.loudRes  # fitResult
+            lr = cls._combined_loud_result(m)
             model_p_values.append(float(getattr(lr, "pval", constants.BMDS_BLANK_VALUE)))
             model_waics.append(float(getattr(lr, "waic", constants.BMDS_BLANK_VALUE)))
             model_loglikelihoods.append(float(getattr(lr, "ll", constants.BMDS_BLANK_VALUE)))
-
-            b_raw = np.asarray(lr.BMD, dtype=float)
-            n_draw = b_raw.size
-
-            b = b_raw
-            model_bmd.append(b)
-
-            p = np.asarray(lr.parms, dtype=float)
-
-            if p.ndim == 1 and n_draw > 0 and p.size % n_draw == 0:
-                p = p.reshape(n_draw, p.size // n_draw)
-            elif p.ndim == 2 and n_draw > 0 and p.shape[0] != n_draw and p.shape[1] == n_draw:
-                p = p.T
-
-            model_parms.append(p)
+            bmd_draws, parm_draws = cls._loud_draws(lr, n_chains)
+            model_bmd.append(bmd_draws)
+            model_parms.append(parm_draws)
 
         priors = np.asarray(analysis.average.modelPriors, dtype=float)
         posteriors = np.asarray(analysis.result.post_probs, dtype=float)
@@ -302,7 +336,9 @@ class ContinuousModelAverageResult(ModelAverageResult):
         draws = draws[np.isfinite(draws)]
         parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
         if parm_draws.size:
-            parameters = ContinuousParameters.from_loud_draws(model, parm_draws)
+            parameters = ContinuousParameters.from_loud_draws(
+                model, parm_draws.reshape(-1, parm_draws.shape[-1])
+            )
         elif model.results is not None:
             parameters = model.results.parameters
         else:

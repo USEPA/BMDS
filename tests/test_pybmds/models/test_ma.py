@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -109,7 +110,7 @@ class TestDichotomousMa:
         session = pybmds.Session(dataset=ddataset2)
         session.add_model(
             pybmds.Models.Logistic,
-            {"priors": PriorClass.bayesian_loud, "n_chains": 4, "seed": 123},
+            {"priors": PriorClass.bayesian_loud, "n_chains": 4, "samples": 25_000, "seed": 123},
         )
         session.add_model(pybmds.Models.Probit, {"priors": PriorClass.bayesian_loud})
         session.add_model_averaging()
@@ -125,6 +126,8 @@ class TestDichotomousMa:
 
         assert structs.n_chains == 4
         assert structs.seed == 123
+        assert structs.analysis.samples == 25_000
+        assert structs.analysis.chains == 4
 
     def test_dichotomous_loud_ma_session_syncs_results(self):
         session = pybmds.Session(dataset=loud_dma_dataset())
@@ -243,3 +246,70 @@ class TestDichotomousMa:
         assert np.isnan(rehydrated.bmd_dist[1])
         assert np.isnan(rehydrated.model_bmd_dist[0][1])
         assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
+
+    def test_loud_helper_branches(self):
+        assert DichotomousModelAverageResult._param_names(
+            SimpleNamespace(get_param_names=lambda: ["a"]), 3
+        ) == ["a", "param_2", "param_3"]
+
+        class BadCurve:
+            def dr_curve(self, *_args):
+                raise ValueError("bad")
+
+        assert DichotomousModelAverageResult._safe_dr_curve(BadCurve(), np.array([1.0]), []) is None
+
+        one_d = DichotomousModelAverageResult._resize_draws(np.array([1.0]), 3)
+        np.testing.assert_array_equal(one_d[:1], [1.0])
+        assert np.isnan(one_d[1])
+        two_d = DichotomousModelAverageResult._resize_draws(np.array([[1.0, 2.0]]), 2)
+        assert two_d.shape == (2, 2)
+
+        np.testing.assert_array_equal(
+            DichotomousModelAverageResult._loud_weights([np.nan, -9999.0]),
+            np.array([-9999.0, -9999.0]),
+        )
+        np.testing.assert_array_equal(
+            DichotomousModelAverageResult._loud_weights([1000.0, np.inf]),
+            np.array([1.0, 0.0]),
+        )
+
+        existing = np.array([0.25, 0.75])
+        np.testing.assert_array_equal(
+            DichotomousModelAverageResult._loud_posteriors(existing, 1, [1.0, 2.0], [3.0, 4.0]),
+            existing,
+        )
+        assert (
+            DichotomousModelAverageResult._loud_posteriors(
+                np.array([np.nan, np.nan]), 2, [1.0, 2.0], [3.0, 4.0]
+            )[1]
+            > 0
+        )
+        assert np.all(
+            DichotomousModelAverageResult._loud_posteriors(
+                np.array([np.nan, np.nan]), 3, [np.nan, -9999.0], [np.nan, -9999.0]
+            )
+            == -9999.0
+        )
+
+    def test_loud_draw_helpers_cover_chain_and_fallback_shapes(self):
+        chains = [
+            SimpleNamespace(BMD=np.array([1.0, 2.0]), parms=np.array([1.0, 2.0, 3.0, 4.0])),
+            SimpleNamespace(BMD=np.array([3.0, 4.0]), parms=np.array([[5.0, 6.0], [7.0, 8.0]])),
+        ]
+
+        bmd, parms = DichotomousModelAverageResult._loud_draws(chains, n_chains=2)
+
+        assert bmd.shape == (2, 2)
+        assert parms.shape == (2, 2, 2)
+
+        loud = SimpleNamespace(
+            BMD=np.array([1.0, 2.0, 3.0, 4.0]),
+            parms=np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]),
+        )
+        bmd, parms = DichotomousModelAverageResult._loud_draws(loud, n_chains=2)
+        assert bmd.shape == (2, 2)
+        assert parms.shape == (4, 2)
+
+        combined = SimpleNamespace(BMD=[1.0])
+        result = SimpleNamespace(combinedLoudRes=combined, loudRes=chains)
+        assert DichotomousModelAverageResult._combined_loud_result(result) is combined

@@ -3,7 +3,7 @@ from enum import IntEnum
 from typing import Annotated, NamedTuple, Self
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .. import bmdscore, constants
 from ..constants import BOOL_YES_NO, DichotomousModelChoices
@@ -63,6 +63,19 @@ class DichotomousModelSettings(BaseModel):
     count_all_parameters_on_boundary: bool = False
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_loud_mcmc_settings(self) -> Self:
+        prior_class = (
+            self.priors.prior_class if isinstance(self.priors, ModelPriors) else self.priors
+        )
+        if prior_class is PriorClass.bayesian_loud:
+            total_samples = self.samples * self.n_chains
+            if total_samples > 100_000:
+                raise ValueError("LOUD total samples across all chains cannot exceed 100000.")
+            if self.burnin > 0.2 * self.samples:
+                raise ValueError("LOUD burnin cannot exceed 20% of samples per chain.")
+        return self
 
     @property
     def bmr_text(self) -> str:
@@ -159,8 +172,8 @@ class DichotomousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.samples = self.samples
         analysis.burnin = self.burnin
-        if hasattr(analysis, "n_chains"):
-            analysis.n_chains = self.n_chains
+        if hasattr(analysis, "chains"):
+            analysis.chains = self.n_chains
         if self.seed is not None and hasattr(analysis, "seed"):
             analysis.seed = self.seed
         analysis.parms = self.num_params

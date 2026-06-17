@@ -712,7 +712,7 @@ class Session:
                     "distribution of the benchmark dose (BMD) under the LOUD framework."
                 )
 
-                figs = get_model_average_figures(self, n_chains=1, compressed=compressed)
+                figs = get_model_average_figures(self, compressed=compressed)
 
                 add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
                 add_paragraph_with_space_before(

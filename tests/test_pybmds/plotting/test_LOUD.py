@@ -11,18 +11,28 @@ import pybmds
 from pybmds.constants import DistType, Models, PriorClass
 from pybmds.plotting.LOUD import (
     _RHAT_SINGLE_CHAIN_FOOTNOTE,
+    _arviz_hdi,
+    _arviz_summary,
+    _as_chain_draws,
     _bmd_summary_table,
     _build_observed_data,
     _drop_empty_summary_rows,
     _figure_from_axes,
+    _finite_summary_table,
+    _flatten_chain_draws,
+    _infer_n_chains,
     _ma_bmd_hdi,
     _ma_bmd_quantiles,
     _model_color_map,
     _multi_summary_table,
+    _pad_draws,
+    _parameter_figure_height,
     _parameter_group_records,
     _parameter_group_trace_figure,
+    _plot_dist,
     _rename_summary_columns,
     _reshape_draws,
+    _summary_from_draws,
     get_model_average_figures,
     model_average_to_inferencedata,
 )
@@ -223,6 +233,107 @@ class TestLOUD:
         with pytest.raises(ValueError, match="must be divisible"):
             _reshape_draws(np.arange(10, dtype=float), n_chains=3)
 
+    def test_loud_helper_edge_branches(self, monkeypatch):
+        fig, ax = plt.subplots()
+        _plot_dist(np.array([1.0, 1.0]), ax=ax, color="black")
+        assert ax.patches
+        plt.close(fig)
+
+        already_shaped = np.arange(6, dtype=float).reshape(2, 3)
+        np.testing.assert_array_equal(_reshape_draws(already_shaped, n_chains=2), already_shaped)
+        assert _pad_draws(np.ones((2, 1, 1)), 3).shape == (3, 1, 1)
+        with pytest.raises(ValueError, match="Unsupported draw shape"):
+            _pad_draws(np.ones((1, 1, 1, 1)), 2)
+
+        np.testing.assert_array_equal(_as_chain_draws(already_shaped, 2), already_shaped)
+        assert _as_chain_draws(np.arange(12, dtype=float).reshape(6, 2), 3).shape == (3, 2, 2)
+        np.testing.assert_array_equal(_flatten_chain_draws(np.array([1.0, 2.0])), [1.0, 2.0])
+
+        assert (
+            _infer_n_chains(
+                SimpleNamespace(model_average=SimpleNamespace(structs=SimpleNamespace(n_chains=4)))
+            )
+            == 4
+        )
+        assert (
+            _infer_n_chains(
+                SimpleNamespace(
+                    model_average=SimpleNamespace(
+                        structs=None,
+                        models=[SimpleNamespace(settings=SimpleNamespace(n_chains=3))],
+                    )
+                )
+            )
+            == 3
+        )
+        assert (
+            _infer_n_chains(SimpleNamespace(model_average=SimpleNamespace(structs=None, models=[])))
+            == 1
+        )
+
+        with pytest.raises(ValueError, match="Unsupported dataset type"):
+            _build_observed_data(SimpleNamespace(doses=[0, 1]))
+
+        assert _parameter_figure_height(3) == 8.0
+        assert _parameter_figure_height(6) == 11.0
+        assert _parameter_figure_height(20) == 11.0
+
+        monkeypatch.setattr("pybmds.plotting.LOUD._ARVIZ_USES_DATATREE", False)
+
+        def fake_hdi(draws, hdi_prob=None, prob=None):
+            assert hdi_prob == 0.9
+            assert prob is None
+            return np.array([0.0, 1.0])
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.hdi", fake_hdi)
+        np.testing.assert_array_equal(_arviz_hdi(np.array([0.0, 1.0]), 0.9), [0.0, 1.0])
+
+        class FakeInferenceData:
+            def __init__(self, **kwargs):
+                self.groups = kwargs
+
+            @property
+            def posterior(self):
+                return self.groups["posterior"]
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.InferenceData", FakeInferenceData)
+        seen = {}
+
+        def fake_summary(data, var_names, hdi_prob=None, stat_focus=None, **kwargs):
+            seen["legacy"] = (var_names, hdi_prob, stat_focus, type(data).__name__)
+            return pd.DataFrame({"median": [1.0]}, index=var_names)
+
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.summary", fake_summary)
+        legacy_idata = _data_tree(
+            posterior=xr.Dataset(
+                {"x": (("chain", "draw"), np.array([[1.0, 2.0]]))},
+                coords={"chain": [0], "draw": [0, 1]},
+            )
+        )
+        _arviz_summary(legacy_idata, ["x"], 0.9, "median")
+        assert seen["legacy"] == (["x"], 0.9, "median", "FakeInferenceData")
+
+    def test_summary_helpers_empty_and_error_branches(self, monkeypatch):
+        assert _summary_from_draws(np.array([np.nan]), "x", "x", 0.9).empty
+        with pytest.raises(ValueError, match="Unsupported draw shape"):
+            _summary_from_draws(np.ones((1, 1, 1)), "x", "x", 0.9)
+
+        def raise_summary(*args, **kwargs):
+            raise ValueError("boom")
+
+        monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", raise_summary)
+        fallback = _summary_from_draws(np.array([[1.0, 2.0, 3.0]]), "x", "label", 0.9)
+        assert fallback.loc["label", "median"] == 2.0
+
+        idata = _data_tree(
+            posterior=xr.Dataset(
+                {"x": (("chain", "draw", "model", "extra"), np.ones((1, 2, 1, 1)))},
+                coords={"chain": [0], "draw": [0, 1], "model": ["m"], "extra": [0]},
+            )
+        )
+        with pytest.raises(ValueError, match="Unsupported posterior shape"):
+            _finite_summary_table(idata, ["x"], 0.9)
+
     def test_build_observed_data_dichotomous(self, ddataset2):
         observed = _build_observed_data(ddataset2)
 
@@ -252,7 +363,7 @@ class TestLOUD:
         session.add_model_averaging()
         session.execute()
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
 
         assert isinstance(idata, xr.DataTree)
         assert set(["BMD", "MA_BMD", "model_weights", "n_param"]).issubset(
@@ -290,7 +401,7 @@ class TestLOUD:
             ),
         )
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
 
         assert idata.posterior["MA_BMD"].shape == (1, 3)
         assert idata.posterior["BMD"].shape == (1, 3, 1)
@@ -324,7 +435,7 @@ class TestLOUD:
         )
 
         with pytest.raises(ValueError, match="BMD draws but 2 parameter draws"):
-            model_average_to_inferencedata(session, n_chains=1)
+            model_average_to_inferencedata(session)
 
     def test_model_average_to_inferencedata_replaces_infinite_draws(self):
         class FakeModel:
@@ -351,7 +462,7 @@ class TestLOUD:
             ),
         )
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
 
         assert np.isnan(idata.posterior["MA_BMD"].values[0, 1])
         assert np.isnan(idata.posterior["BMD"].values[0, 1, 0])
@@ -390,7 +501,7 @@ class TestLOUD:
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
         session.execute()
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
 
         assert set(["BMD", "MA_BMD", "model_weights", "n_param"]).issubset(
             idata.posterior.data_vars
@@ -416,7 +527,7 @@ class TestLOUD:
         session.add_model_averaging()
         session.execute()
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
 
         assert "alpha" in idata.posterior.data_vars
         assert "rho" in idata.posterior.data_vars
@@ -448,7 +559,7 @@ class TestLOUD:
         session.execute()
 
         alpha = session.models[0].settings.alpha
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
         summary = _bmd_summary_table(idata, alpha)
 
         assert "BMD" in summary.columns
@@ -507,7 +618,7 @@ class TestLOUD:
         session.execute()
 
         alpha = session.models[0].settings.alpha
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
         quantiles = _ma_bmd_quantiles(idata, alpha)
 
         assert set(quantiles) == {"lower", "median", "upper"}
@@ -524,7 +635,7 @@ class TestLOUD:
         session.add_model_averaging()
         session.execute()
 
-        idata = model_average_to_inferencedata(session, n_chains=1)
+        idata = model_average_to_inferencedata(session)
         stats = _ma_bmd_hdi(idata, 0.9)
 
         assert set(stats) == {"lower", "median", "upper"}
@@ -566,6 +677,30 @@ class TestLOUD:
         assert "ess_bulk" in actual.columns
         assert "ess_tail" in actual.columns
         assert "ess_median" not in actual.columns
+
+    def test_summary_from_draws_preserves_chain_dimension(self, monkeypatch):
+        seen_shapes = []
+
+        def fake_summary(idata, var_names, hdi_prob, stat_focus):
+            seen_shapes.append(idata.posterior[var_names[0]].shape)
+            return pd.DataFrame(
+                {
+                    "median": [1.0],
+                    "r_hat": [1.01],
+                    "ess_bulk": [100.0],
+                    "ess_tail": [90.0],
+                },
+                index=pd.Index([var_names[0]], name="var_name"),
+            )
+
+        monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", fake_summary)
+
+        actual = _summary_from_draws(
+            np.arange(12, dtype=float).reshape(4, 3), "BMD", "BMD[Power]", 0.9
+        )
+
+        assert seen_shapes == [(4, 3), (4, 3)]
+        assert actual.loc["BMD[Power]", "r_hat"] == 1.01
 
     def test_multi_summary_table_summarizes_each_variable_independently(self, monkeypatch):
         calls = []
@@ -688,7 +823,7 @@ class TestLOUD:
         monkeypatch.setattr("pybmds.plotting.LOUD._arviz_summary", fake_summary)
         monkeypatch.setattr("pybmds.plotting.LOUD._plot_dist", fake_plot_dist)
 
-        figures = get_model_average_figures(session, n_chains=1)
+        figures = get_model_average_figures(session)
 
         alpha = session.models[0].settings.alpha
         assert figures["alpha"] == pytest.approx(alpha)
