@@ -33,16 +33,21 @@ def cdf_df(arr: np.ndarray, n_points: int = 200) -> pd.DataFrame:
     # Existing BMDS-style CDF format:
     # row 0 = BMD values, row 1 = cumulative probabilities
     if arr.ndim == 2 and 2 in arr.shape:
-        if arr.shape[0] == 2:
-            values = arr.T
-        else:
-            values = arr
-        df = pd.DataFrame(data=values, columns=["BMD", "Percentile"])
-        df["Percentile"] = df["Percentile"] * 100
-        return df[["Percentile", "BMD"]]
+        values = arr.T if arr.shape[0] == 2 else arr
+        percentiles = values[:, 1]
+        is_bmds_cdf = (
+            np.isfinite(percentiles).all()
+            and np.all((0 <= percentiles) & (percentiles <= 1))
+            and np.all(np.diff(percentiles) >= 0)
+        )
+        if is_bmds_cdf:
+            df = pd.DataFrame(data=values, columns=["BMD", "Percentile"])
+            df["Percentile"] = df["Percentile"] * 100
+            return df[["Percentile", "BMD"]]
 
     # LOUD posterior draws: convert raw draws into an empirical CDF with n_points rows
-    if arr.ndim == 1:
+    # Multiple MCMC chains arrive as chains x iterations and are combined here.
+    if arr.ndim in (1, 2):
         draws = arr[np.isfinite(arr)]
         if draws.size == 0:
             return pd.DataFrame(columns=["Percentile", "BMD"])
