@@ -19,7 +19,7 @@
 #include "functional_generalized.h"
 
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
-std::string BMDS_VERSION = "25.2a2";
+std::string BMDS_VERSION = "26.1a1";
 
 double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses) {
   std::vector<double> diff;
@@ -5470,8 +5470,7 @@ void calcLoudPosteriors(
       int nmodels = waic.size();
       double tmpSum = 0;
       for (int i = 0; i < nmodels; i++) {
-        double waic_weight =
-            std::isfinite(waic[i]) && waic[i] != BMDS_MISSING ? waic[i] : 0.0;
+        double waic_weight = std::isfinite(waic[i]) && waic[i] != BMDS_MISSING ? waic[i] : 0.0;
         double int_factor_weight =
             std::isfinite(int_factor[i]) && int_factor[i] != BMDS_MISSING ? int_factor[i] : 0.0;
         posterior_probs[i] = 0.5 * (waic_weight + int_factor_weight);
