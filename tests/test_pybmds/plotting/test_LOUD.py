@@ -728,6 +728,30 @@ class TestLOUD:
         assert "a[1:B]" not in actual.index
         assert "BMD[1:B]" in actual.index
 
+    def test_bmd_diagnostics_retains_models_with_sparse_nonfinite_draws(self):
+        posterior = {
+            "BMD": (
+                ("chain", "draw", "model"),
+                np.array(
+                    [
+                        [[1.0, 4.0], [2.0, np.nan], [3.0, 6.0]],
+                        [[1.1, 4.1], [2.1, 5.1], [3.1, 6.1]],
+                    ]
+                ),
+            ),
+            "MA_BMD": (
+                ("chain", "draw"),
+                np.array([[2.0, np.nan, 4.0], [2.1, 3.1, 4.1]]),
+            ),
+        }
+        coords = {"chain": [0, 1], "draw": np.arange(3), "model": ["A", "B"]}
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
+
+        actual = _bmd_diagnostics_table(idata, hdi_prob=0.9)
+
+        assert list(actual.index) == ["A", "B", "MA_BMD"]
+        assert actual.loc[["A", "B", "MA_BMD"], "BMD"].notna().all()
+
     def test_dichotomous_loud_model_average_to_inferencedata(self):
         dataset = pybmds.DichotomousDataset(
             doses=[0, 0.25, 0.75, 0.85, 1],

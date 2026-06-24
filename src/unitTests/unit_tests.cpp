@@ -1286,6 +1286,28 @@ void cont_loud_model_fit_test() {
 }
 
 void pivotal_pvalue_test() {
+  // Individual lognormal diagnostics use a model prediction on the log scale.
+  // Verify that both the pivotal statistic and pointwise likelihood use that
+  // scale and standardize residuals by the log-scale variance, not its SD.
+  Eigen::MatrixXd Y_log{{std::exp(2.0)}, {std::exp(2.2)}};
+  Eigen::VectorXd mu_log{{2.1}, {2.1}};
+  Eigen::VectorXd parms_log{{1.0}, {100.0}};  // final parameter is precision
+  double q_log = getQVals(
+      Y_log, parms_log, mu_log, distribution::log_normal, loud_datatype::l_individual
+  );
+  expect_true(essentiallyEqual(2.0, q_log, 1e-12));
+
+  Eigen::VectorXd loglik_log = loud_likelihood(
+      Y_log, parms_log, mu_log, distribution::log_normal, loud_datatype::l_individual
+  );
+  double pi = std::acos(-1.0);
+  double expected_log_density_0 =
+      -2.0 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
+  double expected_log_density_1 =
+      -2.2 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
+  expect_true(essentiallyEqual(expected_log_density_0, loglik_log(0), 1e-12));
+  expect_true(essentiallyEqual(expected_log_density_1, loglik_log(1), 1e-12));
+
   // individual data
   Eigen::MatrixXd Y{{11.7692}, {11.5889}, {10.9485}, {12.0335}, {10.5843}, {10.9571}, {12.1292},
                     {12.5896}, {12.9235}, {11.1651}, {9.2031},  {11.7029}, {11.9342}, {11.8759},
@@ -1326,9 +1348,16 @@ void pivotal_pvalue_test() {
       {10.14478, 17.58854, 1.257525, 0.5933468}
   };
 
-  double expected_pval = 0.04056445;
+  double expected_pval = 0.05070569;
   double returned_pval = pivotal_pvalue(R_power_cv, &loudIn);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
+
+  // R contains retained post-burn-in draws, so the configured warm-up length
+  // must not trim the draw matrix again or change the pivotal p-value.
+  loudIn.burnin = 5;
+  double returned_pval_different_burnin = pivotal_pvalue(R_power_cv, &loudIn);
+  expect_true(essentiallyEqual(returned_pval, returned_pval_different_burnin, 1e-12));
+  loudIn.burnin = 2;
 
   // Individual NCV
   loudIn.dist = distribution::normal_ncv;
@@ -1341,7 +1370,7 @@ void pivotal_pvalue_test() {
   };
 
   returned_pval = pivotal_pvalue(R_power_ncv, &loudIn);
-  expected_pval = 0.001367785;
+  expected_pval = 0.001709650;
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
   // Individual LogCV
@@ -1400,7 +1429,7 @@ void pivotal_pvalue_test() {
       {10.54633, 14.75680, 2.397978, 0.2232843, 1.264136},
       {10.52846, 14.77626, 2.392139, 0.2132897, 1.250982}
   };
-  expected_pval = 0.0007524451;
+  expected_pval = 0.0009404825;
   returned_pval = pivotal_pvalue(R_power_ncv_sum, &loudIn);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 

@@ -603,15 +603,19 @@ def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
     draws = _nan_nonfinite(draws)
-    if not np.isfinite(draws).any():
-        return pd.DataFrame()
-    flat_draws = draws[np.isfinite(draws)]
     if draws.ndim == 1:
-        summary_draws = draws.reshape(1, draws.size)
+        summary_draws = draws[np.isfinite(draws)].reshape(1, -1)
     elif draws.ndim == 2:
-        summary_draws = draws
+        # ArviZ returns an all-NaN summary when even a sparse nonfinite value is
+        # present. Drop the affected iteration from every chain so R-hat and ESS
+        # retain a rectangular, correctly aligned chain/draw array.
+        summary_draws = draws[:, np.isfinite(draws).all(axis=0)]
     else:
         raise ValueError(f"Unsupported draw shape for summary: {draws.shape}")
+
+    if summary_draws.size == 0:
+        return pd.DataFrame()
+    flat_draws = summary_draws.reshape(-1)
 
     dataset = xr.Dataset(
         {var_name: (("chain", "draw"), summary_draws)},
