@@ -118,6 +118,38 @@ class Session:
         DistType.normal_ncv: "NCV",
         DistType.log_normal: "Lognormal",
     }
+    continuous_loud_ma_model_order: ClassVar = {
+        c3.ExponentialM3: 0,
+        c3.ExponentialM5: 1,
+        c3.Hill: 2,
+        c3.Power: 3,
+        c3.MultiplicativeHill: 4,
+        c3.InverseExponential: 5,
+        c3.Lognormal: 6,
+        c3.ContinuousGamma: 7,
+        c3.LMS: 8,
+    }
+    continuous_loud_ma_dist_order: ClassVar = {
+        DistType.normal: 0,
+        DistType.normal_ncv: 1,
+        DistType.log_normal: 2,
+    }
+
+    @classmethod
+    def _continuous_loud_ma_sort_key(cls, model: BmdModel):
+        model_order = next(
+            (
+                order
+                for model_type, order in cls.continuous_loud_ma_model_order.items()
+                if isinstance(model, model_type)
+            ),
+            len(cls.continuous_loud_ma_model_order),
+        )
+        dist_order = cls.continuous_loud_ma_dist_order.get(
+            getattr(model.settings, "disttype", None),
+            len(cls.continuous_loud_ma_dist_order),
+        )
+        return model_order, dist_order, model.name()
 
     def _ensure_continuous_ma_models(
         self,
@@ -433,6 +465,7 @@ class Session:
             if prior_classes != {PriorClass.bayesian_loud}:
                 raise ValueError("Continuous model averaging requires prior_class='bayesian_loud'.")
 
+            ma_models = sorted(ma_models, key=self._continuous_loud_ma_sort_key)
             instance = cma.BmdModelAveragingContinuous(session=self, models=ma_models)
 
         else:
@@ -600,6 +633,15 @@ class Session:
         dataset_dict = {}
         self.dataset.update_record(dataset_dict)
         extras = extras or {}
+        ma_weight_lookup = {}
+        if self.model_average:
+            ma_weight_lookup = {
+                id(model): (
+                    self.model_average.results.priors[idx],
+                    self.model_average.results.posteriors[idx],
+                )
+                for idx, model in enumerate(self.model_average.models)
+            }
 
         # add a row for each model
         models = []
@@ -616,8 +658,9 @@ class Session:
                 self.recommender.results.update_record(d, bmds_model_index)
                 self.selected.update_record(d, bmds_model_index)
 
-            if self.model_average:
-                self.model_average.results.update_record_weights(d, bmds_model_index)
+            if self.model_average and id(model) in ma_weight_lookup:
+                prior, posterior = ma_weight_lookup[id(model)]
+                d.update(model_prior=prior, model_posterior=posterior)
 
             models.append(d)
 

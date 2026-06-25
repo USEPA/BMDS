@@ -170,6 +170,9 @@ double findQuantileVals(std::vector<double> data, double q) {
   }
 
   int n = data.size();
+  if (n == 0) {
+    return BMDS_MISSING;
+  }
   // use linear interpolation if needed
   double index = q * (n - 1);
   int lower = static_cast<int>(std::floor(index));
@@ -181,6 +184,16 @@ double findQuantileVals(std::vector<double> data, double q) {
   } else {
     return data[lower] * (1.0 - weight) + data[upper] * weight;
   }
+}
+
+void filterFiniteAndSort(std::vector<double> *data) {
+  data->erase(
+      std::remove_if(
+          data->begin(), data->end(), [](const double &value) { return !std::isfinite(value); }
+      ),
+      data->end()
+  );
+  std::sort(data->begin(), data->end());
 }
 
 void collect_dicho_bmd_values(
@@ -5363,7 +5376,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) =
         pyRes->models[i].combinedLoudRes.BMD;
     std::vector<double> sorted_bmd(bmd_dist);
-    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    filterFiniteAndSort(&sorted_bmd);
     double bmdl = findQuantileVals(sorted_bmd, pyMA->pyDA.alpha);
     double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyDA.alpha);
     double bmd = findMedianVal(sorted_bmd);
@@ -5400,15 +5413,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<double> bmd_ma_ret(bmds_c);
 
   // Calc MA bmdl, bmd, bmdu
-  // remove nans
-  bmds_c.erase(
-      std::remove_if(
-          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
-      ),
-      bmds_c.end()
-  );
-  // sort data
-  std::sort(bmds_c.begin(), bmds_c.end());
+  filterFiniteAndSort(&bmds_c);
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyDA.alpha);
@@ -6102,7 +6107,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) =
         pyRes->models[i].combinedLoudRes.BMD;
     std::vector<double> sorted_bmd(bmd_dist);
-    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    filterFiniteAndSort(&sorted_bmd);
     double bmdl = findQuantileVals(sorted_bmd, pyMA->pyCA.alpha);
     double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyCA.alpha);
     double bmd = findMedianVal(sorted_bmd);
@@ -6138,15 +6143,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<double> bmd_ma_ret(bmds_c);
 
   // Calc MA bmdl, bmd, bmdu
-  // remove nans
-  bmds_c.erase(
-      std::remove_if(
-          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
-      ),
-      bmds_c.end()
-  );
-  // sort data
-  std::sort(bmds_c.begin(), bmds_c.end());
+  filterFiniteAndSort(&bmds_c);
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
@@ -6173,6 +6170,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 double findMedianVal(std::vector<double> dist) {
   int n = dist.size();
   double median = BMDS_MISSING;
+  if (n == 0) {
+    return median;
+  }
   if (n % 2 != 0) {
     median = dist[n / 2];
   } else {

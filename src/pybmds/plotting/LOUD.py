@@ -158,6 +158,23 @@ def _pad_draws(arr: np.ndarray, n_draws: int) -> np.ndarray:
     raise ValueError(f"Unsupported draw shape: {arr.shape}")
 
 
+def _pad_chain_draws(arr: np.ndarray, n_draws: int) -> np.ndarray:
+    arr = _nan_nonfinite(arr)
+    if arr.ndim == 2:
+        out = np.full((arr.shape[0], n_draws), np.nan, dtype=float)
+        rows = min(arr.shape[1], n_draws)
+        out[:, :rows] = arr[:, :rows]
+        return out
+
+    if arr.ndim == 3:
+        out = np.full((arr.shape[0], n_draws, arr.shape[2]), np.nan, dtype=float)
+        rows = min(arr.shape[1], n_draws)
+        out[:, :rows, :] = arr[:, :rows, :]
+        return out
+
+    raise ValueError(f"Unsupported chain draw shape: {arr.shape}")
+
+
 def _as_chain_draws(arr: np.ndarray, n_chains: int) -> np.ndarray:
     arr = _nan_nonfinite(arr)
     if arr.ndim == 1:
@@ -292,63 +309,64 @@ def model_average_to_inferencedata(
     model_parm_chains = [_as_chain_draws(parms, n_chains) for parms in ma_result.model_parm_dist]
 
     draws_per_chain = max([ma_bmd_chains.shape[1]] + [bmds.shape[1] for bmds in model_bmd_chains])
-    n_draws = draws_per_chain * n_chains
     n_models = len(model_names)
     n_params = len(all_param_names)
 
-    model_bmd = np.full((n_draws, n_models), np.nan, dtype=float)
-    model_params = np.full((n_draws, n_models, n_params), np.nan, dtype=float)
+    model_bmd = np.full((n_chains, draws_per_chain, n_models), np.nan, dtype=float)
+    model_params = np.full((n_chains, draws_per_chain, n_models, n_params), np.nan, dtype=float)
     n_param_by_model = np.zeros(n_models, dtype=int)
 
     for model_idx, (bmds, parms, pnames) in enumerate(
         zip(model_bmd_chains, model_parm_chains, param_names_by_model, strict=True)
     ):
-        flat_bmds = _flatten_chain_draws(bmds)
-        flat_parms = _flatten_chain_draws(parms)
-
-        if flat_parms.ndim != 2:
+        if bmds.ndim != 2:
             raise ValueError(
-                f"Model {model_names[model_idx]!r} parameter draws must be 2D after "
-                f"flattening chains; got shape {flat_parms.shape}."
+                f"Model {model_names[model_idx]!r} BMD draws must be 2D after "
+                f"reshaping chains; got shape {bmds.shape}."
+            )
+        if parms.ndim != 3:
+            raise ValueError(
+                f"Model {model_names[model_idx]!r} parameter draws must be 3D after "
+                f"reshaping chains; got shape {parms.shape}."
             )
 
-        if len(flat_bmds) != flat_parms.shape[0]:
+        if bmds.shape[:2] != parms.shape[:2]:
             raise ValueError(
-                f"Model {model_names[model_idx]!r} has {len(flat_bmds)} BMD draws but "
-                f"{flat_parms.shape[0]} parameter draws."
+                f"Model {model_names[model_idx]!r} has BMD draw shape {bmds.shape[:2]} but "
+                f"parameter draw shape {parms.shape[:2]}."
             )
 
-        if flat_parms.shape[1] != len(pnames):
+        if parms.shape[2] != len(pnames):
             raise ValueError(
-                f"Model {model_names[model_idx]!r} has {flat_parms.shape[1]} parameters but "
+                f"Model {model_names[model_idx]!r} has {parms.shape[2]} parameters but "
                 f"{len(pnames)} names."
             )
 
-        bmds = _pad_draws(flat_bmds, n_draws)
-        parms = _pad_draws(flat_parms, n_draws)
-        model_bmd[:, model_idx] = bmds
+        bmds = _pad_chain_draws(bmds, draws_per_chain)
+        parms = _pad_chain_draws(parms, draws_per_chain)
+        model_bmd[:, :, model_idx] = bmds
         n_param_by_model[model_idx] = len(pnames)
 
         for param_idx, pname in enumerate(pnames):
             global_idx = all_param_names.index(pname)
-            model_params[:, model_idx, global_idx] = parms[:, param_idx]
+            model_params[:, :, model_idx, global_idx] = parms[:, :, param_idx]
 
-    ma_bmd = _pad_draws(_flatten_chain_draws(ma_bmd_chains), n_draws)
+    ma_bmd = _pad_chain_draws(ma_bmd_chains, draws_per_chain)
     posteriors = _nan_nonfinite(ma_result.posteriors)
 
     posterior_raw = xr.Dataset(
         data_vars={
             "params": (
                 ("chain", "draw", "model", "param"),
-                _reshape_draws(model_params, n_chains),
+                model_params,
             ),
             "BMD": (
                 ("chain", "draw", "model"),
-                _reshape_draws(model_bmd, n_chains),
+                model_bmd,
             ),
             "MA_BMD": (
                 ("chain", "draw"),
-                _reshape_draws(ma_bmd, n_chains),
+                ma_bmd,
             ),
             "weights": (
                 ("model",),
@@ -361,7 +379,7 @@ def model_average_to_inferencedata(
         },
         coords={
             "chain": np.arange(n_chains),
-            "draw": np.arange(n_draws // n_chains),
+            "draw": np.arange(draws_per_chain),
             "model": model_names,
             "param": all_param_names,
         },
@@ -870,6 +888,7 @@ def _parameter_group_records(
     session,
     hdi_prob: float,
     compressed: bool = True,
+    summary: pd.DataFrame | None = None,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
@@ -903,14 +922,18 @@ def _parameter_group_records(
                 return
 
             rows: list[dict[str, object]] = []
-            summary = _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
-            summary = _rename_summary_columns(summary)
+            group_summary = (
+                summary
+                if summary is not None
+                else _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
+            )
+            group_summary = _rename_summary_columns(group_summary)
             for model in record_models:
                 model_name = model.name()
                 for param_name in param_names:
                     if model_name not in param_model_names.get(param_name, set()):
                         continue
-                    stats = _extract_model_row(summary, param_name, model_name)
+                    stats = _extract_model_row(group_summary, param_name, model_name)
                     if stats is None:
                         continue
                     rows.append(
@@ -946,8 +969,11 @@ def _parameter_group_records(
     return records
 
 
-def _bmd_diagnostics_table(idata: xr.DataTree, hdi_prob: float) -> pd.DataFrame:
-    summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
+def _bmd_diagnostics_table(
+    idata: xr.DataTree, hdi_prob: float, summary: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    if summary is None:
+        summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
     summary = _rename_summary_columns(summary, bmd_labels=True)
     model_names = list(idata.posterior.coords["model"].values)
     rows: list[dict[str, object]] = []
@@ -987,11 +1013,6 @@ def get_model_average_figures(
     out["ma_bmd_quantiles"] = ma_bmd_quantiles
     out["ma_bmd_hdi"] = ma_bmd_hdi
 
-    bmd_summary = _bmd_diagnostics_table(idata, hdi_prob)
-    if single_chain:
-        bmd_summary = _hide_rhat_for_single_chain(bmd_summary)
-    out["bmd_summary"] = bmd_summary
-
     param_names = [
         v
         for v in idata.posterior.data_vars
@@ -999,12 +1020,22 @@ def get_model_average_figures(
     ]
 
     multi_var_names = ["BMD", "MA_BMD", *param_names]
+    raw_multi_summary = _drop_empty_summary_rows(
+        _multi_summary_table(idata, multi_var_names, hdi_prob)
+    )
 
-    multi_summary = _drop_empty_summary_rows(_multi_summary_table(idata, multi_var_names, hdi_prob))
+    bmd_summary = _bmd_diagnostics_table(idata, hdi_prob, summary=raw_multi_summary)
+    if single_chain:
+        bmd_summary = _hide_rhat_for_single_chain(bmd_summary)
+    out["bmd_summary"] = bmd_summary
+
+    multi_summary = raw_multi_summary
     if single_chain:
         multi_summary = _hide_rhat_for_single_chain(multi_summary)
     out["multi_summary"] = multi_summary
-    parameter_groups = _parameter_group_records(idata, session, hdi_prob, compressed=compressed)
+    parameter_groups = _parameter_group_records(
+        idata, session, hdi_prob, compressed=compressed, summary=raw_multi_summary
+    )
     if single_chain:
         for group in parameter_groups:
             group["summary"] = _hide_rhat_for_single_chain(group["summary"])

@@ -54,13 +54,9 @@ class TestContinuousMa:
 
         assert forward.keys() == reverse.keys()
         for key in forward:
-            # Reversing the order also changes each model's chain seed by one,
-            # so allow ordinary Monte Carlo variation while rejecting the
-            # distribution-state regression (which changes scores by hundreds
-            # to hundreds of thousands of ELPD units).
-            assert abs(forward[key]["waic"] - reverse[key]["waic"]) < 25
+            assert forward[key]["waic"] == pytest.approx(reverse[key]["waic"])
             np.testing.assert_allclose(
-                forward[key]["residuals"], reverse[key]["residuals"], atol=0.5
+                forward[key]["residuals"], reverse[key]["residuals"], rtol=0, atol=0
             )
 
     def test_continuous_individual_loud_ma_uses_individual_data(self, cidataset):
@@ -136,8 +132,23 @@ class TestContinuousMa:
         session.add_model_averaging()
         assert np.allclose(session.ma_weights, [0.5, 0.5])
         session.execute()
-        assert np.allclose(session.model_average.results.priors, [0.5, 0.5])
-        assert np.allclose(session.model_average.results.posteriors, [0.0043, 0.9957], atol=0.05)
+        priors_by_model = {
+            model.name(): prior
+            for model, prior in zip(
+                session.model_average.models, session.model_average.results.priors, strict=True
+            )
+        }
+        posteriors_by_model = {
+            model.name(): posterior
+            for model, posterior in zip(
+                session.model_average.models,
+                session.model_average.results.posteriors,
+                strict=True,
+            )
+        }
+        assert np.allclose(list(priors_by_model.values()), [0.5, 0.5])
+        assert posteriors_by_model["Power (CV)"] == pytest.approx(0.0043, abs=0.05)
+        assert posteriors_by_model["Hill (CV)"] == pytest.approx(0.9957, abs=0.05)
 
         # custom; propagate through results
         session = pybmds.Session(dataset=cdataset3)
@@ -150,8 +161,23 @@ class TestContinuousMa:
         session.add_model_averaging(weights=[0.9, 0.1])
         assert np.allclose(session.ma_weights, [0.9, 0.1])
         session.execute()
-        assert np.allclose(session.model_average.results.priors, [0.9, 0.1])
-        assert np.allclose(session.model_average.results.posteriors, [0.0043, 0.9957], atol=0.05)
+        priors_by_model = {
+            model.name(): prior
+            for model, prior in zip(
+                session.model_average.models, session.model_average.results.priors, strict=True
+            )
+        }
+        posteriors_by_model = {
+            model.name(): posterior
+            for model, posterior in zip(
+                session.model_average.models,
+                session.model_average.results.posteriors,
+                strict=True,
+            )
+        }
+        assert priors_by_model == pytest.approx({"Power (CV)": 0.9, "Hill (CV)": 0.1})
+        assert posteriors_by_model["Power (CV)"] == pytest.approx(0.0043, abs=0.05)
+        assert posteriors_by_model["Hill (CV)"] == pytest.approx(0.9957, abs=0.05)
 
     def test_loud_ma_preserves_nonfinite_parameter_draw_rows(self):
         analysis = SimpleNamespace(
