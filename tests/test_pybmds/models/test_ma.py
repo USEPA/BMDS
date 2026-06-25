@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import pybmds
+import pybmds.models.ma as ma_module
 from pybmds.constants import PriorClass
 from pybmds.types.ma import DichotomousModelAverage, DichotomousModelAverageResult
 
@@ -18,6 +19,89 @@ def loud_dma_dataset():
 
 
 class TestDichotomousMa:
+    def test_dichotomous_loud_ma_uses_fixed_model_order(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(pybmds.Models.Weibull, {"priors": PriorClass.bayesian_loud})
+        session.add_model(pybmds.Models.Logistic, {"priors": PriorClass.bayesian_loud})
+        session.add_model(pybmds.Models.Probit, {"priors": PriorClass.bayesian_loud})
+        session.add_model_averaging(weights=[0.2, 0.3, 0.5])
+
+        assert [model.name() for model in session.models] == ["Weibull", "Logistic", "Probit"]
+        assert [model.name() for model in session.model_average.models] == [
+            "Logistic",
+            "Probit",
+            "Weibull",
+        ]
+        assert np.allclose(session.ma_weights, [0.2, 0.3, 0.5])
+
+    def test_dichotomous_loud_ma_remaps_weights_to_fixed_model_order(self, ddataset2, monkeypatch):
+        captured = {}
+
+        class FakeDichotomousModelAverage:
+            def __init__(self, dataset, models, model_weights, prior_class, weight_option):
+                captured["model_names"] = [model.name() for model in models]
+                captured["model_weights"] = np.asarray(model_weights, dtype=float)
+                self.result = SimpleNamespace(models=[SimpleNamespace() for _ in models])
+
+            def execute(self):
+                return self
+
+        fake_result = SimpleNamespace(sync_model_result=lambda *args: None)
+        monkeypatch.setattr(ma_module, "DichotomousModelAverage", FakeDichotomousModelAverage)
+        monkeypatch.setattr(
+            ma_module.DichotomousModelAverageResult,
+            "from_cpp",
+            classmethod(lambda cls, structs, model_results: fake_result),
+        )
+
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(pybmds.Models.Weibull, {"priors": PriorClass.bayesian_loud})
+        session.add_model(pybmds.Models.Logistic, {"priors": PriorClass.bayesian_loud})
+        session.add_model(pybmds.Models.Probit, {"priors": PriorClass.bayesian_loud})
+        session.add_model_averaging(weights=[0.2, 0.3, 0.5])
+
+        session.model_average.execute()
+
+        assert captured["model_names"] == ["Logistic", "Probit", "Weibull"]
+        assert np.allclose(captured["model_weights"], [0.3, 0.5, 0.2])
+
+    def test_regular_dichotomous_bayesian_ma_keeps_session_order_and_model_priors(
+        self, ddataset2, monkeypatch
+    ):
+        captured = {}
+
+        class FakeDichotomousModelAverage:
+            def __init__(self, dataset, models, model_weights, prior_class, weight_option):
+                captured["model_names"] = [model.name() for model in models]
+                captured["model_weights"] = np.asarray(model_weights, dtype=float)
+                self.result = SimpleNamespace(models=[SimpleNamespace() for _ in models])
+
+            def execute(self):
+                return self
+
+        monkeypatch.setattr(ma_module, "DichotomousModelAverage", FakeDichotomousModelAverage)
+        monkeypatch.setattr(
+            ma_module.DichotomousModelAverageResult,
+            "from_cpp",
+            classmethod(lambda cls, structs, model_results: SimpleNamespace()),
+        )
+
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(pybmds.Models.Weibull, {"priors": PriorClass.bayesian})
+        session.add_model(pybmds.Models.Logistic, {"priors": PriorClass.bayesian})
+        session.add_model(pybmds.Models.Probit, {"priors": PriorClass.bayesian})
+        session.add_model_averaging(weights=[0.2, 0.3, 0.5])
+
+        session.model_average.execute()
+
+        assert [model.name() for model in session.model_average.models] == [
+            "Weibull",
+            "Logistic",
+            "Probit",
+        ]
+        assert captured["model_names"] == ["Weibull", "Logistic", "Probit"]
+        assert np.allclose(captured["model_weights"], [0.2, 0.3, 0.5])
+
     def test_dichotomous_ma_session(self, ddataset2):
         # check execution and it can be json serialized
         session = pybmds.Session(dataset=ddataset2)

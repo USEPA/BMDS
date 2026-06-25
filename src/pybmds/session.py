@@ -134,6 +134,17 @@ class Session:
         DistType.normal_ncv: 1,
         DistType.log_normal: 2,
     }
+    dichotomous_loud_ma_model_order: ClassVar = {
+        d3.Logistic: 0,
+        d3.LogLogistic: 1,
+        d3.Probit: 2,
+        d3.LogProbit: 3,
+        d3.QuantalLinear: 4,
+        d3.Multistage: 5,
+        d3.Gamma: 6,
+        d3.Weibull: 7,
+        d3.DichotomousHill: 8,
+    }
 
     @classmethod
     def _continuous_loud_ma_sort_key(cls, model: BmdModel):
@@ -150,6 +161,18 @@ class Session:
             len(cls.continuous_loud_ma_dist_order),
         )
         return model_order, dist_order, model.name()
+
+    @classmethod
+    def _dichotomous_loud_ma_sort_key(cls, model: BmdModel):
+        model_order = next(
+            (
+                order
+                for model_type, order in cls.dichotomous_loud_ma_model_order.items()
+                if isinstance(model, model_type)
+            ),
+            len(cls.dichotomous_loud_ma_model_order),
+        )
+        return model_order, model.name()
 
     def _ensure_continuous_ma_models(
         self,
@@ -427,7 +450,10 @@ class Session:
                 raise ValueError(
                     f"Dichotomous model averaging requires prior_class in {allowed}; got {prior_class}."
                 )
-            instance = ma.BmdModelAveragingDichotomous(session=self, models=copy(self.models))
+            ma_models = copy(self.models)
+            if prior_class is PriorClass.bayesian_loud:
+                ma_models = sorted(ma_models, key=self._dichotomous_loud_ma_sort_key)
+            instance = ma.BmdModelAveragingDichotomous(session=self, models=ma_models)
 
         elif self.dataset.dtype in (
             constants.Dtype.CONTINUOUS,
