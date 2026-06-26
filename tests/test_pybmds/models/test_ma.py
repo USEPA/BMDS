@@ -19,6 +19,24 @@ def loud_dma_dataset():
 
 
 class TestDichotomousMa:
+    def test_default_dichotomous_loud_session_and_ma_models_use_same_order(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+
+        expected = [
+            "Hill",
+            "Gamma",
+            "Logistic",
+            "LogLogistic",
+            "LogProbit",
+            "Multistage 2",
+            "Probit",
+            "Quantal Linear",
+            "Weibull",
+        ]
+        assert [model.name() for model in session.models] == expected
+        assert [model.name() for model in session.model_average.models] == expected
+
     def test_dichotomous_loud_ma_uses_fixed_model_order(self, ddataset2):
         session = pybmds.Session(dataset=ddataset2)
         session.add_model(pybmds.Models.Weibull, {"priors": PriorClass.bayesian_loud})
@@ -34,10 +52,10 @@ class TestDichotomousMa:
             "Probit",
         ]
         assert [model.name() for model in session.model_average.models] == [
+            "Hill",
             "Logistic",
             "Probit",
             "Weibull",
-            "Hill",
         ]
         assert np.allclose(session.ma_weights, [0.2, 0.3, 0.1, 0.4])
 
@@ -70,8 +88,8 @@ class TestDichotomousMa:
 
         session.model_average.execute()
 
-        assert captured["model_names"] == ["Logistic", "Probit", "Weibull", "Hill"]
-        assert np.allclose(captured["model_weights"], [0.3, 0.4, 0.2, 0.1])
+        assert captured["model_names"] == ["Hill", "Logistic", "Probit", "Weibull"]
+        assert np.allclose(captured["model_weights"], [0.1, 0.3, 0.4, 0.2])
 
     def test_regular_dichotomous_bayesian_ma_keeps_session_order_and_model_priors(
         self, ddataset2, monkeypatch

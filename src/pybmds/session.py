@@ -58,15 +58,15 @@ class Session:
 
     model_options: ClassVar = {
         Dtype.DICHOTOMOUS: {
+            Models.DichotomousHill: d3.DichotomousHill,
+            Models.Gamma: d3.Gamma,
             Models.Logistic: d3.Logistic,
             Models.LogLogistic: d3.LogLogistic,
-            Models.Probit: d3.Probit,
             Models.LogProbit: d3.LogProbit,
-            Models.QuantalLinear: d3.QuantalLinear,
             Models.Multistage: d3.Multistage,
-            Models.Gamma: d3.Gamma,
+            Models.Probit: d3.Probit,
+            Models.QuantalLinear: d3.QuantalLinear,
             Models.Weibull: d3.Weibull,
-            Models.DichotomousHill: d3.DichotomousHill,
         },
         Dtype.CONTINUOUS: {
             Models.Linear: c3.Linear,
@@ -135,15 +135,15 @@ class Session:
         DistType.log_normal: 2,
     }
     dichotomous_loud_ma_model_order: ClassVar = {
-        d3.Logistic: 0,
-        d3.LogLogistic: 1,
-        d3.Probit: 2,
-        d3.LogProbit: 3,
-        d3.QuantalLinear: 4,
+        d3.DichotomousHill: 0,
+        d3.Gamma: 1,
+        d3.Logistic: 2,
+        d3.LogLogistic: 3,
+        d3.LogProbit: 4,
         d3.Multistage: 5,
-        d3.Gamma: 6,
-        d3.Weibull: 7,
-        d3.DichotomousHill: 8,
+        d3.Probit: 6,
+        d3.QuantalLinear: 7,
+        d3.Weibull: 8,
     }
 
     @classmethod
