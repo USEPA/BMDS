@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 import pybmds
 from pybmds.constants import DistType, PriorClass
@@ -10,6 +11,54 @@ from pybmds.types.cma import ContinuousModelAverage, ContinuousModelAverageResul
 
 ## TO DO - to change when we have actual results from models
 class TestContinuousMa:
+    def test_mixed_distribution_waic_is_model_order_invariant(self):
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 50, 100, 200, 400],
+            ns=[20, 20, 20, 20, 20],
+            means=[5.26, 5.56, 6.13, 8.24, 11.23],
+            stdevs=[2.23, 2.37, 2.45, 2.64, 2.99],
+        )
+        power = (pybmds.Models.Power, DistType.normal)
+        exp3_lognormal = (pybmds.Models.ExponentialM3, DistType.log_normal)
+
+        def execute(order):
+            session = pybmds.Session(dataset=dataset)
+            for model, disttype in order:
+                session.add_model(
+                    model,
+                    {
+                        "disttype": disttype,
+                        "priors": PriorClass.bayesian_loud,
+                        "n_chains": 1,
+                        "samples": 1000,
+                        "burnin": 100,
+                        "seed": 421,
+                    },
+                )
+            session.add_model_averaging()
+            session.execute()
+            return {
+                (model.bmd_model_class.id, model.settings.disttype): {
+                    "waic": waic,
+                    "residuals": np.asarray(model.results.gof.residual, dtype=float),
+                }
+                for model, waic in zip(
+                    session.model_average.models,
+                    session.model_average.results.model_waics,
+                    strict=True,
+                )
+            }
+
+        forward = execute([power, exp3_lognormal])
+        reverse = execute([exp3_lognormal, power])
+
+        assert forward.keys() == reverse.keys()
+        for key in forward:
+            assert forward[key]["waic"] == pytest.approx(reverse[key]["waic"])
+            np.testing.assert_allclose(
+                forward[key]["residuals"], reverse[key]["residuals"], rtol=0, atol=0
+            )
+
     def test_continuous_individual_loud_ma_uses_individual_data(self, cidataset):
         session = pybmds.Session(dataset=cidataset)
         session.add_model(pybmds.Models.Power, {"priors": PriorClass.bayesian_loud})
@@ -83,8 +132,23 @@ class TestContinuousMa:
         session.add_model_averaging()
         assert np.allclose(session.ma_weights, [0.5, 0.5])
         session.execute()
-        assert np.allclose(session.model_average.results.priors, [0.5, 0.5])
-        assert np.allclose(session.model_average.results.posteriors, [0.0043, 0.9957], atol=0.05)
+        priors_by_model = {
+            model.name(): prior
+            for model, prior in zip(
+                session.model_average.models, session.model_average.results.priors, strict=True
+            )
+        }
+        posteriors_by_model = {
+            model.name(): posterior
+            for model, posterior in zip(
+                session.model_average.models,
+                session.model_average.results.posteriors,
+                strict=True,
+            )
+        }
+        assert np.allclose(list(priors_by_model.values()), [0.5, 0.5])
+        assert posteriors_by_model["Power (CV)"] == pytest.approx(0.0043, abs=0.05)
+        assert posteriors_by_model["Hill (CV)"] == pytest.approx(0.9957, abs=0.05)
 
         # custom; propagate through results
         session = pybmds.Session(dataset=cdataset3)
@@ -97,8 +161,23 @@ class TestContinuousMa:
         session.add_model_averaging(weights=[0.9, 0.1])
         assert np.allclose(session.ma_weights, [0.9, 0.1])
         session.execute()
-        assert np.allclose(session.model_average.results.priors, [0.9, 0.1])
-        assert np.allclose(session.model_average.results.posteriors, [0.0043, 0.9957], atol=0.05)
+        priors_by_model = {
+            model.name(): prior
+            for model, prior in zip(
+                session.model_average.models, session.model_average.results.priors, strict=True
+            )
+        }
+        posteriors_by_model = {
+            model.name(): posterior
+            for model, posterior in zip(
+                session.model_average.models,
+                session.model_average.results.posteriors,
+                strict=True,
+            )
+        }
+        assert priors_by_model == pytest.approx({"Power (CV)": 0.9, "Hill (CV)": 0.1})
+        assert posteriors_by_model["Power (CV)"] == pytest.approx(0.0043, abs=0.05)
+        assert posteriors_by_model["Hill (CV)"] == pytest.approx(0.9957, abs=0.05)
 
     def test_loud_ma_preserves_nonfinite_parameter_draw_rows(self):
         analysis = SimpleNamespace(
@@ -142,18 +221,18 @@ class TestContinuousMa:
         assert np.isinf(result.model_bmd_dist[0][1])
 
         payload = result.model_dump()
-        assert payload["bmd_dist"] == [0.1, None, 0.3]
-        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
-        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
+        assert payload["bmd_dist"] == [0.1, 0.3]
+        assert payload["model_bmd_dist"] == [[0.1]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0]]]
         assert isinstance(json.dumps(payload, allow_nan=False), str)
 
         rehydrated = ContinuousModelAverageResult.model_validate(payload)
-        assert len(rehydrated.bmd_dist) == 3
-        assert len(rehydrated.model_bmd_dist[0]) == 3
-        assert rehydrated.model_parm_dist[0].shape == (3, 2)
-        assert np.isnan(rehydrated.bmd_dist[1])
-        assert np.isnan(rehydrated.model_bmd_dist[0][1])
-        assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
+        assert len(rehydrated.bmd_dist) == 2
+        assert len(rehydrated.model_bmd_dist[0]) == 1
+        assert rehydrated.model_parm_dist[0].shape == (1, 2)
+        assert np.isfinite(rehydrated.bmd_dist).all()
+        assert np.isfinite(rehydrated.model_bmd_dist[0]).all()
+        assert np.isfinite(rehydrated.model_parm_dist[0]).all()
 
     def test_loud_ma_recovers_blank_posteriors_from_waic(self):
         analysis = SimpleNamespace(
@@ -250,3 +329,30 @@ class TestContinuousMa:
         except AttributeError:
             pass
         assert model.results.parameters == "existing"
+
+    def test_finite_json_model_draws_accepts_supported_shapes(self):
+        # Empty arrays are a valid result for a model with no usable draws.
+        bmd, parms = ContinuousModelAverageResult._finite_json_model_draws([], [])
+        assert bmd == []
+        assert parms == []
+
+        # The C++ layer may return parameters flattened; preserve draw/row pairing.
+        bmd, parms = ContinuousModelAverageResult._finite_json_model_draws(
+            [0.1, 0.2], [1.0, 2.0, 3.0, 4.0]
+        )
+        assert bmd == [0.1, 0.2]
+        assert parms == [[1.0, 2.0], [3.0, 4.0]]
+
+    def test_finite_json_model_draws_rejects_unpairable_shapes(self):
+        with pytest.raises(ValueError, match="2 BMD draws with 3 parameter values"):
+            ContinuousModelAverageResult._finite_json_model_draws([0.1, 0.2], [1.0, 2.0, 3.0])
+
+        with pytest.raises(ValueError, match="2 BMD draws with 1 parameter rows"):
+            ContinuousModelAverageResult._finite_json_model_draws([0.1, 0.2], [[1.0, 2.0]])
+
+    def test_reshape_flat_draws_leaves_uneven_chains_flat(self):
+        draws = np.array([1.0, 2.0, 3.0])
+
+        actual = ContinuousModelAverageResult._reshape_flat_draws(draws, n_chains=2)
+
+        np.testing.assert_array_equal(actual, draws)

@@ -1,3 +1,4 @@
+import numpy as np
 from pydantic import Field
 
 from ..constants import PriorClass
@@ -16,15 +17,26 @@ class BmdModelAveragingDichotomous(BmdModelAveraging):
             return DichotomousModelSettings.model_validate(settings)
 
     def execute(self) -> DichotomousModelAverageResult:
+        is_loud = self.settings.priors.prior_class is PriorClass.bayesian_loud
+        model_weights = self.session.ma_weights
+        if is_loud:
+            model_indexes = [self.session.models.index(model) for model in self.models]
+            model_weights = np.asarray(model_weights, dtype=float)
+            if model_weights.size == len(self.session.models):
+                model_weights = model_weights[model_indexes]
+                model_weights = model_weights / model_weights.sum()
+            elif model_weights.size != len(self.models):
+                model_weights = model_weights[model_indexes]
+                model_weights = model_weights / model_weights.sum()
+
         self.structs = DichotomousModelAverage(
             self.session.dataset,
             self.models,
-            self.session.ma_weights,
+            model_weights,
             self.settings.priors.prior_class,
             self.session.weight_option,
         )
         self.structs.execute()
-        is_loud = self.settings.priors.prior_class is PriorClass.bayesian_loud
         results = DichotomousModelAverageResult.from_cpp(
             self.structs, self.models if is_loud else [model.results for model in self.models]
         )

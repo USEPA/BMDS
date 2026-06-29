@@ -254,7 +254,7 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
         impose_positivity: bool = True,
         tolerance: float = 0.01,
         max_iterations: int = 100_000,
-    ) -> TestResult:
+    ) -> tuple[TestResult, "ContinuousIndividualDataset"]:
         """
          Generate synthetic individual response data from summary statistics and
          perform the Jonckheere-Terpstra trend test.
@@ -283,7 +283,8 @@ class ContinuousDataset(ContinuousSummaryDataMixin, DatasetBase):
             tolerance=tolerance,
             max_iterations=max_iterations,
         )
-        return synthetic.trend(hypothesis=hypothesis, nperm=nperm, seed=seed)
+        result = synthetic.trend(hypothesis=hypothesis, nperm=nperm, seed=seed)
+        return result, synthetic
 
 
 class ContinuousDatasetSchema(DatasetSchemaBase):

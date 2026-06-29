@@ -170,6 +170,9 @@ double findQuantileVals(std::vector<double> data, double q) {
   }
 
   int n = data.size();
+  if (n == 0) {
+    return BMDS_MISSING;
+  }
   // use linear interpolation if needed
   double index = q * (n - 1);
   int lower = static_cast<int>(std::floor(index));
@@ -181,6 +184,16 @@ double findQuantileVals(std::vector<double> data, double q) {
   } else {
     return data[lower] * (1.0 - weight) + data[upper] * weight;
   }
+}
+
+void filterFiniteAndSort(std::vector<double> *data) {
+  data->erase(
+      std::remove_if(
+          data->begin(), data->end(), [](const double &value) { return !std::isfinite(value); }
+      ),
+      data->end()
+  );
+  std::sort(data->begin(), data->end());
 }
 
 void collect_dicho_bmd_values(
@@ -2558,9 +2571,10 @@ double getQVals(
 
     } else if (dist == distribution::log_normal) {
       double prec = parms(parms.size() - 1);
-      double gamma = sqrt(1.0 / prec);
-      // sum((log(Y) - mu)^2 / gamma)
-      qVal = ((log(Y.array()) - mu.array()).square() / gamma).sum();
+      double gamma2 = 1.0 / prec;
+      // mu is the predicted mean of log(Y), so use the log-scale variance.
+      // sum((log(Y) - mu)^2 / gamma^2)
+      qVal = ((log(Y.array()) - mu.array()).square() / gamma2).sum();
 
     } else {
       std::cout << "Error in getQVals.  Unknown distribution." << std::endl;
@@ -2698,8 +2712,10 @@ Eigen::VectorXd loud_likelihood(
       double prec = parms(parms.size() - 1);
       double sdlog = sqrt(1.0 / prec);
       for (int i = 0; i < mu.size(); i++) {
-        double zeta = log(mu(i)) - 0.5 * pow(sdlog, 2);
-        loglik(i) = log(gsl_ran_lognormal_pdf(Y(i), zeta, sdlog));
+        // The lognormal model functions already return E[log(Y)]. Match the
+        // likelihood used by the sampler instead of logging mu a second time.
+        double log_y = log(Y(i));
+        loglik(i) = log(gsl_ran_gaussian_pdf(log_y - mu(i), sdlog)) - log_y;
       }
     } else {
       std::cout << "Error in loud_likelihood.  Unknown distribution." << std::endl;
@@ -5094,7 +5110,10 @@ double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
-  Eigen::MatrixXd Ruse = R.bottomRows(max(1, loudIn->iter - loudIn->burnin + 1));
+  // R contains keep_samples returned after sampler warm-up/burn-in. Do not
+  // discard burn-in a second time, or trim only the first of several combined
+  // chains.
+  const Eigen::MatrixXd &Ruse = R;
   int S = Ruse.rows();
   Eigen::VectorXd Qvals(S);
 
@@ -5114,6 +5133,9 @@ double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
   int df_val = N;
   if (loudIn->df_override != BMDS_MISSING) {
     df_val = loudIn->df_override;
+  }
+  if (df_val <= 0) {
+    return BMDS_MISSING;
   }
 
   Eigen::VectorXd mu(S);
@@ -5262,7 +5284,14 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     }
     // loudIn already has priorr, so no need to pass separately
     bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
+    // Use the conventional Pearson goodness-of-fit residual degrees of
+    // freedom, K - p. Use the transformed model parameter count rather than
+    // R.cols(), because the LOUD latent parameterization can contain redundant
+    // columns (for example, three simplex values representing two logistic
+    // parameters).
+    loudIn.df_override = loudIn.Y.rows() - nparms;
     combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+    loudIn.df_override = BMDS_MISSING;
 
     // GOF calcs
     anal.model = pyMA->models[i];
@@ -5347,7 +5376,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) =
         pyRes->models[i].combinedLoudRes.BMD;
     std::vector<double> sorted_bmd(bmd_dist);
-    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    filterFiniteAndSort(&sorted_bmd);
     double bmdl = findQuantileVals(sorted_bmd, pyMA->pyDA.alpha);
     double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyDA.alpha);
     double bmd = findMedianVal(sorted_bmd);
@@ -5384,15 +5413,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<double> bmd_ma_ret(bmds_c);
 
   // Calc MA bmdl, bmd, bmdu
-  // remove nans
-  bmds_c.erase(
-      std::remove_if(
-          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
-      ),
-      bmds_c.end()
-  );
-  // sort data
-  std::sort(bmds_c.begin(), bmds_c.end());
+  filterFiniteAndSort(&bmds_c);
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyDA.alpha);
@@ -5896,6 +5917,28 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   // combine chains by model
   for (int i = 0; i < numModels; i++) {
+    // Restore the model-specific input configuration. The sampling loop above
+    // leaves loudIn configured for the last model, which can otherwise cause
+    // every model's WAIC, bridge factor, and pivotal p-value to use the last
+    // model's distribution.
+    switch (pyMA->loud_dist_type[i]) {
+      case distribution::normal:
+        loudIn = cvInput;
+        break;
+      case distribution::normal_ncv:
+        loudIn = ncvInput;
+        break;
+      case distribution::log_normal:
+        loudIn = logcvInput;
+        break;
+      default:
+        std::cout << "Unsupported LOUD distribution during model post-processing" << std::endl;
+        return;
+    }
+    loudIn.model = pyMA->models[i];
+    loudIn.iter = iter;
+    CA.model = static_cast<cont_model>(pyMA->models[i]);
+
     int nparms = pyRes->models[i].nparms;
     int rcols = pyRes->models[i].loudRes[0].R.cols();
 
@@ -5920,7 +5963,13 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // bridge sample, pivotal pvalue and loglike calcs for each model (combined chains)
     int ll_type = getLoudLLType(pyMA->loud_dist_type[i], pyMA->datatype);
-    int model_typ = getLoudModelType(pyRes->models[i].model, BMDS_MISSING, pyMA->datatype);
+    int model_typ =
+        getLoudModelType(pyRes->models[i].model, pyMA->loud_dist_type[i], pyMA->datatype);
+    if (model_typ == BMDS_MISSING) {
+      std::cout << "Unsupported LOUD model/distribution combination during post-processing"
+                << std::endl;
+      return;
+    }
     Eigen::VectorXd parmVec = colwise_median(combLoudRes->R);
     LogLikeFunction logli = getLogLikeFunc(ll_type);
     ptr2 model_fun = choose_nonlinearity2(model_typ);
@@ -5929,9 +5978,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
     Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
-    loudIn.model = pyMA->models[i];
     loudIn.priorr = priorr;
-    loudIn.iter = iter;
     // isNegative is repeated also
     std::vector<bool> isNegative(priorr.rows());
     for (int i = 0; i < isNegative.size(); i++) {
@@ -5965,7 +6012,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::exp_3:
       case cont_model::hill:
         retParms = colwise_median(pyRes->models[i].combinedLoudRes.parms);
-        if (loudIn.dist != distribution::log_normal) {
+        if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
           retParms(retParms.size() - 1) = log(retParms(retParms.size() - 1));
@@ -5973,7 +6020,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         break;
       case cont_model::exp_5:
         retParms = colwise_median(pyRes->models[i].combinedLoudRes.parms);
-        if (loudIn.dist != distribution::log_normal) {
+        if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
           retParms(retParms.size() - 1) = log(retParms(retParms.size() - 1));
@@ -6058,7 +6105,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     Eigen::Map<Eigen::VectorXd>(&bmd_dist[0], bmd_dist.size()) =
         pyRes->models[i].combinedLoudRes.BMD;
     std::vector<double> sorted_bmd(bmd_dist);
-    std::sort(sorted_bmd.begin(), sorted_bmd.end());
+    filterFiniteAndSort(&sorted_bmd);
     double bmdl = findQuantileVals(sorted_bmd, pyMA->pyCA.alpha);
     double bmdu = findQuantileVals(sorted_bmd, 1.0 - pyMA->pyCA.alpha);
     double bmd = findMedianVal(sorted_bmd);
@@ -6094,15 +6141,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   std::vector<double> bmd_ma_ret(bmds_c);
 
   // Calc MA bmdl, bmd, bmdu
-  // remove nans
-  bmds_c.erase(
-      std::remove_if(
-          bmds_c.begin(), bmds_c.end(), [](const double &value) { return std::isnan(value); }
-      ),
-      bmds_c.end()
-  );
-  // sort data
-  std::sort(bmds_c.begin(), bmds_c.end());
+  filterFiniteAndSort(&bmds_c);
 
   // find bmdl, bmdu
   double bmdl = findQuantileVals(bmds_c, pyMA->pyCA.alpha);
@@ -6129,6 +6168,9 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 double findMedianVal(std::vector<double> dist) {
   int n = dist.size();
   double median = BMDS_MISSING;
+  if (n == 0) {
+    return median;
+  }
   if (n % 2 != 0) {
     median = dist[n / 2];
   } else {

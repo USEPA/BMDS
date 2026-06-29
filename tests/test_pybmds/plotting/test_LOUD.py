@@ -30,6 +30,7 @@ from pybmds.plotting.LOUD import (
     _ma_bmd_quantiles,
     _model_color_map,
     _multi_summary_table,
+    _pad_chain_draws,
     _pad_draws,
     _parameter_figure_height,
     _parameter_group_records,
@@ -330,6 +331,10 @@ class TestLOUD:
         np.testing.assert_array_equal(_as_chain_draws(already_shaped, 2), already_shaped)
         assert _as_chain_draws(np.arange(12, dtype=float).reshape(6, 2), 3).shape == (3, 2, 2)
         np.testing.assert_array_equal(_flatten_chain_draws(np.array([1.0, 2.0])), [1.0, 2.0])
+        assert _pad_chain_draws(np.ones((2, 2)), 3).shape == (2, 3)
+        assert _pad_chain_draws(np.ones((2, 2, 1)), 3).shape == (2, 3, 1)
+        with pytest.raises(ValueError, match="Unsupported chain draw shape"):
+            _pad_chain_draws(np.ones((2,)), 3)
 
         assert (
             _infer_n_chains(
@@ -607,7 +612,7 @@ class TestLOUD:
             idata.posterior.data_vars
         )
         assert list(idata.posterior.coords["model"].values) == [
-            model.name() for model in session.models
+            model.name() for model in session.model_average.models
         ]
         assert idata.observed_data.attrs["dtype"] == "continuous"
         assert idata.posterior["MA_BMD"].shape[0] == 1
@@ -671,8 +676,45 @@ class TestLOUD:
             ),
         )
 
-        with pytest.raises(ValueError, match="BMD draws but 2 parameter draws"):
+        with pytest.raises(ValueError, match="BMD draw shape"):
             model_average_to_inferencedata(session)
+
+    def test_model_average_to_inferencedata_pads_within_chain(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                structs=SimpleNamespace(n_chains=2),
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([[10.0, 11.0, 12.0], [20.0, 21.0, 22.0]]),
+                    model_bmd_dist=[np.array([[1.0, 2.0], [3.0, 4.0]])],
+                    model_parm_dist=[np.array([[[101.0], [102.0]], [[201.0], [202.0]]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        idata = model_average_to_inferencedata(session)
+
+        np.testing.assert_array_equal(
+            idata.posterior["BMD"].values[:, :, 0],
+            np.array([[1.0, 2.0, np.nan], [3.0, 4.0, np.nan]]),
+        )
+        np.testing.assert_array_equal(
+            idata.posterior["g"].values[:, :, 0],
+            np.array([[101.0, 102.0, np.nan], [201.0, 202.0, np.nan]]),
+        )
 
     def test_model_average_to_inferencedata_replaces_infinite_draws(self):
         class FakeModel:
@@ -727,6 +769,30 @@ class TestLOUD:
         assert "a[0:A]" in actual.index
         assert "a[1:B]" not in actual.index
         assert "BMD[1:B]" in actual.index
+
+    def test_bmd_diagnostics_retains_models_with_sparse_nonfinite_draws(self):
+        posterior = {
+            "BMD": (
+                ("chain", "draw", "model"),
+                np.array(
+                    [
+                        [[1.0, 4.0], [2.0, np.nan], [3.0, 6.0]],
+                        [[1.1, 4.1], [2.1, 5.1], [3.1, 6.1]],
+                    ]
+                ),
+            ),
+            "MA_BMD": (
+                ("chain", "draw"),
+                np.array([[2.0, np.nan, 4.0], [2.1, 3.1, 4.1]]),
+            ),
+        }
+        coords = {"chain": [0, 1], "draw": np.arange(3), "model": ["A", "B"]}
+        idata = _data_tree(posterior=xr.Dataset(posterior, coords=coords))
+
+        actual = _bmd_diagnostics_table(idata, hdi_prob=0.9)
+
+        assert list(actual.index) == ["A", "B", "MA_BMD"]
+        assert actual.loc[["A", "B", "MA_BMD"], "BMD"].notna().all()
 
     def test_dichotomous_loud_model_average_to_inferencedata(self):
         dataset = pybmds.DichotomousDataset(
@@ -1086,17 +1152,24 @@ class TestLOUD:
         assert "ess_bulk" in figures["multi_summary"].columns
         assert "ess_tail" in figures["multi_summary"].columns
         assert "ess_median" not in figures["multi_summary"].columns
-        expected_summary_calls = []
         expected_var_names = ["BMD", "MA_BMD"]
         for model in session.models:
             for name in model.results.parameters.names:
                 if name not in expected_var_names:
                     expected_var_names.append(name)
+        expected_slice_count = 0
         for name in expected_var_names:
-            expected_summary_calls.append(((name,), 0.9, "median"))
-            expected_summary_calls.append(((name,), 0.9, "mean"))
-        for expected_call in expected_summary_calls:
-            assert expected_call in calls["summary"]
+            values = np.asarray(figures["idata"].posterior[name].values, dtype=float)
+            if values.ndim == 2:
+                expected_slice_count += int(np.isfinite(values).any())
+            else:
+                expected_slice_count += sum(
+                    int(np.isfinite(values[:, :, model_idx]).any())
+                    for model_idx in range(values.shape[2])
+                )
+            assert ((name,), 0.9, "median") in calls["summary"]
+            assert ((name,), 0.9, "mean") in calls["summary"]
+        assert len(calls["summary"]) == expected_slice_count * 2
         assert calls["dist"] > 0
         posterior_ax = figures["posterior"].axes[0]
         legend_labels = [text.get_text() for text in posterior_ax.get_legend().get_texts()]
@@ -1107,7 +1180,7 @@ class TestLOUD:
         assert any(text.startswith("BMD:") for text in annotation_text)
         assert any(text.startswith("BMDU:") for text in annotation_text)
         assert isinstance(figures["overlay"], plt.Figure)
-        assert figures["parameter_groups"][0]["name"] == "Power"
+        assert figures["parameter_groups"][0]["name"] == "Hill"
         assert {"Model", "Parameter", "Median"}.issubset(
             figures["parameter_groups"][0]["summary"].columns
         )

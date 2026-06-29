@@ -260,7 +260,7 @@ class TestSession:
         assert d["dataset"]["doses"] == [0, 0.125, 0.25, 0.5, 1.0]
         assert len(d["models"]) == 10
         assert list(d["models"][0].keys()) == ["name", "model_class", "settings", "results"]
-        assert d["model_average"]["model_indexes"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        assert d["model_average"]["model_indexes"] == [4, 5, 6, 7, 8, 9, 2, 3, 0, 1]
         assert "bmd" in d["model_average"]["results"]
 
         # ensure we can convert back to a session
@@ -337,23 +337,23 @@ class TestSession:
         session.execute()
 
         assert [model.name() for model in session.model_average.models] == [
-            "Power (CV)",
             "Hill (CV)",
-            "Power (NCV)",
             "Hill (NCV)",
-            "LMS 2-Stage (NCV)",
+            "Power (CV)",
+            "Power (NCV)",
             "Inverse Exponential (NCV)",
+            "LMS 2-Stage (NCV)",
         ]
         assert len(session.model_average.results.priors) == len(session.model_average.models)
         assert len(session.model_average.results.posteriors) == len(session.model_average.models)
         idata = pybmds.plotting.LOUD.model_average_to_inferencedata(session)
         assert list(idata.posterior.coords["model"].values) == [
-            "Power (CV)",
             "Hill (CV)",
-            "Power (NCV)",
             "Hill (NCV)",
-            "LMS 2-Stage (NCV)",
+            "Power (CV)",
+            "Power (NCV)",
             "Inverse Exponential (NCV)",
+            "LMS 2-Stage (NCV)",
         ]
 
         def fake_get_model_average_figures(_session, compressed=True):
@@ -427,6 +427,35 @@ class TestSession:
             assert len(model.results.parameters.names) == len(model.results.parameters.se)
             assert np.isfinite(model.results.plotting.dr_y).all()
             assert np.unique(model.results.plotting.dr_y).size > 1
+
+    def test_to_df_maps_model_average_weights_by_model_identity(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        ma = session.model_average
+        assert ma is not None
+        ma.models = [session.models[1], session.models[0]]
+        ma.results = ma.results.model_copy(
+            update={
+                "priors": np.array([0.25, 0.75]),
+                "posteriors": np.array([0.4, 0.6]),
+            }
+        )
+
+        df = session.to_df()
+
+        by_name = df.set_index("model_name")
+        assert by_name.loc["Hill (CV)", "model_prior"] == pytest.approx(0.25)
+        assert by_name.loc["Hill (CV)", "model_posterior"] == pytest.approx(0.4)
+        assert by_name.loc["Power (CV)", "model_prior"] == pytest.approx(0.75)
+        assert by_name.loc["Power (CV)", "model_posterior"] == pytest.approx(0.6)
 
     def test_continuous_ma_default_include_extended_excludes_existing_hill(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)

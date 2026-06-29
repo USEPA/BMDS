@@ -19,7 +19,10 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
     def execute(self) -> ContinuousModelAverageResult:
         model_indexes = [self.session.models.index(model) for model in self.models]
         model_weights = np.asarray(self.session.ma_weights, dtype=float)
-        if model_weights.size != len(self.models):
+        if model_weights.size == len(self.session.models):
+            model_weights = model_weights[model_indexes]
+            model_weights = model_weights / model_weights.sum()
+        elif model_weights.size != len(self.models):
             model_weights = model_weights[model_indexes]
             model_weights = model_weights / model_weights.sum()
 

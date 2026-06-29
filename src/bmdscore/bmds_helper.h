@@ -882,7 +882,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
 
 Eigen::VectorXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int ll_type
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    int datatype
 );
 
 double getQVals(
