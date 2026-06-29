@@ -1292,19 +1292,16 @@ void pivotal_pvalue_test() {
   Eigen::MatrixXd Y_log{{std::exp(2.0)}, {std::exp(2.2)}};
   Eigen::VectorXd mu_log{{2.1}, {2.1}};
   Eigen::VectorXd parms_log{{1.0}, {100.0}};  // final parameter is precision
-  double q_log = getQVals(
-      Y_log, parms_log, mu_log, distribution::log_normal, loud_datatype::l_individual
-  );
+  double q_log =
+      getQVals(Y_log, parms_log, mu_log, distribution::log_normal, loud_datatype::l_individual);
   expect_true(essentiallyEqual(2.0, q_log, 1e-12));
 
   Eigen::VectorXd loglik_log = loud_likelihood(
       Y_log, parms_log, mu_log, distribution::log_normal, loud_datatype::l_individual
   );
   double pi = std::acos(-1.0);
-  double expected_log_density_0 =
-      -2.0 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
-  double expected_log_density_1 =
-      -2.2 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
+  double expected_log_density_0 = -2.0 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
+  double expected_log_density_1 = -2.2 - 0.5 * std::log(2.0 * pi * 0.01) - 0.5;
   expect_true(essentiallyEqual(expected_log_density_0, loglik_log(0), 1e-12));
   expect_true(essentiallyEqual(expected_log_density_1, loglik_log(1), 1e-12));
 

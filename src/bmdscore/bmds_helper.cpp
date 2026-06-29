@@ -5491,8 +5491,7 @@ void calcLoudPosteriors(
       int nmodels = waic.size();
       double tmpSum = 0;
       for (int i = 0; i < nmodels; i++) {
-        double waic_weight =
-            std::isfinite(waic[i]) && waic[i] != BMDS_MISSING ? waic[i] : 0.0;
+        double waic_weight = std::isfinite(waic[i]) && waic[i] != BMDS_MISSING ? waic[i] : 0.0;
         double int_factor_weight =
             std::isfinite(int_factor[i]) && int_factor[i] != BMDS_MISSING ? int_factor[i] : 0.0;
         posterior_probs[i] = 0.5 * (waic_weight + int_factor_weight);
@@ -5964,9 +5963,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // bridge sample, pivotal pvalue and loglike calcs for each model (combined chains)
     int ll_type = getLoudLLType(pyMA->loud_dist_type[i], pyMA->datatype);
-    int model_typ = getLoudModelType(
-        pyRes->models[i].model, pyMA->loud_dist_type[i], pyMA->datatype
-    );
+    int model_typ =
+        getLoudModelType(pyRes->models[i].model, pyMA->loud_dist_type[i], pyMA->datatype);
     if (model_typ == BMDS_MISSING) {
       std::cout << "Unsupported LOUD model/distribution combination during post-processing"
                 << std::endl;
