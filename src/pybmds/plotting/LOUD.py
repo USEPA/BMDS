@@ -12,7 +12,6 @@ import pandas as pd
 import xarray as xr
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from scipy.stats import gaussian_kde
 
 from ..constants import DistType
 
@@ -90,10 +89,10 @@ def _plot_dist(
     try:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
-            density = gaussian_kde(draws)
-            x = np.linspace(draws.min(), draws.max(), 200)
-            y = density(x)
-    except (ValueError, np.linalg.LinAlgError):
+            kde_result = az.kde(draws)
+            # ArviZ 1.x also returns the estimated bandwidth.
+            x, y = kde_result[:2]
+    except (ValueError, TypeError, np.linalg.LinAlgError):
         ax.hist(draws, density=True, color=color, alpha=0.35)
         return ax
 
@@ -798,7 +797,12 @@ def _model_color_map(model_names: list[str]) -> dict[str, tuple]:
     }
 
 
-def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: int | None = None, **kwargs):
+def _add_figure_legend(
+    fig: plt.Figure,
+    items: list[tuple[str, tuple]],
+    ncol: int | None = None,
+    **kwargs,
+):
     handles = [Line2D([0], [0], color=color, lw=2, label=label) for label, color in items]
     legend_kwargs = dict(
         loc="upper center",
@@ -810,7 +814,7 @@ def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: in
     fig.legend(
         handles=handles,
         labels=[label for label, _ in items],
-        **legend_kwargs
+        **legend_kwargs,
     )
 
 
@@ -895,6 +899,7 @@ def _parameter_group_records(
     hdi_prob: float,
     compressed: bool = True,
     summary: pd.DataFrame | None = None,
+    include_figures: bool = True,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
@@ -953,8 +958,12 @@ def _parameter_group_records(
             if not rows:
                 return
 
-            figure = _parameter_group_trace_figure(
-                idata, record_name, model_names, param_names, color_map, param_model_names
+            figure = (
+                _parameter_group_trace_figure(
+                    idata, record_name, model_names, param_names, color_map, param_model_names
+                )
+                if include_figures
+                else None
             )
             records.append(
                 {
@@ -1004,6 +1013,7 @@ def _bmd_diagnostics_table(
 def get_model_average_figures(
     session,
     compressed: bool = True,
+    parameter_visualizations: bool = True,
 ) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
     idata = model_average_to_inferencedata(session)
     out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
@@ -1040,7 +1050,12 @@ def get_model_average_figures(
         multi_summary = _hide_rhat_for_single_chain(multi_summary)
     out["multi_summary"] = multi_summary
     parameter_groups = _parameter_group_records(
-        idata, session, hdi_prob, compressed=compressed, summary=raw_multi_summary
+        idata,
+        session,
+        hdi_prob,
+        compressed=compressed,
+        summary=raw_multi_summary,
+        include_figures=parameter_visualizations,
     )
     if single_chain:
         for group in parameter_groups:
