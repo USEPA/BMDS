@@ -798,15 +798,19 @@ def _model_color_map(model_names: list[str]) -> dict[str, tuple]:
     }
 
 
-def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: int | None = None):
+def _add_figure_legend(fig: plt.Figure, items: list[tuple[str, tuple]], ncol: int | None = None, **kwargs):
     handles = [Line2D([0], [0], color=color, lw=2, label=label) for label, color in items]
-    fig.legend(
-        handles=handles,
-        labels=[label for label, _ in items],
+    legend_kwargs = dict(
         loc="upper center",
         bbox_to_anchor=(0.5, 0.98),
         ncol=ncol or min(3, max(1, len(handles))),
         frameon=False,
+    )
+    legend_kwargs.update(kwargs)
+    fig.legend(
+        handles=handles,
+        labels=[label for label, _ in items],
+        **legend_kwargs
     )
 
 
@@ -836,8 +840,10 @@ def _bmd_distributions_figure(idata: xr.DataTree) -> plt.Figure:
         [(model_name, color_map[model_name]) for model_name in model_names]
         + [("Model Average", "black")],
         ncol=min(5, max(1, len(model_names) + 1)),
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.02),
     )
-    _safe_tight_layout(fig, rect=(0.03, 0.03, 0.97, 0.80))
+    _safe_tight_layout(fig, rect=(0.03, 0.2, 0.97, 1.0))
     return fig
 
 
