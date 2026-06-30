@@ -10,7 +10,36 @@ from pybmds.types.continuous import (
     ContinuousModelSettings,
     ContinuousParameters,
     ContinuousRiskType,
+    _display_blank_value,
+    _display_loud_loglikelihood,
+    _display_loud_summary_value,
 )
+
+
+def test_loud_display_helpers_cover_numeric_and_text_values():
+    assert _display_blank_value(np.nan) == "-"
+    assert _display_blank_value("value") == "value"
+    assert _display_loud_summary_value(1.25) == "1.25"
+    assert _display_loud_summary_value("value") == "value"
+    assert _display_loud_loglikelihood(1.25) == "-1.25"
+    assert _display_loud_loglikelihood("value") == "value"
+
+
+def test_continuous_parameters_loud_draw_shape_validation():
+    model = type(
+        "Model",
+        (),
+        {
+            "get_param_names": lambda self: ["a", "b"],
+            "get_priors_list": lambda self: [[0, 1, 1, -1, 1], [0, 1, 1, -1, 1]],
+        },
+    )()
+    assert ContinuousParameters.from_loud_draws(model, np.array([1.0, 2.0])).values.shape == (1,)
+    assert ContinuousParameters.from_loud_draws(model, np.array([[1.0, 2.0]])).cov.shape == (2, 2)
+    with pytest.raises(ValueError, match="Unsupported LOUD parameter draw shape"):
+        ContinuousParameters.from_loud_draws(model, np.zeros((1, 1, 1)))
+    with pytest.raises(ValueError, match="draws are empty"):
+        ContinuousParameters.from_loud_draws(model, np.empty((1, 0)))
 
 
 class TestContinuousModelSettings:

@@ -2,7 +2,13 @@ from types import SimpleNamespace
 
 import pandas as pd
 
-from pybmds.reporting.styling import Report, df_to_table, write_bayesian_table, write_dataset_table
+from pybmds.reporting.styling import (
+    Report,
+    _ma_model_bmd_triplet,
+    df_to_table,
+    write_bayesian_table,
+    write_dataset_table,
+)
 
 
 def test_write_dataset_table(cdataset, cidataset, ddataset, nd_dataset):
@@ -85,3 +91,28 @@ def test_write_bayesian_table_keeps_log_posterior_probability_for_non_loud():
     headers = _bayesian_summary_headers(is_loud=False)
 
     assert "Unnormalized Log Posterior Probability" in headers
+
+
+def test_ma_model_bmd_triplet_guard_conditions():
+    model = SimpleNamespace(settings=SimpleNamespace(alpha=0.1))
+    assert _ma_model_bmd_triplet(SimpleNamespace(model_average=None), model) is None
+
+    ma = SimpleNamespace(has_results=False)
+    assert _ma_model_bmd_triplet(SimpleNamespace(model_average=ma), model) is None
+
+    ma = SimpleNamespace(has_results=True, models=[], results=SimpleNamespace(model_bmd_dist=[]))
+    assert _ma_model_bmd_triplet(SimpleNamespace(model_average=ma), model) is None
+
+
+def test_ma_model_bmd_triplet_ignores_invalid_draws_and_calculates_quantiles():
+    model = SimpleNamespace(settings=SimpleNamespace(alpha=0.25))
+    ma = SimpleNamespace(
+        has_results=True,
+        models=[model],
+        results=SimpleNamespace(model_bmd_dist=[[float("nan"), float("inf")]]),
+    )
+    session = SimpleNamespace(model_average=ma)
+    assert _ma_model_bmd_triplet(session, model) is None
+
+    ma.results.model_bmd_dist = [[1.0, 2.0, 3.0, 4.0]]
+    assert _ma_model_bmd_triplet(session, model) == (1.75, 2.5, 3.25)
