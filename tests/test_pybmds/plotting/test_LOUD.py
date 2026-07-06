@@ -299,22 +299,19 @@ class TestLOUD:
         def raise_kde(*args, **kwargs):
             raise ValueError("array must not contain infs or NaNs")
 
-        monkeypatch.setattr("pybmds.plotting.LOUD.gaussian_kde", raise_kde)
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.kde", raise_kde)
         _plot_dist(np.array([1.0, 2.0, 3.0]), ax=ax, color="black")
         assert ax.patches
         plt.close(fig)
 
         fig, ax = plt.subplots()
 
-        class WarningKde:
-            def __init__(self, draws):
-                warnings.warn("overflow encountered in dot", RuntimeWarning, stacklevel=2)
+        def warning_kde(draws):
+            warnings.warn("overflow encountered in dot", RuntimeWarning, stacklevel=2)
+            x = np.linspace(draws.min(), draws.max(), 200)
+            return x, np.ones_like(x, dtype=float), 1.0
 
-            def __call__(self, x):
-                warnings.warn("overflow encountered in square", RuntimeWarning, stacklevel=2)
-                return np.ones_like(x, dtype=float)
-
-        monkeypatch.setattr("pybmds.plotting.LOUD.gaussian_kde", WarningKde)
+        monkeypatch.setattr("pybmds.plotting.LOUD.az.kde", warning_kde)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", RuntimeWarning)
             _plot_dist(np.array([1.0, 2.0, 3.0]), ax=ax, color="black")
@@ -475,6 +472,22 @@ class TestLOUD:
 
         assert list(bmd_summary.index) == ["Power (CV)", "Hill (NCV)", "MA_BMD"]
         assert bmd_summary.loc["MA_BMD", "BMD"] == pytest.approx(11.5)
+
+    def test_parameter_groups_skip_unrequested_figures(self, monkeypatch):
+        monkeypatch.setattr(
+            "pybmds.plotting.LOUD._parameter_group_trace_figure",
+            lambda *args, **kwargs: pytest.fail("parameter figure was generated"),
+        )
+
+        groups = _parameter_group_records(
+            _fake_loud_idata(),
+            _fake_loud_session(),
+            hdi_prob=0.9,
+            include_figures=False,
+        )
+
+        assert groups
+        assert all(group["trace_figure"] is None for group in groups)
 
     def test_loud_figures_skip_values_too_large_for_matplotlib_layout(self):
         huge = 1e200

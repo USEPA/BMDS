@@ -3,7 +3,21 @@ from pydantic import ValidationError
 
 from pybmds.constants import PriorClass
 from pybmds.models import dichotomous
-from pybmds.types.dichotomous import DichotomousModelSettings, DichotomousRiskType
+from pybmds.types.dichotomous import (
+    DichotomousModelSettings,
+    DichotomousRiskType,
+    _display_loud_loglikelihood,
+    _display_loud_summary_value,
+)
+
+
+def test_loud_display_helpers_cover_numeric_blank_and_text_values():
+    assert _display_loud_summary_value(float("nan")) == "-"
+    assert _display_loud_summary_value(1.25) == "1.25"
+    assert _display_loud_summary_value("value") == "value"
+    assert _display_loud_loglikelihood(float("inf")) == "-"
+    assert _display_loud_loglikelihood(1.25) == "-1.25"
+    assert _display_loud_loglikelihood("value") == "value"
 
 
 class TestDichotomousAnalysisCPPStructs:

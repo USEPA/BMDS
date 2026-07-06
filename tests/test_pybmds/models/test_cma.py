@@ -6,11 +6,19 @@ import pytest
 
 import pybmds
 from pybmds.constants import DistType, PriorClass
+from pybmds.models.cma import BmdModelAveragingContinuous
 from pybmds.types.cma import ContinuousModelAverage, ContinuousModelAverageResult
+from pybmds.types.continuous import ContinuousModelSettings
 
 
 ## TO DO - to change when we have actual results from models
 class TestContinuousMa:
+    def test_model_settings_accept_defaults_instances_and_dicts(self):
+        defaults = BmdModelAveragingContinuous.get_model_settings(None, None)
+        assert isinstance(defaults, ContinuousModelSettings)
+        assert BmdModelAveragingContinuous.get_model_settings(None, defaults) is defaults
+        assert BmdModelAveragingContinuous.get_model_settings(None, {"alpha": 0.1}).alpha == 0.1
+
     def test_mixed_distribution_waic_is_model_order_invariant(self):
         dataset = pybmds.ContinuousDataset(
             doses=[0, 50, 100, 200, 400],

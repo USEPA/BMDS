@@ -42,6 +42,14 @@ def mock_nested_dichotomous_prior():
 
 
 class TestModelPriors:
+    def test_report_table_and_non_loud_defaults_noop(self, mock_prior):
+        table = mock_prior.report_tbl()
+        assert "name" in table
+        assert "a" in table
+        original = deepcopy(mock_prior)
+        mock_prior.apply_continuous_loud_defaults(object(), DistType.normal)
+        assert mock_prior == original
+
     def test_get_prior(self, mock_prior):
         assert mock_prior.get_prior("a").name == "a"
         assert mock_prior.get_prior("d").name == "d"

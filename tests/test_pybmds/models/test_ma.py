@@ -7,6 +7,8 @@ import pytest
 import pybmds
 import pybmds.models.ma as ma_module
 from pybmds.constants import PriorClass
+from pybmds.models.ma import BmdModelAveragingDichotomous
+from pybmds.types.dichotomous import DichotomousModelSettings
 from pybmds.types.ma import DichotomousModelAverage, DichotomousModelAverageResult
 
 
@@ -19,6 +21,12 @@ def loud_dma_dataset():
 
 
 class TestDichotomousMa:
+    def test_model_settings_accept_defaults_instances_and_dicts(self):
+        defaults = BmdModelAveragingDichotomous.get_model_settings(None, None)
+        assert isinstance(defaults, DichotomousModelSettings)
+        assert BmdModelAveragingDichotomous.get_model_settings(None, defaults) is defaults
+        assert BmdModelAveragingDichotomous.get_model_settings(None, {"alpha": 0.1}).alpha == 0.1
+
     def test_default_dichotomous_loud_session_and_ma_models_use_same_order(self, ddataset2):
         session = pybmds.Session(dataset=ddataset2)
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)

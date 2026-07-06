@@ -202,7 +202,9 @@ class TestSession:
         session = pybmds.Session(dataset=ddataset2)
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             assert _session is session
 
             def fig():
@@ -356,7 +358,9 @@ class TestSession:
             "LMS 2-Stage (NCV)",
         ]
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             assert _session is session
 
             def fig():
@@ -505,7 +509,9 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             assert _session is session
 
             def fig():
@@ -645,7 +651,9 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             def fig():
                 return plt.figure()
 
@@ -694,7 +702,9 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             assert compressed is False
 
             def fig():
@@ -744,7 +754,9 @@ class TestSession:
         session.add_model_averaging()
         session.execute()
 
-        def fake_get_model_average_figures(_session, compressed=True):
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True
+        ):
             def fig():
                 return plt.figure()
 
