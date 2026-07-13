@@ -39,7 +39,12 @@ jobs:
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             VCPKG_HOST_TRIPLET=x64-windows-static-md
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            VCPKG_HOST_TRIPLET=x64-linux
+            #Differentiate between Intel x64 and ARM64 native runners
+            if [[ "$(uname -m)" == "aarch64" ]]; then
+              VCPKG_HOST_TRIPLET=arm64-linux
+            else
+              VCPKG_HOST_TRIPLET=x64-linux
+            fi
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             VCPKG_HOST_TRIPLET=arm64-osx
           fi
