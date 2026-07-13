@@ -31,7 +31,7 @@ jobs:
         with:
           repository: "Microsoft/vcpkg"
           path: vcpkg
-          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93
+          ref: c9c17dcea3016bc241df0422e82b8aea212dcb93 
 
       - name: Export vcpkg host triplet for compilation
         shell: bash
@@ -39,7 +39,12 @@ jobs:
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             VCPKG_HOST_TRIPLET=x64-windows-static-md
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            VCPKG_HOST_TRIPLET=x64-linux
+            #Differentiate between Intel x64 and ARM64 native runners
+            if [[ "$(uname -m)" == "aarch64" ]]; then
+              VCPKG_HOST_TRIPLET=arm64-linux
+            else
+              VCPKG_HOST_TRIPLET=x64-linux
+            fi
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             VCPKG_HOST_TRIPLET=arm64-osx
           fi
