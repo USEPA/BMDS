@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Download vcpkg
         uses: actions/checkout@v4
@@ -39,16 +39,16 @@ jobs:
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             VCPKG_HOST_TRIPLET=x64-windows-static-md
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            VCPKG_HOST_TRIPLET=x64-linux
+            if [[ "$(uname -m)" == "aarch64" ]]; then
+              VCPKG_HOST_TRIPLET=arm64-linux
+            else
+              VCPKG_HOST_TRIPLET=x64-linux
+            fi
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             VCPKG_HOST_TRIPLET=arm64-osx
           fi
           echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           echo $VCPKG_HOST_TRIPLET
-
-      - name: Set up QEMU
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
 
       - uses: pypa/cibuildwheel@v3.3.0
         env:
