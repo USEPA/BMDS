@@ -46,9 +46,9 @@ jobs:
           echo VCPKG_HOST_TRIPLET="$VCPKG_HOST_TRIPLET" >> $GITHUB_ENV
           echo $VCPKG_HOST_TRIPLET
 
-      -name Set up QEMU
-       if: runner.os == 'Linux'
-       uses: docker/setup-qemu-action@v3
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
 
       - uses: pypa/cibuildwheel@v3.3.0
         env:
