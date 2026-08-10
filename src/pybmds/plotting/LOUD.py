@@ -508,6 +508,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     records: list[dict[str, float | str]] = []
     model_names = list(idata.posterior.coords["model"].values)
     bmd = np.asarray(idata.posterior["BMD"].values, dtype=float)
+    model_weights = _posterior_model_weight_map(idata)
 
     for model_idx, model_name in enumerate(model_names):
         draws = bmd[:, :, model_idx].reshape(-1)
@@ -517,6 +518,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         records.append(
             {
                 "model": str(model_name),
+                "Posterior Weights": model_weights.get(str(model_name), np.nan),
                 "BMD": float(np.nanquantile(draws, 0.5)),
                 "BMDL": float(np.nanquantile(draws, alpha)),
                 "BMDU": float(np.nanquantile(draws, 1 - alpha)),
@@ -531,6 +533,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         records.append(
             {
                 "model": "MA_BMD",
+                "Posterior Weights": np.nan,
                 "BMD": ma_quantiles["median"],
                 "BMDL": ma_quantiles["lower"],
                 "BMDU": ma_quantiles["upper"],
@@ -543,6 +546,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     if not records:
         return pd.DataFrame(
             columns=[
+                "Posterior Weights",
                 "BMD",
                 "BMDL",
                 "BMDU",
@@ -554,6 +558,18 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         )
 
     return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
+
+
+def _posterior_model_weight_map(idata: xr.DataTree) -> dict[str, float]:
+    if "model_weights" not in idata.posterior:
+        return {}
+
+    model_names = [str(name) for name in idata.posterior.coords["model"].values]
+    weights = np.asarray(idata.posterior["model_weights"].values, dtype=float).reshape(-1)
+    return {
+        model_name: float(weight) if np.isfinite(weight) else np.nan
+        for model_name, weight in zip(model_names, weights, strict=False)
+    }
 
 
 def _format_percent_label(percent: float) -> str:
@@ -991,17 +1007,30 @@ def _bmd_diagnostics_table(
         summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
     summary = _rename_summary_columns(summary, bmd_labels=True)
     model_names = list(idata.posterior.coords["model"].values)
+    model_weights = _posterior_model_weight_map(idata)
     rows: list[dict[str, object]] = []
 
     for model_name in model_names:
         stats = _extract_model_row(summary, "BMD", str(model_name))
         if stats is None:
             continue
-        rows.append({"model": str(model_name), **stats.to_dict()})
+        rows.append(
+            {
+                "model": str(model_name),
+                "Posterior Weights": model_weights.get(str(model_name), np.nan),
+                **stats.to_dict(),
+            }
+        )
 
     ma_stats = _extract_model_row(summary, "MA_BMD", "MA_BMD")
     if ma_stats is not None:
-        rows.append({"model": "MA_BMD", **ma_stats.to_dict()})
+        rows.append(
+            {
+                "model": "MA_BMD",
+                "Posterior Weights": np.nan,
+                **ma_stats.to_dict(),
+            }
+        )
 
     if rows:
         return pd.DataFrame(rows).set_index("model")
