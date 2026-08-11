@@ -2252,8 +2252,8 @@ void runPythonContLoud() {
   //  normal = 1, normal_ncv = 2, log_normal = 3
 
   // testing
-  std::vector<int> models = {8, 8};
-  std::vector<int> dists = {1, 2};
+  // std::vector<int> models = {8, 8};
+  // std::vector<int> dists = {1, 2};
   // std::vector<int> models = {8};
   // std::vector<int> dists = {1};
   // kitchen sink
@@ -2267,8 +2267,8 @@ void runPythonContLoud() {
   //                          1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
 
   // BMDS models from CMA_waic_all
-  // std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
-  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
+  std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
 
   // summary data
   //// double D[] = {0, 0.125, 0.25, 0.5, 1.0};
