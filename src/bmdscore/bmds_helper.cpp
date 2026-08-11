@@ -2852,7 +2852,7 @@ void bridge_sample(
     for (int i = 0; i < R.rows(); i++) {
       Eigen::VectorXd row = R.row(i);
       double post_B = prior_v(priorr, row);
-      mu = model_fun(row, loudIn->doses);
+      // mu = model_fun(row, loudIn->doses);
       // A = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
       A = loglik_mat.row(i);
       post(i) = A.sum();
@@ -5218,14 +5218,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
+  std::vector<Eigen::MatrixXd> expandedPriors(numModels);
+  for (int i = 0; i < numModels; i++) {
+    expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+  }
   struct fitResult loudOut;
   long seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyDA.chains);
     pyRes->models[i].loudRes = loudRes;
     for (int chain = 0; chain < chains; chain++) {
-      Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
-      loudIn.priorr = priorr;
+      loudIn.priorr = expandedPriors[i];
       loudIn.model = pyMA->models[i];
       pyRes->models[i].bmdsRes.validResult = false;
 
@@ -5235,6 +5238,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
+
+      fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
+      if (chain == 0) {
+        combLoudRes->R.resize(iter, loudOut.R.cols());
+        combLoudRes->BMD.resize(iter);
+        combLoudRes->parms.resize(iter, loudOut.parms.cols());
+      }
+      int current_row = chain * samples;
+      combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
+      combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
+      combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
+
       seed += 1;  // iterate random seed by 1 for each chain
     }
   }
@@ -5242,20 +5257,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < numModels; i++) {
     // combine chains by model
     int nparms = pyRes->models[i].nparms;
-    int rcols = pyRes->models[i].loudRes[0].R.cols();
 
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
-    combLoudRes->R.resize(iter, rcols);
-    combLoudRes->BMD.resize(iter);
-    combLoudRes->parms.resize(iter, nparms);
-    int current_row = 0;
-    for (int chain = 0; chain < pyRes->models[i].loudRes.size(); chain++) {
-      fitResult *chainLoudRes = &pyRes->models[i].loudRes[chain];
-      combLoudRes->R.block(current_row, 0, samples, rcols) = chainLoudRes->R;
-      combLoudRes->BMD.segment(current_row, samples) = chainLoudRes->BMD;
-      combLoudRes->parms.block(current_row, 0, samples, nparms) = chainLoudRes->parms;
-      current_row += samples;
-    }
 
     Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= combLoudRes->BMD.size() / 2) {
@@ -5272,8 +5275,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     combLoudRes->ll = logli(parmVec, loudIn.doses, loudIn.Y, model_fun);
 
-    // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
-    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    Eigen::MatrixXd &priorr = expandedPriors[i];
     loudIn.model = pyMA->models[i];
     loudIn.priorr = priorr;
     loudIn.iter = iter;
@@ -5771,6 +5773,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
+  std::vector<Eigen::MatrixXd> expandedPriors(numModels);
+  for (int i = 0; i < numModels; i++) {
+    expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+  }
   long seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyCA.chains);
@@ -5780,7 +5786,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].bmdsRes.validResult = false;
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist = pyMA->loud_dist_type[i];
-      Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
       switch (pyMA->loud_dist_type[i]) {
         case distribution::normal:
           loudIn = cvInput;
@@ -5796,7 +5801,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
           return;
           break;
       }
-      loudIn.priorr = priorr;
+      loudIn.priorr = expandedPriors[i];
       loudIn.model = pyMA->models[i];
       CA.model = static_cast<cont_model>(pyMA->models[i]);
 
@@ -5911,6 +5916,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
+
+      fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
+      if (chain == 0) {
+        combLoudRes->R.resize(iter, loudOut.R.cols());
+        combLoudRes->BMD.resize(iter);
+        combLoudRes->parms.resize(iter, loudOut.parms.cols());
+      }
+      int current_row = chain * samples;
+      combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
+      combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
+      combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
+
       seed += 1;
     }
   }
@@ -5940,20 +5957,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     CA.model = static_cast<cont_model>(pyMA->models[i]);
 
     int nparms = pyRes->models[i].nparms;
-    int rcols = pyRes->models[i].loudRes[0].R.cols();
-
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
-    combLoudRes->R.resize(iter, rcols);
-    combLoudRes->BMD.resize(iter);
-    combLoudRes->parms.resize(iter, nparms);
-    int current_row = 0;
-    for (int chain = 0; chain < pyRes->models[i].loudRes.size(); chain++) {
-      fitResult *chainLoudRes = &pyRes->models[i].loudRes[chain];
-      combLoudRes->R.block(current_row, 0, samples, rcols) = chainLoudRes->R;
-      combLoudRes->BMD.segment(current_row, samples) = chainLoudRes->BMD;
-      combLoudRes->parms.block(current_row, 0, samples, nparms) = chainLoudRes->parms;
-      current_row += samples;
-    }
 
     Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= combLoudRes->BMD.size() / 2) {
@@ -5976,8 +5980,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     combLoudRes->ll = logli(parmVec, loudIn.doses, loudIn.Y, model_fun);
 
-    // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
-    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    Eigen::MatrixXd &priorr = expandedPriors[i];
     loudIn.priorr = priorr;
     // isNegative is repeated also
     std::vector<bool> isNegative(priorr.rows());

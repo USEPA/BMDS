@@ -785,6 +785,7 @@ class Session:
                     self,
                     compressed=compressed,
                     parameter_visualizations=parameter_visualizations,
+                    parameter_tables=parameter_tables,
                 )
 
                 add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
@@ -822,9 +823,10 @@ class Session:
 
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
-                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel())
+                cdf = self.model_average.cdf()
+                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel(), cdf=cdf)
                 report.document.add_paragraph(add_mpl_figure(report.document, fig, 6))
-                df_to_table(report, self.model_average.cdf())
+                df_to_table(report, cdf)
             if all_models:
                 report.document.add_paragraph("Individual Model Results", h2)
                 write_models(report, self, bmd_cdf_table, header_level + 2)

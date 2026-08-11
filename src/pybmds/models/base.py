@@ -351,11 +351,16 @@ class BmdModelAveraging(abc.ABC):
     def to_dict(self) -> dict:
         return self.serialize.model_dump()
 
-    def cdf_plot(self, xlabel: str, figsize: tuple[float, float] | None = None) -> Figure:
+    def cdf_plot(
+        self,
+        xlabel: str,
+        figsize: tuple[float, float] | None = None,
+        cdf: pd.DataFrame | None = None,
+    ) -> Figure:
         if not self.has_results:
             raise ValueError("Cannot plot if results are unavailable")
         return cdf_plot(
-            cdf=self.cdf(),
+            cdf=self.cdf() if cdf is None else cdf,
             alpha=self.settings.alpha,
             bmd=self.results.bmd,
             bmdl=self.results.bmdl,

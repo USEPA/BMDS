@@ -23,6 +23,14 @@ _RHAT_SINGLE_CHAIN_FOOTNOTE = (
     "R-hat statistic is calculated only when more than 1 Markov chain is used."
 )
 _PLOT_ABS_LIMIT = 1e100
+_PLOT_MAX_DRAWS = 10_000
+
+
+def _downsample_plot_draws(draws: np.ndarray) -> np.ndarray:
+    if draws.size <= _PLOT_MAX_DRAWS:
+        return draws
+    indexes = np.linspace(0, draws.size - 1, _PLOT_MAX_DRAWS, dtype=int)
+    return draws[indexes]
 
 
 def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
@@ -82,6 +90,7 @@ def _plot_dist(
     draws = _plot_safe_values(draws)
     if draws.size == 0:
         return ax
+    draws = _downsample_plot_draws(draws)
     if draws.size < 2 or np.unique(draws).size < 2:
         ax.hist(draws, density=True, color=color, alpha=0.35)
         return ax
@@ -916,6 +925,7 @@ def _parameter_group_records(
     compressed: bool = True,
     summary: pd.DataFrame | None = None,
     include_figures: bool = True,
+    include_tables: bool = True,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
@@ -949,29 +959,34 @@ def _parameter_group_records(
                 return
 
             rows: list[dict[str, object]] = []
-            group_summary = (
-                summary
-                if summary is not None
-                else _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
-            )
-            group_summary = _rename_summary_columns(group_summary)
-            for model in record_models:
-                model_name = model.name()
-                for param_name in param_names:
-                    if model_name not in param_model_names.get(param_name, set()):
-                        continue
-                    stats = _extract_model_row(group_summary, param_name, model_name)
-                    if stats is None:
-                        continue
-                    rows.append(
-                        {
-                            "Model": _parameter_group_model_label(model),
-                            "Parameter": param_name,
-                            **stats.to_dict(),
-                        }
+            if include_tables:
+                group_summary = (
+                    summary
+                    if summary is not None
+                    else _drop_empty_summary_rows(
+                        _multi_summary_table(idata, param_names, hdi_prob)
                     )
+                )
+                group_summary = _rename_summary_columns(group_summary)
+                for model in record_models:
+                    model_name = model.name()
+                    for param_name in param_names:
+                        if model_name not in param_model_names.get(param_name, set()):
+                            continue
+                        stats = _extract_model_row(group_summary, param_name, model_name)
+                        if stats is None:
+                            continue
+                        rows.append(
+                            {
+                                "Model": _parameter_group_model_label(model),
+                                "Parameter": param_name,
+                                **stats.to_dict(),
+                            }
+                        )
 
-            if not rows:
+            if include_tables and not rows:
+                return
+            if not include_tables and not include_figures:
                 return
 
             figure = (
@@ -1043,6 +1058,7 @@ def get_model_average_figures(
     session,
     compressed: bool = True,
     parameter_visualizations: bool = True,
+    parameter_tables: bool = True,
 ) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
     idata = model_average_to_inferencedata(session)
     out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
@@ -1064,7 +1080,7 @@ def get_model_average_figures(
         if v not in ["BMD", "MA_BMD", "model_weights", "n_param"]
     ]
 
-    multi_var_names = ["BMD", "MA_BMD", *param_names]
+    multi_var_names = ["BMD", "MA_BMD", *param_names] if parameter_tables else ["BMD", "MA_BMD"]
     raw_multi_summary = _drop_empty_summary_rows(
         _multi_summary_table(idata, multi_var_names, hdi_prob)
     )
@@ -1085,6 +1101,7 @@ def get_model_average_figures(
         compressed=compressed,
         summary=raw_multi_summary,
         include_figures=parameter_visualizations,
+        include_tables=parameter_tables,
     )
     if single_chain:
         for group in parameter_groups:

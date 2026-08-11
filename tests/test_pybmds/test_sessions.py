@@ -203,7 +203,7 @@ class TestSession:
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -359,7 +359,7 @@ class TestSession:
         ]
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -510,7 +510,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -652,7 +652,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             def fig():
                 return plt.figure()
@@ -703,7 +703,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert compressed is False
 
@@ -755,7 +755,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             def fig():
                 return plt.figure()
