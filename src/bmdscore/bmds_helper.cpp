@@ -2497,7 +2497,7 @@ struct fitInput createFitInput(
 }
 
 double getQVals(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 ) {
   double qVal = 0.0;
@@ -2635,7 +2635,7 @@ double getQVals(
 }
 
 Eigen::VectorXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 ) {
   Eigen::VectorXd loglik(mu.rows());
@@ -2776,23 +2776,17 @@ Eigen::VectorXd loud_likelihood(
 }
 
 void bridge_sample(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
-    //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
-    Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
+    Eigen::MatrixXd &R, const Eigen::MatrixXd &mu, const struct fitInput *loudIn,
+    struct fitResult *loudOut, Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
-
-  // change from original bridgesource R code
-  // now references functional_generalized.cpp model fun with function signature
-  // Eigen::VectorXd model_fun(const Eigen::VectorXd& parms, const Eigen::MatrixXd& doses)
   int S = R.rows();
   int N = loudIn->Y.rows();
-  Eigen::VectorXd mu(S);
   Eigen::MatrixXd loglik_mat(S, N);
   for (int i = 0; i < S; i++) {
-    mu = model_fun(R.row(i), loudIn->doses);
-    loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
+    loglik_mat.row(i) =
+        loud_likelihood(loudIn->Y, R.row(i), mu.row(i), loudIn->dist, loudIn->datatype);
   }
 
   // WAIC calculation
@@ -2852,8 +2846,6 @@ void bridge_sample(
     for (int i = 0; i < R.rows(); i++) {
       Eigen::VectorXd row = R.row(i);
       double post_B = prior_v(priorr, row);
-      // mu = model_fun(row, loudIn->doses);
-      // A = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
       A = loglik_mat.row(i);
       post(i) = A.sum();
       post(i) += post_B;
@@ -2864,8 +2856,8 @@ void bridge_sample(
     for (int i = 0; i < g_estimate.rows(); i++) {
       Eigen::VectorXd row = g_estimate.row(i);
       double post_B = prior_v(priorr, row);
-      mu = model_fun(row, loudIn->doses);
-      Ag = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
+      Eigen::VectorXd mu_g = model_fun(row, loudIn->doses);
+      Ag = loud_likelihood(loudIn->Y, row, mu_g, loudIn->dist, loudIn->datatype);
       post_g(i) = Ag.sum();
       post_g(i) += post_B;
     }
@@ -3337,18 +3329,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut, long see
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
-
-  //  // calc LL
-  //  Eigen::VectorXd parmVec = colwise_median(R);
-  //  loudOut->R = parmVec;
-  //  LogLikeFunction logli = getLogLikeFunc(ll_type);
-  //  ptr2 model_fun = choose_nonlinearity2(model_typ);
-  //
-  //  loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
-  //
-  //  bridge_sample(R, loudIn, loudOut, priorr, isNegative);
-  //  // pivotal pvalue
-  //  loudOut->pval = pivotal_pvalue(R, loudIn);
 }
 
 void additional_cont_calcs(
@@ -5106,7 +5086,9 @@ double calcLoudBMD(
   return bmd;
 }
 
-double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
+double pivotal_pvalue(
+    Eigen::MatrixXd &R, const struct fitInput *loudIn, const Eigen::MatrixXd &mu
+) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -5138,11 +5120,11 @@ double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
     return BMDS_MISSING;
   }
 
-  Eigen::VectorXd mu(S);
+  // Eigen::VectorXd mu(S);
 
   for (int i = 0; i < S; ++i) {
-    mu = model_fun(Ruse.row(i), loudIn->doses);
-    Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu, loudIn->dist, loudIn->datatype);
+    // mu = model_fun(Ruse.row(i), loudIn->doses);
+    Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu.row(i), loudIn->dist, loudIn->datatype);
   }
 
   int m = ceil(loudIn->qlev * S) - 1;  //-1 needed due to 0 indexing
@@ -5284,15 +5266,23 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     for (int i = 0; i < isNegative.size(); i++) {
       isNegative[i] = false;
     }
+
+    int S = combLoudRes->R.rows();
+    int N = loudIn.Y.rows();
+    Eigen::MatrixXd mu(S, N);
+    for (int i = 0; i < S; i++) {
+      mu.row(i) = model_fun(combLoudRes->R.row(i), loudIn.doses);
+    }
+
     // loudIn already has priorr, so no need to pass separately
-    bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
+    bridge_sample(combLoudRes->R, mu, &loudIn, combLoudRes, priorr, isNegative);
     // Use the conventional Pearson goodness-of-fit residual degrees of
     // freedom, K - p. Use the transformed model parameter count rather than
     // R.cols(), because the LOUD latent parameterization can contain redundant
     // columns (for example, three simplex values representing two logistic
     // parameters).
     loudIn.df_override = loudIn.Y.rows() - nparms;
-    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn, mu);
     loudIn.df_override = BMDS_MISSING;
 
     // GOF calcs
@@ -5987,9 +5977,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     for (int i = 0; i < isNegative.size(); i++) {
       isNegative[i] = false;
     }
+
+    int S = combLoudRes->R.rows();
+    int N = loudIn.Y.rows();
+    Eigen::MatrixXd mu(S, N);
+    for (int i = 0; i < S; i++) {
+      mu.row(i) = model_fun(combLoudRes->R.row(i), loudIn.doses);
+    }
+
     // loudIn already has priorr, so no need to pass separately
-    bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
-    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+    bridge_sample(combLoudRes->R, mu, &loudIn, combLoudRes, priorr, isNegative);
+    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn, mu);
 
     // convert python_continuous_analysis to continuous_analysis
 

@@ -1345,14 +1345,23 @@ void pivotal_pvalue_test() {
       {10.14478, 17.58854, 1.257525, 0.5933468}
   };
 
+  int S = R_power_cv.rows();
+  int N = loudIn.Y.rows();
+  Eigen::MatrixXd mu_power_cv(S, N);
+  int model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_power_cv.row(i) = model_fun(R_power_cv.row(i), loudIn.doses);
+  }
+
   double expected_pval = 0.05070569;
-  double returned_pval = pivotal_pvalue(R_power_cv, &loudIn);
+  double returned_pval = pivotal_pvalue(R_power_cv, &loudIn, mu_power_cv);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
   // R contains retained post-burn-in draws, so the configured warm-up length
   // must not trim the draw matrix again or change the pivotal p-value.
   loudIn.burnin = 5;
-  double returned_pval_different_burnin = pivotal_pvalue(R_power_cv, &loudIn);
+  double returned_pval_different_burnin = pivotal_pvalue(R_power_cv, &loudIn, mu_power_cv);
   expect_true(essentiallyEqual(returned_pval, returned_pval_different_burnin, 1e-12));
   loudIn.burnin = 2;
 
@@ -1366,7 +1375,16 @@ void pivotal_pvalue_test() {
       {10.37943, 15.58127, 1.516049, 0.4276003, 0.3808668}
   };
 
-  returned_pval = pivotal_pvalue(R_power_ncv, &loudIn);
+  // int S = R_power_cv.rows();
+  // int N = loudIn.Y.rows();
+  Eigen::MatrixXd mu_power_ncv(S, N);
+  model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_power_ncv.row(i) = model_fun(R_power_ncv.row(i), loudIn.doses);
+  }
+
+  returned_pval = pivotal_pvalue(R_power_ncv, &loudIn, mu_power_ncv);
   expected_pval = 0.001709650;
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
@@ -1382,7 +1400,14 @@ void pivotal_pvalue_test() {
       {2.073364, 1.049481, 2.213176, 1.066825}
   };
 
-  returned_pval = pivotal_pvalue(R_exp3_log, &loudIn);
+  Eigen::MatrixXd mu_exp3_log(S, N);
+  model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_exp3_log.row(i) = model_fun(R_exp3_log.row(i), loudIn.doses);
+  }
+
+  returned_pval = pivotal_pvalue(R_exp3_log, &loudIn, mu_exp3_log);
   expected_pval = 1.0;
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
@@ -1414,7 +1439,16 @@ void pivotal_pvalue_test() {
 
   // Summary CV
   loudIn.dist = distribution::normal;
-  returned_pval = pivotal_pvalue(R_power_cv_sum, &loudIn);
+
+  N = loudIn.Y.rows();
+  Eigen::MatrixXd mu_power_cv_sum(S, N);
+  model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_power_cv_sum.row(i) = model_fun(R_power_cv_sum.row(i), loudIn.doses);
+  }
+
+  returned_pval = pivotal_pvalue(R_power_cv_sum, &loudIn, mu_power_cv_sum);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
   // Summary NCV
@@ -1426,22 +1460,38 @@ void pivotal_pvalue_test() {
       {10.54633, 14.75680, 2.397978, 0.2232843, 1.264136},
       {10.52846, 14.77626, 2.392139, 0.2132897, 1.250982}
   };
+
+  Eigen::MatrixXd mu_power_ncv_sum(S, N);
+  model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_power_ncv_sum.row(i) = model_fun(R_power_ncv_sum.row(i), loudIn.doses);
+  }
+
   expected_pval = 0.0009404825;
-  returned_pval = pivotal_pvalue(R_power_ncv_sum, &loudIn);
+  returned_pval = pivotal_pvalue(R_power_ncv_sum, &loudIn, mu_power_ncv_sum);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 
   // Summary LogCV
   loudIn.dist = distribution::log_normal;
   loudIn.model = cont_model::exp_3;
-  Eigen::MatrixXd R_power_lognormal_sum{
+  Eigen::MatrixXd R_exp3_log_sum{
       {3.378570, 1.876914, 0.9280766, 0.2711137},
       {3.376712, 1.891313, 1.0694113, 0.2856840},
       {3.376792, 1.890697, 1.0538501, 0.2841253},
       {3.377071, 1.888535, 1.0393825, 0.2826644},
       {3.377061, 1.888611, 1.0338722, 0.2821067}
   };
+
+  Eigen::MatrixXd mu_exp3_log_sum(S, N);
+  model_typ = getLoudModelType(loudIn.model, loudIn.dist, loudIn.datatype);
+  model_fun = choose_nonlinearity2(model_typ);
+  for (int i = 0; i < S; i++) {
+    mu_exp3_log_sum.row(i) = model_fun(R_exp3_log_sum.row(i), loudIn.doses);
+  }
+
   expected_pval = 1.0;
-  returned_pval = pivotal_pvalue(R_power_lognormal_sum, &loudIn);
+  returned_pval = pivotal_pvalue(R_exp3_log_sum, &loudIn, mu_exp3_log_sum);
   expect_true(essentiallyEqual(expected_pval, returned_pval, 0.001));
 }
 
@@ -1562,7 +1612,16 @@ void bridge_sample_test() {
     isNegative[i] = false;
   }
 
-  bridge_sample(R, &cvInput, &cvPowerOut, priorr, isNegative);
+  int model_typ = getLoudModelType(cvInput.model, cvInput.dist, cvInput.datatype);
+  ptr2 model_fun = choose_nonlinearity2(model_typ);
+  int S = R.rows();
+  int N = cvInput.Y.rows();
+  Eigen::MatrixXd mu(S, N);
+  for (int i = 0; i < S; i++) {
+    mu.row(i) = model_fun(R.row(i), cvInput.doses);
+  }
+
+  bridge_sample(R, mu, &cvInput, &cvPowerOut, priorr, isNegative);
   double expected_waic = -112.5453;
   expect_true(essentiallyEqual(expected_waic, cvPowerOut.waic, 0.001));
 
