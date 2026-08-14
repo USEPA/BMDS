@@ -1048,7 +1048,10 @@ def _bmd_diagnostics_table(
         )
 
     if rows:
-        return pd.DataFrame(rows).set_index("model")
+        df = pd.DataFrame(rows).set_index("model")
+        df["Posterior Weights"] = df["Posterior Weights"].astype(object)
+        df.loc["MA_BMD", "Posterior Weights"] = None
+        return df
 
     alpha = (1 - hdi_prob) / 2
     return _bmd_summary_table(idata, alpha)

@@ -447,7 +447,7 @@ class TestLOUD:
         assert "Posterior Weights" in bmd_summary.columns
         assert bmd_summary.loc["Power (CV)", "Posterior Weights"] == pytest.approx(0.25)
         assert bmd_summary.loc["Hill (NCV)", "Posterior Weights"] == pytest.approx(0.75)
-        assert np.isnan(bmd_summary.loc["MA_BMD", "Posterior Weights"])
+        assert bmd_summary.loc["MA_BMD", "Posterior Weights"] is None
         assert "BMD" in bmd_summary.columns
 
         parameter_groups = _parameter_group_records(idata, session, hdi_prob=0.9)
@@ -893,7 +893,7 @@ class TestLOUD:
         assert "mean" not in summary.columns
         assert "MA_BMD" in summary.index
         assert summary["Posterior Weights"].drop(index="MA_BMD").notna().all()
-        assert np.isnan(summary.loc["MA_BMD", "Posterior Weights"])
+        assert pd.isna(summary.loc["MA_BMD", "Posterior Weights"])
 
     def test_rename_summary_columns_handles_arviz_datatree_eti_labels(self):
         summary = pd.DataFrame(
