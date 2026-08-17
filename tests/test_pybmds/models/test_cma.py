@@ -229,18 +229,19 @@ class TestContinuousMa:
         assert np.isinf(result.model_bmd_dist[0][1])
 
         payload = result.model_dump()
-        assert payload["bmd_dist"] == [0.1, 0.3]
-        assert payload["model_bmd_dist"] == [[0.1]]
-        assert payload["model_parm_dist"] == [[[1.0, 2.0]]]
+        assert payload["bmd_dist"] == [0.1, None, 0.3]
+        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
         assert isinstance(json.dumps(payload, allow_nan=False), str)
 
         rehydrated = ContinuousModelAverageResult.model_validate(payload)
-        assert len(rehydrated.bmd_dist) == 2
-        assert len(rehydrated.model_bmd_dist[0]) == 1
-        assert rehydrated.model_parm_dist[0].shape == (1, 2)
-        assert np.isfinite(rehydrated.bmd_dist).all()
-        assert np.isfinite(rehydrated.model_bmd_dist[0]).all()
-        assert np.isfinite(rehydrated.model_parm_dist[0]).all()
+        assert len(rehydrated.bmd_dist) == 3
+        assert len(rehydrated.model_bmd_dist[0]) == 3
+        assert rehydrated.model_parm_dist[0].shape == (3, 2)
+        assert np.isnan(rehydrated.bmd_dist[1])
+        assert np.isnan(rehydrated.model_bmd_dist[0][1])
+        assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
+        assert np.isnan(rehydrated.model_parm_dist[0][2, 1])
 
     def test_loud_ma_recovers_blank_posteriors_from_waic(self):
         analysis = SimpleNamespace(
@@ -338,25 +339,16 @@ class TestContinuousMa:
             pass
         assert model.results.parameters == "existing"
 
-    def test_finite_json_model_draws_accepts_supported_shapes(self):
-        # Empty arrays are a valid result for a model with no usable draws.
-        bmd, parms = ContinuousModelAverageResult._finite_json_model_draws([], [])
-        assert bmd == []
-        assert parms == []
-
-        # The C++ layer may return parameters flattened; preserve draw/row pairing.
-        bmd, parms = ContinuousModelAverageResult._finite_json_model_draws(
-            [0.1, 0.2], [1.0, 2.0, 3.0, 4.0]
-        )
-        assert bmd == [0.1, 0.2]
-        assert parms == [[1.0, 2.0], [3.0, 4.0]]
-
-    def test_finite_json_model_draws_rejects_unpairable_shapes(self):
-        with pytest.raises(ValueError, match="2 BMD draws with 3 parameter values"):
-            ContinuousModelAverageResult._finite_json_model_draws([0.1, 0.2], [1.0, 2.0, 3.0])
-
-        with pytest.raises(ValueError, match="2 BMD draws with 1 parameter rows"):
-            ContinuousModelAverageResult._finite_json_model_draws([0.1, 0.2], [[1.0, 2.0]])
+    def test_json_safe_draws_preserves_supported_shapes(self):
+        assert ContinuousModelAverageResult._json_safe_draws([]) == []
+        assert ContinuousModelAverageResult._json_safe_draws([1.0, np.nan, np.inf]) == [
+            1.0,
+            None,
+            None,
+        ]
+        assert ContinuousModelAverageResult._json_safe_draws(
+            np.array([[1.0, np.nan], [2.0, np.inf]])
+        ) == [[1.0, None], [2.0, None]]
 
     def test_reshape_flat_draws_leaves_uneven_chains_flat(self):
         draws = np.array([1.0, 2.0, 3.0])
