@@ -155,47 +155,20 @@ class ContinuousModelAverageResult(ModelAverageResult):
     dr_y: NumpyFloatArray
 
     @staticmethod
-    def _finite_json_draws(draws) -> list[float]:
-        """Return a flat, finite-only draw vector for external JSON consumers."""
-        arr = np.asarray(draws, dtype=float).reshape(-1)
-        return arr[np.isfinite(arr)].tolist()
-
-    @staticmethod
-    def _finite_json_model_draws(bmd_draws, parm_draws) -> tuple[list[float], list[list[float]]]:
-        """Filter paired model draws without breaking BMD/parameter row alignment."""
-        bmd = np.asarray(bmd_draws, dtype=float).reshape(-1)
-        parms = np.asarray(parm_draws, dtype=float)
-        if parms.ndim == 1:
-            if bmd.size == 0:
-                parms = parms.reshape(0, 0)
-            elif parms.size % bmd.size == 0:
-                parms = parms.reshape(bmd.size, parms.size // bmd.size)
-            else:
-                raise ValueError(
-                    f"Cannot pair {bmd.size} BMD draws with {parms.size} parameter values."
-                )
-        else:
-            parms = parms.reshape(-1, parms.shape[-1])
-
-        if bmd.size != parms.shape[0]:
-            raise ValueError(
-                f"Cannot pair {bmd.size} BMD draws with {parms.shape[0]} parameter rows."
-            )
-
-        valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
-        return bmd[valid].tolist(), parms[valid].tolist()
+    def _json_safe_draws(draws) -> list:
+        """Preserve draw shape while converting nonfinite values to JSON nulls."""
+        arr = np.asarray(draws, dtype=float)
+        values = arr.astype(object)
+        values[~np.isfinite(arr)] = None
+        return values.tolist()
 
     @model_serializer(mode="wrap")
     def serialize_model(self, handler):
         data = handler(self)
 
-        data["bmd_dist"] = self._finite_json_draws(self.bmd_dist)
-        model_draws = [
-            self._finite_json_model_draws(bmd_draws, parm_draws)
-            for bmd_draws, parm_draws in zip(self.model_bmd_dist, self.model_parm_dist, strict=True)
-        ]
-        data["model_bmd_dist"] = [bmd_draws for bmd_draws, _ in model_draws]
-        data["model_parm_dist"] = [parm_draws for _, parm_draws in model_draws]
+        data["bmd_dist"] = self._json_safe_draws(self.bmd_dist)
+        data["model_bmd_dist"] = [self._json_safe_draws(draws) for draws in self.model_bmd_dist]
+        data["model_parm_dist"] = [self._json_safe_draws(draws) for draws in self.model_parm_dist]
         return data
 
     @staticmethod
