@@ -1041,6 +1041,23 @@ class TestLOUD:
             np.nanquantile(finite_draws, 0.95)
         )
 
+    def test_summary_from_draws_quantiles_work_without_complete_chain_columns(self):
+        draws = np.array([[1.0, np.nan], [np.nan, 3.0]])
+
+        actual = _summary_from_draws(draws, "BMD", "BMD[Power]", 0.9)
+
+        assert actual.loc["BMD[Power]", "median"] == pytest.approx(2.0)
+        assert np.isnan(actual.loc["BMD[Power]", "r_hat"])
+        assert np.isnan(actual.loc["BMD[Power]", "ess_bulk"])
+        assert np.isnan(actual.loc["BMD[Power]", "ess_tail"])
+
+    def test_summary_from_draws_accepts_one_dimensional_draws(self):
+        actual = _summary_from_draws(np.array([1.0, np.nan, 3.0]), "MA_BMD", "MA_BMD", 0.9)
+
+        assert actual.loc["MA_BMD", "median"] == pytest.approx(2.0)
+        assert actual.loc["MA_BMD", "eti_5%"] == pytest.approx(1.1)
+        assert actual.loc["MA_BMD", "eti_95%"] == pytest.approx(2.9)
+
     def test_rename_summary_columns_prefers_explicit_eti_percentiles(self):
         summary = pd.DataFrame(
             {
