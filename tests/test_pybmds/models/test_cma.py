@@ -224,14 +224,17 @@ class TestContinuousMa:
 
         assert result.model_parm_dist[0].shape == (3, 2)
         assert np.isnan(result.model_parm_dist[0][1, 0])
-        assert np.isinf(result.model_parm_dist[0][2, 1])
+        assert np.isnan(result.model_parm_dist[0][1, 1])
+        assert np.isnan(result.model_parm_dist[0][2, 0])
+        assert np.isnan(result.model_parm_dist[0][2, 1])
         assert np.isinf(result.bmd_dist[1])
-        assert np.isinf(result.model_bmd_dist[0][1])
+        assert np.isnan(result.model_bmd_dist[0][1])
+        assert np.isnan(result.model_bmd_dist[0][2])
 
         payload = result.model_dump()
         assert payload["bmd_dist"] == [0.1, None, 0.3]
-        assert payload["model_bmd_dist"] == [[0.1, None, 0.3]]
-        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, 3.0], [4.0, None]]]
+        assert payload["model_bmd_dist"] == [[0.1, None, None]]
+        assert payload["model_parm_dist"] == [[[1.0, 2.0], [None, None], [None, None]]]
         assert isinstance(json.dumps(payload, allow_nan=False), str)
 
         rehydrated = ContinuousModelAverageResult.model_validate(payload)
@@ -240,8 +243,20 @@ class TestContinuousMa:
         assert rehydrated.model_parm_dist[0].shape == (3, 2)
         assert np.isnan(rehydrated.bmd_dist[1])
         assert np.isnan(rehydrated.model_bmd_dist[0][1])
+        assert np.isnan(rehydrated.model_bmd_dist[0][2])
         assert np.isnan(rehydrated.model_parm_dist[0][1, 0])
+        assert np.isnan(rehydrated.model_parm_dist[0][1, 1])
+        assert np.isnan(rehydrated.model_parm_dist[0][2, 0])
         assert np.isnan(rehydrated.model_parm_dist[0][2, 1])
+
+    def test_loud_ma_masks_paired_flat_parameter_rows_for_chains(self):
+        bmd, parms = ContinuousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([[0.1, 0.2], [0.3, 0.4]]),
+            np.array([[1.0], [np.nan], [3.0], [np.inf]]),
+        )
+
+        np.testing.assert_array_equal(bmd, np.array([[0.1, np.nan], [0.3, np.nan]]))
+        np.testing.assert_array_equal(parms, np.array([[1.0], [np.nan], [3.0], [np.nan]]))
 
     def test_loud_ma_recovers_blank_posteriors_from_waic(self):
         analysis = SimpleNamespace(

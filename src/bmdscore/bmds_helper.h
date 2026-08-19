@@ -1044,4 +1044,4 @@ double get_median(Eigen::VectorXd v);
 
 Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat);
 
-Eigen::RowVectorXd colwise_finite_median(const Eigen::MatrixXd &mat);
+Eigen::RowVectorXd colwise_valid_row_median(const Eigen::MatrixXd &mat);

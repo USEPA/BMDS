@@ -32,6 +32,7 @@ from .reporting.styling import (
     Report,
     add_mpl_figure,
     df_to_table,
+    parameter_summary_formatter,
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
@@ -808,7 +809,11 @@ class Session:
 
                     if parameter_tables:
                         add_paragraph_with_space_before(f"{group['name']} model parameters")
-                        df_to_table(report, group["summary"].fillna(""))
+                        df_to_table(
+                            report,
+                            group["summary"].fillna(""),
+                            formatter=parameter_summary_formatter,
+                        )
 
                     if parameter_visualizations and group_figure is not None:
                         add_paragraph_with_space_before(

@@ -162,6 +162,34 @@ class ContinuousModelAverageResult(ModelAverageResult):
         values[~np.isfinite(arr)] = None
         return values.tolist()
 
+    @staticmethod
+    def _apply_paired_valid_draw_mask(
+        bmd_draws: np.ndarray, parm_draws: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        bmd = np.asarray(bmd_draws, dtype=float).copy()
+        parms = np.asarray(parm_draws, dtype=float).copy()
+
+        if bmd.size == 0 or parms.size == 0:
+            return bmd, parms
+
+        if parms.ndim == bmd.ndim + 1 and parms.shape[:-1] == bmd.shape:
+            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=-1)
+        elif bmd.ndim == 1 and parms.ndim == 2 and parms.shape[0] == bmd.shape[0]:
+            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
+        elif parms.ndim == 2 and parms.shape[0] == bmd.size:
+            valid = (np.isfinite(bmd.reshape(-1)) & np.isfinite(parms).all(axis=1)).reshape(
+                bmd.shape
+            )
+        else:
+            return bmd, parms
+
+        bmd[~valid] = np.nan
+        if parms.ndim == 2 and parms.shape[0] == bmd.size and valid.shape != parms.shape[:1]:
+            parms[~valid.reshape(-1), :] = np.nan
+        else:
+            parms[~valid, ...] = np.nan
+        return bmd, parms
+
     @model_serializer(mode="wrap")
     def serialize_model(self, handler):
         data = handler(self)
@@ -273,6 +301,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
             model_waics.append(float(getattr(lr, "waic", constants.BMDS_BLANK_VALUE)))
             model_loglikelihoods.append(float(getattr(lr, "ll", constants.BMDS_BLANK_VALUE)))
             bmd_draws, parm_draws = cls._loud_draws(lr, n_chains)
+            bmd_draws, parm_draws = cls._apply_paired_valid_draw_mask(bmd_draws, parm_draws)
             model_bmd.append(bmd_draws)
             model_parms.append(parm_draws)
 

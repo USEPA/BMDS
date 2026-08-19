@@ -86,6 +86,16 @@ def write_cell(cell, value, style, formatter=ff):
     cell.paragraphs[0].style = style
 
 
+def parameter_summary_formatter(value) -> str:
+    if isinstance(value, str):
+        return value
+    if value == BMDS_BLANK_VALUE or not np.isfinite(value):
+        return "-"
+    if 0 < abs(value) < 0.001:
+        return f"{value:.3g}"
+    return ff(value)
+
+
 def set_column_width(column, size_in_inches: float):
     for cell in column.cells:
         cell.width = Inches(size_in_inches)
@@ -632,7 +642,7 @@ def write_setting_p(report: Report, title: str, value: str):
     p.add_run(value)
 
 
-def df_to_table(report: Report, df: pd.DataFrame):
+def df_to_table(report: Report, df: pd.DataFrame, formatter=ff):
     """Quickly generate a word table from a pandas data frame.
 
     Optimized for speed - see https://github.com/python-openxml/python-docx/issues/174
@@ -648,7 +658,7 @@ def df_to_table(report: Report, df: pd.DataFrame):
         write_cell(cells[i], header, style=hdr)
     for i, row in enumerate(data["data"]):
         for j, value in enumerate(row):
-            write_cell(cells[(i + 1) * n_col + j], value, style=body)
+            write_cell(cells[(i + 1) * n_col + j], value, style=body, formatter=formatter)
 
     for footnote in df.attrs.get("footnotes", []):
         report.document.add_paragraph(str(footnote), report.styles.tbl_footnote)

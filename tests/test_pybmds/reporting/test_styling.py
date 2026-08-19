@@ -6,6 +6,7 @@ from pybmds.reporting.styling import (
     Report,
     _ma_model_bmd_triplet,
     df_to_table,
+    parameter_summary_formatter,
     write_bayesian_table,
     write_dataset_table,
 )
@@ -34,6 +35,20 @@ def test_df_to_table_writes_dataframe_footnotes():
     assert report.document.paragraphs[-1].text == (
         "R-hat statistic is calculated only when more than 1 Markov chain is used."
     )
+
+
+def test_df_to_table_accepts_custom_formatter():
+    report = Report.build_default()
+    df = pd.DataFrame({"Parameter": ["alpha"], "Median": [0.000584]})
+
+    df_to_table(report, df, formatter=parameter_summary_formatter)
+
+    assert report.document.tables[0].cell(1, 1).text == "0.000584"
+
+
+def test_parameter_summary_formatter_keeps_small_values():
+    assert parameter_summary_formatter(0.000584) == "0.000584"
+    assert parameter_summary_formatter(-0.000584) == "-0.000584"
 
 
 def _bayesian_summary_headers(is_loud: bool) -> list[str]:

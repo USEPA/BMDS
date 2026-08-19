@@ -395,6 +395,16 @@ class TestDichotomousMa:
         two_d = DichotomousModelAverageResult._resize_draws(np.array([[1.0, 2.0]]), 2)
         assert two_d.shape == (2, 2)
 
+        bmd, parms = DichotomousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([0.1, 0.2, 0.3]),
+            np.array([[1.0, 2.0], [np.nan, 3.0], [4.0, np.inf]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([0.1, np.nan, np.nan]))
+        np.testing.assert_array_equal(
+            parms,
+            np.array([[1.0, 2.0], [np.nan, np.nan], [np.nan, np.nan]]),
+        )
+
         np.testing.assert_array_equal(
             DichotomousModelAverageResult._loud_weights([np.nan, -9999.0]),
             np.array([-9999.0, -9999.0]),

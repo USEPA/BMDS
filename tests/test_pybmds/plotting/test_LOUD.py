@@ -1025,6 +1025,41 @@ class TestLOUD:
         assert seen_shapes == [(4, 3), (4, 3)]
         assert actual.loc["BMD[Power]", "r_hat"] == 1.01
 
+    def test_summary_from_draws_quantiles_use_all_finite_draws(self):
+        draws = np.array([[1.0, np.nan, 3.0], [2.0, 4.0, np.nan]])
+
+        actual = _summary_from_draws(draws, "BMD", "BMD[Power]", 0.9)
+
+        finite_draws = np.array([1.0, 3.0, 2.0, 4.0])
+        assert actual.loc["BMD[Power]", "median"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.5)
+        )
+        assert actual.loc["BMD[Power]", "eti_5%"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.05)
+        )
+        assert actual.loc["BMD[Power]", "eti_95%"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.95)
+        )
+
+    def test_rename_summary_columns_prefers_explicit_eti_percentiles(self):
+        summary = pd.DataFrame(
+            {
+                "median": [2.0],
+                "eti90_lb": [1.2],
+                "eti90_ub": [2.8],
+                "eti_5%": [1.0],
+                "eti_95%": [3.0],
+            },
+            index=["BMD[Power]"],
+        )
+
+        actual = _rename_summary_columns(summary, bmd_labels=True)
+
+        assert actual.loc["BMD[Power]", "BMDL"] == pytest.approx(1.0)
+        assert actual.loc["BMD[Power]", "BMDU"] == pytest.approx(3.0)
+        assert "eti90_lb" not in actual.columns
+        assert "eti90_ub" not in actual.columns
+
     def test_multi_summary_table_summarizes_each_variable_independently(self, monkeypatch):
         calls = []
 

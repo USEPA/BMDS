@@ -5307,7 +5307,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // set res.parms to col means for individual model parms
     // TODO check to make sure we should use mean instead of median
-    Eigen::VectorXd retParms = colwise_median(combLoudRes->parms);
+    Eigen::VectorXd retParms = colwise_valid_row_median(combLoudRes->parms);
 
     // need to rescale for BMDS form
     scale_dichoParms(pyMA->models[i], retParms);
@@ -6012,7 +6012,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::power:
       case cont_model::exp_3:
       case cont_model::hill:
-        retParms = colwise_finite_median(pyRes->models[i].combinedLoudRes.parms);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.parms);
         if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -6020,7 +6020,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         }
         break;
       case cont_model::exp_5:
-        retParms = colwise_finite_median(pyRes->models[i].combinedLoudRes.parms);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.parms);
         if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -6034,7 +6034,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::l_lognormal_efsa:
       case cont_model::l_gamma_efsa:
       case cont_model::l_lms_efsa:
-        retParms = colwise_finite_median(pyRes->models[i].combinedLoudRes.R);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.R);
         //    if (loudIn.dist == distribution::log_normal) {
         //      // EFSA lognormal models models return ln(alpha)
         //      // EFSA expects alpha
@@ -10692,30 +10692,32 @@ Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat) {
   return medians;
 }
 
-double get_finite_median(Eigen::VectorXd v) {
-  std::vector<double> finite;
-  finite.reserve(v.size());
-  for (int i = 0; i < v.size(); ++i) {
-    if (std::isfinite(v(i))) {
-      finite.push_back(v(i));
+Eigen::RowVectorXd colwise_valid_row_median(const Eigen::MatrixXd &mat) {
+  std::vector<int> valid_rows;
+  valid_rows.reserve(mat.rows());
+  for (int row = 0; row < mat.rows(); ++row) {
+    bool valid = true;
+    for (int col = 0; col < mat.cols(); ++col) {
+      if (!std::isfinite(mat(row, col))) {
+        valid = false;
+        break;
+      }
     }
+    if (valid) valid_rows.push_back(row);
   }
 
-  if (finite.empty()) return BMDS_MISSING;
-
-  std::sort(finite.begin(), finite.end());
-  int size = finite.size();
-  if (size % 2 == 0) {
-    return (finite[size / 2 - 1] + finite[size / 2]) / 2.0;
-  } else {
-    return finite[size / 2];
-  }
-}
-
-Eigen::RowVectorXd colwise_finite_median(const Eigen::MatrixXd &mat) {
   Eigen::RowVectorXd medians(mat.cols());
-  for (int i = 0; i < mat.cols(); ++i) {
-    medians(i) = get_finite_median(mat.col(i));
+  if (valid_rows.empty()) {
+    medians.setConstant(BMDS_MISSING);
+    return medians;
+  }
+
+  for (int col = 0; col < mat.cols(); ++col) {
+    Eigen::VectorXd values(valid_rows.size());
+    for (int row_idx = 0; row_idx < valid_rows.size(); ++row_idx) {
+      values(row_idx) = mat(valid_rows[row_idx], col);
+    }
+    medians(col) = get_median(values);
   }
   return medians;
 }

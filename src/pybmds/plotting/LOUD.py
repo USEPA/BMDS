@@ -602,6 +602,7 @@ def _eti_column_info(column: str) -> tuple[float, str] | None:
 
 
 def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> pd.DataFrame:
+    summary = summary.copy()
     rename: dict[str, str] = {}
     if "median" in summary.columns:
         rename["median"] = "BMD" if bmd_labels else "Median"
@@ -620,6 +621,22 @@ def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> 
     eti_column_info = {
         column: info for column in summary.columns if (info := _eti_column_info(column)) is not None
     }
+    eti_groups: dict[float, list[str]] = {}
+    for column, (percent, _) in eti_column_info.items():
+        eti_groups.setdefault(percent, []).append(column)
+    selected_eti_columns = {
+        min(columns, key=lambda column: 0 if re.fullmatch(r"eti_\d+(?:\.\d+)?%", column) else 1)
+        for columns in eti_groups.values()
+    }
+    duplicate_eti_columns = [
+        column for column in eti_column_info if column not in selected_eti_columns
+    ]
+    if duplicate_eti_columns:
+        summary = summary.drop(columns=duplicate_eti_columns)
+        eti_column_info = {
+            column: info for column, info in eti_column_info.items() if column in summary.columns
+        }
+
     eti_columns = list(eti_column_info)
     if len(eti_columns) >= 2:
         eti_columns = sorted(eti_columns, key=lambda column: eti_column_info[column][0])
@@ -645,8 +662,12 @@ def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
     draws = _nan_nonfinite(draws)
+    flat_draws = draws[np.isfinite(draws)]
+    if flat_draws.size == 0:
+        return pd.DataFrame()
+
     if draws.ndim == 1:
-        summary_draws = draws[np.isfinite(draws)].reshape(1, -1)
+        summary_draws = flat_draws.reshape(1, -1)
     elif draws.ndim == 2:
         # ArviZ returns an all-NaN summary when even a sparse nonfinite value is
         # present. Drop the affected iteration from every chain so R-hat and ESS
@@ -655,9 +676,23 @@ def _summary_from_draws(
     else:
         raise ValueError(f"Unsupported draw shape for summary: {draws.shape}")
 
+    alpha = (1 - hdi_prob) / 2
+    finite_stats = {
+        "median": float(np.nanquantile(flat_draws, 0.5)),
+        f"eti_{alpha:.0%}": float(np.nanquantile(flat_draws, alpha)),
+        f"eti_{1 - alpha:.0%}": float(np.nanquantile(flat_draws, 1 - alpha)),
+    }
+
     if summary_draws.size == 0:
-        return pd.DataFrame()
-    flat_draws = summary_draws.reshape(-1)
+        return pd.DataFrame(
+            {
+                **{column: [value] for column, value in finite_stats.items()},
+                "r_hat": [np.nan],
+                "ess_bulk": [np.nan],
+                "ess_tail": [np.nan],
+            },
+            index=pd.Index([label], name="var_name"),
+        )
 
     dataset = xr.Dataset(
         {var_name: (("chain", "draw"), summary_draws)},
@@ -693,14 +728,13 @@ def _summary_from_draws(
                     errors="ignore",
                 )
             )
+        for column, value in finite_stats.items():
+            median_summary[column] = value
         return median_summary
     except ValueError:
-        alpha = (1 - hdi_prob) / 2
         return pd.DataFrame(
             {
-                "median": [float(np.nanquantile(flat_draws, 0.5))],
-                f"eti_{alpha:.0%}": [float(np.nanquantile(flat_draws, alpha))],
-                f"eti_{1 - alpha:.0%}": [float(np.nanquantile(flat_draws, 1 - alpha))],
+                **{column: [value] for column, value in finite_stats.items()},
                 "r_hat": [np.nan],
                 "ess_bulk": [np.nan],
                 "ess_tail": [np.nan],
