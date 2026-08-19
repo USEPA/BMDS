@@ -1043,3 +1043,5 @@ void clean_cont_MA_results(struct python_continuousMA_result *res);
 double get_median(Eigen::VectorXd v);
 
 Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat);
+
+Eigen::RowVectorXd colwise_finite_median(const Eigen::MatrixXd &mat);
