@@ -405,6 +405,30 @@ class TestDichotomousMa:
             np.array([[1.0, 2.0], [np.nan, np.nan], [np.nan, np.nan]]),
         )
 
+        bmd, parms = DichotomousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([], dtype=float),
+            np.array([[1.0]], dtype=float),
+        )
+        assert bmd.size == 0
+        np.testing.assert_array_equal(parms, np.array([[1.0]]))
+
+        bmd, parms = DichotomousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([[0.1, 0.2], [0.3, np.nan]]),
+            np.array([[[1.0], [np.nan]], [[3.0], [4.0]]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([[0.1, np.nan], [0.3, np.nan]]))
+        np.testing.assert_array_equal(
+            parms,
+            np.array([[[1.0], [np.nan]], [[3.0], [np.nan]]]),
+        )
+
+        bmd, parms = DichotomousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([0.1, 0.2]),
+            np.array([[1.0], [2.0], [3.0]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([0.1, 0.2]))
+        np.testing.assert_array_equal(parms, np.array([[1.0], [2.0], [3.0]]))
+
         np.testing.assert_array_equal(
             DichotomousModelAverageResult._loud_weights([np.nan, -9999.0]),
             np.array([-9999.0, -9999.0]),

@@ -258,6 +258,38 @@ class TestContinuousMa:
         np.testing.assert_array_equal(bmd, np.array([[0.1, np.nan], [0.3, np.nan]]))
         np.testing.assert_array_equal(parms, np.array([[1.0], [np.nan], [3.0], [np.nan]]))
 
+    def test_loud_ma_paired_mask_edge_shapes(self):
+        bmd, parms = ContinuousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([], dtype=float),
+            np.array([[1.0]], dtype=float),
+        )
+        assert bmd.size == 0
+        np.testing.assert_array_equal(parms, np.array([[1.0]]))
+
+        bmd, parms = ContinuousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([0.1, 0.2, np.nan]),
+            np.array([[1.0, 2.0], [np.nan, 3.0], [4.0, 5.0]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([0.1, np.nan, np.nan]))
+        np.testing.assert_array_equal(
+            parms,
+            np.array([[1.0, 2.0], [np.nan, np.nan], [np.nan, np.nan]]),
+        )
+
+        bmd, parms = ContinuousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([0.1, 0.2]),
+            np.array([[1.0], [np.nan]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([0.1, np.nan]))
+        np.testing.assert_array_equal(parms, np.array([[1.0], [np.nan]]))
+
+        bmd, parms = ContinuousModelAverageResult._apply_paired_valid_draw_mask(
+            np.array([0.1, 0.2]),
+            np.array([[1.0], [2.0], [3.0]]),
+        )
+        np.testing.assert_array_equal(bmd, np.array([0.1, 0.2]))
+        np.testing.assert_array_equal(parms, np.array([[1.0], [2.0], [3.0]]))
+
     def test_loud_ma_recovers_blank_posteriors_from_waic(self):
         analysis = SimpleNamespace(
             result=SimpleNamespace(
