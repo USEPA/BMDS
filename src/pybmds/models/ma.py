@@ -45,10 +45,19 @@ class BmdModelAveragingDichotomous(BmdModelAveraging):
                 results.sync_model_result(model, idx, self.structs.result.models[idx])
         return results
 
-    def serialize(self, session) -> "BmdModelAveragingDichotomousSchema":
+    def serialize(
+        self, session, include_loud_draws: bool = True
+    ) -> "BmdModelAveragingDichotomousSchema":
         model_indexes = [session.models.index(model) for model in self.models]
+        results = self.results
+        if (
+            not include_loud_draws
+            and self.settings.priors.prior_class is PriorClass.bayesian_loud
+            and results is not None
+        ):
+            results = results.without_loud_draws()
         return BmdModelAveragingDichotomousSchema(
-            settings=self.settings, model_indexes=model_indexes, results=self.results
+            settings=self.settings, model_indexes=model_indexes, results=results
         )
 
 

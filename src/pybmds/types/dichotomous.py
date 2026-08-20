@@ -222,6 +222,9 @@ class DichotomousModelResult(BaseModel):
     total_df: float
     bmd_dist: NumpyFloatArray
 
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"bmd_dist": np.empty((2, 0), dtype=float)})
+
     @classmethod
     def from_model(cls, model) -> Self:
         result = model.structs.result
@@ -456,6 +459,9 @@ class DichotomousResult(BaseModel):
     plotting: DichotomousPlotting
     summary_p_value: float | None = None
     summary_waic: float | None = None
+
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"fit": self.fit.without_loud_draws()})
 
     @classmethod
     def from_model(cls, model) -> Self:

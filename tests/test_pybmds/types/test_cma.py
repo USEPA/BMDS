@@ -36,3 +36,27 @@ class TestContinuousModelAverage:
         assert data["bmd_dist"] == [[1.0, None], [2.0, 3.0]]
         assert data["model_bmd_dist"] == [[[1.0, None], [2.0, 3.0]]]
         assert data["model_parm_dist"] == [[[[1.0], [None]], [[2.0], [3.0]]]]
+
+    def test_without_loud_draws_removes_raw_draw_arrays(self):
+        result = ContinuousModelAverageResult(
+            bmdl=1.0,
+            bmd=2.0,
+            bmdu=3.0,
+            bmdl_y=0.1,
+            bmd_y=0.2,
+            bmdu_y=0.3,
+            bmd_dist=np.array([[1.0, 2.0], [3.0, 4.0]]),
+            priors=np.array([1.0]),
+            posteriors=np.array([1.0]),
+            model_bmd_dist=[np.array([[1.0, 2.0]])],
+            model_parm_dist=[np.array([[[1.0], [2.0]]])],
+            dr_x=np.array([0.0, 1.0]),
+            dr_y=np.array([0.0, 0.5]),
+        )
+
+        trimmed = result.without_loud_draws()
+
+        assert trimmed.model_dump()["bmd_dist"] == []
+        assert trimmed.model_dump()["model_bmd_dist"] == []
+        assert trimmed.model_dump()["model_parm_dist"] == []
+        assert result.model_dump()["bmd_dist"] == [[1.0, 2.0], [3.0, 4.0]]

@@ -143,6 +143,15 @@ class DichotomousModelAverageResult(ModelAverageResult):
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(
+            update={
+                "bmd_dist": np.empty((0,), dtype=float),
+                "model_bmd_dist": [],
+                "model_parm_dist": [],
+            }
+        )
+
     @staticmethod
     def _json_safe_draws(draws) -> list:
         arr = np.asarray(draws, dtype=float)

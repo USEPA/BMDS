@@ -346,7 +346,7 @@ class BmdModelAveraging(abc.ABC):
         return self.results is not None
 
     @abc.abstractmethod
-    def serialize(self, session) -> BmdModelAveragingSchema: ...
+    def serialize(self, session, include_loud_draws: bool = True) -> BmdModelAveragingSchema: ...
 
     def to_dict(self) -> dict:
         return self.serialize.model_dump()

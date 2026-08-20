@@ -592,7 +592,19 @@ class Session:
 
     # serializing
     # -----------
-    def serialize(self) -> SessionSchema:
+    def serialize(self, include_loud_draws: bool = True) -> SessionSchema:
+        models = []
+        for model in self.models:
+            serialized = model.serialize()
+            if (
+                not include_loud_draws
+                and getattr(model.settings.priors, "prior_class", None) is PriorClass.bayesian_loud
+                and serialized.results is not None
+                and hasattr(serialized.results, "without_loud_draws")
+            ):
+                serialized.results = serialized.results.without_loud_draws()
+            models.append(serialized)
+
         schema = SessionSchema(
             id=self.id,
             name=self.name,
@@ -602,11 +614,13 @@ class Session:
                 dll=self.dll_version(),
             ),
             dataset=self.dataset.serialize(),
-            models=[model.serialize() for model in self.models],
+            models=models,
             selected=self.selected.serialize(),
         )
         if self.model_average is not None:
-            schema.bmds_model_average = self.model_average.serialize(self)
+            schema.bmds_model_average = self.model_average.serialize(
+                self, include_loud_draws=include_loud_draws
+            )
 
         if self.recommender is not None:
             schema.recommender = self.recommender.serialize()
@@ -631,8 +645,8 @@ class Session:
 
     # reporting
     # ---------
-    def to_dict(self):
-        return self.serialize().model_dump(by_alias=True)
+    def to_dict(self, include_loud_draws: bool = True):
+        return self.serialize(include_loud_draws=include_loud_draws).model_dump(by_alias=True)
 
     def session_title(self) -> str:
         if self.id and self.name:
