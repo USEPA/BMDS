@@ -736,6 +736,7 @@ class Session:
         parameter_tables: bool = True,
         parameter_visualizations: bool = False,
         compressed: bool = True,
+        skip_loud_diagnostics: bool = False,
     ):
         """Return a Document object with the session executed
 
@@ -754,6 +755,11 @@ class Session:
                 visualization figures in the report
             compressed (bool, default True): Group LOUD parameter tables and visualizations by
                 model family. If False, separate tables and visualizations by individual model.
+            skip_loud_diagnostics (bool, default = False): Skip rendering the LOUD model-averaging
+            diagnostics sectio (posterior/overlay plots, BMD summary, parameter tables). 
+            Set True when the caller renders this section separately - for example, when the 
+            session's LOUD draws were stripped at serialization time and pre-rendered
+            artifacts must be substituted instead. 
 
         Returns:
             A python docx.Document object with content added.
@@ -789,7 +795,7 @@ class Session:
             plot_dr(report, self)
 
             # LOUD-specific ArviZ plots
-            if self.is_bayesian_loud() and self.model_average:
+            if self.is_bayesian_loud() and self.model_average and not skip_loud_diagnostics:
                 add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
                 add_paragraph_with_space_before(
                     "The following diagnostics summarize the model-averaged posterior "

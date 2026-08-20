@@ -124,6 +124,7 @@ class BatchSession(BatchBase):
         parameter_tables: bool = True,
         parameter_visualizations: bool = False,
         compressed: bool = True,
+        skip_loud_diagnostics: bool = False,
     ):
         """Append each session to a single document
 
@@ -161,6 +162,7 @@ class BatchSession(BatchBase):
                 parameter_tables=parameter_tables,
                 parameter_visualizations=parameter_visualizations,
                 compressed=compressed,
+                skip_loud_diagnostics=skip_loud_diagnostics
             )
 
         if citation and len(self.sessions) > 0:
