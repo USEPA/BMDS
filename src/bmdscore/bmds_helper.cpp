@@ -3902,6 +3902,12 @@ void fit_mstage2(
     double b11 = R(i, 1);
     double c11 = R(i, 2);
     double y1 = R(i, 3);
+    double eps = 1e-12;
+    if (y1 <= eps) {
+      y1 = eps;
+    } else if (y1 >= 1.0 - eps) {
+      y1 = 1.0 - eps;
+    }
 
     double sum = a11 + b11 + c11;
     double p_zero = a11 / sum;
