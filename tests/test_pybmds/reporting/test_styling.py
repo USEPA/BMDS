@@ -8,8 +8,8 @@ from pybmds.reporting.styling import (
     _ma_model_bmd_triplet,
     df_to_table,
     parameter_summary_formatter,
-    write_cell,
     write_bayesian_table,
+    write_cell,
     write_dataset_table,
 )
 

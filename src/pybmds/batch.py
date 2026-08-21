@@ -162,7 +162,7 @@ class BatchSession(BatchBase):
                 parameter_tables=parameter_tables,
                 parameter_visualizations=parameter_visualizations,
                 compressed=compressed,
-                skip_loud_diagnostics=skip_loud_diagnostics
+                skip_loud_diagnostics=skip_loud_diagnostics,
             )
 
         if citation and len(self.sessions) > 0:

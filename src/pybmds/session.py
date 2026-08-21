@@ -756,10 +756,10 @@ class Session:
             compressed (bool, default True): Group LOUD parameter tables and visualizations by
                 model family. If False, separate tables and visualizations by individual model.
             skip_loud_diagnostics (bool, default = False): Skip rendering the LOUD model-averaging
-            diagnostics sectio (posterior/overlay plots, BMD summary, parameter tables). 
-            Set True when the caller renders this section separately - for example, when the 
+            diagnostics sectio (posterior/overlay plots, BMD summary, parameter tables).
+            Set True when the caller renders this section separately - for example, when the
             session's LOUD draws were stripped at serialization time and pre-rendered
-            artifacts must be substituted instead. 
+            artifacts must be substituted instead.
 
         Returns:
             A python docx.Document object with content added.
