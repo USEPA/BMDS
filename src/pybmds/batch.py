@@ -143,6 +143,8 @@ class BatchSession(BatchBase):
                 visualization figures in the report
             compressed (bool, default True): Group LOUD parameter tables and visualizations by
                 model family. If False, separate tables and visualizations by individual model.
+            skip_loud_diagnostics (bool, default False): Skip rendering the LOUD model-averaging
+                diagnostics section in the report.
 
         Returns:
             A python docx.Document object with content added.

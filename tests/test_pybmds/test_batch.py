@@ -113,6 +113,7 @@ class TestBatchSession:
                 "parameter_tables": False,
                 "parameter_visualizations": True,
                 "compressed": False,
+                "skip_loud_diagnostics": False,
             }
         ]
 
