@@ -1,4 +1,4 @@
-__version__ = "26.1a3"  # see docs/development for versioning
+__version__ = "26.1a4"  # see docs/development for versioning
 
 import os
 
