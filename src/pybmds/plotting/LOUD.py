@@ -23,6 +23,14 @@ _RHAT_SINGLE_CHAIN_FOOTNOTE = (
     "R-hat statistic is calculated only when more than 1 Markov chain is used."
 )
 _PLOT_ABS_LIMIT = 1e100
+_PLOT_MAX_DRAWS = 10_000
+
+
+def _downsample_plot_draws(draws: np.ndarray) -> np.ndarray:
+    if draws.size <= _PLOT_MAX_DRAWS:
+        return draws
+    indexes = np.linspace(0, draws.size - 1, _PLOT_MAX_DRAWS, dtype=int)
+    return draws[indexes]
 
 
 def _data_tree(**groups: xr.Dataset) -> xr.DataTree:
@@ -82,6 +90,7 @@ def _plot_dist(
     draws = _plot_safe_values(draws)
     if draws.size == 0:
         return ax
+    draws = _downsample_plot_draws(draws)
     if draws.size < 2 or np.unique(draws).size < 2:
         ax.hist(draws, density=True, color=color, alpha=0.35)
         return ax
@@ -508,6 +517,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     records: list[dict[str, float | str]] = []
     model_names = list(idata.posterior.coords["model"].values)
     bmd = np.asarray(idata.posterior["BMD"].values, dtype=float)
+    model_weights = _posterior_model_weight_map(idata)
 
     for model_idx, model_name in enumerate(model_names):
         draws = bmd[:, :, model_idx].reshape(-1)
@@ -517,6 +527,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         records.append(
             {
                 "model": str(model_name),
+                "Posterior Weights": model_weights.get(str(model_name), np.nan),
                 "BMD": float(np.nanquantile(draws, 0.5)),
                 "BMDL": float(np.nanquantile(draws, alpha)),
                 "BMDU": float(np.nanquantile(draws, 1 - alpha)),
@@ -531,6 +542,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         records.append(
             {
                 "model": "MA_BMD",
+                "Posterior Weights": np.nan,
                 "BMD": ma_quantiles["median"],
                 "BMDL": ma_quantiles["lower"],
                 "BMDU": ma_quantiles["upper"],
@@ -543,6 +555,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
     if not records:
         return pd.DataFrame(
             columns=[
+                "Posterior Weights",
                 "BMD",
                 "BMDL",
                 "BMDU",
@@ -554,6 +567,18 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
         )
 
     return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
+
+
+def _posterior_model_weight_map(idata: xr.DataTree) -> dict[str, float]:
+    if "model_weights" not in idata.posterior:
+        return {}
+
+    model_names = [str(name) for name in idata.posterior.coords["model"].values]
+    weights = np.asarray(idata.posterior["model_weights"].values, dtype=float).reshape(-1)
+    return {
+        model_name: float(weight) if np.isfinite(weight) else np.nan
+        for model_name, weight in zip(model_names, weights, strict=False)
+    }
 
 
 def _format_percent_label(percent: float) -> str:
@@ -577,6 +602,7 @@ def _eti_column_info(column: str) -> tuple[float, str] | None:
 
 
 def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> pd.DataFrame:
+    summary = summary.copy()
     rename: dict[str, str] = {}
     if "median" in summary.columns:
         rename["median"] = "BMD" if bmd_labels else "Median"
@@ -595,6 +621,22 @@ def _rename_summary_columns(summary: pd.DataFrame, bmd_labels: bool = False) -> 
     eti_column_info = {
         column: info for column in summary.columns if (info := _eti_column_info(column)) is not None
     }
+    eti_groups: dict[float, list[str]] = {}
+    for column, (percent, _) in eti_column_info.items():
+        eti_groups.setdefault(percent, []).append(column)
+    selected_eti_columns = {
+        min(columns, key=lambda column: 0 if re.fullmatch(r"eti_\d+(?:\.\d+)?%", column) else 1)
+        for columns in eti_groups.values()
+    }
+    duplicate_eti_columns = [
+        column for column in eti_column_info if column not in selected_eti_columns
+    ]
+    if duplicate_eti_columns:
+        summary = summary.drop(columns=duplicate_eti_columns)
+        eti_column_info = {
+            column: info for column, info in eti_column_info.items() if column in summary.columns
+        }
+
     eti_columns = list(eti_column_info)
     if len(eti_columns) >= 2:
         eti_columns = sorted(eti_columns, key=lambda column: eti_column_info[column][0])
@@ -620,8 +662,12 @@ def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
     draws = _nan_nonfinite(draws)
+    flat_draws = draws[np.isfinite(draws)]
+    if flat_draws.size == 0:
+        return pd.DataFrame()
+
     if draws.ndim == 1:
-        summary_draws = draws[np.isfinite(draws)].reshape(1, -1)
+        summary_draws = flat_draws.reshape(1, -1)
     elif draws.ndim == 2:
         # ArviZ returns an all-NaN summary when even a sparse nonfinite value is
         # present. Drop the affected iteration from every chain so R-hat and ESS
@@ -630,9 +676,23 @@ def _summary_from_draws(
     else:
         raise ValueError(f"Unsupported draw shape for summary: {draws.shape}")
 
+    alpha = (1 - hdi_prob) / 2
+    finite_stats = {
+        "median": float(np.nanquantile(flat_draws, 0.5)),
+        f"eti_{alpha:.0%}": float(np.nanquantile(flat_draws, alpha)),
+        f"eti_{1 - alpha:.0%}": float(np.nanquantile(flat_draws, 1 - alpha)),
+    }
+
     if summary_draws.size == 0:
-        return pd.DataFrame()
-    flat_draws = summary_draws.reshape(-1)
+        return pd.DataFrame(
+            {
+                **{column: [value] for column, value in finite_stats.items()},
+                "r_hat": [np.nan],
+                "ess_bulk": [np.nan],
+                "ess_tail": [np.nan],
+            },
+            index=pd.Index([label], name="var_name"),
+        )
 
     dataset = xr.Dataset(
         {var_name: (("chain", "draw"), summary_draws)},
@@ -668,14 +728,13 @@ def _summary_from_draws(
                     errors="ignore",
                 )
             )
+        for column, value in finite_stats.items():
+            median_summary[column] = value
         return median_summary
     except ValueError:
-        alpha = (1 - hdi_prob) / 2
         return pd.DataFrame(
             {
-                "median": [float(np.nanquantile(flat_draws, 0.5))],
-                f"eti_{alpha:.0%}": [float(np.nanquantile(flat_draws, alpha))],
-                f"eti_{1 - alpha:.0%}": [float(np.nanquantile(flat_draws, 1 - alpha))],
+                **{column: [value] for column, value in finite_stats.items()},
                 "r_hat": [np.nan],
                 "ess_bulk": [np.nan],
                 "ess_tail": [np.nan],
@@ -900,6 +959,7 @@ def _parameter_group_records(
     compressed: bool = True,
     summary: pd.DataFrame | None = None,
     include_figures: bool = True,
+    include_tables: bool = True,
 ) -> list[dict[str, object]]:
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
@@ -933,29 +993,34 @@ def _parameter_group_records(
                 return
 
             rows: list[dict[str, object]] = []
-            group_summary = (
-                summary
-                if summary is not None
-                else _drop_empty_summary_rows(_multi_summary_table(idata, param_names, hdi_prob))
-            )
-            group_summary = _rename_summary_columns(group_summary)
-            for model in record_models:
-                model_name = model.name()
-                for param_name in param_names:
-                    if model_name not in param_model_names.get(param_name, set()):
-                        continue
-                    stats = _extract_model_row(group_summary, param_name, model_name)
-                    if stats is None:
-                        continue
-                    rows.append(
-                        {
-                            "Model": _parameter_group_model_label(model),
-                            "Parameter": param_name,
-                            **stats.to_dict(),
-                        }
+            if include_tables:
+                group_summary = (
+                    summary
+                    if summary is not None
+                    else _drop_empty_summary_rows(
+                        _multi_summary_table(idata, param_names, hdi_prob)
                     )
+                )
+                group_summary = _rename_summary_columns(group_summary)
+                for model in record_models:
+                    model_name = model.name()
+                    for param_name in param_names:
+                        if model_name not in param_model_names.get(param_name, set()):
+                            continue
+                        stats = _extract_model_row(group_summary, param_name, model_name)
+                        if stats is None:
+                            continue
+                        rows.append(
+                            {
+                                "Model": _parameter_group_model_label(model),
+                                "Parameter": param_name,
+                                **stats.to_dict(),
+                            }
+                        )
 
-            if not rows:
+            if include_tables and not rows:
+                return
+            if not include_tables and not include_figures:
                 return
 
             figure = (
@@ -991,20 +1056,36 @@ def _bmd_diagnostics_table(
         summary = _drop_empty_summary_rows(_multi_summary_table(idata, ["BMD", "MA_BMD"], hdi_prob))
     summary = _rename_summary_columns(summary, bmd_labels=True)
     model_names = list(idata.posterior.coords["model"].values)
+    model_weights = _posterior_model_weight_map(idata)
     rows: list[dict[str, object]] = []
 
     for model_name in model_names:
         stats = _extract_model_row(summary, "BMD", str(model_name))
         if stats is None:
             continue
-        rows.append({"model": str(model_name), **stats.to_dict()})
+        rows.append(
+            {
+                "model": str(model_name),
+                "Posterior Weights": model_weights.get(str(model_name), np.nan),
+                **stats.to_dict(),
+            }
+        )
 
     ma_stats = _extract_model_row(summary, "MA_BMD", "MA_BMD")
     if ma_stats is not None:
-        rows.append({"model": "MA_BMD", **ma_stats.to_dict()})
+        rows.append(
+            {
+                "model": "MA_BMD",
+                "Posterior Weights": np.nan,
+                **ma_stats.to_dict(),
+            }
+        )
 
     if rows:
-        return pd.DataFrame(rows).set_index("model")
+        df = pd.DataFrame(rows).set_index("model")
+        df["Posterior Weights"] = df["Posterior Weights"].astype(object)
+        df.loc["MA_BMD", "Posterior Weights"] = None
+        return df
 
     alpha = (1 - hdi_prob) / 2
     return _bmd_summary_table(idata, alpha)
@@ -1014,6 +1095,7 @@ def get_model_average_figures(
     session,
     compressed: bool = True,
     parameter_visualizations: bool = True,
+    parameter_tables: bool = True,
 ) -> dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float]:
     idata = model_average_to_inferencedata(session)
     out: dict[str, plt.Figure | pd.DataFrame | xr.DataTree | float] = {"idata": idata}
@@ -1035,7 +1117,7 @@ def get_model_average_figures(
         if v not in ["BMD", "MA_BMD", "model_weights", "n_param"]
     ]
 
-    multi_var_names = ["BMD", "MA_BMD", *param_names]
+    multi_var_names = ["BMD", "MA_BMD", *param_names] if parameter_tables else ["BMD", "MA_BMD"]
     raw_multi_summary = _drop_empty_summary_rows(
         _multi_summary_table(idata, multi_var_names, hdi_prob)
     )
@@ -1056,6 +1138,7 @@ def get_model_average_figures(
         compressed=compressed,
         summary=raw_multi_summary,
         include_figures=parameter_visualizations,
+        include_tables=parameter_tables,
     )
     if single_chain:
         for group in parameter_groups:

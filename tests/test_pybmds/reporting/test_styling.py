@@ -2,11 +2,14 @@ from types import SimpleNamespace
 
 import pandas as pd
 
+from pybmds.constants import BMDS_BLANK_VALUE
 from pybmds.reporting.styling import (
     Report,
     _ma_model_bmd_triplet,
     df_to_table,
+    parameter_summary_formatter,
     write_bayesian_table,
+    write_cell,
     write_dataset_table,
 )
 
@@ -34,6 +37,32 @@ def test_df_to_table_writes_dataframe_footnotes():
     assert report.document.paragraphs[-1].text == (
         "R-hat statistic is calculated only when more than 1 Markov chain is used."
     )
+
+
+def test_df_to_table_accepts_custom_formatter():
+    report = Report.build_default()
+    df = pd.DataFrame({"Parameter": ["alpha"], "Median": [0.000584]})
+
+    df_to_table(report, df, formatter=parameter_summary_formatter)
+
+    assert report.document.tables[0].cell(1, 1).text == "0.000584"
+
+
+def test_write_cell_formats_blank_value():
+    report = Report.build_default()
+    table = report.document.add_table(1, 1)
+
+    write_cell(table.cell(0, 0), BMDS_BLANK_VALUE, report.styles.tbl_body)
+
+    assert table.cell(0, 0).text == "-"
+
+
+def test_parameter_summary_formatter_keeps_small_values():
+    assert parameter_summary_formatter("already formatted") == "already formatted"
+    assert parameter_summary_formatter(float("nan")) == "-"
+    assert parameter_summary_formatter(0.000584) == "0.000584"
+    assert parameter_summary_formatter(-0.000584) == "-0.000584"
+    assert parameter_summary_formatter(1.25) == "1.25"
 
 
 def _bayesian_summary_headers(is_loud: bool) -> list[str]:

@@ -32,6 +32,7 @@ from .reporting.styling import (
     Report,
     add_mpl_figure,
     df_to_table,
+    parameter_summary_formatter,
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
@@ -591,7 +592,19 @@ class Session:
 
     # serializing
     # -----------
-    def serialize(self) -> SessionSchema:
+    def serialize(self, include_loud_draws: bool = True) -> SessionSchema:
+        models = []
+        for model in self.models:
+            serialized = model.serialize()
+            if (
+                not include_loud_draws
+                and getattr(model.settings.priors, "prior_class", None) is PriorClass.bayesian_loud
+                and serialized.results is not None
+                and hasattr(serialized.results, "without_loud_draws")
+            ):
+                serialized.results = serialized.results.without_loud_draws()
+            models.append(serialized)
+
         schema = SessionSchema(
             id=self.id,
             name=self.name,
@@ -601,11 +614,13 @@ class Session:
                 dll=self.dll_version(),
             ),
             dataset=self.dataset.serialize(),
-            models=[model.serialize() for model in self.models],
+            models=models,
             selected=self.selected.serialize(),
         )
         if self.model_average is not None:
-            schema.bmds_model_average = self.model_average.serialize(self)
+            schema.bmds_model_average = self.model_average.serialize(
+                self, include_loud_draws=include_loud_draws
+            )
 
         if self.recommender is not None:
             schema.recommender = self.recommender.serialize()
@@ -630,8 +645,8 @@ class Session:
 
     # reporting
     # ---------
-    def to_dict(self):
-        return self.serialize().model_dump(by_alias=True)
+    def to_dict(self, include_loud_draws: bool = True):
+        return self.serialize(include_loud_draws=include_loud_draws).model_dump(by_alias=True)
 
     def session_title(self) -> str:
         if self.id and self.name:
@@ -721,6 +736,7 @@ class Session:
         parameter_tables: bool = True,
         parameter_visualizations: bool = False,
         compressed: bool = True,
+        skip_loud_diagnostics: bool = False,
     ):
         """Return a Document object with the session executed
 
@@ -739,6 +755,11 @@ class Session:
                 visualization figures in the report
             compressed (bool, default True): Group LOUD parameter tables and visualizations by
                 model family. If False, separate tables and visualizations by individual model.
+            skip_loud_diagnostics (bool, default = False): Skip rendering the LOUD model-averaging
+            diagnostics sectio (posterior/overlay plots, BMD summary, parameter tables).
+            Set True when the caller renders this section separately - for example, when the
+            session's LOUD draws were stripped at serialization time and pre-rendered
+            artifacts must be substituted instead.
 
         Returns:
             A python docx.Document object with content added.
@@ -774,7 +795,7 @@ class Session:
             plot_dr(report, self)
 
             # LOUD-specific ArviZ plots
-            if self.is_bayesian_loud() and self.model_average:
+            if self.is_bayesian_loud() and self.model_average and not skip_loud_diagnostics:
                 add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
                 add_paragraph_with_space_before(
                     "The following diagnostics summarize the model-averaged posterior "
@@ -785,6 +806,7 @@ class Session:
                     self,
                     compressed=compressed,
                     parameter_visualizations=parameter_visualizations,
+                    parameter_tables=parameter_tables,
                 )
 
                 add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
@@ -807,7 +829,11 @@ class Session:
 
                     if parameter_tables:
                         add_paragraph_with_space_before(f"{group['name']} model parameters")
-                        df_to_table(report, group["summary"].fillna(""))
+                        df_to_table(
+                            report,
+                            group["summary"].fillna(""),
+                            formatter=parameter_summary_formatter,
+                        )
 
                     if parameter_visualizations and group_figure is not None:
                         add_paragraph_with_space_before(
@@ -822,9 +848,10 @@ class Session:
 
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
-                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel())
+                cdf = self.model_average.cdf()
+                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel(), cdf=cdf)
                 report.document.add_paragraph(add_mpl_figure(report.document, fig, 6))
-                df_to_table(report, self.model_average.cdf())
+                df_to_table(report, cdf)
             if all_models:
                 report.document.add_paragraph("Individual Model Results", h2)
                 write_models(report, self, bmd_cdf_table, header_level + 2)

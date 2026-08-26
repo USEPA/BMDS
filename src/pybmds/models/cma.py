@@ -75,10 +75,19 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
             )
         return results
 
-    def serialize(self, session) -> "BmdModelAveragingContinuousSchema":
+    def serialize(
+        self, session, include_loud_draws: bool = True
+    ) -> "BmdModelAveragingContinuousSchema":
         model_indexes = [session.models.index(model) for model in self.models]
+        results = self.results
+        if (
+            not include_loud_draws
+            and self.settings.priors.prior_class is PriorClass.bayesian_loud
+            and results is not None
+        ):
+            results = results.without_loud_draws()
         return BmdModelAveragingContinuousSchema(
-            settings=self.settings, model_indexes=model_indexes, results=self.results
+            settings=self.settings, model_indexes=model_indexes, results=results
         )
 
 

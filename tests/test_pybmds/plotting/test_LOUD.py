@@ -444,6 +444,10 @@ class TestLOUD:
 
         bmd_summary = _bmd_diagnostics_table(idata, hdi_prob=0.9)
         assert list(bmd_summary.index) == ["Power (CV)", "Hill (NCV)", "MA_BMD"]
+        assert "Posterior Weights" in bmd_summary.columns
+        assert bmd_summary.loc["Power (CV)", "Posterior Weights"] == pytest.approx(0.25)
+        assert bmd_summary.loc["Hill (NCV)", "Posterior Weights"] == pytest.approx(0.75)
+        assert bmd_summary.loc["MA_BMD", "Posterior Weights"] is None
         assert "BMD" in bmd_summary.columns
 
         parameter_groups = _parameter_group_records(idata, session, hdi_prob=0.9)
@@ -878,6 +882,7 @@ class TestLOUD:
         idata = model_average_to_inferencedata(session)
         summary = _bmd_summary_table(idata, alpha)
 
+        assert "Posterior Weights" in summary.columns
         assert "BMD" in summary.columns
         assert "BMDL" in summary.columns
         assert "BMDU" in summary.columns
@@ -887,6 +892,8 @@ class TestLOUD:
         assert "median" not in summary.columns
         assert "mean" not in summary.columns
         assert "MA_BMD" in summary.index
+        assert summary["Posterior Weights"].drop(index="MA_BMD").notna().all()
+        assert pd.isna(summary.loc["MA_BMD", "Posterior Weights"])
 
     def test_rename_summary_columns_handles_arviz_datatree_eti_labels(self):
         summary = pd.DataFrame(
@@ -1017,6 +1024,58 @@ class TestLOUD:
 
         assert seen_shapes == [(4, 3), (4, 3)]
         assert actual.loc["BMD[Power]", "r_hat"] == 1.01
+
+    def test_summary_from_draws_quantiles_use_all_finite_draws(self):
+        draws = np.array([[1.0, np.nan, 3.0], [2.0, 4.0, np.nan]])
+
+        actual = _summary_from_draws(draws, "BMD", "BMD[Power]", 0.9)
+
+        finite_draws = np.array([1.0, 3.0, 2.0, 4.0])
+        assert actual.loc["BMD[Power]", "median"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.5)
+        )
+        assert actual.loc["BMD[Power]", "eti_5%"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.05)
+        )
+        assert actual.loc["BMD[Power]", "eti_95%"] == pytest.approx(
+            np.nanquantile(finite_draws, 0.95)
+        )
+
+    def test_summary_from_draws_quantiles_work_without_complete_chain_columns(self):
+        draws = np.array([[1.0, np.nan], [np.nan, 3.0]])
+
+        actual = _summary_from_draws(draws, "BMD", "BMD[Power]", 0.9)
+
+        assert actual.loc["BMD[Power]", "median"] == pytest.approx(2.0)
+        assert np.isnan(actual.loc["BMD[Power]", "r_hat"])
+        assert np.isnan(actual.loc["BMD[Power]", "ess_bulk"])
+        assert np.isnan(actual.loc["BMD[Power]", "ess_tail"])
+
+    def test_summary_from_draws_accepts_one_dimensional_draws(self):
+        actual = _summary_from_draws(np.array([1.0, np.nan, 3.0]), "MA_BMD", "MA_BMD", 0.9)
+
+        assert actual.loc["MA_BMD", "median"] == pytest.approx(2.0)
+        assert actual.loc["MA_BMD", "eti_5%"] == pytest.approx(1.1)
+        assert actual.loc["MA_BMD", "eti_95%"] == pytest.approx(2.9)
+
+    def test_rename_summary_columns_prefers_explicit_eti_percentiles(self):
+        summary = pd.DataFrame(
+            {
+                "median": [2.0],
+                "eti90_lb": [1.2],
+                "eti90_ub": [2.8],
+                "eti_5%": [1.0],
+                "eti_95%": [3.0],
+            },
+            index=["BMD[Power]"],
+        )
+
+        actual = _rename_summary_columns(summary, bmd_labels=True)
+
+        assert actual.loc["BMD[Power]", "BMDL"] == pytest.approx(1.0)
+        assert actual.loc["BMD[Power]", "BMDU"] == pytest.approx(3.0)
+        assert "eti90_lb" not in actual.columns
+        assert "eti90_ub" not in actual.columns
 
     def test_multi_summary_table_summarizes_each_variable_independently(self, monkeypatch):
         calls = []
@@ -1150,6 +1209,7 @@ class TestLOUD:
         assert isinstance(figures["multi_summary"], pd.DataFrame)
         assert isinstance(figures["parameter_groups"], list)
         assert "BMD" in figures["bmd_summary"].columns
+        assert "Posterior Weights" in figures["bmd_summary"].columns
         assert "BMDL" in figures["bmd_summary"].columns
         assert "BMDU" in figures["bmd_summary"].columns
         assert "median" not in figures["bmd_summary"].columns

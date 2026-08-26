@@ -154,48 +154,58 @@ class ContinuousModelAverageResult(ModelAverageResult):
     dr_x: NumpyFloatArray
     dr_y: NumpyFloatArray
 
-    @staticmethod
-    def _finite_json_draws(draws) -> list[float]:
-        """Return a flat, finite-only draw vector for external JSON consumers."""
-        arr = np.asarray(draws, dtype=float).reshape(-1)
-        return arr[np.isfinite(arr)].tolist()
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(
+            update={
+                "bmd_dist": np.empty((0,), dtype=float),
+                "model_bmd_dist": [],
+                "model_parm_dist": [],
+            }
+        )
 
     @staticmethod
-    def _finite_json_model_draws(bmd_draws, parm_draws) -> tuple[list[float], list[list[float]]]:
-        """Filter paired model draws without breaking BMD/parameter row alignment."""
-        bmd = np.asarray(bmd_draws, dtype=float).reshape(-1)
-        parms = np.asarray(parm_draws, dtype=float)
-        if parms.ndim == 1:
-            if bmd.size == 0:
-                parms = parms.reshape(0, 0)
-            elif parms.size % bmd.size == 0:
-                parms = parms.reshape(bmd.size, parms.size // bmd.size)
-            else:
-                raise ValueError(
-                    f"Cannot pair {bmd.size} BMD draws with {parms.size} parameter values."
-                )
-        else:
-            parms = parms.reshape(-1, parms.shape[-1])
+    def _json_safe_draws(draws) -> list:
+        """Preserve draw shape while converting nonfinite values to JSON nulls."""
+        arr = np.asarray(draws, dtype=float)
+        values = arr.astype(object)
+        values[~np.isfinite(arr)] = None
+        return values.tolist()
 
-        if bmd.size != parms.shape[0]:
-            raise ValueError(
-                f"Cannot pair {bmd.size} BMD draws with {parms.shape[0]} parameter rows."
+    @staticmethod
+    def _apply_paired_valid_draw_mask(
+        bmd_draws: np.ndarray, parm_draws: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        bmd = np.asarray(bmd_draws, dtype=float).copy()
+        parms = np.asarray(parm_draws, dtype=float).copy()
+
+        if bmd.size == 0 or parms.size == 0:
+            return bmd, parms
+
+        if parms.ndim == bmd.ndim + 1 and parms.shape[:-1] == bmd.shape:
+            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=-1)
+        elif bmd.ndim == 1 and parms.ndim == 2 and parms.shape[0] == bmd.shape[0]:
+            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
+        elif parms.ndim == 2 and parms.shape[0] == bmd.size:
+            valid = (np.isfinite(bmd.reshape(-1)) & np.isfinite(parms).all(axis=1)).reshape(
+                bmd.shape
             )
+        else:
+            return bmd, parms
 
-        valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
-        return bmd[valid].tolist(), parms[valid].tolist()
+        bmd[~valid] = np.nan
+        if parms.ndim == 2 and parms.shape[0] == bmd.size and valid.shape != parms.shape[:1]:
+            parms[~valid.reshape(-1), :] = np.nan
+        else:
+            parms[~valid, ...] = np.nan
+        return bmd, parms
 
     @model_serializer(mode="wrap")
     def serialize_model(self, handler):
         data = handler(self)
 
-        data["bmd_dist"] = self._finite_json_draws(self.bmd_dist)
-        model_draws = [
-            self._finite_json_model_draws(bmd_draws, parm_draws)
-            for bmd_draws, parm_draws in zip(self.model_bmd_dist, self.model_parm_dist, strict=True)
-        ]
-        data["model_bmd_dist"] = [bmd_draws for bmd_draws, _ in model_draws]
-        data["model_parm_dist"] = [parm_draws for _, parm_draws in model_draws]
+        data["bmd_dist"] = self._json_safe_draws(self.bmd_dist)
+        data["model_bmd_dist"] = [self._json_safe_draws(draws) for draws in self.model_bmd_dist]
+        data["model_parm_dist"] = [self._json_safe_draws(draws) for draws in self.model_parm_dist]
         return data
 
     @staticmethod
@@ -300,6 +310,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
             model_waics.append(float(getattr(lr, "waic", constants.BMDS_BLANK_VALUE)))
             model_loglikelihoods.append(float(getattr(lr, "ll", constants.BMDS_BLANK_VALUE)))
             bmd_draws, parm_draws = cls._loud_draws(lr, n_chains)
+            bmd_draws, parm_draws = cls._apply_paired_valid_draw_mask(bmd_draws, parm_draws)
             model_bmd.append(bmd_draws)
             model_parms.append(parm_draws)
 

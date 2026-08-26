@@ -203,7 +203,7 @@ class TestSession:
         session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -359,7 +359,7 @@ class TestSession:
         ]
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -431,6 +431,34 @@ class TestSession:
             assert len(model.results.parameters.names) == len(model.results.parameters.se)
             assert np.isfinite(model.results.plotting.dr_y).all()
             assert np.unique(model.results.plotting.dr_y).size > 1
+
+    def test_loud_session_to_dict_can_exclude_raw_draws(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        settings = {
+            "disttype": DistType.normal,
+            "priors": PriorClass.bayesian_loud,
+            "n_chains": 1,
+            "samples": 25,
+            "burnin": 5,
+            "seed": 0,
+        }
+        session.add_model(Models.Power, settings)
+        session.add_model(Models.ExponentialM3, settings)
+        session.add_model_averaging()
+        session.execute()
+
+        full = session.to_dict()
+        trimmed = session.to_dict(include_loud_draws=False)
+
+        assert full["model_average"]["results"]["bmd_dist"]
+        assert full["model_average"]["results"]["model_bmd_dist"]
+        assert full["model_average"]["results"]["model_parm_dist"]
+        assert full["models"][0]["results"]["fit"]["bmd_dist"]
+
+        assert trimmed["model_average"]["results"]["bmd_dist"] == []
+        assert trimmed["model_average"]["results"]["model_bmd_dist"] == []
+        assert trimmed["model_average"]["results"]["model_parm_dist"] == []
+        assert trimmed["models"][0]["results"]["fit"]["bmd_dist"] == [[], []]
 
     def test_to_df_maps_model_average_weights_by_model_identity(self, cdataset3):
         session = pybmds.Session(dataset=cdataset3)
@@ -510,7 +538,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert _session is session
 
@@ -652,7 +680,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             def fig():
                 return plt.figure()
@@ -703,7 +731,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             assert compressed is False
 
@@ -755,7 +783,7 @@ class TestSession:
         session.execute()
 
         def fake_get_model_average_figures(
-            _session, compressed=True, parameter_visualizations=True
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
         ):
             def fig():
                 return plt.figure()

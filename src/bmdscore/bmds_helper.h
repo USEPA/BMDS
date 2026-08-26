@@ -748,13 +748,15 @@ void SortNestedData(
 );
 
 void bridge_sample(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
+    Eigen::MatrixXd &R, const Eigen::MatrixXd &mu, const struct fitInput *loudIn,
+    struct fitResult *loudOut,
     //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
     Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 );
 
 double pivotal_pvalue(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn  // fitResult *loudOut,
+    Eigen::MatrixXd &R, const struct fitInput *loudIn,
+    const Eigen::MatrixXd &mu  // fitResult *loudOut,
 );
 
 void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
@@ -882,12 +884,12 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
 
 Eigen::VectorXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 );
 
 double getQVals(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 );
 
@@ -1041,3 +1043,5 @@ void clean_cont_MA_results(struct python_continuousMA_result *res);
 double get_median(Eigen::VectorXd v);
 
 Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat);
+
+Eigen::RowVectorXd colwise_valid_row_median(const Eigen::MatrixXd &mat);

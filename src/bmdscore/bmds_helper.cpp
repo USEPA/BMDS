@@ -2497,7 +2497,7 @@ struct fitInput createFitInput(
 }
 
 double getQVals(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 ) {
   double qVal = 0.0;
@@ -2635,7 +2635,7 @@ double getQVals(
 }
 
 Eigen::VectorXd loud_likelihood(
-    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, Eigen::VectorXd &mu, int dist,
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
     int datatype
 ) {
   Eigen::VectorXd loglik(mu.rows());
@@ -2776,23 +2776,17 @@ Eigen::VectorXd loud_likelihood(
 }
 
 void bridge_sample(
-    Eigen::MatrixXd &R, const struct fitInput *loudIn, struct fitResult *loudOut,
-    //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
-    Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
+    Eigen::MatrixXd &R, const Eigen::MatrixXd &mu, const struct fitInput *loudIn,
+    struct fitResult *loudOut, Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
 ) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
-
-  // change from original bridgesource R code
-  // now references functional_generalized.cpp model fun with function signature
-  // Eigen::VectorXd model_fun(const Eigen::VectorXd& parms, const Eigen::MatrixXd& doses)
   int S = R.rows();
   int N = loudIn->Y.rows();
-  Eigen::VectorXd mu(S);
   Eigen::MatrixXd loglik_mat(S, N);
   for (int i = 0; i < S; i++) {
-    mu = model_fun(R.row(i), loudIn->doses);
-    loglik_mat.row(i) = loud_likelihood(loudIn->Y, R.row(i), mu, loudIn->dist, loudIn->datatype);
+    loglik_mat.row(i) =
+        loud_likelihood(loudIn->Y, R.row(i), mu.row(i), loudIn->dist, loudIn->datatype);
   }
 
   // WAIC calculation
@@ -2852,8 +2846,6 @@ void bridge_sample(
     for (int i = 0; i < R.rows(); i++) {
       Eigen::VectorXd row = R.row(i);
       double post_B = prior_v(priorr, row);
-      mu = model_fun(row, loudIn->doses);
-      // A = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
       A = loglik_mat.row(i);
       post(i) = A.sum();
       post(i) += post_B;
@@ -2864,8 +2856,8 @@ void bridge_sample(
     for (int i = 0; i < g_estimate.rows(); i++) {
       Eigen::VectorXd row = g_estimate.row(i);
       double post_B = prior_v(priorr, row);
-      mu = model_fun(row, loudIn->doses);
-      Ag = loud_likelihood(loudIn->Y, row, mu, loudIn->dist, loudIn->datatype);
+      Eigen::VectorXd mu_g = model_fun(row, loudIn->doses);
+      Ag = loud_likelihood(loudIn->Y, row, mu_g, loudIn->dist, loudIn->datatype);
       post_g(i) = Ag.sum();
       post_g(i) += post_B;
     }
@@ -3337,18 +3329,6 @@ void fit_Loud(const struct fitInput *loudIn, struct fitResult *loudOut, long see
       fit_clms_efsa(loudIn, loudOut, R);
       break;
   }
-
-  //  // calc LL
-  //  Eigen::VectorXd parmVec = colwise_median(R);
-  //  loudOut->R = parmVec;
-  //  LogLikeFunction logli = getLogLikeFunc(ll_type);
-  //  ptr2 model_fun = choose_nonlinearity2(model_typ);
-  //
-  //  loudOut->ll = logli(parmVec, loudIn->doses, loudIn->Y, model_fun);
-  //
-  //  bridge_sample(R, loudIn, loudOut, priorr, isNegative);
-  //  // pivotal pvalue
-  //  loudOut->pval = pivotal_pvalue(R, loudIn);
 }
 
 void additional_cont_calcs(
@@ -3922,6 +3902,12 @@ void fit_mstage2(
     double b11 = R(i, 1);
     double c11 = R(i, 2);
     double y1 = R(i, 3);
+    double eps = 1e-12;
+    if (y1 <= eps) {
+      y1 = eps;
+    } else if (y1 >= 1.0 - eps) {
+      y1 = 1.0 - eps;
+    }
 
     double sum = a11 + b11 + c11;
     double p_zero = a11 / sum;
@@ -5106,7 +5092,9 @@ double calcLoudBMD(
   return bmd;
 }
 
-double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
+double pivotal_pvalue(
+    Eigen::MatrixXd &R, const struct fitInput *loudIn, const Eigen::MatrixXd &mu
+) {
   int model_typ = getLoudModelType(loudIn->model, loudIn->dist, loudIn->datatype);
   ptr2 model_fun = choose_nonlinearity2(model_typ);
 
@@ -5138,11 +5126,11 @@ double pivotal_pvalue(Eigen::MatrixXd &R, const struct fitInput *loudIn) {
     return BMDS_MISSING;
   }
 
-  Eigen::VectorXd mu(S);
+  // Eigen::VectorXd mu(S);
 
   for (int i = 0; i < S; ++i) {
-    mu = model_fun(Ruse.row(i), loudIn->doses);
-    Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu, loudIn->dist, loudIn->datatype);
+    // mu = model_fun(Ruse.row(i), loudIn->doses);
+    Qvals(i) = getQVals(loudIn->Y, Ruse.row(i), mu.row(i), loudIn->dist, loudIn->datatype);
   }
 
   int m = ceil(loudIn->qlev * S) - 1;  //-1 needed due to 0 indexing
@@ -5218,14 +5206,17 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
+  std::vector<Eigen::MatrixXd> expandedPriors(numModels);
+  for (int i = 0; i < numModels; i++) {
+    expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+  }
   struct fitResult loudOut;
   long seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyDA.chains);
     pyRes->models[i].loudRes = loudRes;
     for (int chain = 0; chain < chains; chain++) {
-      Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
-      loudIn.priorr = priorr;
+      loudIn.priorr = expandedPriors[i];
       loudIn.model = pyMA->models[i];
       pyRes->models[i].bmdsRes.validResult = false;
 
@@ -5235,6 +5226,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
+
+      fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
+      if (chain == 0) {
+        combLoudRes->R.resize(iter, loudOut.R.cols());
+        combLoudRes->BMD.resize(iter);
+        combLoudRes->parms.resize(iter, loudOut.parms.cols());
+      }
+      int current_row = chain * samples;
+      combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
+      combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
+      combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
+
       seed += 1;  // iterate random seed by 1 for each chain
     }
   }
@@ -5242,20 +5245,8 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < numModels; i++) {
     // combine chains by model
     int nparms = pyRes->models[i].nparms;
-    int rcols = pyRes->models[i].loudRes[0].R.cols();
 
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
-    combLoudRes->R.resize(iter, rcols);
-    combLoudRes->BMD.resize(iter);
-    combLoudRes->parms.resize(iter, nparms);
-    int current_row = 0;
-    for (int chain = 0; chain < pyRes->models[i].loudRes.size(); chain++) {
-      fitResult *chainLoudRes = &pyRes->models[i].loudRes[chain];
-      combLoudRes->R.block(current_row, 0, samples, rcols) = chainLoudRes->R;
-      combLoudRes->BMD.segment(current_row, samples) = chainLoudRes->BMD;
-      combLoudRes->parms.block(current_row, 0, samples, nparms) = chainLoudRes->parms;
-      current_row += samples;
-    }
 
     Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= combLoudRes->BMD.size() / 2) {
@@ -5272,8 +5263,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     combLoudRes->ll = logli(parmVec, loudIn.doses, loudIn.Y, model_fun);
 
-    // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
-    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    Eigen::MatrixXd &priorr = expandedPriors[i];
     loudIn.model = pyMA->models[i];
     loudIn.priorr = priorr;
     loudIn.iter = iter;
@@ -5282,15 +5272,23 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     for (int i = 0; i < isNegative.size(); i++) {
       isNegative[i] = false;
     }
+
+    int S = combLoudRes->R.rows();
+    int N = loudIn.Y.rows();
+    Eigen::MatrixXd mu(S, N);
+    for (int i = 0; i < S; i++) {
+      mu.row(i) = model_fun(combLoudRes->R.row(i), loudIn.doses);
+    }
+
     // loudIn already has priorr, so no need to pass separately
-    bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
+    bridge_sample(combLoudRes->R, mu, &loudIn, combLoudRes, priorr, isNegative);
     // Use the conventional Pearson goodness-of-fit residual degrees of
     // freedom, K - p. Use the transformed model parameter count rather than
     // R.cols(), because the LOUD latent parameterization can contain redundant
     // columns (for example, three simplex values representing two logistic
     // parameters).
     loudIn.df_override = loudIn.Y.rows() - nparms;
-    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn, mu);
     loudIn.df_override = BMDS_MISSING;
 
     // GOF calcs
@@ -5315,7 +5313,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     // set res.parms to col means for individual model parms
     // TODO check to make sure we should use mean instead of median
-    Eigen::VectorXd retParms = colwise_median(combLoudRes->parms);
+    Eigen::VectorXd retParms = colwise_valid_row_median(combLoudRes->parms);
 
     // need to rescale for BMDS form
     scale_dichoParms(pyMA->models[i], retParms);
@@ -5771,6 +5769,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
   std::vector<bool> isValid(pyMA->models.size(), false);
   int numModels = pyMA->models.size();
+  std::vector<Eigen::MatrixXd> expandedPriors(numModels);
+  for (int i = 0; i < numModels; i++) {
+    expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+  }
   long seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyCA.chains);
@@ -5780,7 +5782,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].bmdsRes.validResult = false;
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist = pyMA->loud_dist_type[i];
-      Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
       switch (pyMA->loud_dist_type[i]) {
         case distribution::normal:
           loudIn = cvInput;
@@ -5796,7 +5797,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
           return;
           break;
       }
-      loudIn.priorr = priorr;
+      loudIn.priorr = expandedPriors[i];
       loudIn.model = pyMA->models[i];
       CA.model = static_cast<cont_model>(pyMA->models[i]);
 
@@ -5911,6 +5912,18 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
       pyRes->models[i].dist_numE = 0;
+
+      fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
+      if (chain == 0) {
+        combLoudRes->R.resize(iter, loudOut.R.cols());
+        combLoudRes->BMD.resize(iter);
+        combLoudRes->parms.resize(iter, loudOut.parms.cols());
+      }
+      int current_row = chain * samples;
+      combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
+      combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
+      combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
+
       seed += 1;
     }
   }
@@ -5940,20 +5953,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     CA.model = static_cast<cont_model>(pyMA->models[i]);
 
     int nparms = pyRes->models[i].nparms;
-    int rcols = pyRes->models[i].loudRes[0].R.cols();
-
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
-    combLoudRes->R.resize(iter, rcols);
-    combLoudRes->BMD.resize(iter);
-    combLoudRes->parms.resize(iter, nparms);
-    int current_row = 0;
-    for (int chain = 0; chain < pyRes->models[i].loudRes.size(); chain++) {
-      fitResult *chainLoudRes = &pyRes->models[i].loudRes[chain];
-      combLoudRes->R.block(current_row, 0, samples, rcols) = chainLoudRes->R;
-      combLoudRes->BMD.segment(current_row, samples) = chainLoudRes->BMD;
-      combLoudRes->parms.block(current_row, 0, samples, nparms) = chainLoudRes->parms;
-      current_row += samples;
-    }
 
     Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
     if (nan_count <= combLoudRes->BMD.size() / 2) {
@@ -5976,17 +5976,24 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     combLoudRes->ll = logli(parmVec, loudIn.doses, loudIn.Y, model_fun);
 
-    // prior expansion is repeated.  Need to store somewhere so repeat is not needed.
-    Eigen::MatrixXd priorr = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
+    Eigen::MatrixXd &priorr = expandedPriors[i];
     loudIn.priorr = priorr;
     // isNegative is repeated also
     std::vector<bool> isNegative(priorr.rows());
     for (int i = 0; i < isNegative.size(); i++) {
       isNegative[i] = false;
     }
+
+    int S = combLoudRes->R.rows();
+    int N = loudIn.Y.rows();
+    Eigen::MatrixXd mu(S, N);
+    for (int i = 0; i < S; i++) {
+      mu.row(i) = model_fun(combLoudRes->R.row(i), loudIn.doses);
+    }
+
     // loudIn already has priorr, so no need to pass separately
-    bridge_sample(combLoudRes->R, &loudIn, combLoudRes, priorr, isNegative);
-    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn);
+    bridge_sample(combLoudRes->R, mu, &loudIn, combLoudRes, priorr, isNegative);
+    combLoudRes->pval = pivotal_pvalue(combLoudRes->R, &loudIn, mu);
 
     // convert python_continuous_analysis to continuous_analysis
 
@@ -6011,7 +6018,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::power:
       case cont_model::exp_3:
       case cont_model::hill:
-        retParms = colwise_median(pyRes->models[i].combinedLoudRes.parms);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.parms);
         if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -6019,7 +6026,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         }
         break;
       case cont_model::exp_5:
-        retParms = colwise_median(pyRes->models[i].combinedLoudRes.parms);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.parms);
         if (pyMA->loud_dist_type[i] != distribution::log_normal) {
           // BMDS CV and NCV models return exp(ln(alpha))
           // BMDS expects ln(alpha)
@@ -6033,7 +6040,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       case cont_model::l_lognormal_efsa:
       case cont_model::l_gamma_efsa:
       case cont_model::l_lms_efsa:
-        retParms = colwise_median(pyRes->models[i].combinedLoudRes.R);
+        retParms = colwise_valid_row_median(pyRes->models[i].combinedLoudRes.R);
         //    if (loudIn.dist == distribution::log_normal) {
         //      // EFSA lognormal models models return ln(alpha)
         //      // EFSA expects alpha
@@ -10687,6 +10694,36 @@ Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat) {
   Eigen::RowVectorXd medians(mat.cols());
   for (int i = 0; i < mat.cols(); ++i) {
     medians(i) = get_median(mat.col(i));
+  }
+  return medians;
+}
+
+Eigen::RowVectorXd colwise_valid_row_median(const Eigen::MatrixXd &mat) {
+  std::vector<int> valid_rows;
+  valid_rows.reserve(mat.rows());
+  for (int row = 0; row < mat.rows(); ++row) {
+    bool valid = true;
+    for (int col = 0; col < mat.cols(); ++col) {
+      if (!std::isfinite(mat(row, col))) {
+        valid = false;
+        break;
+      }
+    }
+    if (valid) valid_rows.push_back(row);
+  }
+
+  Eigen::RowVectorXd medians(mat.cols());
+  if (valid_rows.empty()) {
+    medians.setConstant(BMDS_MISSING);
+    return medians;
+  }
+
+  for (int col = 0; col < mat.cols(); ++col) {
+    Eigen::VectorXd values(valid_rows.size());
+    for (int row_idx = 0; row_idx < valid_rows.size(); ++row_idx) {
+      values(row_idx) = mat(valid_rows[row_idx], col);
+    }
+    medians(col) = get_median(values);
   }
   return medians;
 }
