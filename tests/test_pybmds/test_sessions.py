@@ -380,7 +380,12 @@ class TestSession:
         )
 
         docx = session.to_docx(citation=False)
-        bayesian_table = docx.tables[1]
+        bayesian_table = next(
+            table
+            for table in docx.tables
+            if table.rows[0].cells[0].text == "Model"
+            and table.rows[0].cells[1].text == "Prior Weights"
+        )
 
         assert bayesian_table.cell(1, 1).text != "-"
         assert bayesian_table.cell(2, 1).text != "-"
