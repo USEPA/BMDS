@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from copy import copy, deepcopy
 from itertools import cycle
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -736,7 +736,7 @@ class Session:
         parameter_tables: bool = True,
         parameter_visualizations: bool = False,
         compressed: bool = True,
-        skip_loud_diagnostics: bool = False,
+        skip_loud_diagnostics: bool | Callable[[Report], None] = False,
     ):
         """Return a Document object with the session executed
 
@@ -795,56 +795,61 @@ class Session:
             plot_dr(report, self)
 
             # LOUD-specific ArviZ plots
-            if self.is_bayesian_loud() and self.model_average and not skip_loud_diagnostics:
-                add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
-                add_paragraph_with_space_before(
-                    "The following diagnostics summarize the model-averaged posterior "
-                    "distribution of the benchmark dose (BMD) under the LOUD framework."
-                )
+            
+            if self.is_bayesian_loud() and self.model_average:
+                if callable(skip_loud_diagnostics):
+                    skip_loud_diagnostics(report)
+                elif not skip_loud_diagnostics:    
 
-                figs = get_model_average_figures(
-                    self,
-                    compressed=compressed,
-                    parameter_visualizations=parameter_visualizations,
-                    parameter_tables=parameter_tables,
-                )
+                    add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
+                    add_paragraph_with_space_before(
+                        "The following diagnostics summarize the model-averaged posterior "
+                        "distribution of the benchmark dose (BMD) under the LOUD framework."
+                    )
 
-                add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
-                add_paragraph_with_space_before(
-                    add_mpl_figure(report.document, figs["posterior"], 6)
-                )
-                plt.close(figs["posterior"])
+                    figs = get_model_average_figures(
+                        self,
+                        compressed=compressed,
+                        parameter_visualizations=parameter_visualizations,
+                        parameter_tables=parameter_tables,
+                    )
 
-                add_paragraph_with_space_before(
-                    "Overlay of model-specific and model-averaged BMD distributions"
-                )
-                add_paragraph_with_space_before(add_mpl_figure(report.document, figs["overlay"], 6))
-                plt.close(figs["overlay"])
+                    add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
+                    add_paragraph_with_space_before(
+                        add_mpl_figure(report.document, figs["posterior"], 6)
+                    )
+                    plt.close(figs["posterior"])
 
-                add_paragraph_with_space_before("Summary statistics for BMD and model-averaged BMD")
-                df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
+                    add_paragraph_with_space_before(
+                        "Overlay of model-specific and model-averaged BMD distributions"
+                    )
+                    add_paragraph_with_space_before(add_mpl_figure(report.document, figs["overlay"], 6))
+                    plt.close(figs["overlay"])
 
-                for group in figs["parameter_groups"]:
-                    group_figure = group.get("trace_figure")
+                    add_paragraph_with_space_before("Summary statistics for BMD and model-averaged BMD")
+                    df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
 
-                    if parameter_tables:
-                        add_paragraph_with_space_before(f"{group['name']} model parameters")
-                        df_to_table(
-                            report,
-                            group["summary"].fillna(""),
-                            formatter=parameter_summary_formatter,
-                        )
+                    for group in figs["parameter_groups"]:
+                        group_figure = group.get("trace_figure")
 
-                    if parameter_visualizations and group_figure is not None:
-                        add_paragraph_with_space_before(
-                            f"{group['name']} model parameter visualizations"
-                        )
-                        add_paragraph_with_space_before(
-                            add_mpl_figure(report.document, group_figure, 7.0)
-                        )
+                        if parameter_tables:
+                            add_paragraph_with_space_before(f"{group['name']} model parameters")
+                            df_to_table(
+                                report,
+                                group["summary"].fillna(""),
+                                formatter=parameter_summary_formatter,
+                            )
 
-                    if group_figure is not None:
-                        plt.close(group_figure)
+                        if parameter_visualizations and group_figure is not None:
+                            add_paragraph_with_space_before(
+                                f"{group['name']} model parameter visualizations"
+                            )
+                            add_paragraph_with_space_before(
+                                add_mpl_figure(report.document, group_figure, 7.0)
+                            )
+
+                        if group_figure is not None:
+                            plt.close(group_figure)
 
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
