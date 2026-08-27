@@ -124,6 +124,8 @@ def write_dataset_metadata(report: Report, dataset: DatasetBase):
     if dataset.metadata.name:
         write_setting_p(report, "Name: ", dataset.metadata.name)
     for key, value in dataset.metadata.model_extra.items():
+        if key == "model_type":
+            continue
         write_setting_p(report, f"{key.title()}: ", str(value))
 
 
