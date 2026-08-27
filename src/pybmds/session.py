@@ -3,28 +3,40 @@ from __future__ import annotations
 import logging
 from copy import copy, deepcopy
 from itertools import cycle
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from docx.shared import Pt
 
 from . import __version__, bmdscore, constants, plotting
-from .constants import BMDS_BLANK_VALUE, MAXIMUM_POLYNOMIAL_ORDER, Dtype, Models, PriorClass
+from .constants import (
+    BMDS_BLANK_VALUE,
+    MAXIMUM_POLYNOMIAL_ORDER,
+    DistType,
+    Dtype,
+    Models,
+    PriorClass,
+)
 from .datasets.base import DatasetSchemaBase, DatasetType
+from .models import cma, ma
 from .models import continuous as c3
 from .models import dichotomous as d3
-from .models import ma
 from .models import nested_dichotomous as nd3
 from .models.base import BmdModel, BmdModelAveraging, BmdModelAveragingSchema, BmdModelSchema
+from .plotting.LOUD import get_model_average_figures
 from .recommender import Recommender, RecommenderSettings
 from .reporting.styling import (
     Report,
     add_mpl_figure,
     df_to_table,
+    parameter_summary_formatter,
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
+    write_MCMC_table,
     write_citation,
     write_dataset_metadata,
     write_dataset_table,
@@ -48,15 +60,15 @@ class Session:
 
     model_options: ClassVar = {
         Dtype.DICHOTOMOUS: {
+            Models.DichotomousHill: d3.DichotomousHill,
+            Models.Gamma: d3.Gamma,
             Models.Logistic: d3.Logistic,
             Models.LogLogistic: d3.LogLogistic,
-            Models.Probit: d3.Probit,
             Models.LogProbit: d3.LogProbit,
-            Models.QuantalLinear: d3.QuantalLinear,
             Models.Multistage: d3.Multistage,
-            Models.Gamma: d3.Gamma,
+            Models.Probit: d3.Probit,
+            Models.QuantalLinear: d3.QuantalLinear,
             Models.Weibull: d3.Weibull,
-            Models.DichotomousHill: d3.DichotomousHill,
         },
         Dtype.CONTINUOUS: {
             Models.Linear: c3.Linear,
@@ -65,6 +77,11 @@ class Session:
             Models.Hill: c3.Hill,
             Models.ExponentialM3: c3.ExponentialM3,
             Models.ExponentialM5: c3.ExponentialM5,
+            Models.MultiplicativeHill: c3.MultiplicativeHill,
+            Models.InverseExponential: c3.InverseExponential,
+            Models.Lognormal: c3.Lognormal,
+            Models.ContinuousGamma: c3.ContinuousGamma,
+            Models.LMS2: c3.LMS,
         },
         Dtype.CONTINUOUS_INDIVIDUAL: {
             Models.Linear: c3.Linear,
@@ -73,12 +90,152 @@ class Session:
             Models.Hill: c3.Hill,
             Models.ExponentialM3: c3.ExponentialM3,
             Models.ExponentialM5: c3.ExponentialM5,
+            Models.MultiplicativeHill: c3.MultiplicativeHill,
+            Models.InverseExponential: c3.InverseExponential,
+            Models.Lognormal: c3.Lognormal,
+            Models.ContinuousGamma: c3.ContinuousGamma,
+            Models.LMS2: c3.LMS,
         },
         Dtype.NESTED_DICHOTOMOUS: {
             Models.NestedLogistic: nd3.NestedLogistic,
             Models.NCTR: nd3.Nctr,
         },
     }
+    continuous_default_models: ClassVar = (
+        Models.Linear,
+        Models.Polynomial,
+        Models.Power,
+        Models.Hill,
+        Models.ExponentialM3,
+        Models.ExponentialM5,
+    )
+    continuous_loud_default_models: ClassVar = (
+        Models.Power,
+        Models.Hill,
+        Models.ExponentialM3,
+        Models.ExponentialM5,
+    )
+    continuous_disttype_suffixes: ClassVar = {
+        DistType.normal: "CV",
+        DistType.normal_ncv: "NCV",
+        DistType.log_normal: "Lognormal",
+    }
+    continuous_loud_ma_model_order: ClassVar = {
+        c3.ExponentialM3: 0,
+        c3.ExponentialM5: 1,
+        c3.Hill: 2,
+        c3.Power: 3,
+        c3.MultiplicativeHill: 4,
+        c3.InverseExponential: 5,
+        c3.Lognormal: 6,
+        c3.ContinuousGamma: 7,
+        c3.LMS: 8,
+    }
+    continuous_loud_ma_dist_order: ClassVar = {
+        DistType.normal: 0,
+        DistType.normal_ncv: 1,
+        DistType.log_normal: 2,
+    }
+    dichotomous_loud_ma_model_order: ClassVar = {
+        d3.DichotomousHill: 0,
+        d3.Gamma: 1,
+        d3.Logistic: 2,
+        d3.LogLogistic: 3,
+        d3.LogProbit: 4,
+        d3.Multistage: 5,
+        d3.Probit: 6,
+        d3.QuantalLinear: 7,
+        d3.Weibull: 8,
+    }
+
+    @classmethod
+    def _continuous_loud_ma_sort_key(cls, model: BmdModel):
+        model_order = next(
+            (
+                order
+                for model_type, order in cls.continuous_loud_ma_model_order.items()
+                if isinstance(model, model_type)
+            ),
+            len(cls.continuous_loud_ma_model_order),
+        )
+        dist_order = cls.continuous_loud_ma_dist_order.get(
+            getattr(model.settings, "disttype", None),
+            len(cls.continuous_loud_ma_dist_order),
+        )
+        return model_order, dist_order, model.name()
+
+    @classmethod
+    def _dichotomous_loud_ma_sort_key(cls, model: BmdModel):
+        model_order = next(
+            (
+                order
+                for model_type, order in cls.dichotomous_loud_ma_model_order.items()
+                if isinstance(model, model_type)
+            ),
+            len(cls.dichotomous_loud_ma_model_order),
+        )
+        return model_order, model.name()
+
+    def _ensure_continuous_ma_models(
+        self,
+        settings: dict | None = None,
+        include_extended: bool = False,
+    ):
+        """
+        Ensure that all continuous models required for CMA exist in session.models.
+        BMDS models are always included: Power, Hill (CV + NCV)Exp3, Exp5 (CV + NCV + Lognormal)
+        EFSA models are included ONLY if include_extended=True
+        """
+        settings = deepcopy(settings) if settings else {}
+
+        suffix = {
+            DistType.normal: "CV",
+            DistType.normal_ncv: "NCV",
+            DistType.log_normal: "Lognormal",
+        }
+
+        def _add(Model, disttypes):
+            for dt in disttypes:
+                # skip if already present
+                for m in self.models:
+                    if isinstance(m, Model) and m.settings.disttype == dt:
+                        break
+                else:
+                    model_settings = deepcopy(settings)
+                    model_settings["disttype"] = dt
+                    model_settings.setdefault(
+                        "name", f"{Model.bmd_model_class.verbose} ({suffix[dt]})"
+                    )
+                    instance = Model(self.dataset, settings=model_settings)
+                    instance.session = self
+                    self.models.append(instance)
+
+        # BMDS models
+        _add(c3.Power, [DistType.normal, DistType.normal_ncv])
+        if not include_extended:
+            _add(c3.Hill, [DistType.normal, DistType.normal_ncv])
+        _add(
+            c3.ExponentialM3,
+            [DistType.normal, DistType.normal_ncv, DistType.log_normal],
+        )
+        _add(
+            c3.ExponentialM5,
+            [DistType.normal, DistType.normal_ncv, DistType.log_normal],
+        )
+
+        # EFSA models (opt-in only)
+        if include_extended:
+            for Model in (
+                c3.MultiplicativeHill,
+                c3.InverseExponential,
+                c3.Lognormal,
+                c3.ContinuousGamma,
+                c3.LMS,
+            ):
+                _add(
+                    Model,
+                    [DistType.normal, DistType.normal_ncv, DistType.log_normal],
+                )
 
     def __init__(
         self,
@@ -95,24 +252,112 @@ class Session:
         self.models: list[BmdModel] = []
         self.ma_weights: npt.NDArray | None = None
         self.model_average: BmdModelAveraging | None = None
+        self._exclude_additive_hill_from_default_efsa_ma: bool = False
+        self.weight_option: int = 1
         self.recommendation_settings: RecommenderSettings | None = recommendation_settings
         self.recommender: Recommender | None = None
         self.selected: SelectedModel = SelectedModel(self)
 
-    def add_default_bayesian_models(self, settings: dict | None = None, model_average: bool = True):
+    def add_default_bayesian_models(
+        self,
+        settings: dict | None = None,
+        model_average: bool = True,
+        include_extended: bool = False,
+        prior_class: PriorClass | None = None,
+        weight_option: str | int | None = None,
+    ):
         settings = deepcopy(settings) if settings else {}
-        settings["priors"] = PriorClass.bayesian
-        for name in self.model_options[self.dataset.dtype].keys():
-            model_settings = deepcopy(settings)
-            if name in Models.VARIABLE_POLYNOMIAL():
-                model_settings.update(degree=2)
-            self.add_model(name, settings=model_settings)
+        if prior_class is None:
+            if (
+                self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL)
+                and model_average
+            ):
+                # Continuous MA requires LOUD priors
+                prior_class = PriorClass.bayesian_loud
+            else:
+                # Default behavior everywhere else
+                prior_class = PriorClass.bayesian
 
-        if model_average and self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
+        if self.dataset.dtype is constants.Dtype.DICHOTOMOUS and prior_class not in (
+            PriorClass.bayesian,
+            PriorClass.bayesian_loud,
+        ):
+            raise ValueError(
+                "For dichotomous datasets, prior_class must be PriorClass.bayesian or PriorClass.bayesian_loud."
+            )
+
+        settings["priors"] = prior_class
+
+        weight_option_int = 1
+
+        if weight_option is not None:
+            if prior_class != PriorClass.bayesian_loud:
+                raise ValueError("weight_option can only be set for the LOUD Bayesian MA approach")
+
+            weight_map = {
+                "waic": 1,
+                "bridge": 2,
+                "bridge_sampling": 2,
+                "average": 3,
+            }
+
+            if isinstance(weight_option, int):
+                if weight_option not in (1, 2, 3):
+                    raise ValueError(
+                        "weight_option int must be 1 (WAIC), 2 (Bridge), or 3 (average)."
+                    )
+                weight_option_int = weight_option
+
+            elif isinstance(weight_option, str):
+                key = weight_option.strip().lower().replace(" ", "_")
+                if key not in weight_map:
+                    raise ValueError(
+                        "weight_option must be one of: 'waic', 'bridge', or 'average'."
+                    )
+                weight_option_int = weight_map[key]
+
+            else:
+                raise ValueError("weight_option must be str or int.")
+
+        self.weight_option = weight_option_int
+
+        if include_extended and self.dataset.dtype not in (
+            Dtype.CONTINUOUS,
+            Dtype.CONTINUOUS_INDIVIDUAL,
+        ):
+            raise ValueError("include_extended is only supported for continuous datasets.")
+
+        if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
+            self._exclude_additive_hill_from_default_efsa_ma = bool(include_extended)
+            # BMDS CMA defaults (with variance variants)
+            self._ensure_continuous_ma_models(settings=settings, include_extended=include_extended)
+
+        else:
+            for name in self.model_options[self.dataset.dtype].keys():
+                model_settings = deepcopy(settings)
+                if name in Models.VARIABLE_POLYNOMIAL():
+                    model_settings.update(degree=2)
+                self.add_model(name, settings=model_settings)
+
+        if model_average and self.dataset.dtype in (
+            constants.Dtype.DICHOTOMOUS,
+            constants.Dtype.CONTINUOUS,
+            constants.Dtype.CONTINUOUS_INDIVIDUAL,
+        ):
             self.add_model_averaging()
 
     def add_default_models(self, settings: dict | None = None):
-        for name in self.model_options[self.dataset.dtype].keys():
+        if self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
+            prior_class = None if settings is None else settings.get("priors")
+            names = (
+                self.continuous_loud_default_models
+                if prior_class == PriorClass.bayesian_loud
+                else self.continuous_default_models
+            )
+        else:
+            names = self.model_options[self.dataset.dtype].keys()
+
+        for name in names:
             model_settings = deepcopy(settings) if settings is not None else None
             if name in Models.VARIABLE_POLYNOMIAL():
                 min_poly_order = 2
@@ -127,8 +372,20 @@ class Session:
                 self.add_model(name, settings=model_settings)
 
     def add_model(self, name, settings=None):
+        if (
+            self.dataset.dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL)
+            and isinstance(settings, dict)
+            and "disttype" in settings
+            and not settings.get("name")
+        ):
+            settings = deepcopy(settings)
+            suffix = self.continuous_disttype_suffixes.get(settings["disttype"])
+            if suffix:
+                Model = self.model_options[self.dataset.dtype][name]
+                settings["name"] = f"{Model.bmd_model_class.verbose} ({suffix})"
         Model = self.model_options[self.dataset.dtype][name]
         instance = Model(dataset=self.dataset, settings=settings)
+        instance.session = self
         self.models.append(instance)
 
     def set_ma_weights(self, weights: npt.ArrayLike | None = None):
@@ -139,20 +396,130 @@ class Session:
         weights = np.array(weights)
         self.ma_weights = weights / weights.sum()
 
-    def add_model_averaging(self, weights: list[float] | None = None):
+    def add_model_averaging(
+        self,
+        weights: list[float] | None = None,
+        weight_option: str | int | None = None,
+    ):
         """
-        Must be added average other models are added since a shallow copy is taken, and the
+        Must be added after other models are added since a shallow copy is taken, and the
         execution of model averaging assumes all other models were executed.
         """
         if weights or self.ma_weights is None:
             self.set_ma_weights(weights)
-        instance = ma.BmdModelAveragingDichotomous(session=self, models=copy(self.models))
+
+        weight_option_int: int = 1
+
+        if weight_option is not None:
+            weight_map = {
+                "waic": 1,
+                "bridge": 2,
+                "bridge_sampling": 2,
+                "average": 3,
+            }
+
+            if isinstance(weight_option, int):
+                if weight_option not in (1, 2, 3):
+                    raise ValueError(
+                        "weight_option int must be 1 (WAIC), 2 (Bridge), or 3 (average)."
+                    )
+                weight_option_int = weight_option
+
+            elif isinstance(weight_option, str):
+                key = weight_option.strip().lower().replace(" ", "_")
+                if key not in weight_map:
+                    raise ValueError(
+                        "weight_option must be one of: 'waic', 'bridge', or 'average'."
+                    )
+                weight_option_int = weight_map[key]
+
+            else:
+                raise ValueError("weight_option must be str or int.")
+
+            self.weight_option = weight_option_int
+
+        if self.dataset.dtype is constants.Dtype.DICHOTOMOUS:
+            prior_classes = {m.settings.priors.prior_class for m in self.models}
+            allowed = {PriorClass.bayesian, PriorClass.bayesian_loud}
+
+            if len(prior_classes) > 1:
+                raise ValueError(
+                    "Dichotomous model averaging requires all models to use the same prior_class."
+                )
+
+            (prior_class,) = tuple(prior_classes)
+            if prior_class not in allowed:
+                raise ValueError(
+                    f"Dichotomous model averaging requires prior_class in {allowed}; got {prior_class}."
+                )
+            ma_models = copy(self.models)
+            if prior_class is PriorClass.bayesian_loud:
+                ma_models = sorted(ma_models, key=self._dichotomous_loud_ma_sort_key)
+            instance = ma.BmdModelAveragingDichotomous(session=self, models=ma_models)
+
+        elif self.dataset.dtype in (
+            constants.Dtype.CONTINUOUS,
+            constants.Dtype.CONTINUOUS_INDIVIDUAL,
+        ):
+            allowed_bmds = (
+                c3.Power,
+                c3.Hill,
+                c3.ExponentialM3,
+                c3.ExponentialM5,
+            )
+
+            allowed_efsa = (
+                c3.MultiplicativeHill,
+                c3.InverseExponential,
+                c3.Lognormal,
+                c3.ContinuousGamma,
+                c3.LMS,
+            )
+
+            eligible = allowed_bmds + allowed_efsa
+            ma_models = [m for m in self.models if isinstance(m, eligible)]
+
+            if not ma_models:
+                raise ValueError(
+                    "No continuous models eligible for model averaging were found in session.models."
+                    "Call add_default_bayesian_models(...) or add models manually before add_model_averaging()."
+                )
+
+            # Only the default LOUD+EFSA session builder excludes additive Hill.
+            if self._exclude_additive_hill_from_default_efsa_ma:
+                ma_models = [m for m in ma_models if not isinstance(m, c3.Hill)]
+
+            prior_classes = {m.settings.priors.prior_class for m in ma_models}
+            if prior_classes != {PriorClass.bayesian_loud}:
+                raise ValueError("Continuous model averaging requires prior_class='bayesian_loud'.")
+
+            ma_models = sorted(ma_models, key=self._continuous_loud_ma_sort_key)
+            instance = cma.BmdModelAveragingContinuous(session=self, models=ma_models)
+
+        else:
+            raise ValueError(f"Model averaging not supported for dtype: {self.dataset.dtype}")
+
         self.model_average = instance
 
     def execute(self):
+        loud_cma_models = set()
+        if (
+            self.model_average is not None
+            and self.dataset.dtype
+            in (constants.Dtype.CONTINUOUS, constants.Dtype.CONTINUOUS_INDIVIDUAL)
+            and all(
+                model.settings.priors.prior_class is PriorClass.bayesian_loud
+                for model in self.model_average.models
+            )
+        ):
+            loud_cma_models = set(self.model_average.models)
+
         # execute individual models
         for model in self.models:
-            model.execute_job()
+            if model in loud_cma_models:
+                model.prepare_for_loud_model_average()
+            else:
+                model.execute_job()
 
         # execute model average
         if self.model_average is not None:
@@ -202,12 +569,43 @@ class Session:
             return False
         return self.models[0].settings.priors.is_bayesian
 
+    def is_bayesian_loud(self) -> bool:
+        """Determine if models are using the LOUD Bayesian prior."""
+        if not self.is_bayesian():
+            return False
+        return self.models[0].settings.priors.prior_class == PriorClass.bayesian_loud
+
     def dll_version(self) -> str:
         return bmdscore.version()
 
+    def get_model_average_summary_for_model(self, model):
+        if self.model_average is None or not self.model_average.has_results:
+            return None
+
+        try:
+            idx = next(
+                i for i, ma_model in enumerate(self.model_average.models) if ma_model is model
+            )
+        except StopIteration:
+            return None
+
+        return self.model_average.results.model_summary(idx, model.settings.alpha)
+
     # serializing
     # -----------
-    def serialize(self) -> SessionSchema:
+    def serialize(self, include_loud_draws: bool = True) -> SessionSchema:
+        models = []
+        for model in self.models:
+            serialized = model.serialize()
+            if (
+                not include_loud_draws
+                and getattr(model.settings.priors, "prior_class", None) is PriorClass.bayesian_loud
+                and serialized.results is not None
+                and hasattr(serialized.results, "without_loud_draws")
+            ):
+                serialized.results = serialized.results.without_loud_draws()
+            models.append(serialized)
+
         schema = SessionSchema(
             id=self.id,
             name=self.name,
@@ -217,11 +615,13 @@ class Session:
                 dll=self.dll_version(),
             ),
             dataset=self.dataset.serialize(),
-            models=[model.serialize() for model in self.models],
+            models=models,
             selected=self.selected.serialize(),
         )
         if self.model_average is not None:
-            schema.bmds_model_average = self.model_average.serialize(self)
+            schema.bmds_model_average = self.model_average.serialize(
+                self, include_loud_draws=include_loud_draws
+            )
 
         if self.recommender is not None:
             schema.recommender = self.recommender.serialize()
@@ -246,8 +646,8 @@ class Session:
 
     # reporting
     # ---------
-    def to_dict(self):
-        return self.serialize().model_dump(by_alias=True)
+    def to_dict(self, include_loud_draws: bool = True):
+        return self.serialize(include_loud_draws=include_loud_draws).model_dump(by_alias=True)
 
     def session_title(self) -> str:
         if self.id and self.name:
@@ -275,6 +675,15 @@ class Session:
         dataset_dict = {}
         self.dataset.update_record(dataset_dict)
         extras = extras or {}
+        ma_weight_lookup = {}
+        if self.model_average:
+            ma_weight_lookup = {
+                id(model): (
+                    self.model_average.results.priors[idx],
+                    self.model_average.results.posteriors[idx],
+                )
+                for idx, model in enumerate(self.model_average.models)
+            }
 
         # add a row for each model
         models = []
@@ -291,8 +700,9 @@ class Session:
                 self.recommender.results.update_record(d, bmds_model_index)
                 self.selected.update_record(d, bmds_model_index)
 
-            if self.model_average:
-                self.model_average.results.update_record_weights(d, bmds_model_index)
+            if self.model_average and id(model) in ma_weight_lookup:
+                prior, posterior = ma_weight_lookup[id(model)]
+                d.update(model_prior=prior, model_posterior=posterior)
 
             models.append(d)
 
@@ -324,6 +734,10 @@ class Session:
         all_models: bool = False,
         bmd_cdf_table: bool = False,
         session_inputs_table: bool = False,
+        parameter_tables: bool = True,
+        parameter_visualizations: bool = False,
+        compressed: bool = True,
+        skip_loud_diagnostics: bool | Callable[[Report], None] = False,
     ):
         """Return a Document object with the session executed
 
@@ -337,12 +751,27 @@ class Session:
             session_inputs_table (bool, default False): Write an inputs table for a session,
                 assuming a single model's input settings are representative of all models in a
                 session, which may not always be true
+            parameter_tables (bool, default True): Include grouped LOUD parameter tables
+            parameter_visualizations (bool, default False): Include grouped LOUD parameter
+                visualization figures in the report
+            compressed (bool, default True): Group LOUD parameter tables and visualizations by
+                model family. If False, separate tables and visualizations by individual model.
+            skip_loud_diagnostics (bool, default = False): Skip rendering the LOUD model-averaging
+            diagnostics sectio (posterior/overlay plots, BMD summary, parameter tables).
+            Set True when the caller renders this section separately - for example, when the
+            session's LOUD draws were stripped at serialization time and pre-rendered
+            artifacts must be substituted instead.
 
         Returns:
             A python docx.Document object with content added.
         """
         if report is None:
             report = Report.build_default()
+
+        def add_paragraph_with_space_before(text: str = "", style: str | None = None):
+            paragraph = report.document.add_paragraph(text, style)
+            paragraph.paragraph_format.space_before = Pt(6)
+            return paragraph
 
         h1 = report.styles.get_header_style(header_level)
         h2 = report.styles.get_header_style(header_level + 1)
@@ -362,14 +791,80 @@ class Session:
             write_inputs_table(report, self)
 
         if self.is_bayesian():
+            if self.is_bayesian_loud():
+                report.document.add_paragraph("Markov Chain Monte Carlo Options", h2)
+                write_MCMC_table(report, self)
+
             report.document.add_paragraph("Bayesian Summary", h2)
             write_bayesian_table(report, self)
             plot_dr(report, self)
+
+            # LOUD-specific ArviZ plots
+
+            if self.is_bayesian_loud() and self.model_average:
+                if callable(skip_loud_diagnostics):
+                    skip_loud_diagnostics(report)
+                elif not skip_loud_diagnostics:
+                    add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
+                    add_paragraph_with_space_before(
+                        "The following diagnostics summarize the model-averaged posterior "
+                        "distribution of the benchmark dose (BMD) under the LOUD framework."
+                    )
+
+                    figs = get_model_average_figures(
+                        self,
+                        compressed=compressed,
+                        parameter_visualizations=parameter_visualizations,
+                        parameter_tables=parameter_tables,
+                    )
+
+                    add_paragraph_with_space_before("Posterior distribution of model-averaged BMD")
+                    add_paragraph_with_space_before(
+                        add_mpl_figure(report.document, figs["posterior"], 6)
+                    )
+                    plt.close(figs["posterior"])
+
+                    add_paragraph_with_space_before(
+                        "Overlay of model-specific and model-averaged BMD distributions"
+                    )
+                    add_paragraph_with_space_before(
+                        add_mpl_figure(report.document, figs["overlay"], 6)
+                    )
+                    plt.close(figs["overlay"])
+
+                    add_paragraph_with_space_before(
+                        "Summary statistics for BMD and model-averaged BMD"
+                    )
+                    df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
+
+                    for group in figs["parameter_groups"]:
+                        group_figure = group.get("trace_figure")
+
+                        if parameter_tables:
+                            add_paragraph_with_space_before(f"{group['name']} model parameters")
+                            df_to_table(
+                                report,
+                                group["summary"].fillna(""),
+                                formatter=parameter_summary_formatter,
+                            )
+
+                        if parameter_visualizations and group_figure is not None:
+                            add_paragraph_with_space_before(
+                                f"{group['name']} model parameter visualizations"
+                            )
+                            add_paragraph_with_space_before(
+                                add_mpl_figure(report.document, group_figure, 7.0)
+                            )
+
+                        if group_figure is not None:
+                            plt.close(group_figure)
+
             if self.model_average and bmd_cdf_table:
                 report.document.add_paragraph("CDF:", report.styles.tbl_body)
-                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel())
+                cdf = self.model_average.cdf()
+                fig = self.model_average.cdf_plot(xlabel=self.dataset.get_xlabel(), cdf=cdf)
                 report.document.add_paragraph(add_mpl_figure(report.document, fig, 6))
-                df_to_table(report, self.model_average.cdf())
+                df_to_table(report, cdf)
             if all_models:
                 report.document.add_paragraph("Individual Model Results", h2)
                 write_models(report, self, bmd_cdf_table, header_level + 2)
@@ -420,10 +915,13 @@ class Session:
         else:
             color_cycle = cycle(["#ababab"])
             line_cycle = cycle(["solid"])
-        for i, model in enumerate(self.models):
+        plotted_models = 0
+        for model in self.models:
+            if not model.has_results:
+                continue
             if colorize:
                 label = model.name()
-            elif i == 0:
+            elif plotted_models == 0:
                 label = "Individual Model"
             else:
                 label = None
@@ -436,6 +934,7 @@ class Session:
                 zorder=100,
                 lw=2,
             )
+            plotted_models += 1
         if has_ma:
             ma = self.model_average
             ax.plot(

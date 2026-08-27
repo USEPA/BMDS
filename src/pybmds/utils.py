@@ -24,6 +24,8 @@ def ff(value) -> str:
     """Float formatter for floats and float-like values"""
     if isinstance(value, str):
         return value
+    elif value == BMDS_BLANK_VALUE or not math.isfinite(value):
+        return "-"
     elif abs(value) > 1e6:
         return f"{value:.1E}"
     elif value > 0 and value < 0.001:

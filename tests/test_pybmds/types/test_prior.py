@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pybmds.constants import DistType, PriorClass, PriorDistribution
-from pybmds.models.continuous import Polynomial
+from pybmds.models.continuous import ExponentialM3, Polynomial
 from pybmds.models.dichotomous import Multistage
 from pybmds.types.priors import ModelPriors, Prior
 
@@ -42,6 +42,14 @@ def mock_nested_dichotomous_prior():
 
 
 class TestModelPriors:
+    def test_report_table_and_non_loud_defaults_noop(self, mock_prior):
+        table = mock_prior.report_tbl()
+        assert "name" in table
+        assert "a" in table
+        original = deepcopy(mock_prior)
+        mock_prior.apply_continuous_loud_defaults(object(), DistType.normal)
+        assert mock_prior == original
+
     def test_get_prior(self, mock_prior):
         assert mock_prior.get_prior("a").name == "a"
         assert mock_prior.get_prior("d").name == "d"
@@ -202,6 +210,70 @@ class TestModelPriors:
         initial = m.settings.priors.model_dump_json()
         assert ModelPriors.model_validate_json(initial).model_dump_json() == initial
 
+    def test_loud_continuous_defaults_are_dataset_based(self, cdataset):
+        # Force LOUD priors and a known disttype so we get Var0 only (CV)
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        priors = m.settings.priors
+        m0 = priors.get_prior("m0")
+        m1 = priors.get_prior("m1")
+        v0 = priors.get_prior("Var0")
+
+        # m0/m1 should be StudentT for LOUD
+        assert m0.type is PriorDistribution.Student_t
+        assert m1.type is PriorDistribution.Student_t
+
+        # Var0 should be Gamma for LOUD CV
+        assert v0.type is PriorDistribution.Gamma
+
+        # sanity: df should be > 0, scales should be > 0
+        assert m0.initial_value > 0  # df
+        assert m1.initial_value > 0  # df
+        assert m0.min_value > 0  # scale
+        assert m1.min_value > 0  # scale
+        assert v0.initial_value > 0  # shape
+        assert v0.stdev > 0  # scale
+
+    def test_loud_override_semantic_params(self, cdataset):
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+        priors = m.settings.priors
+
+        # Override StudentT using df/loc/scale semantics
+        priors.update("m0", df=7, loc=123.0, scale=4.5)
+        p = priors.get_prior("m0")
+        assert p.type is PriorDistribution.Student_t
+        assert p.initial_value == 7  # df
+        assert p.stdev == 123.0  # loc
+        assert p.min_value == 4.5  # scale
+
+        # Override InvGamma using shape/scale semantics
+        priors.update("Var0", shape=2.0, scale=10.0)
+        v = priors.get_prior("Var0")
+        assert v.type is PriorDistribution.Gamma
+        assert v.initial_value == 2.0  # shape
+        assert v.stdev == 10.0  # scale
+
+    def test_loud_ncv_has_var0_and_var1(self, cdataset):
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal_ncv),
+        )
+        priors = m.settings.priors
+
+        v0 = priors.get_prior("Var0")
+        v1 = priors.get_prior("Var1")
+
+        assert v0.type is PriorDistribution.Gamma
+        assert v1.type is PriorDistribution.Gamma
+        assert v0.initial_value > 0 and v0.stdev > 0
+        assert v1.initial_value > 0 and v1.stdev > 0
+
     def test_nested_dichotomous_update(self, mock_nested_dichotomous_prior):
         prior = mock_nested_dichotomous_prior
         prior.update("phi1", min_value=-10, max_value=10)
@@ -222,3 +294,73 @@ class TestModelPriors:
             priors.update("a", **settings)
             with pytest.warns(UserWarning, match=message):
                 priors.priors_list()
+
+    def test_loud_priors_list_includes_variance(self, cidataset):
+        m = ExponentialM3(
+            dataset=cidataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        names = m.get_param_names()
+
+        # LOUD priors list is numeric rows; should align 1:1 with names
+        plist = m.get_priors_list()
+
+        assert "a" in names
+        assert "b" in names
+        assert "d" in names
+        assert "alpha" in names
+
+        assert len(plist) == len(names)
+
+    def test_LOUD_prior_table(self, cidataset):
+        # Test LOUD prior table is constructed correctly and that the dataset-informed defaults produce the expected values
+        m = ExponentialM3(
+            dataset=cidataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        mp = m.settings.priors
+        assert mp.prior_class is PriorClass.bayesian_loud
+
+        table = m.priors_tbl()
+
+        ## Verify table structure and content for LOUD priors with dataset-informed defaults
+        # Verify Student-t priors (m0, m1)
+        assert "Student_t" in table
+        assert "m0" in table
+        assert "m1" in table
+        assert "df=" in table
+        assert "loc=" in table
+        assert "scale=" in table
+
+        # Verify Gamma variance prior
+        assert "Gamma" in table
+        assert "Var" in table
+        assert "shape=" in table
+        assert "min=" in table
+        assert "max=" in table
+
+        # Verify that the expected values are in the table
+        assert "df=7" in table
+        assert "loc=9.9264" in table
+        assert "scale=0.332492" in table
+
+        expected = dedent(
+            """
+        ╒═════════════╤════════════════╤══════════════════════════════════════════════════════════╕
+        │ Parameter   │ Distribution   │ Definition                                               │
+        ╞═════════════╪════════════════╪══════════════════════════════════════════════════════════╡
+        │ m0          │ Student_t      │ df=7.0, loc=9.926400000000001, scale=0.33249228831014155 │
+        │ m1          │ Student_t      │ df=5.0, loc=10.85275, scale=0.3087445899660966           │
+        │ d           │ Lognormal      │ initial=0.47, stdev=0.421, min=0.0, max=18.0             │
+        │ Var         │ Gamma          │ shape=6.5, scale=4.550049882777775, min=0.0, max=10000.0 │
+        ╘═════════════╧════════════════╧══════════════════════════════════════════════════════════╛
+        """
+        )
+        expected = expected.replace("m0", "a").replace("m1", "b").replace("Var", "alpha")
+
+        assert "│ m0" in table
+        assert "│ m1" in table
+        assert "│ d" in table
+        assert "│ Var" in table

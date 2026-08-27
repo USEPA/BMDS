@@ -3,12 +3,12 @@ from enum import IntEnum
 from typing import Annotated, NamedTuple, Self
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .. import bmdscore, constants
-from ..constants import BOOL_YES_NO, ContinuousModelChoices, Dtype
+from ..constants import BMDS_BLANK_VALUE, BOOL_YES_NO, ContinuousModelChoices, Dtype
 from ..datasets.continuous import ContinuousDatasets
-from ..utils import multi_lstrip, pretty_table, unique_items
+from ..utils import ff, multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     CONTINUOUS_TEST_FOOTNOTES,
@@ -19,6 +19,28 @@ from .common import (
     residual_of_interest,
 )
 from .priors import ModelPriors, PriorClass, PriorDistribution
+
+
+def _display_blank_value(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+    return value
+
+
+def _display_loud_summary_value(value):
+    value = _display_blank_value(value)
+    if isinstance(value, float):
+        return ff(value)
+    return value
+
+
+def _display_loud_loglikelihood(value):
+    value = _display_blank_value(value)
+    if isinstance(value, float):
+        return ff(-abs(value))
+    return value
 
 
 class ContinuousRiskType(IntEnum):
@@ -50,13 +72,30 @@ class ContinuousModelSettings(BaseModel):
     tail_prob: Annotated[float, Field(gt=0, lt=1)] = 0.01
     disttype: constants.DistType = constants.DistType.normal
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
-    samples: Annotated[int, Field(ge=0, le=1000)] = 100
+    samples: Annotated[int, Field(ge=0, le=100000)] = 50000
+    burnin: Annotated[int, Field(ge=5, le=20000)] = 5000
+    n_chains: Annotated[int, Field(ge=1, le=4)] = 1
+    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] = 0
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # polynomial only
-    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
     priors: PriorClass | ModelPriors | None = None  # if None; default used
+    loud_priors_tbl: str | None = None
     count_all_parameters_on_boundary: bool = False
+    verbose_name: str | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_loud_mcmc_settings(self) -> Self:
+        prior_class = (
+            self.priors.prior_class if isinstance(self.priors, ModelPriors) else self.priors
+        )
+        if prior_class is PriorClass.bayesian_loud:
+            total_samples = self.samples * self.n_chains
+            if total_samples > 100_000:
+                raise ValueError("LOUD total samples across all chains cannot exceed 100000.")
+            if self.burnin > 0.2 * self.samples:
+                raise ValueError("LOUD burnin cannot exceed 20% of samples per chain.")
+        return self
 
     @property
     def bmr_text(self) -> str:
@@ -132,6 +171,11 @@ MODEL_ENUM_MAP = {
     ContinuousModelChoices.polynomial.value.id: bmdscore.cont_model.polynomial,
     ContinuousModelChoices.exp_m3.value.id: bmdscore.cont_model.exp_3,
     ContinuousModelChoices.exp_m5.value.id: bmdscore.cont_model.exp_5,
+    ContinuousModelChoices.mult_hill.value.id: bmdscore.cont_model.l_hill_efsa,  # models only included using LOUD priors
+    ContinuousModelChoices.inverse_exp.value.id: bmdscore.cont_model.l_invexp_efsa,
+    ContinuousModelChoices.lognormal.value.id: bmdscore.cont_model.l_lognormal_efsa,
+    ContinuousModelChoices.cont_gamma.value.id: bmdscore.cont_model.l_gamma_efsa,
+    ContinuousModelChoices.lms.value.id: bmdscore.cont_model.l_lms_efsa,
 }
 
 
@@ -147,6 +191,8 @@ class ContinuousAnalysis(BaseModel):
     alpha: float
     samples: int
     burnin: int
+    n_chains: int
+    seed: int | None
     degree: int
     count_all_parameters_on_boundary: bool
 
@@ -184,6 +230,12 @@ class ContinuousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.disttype = self.disttype.value
         analysis.alpha = self.alpha
+        analysis.samples = self.samples
+        analysis.burnin = self.burnin
+        if hasattr(analysis, "chains"):
+            analysis.chains = self.n_chains
+        if self.seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = self.seed
         analysis.tail_prob = self.tail_prob
         analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
 
@@ -247,22 +299,34 @@ class ContinuousModelResult(BaseModel):
     total_df: float
     bmd_dist: NumpyFloatArray
 
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"bmd_dist": np.empty((2, 0), dtype=float)})
+
     @classmethod
     def from_model(cls, model) -> Self:
         result = model.structs.result
         summary = result.bmdsRes
-        arr = np.array(result.bmd_dist, dtype=float).reshape(2, constants.N_BMD_DIST)
-        arr = arr[:, np.isfinite(arr[0, :])]
-        arr = arr[:, arr[0, :] > 0]
+
+        raw_bmd_dist = np.asarray(result.bmd_dist, dtype=float)
+        if raw_bmd_dist.size == 2 * constants.N_BMD_DIST:
+            arr = raw_bmd_dist.reshape(2, constants.N_BMD_DIST)
+            arr = arr[:, np.isfinite(arr[0, :])]
+            arr = arr[:, arr[0, :] > 0]
+        else:
+            arr = np.empty((2, 0), dtype=float)
+
+        ll = getattr(getattr(result, "aod", None), "LL", None)
+        ll = list(ll) if ll is not None else []
+        loglik = ll[3] if len(ll) >= 4 else (ll[-1] if len(ll) else constants.BMDS_BLANK_VALUE)
 
         return ContinuousModelResult(
             dist=result.dist,
-            loglikelihood=result.aod.LL[3],
-            aic=summary.AIC,
-            bic_equiv=summary.BIC_equiv,
-            chisq=summary.chisq,
-            model_df=result.model_df,
-            total_df=result.total_df,
+            loglikelihood=loglik,
+            aic=getattr(summary, "AIC", constants.BMDS_BLANK_VALUE),
+            bic_equiv=getattr(summary, "BIC_equiv", constants.BMDS_BLANK_VALUE),
+            chisq=getattr(summary, "chisq", constants.BMDS_BLANK_VALUE),
+            model_df=getattr(result, "model_df", constants.BMDS_BLANK_VALUE),
+            total_df=getattr(result, "total_df", constants.BMDS_BLANK_VALUE),
             bmd_dist=arr,
         )
 
@@ -291,6 +355,23 @@ class ContinuousParameters(BaseModel):
         result = model.structs.result
         summary = result.bmdsRes
         param_names = model.get_param_names()
+
+        disttype = model.settings.disttype
+        renamed = []
+        for name in param_names:
+            if name == "Var0" and disttype in {
+                constants.DistType.normal,
+                constants.DistType.normal_ncv,
+            }:
+                renamed.append("alpha")
+            elif name == "Var0" and disttype == constants.DistType.log_normal:
+                renamed.append("log-alpha")
+            elif name == "Var1" and disttype == constants.DistType.normal_ncv:
+                renamed.append("rho")
+            else:
+                renamed.append(name)
+
+        param_names = renamed
         priors = cls.get_priors(model)
 
         cov_n = result.nparms
@@ -298,26 +379,87 @@ class ContinuousParameters(BaseModel):
         slice = None
 
         # DLL deletes the c parameter and shifts items down; correct in outputs here
-        if model.bmd_model_class.id == ContinuousModelChoices.exp_m3.value.id:
-            # do the same for parameter names for consistency
-            c_index = param_names.index("c")
-            param_names.pop(c_index)
+        if model.settings.priors.prior_class is not PriorClass.bayesian_loud:
+            if model.bmd_model_class.id == ContinuousModelChoices.exp_m3.value.id:
+                # do the same for parameter names for consistency
+                c_index = param_names.index("c")
+                param_names.pop(c_index)
 
-            # shift priors as well
-            priors = priors.T
-            priors[c_index:-1] = priors[c_index + 1 :]
-            priors = priors[:-1].T
+                # shift priors as well
+                priors = priors.T
+                priors[c_index:-1] = priors[c_index + 1 :]
+                priors = priors[:-1].T
 
-            # remove final element for some params (stdErr, lowerConf, upperConf)
-            slice = -1
+                # remove final element for some params (stdErr, lowerConf, upperConf)
+                slice = -1
+
+        bounded = np.asarray(summary.bounded, dtype=float)
+        if slice is not None:
+            bounded = bounded[:slice]
 
         return cls(
             names=param_names,
             values=result.parms,
-            bounded=summary.bounded,
+            bounded=bounded,
             se=summary.stdErr[:slice],
             lower_ci=summary.lowerConf[:slice],
             upper_ci=summary.upperConf[:slice],
+            cov=cov,
+            prior_type=priors[0],
+            prior_initial_value=priors[1],
+            prior_stdev=priors[2],
+            prior_min_value=priors[3],
+            prior_max_value=priors[4],
+        )
+
+    @classmethod
+    def _median_draw(cls, draws: np.ndarray) -> np.ndarray:
+        median = np.median(draws, axis=0)
+        q25, q75 = np.quantile(draws, [0.25, 0.75], axis=0)
+        scale = q75 - q25
+        scale[scale <= 0] = np.std(draws, axis=0, ddof=0)[scale <= 0]
+        scale[scale <= 0] = 1.0
+        distances = np.linalg.norm((draws - median) / scale, axis=1)
+        return draws[int(np.argmin(distances))]
+
+    @classmethod
+    def from_loud_draws(cls, model, parm_draws: np.ndarray) -> Self:
+        draws = np.asarray(parm_draws, dtype=float)
+        if draws.ndim == 1:
+            draws = draws.reshape(-1, 1)
+        if draws.ndim != 2:
+            raise ValueError(f"Unsupported LOUD parameter draw shape: {draws.shape}")
+
+        draws = draws[np.isfinite(draws).all(axis=1)]
+        param_names = model.get_param_names()
+        priors = cls.get_priors(model)
+
+        n_params = min(draws.shape[1], len(param_names), priors.shape[1])
+        if n_params == 0:
+            raise ValueError("LOUD parameter draws are empty")
+
+        draws = draws[:, :n_params]
+        param_names = param_names[:n_params]
+        priors = priors[:, :n_params]
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            values = cls._median_draw(draws)
+            se = np.std(draws, axis=0, ddof=0)
+            lower_ci = np.quantile(draws, 0.025, axis=0)
+            upper_ci = np.quantile(draws, 0.975, axis=0)
+            cov = np.cov(draws, rowvar=False)
+        cov = np.atleast_2d(cov)
+        if cov.shape != (n_params, n_params):
+            cov = np.eye(n_params, dtype=float)
+
+        return cls(
+            names=param_names,
+            values=values,
+            bounded=np.zeros(n_params, dtype=int),
+            se=se,
+            lower_ci=lower_ci,
+            upper_ci=upper_ci,
             cov=cov,
             prior_type=priors[0],
             prior_initial_value=priors[1],
@@ -387,21 +529,36 @@ class ContinuousGof(BaseModel):
 
     @classmethod
     def from_model(cls, model) -> Self:
-        gof = model.structs.result.gof
         summary = model.structs.result.bmdsRes
-        return ContinuousGof(
-            dose=np.array(gof.dose),
-            size=np.array(gof.size),
-            est_mean=np.array(gof.estMean),
-            calc_mean=np.array(gof.calcMean),
-            obs_mean=np.array(gof.obsMean),
-            est_sd=np.array(gof.estSD),
-            calc_sd=np.array(gof.calcSD),
-            obs_sd=np.array(gof.obsSD),
-            residual=np.array(gof.res),
-            eb_lower=np.array(gof.ebLower),
-            eb_upper=np.array(gof.ebUpper),
-            roi=residual_of_interest(summary.BMD, model.dataset.doses, np.array(gof.res).tolist()),
+        return cls.from_cpp(model.structs.result.gof, summary.BMD, model.dataset.doses)
+
+    @classmethod
+    def from_cpp(cls, gof, bmd: float, doses: list[float]) -> Self:
+        dose = np.asarray(getattr(gof, "dose", []), dtype=float)
+        size = np.asarray(getattr(gof, "size", []), dtype=float)
+        est_mean = np.asarray(getattr(gof, "estMean", []), dtype=float)
+        calc_mean = np.asarray(getattr(gof, "calcMean", []), dtype=float)
+        obs_mean = np.asarray(getattr(gof, "obsMean", []), dtype=float)
+        est_sd = np.asarray(getattr(gof, "estSD", []), dtype=float)
+        calc_sd = np.asarray(getattr(gof, "calcSD", []), dtype=float)
+        obs_sd = np.asarray(getattr(gof, "obsSD", []), dtype=float)
+        residual = np.asarray(getattr(gof, "res", []), dtype=float)
+        eb_lower = np.asarray(getattr(gof, "ebLower", []), dtype=float)
+        eb_upper = np.asarray(getattr(gof, "ebUpper", []), dtype=float)
+
+        return cls(
+            dose=dose,
+            size=size,
+            est_mean=est_mean,
+            calc_mean=calc_mean,
+            obs_mean=obs_mean,
+            est_sd=est_sd,
+            calc_sd=calc_sd,
+            obs_sd=obs_sd,
+            residual=residual,
+            eb_lower=eb_lower,
+            eb_upper=eb_upper,
+            roi=residual_of_interest(bmd, doses, residual.tolist()),
         )
 
     def get_tbl_data_means(self, disttype: constants.DistType):
@@ -466,6 +623,8 @@ class ContinuousGof(BaseModel):
     def tbl(self, disttype: constants.DistType) -> str:
         mean_headers, mean_data = self.get_tbl_data_means(disttype)
         sd_headers, sd_data = self.get_tbl_data_sds(disttype)
+        mean_data = [tuple(_display_blank_value(value) for value in row) for row in mean_data]
+        sd_data = [tuple(_display_blank_value(value) for value in row) for row in sd_data]
         return "\n".join(
             [
                 pretty_table(mean_data, mean_headers.split("|")),
@@ -475,6 +634,9 @@ class ContinuousGof(BaseModel):
 
     def n(self) -> int:
         return self.dose.size
+
+    def residual_value(self, index: int) -> float:
+        return self.residual[index] if index < len(self.residual) else BMDS_BLANK_VALUE
 
 
 class ContinuousDeviance(BaseModel):
@@ -512,11 +674,15 @@ class ContinuousTests(BaseModel):
     @classmethod
     def from_model(cls, model) -> Self:
         tests = model.structs.result.aod.TOI
+        ll_ratios = list(getattr(tests, "llRatio", []) or [])
+        dfs = list(getattr(tests, "DF", []) or [])
+        p_values = list(getattr(tests, "pVal", []) or [])
+
         return cls(
             names=["Test 1", "Test 2", "Test 3", "Test 4"],
-            ll_ratios=tests.llRatio,
-            dfs=tests.DF,
-            p_values=tests.pVal,
+            ll_ratios=ll_ratios,
+            dfs=dfs,
+            p_values=p_values,
         )
 
     def tbl(self) -> str:
@@ -527,6 +693,12 @@ class ContinuousTests(BaseModel):
         ):
             data.append([name, ll_ratio, df, p_value])
         return pretty_table(data, headers)
+
+    def p_value(self, index: int) -> float:
+        return self.p_values[index] if index < len(self.p_values) else BMDS_BLANK_VALUE
+
+    def df(self, index: int) -> float:
+        return self.dfs[index] if index < len(self.dfs) else BMDS_BLANK_VALUE
 
 
 class ContinuousPlotting(BaseModel):
@@ -568,20 +740,51 @@ class ContinuousResult(BaseModel):
     deviance: ContinuousDeviance
     tests: ContinuousTests
     plotting: ContinuousPlotting
+    summary_p_value: float | None = None
+    summary_waic: float | None = None
+
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"fit": self.fit.without_loud_draws()})
 
     def tbl(self) -> str:
+        if self.summary_p_value is not None:
+            data = [
+                ["BMD", _display_loud_summary_value(self.bmd)],
+                ["BMDL", _display_loud_summary_value(self.bmdl)],
+                ["BMDU", _display_loud_summary_value(self.bmdu)],
+                ["Log-Likelihood", _display_loud_loglikelihood(self.fit.loglikelihood)],
+                ["P-Value", _display_loud_summary_value(self.summary_p_value)],
+            ]
+            if self.summary_waic is not None:
+                data.append(["WAIC", _display_loud_summary_value(self.summary_waic)])
+            return pretty_table(data, "")
+
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],
             ["BMDU", self.bmdu],
             ["AIC", self.fit.aic],
             ["Log-Likelihood", self.fit.loglikelihood],
-            ["P-Value", self.tests.p_values[3]],
-            ["Model d.f.", self.tests.dfs[3]],
+            ["P-Value", self.tests.p_value(3)],
+            ["Model d.f.", self.tests.df(3)],
         ]
         return pretty_table(data, "")
 
     def text(self, dataset: ContinuousDatasets, settings: ContinuousModelSettings) -> str:
+        if settings.priors.prior_class is PriorClass.bayesian_loud:
+            return multi_lstrip(
+                f"""
+            Modeling Summary:
+            {self.tbl()}
+
+            Model Parameters:
+            {self.parameters.tbl()}
+
+            Goodness of Fit:
+            {self.gof.tbl(disttype=settings.disttype)}
+            """
+            )
+
         return multi_lstrip(
             f"""
         Modeling Summary:
@@ -627,13 +830,13 @@ class ContinuousResult(BaseModel):
             bmdu=self.bmdu,
             aic=self.fit.aic,
             loglikelihood=self.fit.loglikelihood,
-            p_value1=self.tests.p_values[0],
-            p_value2=self.tests.p_values[1],
-            p_value3=self.tests.p_values[2],
-            p_value4=self.tests.p_values[3],
-            model_dof=self.tests.dfs[3],
+            p_value1=self.tests.p_value(0),
+            p_value2=self.tests.p_value(1),
+            p_value3=self.tests.p_value(2),
+            p_value4=self.tests.p_value(3),
+            model_dof=self.tests.df(3),
             residual_of_interest=self.gof.roi,
-            residual_at_lowest_dose=self.gof.residual[0],
+            residual_at_lowest_dose=self.gof.residual_value(0),
         )
 
     def get_parameter(self, parameter: str) -> float:
@@ -648,13 +851,13 @@ class ContinuousResult(BaseModel):
             case "aic":
                 return self.fit.aic
             case "dof":
-                return self.tests.dfs[3]
+                return self.tests.df(3)
             case "pvalue":
-                return self.tests.p_values[3]
+                return self.tests.p_value(3)
             case "roi":
                 return self.gof.roi
             case "roi_control":
-                return self.gof.residual[0]
+                return self.gof.residual_value(0)
             case "n_params":
                 return len(self.parameters.values)
             case _:  # pragma: no cover

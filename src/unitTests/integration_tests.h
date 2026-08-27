@@ -5,6 +5,7 @@
 void runPythonDichoAnalysis();
 void runPythonContAnalysis();
 void runPythonMultitumorAnalysis();
+void runDichoLoudAnalysis();
 int run_all_integrationTests();
 
 std::vector<double> getMultitumorPrior(int degree, int prior_cols);
@@ -32,4 +33,10 @@ void createMultitumorAnalysis(
     std::vector<std::vector<double>> N, std::vector<std::vector<double>> Y,
     std::vector<int> dataSize, std::vector<int> degree, python_multitumor_analysis *anal,
     python_multitumor_result *res
+);
+void createDichoLoudAnalysisStructs(
+    std::vector<int> &models, int BMD_type, double BMR, double alpha, int weightOption, int iter,
+    int burnin, int chains, long seed, std::vector<double> &D, std::vector<double> &Y,
+    std::vector<double> &N, python_dichotomousMA_analysis *ma_info,
+    python_dichotomousMA_result *ma_res
 );

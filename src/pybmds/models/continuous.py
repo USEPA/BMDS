@@ -1,16 +1,48 @@
 import numpy as np
 from pydantic import Field
+from scipy.stats import gamma, norm
 
 from ..constants import ContinuousModel, ContinuousModelChoices, DistType, PriorClass
 from ..datasets.continuous import ContinuousDatasets
 from ..exceptions import ConfigurationException
 from ..types.continuous import ContinuousAnalysis, ContinuousModelSettings, ContinuousResult
 from ..types.priors import ModelPriors, get_continuous_prior
+from ..utils import multi_lstrip
 from .base import BmdModel, BmdModelSchema, InputModelSettings
 
 
 class BmdModelContinuous(BmdModel):
     bmd_model_class: ContinuousModel
+
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+
+        session = getattr(self, "session", None)
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and session is not None:
+            summary = session.get_model_average_summary_for_model(self)
+            if summary is not None:
+                return multi_lstrip(
+                    f"""
+                Modeling Summary:
+                {self.results.tbl()}
+
+                Model Parameters:
+                {self.results.parameters.tbl()}
+
+                Goodness of Fit:
+                {self.results.gof.tbl(disttype=self.settings.disttype)}
+
+                LOUD Model-Average Weights:
+                Prior Weight: {summary.prior}
+                Posterior Weight: {summary.posterior}
+
+                Model-specific BMD values shown above are taken from the LOUD
+                model averaging result for this model.
+                """
+                )
+
+        return super().results_text()
 
     def get_model_settings(
         self,
@@ -39,8 +71,38 @@ class BmdModelContinuous(BmdModel):
                 if isinstance(model_settings.priors, PriorClass)
                 else self.get_default_prior_class()
             )
+            if prior_class in (
+                PriorClass.frequentist_restricted,
+                PriorClass.frequentist_unrestricted,
+                PriorClass.bayesian,
+            ):
+                bayes_only_models = {
+                    ContinuousModelChoices.mult_hill.value.id,
+                    ContinuousModelChoices.inverse_exp.value.id,
+                    ContinuousModelChoices.lognormal.value.id,
+                    ContinuousModelChoices.cont_gamma.value.id,
+                    ContinuousModelChoices.lms.value.id,
+                }
+                if self.bmd_model_class.id in bayes_only_models:
+                    raise ConfigurationException(
+                        "This model cannot be fit using maximum likelihood estimation (frequentist priors)."
+                    )
             model_settings.priors = get_continuous_prior(
-                self.bmd_model_class, prior_class=prior_class
+                self.bmd_model_class,
+                prior_class=prior_class,
+                dataset=dataset,
+                dist_type=model_settings.disttype,
+            )
+        if model_settings.priors.prior_class is PriorClass.bayesian_loud:
+            if model_settings.samples is None:
+                model_settings.samples = 500
+            if model_settings.burnin is None:
+                model_settings.burnin = 50
+            model_settings = ContinuousModelSettings.model_validate(
+                {
+                    field: getattr(model_settings, field)
+                    for field in ContinuousModelSettings.model_fields
+                }
             )
 
         return model_settings
@@ -65,17 +127,29 @@ class BmdModelContinuous(BmdModel):
             disttype=self.settings.disttype,
             samples=self.settings.samples,
             burnin=self.settings.burnin,
+            n_chains=self.settings.n_chains,
+            seed=self.settings.seed,
             degree=self.settings.degree,
             count_all_parameters_on_boundary=self.settings.count_all_parameters_on_boundary,
         )
 
     def execute(self) -> ContinuousResult:
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and (
+            self.session is None or self.session.model_average is None
+        ):
+            return self._execute_standalone_loud()
+
         inputs = self._build_inputs()
         structs = inputs.to_cpp()
         self.structs = structs
         self.structs.execute()
         self.results = ContinuousResult.from_model(self)
         return self.results
+
+    def prepare_for_loud_model_average(self):
+        inputs = self._build_inputs()
+        self.structs = inputs.to_cpp()
+        self.results = None
 
     def get_default_model_degree(self, dataset) -> int:
         return 0
@@ -92,18 +166,26 @@ class BmdModelContinuous(BmdModel):
         )
 
     def get_param_names(self) -> list[str]:
+        mp = self.settings.priors
+        if isinstance(mp, ModelPriors) and mp.prior_class is PriorClass.bayesian_loud:
+            names = list(self.bmd_model_class.params)
+            if self.__class__.__name__ == "ExponentialM3":
+                names = [n for n in names if n != "c"]
+
+            return names + self.get_variance_param_names()
         names = list(self.bmd_model_class.params)
         names.extend(self.get_variance_param_names())
         return names
 
     def get_variance_param_names(self):
         if self.settings.disttype == DistType.normal_ncv:
-            return list(self.bmd_model_class.variance_params)
-        else:
-            return [self.bmd_model_class.variance_params[1]]
+            return ["rho", "alpha"]
+        if self.settings.disttype == DistType.log_normal:
+            return ["log-alpha"]
+        return ["alpha"]
 
     def get_gof_pvalue(self) -> float:
-        return self.results.tests.p_values[3]
+        return self.results.tests.p_value(3)
 
     def get_priors_list(self) -> list[list]:
         degree = self.settings.degree if self.degree_required else None
@@ -298,11 +380,161 @@ class ExponentialM5(BmdModelContinuous):
         return a * (c - (c - 1.0) * np.exp(-1.0 * np.power(b * doses, d)))
 
 
+class MultiplicativeHill(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.mult_hill.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The multiplicative Hill model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * doses**d / (b**d + doses**d))
+
+
+class InverseExponential(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.inverse_exp.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Inverse-Exponential model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * np.exp(-b * doses**-d))
+
+
+class Lognormal(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.lognormal.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Lognormal model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * norm.cdf(np.log(b) + d * np.log(doses)))
+
+
+class ContinuousGamma(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.cont_gamma.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The Continuous Gamma model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * gamma.cdf(b * doses, d))
+
+
+class LMS(BmdModelContinuous):
+    bmd_model_class = ContinuousModelChoices.lms.value
+
+    def get_default_prior_class(self) -> PriorClass:
+        return PriorClass.bayesian_loud
+
+    def get_model_settings(
+        self, dataset: ContinuousDatasets, settings: InputModelSettings
+    ) -> ContinuousModelSettings:
+        model_settings = super().get_model_settings(dataset, settings)
+
+        if model_settings.priors.prior_class in (
+            PriorClass.frequentist_restricted,
+            PriorClass.frequentist_unrestricted,
+        ):
+            raise ConfigurationException(
+                "The LMS 2-stage model cannot be fit using maximum likelihood estimation"
+            )
+
+        return model_settings
+
+    def dr_curve(self, doses, params) -> np.ndarray:
+        a = params[0]
+        b = params[1]
+        c = params[2]
+        d = params[3]
+        return a * (1 + (c - 1.0) * (1 - np.exp(-b * doses - d * doses**2)))
+
+
 _bmd_model_map = {
     ContinuousModelChoices.power.value.id: Power,
     ContinuousModelChoices.hill.value.id: Hill,
     ContinuousModelChoices.exp_m3.value.id: ExponentialM3,
     ContinuousModelChoices.exp_m5.value.id: ExponentialM5,
+    ContinuousModelChoices.mult_hill.value.id: MultiplicativeHill,
+    ContinuousModelChoices.inverse_exp.value.id: InverseExponential,
+    ContinuousModelChoices.lognormal.value.id: Lognormal,
+    ContinuousModelChoices.cont_gamma.value.id: ContinuousGamma,
+    ContinuousModelChoices.lms.value.id: LMS,
 }
 
 

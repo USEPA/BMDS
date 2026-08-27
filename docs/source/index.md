@@ -10,10 +10,10 @@ If you'd prefer to run the software on your computer, **BMDS Desktop** is the sa
 The Python package **pybmds** enables execution of dose-response models in a scripting environment. The package includes dose-response models for multiple types of dose-response data, including dichotomous, continuous, nested dichotomous, and cancer (including multitumor modeling). `pybmds` is the underlying execution engine for BMDS Online and BMDS Desktop.
 
 **Highlights:**
-
-* Dose-response modeling for multiple dataset types (continuous, dichotomous, nested dichotomous, cancer, multitumor)
+* Bayesian model averaging for continuous and dichotomous data types
+* Maximum likelihood dose-response modeling for multiple dataset types (continuous, dichotomous, nested dichotomous, cancer, multitumor)
 * Plotting and summary table capabilities
-* Model recommendation logic
+* Model recommendation logic for maximum likelihood models
 * Reporting in Microsoft Excel and Microsoft Word reports
 * Batch execution for multiple datasets or option set configuration
 

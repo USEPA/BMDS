@@ -1,12 +1,72 @@
 import json
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pytest
 
 import pybmds
-from pybmds.constants import Models, PriorClass
+from pybmds.constants import DistType, Models, PriorClass
 
 
 class TestSession:
+    @staticmethod
+    def _settings_table(docx):
+        for table in docx.tables:
+            if len(table.rows) > 0 and table.cell(0, 0).text == "Setting":
+                return {row.cells[0].text: row.cells[1].text for row in table.rows}
+        raise AssertionError("Settings table not found")
+
+    @staticmethod
+    def _stub_loud_report_sections(monkeypatch):
+        def fig():
+            return plt.figure()
+
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            pybmds.session,
+            "get_model_average_figures",
+            lambda *args, **kwargs: {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [],
+            },
+        )
+
+    def test_add_default_models_continuous_uses_legacy_defaults_for_non_loud_priors(
+        self, cdataset3
+    ):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_default_models({"priors": PriorClass.frequentist_restricted})
+
+        model_types = [type(model) for model in session.models]
+        assert len(session.models) == 7
+        assert pybmds.models.continuous.Linear in model_types
+        assert model_types.count(pybmds.models.continuous.Polynomial) == 2
+        assert pybmds.models.continuous.MultiplicativeHill not in model_types
+        assert pybmds.models.continuous.InverseExponential not in model_types
+        assert pybmds.models.continuous.Lognormal not in model_types
+        assert pybmds.models.continuous.ContinuousGamma not in model_types
+        assert pybmds.models.continuous.LMS not in model_types
+
+    def test_add_default_models_continuous_excludes_loud_only_models(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_default_models({"priors": PriorClass.bayesian_loud})
+
+        model_types = {type(model) for model in session.models}
+        assert len(session.models) == 4
+        assert pybmds.models.continuous.Linear not in model_types
+        assert pybmds.models.continuous.Polynomial not in model_types
+        assert pybmds.models.continuous.MultiplicativeHill not in model_types
+        assert pybmds.models.continuous.InverseExponential not in model_types
+        assert pybmds.models.continuous.Lognormal not in model_types
+        assert pybmds.models.continuous.ContinuousGamma not in model_types
+        assert pybmds.models.continuous.LMS not in model_types
+
     def test_dichotomous(self, ddataset2, rewrite_data_files, data_path):
         # make sure serialize looks correct
         session1 = pybmds.Session(id=1, name="test", description="hello", dataset=ddataset2)
@@ -90,6 +150,733 @@ class TestSession:
             df.to_excel(data_path / "reports/session-dichotomous-ma.xlsx", index=False)
             docx.save(data_path / "reports/session-dichotomous-ma.docx")
 
+    # def test_dichotomous_ma_loud(self, ddataset2):
+    #     session = pybmds.Session(dataset=ddataset2)
+    #     session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+    #     session.execute_and_recommend()
+    #     assert session.model_average is not None
+
+    def test_dichotomous_ma_rejects_mixed_priors(self, ddataset2):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_model(Models.Logistic, {"priors": PriorClass.bayesian})
+        session.add_model(Models.Weibull, {"priors": PriorClass.bayesian_loud})
+
+        with pytest.raises(ValueError, match="same prior_class|requires all models"):
+            session.add_model_averaging()
+
+    def test_dichotomous_loud_settings_table_includes_modeling_type_and_weight_option(
+        self, ddataset2, monkeypatch
+    ):
+        self._stub_loud_report_sections(monkeypatch)
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(
+            prior_class=PriorClass.bayesian_loud, weight_option="bridge_sampling"
+        )
+
+        docx = session.to_docx(session_inputs_table=True, citation=False)
+        settings = self._settings_table(docx)
+
+        assert settings["Modeling Type"] == "Bayesian LOUD"
+        assert settings["Weight Option"] == "Bridge Sampling"
+
+    def test_continuous_loud_settings_table_includes_modeling_type_and_weight_option(
+        self, cdataset3, monkeypatch
+    ):
+        self._stub_loud_report_sections(monkeypatch)
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging(weight_option=1)
+
+        docx = session.to_docx(session_inputs_table=True, citation=False)
+        settings = self._settings_table(docx)
+
+        assert settings["Modeling Type"] == "Bayesian LOUD"
+        assert settings["Weight Option"] == "WAIC"
+
+    def test_dichotomous_loud_ma_docx_includes_loud_diagnostics(self, ddataset2, monkeypatch):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian_loud)
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            assert _session is session
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [],
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Model Averaging Diagnostics (LOUD)" in paragraph_text
+        assert "Posterior distribution of model-averaged BMD" in paragraph_text
+        assert "Overlay of model-specific and model-averaged BMD distributions" in paragraph_text
+        assert "Summary statistics for BMD and model-averaged BMD" in paragraph_text
+
+    def test_dichotomous_bayesian_ma_docx_does_not_include_loud_diagnostics(
+        self, ddataset2, monkeypatch
+    ):
+        session = pybmds.Session(dataset=ddataset2)
+        session.add_default_bayesian_models(prior_class=PriorClass.bayesian)
+
+        monkeypatch.setattr(pybmds.session, "write_bayesian_table", lambda *args, **kwargs: None)
+        monkeypatch.setattr(pybmds.session, "plot_dr", lambda *args, **kwargs: None)
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Model Averaging Diagnostics (LOUD)" not in paragraph_text
+
+    def test_continuous_ma(self, cdataset3, data_path, rewrite_data_files):
+        # make sure serialize looks correct
+        session1 = pybmds.Session(dataset=cdataset3)
+        session1.add_default_bayesian_models()
+        session1.add_model_averaging()
+        session1.execute_and_recommend()
+        d = session1.to_dict()
+
+        if rewrite_data_files:
+            (data_path / "reports/session-continuous.json").write_text(
+                session1.serialize().model_dump_json()
+            )
+
+        # spot check a few keys
+        assert d["dataset"]["doses"] == [0, 0.125, 0.25, 0.5, 1.0]
+        assert len(d["models"]) == 10
+        assert list(d["models"][0].keys()) == ["name", "model_class", "settings", "results"]
+        assert d["model_average"]["model_indexes"] == [4, 5, 6, 7, 8, 9, 2, 3, 0, 1]
+        assert "bmd" in d["model_average"]["results"]
+
+        # ensure we can convert back to a session
+        session2 = pybmds.Session.from_serialized(json.loads(json.dumps(d)))
+        assert isinstance(session2, pybmds.Session)
+        assert session2.dataset.doses == [0, 0.125, 0.25, 0.5, 1.0]
+        assert len(session2.models) == 10
+        assert session2.models[0].has_results is True
+
+        # make sure we get the same result back after deserializing
+        d1 = session1.serialize().model_dump()
+        d2 = session2.serialize().model_dump()
+        assert d1 == d2
+
+        # df/docx
+        df = session1.to_df()
+        docx = session1.to_docx(session_inputs_table=True, all_models=True, bmd_cdf_table=False)
+
+        if rewrite_data_files:
+            df.to_excel(data_path / "reports/session-continuous-ma.xlsx", index=False)
+            docx.save(data_path / "reports/session-continuous-ma.docx")
+
+    def test_continuous_ma_rejects_bayesian_priors(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+
+        # Add eligible continuous models with "regular" bayesian priors
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian}
+        )
+        session.add_model(Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian})
+
+        with pytest.raises(ValueError, match=r"Continuous model averaging requires.*bayesian_loud"):
+            session.add_model_averaging()
+
+    def test_continuous_ma_allows_bayesian_loud_priors(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+
+        session.add_model_averaging()
+        session.execute_and_recommend()
+        d = session.to_dict()
+
+        assert session.model_average is not None
+        assert "bmd" in d["model_average"]["results"]
+
+    def test_continuous_ma_manual_models_keep_hill_with_efsa_models(self, cdataset3, monkeypatch):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.LMS2, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.InverseExponential,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        assert [model.name() for model in session.model_average.models] == [
+            "Hill (CV)",
+            "Hill (NCV)",
+            "Power (CV)",
+            "Power (NCV)",
+            "Inverse Exponential (NCV)",
+            "LMS 2-Stage (NCV)",
+        ]
+        assert len(session.model_average.results.priors) == len(session.model_average.models)
+        assert len(session.model_average.results.posteriors) == len(session.model_average.models)
+        idata = pybmds.plotting.LOUD.model_average_to_inferencedata(session)
+        assert list(idata.posterior.coords["model"].values) == [
+            "Hill (CV)",
+            "Hill (NCV)",
+            "Power (CV)",
+            "Power (NCV)",
+            "Inverse Exponential (NCV)",
+            "LMS 2-Stage (NCV)",
+        ]
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            assert _session is session
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(citation=False)
+        bayesian_table = next(
+            table
+            for table in docx.tables
+            if table.rows[0].cells[0].text == "Model"
+            and table.rows[0].cells[1].text == "Prior Weights"
+        )
+
+        assert bayesian_table.cell(1, 1).text != "-"
+        assert bayesian_table.cell(2, 1).text != "-"
+        assert bayesian_table.cell(3, 1).text != "-"
+        assert bayesian_table.cell(4, 1).text != "-"
+        assert bayesian_table.cell(5, 1).text != "-"
+        assert bayesian_table.cell(6, 1).text != "-"
+
+    def test_continuous_ma_syncs_loud_per_model_results_back_to_models(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.LMS2, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.InverseExponential,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        loud_lookup = {
+            model.name(): session.model_average.results.model_summary(idx, model.settings.alpha)
+            for idx, model in enumerate(session.model_average.models)
+        }
+        p_value_lookup = {
+            model.name(): session.model_average.results.model_p_values[idx]
+            for idx, model in enumerate(session.model_average.models)
+        }
+
+        for model in session.models:
+            assert model.has_results is True
+            assert "Model has not successfully executed" not in model.text()
+            assert "Model Parameters:" in model.text()
+
+            summary = loud_lookup[model.name()]
+            assert model.results.bmdl == pytest.approx(summary.bmdl)
+            assert model.results.bmd == pytest.approx(summary.bmd)
+            assert model.results.bmdu == pytest.approx(summary.bmdu)
+            assert model.results.summary_p_value == pytest.approx(p_value_lookup[model.name()])
+            assert len(model.results.fit.bmd_dist) > 0
+            assert len(model.results.parameters.names) == len(model.results.parameters.values)
+            assert len(model.results.parameters.names) == len(model.results.parameters.se)
+            assert np.isfinite(model.results.plotting.dr_y).all()
+            assert np.unique(model.results.plotting.dr_y).size > 1
+
+    def test_loud_session_to_dict_can_exclude_raw_draws(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        settings = {
+            "disttype": DistType.normal,
+            "priors": PriorClass.bayesian_loud,
+            "n_chains": 1,
+            "samples": 25,
+            "burnin": 5,
+            "seed": 0,
+        }
+        session.add_model(Models.Power, settings)
+        session.add_model(Models.ExponentialM3, settings)
+        session.add_model_averaging()
+        session.execute()
+
+        full = session.to_dict()
+        trimmed = session.to_dict(include_loud_draws=False)
+
+        assert full["model_average"]["results"]["bmd_dist"]
+        assert full["model_average"]["results"]["model_bmd_dist"]
+        assert full["model_average"]["results"]["model_parm_dist"]
+        assert full["models"][0]["results"]["fit"]["bmd_dist"]
+
+        assert trimmed["model_average"]["results"]["bmd_dist"] == []
+        assert trimmed["model_average"]["results"]["model_bmd_dist"] == []
+        assert trimmed["model_average"]["results"]["model_parm_dist"] == []
+        assert trimmed["models"][0]["results"]["fit"]["bmd_dist"] == [[], []]
+
+    def test_to_df_maps_model_average_weights_by_model_identity(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        ma = session.model_average
+        assert ma is not None
+        ma.models = [session.models[1], session.models[0]]
+        ma.results = ma.results.model_copy(
+            update={
+                "priors": np.array([0.25, 0.75]),
+                "posteriors": np.array([0.4, 0.6]),
+            }
+        )
+
+        df = session.to_df()
+
+        by_name = df.set_index("model_name")
+        assert by_name.loc["Hill (CV)", "model_prior"] == pytest.approx(0.25)
+        assert by_name.loc["Hill (CV)", "model_posterior"] == pytest.approx(0.4)
+        assert by_name.loc["Power (CV)", "model_prior"] == pytest.approx(0.75)
+        assert by_name.loc["Power (CV)", "model_posterior"] == pytest.approx(0.6)
+
+    def test_continuous_ma_default_include_extended_excludes_existing_hill(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+
+        session.add_default_bayesian_models(
+            include_extended=True,
+            model_average=False,
+            prior_class=PriorClass.bayesian_loud,
+        )
+        session.add_model_averaging()
+
+        assert "Hill (CV)" in [model.name() for model in session.models]
+        assert "Hill (CV)" not in [model.name() for model in session.model_average.models]
+
+    def test_to_docx_all_models_skips_cdf_for_unsuccessful_models(self, cdataset3, monkeypatch):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_default_bayesian_models(
+            include_extended=True,
+            model_average=False,
+            prior_class=PriorClass.bayesian_loud,
+        )
+        session.execute()
+
+        unsuccessful_model = session.models[-1]
+        unsuccessful_model.results = None
+        monkeypatch.setattr(
+            unsuccessful_model,
+            "cdf_plot",
+            lambda: pytest.fail("CDF plot should not be generated for an unsuccessful model"),
+        )
+
+        docx = session.to_docx(citation=False, all_models=True, bmd_cdf_table=True)
+
+        assert docx is not None
+
+    def test_continuous_loud_docx_reporting_spacing(self, cdataset3, monkeypatch):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            assert _session is session
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame(
+                    {
+                        "median": [1.23],
+                        "eti_5%": [1.0],
+                        "eti_95%": [1.5],
+                        "r_hat": [1.0],
+                        "ess_bulk": [90.0],
+                        "ess_tail": [80.0],
+                    },
+                    index=["MA_BMD"],
+                ),
+                "parameter_groups": [
+                    {
+                        "name": "Power",
+                        "summary": pd.DataFrame(
+                            {
+                                "Model": ["CV", "NCV"],
+                                "Parameter": ["g", "rho"],
+                                "median": [1.23, 2.34],
+                                "r_hat": [1.0, 1.0],
+                                "ess_bulk": [90.0, 88.0],
+                                "ess_tail": [80.0, 79.0],
+                            }
+                        ),
+                        "trace_figure": fig(),
+                    }
+                ],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(citation=False, bmd_cdf_table=False)
+        spacing_by_text = {
+            paragraph.text: paragraph.paragraph_format.space_before.pt
+            if paragraph.paragraph_format.space_before is not None
+            else None
+            for paragraph in docx.paragraphs
+        }
+
+        assert spacing_by_text["Model Averaging Diagnostics (LOUD)"] == 6.0
+        assert spacing_by_text["Posterior distribution of model-averaged BMD"] == 6.0
+        assert (
+            spacing_by_text["Overlay of model-specific and model-averaged BMD distributions"] == 6.0
+        )
+        assert spacing_by_text["Summary statistics for BMD and model-averaged BMD"] == 6.0
+        assert spacing_by_text["Power model parameters"] == 6.0
+        assert "Power model parameter visualizations" not in spacing_by_text
+
+    def test_continuous_loud_docx_uses_model_gof_values(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        docx = session.to_docx(citation=False, all_models=True, bmd_cdf_table=False)
+        bayesian_table = next(
+            table
+            for table in docx.tables
+            if table.rows[0].cells[0].text == "Model"
+            and table.rows[0].cells[1].text == "Prior Weights"
+        )
+
+        for row in bayesian_table.rows[1:3]:
+            assert row.cells[6].text != "-"
+            assert row.cells[7].text != "-"
+
+        text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
+        assert "Log-Likelihood" in text
+        assert any("Log-Likelihood" in line and "-" in line for line in text.splitlines())
+        assert "Model Fitted Mean" in text
+        assert "Model Fitted SD" in text
+        assert "-9999" not in text
+
+    def test_continuous_ma_to_df_handles_models_without_toi_tests(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.ExponentialM3,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.MultiplicativeHill,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.ExponentialM3,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.MultiplicativeHill,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.LMS2,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        df = session.to_df()
+
+        blank = pybmds.constants.BMDS_BLANK_VALUE
+        mh_row = df[df.model_name.str.startswith("Multiplicative Hill")].iloc[0]
+        lms_row = df[df.model_name.str.startswith("LMS 2-Stage")].iloc[0]
+
+        assert mh_row.p_value1 == blank
+        assert mh_row.p_value4 == blank
+        assert mh_row.model_dof == blank
+        assert lms_row.p_value1 == blank
+        assert lms_row.p_value4 == blank
+        assert lms_row.model_dof == blank
+
+    def test_to_docx_can_include_grouped_parameter_visualizations(self, monkeypatch, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [
+                    {
+                        "name": "Power",
+                        "summary": pd.DataFrame(
+                            {
+                                "Model": ["CV"],
+                                "Parameter": ["g"],
+                                "median": [1.23],
+                                "r_hat": [1.0],
+                                "ess_bulk": [90.0],
+                                "ess_tail": [80.0],
+                            }
+                        ),
+                        "trace_figure": fig(),
+                    }
+                ],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(citation=False, parameter_visualizations=True)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Power model parameters" in paragraph_text
+        assert "Power model parameter visualizations" in paragraph_text
+
+    def test_to_docx_can_expand_loud_parameters_by_model(self, monkeypatch, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            assert compressed is False
+
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23]}, index=["MA_BMD"]),
+                "parameter_groups": [
+                    {
+                        "name": "Power CV",
+                        "summary": pd.DataFrame({"Model": ["CV"], "Parameter": ["g"]}),
+                        "trace_figure": fig(),
+                    },
+                    {
+                        "name": "Power NCV",
+                        "summary": pd.DataFrame({"Model": ["NCV"], "Parameter": ["g"]}),
+                        "trace_figure": fig(),
+                    },
+                ],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(
+            citation=False,
+            parameter_visualizations=True,
+            compressed=False,
+        )
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Power CV model parameters" in paragraph_text
+        assert "Power NCV model parameters" in paragraph_text
+        assert "Power CV model parameter visualizations" in paragraph_text
+        assert "Power NCV model parameter visualizations" in paragraph_text
+
+    def test_to_docx_can_hide_parameter_tables(self, monkeypatch, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+
+        def fake_get_model_average_figures(
+            _session, compressed=True, parameter_visualizations=True, parameter_tables=True
+        ):
+            def fig():
+                return plt.figure()
+
+            return {
+                "posterior": fig(),
+                "overlay": fig(),
+                "bmd_summary": pd.DataFrame({"median": [1.23], "r_hat": [1.0]}, index=["MA_BMD"]),
+                "parameter_groups": [
+                    {
+                        "name": "Power",
+                        "summary": pd.DataFrame({"Model": ["CV"], "Parameter": ["g"]}),
+                        "trace_figure": fig(),
+                    }
+                ],
+                "alpha": 0.05,
+                "hdi_prob": 0.9,
+            }
+
+        monkeypatch.setattr(
+            pybmds.session, "get_model_average_figures", fake_get_model_average_figures
+        )
+
+        docx = session.to_docx(citation=False, parameter_tables=False)
+        paragraph_text = [paragraph.text for paragraph in docx.paragraphs]
+
+        assert "Power model parameters" not in paragraph_text
+
+    def test_continuous_manual_models_use_disttype_in_default_names(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.Power,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.Hill,
+            {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.Power,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+        session.add_model(
+            pybmds.Models.Hill,
+            {"disttype": DistType.normal_ncv, "priors": PriorClass.bayesian_loud},
+        )
+
+        assert [model.name() for model in session.models] == [
+            "Power (CV)",
+            "Hill (CV)",
+            "Power (NCV)",
+            "Hill (NCV)",
+        ]
+
+    def test_continuous_cma_with_efsa(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+
+        session.add_default_bayesian_models(include_extended=True)
+        assert getattr(session, "models", None) is not None
+        assert len(session.models) > 0, "No models were added to the session"
+
+        session.add_model_averaging()
+
+        ma = session.model_average
+        assert session.model_average is not None, "model_average was not created"
+        ma = session.model_average
+
+        assert getattr(ma, "models", None) is not None, "model_average.models is missing"
+        assert len(ma.models) > 0, "model_average has no models"
+
+        from pybmds.constants import DistType
+
+        seen = {}
+        for m in ma.models:
+            seen.setdefault(m.__class__.__name__, set()).add(m.settings.disttype)
+
+        # Spot-check one EFSA model
+        assert "MultiplicativeHill" in seen, f"MultiplicativeHill not found; saw: {sorted(seen)}"
+        assert seen["MultiplicativeHill"] == {
+            DistType.normal,
+            DistType.normal_ncv,
+            DistType.log_normal,
+        }, f"MultiplicativeHill disttypes wrong: {seen['MultiplicativeHill']}"
+
+        # BMDS models must still be present
+        assert "Power" in seen, f"Power not found; saw: {sorted(seen)}"
+        assert "ExponentialM3" in seen, f"ExponentialM3 not found; saw: {sorted(seen)}"
+
     def test_nested_dichotomous(self, nd_dataset4, rewrite_data_files, data_path):
         session = pybmds.Session(dataset=nd_dataset4)
         session.add_default_models()
@@ -164,6 +951,32 @@ class TestSessionPlot:
         session = pybmds.Session(dataset=ddataset)
         session.add_model(Models.Weibull, {"priors": PriorClass.bayesian})
         session.add_model(Models.Logistic, {"priors": PriorClass.bayesian})
+        session.add_model_averaging()
+        session.execute()
+        return session.plot(colorize=False)
+
+    @pytest.mark.mpl_image_compare
+    def test_continuous_ma_colorize(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model_averaging()
+        session.execute()
+        return session.plot(colorize=True)
+
+    @pytest.mark.mpl_image_compare
+    def test_continuous_ma(self, cdataset3):
+        session = pybmds.Session(dataset=cdataset3)
+        session.add_model(
+            pybmds.Models.Power, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
+        session.add_model(
+            pybmds.Models.Hill, {"disttype": DistType.normal, "priors": PriorClass.bayesian_loud}
+        )
         session.add_model_averaging()
         session.execute()
         return session.plot(colorize=False)

@@ -34,6 +34,8 @@ extern std::string BMDS_VERSION;
 
 enum nested_model { nlogistic = 1, nctr = 2 };
 
+enum loud_datatype { l_summary = 1, l_individual = 2, l_nested = 3, l_dichotomous = 4 };
+
 // BMDS helper structures
 #ifdef _WIN64
 #  pragma pack(8)
@@ -181,6 +183,46 @@ struct nestedSRData {
   double maxAbsSR;
 };
 
+// input struct for LOUD CMA
+struct fitInput {
+  Eigen::MatrixXd doses;
+  Eigen::MatrixXd Y;
+  Eigen::MatrixXd priorr;
+  int model;
+  double lmean0;
+  double lmean1;
+  int N_obs0;
+  int N_obs1;
+  double s0sq;
+  double s1sq;
+  int N_obs;     // required for cv, logcv
+  double ssq;    // required for cv, logcv
+  int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamma, & LMS
+  int iter = 5;  // 50000;
+  double bmr;
+  // double bmr_rel;
+  // double bmr_sd;
+  int dist;  // defined in the distribution enum
+  int datatype;
+  int bmdtype;
+  int weightOption;
+  double tailProb;
+  int burnin = 5;  // 5000;
+  double qlev = 0.90;
+  int df_override = BMDS_MISSING;
+};
+
+// result struct for LOUD CMA
+struct fitResult {
+  Eigen::MatrixXd parms;
+  double int_factor;
+  double waic;
+  Eigen::VectorXd BMD;
+  Eigen::MatrixXd R;
+  double ll;
+  double pval;
+};
+
 struct python_dichotomous_analysis {
   int model;              // Model Type as listed in dich_model
   int n;                  // total number of observations obs/n
@@ -190,10 +232,11 @@ struct python_dichotomous_analysis {
   std::vector<double> prior;    // a column order matrix (parms x prior_cols)
   int BMD_type;                 // 1 = extra ; added otherwise
   double BMR;
-  double alpha;                  // alpha of the analysis
-  int degree;                    // degree of polynomial used only  multistage
-  int samples;                   // number of MCMC samples.
-  int burnin;                    // size of burin
+  double alpha;  // alpha of the analysis
+  int degree;    // degree of polynomial used only  multistage
+  int samples;   // number of MCMC samples.
+  int burnin;    // size of burin
+  int chains;
   int parms;                     // number of parameters in the model
   int prior_cols;                // colunns in the prior
   bool countAllParmsOnBoundary;  // whether to allow parameter that hit a bound to affect AIC, DOF,
@@ -209,6 +252,7 @@ struct python_dichotomous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   double bmd;                    // the central estimate of the BMD
   double gof_p_value;            // P-value from Chi Square goodness of fit
@@ -216,6 +260,8 @@ struct python_dichotomous_model_result {
   struct dichotomous_GOF gof;
   struct BMDS_results bmdsRes;
   struct dicho_AOD aod;
+  struct fitResult combinedLoudRes;
+  std::vector<fitResult> loudRes;  // one for each chain
 
   double getSRAtDose(double targetDose, std::vector<double> doses);
 };
@@ -226,11 +272,22 @@ struct python_dichotomousMA_analysis {
                                             // priors[i] is the prior array for the ith model ect
   std::vector<int> nparms;                  // parameters in each model
   std::vector<int> actual_parms;            // actual number of parameters in the model
-  std::vector<int> prior_cols;      // columns in the prior if there are 'more' in the future
-                                    // presently there are only 5
-  std::vector<int> models;          // list of models this is defined by dich_model.
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                                // presently there are only 5
+  std::vector<int> models;      // list of models this is defined by dich_model.
+  std::vector<int>
+      loud_bmd_type;  // list of bmd types corresponding to each model for loud approach
+
   std::vector<double> modelPriors;  // prior probability on the model
+  long seed = BMDS_MISSING;         // BMDS_MISSING (default)- seed set by time clock
+                                    // 0 - seed set to alorithm default
+                                    // >0 - user specified seed
+
   struct python_dichotomous_analysis pyDA;
+
+  // LOUD properties
+  int weightOption;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;
 };
 
 struct python_dichotomousMA_result {
@@ -258,10 +315,11 @@ struct python_continuous_analysis {
   double tail_prob;             // tail probability
   int disttype;                 // Distribution type defined in the enum distribution
   double alpha;                 // specified alpha
-  int samples;                  // number of MCMC samples.
   int degree;                   // if polynomial it is the degree
+  int samples;                  // number of MCMC samples.
   int burnin;                   // burn in
-  int parms;                    // number of parameters
+  int chains;
+  int parms;  // number of parameters
   int prior_cols;
   int transform_dose;  // Use the arc-sin-hyperbolic inverse to transform dose.
   bool restricted;
@@ -280,11 +338,45 @@ struct python_continuous_model_result {
   int dist_numE;                 // number of entries in rows for the bmd_dist
   double model_df;               // Used model degrees of freedom
   double total_df;               // Total degrees of freedom
+  double ess;                    // convergence diagnostic from MCMC run - effective sample size
   double bmd;                    // The bmd at the maximum
   std::vector<double> bmd_dist;  // bmd distribution (dist_numE x 2) matrix
   struct continuous_GOF gof;
   struct BMDS_results bmdsRes;
   struct continuous_AOD aod;
+  std::vector<fitResult> loudRes;
+  struct fitResult combinedLoudRes;
+};
+
+struct python_continuousMA_analysis {
+  int nmodels;                              // number of models for the model average
+  std::vector<std::vector<double>> priors;  // List of pointers to prior arrays
+                                            // priors[i] is the prior array for the ith model ect
+  std::vector<int> nparms;                  // parameters in each model
+  std::vector<int> actual_parms;            // actual number of parameters in the model
+  std::vector<int> prior_cols;  // columns in the prior if there are 'more' in the future
+                                // presently there are only 5
+  std::vector<int> models;      // list of models this is defined by cont_model.
+  std::vector<int>
+      loud_dist_type;  // list of dist types corresponding to each model for loud approach
+  std::vector<double> modelPriors;  // prior probability on the model
+  int weightOption;                 // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int datatype;                     // uses loud_datatype enum
+  long seed = BMDS_MISSING;         // BMDS_MISSING (default)- seed set by time clock
+                                    // 0 - seed set to alorithm default
+                                    // >0 - user specified seed
+  struct python_continuous_analysis pyCA;
+};
+
+struct python_continuousMA_result {
+  int nmodels;  // number of models for each
+  std::vector<python_continuous_model_result>
+      models;                      // Individual model fits for each model average
+  int dist_numE;                   // number of entries in rows for the bmd_dist
+  std::vector<double> post_probs;  // posterior probabilities
+  std::vector<double> bmd_dist;    // bmd ma distribution (dist_numE x 2) matrix
+
+  struct BMDSMA_results bmdsRes;
 };
 
 struct python_multitumor_analysis {
@@ -434,7 +526,10 @@ extern "C" {
 void cleanDouble(double *val);
 
 void rescale_dichoParms(int model, double *parms);
-void rescale_contParms(struct continuous_analysis *CA, double *parms);
+void rescale_contParms(int model, int nparms, double *parms);
+// void rescale_contParms(struct continuous_analysis *CA, double *parms);
+
+void scale_dichoParms(int model, Eigen::VectorXd &parms);
 
 void calcParmCIs_dicho(struct dichotomous_model_result *res, struct BMDS_results *bmdsRes);
 void calcParmCIs_cont(struct continuous_model_result *res, struct BMDS_results *bmdsRes);
@@ -481,20 +576,6 @@ void calcContAIC(
 );
 
 double calcNestedAIC(double fitted_LL, double fitted_df, double red_df);
-
-void clean_dicho_results(
-    struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
-    struct dicho_AOD *aod
-);
-void clean_cont_results(
-    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
-    struct continuous_GOF *gof
-);
-void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
-
-void clean_multitumor_results(struct python_multitumor_result *res);
-
-void clean_nested_results(struct python_nested_result *res);
 
 void convertFromPythonDichoAnalysis(
     struct dichotomous_analysis *anal, struct python_dichotomous_analysis *pyAnal
@@ -666,6 +747,73 @@ void SortNestedData(
     std::vector<double> &Yp, std::vector<double> &Yn, std::vector<double> &Lsc, bool sortByLsc
 );
 
+void bridge_sample(
+    Eigen::MatrixXd &R, const Eigen::MatrixXd &mu, const struct fitInput *loudIn,
+    struct fitResult *loudOut,
+    //    Eigen::VectorXd (*model_fun)(const Eigen::VectorXd &, const Eigen::MatrixXd &X),
+    Eigen::MatrixXd &priorr, std::vector<bool> &isNegative
+);
+
+double pivotal_pvalue(
+    Eigen::MatrixXd &R, const struct fitInput *loudIn,
+    const Eigen::MatrixXd &mu  // fitResult *loudOut,
+);
+
+void fit_cpower(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cexp3(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_cexp5(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_chill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+void fit_chill_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_cinvexp_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_clog_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_cgamma_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+void fit_clms_efsa(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_qlinear(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_logistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_probit(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
+void fit_mstage2(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_loglogistic(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_logprobit(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_dhill(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
+void fit_weibull(
+    const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R
+);
+
+void fit_dgamma(const struct fitInput *loudIn, struct fitResult *loudOut, const Eigen::MatrixXd &R);
+
+double prior_v(Eigen::MatrixXd &priorr, Eigen::VectorXd &R);
+
+// void fit_cgamma_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+// void fit_clms_efsa(struct fitInput *loudIn, struct fitResult *loudOut);
+
 void BMDS_ENTRY_API __stdcall runBMDSDichoAnalysis(
     struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
     struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *aod,
@@ -705,9 +853,90 @@ void BMDS_ENTRY_API __stdcall pythonBMDSNested(
     struct python_nested_analysis *pyAnal, struct python_nested_result *pyRes
 );
 
+void additional_dicho_calcs(
+    struct dichotomous_analysis *anal, struct dichotomous_model_result *res,
+    struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes, struct dicho_AOD *bmdsAOD,
+    bool *countAllParmsOnBoundary, bool *isLoud
+);
+
+void additional_cont_calcs(
+    struct continuous_analysis *GOFanal, struct continuous_model_result *res,
+    struct continuous_GOF *gof, struct BMDS_results *bmdsRes, struct continuous_AOD *bmdsAOD,
+    bool *countAllParmsOnBoundary, bool *isLoud
+);
+void continuous_expectation_LOUD(
+    const continuous_analysis *CA, const continuous_model_result *MR,
+    continuous_expected_result *expected
+);
+
 #ifdef __cplusplus
 }
 #endif
+
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
+    struct python_continuousMA_analysis *pyMA, struct python_continuousMA_result *pyRes
+);
+
+void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
+    struct python_dichotomousMA_analysis *pyMA, struct python_dichotomousMA_result *pyRes
+);
+
+Eigen::MatrixXd expandLoudPrior(std::vector<double> flatPrior, int priorCols);
+
+Eigen::VectorXd loud_likelihood(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
+    int datatype
+);
+
+double getQVals(
+    const Eigen::MatrixXd &Y, const Eigen::VectorXd &parms, const Eigen::VectorXd &mu, int dist,
+    int datatype
+);
+
+void calcLoudWeights(std::vector<double> &weights, std::vector<bool> &isValid);
+
+void calcLoudPosteriors(
+    std::vector<double> &waic, std::vector<double> &int_factor,
+    std::vector<double> &posterior_probs, int weightOption, std::vector<bool> &isValid
+);
+
+struct fitInput createFitInput(
+    Eigen::MatrixXd doses, Eigen::MatrixXd Y, double lmean0, double lmean1, int N_obs0, int N_obs1,
+    double s0sq, double s1sq, int N_obs, double ssq, int iter, int burnin, double bmr, int dist,
+    int datatype, int bmdtype, bool isIncreasing, int weightOption, double tailProb
+);
+
+double calcLoudBMD(
+    normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb
+);
+double calcLoudBMD(
+    lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
+    double tailProb
+);
+
+double calcLoudBMD(
+    cont_model model, Eigen::VectorXd R, contbmd BMDtype, double bmr, bool constVar, bool isNormal,
+    bool isIncreasing, double tailProb
+);
+
+double calcLoudBMD(
+    binomialBMD *model, Eigen::MatrixXd theta, int BMD_type, double bmr, Eigen::MatrixXd X
+);
+
+double findMedianVal(std::vector<double> dist);
+
+int getLoudModelType(int model, int distType, int dataType);
+
+int getLoudLLType(int distType, int dataType);
+
+// overloaded functions
+void determineAdvDir(struct python_continuous_analysis *pyAnal);
+
+std::vector<std::vector<double>> createDefaultDichoPriors(struct python_dichotomousMA_analysis *pyMA
+);
+
+std::vector<std::vector<double>> createDefaultPriors(struct python_continuousMA_analysis *pyMA);
 
 // overloaded print statements
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
@@ -785,3 +1014,34 @@ std::string BMDS_ENTRY_API __stdcall printBmdsStruct(
 );
 
 std::string BMDS_ENTRY_API __stdcall printBmdsStruct(struct dicho_AOD *AOD, bool print = true);
+
+std::string printBmdsStruct(struct fitInput *in, bool print = true);
+
+std::string printBmdsStruct(struct fitResult *out, bool print = true);
+
+std::string printBmdsStruct(struct python_continuousMA_analysis *pyAnal, bool print = true);
+
+std::string printBmdsStruct(struct python_continuousMA_result *pyRes, bool print = true);
+
+void clean_dicho_results(
+    struct dichotomous_model_result *res, struct dichotomous_GOF *gof, struct BMDS_results *bmdsRes,
+    struct dicho_AOD *aod
+);
+void clean_cont_results(
+    struct continuous_model_result *res, struct BMDS_results *bmdsRes, struct continuous_AOD *aod,
+    struct continuous_GOF *gof
+);
+void clean_dicho_MA_results(struct dichotomousMA_result *res, struct BMDSMA_results *bmdsRes);
+void clean_dicho_MA_results(struct python_dichotomousMA_result *res);
+
+void clean_multitumor_results(struct python_multitumor_result *res);
+
+void clean_nested_results(struct python_nested_result *res);
+
+void clean_cont_MA_results(struct python_continuousMA_result *res);
+
+double get_median(Eigen::VectorXd v);
+
+Eigen::RowVectorXd colwise_median(const Eigen::MatrixXd &mat);
+
+Eigen::RowVectorXd colwise_valid_row_median(const Eigen::MatrixXd &mat);

@@ -1,4 +1,5 @@
 
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -32,6 +33,28 @@ PYBIND11_MODULE(bmdscore, m) {
   py::enum_<nested_model>(m, "nested_model", py::arithmetic(), "Nested model enumeration")
       .value("nlogistic", nlogistic, "nested logistic model enum")
       .value("nctr", nctr, "NCTR model enum")
+      .export_values();
+
+  py::enum_<cont_model>(m, "cont_model", py::arithmetic(), "Continuous model enumeration")
+      .value("generic", generic, "generic model enum")
+      .value("hill", hill, "continuous hill model enum")
+      .value("exp_3", exp_3, "exponential 3 model enum")
+      .value("exp_5", exp_5, "exponential 5 model enum")
+      .value("power", power, "power model enum")
+      .value("funl", funl, "funl model enum")
+      .value("polynomial", polynomial, "polynomial model enum")
+      .value("l_hill_efsa", l_hill_efsa, "loud hill efsa model enum")
+      .value("l_invexp_efsa", l_invexp_efsa, "loud invexp efsa model enum")
+      .value("l_lognormal_efsa", l_lognormal_efsa, "loud lognormal efsa model enum")
+      .value("l_gamma_efsa", l_gamma_efsa, "loud gamma efsa model enum")
+      .value("l_lms_efsa", l_lms_efsa, "loud lms efsa model enum")
+      .export_values();
+
+  py::enum_<loud_datatype>(m, "loud_datatype", py::arithmetic(), "Loud datatype enumeration")
+      .value("l_summary", l_summary, "loud summary data")
+      .value("l_individual", l_individual, "loud individual data")
+      .value("l_nested", l_nested, "loud nested data")
+      .value("l_dichotomous", l_dichotomous, "loud dichotomous data")
       .export_values();
 
   py::class_<test_struct>(m, "test_struct")
@@ -93,16 +116,6 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("dfRed", &dicho_AOD::dfRed)
       .def_readwrite("pvFit", &dicho_AOD::pvFit)
       .def_readwrite("pvRed", &dicho_AOD::pvRed);
-
-  py::enum_<cont_model>(m, "cont_model", py::arithmetic(), "Continuous model enumeration")
-      .value("generic", generic, "generic model enum")
-      .value("hill", hill, "continuous hill model enum")
-      .value("exp_3", exp_3, "exponential 3 model enum")
-      .value("exp_5", exp_5, "exponential 5 model enum")
-      .value("power", power, "power model enum")
-      .value("funl", funl, "funl model enum")
-      .value("polynomial", polynomial, "polynomial model enum")
-      .export_values();
 
   py::enum_<distribution>(m, "distribution", py::arithmetic(), "Continuous model distribution")
       .value("normal", normal, "normal distribution")
@@ -173,6 +186,15 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("avgAbsSR", &nestedSRData::avgAbsSR)
       .def_readwrite("maxAbsSR", &nestedSRData::maxAbsSR);
 
+  py::class_<fitResult>(m, "fitResult")
+      .def(py::init<>())
+      .def_readwrite("parms", &fitResult::parms)
+      .def_readwrite("int_factor", &fitResult::int_factor)
+      .def_readwrite("waic", &fitResult::waic)
+      .def_readwrite("BMD", &fitResult::BMD)
+      .def_readwrite("ll", &fitResult::ll)
+      .def_readwrite("pval", &fitResult::pval);
+
   py::class_<python_dichotomous_analysis>(m, "python_dichotomous_analysis")
       .def(py::init<>())
       .def_readwrite("model", &python_dichotomous_analysis::model)
@@ -187,6 +209,7 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("degree", &python_dichotomous_analysis::degree)
       .def_readwrite("samples", &python_dichotomous_analysis::samples)
       .def_readwrite("burnin", &python_dichotomous_analysis::burnin)
+      .def_readwrite("chains", &python_dichotomous_analysis::chains)
       .def_readwrite("parms", &python_dichotomous_analysis::parms)
       .def_readwrite("prior_cols", &python_dichotomous_analysis::prior_cols)
       .def_readwrite(
@@ -211,7 +234,9 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("aod", &python_dichotomous_model_result::aod)
       .def_readwrite(
           "gof_chi_sqr_statistic", &python_dichotomous_model_result::gof_chi_sqr_statistic
-      );
+      )
+      .def_readwrite("loudRes", &python_dichotomous_model_result::loudRes)
+      .def_readwrite("combinedLoudRes", &python_dichotomous_model_result::combinedLoudRes);
 
   py::class_<python_dichotomousMA_analysis>(m, "python_dichotomousMA_analysis")
       .def(py::init<>())
@@ -222,7 +247,10 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("prior_cols", &python_dichotomousMA_analysis::prior_cols)
       .def_readwrite("models", &python_dichotomousMA_analysis::models)
       .def_readwrite("modelPriors", &python_dichotomousMA_analysis::modelPriors)
-      .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA);
+      .def_readwrite("pyDA", &python_dichotomousMA_analysis::pyDA)
+      .def_readwrite("weightOption", &python_dichotomousMA_analysis::weightOption)
+      .def_readwrite("datatype", &python_dichotomousMA_analysis::datatype)
+      .def_readwrite("seed", &python_dichotomousMA_analysis::seed);
 
   py::class_<python_dichotomousMA_result>(m, "python_dichotomousMA_result")
       .def(py::init<>())
@@ -249,9 +277,10 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("tail_prob", &python_continuous_analysis::tail_prob)
       .def_readwrite("disttype", &python_continuous_analysis::disttype)
       .def_readwrite("alpha", &python_continuous_analysis::alpha)
-      .def_readwrite("samples", &python_continuous_analysis::samples)
       .def_readwrite("degree", &python_continuous_analysis::degree)
+      .def_readwrite("samples", &python_continuous_analysis::samples)
       .def_readwrite("burnin", &python_continuous_analysis::burnin)
+      .def_readwrite("chains", &python_continuous_analysis::chains)
       .def_readwrite("parms", &python_continuous_analysis::parms)
       .def_readwrite("prior_cols", &python_continuous_analysis::prior_cols)
       .def_readwrite("transform_dose", &python_continuous_analysis::transform_dose)
@@ -276,7 +305,33 @@ PYBIND11_MODULE(bmdscore, m) {
       .def_readwrite("bmd_dist", &python_continuous_model_result::bmd_dist)
       .def_readwrite("gof", &python_continuous_model_result::gof)
       .def_readwrite("bmdsRes", &python_continuous_model_result::bmdsRes)
-      .def_readwrite("aod", &python_continuous_model_result::aod);
+      .def_readwrite("aod", &python_continuous_model_result::aod)
+      .def_readwrite("combinedLoudRes", &python_continuous_model_result::combinedLoudRes)
+      .def_readwrite("loudRes", &python_continuous_model_result::loudRes);
+
+  py::class_<python_continuousMA_analysis>(m, "python_continuousMA_analysis")
+      .def(py::init<>())
+      .def_readwrite("nmodels", &python_continuousMA_analysis::nmodels)
+      .def_readwrite("priors", &python_continuousMA_analysis::priors)
+      .def_readwrite("nparms", &python_continuousMA_analysis::nparms)
+      .def_readwrite("actual_parms", &python_continuousMA_analysis::actual_parms)
+      .def_readwrite("prior_cols", &python_continuousMA_analysis::prior_cols)
+      .def_readwrite("models", &python_continuousMA_analysis::models)
+      .def_readwrite("disttype", &python_continuousMA_analysis::loud_dist_type)
+      .def_readwrite("modelPriors", &python_continuousMA_analysis::modelPriors)
+      .def_readwrite("weightOption", &python_continuousMA_analysis::weightOption)
+      .def_readwrite("datatype", &python_continuousMA_analysis::datatype)
+      .def_readwrite("seed", &python_continuousMA_analysis::seed)
+      .def_readwrite("pyCA", &python_continuousMA_analysis::pyCA);
+
+  py::class_<python_continuousMA_result>(m, "python_continuousMA_result")
+      .def(py::init<>())
+      .def_readwrite("nmodels", &python_continuousMA_result::nmodels)
+      .def_readwrite("models", &python_continuousMA_result::models)
+      .def_readwrite("dist_numE", &python_continuousMA_result::dist_numE)
+      .def_readwrite("post_probs", &python_continuousMA_result::post_probs)
+      .def_readwrite("bmd_dist", &python_continuousMA_result::bmd_dist)
+      .def_readwrite("bmdsRes", &python_continuousMA_result::bmdsRes);
 
   py::class_<python_multitumor_analysis>(m, "python_multitumor_analysis")
       .def(py::init<>())
@@ -369,6 +424,24 @@ PYBIND11_MODULE(bmdscore, m) {
       py::arg("python_nested_analysis"), py::arg("python_nested_result")
   );
 
+  //  m.def(
+  //      "pythonBMDSLoud", &pythonBMDSLoud, "Entry point to run BMDS continuous LOUD MA",
+  //      py::arg("python_continuousMA_analysis"), py::arg("python_continuousMA_result")
+  //  );
+
+  m.def(
+      "pythonBMDSLoud",
+      overload_cast_<python_continuousMA_analysis*, python_continuousMA_result*>()(&pythonBMDSLoud),
+      "Overloaded method to run BMDS Loud Approach"
+  );
+
+  m.def(
+      "pythonBMDSLoud",
+      overload_cast_<python_dichotomousMA_analysis*, python_dichotomousMA_result*>()(&pythonBMDSLoud
+      ),
+      "Overloaded method to run BMDS Loud Approach"
+  );
+
   m.def(
       "print", overload_cast_<python_dichotomous_analysis*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
@@ -386,6 +459,16 @@ PYBIND11_MODULE(bmdscore, m) {
 
   m.def(
       "print", overload_cast_<python_continuous_model_result*, bool>()(&printBmdsStruct),
+      "Overloaded method to print structs"
+  );
+
+  m.def(
+      "print", overload_cast_<python_continuousMA_analysis*, bool>()(&printBmdsStruct),
+      "Overloaded method to print structs"
+  );
+
+  m.def(
+      "print", overload_cast_<python_continuousMA_result*, bool>()(&printBmdsStruct),
       "Overloaded method to print structs"
   );
 

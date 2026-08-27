@@ -11,9 +11,10 @@ from pydantic import BaseModel
 
 from .. import plotting
 from ..constants import BmdModelSchema as BmdModelClass
-from ..constants import Dtype
+from ..constants import ContinuousModelChoices, DistType, Dtype, PriorClass
 from ..datasets.base import DatasetType
-from ..types.priors import priors_tbl
+from ..types.priors import ModelPriors
+from ..types.priors import priors_tbl as priors_tbl_fn
 from ..utils import get_version, multi_lstrip
 
 if TYPE_CHECKING:
@@ -26,10 +27,42 @@ logger = logging.getLogger(__name__)
 InputModelSettings = dict | BaseModel | None
 
 
-def cdf_df(arr: np.ndarray) -> pd.DataFrame:
-    df = pd.DataFrame(data=arr.T, columns=["BMD", "Percentile"])
-    df["Percentile"] = df.Percentile * 100
-    return df[["Percentile", "BMD"]]
+def cdf_df(arr: np.ndarray, n_points: int = 200) -> pd.DataFrame:
+    arr = np.asarray(arr, dtype=float)
+
+    # Existing BMDS-style CDF format:
+    # row 0 = BMD values, row 1 = cumulative probabilities
+    if arr.ndim == 2 and 2 in arr.shape:
+        values = arr.T if arr.shape[0] == 2 else arr
+        percentiles = values[:, 1]
+        is_bmds_cdf = (
+            np.isfinite(percentiles).all()
+            and np.all((0 <= percentiles) & (percentiles <= 1))
+            and np.all(np.diff(percentiles) >= 0)
+        )
+        if is_bmds_cdf:
+            df = pd.DataFrame(data=values, columns=["BMD", "Percentile"])
+            df["Percentile"] = df["Percentile"] * 100
+            return df[["Percentile", "BMD"]]
+
+    # LOUD posterior draws: convert raw draws into an empirical CDF with n_points rows
+    # Multiple MCMC chains arrive as chains x iterations and are combined here.
+    if arr.ndim in (1, 2):
+        draws = arr[np.isfinite(arr)]
+        if draws.size == 0:
+            return pd.DataFrame(columns=["Percentile", "BMD"])
+
+        percentiles = np.linspace(0.5, 99.5, n_points)
+        bmd_values = np.percentile(draws, percentiles)
+
+        return pd.DataFrame(
+            {
+                "Percentile": percentiles,
+                "BMD": bmd_values,
+            }
+        )
+
+    raise ValueError(f"Unsupported CDF input shape: {arr.shape}")
 
 
 def cdf_plot(
@@ -74,6 +107,7 @@ class BmdModel(abc.ABC):
         self.settings = self.get_model_settings(dataset, settings)
         self.structs: NamedTuple | None = None  # used for model averaging
         self.results: BaseModel | None = None
+        self.session: Session | None = None
 
     def name(self) -> str:
         # return name of model; may be setting-specific
@@ -94,6 +128,24 @@ class BmdModel(abc.ABC):
     def execute_job(self):
         self.execute()
 
+    def _execute_standalone_loud(self) -> BaseModel:
+        """Execute a LOUD model through an internal one-model averaging session."""
+        from ..session import Session
+
+        original_session = self.session
+        session = Session(dataset=self.dataset)
+        session.models = [self]
+        self.session = session
+        try:
+            session.add_model_averaging()
+            session.execute()
+        finally:
+            self.session = original_session
+
+        if self.results is None:  # pragma: no cover
+            raise RuntimeError("Standalone LOUD execution did not return model results.")
+        return self.results
+
     @abc.abstractmethod
     def serialize(self) -> BaseModel: ...
 
@@ -104,16 +156,40 @@ class BmdModel(abc.ABC):
         version = f"Version: pybmds {version.python} (bmdscore {version.dll})"
         settings = self.model_settings_text()
         if self.has_results:
-            results = self.results.text(self.dataset, self.settings)
+            results = self.results_text()
         else:
             results = "Model has not successfully executed; no results available."
 
         return "\n\n".join([title, version, settings, results]) + "\n"
 
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+        return self.results.text(self.dataset, self.settings)
+
     def priors_tbl(self) -> str:
         """Show prior or parameter boundary testing."""
-        return priors_tbl(
-            self.get_param_names(), self.get_priors_list(), self.settings.priors.is_bayesian
+        mp = self.settings.priors
+        priors = self.get_priors_list()
+
+        # If priors are LOUD, build the table names from the priors object
+        if isinstance(mp, ModelPriors) and mp.prior_class is PriorClass.bayesian_loud:
+            names = [p.name for p in mp.priors]
+            if getattr(self.bmd_model_class, "id", None) == ContinuousModelChoices.exp_m3.value.id:
+                names = [n for n in names if n != "c"]
+
+            var_names = [p.name for p in (mp.variance_priors or [])]
+            if getattr(self.settings, "disttype", None) != DistType.normal_ncv and var_names:
+                var_names = [var_names[0]]
+            names = names + var_names
+
+            return priors_tbl_fn(
+                names, priors, mp.is_bayesian, getattr(self.settings, "disttype", None)
+            )
+
+        # Default behavior (frequentist or non-LOUD bayesian): use model param names
+        return priors_tbl_fn(
+            self.get_param_names(), priors, mp.is_bayesian, getattr(self.settings, "disttype", None)
         )
 
     def model_settings_text(self) -> str:
@@ -270,16 +346,21 @@ class BmdModelAveraging(abc.ABC):
         return self.results is not None
 
     @abc.abstractmethod
-    def serialize(self, session) -> BmdModelAveragingSchema: ...
+    def serialize(self, session, include_loud_draws: bool = True) -> BmdModelAveragingSchema: ...
 
     def to_dict(self) -> dict:
         return self.serialize.model_dump()
 
-    def cdf_plot(self, xlabel: str, figsize: tuple[float, float] | None = None) -> Figure:
+    def cdf_plot(
+        self,
+        xlabel: str,
+        figsize: tuple[float, float] | None = None,
+        cdf: pd.DataFrame | None = None,
+    ) -> Figure:
         if not self.has_results:
             raise ValueError("Cannot plot if results are unavailable")
         return cdf_plot(
-            cdf=self.cdf(),
+            cdf=self.cdf() if cdf is None else cdf,
             alpha=self.settings.alpha,
             bmd=self.results.bmd,
             bmdl=self.results.bmdl,
@@ -297,9 +378,12 @@ class BmdModelAveraging(abc.ABC):
 class BmdModelAveragingSchema(BaseModel):
     @classmethod
     def get_subclass(cls, dtype: Dtype) -> Self:
+        from .cma import BmdModelAveragingContinuousSchema
         from .ma import BmdModelAveragingDichotomousSchema
 
-        if dtype in (Dtype.DICHOTOMOUS):
+        if dtype == Dtype.DICHOTOMOUS:
             return BmdModelAveragingDichotomousSchema
+        elif dtype in (Dtype.CONTINUOUS, Dtype.CONTINUOUS_INDIVIDUAL):
+            return BmdModelAveragingContinuousSchema
         else:
             raise ValueError(f"Invalid dtype: {dtype}")

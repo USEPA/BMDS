@@ -1,3 +1,4 @@
+import math
 import re
 import warnings
 from itertools import chain
@@ -30,8 +31,32 @@ class Prior(BaseModel):
     def numeric_list(self) -> list[float]:
         return list(self.model_dump(exclude={"name"}).values())
 
+    def __repr_args__(self):
+        # Make debug printing reflect LOUD parameterization
+        if self.type is PriorDistribution.Student_t:
+            # NOTE: by convention in this codebase:
+            # initial_value=df, stdev=loc, min_value=scale, max_value=<constraint/min/etc>
+            return [
+                ("name", self.name),
+                ("type", self.type),
+                ("df", self.initial_value),
+                ("location", self.stdev),
+                ("scale", self.min_value),
+            ]
+
+        if self.type is PriorDistribution.Gamma:
+            return [
+                ("name", self.name),
+                ("type", self.type),
+                ("shape", self.initial_value),
+                ("scale", self.stdev),
+            ]
+
+        return super().__repr_args__()
+
 
 class ModelPriors(BaseModel):
+    model_id: int | None = None
     prior_class: PriorClass  # if this is a predefined model class
     priors: list[Prior]  # priors for main model
     variance_priors: list[Prior] | None = None  # priors for variance model (continuous-only)
@@ -51,6 +76,108 @@ class ModelPriors(BaseModel):
             for p in chain(self.priors, self.variance_priors or ())
         ]
         return pretty_table(rows, headers)
+
+    def apply_continuous_loud_defaults(self, dataset, dist_type: DistType) -> None:
+        """
+        Apply dataset-informed default priors for Continuous LOUD models.
+        This overwrites CSV defaults BEFORE user overrides are applied.
+        """
+        if self.prior_class is not PriorClass.bayesian_loud:
+            return
+
+        doses = np.asarray(dataset.doses, dtype=float)
+        ns = np.asarray(dataset.ns, dtype=float)
+        means = np.asarray(dataset.means, dtype=float)
+        stdevs = np.asarray(dataset.stdevs, dtype=float)
+
+        i0 = int(np.argmin(doses))
+        i1 = int(np.argmax(doses))
+
+        n0, n1 = ns[i0], ns[i1]
+        m0, m1 = means[i0], means[i1]
+        s0, s1 = stdevs[i0], stdevs[i1]
+
+        def _p(name: str) -> Prior | None:
+            try:
+                return self.get_prior(name)
+            except ValueError:
+                return None
+
+        # -----------------------------
+        # Mean priors (Student-t)
+        # -----------------------------
+        df0 = n0 - 1
+        df1 = n1 - 1
+
+        if dist_type in {DistType.normal, DistType.normal_ncv}:
+            scale0 = s0 / math.sqrt(df0)
+            scale1 = s1 / math.sqrt(df1)
+
+            if p := _p("m0"):
+                p.type = PriorDistribution.Student_t
+                p.initial_value = df0
+                p.stdev = m0  # loc
+                p.min_value = scale0  # scale
+
+            if p := _p("m1"):
+                p.type = PriorDistribution.Student_t
+                p.initial_value = df1
+                p.stdev = m1
+                p.min_value = scale1
+
+        elif dist_type is DistType.log_normal:
+            if m0 <= 0 or m1 <= 0:
+                return
+
+            varlog0 = math.log(1 + (s0**2 / m0**2))
+            varlog1 = math.log(1 + (s1**2 / m1**2))
+            s01 = ((df0 * varlog0) + (df1 * varlog1)) / (df0 + df1)
+
+            scale0 = math.sqrt(s01 / df0)
+            scale1 = math.sqrt(s01 / df1)
+
+            if p := _p("m0"):
+                p.type = PriorDistribution.Student_t
+                p.initial_value = df0
+                p.stdev = math.log(m0)
+                p.min_value = scale0
+
+            if p := _p("m1"):
+                p.type = PriorDistribution.Student_t
+                p.initial_value = df1
+                p.stdev = math.log(m1)
+                p.min_value = scale1
+
+        # -----------------------------
+        # Variance priors (Gamma)
+        # -----------------------------
+        if dist_type is DistType.normal:
+            # pooled variance
+            s2 = ((df0 * s0**2) + (df1 * s1**2)) / (df0 + df1)
+            if p := _p("Var0"):
+                p.type = PriorDistribution.Gamma
+                p.initial_value = (n0 + n1 - 1) / 2  # shape
+                p.stdev = s2 * (n0 + n1) / 2  # scale
+
+        elif dist_type is DistType.normal_ncv:
+            if p := _p("Var0"):
+                p.type = PriorDistribution.Gamma
+                p.initial_value = df0 / 2
+                p.stdev = (s0**2) * n0 / 2
+
+            if p := _p("Var1"):
+                p.type = PriorDistribution.Gamma
+                p.initial_value = df1 / 2
+                p.stdev = (s1**2) * n1 / 2
+
+        elif dist_type is DistType.log_normal:
+            s2log = ((df0 * varlog0) + (df1 * varlog1)) / (df0 + df1)
+            if p := _p("Var0"):
+                p.type = PriorDistribution.Gamma
+                p.initial_value = (n0 + n1 - 1) / 2
+                p.stdev = s2log * (n0 + n1) / 2
+            if p := _p("Var1"):
+                self.variance_priors.remove(p)
 
     def get_prior(self, name: str) -> Prior:
         """Search all priors and return the match by name.
@@ -94,6 +221,15 @@ class ModelPriors(BaseModel):
 
         # otherwise set revisions directly
         prior = self.get_prior(name)
+        if prior.type is PriorDistribution.Student_t:
+            alias = {"df": "initial_value", "loc": "stdev", "scale": "min_value"}
+        elif prior.type is PriorDistribution.Gamma:
+            alias = {"shape": "initial_value", "scale": "stdev"}
+        else:
+            alias = {}
+
+        kw = {alias.get(k, k): v for k, v in kw.items()}
+
         for k, v in kw.items():
             setattr(prior, k, v)
 
@@ -103,8 +239,15 @@ class ModelPriors(BaseModel):
         dist_type: DistType | None = None,
         nphi: int | None = None,
     ) -> list[list]:
+        priors_src = list(self.priors)
+        if self.prior_class is PriorClass.bayesian_loud:
+            EXP3_MODEL_ID = 3
+
+            if self.model_id == EXP3_MODEL_ID:
+                priors_src = [p for p in priors_src if p.name != "c"]
+
         priors = []
-        for prior in self.priors:
+        for prior in priors_src:
             if nphi is not None and prior.name == "phi":
                 continue
             priors.append(prior.model_copy())
@@ -131,14 +274,22 @@ class ModelPriors(BaseModel):
                     setattr(prior, key, value)
                 priors.append(prior)
 
-        # add constant variance parameter
-        if dist_type and dist_type in {DistType.normal, DistType.log_normal}:
-            priors.append(self.variance_priors[1].model_copy())
+        if self.prior_class is PriorClass.bayesian_loud:
+            if dist_type in {DistType.normal, DistType.log_normal}:
+                priors.append(self.get_prior("Var0").model_copy())
+            elif dist_type is DistType.normal_ncv:
+                priors.append(self.get_prior("Var0").model_copy())
+                priors.append(self.get_prior("Var1").model_copy())
 
-        # add non-constant variance parameter
-        if dist_type and dist_type is DistType.normal_ncv:
-            for variance_prior in self.variance_priors:
-                priors.append(variance_prior)
+        else:
+            # add constant variance parameter
+            if dist_type and dist_type in {DistType.normal, DistType.log_normal}:
+                priors.append(self.variance_priors[1].model_copy())
+
+            # add non-constant variance parameter
+            if dist_type and dist_type is DistType.normal_ncv:
+                for variance_prior in self.variance_priors:
+                    priors.append(variance_prior)
 
         # check values
         for prior in priors:
@@ -173,8 +324,14 @@ def _load_model_priors():
     # lazy load model priors from CSV file
     def set_param_type(df):
         df = df.assign(variance_param=False)
+        legacy_variance = {"rho", "alpha", "log-alpha"}
+        loud_variance = {"Var0", "Var1"}
+        df.loc[(df.data_class == "C") & (df.name.isin(legacy_variance)), "variance_param"] = True
+
+        loud_value = PriorClass.bayesian_loud.value
         df.loc[
-            (df.data_class == "C") & (df.name.isin(["rho", "alpha", "log-alpha"])), "variance_param"
+            (df.data_class == "C") & (df.prior_class == loud_value) & (df.name.isin(loud_variance)),
+            "variance_param",
         ] = True
         return df
 
@@ -185,6 +342,7 @@ def _load_model_priors():
             gof_priors = params[params.variance_param == False]  # noqa: E712
             var_priors = params[params.variance_param == True]  # noqa: E712
             priors[key] = ModelPriors(
+                model_id=int(model_id),
                 prior_class=prior_class,
                 priors=gof_priors.to_dict("records"),
                 variance_priors=var_priors.to_dict("records") if var_priors.shape[0] > 0 else None,
@@ -208,11 +366,18 @@ def get_dichotomous_prior(model: DichotomousModel, prior_class: PriorClass) -> M
     return _model_priors[key].model_copy(deep=True)
 
 
-def get_continuous_prior(model: ContinuousModel, prior_class: PriorClass) -> ModelPriors:
+def get_continuous_prior(
+    model: ContinuousModel, prior_class: PriorClass, dataset=None, dist_type: DistType | None = None
+) -> ModelPriors:
     if len(_model_priors) == 0:
         _load_model_priors()
     key = f"{Dtype.CONTINUOUS.value}-{model.id}-{prior_class}"
-    return _model_priors[key].model_copy(deep=True)
+    mp = _model_priors[key].model_copy(deep=True)
+
+    if dataset is not None and prior_class is PriorClass.bayesian_loud:
+        mp.apply_continuous_loud_defaults(dataset, dist_type)
+
+    return mp
 
 
 def get_nested_dichotomous_prior(
@@ -224,18 +389,62 @@ def get_nested_dichotomous_prior(
     return _model_priors[key].model_copy(deep=True)
 
 
-def priors_tbl(params: list[str], priors: list[list], is_bayesian: bool) -> str:
-    headers = []
+def priors_tbl(
+    params: list[str],
+    priors: list[list],
+    is_bayesian: bool,
+    dist_type: DistType | None = None,
+) -> str:
+    """NOTE: values is [type, initial_value, stdev, min_value, max_value]
+    For LOUD we interpret these fields as distribution parameters:
+    Student_t: (df, loc, scale, min)  => (initial, stdev, min, max)
+    Gamma: (shape, scale, min, max) => (initial, stdev, min, max)
+    """
     rows = []
     if is_bayesian:
-        headers = "Parameter|Distribution|Initial|Stdev|Min|Max"
+        headers = "Parameter|Distribution|Definition"
+
+        # enforce 1:1 alignment; if this fails, upstream is wrong
+        if len(params) != len(priors):
+            raise ValueError(
+                f"Mismatch between parameter names ({len(params)}) and priors ({len(priors)}). "
+                f"Params: {params}"
+            )
+
         for name, values in zip(params, priors, strict=True):
-            rows.append((name, values[0].name, values[1], values[2], values[3], values[4]))
+            dist = values[0]
+
+            if dist.name.lower() in {"student_t"}:
+                df_ = values[1]
+                loc = values[2]
+                scale = values[3]
+                definition = f"df={df_}, loc={loc}, scale={scale}"
+            elif dist.name.lower() in {"gamma"}:
+                shape = values[1]
+                scale = values[2]
+                definition = f"shape={shape}, scale={scale}, min={values[3]}, max={values[4]}"
+            else:
+                definition = (
+                    f"initial={values[1]}, stdev={values[2]}, min={values[3]}, max={values[4]}"
+                )
+
+            display_name = name
+            if name == "Var0" and dist_type == DistType.normal:
+                display_name = "Var"
+            elif name == "Var0" and dist_type == DistType.log_normal:
+                display_name = "Var_log"
+
+            rows.append((display_name, dist.name, definition))
+
     else:
         headers = "Parameter|Initial|Min|Max"
         for name, values in zip(params, priors, strict=True):
             rows.append((name, values[1], values[3], values[4]))
-    return pretty_table(rows, headers.split("|"))
+
+    return pretty_table(
+        rows,
+        headers.split("|"),
+    )
 
 
 def multistage_cancer_prior() -> ModelPriors:

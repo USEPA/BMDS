@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from pybmds.types.common import NumpyFloatArray, residual_of_interest
+from pybmds.types.common import NumpyFloatArray, NumpyIntArray, residual_of_interest
 
 
 def test_residual_of_interest():
@@ -23,6 +23,10 @@ class ExampleModel(BaseModel):
     d: NumpyFloatArray
 
 
+class ExampleIntModel(BaseModel):
+    d: NumpyIntArray
+
+
 class TestNumpyFloatArray:
     def test_successes(self):
         for data in [[1], [1, 2, 3], [[1, 2], [3, 4]]]:
@@ -35,3 +39,9 @@ class TestNumpyFloatArray:
         for data in ["a", ["a", "a"], None]:
             with pytest.raises(ValidationError):
                 ExampleModel(d=data)
+
+    def test_type_errors_are_reported_as_validation_errors(self):
+        with pytest.raises(ValidationError, match="invalid np.ndarray format"):
+            ExampleModel(d=[object()])
+        with pytest.raises(ValidationError, match="invalid np.ndarray format"):
+            ExampleIntModel(d=[object()])

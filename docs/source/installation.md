@@ -30,7 +30,7 @@ In the terminal, confirm that `conda` is available:
 conda --version
 ```
 
-This should return a conda version, for example `conda 24.7.1`. Conda can install different versions of Python, and you should be able to install a version that is compatible with `pybmds` and BMDS Desktop as long as the conda installation is not too old.
+This should return a conda version, for example `conda 26.5.2`. Conda can install different versions of Python, and you should be able to install a version that is compatible with `pybmds` and BMDS Desktop as long as the conda installation is not too old.
 
 If you see a conda version after typing this command, you’re ready for the next step! Otherwise, check the [FAQ](faq) for possible solutions.
 
@@ -233,7 +233,7 @@ python -m pip install bmds-ui
 You can install a specific version of `bmds-ui` by specifying the version number, for example:
 
 ```bash
-python -m pip install bmds-ui==24.1
+python -m pip install bmds-ui==25.1
 ```
 
 If no version is specified, `pip` will install the latest version.

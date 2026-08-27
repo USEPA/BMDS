@@ -85,6 +85,38 @@ class TestBatchSession:
             (data_path / "reports/batch-continuous.xlsx").write_bytes(excel.getvalue())
             docx.save(data_path / "reports/batch-continuous.docx")
 
+    def test_to_docx_passes_loud_parameter_options(self):
+        calls = []
+
+        class FakeSession:
+            def to_docx(self, report, **kwargs):
+                calls.append(kwargs)
+                return report.document
+
+        batch = BatchSession(sessions=[FakeSession()])
+
+        batch.to_docx(
+            citation=False,
+            parameter_tables=False,
+            parameter_visualizations=True,
+            compressed=False,
+        )
+
+        assert calls == [
+            {
+                "header_level": 1,
+                "citation": False,
+                "dataset_format_long": True,
+                "all_models": False,
+                "bmd_cdf_table": False,
+                "session_inputs_table": False,
+                "parameter_tables": False,
+                "parameter_visualizations": True,
+                "compressed": False,
+                "skip_loud_diagnostics": False,
+            }
+        ]
+
 
 class TestMultitumorBatch:
     def test_exports(self, mt_datasets, rewrite_data_files, data_path):

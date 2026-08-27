@@ -56,6 +56,22 @@ class TestPriorOverrides:
             assert v.min_value == priors[1]
             assert v.max_value == priors[2]
 
+    def test_bayes_only_models_reject_frequentist_priors(self, cdataset2):
+        for Model in [
+            continuous.MultiplicativeHill,
+            continuous.InverseExponential,
+            continuous.Lognormal,
+            continuous.ContinuousGamma,
+            continuous.LMS,
+        ]:
+            for prior_class in [
+                PriorClass.frequentist_restricted,
+                PriorClass.frequentist_unrestricted,
+                PriorClass.bayesian,
+            ]:
+                with pytest.raises(ConfigurationException):
+                    Model(cdataset2, {"priors": prior_class})
+
 
 class TestBmdModelContinuous:
     def test_get_param_names(self, cdataset2):
@@ -81,6 +97,24 @@ class TestBmdModelContinuous:
         )
         assert model.get_param_names() == ["g", "b1", "b2", "b3", "rho", "alpha"]
 
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.normal_ncv, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "rho", "alpha"]
+
+        model = continuous.MultiplicativeHill(
+            dataset=cdataset2,
+            settings=dict(disttype=DistType.log_normal, priors=PriorClass.bayesian_loud),
+        )
+        assert model.get_param_names() == ["a", "b", "c", "d", "log-alpha"]
+
     def test_report(self, cdataset2):
         model = continuous.Hill(dataset=cdataset2)
         text = model.text()
@@ -91,6 +125,30 @@ class TestBmdModelContinuous:
         text = model.text()
         assert "Hill" in text
         assert "Goodness of Fit:" in text
+        assert "Likelihoods:" in text
+        assert "Tests of Mean and Variance Fits:" in text
+
+    def test_standalone_loud(self, cdataset2):
+        model = continuous.Power(
+            dataset=cdataset2,
+            settings={
+                "disttype": DistType.normal,
+                "priors": PriorClass.bayesian_loud,
+                "samples": 500,
+                "burnin": 50,
+            },
+        )
+
+        result = model.execute()
+
+        assert result is model.results
+        assert model.has_results is True
+        assert model.session is None
+        assert result.bmd > 0
+        assert "Model has not successfully executed" not in model.text()
+        assert "Likelihoods:" not in model.text()
+        assert "Tests of Mean and Variance Fits:" not in model.text()
+        assert "Likelihoods:" not in result.text(model.dataset, model.settings)
 
     def test_default_prior_class(self, cdataset2):
         for Model, prior_class in [
@@ -100,6 +158,11 @@ class TestBmdModelContinuous:
             (continuous.Hill, PriorClass.frequentist_restricted),
             (continuous.Linear, PriorClass.frequentist_unrestricted),
             (continuous.Polynomial, PriorClass.frequentist_restricted),
+            (continuous.MultiplicativeHill, PriorClass.bayesian_loud),
+            (continuous.InverseExponential, PriorClass.bayesian_loud),
+            (continuous.Lognormal, PriorClass.bayesian_loud),
+            (continuous.ContinuousGamma, PriorClass.bayesian_loud),
+            (continuous.LMS, PriorClass.bayesian_loud),
         ]:
             assert Model(cdataset2).settings.priors.prior_class is prior_class
 
