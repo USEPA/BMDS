@@ -36,6 +36,7 @@ from .reporting.styling import (
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
+    write_MCMC_table,
     write_citation,
     write_dataset_metadata,
     write_dataset_table,
@@ -790,6 +791,10 @@ class Session:
             write_inputs_table(report, self)
 
         if self.is_bayesian():
+            if self.is_bayesian_loud(): 
+                report.document.add_paragraph("Markov Chain Monte Carlo Options", h2)
+                write_MCMC_table(report, self)
+
             report.document.add_paragraph("Bayesian Summary", h2)
             write_bayesian_table(report, self)
             plot_dr(report, self)
