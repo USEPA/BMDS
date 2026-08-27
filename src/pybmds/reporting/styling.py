@@ -612,11 +612,13 @@ def write_bayesian_table(report: Report, session: Session):
         footnotes.add_footnote_text(report.document, report.styles.tbl_footnote)
 
 def write_MCMC_table(report: Report, session: Session):
+    settings = session.models[0].settings
     data = {
-                "Seed": -9999,
-                "# Chains": -9999,
-                "# iterations per chain": -9999,
-                "Burn In": -9999,
+                "Setting": "Value",
+                "Seed": settings.seed,
+                "# Chains": settings.n_chains,
+                "# iterations per chain": settings.samples,
+                "Burn In": settings.burnin,
             }
 
     styles = report.styles
