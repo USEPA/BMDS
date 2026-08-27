@@ -611,15 +611,16 @@ def write_bayesian_table(report: Report, session: Session):
     if len(footnotes) > 0:
         footnotes.add_footnote_text(report.document, report.styles.tbl_footnote)
 
+
 def write_MCMC_table(report: Report, session: Session):
     settings = session.models[0].settings
     data = {
-                "Setting": "Value",
-                "Seed": settings.seed,
-                "# Chains": settings.n_chains,
-                "# iterations per chain": settings.samples,
-                "Burn In": settings.burnin,
-            }
+        "Setting": "Value",
+        "Seed": settings.seed,
+        "# Chains": settings.n_chains,
+        "# iterations per chain": settings.samples,
+        "Burn In": settings.burnin,
+    }
 
     styles = report.styles
     hdr = report.styles.tbl_header
@@ -627,8 +628,8 @@ def write_MCMC_table(report: Report, session: Session):
 
     tbl = report.document.add_table(len(data), 2, style=styles.table)
     for idx, (key, value) in enumerate(data.items()):
-            write_cell(tbl.cell(idx, 0), key, style=hdr)
-            write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
+        write_cell(tbl.cell(idx, 0), key, style=hdr)
+        write_cell(tbl.cell(idx, 1), value, style=hdr if idx == 0 else body)
 
 
 def write_models(report: Report, session: Session, bmd_cdf_table: bool, header_level: int):

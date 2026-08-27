@@ -791,7 +791,7 @@ class Session:
             write_inputs_table(report, self)
 
         if self.is_bayesian():
-            if self.is_bayesian_loud(): 
+            if self.is_bayesian_loud():
                 report.document.add_paragraph("Markov Chain Monte Carlo Options", h2)
                 write_MCMC_table(report, self)
 
@@ -800,12 +800,11 @@ class Session:
             plot_dr(report, self)
 
             # LOUD-specific ArviZ plots
-            
+
             if self.is_bayesian_loud() and self.model_average:
                 if callable(skip_loud_diagnostics):
                     skip_loud_diagnostics(report)
-                elif not skip_loud_diagnostics:    
-
+                elif not skip_loud_diagnostics:
                     add_paragraph_with_space_before("Model Averaging Diagnostics (LOUD)", h2)
                     add_paragraph_with_space_before(
                         "The following diagnostics summarize the model-averaged posterior "
@@ -828,10 +827,14 @@ class Session:
                     add_paragraph_with_space_before(
                         "Overlay of model-specific and model-averaged BMD distributions"
                     )
-                    add_paragraph_with_space_before(add_mpl_figure(report.document, figs["overlay"], 6))
+                    add_paragraph_with_space_before(
+                        add_mpl_figure(report.document, figs["overlay"], 6)
+                    )
                     plt.close(figs["overlay"])
 
-                    add_paragraph_with_space_before("Summary statistics for BMD and model-averaged BMD")
+                    add_paragraph_with_space_before(
+                        "Summary statistics for BMD and model-averaged BMD"
+                    )
                     df_to_table(report, figs["bmd_summary"].reset_index().fillna(""))
 
                     for group in figs["parameter_groups"]:
