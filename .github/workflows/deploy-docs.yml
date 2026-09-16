@@ -16,6 +16,8 @@ jobs:
       VCPKG_HOST_TRIPLET: x64-linux
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Cache vcpkg dependencies
         id: cache-vcpkg-deps
         uses: actions/cache@v4
