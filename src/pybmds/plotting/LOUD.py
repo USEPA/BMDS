@@ -171,7 +171,7 @@ def _bmd_axis_cap(idata: xr.DataTree) -> float | None:
     if highest_dose <= 0:
         return None
 
-    return 5 * highest_dose
+    return 3 * highest_dose
 
 
 def _apply_bmd_axis_cap(
@@ -766,10 +766,12 @@ def _append_footnote(summary: pd.DataFrame, footnote: str) -> pd.DataFrame:
     return summary
 
 
-def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
+def _zero_weight_unavailable_convergence_labels(
+    summary: pd.DataFrame, label_column: str | None = None
+) -> list[str]:
     weight_col = "Posterior Weights" if "Posterior Weights" in summary.columns else "Model Weight"
     if weight_col not in summary.columns:
-        return False
+        return []
 
     convergence_columns = [
         column
@@ -777,9 +779,10 @@ def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
         if column in summary.columns
     ]
     if not convergence_columns:
-        return False
+        return []
 
-    for _, row in summary.iterrows():
+    labels: list[str] = []
+    for index, row in summary.iterrows():
         try:
             weight = float(row[weight_col])
         except (TypeError, ValueError):
@@ -787,18 +790,40 @@ def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
         if not np.isclose(weight, 0.0):
             continue
         if all(pd.isna(row[column]) for column in convergence_columns):
-            return True
-    return False
+            label = row[label_column] if label_column and label_column in row.index else index
+            labels.append(str(label))
+    return labels
 
 
-def _add_zero_weight_convergence_footnote(summary: pd.DataFrame) -> pd.DataFrame:
-    if _has_unavailable_convergence_for_zero_weight(summary):
-        return _append_footnote(summary, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
+def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
+    return bool(_zero_weight_unavailable_convergence_labels(summary))
+
+
+def _append_row_footnote(summary: pd.DataFrame, labels: list[str], footnote: str) -> pd.DataFrame:
+    row_footnotes = {
+        str(label): list(footnotes)
+        for label, footnotes in summary.attrs.get("row_footnotes", {}).items()
+    }
+    for label in labels:
+        footnotes = row_footnotes.setdefault(str(label), [])
+        if footnote not in footnotes:
+            footnotes.append(footnote)
+    summary.attrs["row_footnotes"] = row_footnotes
+    return summary
+
+
+def _add_zero_weight_convergence_footnote(
+    summary: pd.DataFrame, label_column: str | None = None
+) -> pd.DataFrame:
+    labels = _zero_weight_unavailable_convergence_labels(summary, label_column=label_column)
+    if labels:
+        summary = _append_footnote(summary, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
+        return _append_row_footnote(summary, labels, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
     return summary
 
 
 def _parameter_summary_with_footnotes(summary: pd.DataFrame) -> pd.DataFrame:
-    summary = _add_zero_weight_convergence_footnote(summary)
+    summary = _add_zero_weight_convergence_footnote(summary, label_column="Model")
     attrs = dict(summary.attrs)
     summary = summary.drop(columns=["Model Weight"], errors="ignore")
     summary.attrs = attrs

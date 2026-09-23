@@ -676,11 +676,24 @@ def df_to_table(report: Report, df: pd.DataFrame, formatter=ff):
     tbl = report.document.add_table(n_rows, n_col, style=report.styles.table)
     cells = tbl._cells
     data = df.to_dict("tight", index=False)
+    footnotes = TableFootnote()
+    row_footnotes = {
+        str(label): list(notes) for label, notes in df.attrs.get("row_footnotes", {}).items()
+    }
+    marked_footnotes = {note for notes in row_footnotes.values() for note in notes}
     for i, header in enumerate(data["columns"]):
         write_cell(cells[i], header, style=hdr)
     for i, row in enumerate(data["data"]):
+        row_label = str(row[0]) if row else str(i)
         for j, value in enumerate(row):
-            write_cell(cells[(i + 1) * n_col + j], value, style=body, formatter=formatter)
+            cell = cells[(i + 1) * n_col + j]
+            write_cell(cell, value, style=body, formatter=formatter)
+            if j == 0:
+                for footnote in row_footnotes.get(row_label, []):
+                    footnotes.add_footnote(cell.paragraphs[0], footnote)
 
     for footnote in df.attrs.get("footnotes", []):
-        report.document.add_paragraph(str(footnote), report.styles.tbl_footnote)
+        if footnote not in marked_footnotes:
+            footnotes.add_footnote(None, str(footnote))
+    if len(footnotes) > 0:
+        footnotes.add_footnote_text(report.document, report.styles.tbl_footnote)

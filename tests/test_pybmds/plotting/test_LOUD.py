@@ -354,13 +354,13 @@ class TestLOUD:
             _positive_support_kde(np.array([1.0, 2.0]), x_range=(-2.0, -1.0))
 
         idata = _with_observed_doses(_fake_loud_idata(), [0.0, 10.0])
-        assert _bmd_axis_cap(idata) == 50.0
-        assert _bmd_plot_range(idata, np.array([1.0, 100.0])) == (0.0, 50.0)
+        assert _bmd_axis_cap(idata) == 30.0
+        assert _bmd_plot_range(idata, np.array([1.0, 100.0])) == (0.0, 30.0)
         assert _bmd_plot_range(idata, np.array([1.0, 10.0])) is None
 
         fig, ax = plt.subplots()
         _apply_bmd_axis_cap(ax, idata, np.array([1.0, 100.0]))
-        assert ax.get_xlim()[1] == pytest.approx(50.0)
+        assert ax.get_xlim()[1] == pytest.approx(30.0)
         plt.close(fig)
 
         assert _bmd_axis_cap(_data_tree(posterior=idata.posterior)) is None
@@ -419,6 +419,7 @@ class TestLOUD:
         footnoted = _parameter_summary_with_footnotes(summary)
         assert "Model Weight" not in footnoted.columns
         assert _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE in footnoted.attrs["footnotes"]
+        assert footnoted.attrs["row_footnotes"] == {"0": [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]}
 
         monkeypatch.setattr("pybmds.plotting.LOUD._ARVIZ_USES_DATATREE", False)
 
@@ -524,6 +525,9 @@ class TestLOUD:
             zero_weight_idata, hdi_prob=0.9, summary=missing_convergence
         )
         assert zero_weight_bmd.attrs["footnotes"] == [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
+        assert zero_weight_bmd.attrs["row_footnotes"] == {
+            "Power (CV)": [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
+        }
 
         parameter_groups = _parameter_group_records(idata, session, hdi_prob=0.9)
         assert [group["name"] for group in parameter_groups] == ["Power", "Hill"]
@@ -540,15 +544,15 @@ class TestLOUD:
         plt.close(posterior)
         plt.close(overlay)
 
-    def test_bmd_figures_cap_x_axis_when_draws_exceed_five_times_highest_dose(self):
+    def test_bmd_figures_cap_x_axis_when_draws_exceed_three_times_highest_dose(self):
         idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 2])
         stats = _ma_bmd_quantiles(idata, alpha=0.05)
 
         posterior = _ma_bmd_posterior_figure(idata, stats)
         overlay = _bmd_distributions_figure(idata)
 
-        assert posterior.axes[0].get_xlim() == pytest.approx((0, 10))
-        assert overlay.axes[0].get_xlim() == pytest.approx((0, 10))
+        assert posterior.axes[0].get_xlim() == pytest.approx((0, 6))
+        assert overlay.axes[0].get_xlim() == pytest.approx((0, 6))
 
         plt.close(posterior)
         plt.close(overlay)
@@ -562,19 +566,19 @@ class TestLOUD:
             xdata = line.get_xdata()
             assert len(xdata) == 512
             assert xdata[0] > 0
-            assert xdata[-1] == pytest.approx(10)
+            assert xdata[-1] == pytest.approx(6)
 
         plt.close(overlay)
 
-    def test_bmd_figures_keep_auto_x_axis_when_draws_within_five_times_highest_dose(self):
-        idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 5])
+    def test_bmd_figures_keep_auto_x_axis_when_draws_within_three_times_highest_dose(self):
+        idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 8])
         stats = _ma_bmd_quantiles(idata, alpha=0.05)
 
         posterior = _ma_bmd_posterior_figure(idata, stats)
         overlay = _bmd_distributions_figure(idata)
 
-        assert posterior.axes[0].get_xlim()[1] != pytest.approx(25)
-        assert overlay.axes[0].get_xlim()[1] != pytest.approx(25)
+        assert posterior.axes[0].get_xlim()[1] != pytest.approx(24)
+        assert overlay.axes[0].get_xlim()[1] != pytest.approx(24)
 
         plt.close(posterior)
         plt.close(overlay)
@@ -700,6 +704,7 @@ class TestLOUD:
         )
         zero_weight = _add_zero_weight_convergence_footnote(zero_weight)
         assert zero_weight.attrs["footnotes"] == [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
+        assert zero_weight.attrs["row_footnotes"] == {"0": [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]}
 
     def test_build_observed_data_dichotomous(self, ddataset2):
         observed = _build_observed_data(ddataset2)
