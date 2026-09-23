@@ -202,14 +202,13 @@ double findQuantileVals(std::vector<double> data, double q) {
   }
 }
 
-bool isValidBmdscoreValue(double value) {
-  return std::isfinite(value) && value != BMDS_MISSING;
-}
+bool isValidBmdscoreValue(double value) { return std::isfinite(value) && value != BMDS_MISSING; }
 
 void filterFiniteAndSort(std::vector<double> *data) {
   data->erase(
       std::remove_if(
-          data->begin(), data->end(), [](const double &value) { return !isValidBmdscoreValue(value); }
+          data->begin(), data->end(),
+          [](const double &value) { return !isValidBmdscoreValue(value); }
       ),
       data->end()
   );
@@ -6033,7 +6032,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
       combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
       combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
-
     }
   }
 

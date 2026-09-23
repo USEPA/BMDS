@@ -52,7 +52,7 @@ static inline double safe_gamma_pinv(const double P, const double a, const doubl
     return GSL_NAN;
   }
 
-  gsl_error_handler_t *old_handler = gsl_set_error_handler_off();
+  gsl_error_handler_t* old_handler = gsl_set_error_handler_off();
   double value = gsl_cdf_gamma_Pinv(P, a, b);
   gsl_set_error_handler(old_handler);
   return value;
