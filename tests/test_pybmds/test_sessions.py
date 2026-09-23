@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 import pybmds
-from pybmds.constants import DistType, Models, PriorClass
+from pybmds.constants import BMDS_BLANK_VALUE, DistType, Models, PriorClass
 
 
 def assert_strict_json(payload):
