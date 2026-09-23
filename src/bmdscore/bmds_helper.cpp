@@ -22,7 +22,7 @@
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
 std::string BMDS_VERSION = "26.1";
 
-long stableContinuousLoudSeed(long baseSeed, int model, int dist, int chain) {
+long stableLoudSeed(long baseSeed, int model, int dist, int chain) {
   // Keep model-specific LOUD draws stable when the model-average set changes.
   unsigned long long x = static_cast<unsigned long long>(baseSeed);
   x += 0x9e3779b97f4a7c15ULL;
@@ -35,6 +35,10 @@ long stableContinuousLoudSeed(long baseSeed, int model, int dist, int chain) {
   x *= 0x94d049bb133111ebULL;
   x ^= x >> 31;
   return static_cast<long>((x % 2147483646ULL) + 1ULL);
+}
+
+long stableContinuousLoudSeed(long baseSeed, int model, int dist, int chain) {
+  return stableLoudSeed(baseSeed, model, dist, chain);
 }
 
 double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses) {
@@ -5313,17 +5317,19 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < numModels; i++) {
     expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
   }
-  struct fitResult loudOut;
-  long seed = pyMA->seed;
+  long base_seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyDA.chains);
     pyRes->models[i].loudRes = loudRes;
     for (int chain = 0; chain < chains; chain++) {
+      struct fitResult loudOut;
       loudIn.priorr = expandedPriors[i];
       loudIn.model = pyMA->models[i];
       pyRes->models[i].bmdsRes.validResult = false;
 
-      fit_Loud_dicho(&loudIn, &loudOut, seed);
+      long model_chain_seed =
+          stableLoudSeed(base_seed, static_cast<int>(pyMA->models[i]), BMDS_MISSING, chain);
+      fit_Loud_dicho(&loudIn, &loudOut, model_chain_seed);
 
       pyRes->models[i].loudRes[chain] = loudOut;
       pyRes->models[i].nparms = loudOut.parms.cols();
@@ -5340,8 +5346,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       combLoudRes->R.block(current_row, 0, samples, loudOut.R.cols()) = loudOut.R;
       combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
       combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
-
-      seed += 1;  // iterate random seed by 1 for each chain
     }
   }
 
@@ -5501,7 +5505,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // std::random_device rd;
   // define a random number generator
   // std::mt19937 gen(rd());
-  std::mt19937 gen(seed);
+  std::mt19937 gen(stableLoudSeed(base_seed, BMDS_MISSING, BMDS_MISSING, 0));
   // define weight distribution
   std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
   // std::vector<double> bmds_c(iter*chains);
