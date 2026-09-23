@@ -919,6 +919,9 @@ class Session:
         for model in self.models:
             if not model.has_results:
                 continue
+            dr_y = np.asarray(model.results.plotting.dr_y, dtype=float)
+            if not (np.isfinite(dr_y) & (dr_y != BMDS_BLANK_VALUE)).any():
+                continue
             if colorize:
                 label = model.name()
             elif plotted_models == 0:
@@ -927,7 +930,7 @@ class Session:
                 label = None
             ax.plot(
                 model.results.plotting.dr_x,
-                model.results.plotting.dr_y,
+                dr_y,
                 label=label,
                 c=next(color_cycle),
                 linestyle=next(line_cycle),

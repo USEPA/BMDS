@@ -29,9 +29,7 @@ class TestContinuousModelAverage:
             priors=np.array([1.0]),
             posteriors=np.array([1.0]),
             model_bmd_dist=[np.array([[1.0, np.inf], [BMDS_BLANK_VALUE, 3.0]])],
-            model_parm_dist=[
-                np.array([[[1.0], [np.nan]], [[BMDS_BLANK_VALUE], [3.0]]])
-            ],
+            model_parm_dist=[np.array([[[1.0], [np.nan]], [[BMDS_BLANK_VALUE], [3.0]]])],
             dr_x=np.array([0.0, 1.0]),
             dr_y=np.array([0.0, 0.5]),
         )

@@ -181,8 +181,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif parms.ndim == 2 and parms.shape[0] == bmd.size:
             valid = (
-                valid_bmdscore_draw_mask(bmd.reshape(-1))
-                & valid_bmdscore_draw_rows(parms)
+                valid_bmdscore_draw_mask(bmd.reshape(-1)) & valid_bmdscore_draw_rows(parms)
             ).reshape(bmd.shape)
         else:
             return bmd, parms
@@ -386,9 +385,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             valid_posteriors = []
             for idx, (model, parm_draws) in enumerate(zip(models, model_parms, strict=True)):
                 finite_parm_draws = parm_draws.reshape(-1, parm_draws.shape[-1])
-                finite_parm_draws = finite_parm_draws[
-                    valid_bmdscore_draw_rows(finite_parm_draws)
-                ]
+                finite_parm_draws = finite_parm_draws[valid_bmdscore_draw_rows(finite_parm_draws)]
                 params = (
                     np.nanmedian(finite_parm_draws, axis=0)
                     if finite_parm_draws.size

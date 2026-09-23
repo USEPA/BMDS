@@ -987,6 +987,33 @@ class TestSessionPlot:
         session.execute()
         return session.plot(colorize=False)
 
+    def test_continuous_ma_skips_blank_individual_model_curve(self):
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 8.3, 33.3, 100],
+            ns=[10, 10, 10, 10],
+            means=[128.3, 134.1, 137.9, 63.2],
+            stdevs=[48.5, 62, 72.9, 22.6],
+        )
+        session = pybmds.Session(dataset=dataset)
+        session.add_default_bayesian_models(
+            include_extended=True,
+            weight_option=1,
+            settings=dict(
+                n_chains=4,
+                samples=1000,
+                burnin=200,
+                seed=0,
+                bmr_type=pybmds.ContinuousRiskType.RelativeDeviation,
+                bmr=0.1,
+            ),
+        )
+        session.execute()
+
+        fig = session.plot(colorize=False)
+        ax = fig.gca()
+
+        assert not any(np.all(line.get_ydata() == BMDS_BLANK_VALUE) for line in ax.lines)
+
     @pytest.mark.mpl_image_compare
     def test_continuous_colorize(self, cdataset):
         session = pybmds.Session(dataset=cdataset)

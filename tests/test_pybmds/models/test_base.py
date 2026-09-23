@@ -30,9 +30,7 @@ def test_cdf_df_handles_empty_draws_and_rejects_higher_dimensions():
     assert empty.empty
     assert empty.columns.to_list() == ["Percentile", "BMD"]
 
-    empty_from_cdf_shape = cdf_df(
-        np.array([[BMDS_BLANK_VALUE, np.nan], [0.25, 0.75]])
-    )
+    empty_from_cdf_shape = cdf_df(np.array([[BMDS_BLANK_VALUE, np.nan], [0.25, 0.75]]))
     assert empty_from_cdf_shape["BMD"].to_list() == pytest.approx(
         np.percentile([0.25, 0.75], empty_from_cdf_shape["Percentile"])
     )

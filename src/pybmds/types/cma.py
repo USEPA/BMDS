@@ -193,8 +193,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
             valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif parms.ndim == 2 and parms.shape[0] == bmd.size:
             valid = (
-                valid_bmdscore_draw_mask(bmd.reshape(-1))
-                & valid_bmdscore_draw_rows(parms)
+                valid_bmdscore_draw_mask(bmd.reshape(-1)) & valid_bmdscore_draw_rows(parms)
             ).reshape(bmd.shape)
         else:
             return bmd, parms
