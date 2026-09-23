@@ -920,8 +920,11 @@ class Session:
         for model in self.models:
             if not model.has_results:
                 continue
+            params = np.asarray(model.results.parameters.values, dtype=float)
+            if not (np.isfinite(params) & (params != BMDS_BLANK_VALUE)).all():
+                continue
             dr_y = np.asarray(model.results.plotting.dr_y, dtype=float)
-            if not (np.isfinite(dr_y) & (dr_y != BMDS_BLANK_VALUE)).any():
+            if not (np.isfinite(dr_y) & (dr_y != BMDS_BLANK_VALUE)).all():
                 continue
             if colorize:
                 label = model.name()
