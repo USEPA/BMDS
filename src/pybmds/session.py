@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from copy import copy, deepcopy
 from itertools import cycle
-from typing import Any, Callable, ClassVar
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,11 +37,11 @@ from .reporting.styling import (
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
-    write_MCMC_table,
     write_citation,
     write_dataset_metadata,
     write_dataset_table,
     write_inputs_table,
+    write_MCMC_table,
     write_model,
     write_models,
 )

@@ -10,13 +10,14 @@ import xarray as xr
 import pybmds
 from pybmds.constants import BMDS_BLANK_VALUE, DistType, Models, PriorClass
 from pybmds.plotting.LOUD import (
+    _PLOT_KDE_POINTS,
     _RHAT_SINGLE_CHAIN_FOOTNOTE,
     _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE,
     _add_zero_weight_convergence_footnote,
+    _apply_bmd_axis_cap,
     _arviz_hdi,
     _arviz_summary,
     _as_chain_draws,
-    _apply_bmd_axis_cap,
     _bmd_axis_cap,
     _bmd_diagnostics_table,
     _bmd_distributions_figure,
@@ -41,7 +42,6 @@ from pybmds.plotting.LOUD import (
     _parameter_group_records,
     _parameter_group_trace_figure,
     _parameter_summary_with_footnotes,
-    _PLOT_KDE_POINTS,
     _plot_dist,
     _positive_support_kde,
     _rename_summary_columns,

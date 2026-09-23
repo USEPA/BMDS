@@ -1,5 +1,5 @@
-from copy import deepcopy
 import warnings
+from copy import deepcopy
 from textwrap import dedent
 
 import numpy as np
