@@ -371,7 +371,7 @@ def test_decreasing_lognormal():
     for model in (Models.ExponentialM3, Models.ExponentialM5):
         session.add_model(model, settings)
     session.execute()
-    for model, bmd in zip(session.models, [227, 46], strict=True):
+    for model, bmd in zip(session.models, [213, 41], strict=True):
         assert model.results.has_completed is True
         assert model.results.bmd == pytest.approx(bmd, rel=0.05)
 

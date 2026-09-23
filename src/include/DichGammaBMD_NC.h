@@ -12,8 +12,8 @@
 #define GAMMA_G(X) 1.0 / (1.0 + exp(-X))
 #define GAMMA_A(X) X
 #define GAMMA_B(X) X
-#define GAMMA_ADDED_Z(G, A, BMR) gsl_cdf_gamma_Pinv(BMR / (1 - G), A, 1)
-#define GAMMA_EXTRA_Z(G, A, BMR) gsl_cdf_gamma_Pinv(BMR, A, 1)
+#define GAMMA_ADDED_Z(G, A, BMR) safe_gamma_pinv(BMR / (1 - G), A, 1)
+#define GAMMA_EXTRA_Z(G, A, BMR) safe_gamma_pinv(BMR, A, 1)
 #define GAMMA_ADDED_RISK(G, A, B, BMR) GAMMA_ADDED_Z(G, A, BMR) / B
 #define GAMMA_EXTRA_RISK(G, A, B, BMR) GAMMA_EXTRA_Z(G, A, BMR) / B
 #define GAMMA_MEAN(G, A, B, D) ((D) <= (0.0)) ? (G) : (G + (1 - G) * (gsl_cdf_gamma_P(B * D, A, 1)))
@@ -32,6 +32,7 @@
 
 #  include <gsl/gsl_blas.h>
 #  include <gsl/gsl_cdf.h>
+#  include <gsl/gsl_errno.h>
 #  include <gsl/gsl_ieee_utils.h>
 #  include <gsl/gsl_integration.h>
 #  include <gsl/gsl_linalg.h>
@@ -44,6 +45,18 @@
 
 #  include "binomModels.h"
 #  include "log_likelihoods.h"
+
+static inline double safe_gamma_pinv(const double P, const double a, const double b) {
+  if (!std::isfinite(P) || !std::isfinite(a) || !std::isfinite(b) || P < 0.0 || P > 1.0 ||
+      a <= 0.0 || b <= 0.0) {
+    return GSL_NAN;
+  }
+
+  gsl_error_handler_t *old_handler = gsl_set_error_handler_off();
+  double value = gsl_cdf_gamma_Pinv(P, a, b);
+  gsl_set_error_handler(old_handler);
+  return value;
+}
 
 // void gradient(Eigen::MatrixXd v, double *g, void *data, std::function<double(Eigen::MatrixXd,
 // void*)> math_func)

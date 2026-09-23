@@ -22,6 +22,21 @@ def clean_array(arr: np.ndarray) -> np.ndarray:
     )
 
 
+def valid_bmdscore_draw_mask(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return np.isfinite(arr) & (arr != BMDS_BLANK_VALUE)
+
+
+def valid_bmdscore_draws(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return arr[valid_bmdscore_draw_mask(arr)]
+
+
+def valid_bmdscore_draw_rows(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return np.isfinite(arr).all(axis=-1) & (arr != BMDS_BLANK_VALUE).all(axis=-1)
+
+
 class PydanticNumpyArray(np.ndarray):
     # pydantic friendly numpy arrays
 

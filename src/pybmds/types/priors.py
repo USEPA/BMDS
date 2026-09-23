@@ -293,6 +293,14 @@ class ModelPriors(BaseModel):
 
         # check values
         for prior in priors:
+            if prior.type is PriorDistribution.Student_t:
+                continue
+
+            if prior.type is PriorDistribution.Gamma:
+                if prior.min_value > prior.max_value:
+                    warnings.warn(f"Min Value > Max Value ({prior})", stacklevel=2)
+                continue
+
             if prior.min_value > prior.max_value:
                 warnings.warn(f"Min Value > Max Value ({prior})", stacklevel=2)
             elif prior.initial_value < prior.min_value:

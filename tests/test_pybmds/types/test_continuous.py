@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from pybmds.constants import DistType, PriorClass
+from pybmds.constants import BMDS_BLANK_VALUE, DistType, PriorClass
 from pybmds.models import continuous
 from pybmds.types.continuous import (
     ContinuousModelSettings,
@@ -38,6 +38,28 @@ def test_continuous_parameters_loud_draw_shape_validation():
     assert ContinuousParameters.from_loud_draws(model, np.array([[1.0, 2.0]])).cov.shape == (2, 2)
     with pytest.raises(ValueError, match="Unsupported LOUD parameter draw shape"):
         ContinuousParameters.from_loud_draws(model, np.zeros((1, 1, 1)))
+
+
+def test_continuous_parameters_loud_draws_all_invalid_return_blank_values():
+    model = type(
+        "Model",
+        (),
+        {
+            "get_param_names": lambda self: ["a", "b"],
+            "get_priors_list": lambda self: [[0, 1, 1, -1, 1], [0, 1, 1, -1, 1]],
+        },
+    )()
+
+    params = ContinuousParameters.from_loud_draws(
+        model,
+        np.array([[BMDS_BLANK_VALUE, 1.0], [np.nan, 2.0], [np.inf, 3.0]]),
+    )
+
+    assert params.names == ["a", "b"]
+    np.testing.assert_array_equal(params.values, [BMDS_BLANK_VALUE, BMDS_BLANK_VALUE])
+    np.testing.assert_array_equal(params.se, [BMDS_BLANK_VALUE, BMDS_BLANK_VALUE])
+    assert params.cov.shape == (2, 2)
+    assert np.all(params.cov == BMDS_BLANK_VALUE)
     with pytest.raises(ValueError, match="draws are empty"):
         ContinuousParameters.from_loud_draws(model, np.empty((1, 0)))
 
@@ -162,6 +184,11 @@ class TestContinuousParameters:
 
         assert len(params.values) == 4
         assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
+        assert np.all(np.isfinite(params.values))
+        assert np.all(params.se == BMDS_BLANK_VALUE)
+        assert np.all(np.isfinite(params.lower_ci))
+        assert np.all(np.isfinite(params.upper_ci))
+        assert np.all(params.cov == BMDS_BLANK_VALUE)
 
     def test_exp3(self, cdataset):
         """

@@ -38,10 +38,54 @@ class TestDichotomousModelAverageResultHelpers:
         assert bmd.shape == (2,)
         assert parms.shape == (2, 2)
 
+        chains = [
+            SimpleNamespace(
+                BMD=[1.0, 2.0, 3.0],
+                parms=np.array([[10.0, 20.0, 30.0], [11.0, 21.0, 31.0]]),
+            ),
+            SimpleNamespace(
+                BMD=[4.0, 5.0, 6.0],
+                parms=np.array([[40.0, 50.0, 60.0], [41.0, 51.0, 61.0]]),
+            ),
+        ]
+        bmd, parms = result._loud_draws(chains, 2)
+        assert bmd.shape == (2, 3)
+        assert parms.shape == (2, 3, 2)
+        np.testing.assert_array_equal(parms[1], [[40.0, 41.0], [50.0, 51.0], [60.0, 61.0]])
+
     def test_combined_loud_result_falls_back_to_per_chain_results(self):
+        combined = SimpleNamespace(BMD=[1.0])
         chains = [SimpleNamespace(BMD=[1.0])]
+        cpp_result = SimpleNamespace(combinedLoudRes=combined, loudRes=chains)
+        assert DichotomousModelAverageResult._combined_loud_result(cpp_result) is combined
+
         cpp_result = SimpleNamespace(combinedLoudRes=None, loudRes=chains)
         assert DichotomousModelAverageResult._combined_loud_result(cpp_result) is chains
+
+    def test_loud_json_draws_preserve_shape_with_nulls(self):
+        result = DichotomousModelAverageResult(
+            bmdl=1.0,
+            bmd=2.0,
+            bmdu=3.0,
+            bmdl_y=0.1,
+            bmd_y=0.2,
+            bmdu_y=0.3,
+            bmd_dist=np.array([1.0, np.nan, BMDS_BLANK_VALUE, 4.0]),
+            priors=np.array([1.0]),
+            posteriors=np.array([1.0]),
+            model_bmd_dist=[np.array([1.0, np.inf, BMDS_BLANK_VALUE, 4.0])],
+            model_parm_dist=[
+                np.array([[1.0], [np.nan], [BMDS_BLANK_VALUE], [4.0]])
+            ],
+            dr_x=np.array([0.0, 1.0]),
+            dr_y=np.array([0.0, 0.5]),
+        )
+
+        data = result.model_dump()
+
+        assert data["bmd_dist"] == [1.0, None, None, 4.0]
+        assert data["model_bmd_dist"] == [[1.0, None, None, 4.0]]
+        assert data["model_parm_dist"] == [[[1.0], [None], [None], [4.0]]]
 
     def test_without_loud_draws_removes_raw_draw_arrays(self):
         result = DichotomousModelAverageResult(

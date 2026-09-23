@@ -1,4 +1,5 @@
 from copy import deepcopy
+import warnings
 from textwrap import dedent
 
 import numpy as np
@@ -103,6 +104,35 @@ class TestModelPriors:
         assert np.allclose(prior.to_c_nd(n_phi=1), [1, 2, 3, 4, 5, 6])
         assert np.allclose(prior.to_c_nd(n_phi=2), [1, 2, 3, 3, 4, 5, 6, 6])
         assert np.allclose(prior.to_c_nd(n_phi=3), [1, 2, 3, 3, 3, 4, 5, 6, 6, 6])
+
+    def test_loud_prior_validation_skips_student_t_and_warns_for_gamma_bounds(self):
+        priors = ModelPriors(
+            prior_class=PriorClass.bayesian_loud,
+            priors=[
+                Prior(
+                    name="student",
+                    type=PriorDistribution.Student_t,
+                    initial_value=100,
+                    stdev=1,
+                    min_value=10,
+                    max_value=1,
+                ),
+                Prior(
+                    name="gamma",
+                    type=PriorDistribution.Gamma,
+                    initial_value=1,
+                    stdev=1,
+                    min_value=10,
+                    max_value=1,
+                ),
+            ],
+        )
+
+        with pytest.warns(UserWarning, match="Min Value > Max Value") as caught:
+            priors.priors_list()
+
+        assert len(caught) == 1
+        assert "gamma" in str(caught[0].message)
 
     def test_multistage_update(self, ddataset):
         m = Multistage(dataset=ddataset, settings=dict(degree=8))
@@ -273,6 +303,16 @@ class TestModelPriors:
         assert v1.type is PriorDistribution.Gamma
         assert v0.initial_value > 0 and v0.stdev > 0
         assert v1.initial_value > 0 and v1.stdev > 0
+
+    def test_loud_distribution_priors_skip_generic_bounds_warnings(self, cdataset):
+        m = ExponentialM3(
+            dataset=cdataset,
+            settings=dict(priors=PriorClass.bayesian_loud, disttype=DistType.normal),
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            m.get_priors_list()
 
     def test_nested_dichotomous_update(self, mock_nested_dichotomous_prior):
         prior = mock_nested_dichotomous_prior

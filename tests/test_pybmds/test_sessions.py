@@ -9,6 +9,10 @@ import pybmds
 from pybmds.constants import DistType, Models, PriorClass
 
 
+def assert_strict_json(payload):
+    json.dumps(payload, allow_nan=False)
+
+
 class TestSession:
     @staticmethod
     def _settings_table(docx):
@@ -454,6 +458,8 @@ class TestSession:
 
         full = session.to_dict()
         trimmed = session.to_dict(include_loud_draws=False)
+        assert_strict_json(full)
+        assert_strict_json(trimmed)
 
         assert full["model_average"]["results"]["bmd_dist"]
         assert full["model_average"]["results"]["model_bmd_dist"]

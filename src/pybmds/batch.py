@@ -178,7 +178,7 @@ class BatchSession(BatchBase):
         Returns:
             str: A JSON string
         """
-        return json.dumps([session.to_dict() for session in self.sessions])
+        return json.dumps([session.to_dict() for session in self.sessions], allow_nan=False)
 
     @classmethod
     def execute(
@@ -300,7 +300,7 @@ class MultitumorBatch(BatchBase):
         return report.document
 
     def serialize(self) -> str:
-        return json.dumps([session.to_dict() for session in self.sessions])
+        return json.dumps([session.to_dict() for session in self.sessions], allow_nan=False)
 
     @classmethod
     def execute(cls, datasets: list[dict], runner: Callable, nprocs: int | None = None) -> Self:

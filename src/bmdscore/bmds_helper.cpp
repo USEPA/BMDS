@@ -11,6 +11,7 @@
 #include <numeric>
 // #include <cmath>
 #include <chrono>
+#include <limits>
 #include <nlopt.hpp>
 #include <set>
 
@@ -20,6 +21,21 @@
 
 // calendar versioning; see https://peps.python.org/pep-0440/#pre-releases
 std::string BMDS_VERSION = "25.2";
+
+long stableContinuousLoudSeed(long baseSeed, int model, int dist, int chain) {
+  // Keep model-specific LOUD draws stable when the model-average set changes.
+  unsigned long long x = static_cast<unsigned long long>(baseSeed);
+  x += 0x9e3779b97f4a7c15ULL;
+  x ^= (static_cast<unsigned long long>(model) + 0x9e3779b97f4a7c15ULL + (x << 6) + (x >> 2));
+  x ^= (static_cast<unsigned long long>(dist) + 0xbf58476d1ce4e5b9ULL + (x << 6) + (x >> 2));
+  x ^= (static_cast<unsigned long long>(chain) + 0x94d049bb133111ebULL + (x << 6) + (x >> 2));
+  x ^= x >> 30;
+  x *= 0xbf58476d1ce4e5b9ULL;
+  x ^= x >> 27;
+  x *= 0x94d049bb133111ebULL;
+  x ^= x >> 31;
+  return static_cast<long>((x % 2147483646ULL) + 1ULL);
+}
 
 double python_dichotomous_model_result::getSRAtDose(double targetDose, std::vector<double> doses) {
   std::vector<double> diff;
@@ -186,14 +202,81 @@ double findQuantileVals(std::vector<double> data, double q) {
   }
 }
 
+bool isValidBmdscoreValue(double value) {
+  return std::isfinite(value) && value != BMDS_MISSING;
+}
+
 void filterFiniteAndSort(std::vector<double> *data) {
   data->erase(
       std::remove_if(
-          data->begin(), data->end(), [](const double &value) { return !std::isfinite(value); }
+          data->begin(), data->end(), [](const double &value) { return !isValidBmdscoreValue(value); }
       ),
       data->end()
   );
   std::sort(data->begin(), data->end());
+}
+
+bool hasFiniteBmdAndParms(const fitResult *fitRes, int row) {
+  if (!isValidBmdscoreValue(fitRes->BMD(row))) {
+    return false;
+  }
+  for (int col = 0; col < fitRes->parms.cols(); col++) {
+    if (!isValidBmdscoreValue(fitRes->parms(row, col))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Eigen::Index countInvalidBmdParmRows(const fitResult *fitRes) {
+  Eigen::Index invalid_count = 0;
+  for (int row = 0; row < fitRes->BMD.size(); row++) {
+    if (!hasFiniteBmdAndParms(fitRes, row)) {
+      invalid_count++;
+    }
+  }
+  return invalid_count;
+}
+
+bool hasEnoughAlignedBmdParmDraws(const fitResult *fitRes, int samples, int chains) {
+  if (chains <= 1) {
+    return true;
+  }
+  if (samples <= 0 || fitRes->BMD.size() != samples * chains) {
+    return false;
+  }
+  int aligned_draws = 0;
+  for (int draw = 0; draw < samples; draw++) {
+    bool valid = true;
+    for (int chain = 0; chain < chains; chain++) {
+      if (!hasFiniteBmdAndParms(fitRes, chain * samples + draw)) {
+        valid = false;
+        break;
+      }
+    }
+    if (valid && ++aligned_draws >= 4) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void markBmdRowsInvalidWhenParmsInvalid(fitResult *fitRes) {
+  for (int row = 0; row < fitRes->BMD.size(); row++) {
+    if (!hasFiniteBmdAndParms(fitRes, row)) {
+      fitRes->BMD(row) = BMDS_MISSING;
+    }
+  }
+}
+
+void rescaleBmdDraws(Eigen::VectorXd *bmd, double scale) {
+  for (int row = 0; row < bmd->size(); row++) {
+    if (isValidBmdscoreValue((*bmd)(row))) {
+      (*bmd)(row) *= scale;
+    } else {
+      (*bmd)(row) = BMDS_MISSING;
+    }
+  }
 }
 
 void collect_dicho_bmd_values(
@@ -1906,15 +1989,40 @@ void clean_cont_results(
   }
 }
 
+void cleanFitResult(fitResult *loudRes) {
+  cleanDouble(&loudRes->int_factor);
+  cleanDouble(&loudRes->waic);
+  cleanDouble(&loudRes->pval);
+  cleanDouble(&loudRes->ll);
+  for (int i = 0; i < loudRes->parms.rows(); i++) {
+    for (int j = 0; j < loudRes->parms.cols(); j++) {
+      cleanDouble(&loudRes->parms(i, j));
+    }
+  }
+  for (int i = 0; i < loudRes->R.rows(); i++) {
+    for (int j = 0; j < loudRes->R.cols(); j++) {
+      cleanDouble(&loudRes->R(i, j));
+    }
+  }
+  for (int i = 0; i < loudRes->BMD.size(); i++) {
+    cleanDouble(&loudRes->BMD[i]);
+  }
+}
+
 // used for LOUD results
 void clean_cont_MA_results(struct python_continuousMA_result *res) {
   // python_continuousMA_result
+  for (int i = 0; i < res->bmd_dist.size(); i++) {
+    cleanDouble(&res->bmd_dist[i]);
+  }
   for (int i = 0; i < res->nmodels; i++) {
     cleanDouble(&res->post_probs[i]);
-    cleanDouble(&res->bmd_dist[i]);
     // python_continuous_model_result
     for (int j = 0; j < res->models[i].parms.size(); j++) {
       cleanDouble(&res->models[i].parms[j]);
+    }
+    for (int j = 0; j < res->models[i].bmd_dist.size(); j++) {
+      cleanDouble(&res->models[i].bmd_dist[j]);
     }
     cleanDouble(&res->models[i].ess);
     cleanDouble(&res->models[i].bmd);
@@ -1934,20 +2042,11 @@ void clean_cont_MA_results(struct python_continuousMA_result *res) {
 
   // Loud fitResult
   for (int k = 0; k < res->nmodels; k++) {
+    cleanFitResult(&res->models[k].combinedLoudRes);
     int chains = res->models[k].loudRes.size();
     for (int chain = 0; chain < chains; chain++) {
-      struct fitResult loudRes = res->models[k].loudRes[chain];
-      cleanDouble(&loudRes.int_factor);
-      cleanDouble(&loudRes.waic);
-      cleanDouble(&loudRes.pval);
-      for (int i = 0; i < loudRes.parms.rows(); i++) {
-        for (int j = 0; j < loudRes.parms.cols(); j++) {
-          cleanDouble(&loudRes.parms(i, j));
-        }
-      }
-      for (int i = 0; i < loudRes.BMD.size(); i++) {
-        cleanDouble(&loudRes.BMD[i]);
-      }
+      struct fitResult &loudRes = res->models[k].loudRes[chain];
+      cleanFitResult(&loudRes);
     }
   }
 }
@@ -1955,12 +2054,17 @@ void clean_cont_MA_results(struct python_continuousMA_result *res) {
 // used for LOUD results
 void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
   // python_dichotomousMA_result
+  for (int i = 0; i < res->bmd_dist.size(); i++) {
+    cleanDouble(&res->bmd_dist[i]);
+  }
   for (int i = 0; i < res->nmodels; i++) {
     cleanDouble(&res->post_probs[i]);
-    cleanDouble(&res->bmd_dist[i]);
     // python_continuous_model_result
     for (int j = 0; j < res->models[i].parms.size(); j++) {
       cleanDouble(&res->models[i].parms[j]);
+    }
+    for (int j = 0; j < res->models[i].bmd_dist.size(); j++) {
+      cleanDouble(&res->models[i].bmd_dist[j]);
     }
     cleanDouble(&res->models[i].ess);
     cleanDouble(&res->models[i].bmd);
@@ -1980,20 +2084,11 @@ void clean_dicho_MA_results(struct python_dichotomousMA_result *res) {
 
   // Loud fitResult
   for (int k = 0; k < res->nmodels; k++) {
+    cleanFitResult(&res->models[k].combinedLoudRes);
     int chains = res->models[k].loudRes.size();
     for (int chain = 0; chain < chains; chain++) {
-      struct fitResult loudRes = res->models[k].loudRes[chain];
-      cleanDouble(&loudRes.int_factor);
-      cleanDouble(&loudRes.waic);
-      cleanDouble(&loudRes.pval);
-      for (int i = 0; i < loudRes.parms.rows(); i++) {
-        for (int j = 0; j < loudRes.parms.cols(); j++) {
-          cleanDouble(&loudRes.parms(i, j));
-        }
-      }
-      for (int i = 0; i < loudRes.BMD.size(); i++) {
-        cleanDouble(&loudRes.BMD[i]);
-      }
+      struct fitResult &loudRes = res->models[k].loudRes[chain];
+      cleanFitResult(&loudRes);
     }
   }
 }
@@ -3010,7 +3105,7 @@ int getLoudModelType(int model, int distType, int dataType) {
         std::cout << "error in getLoudModelType" << std::endl;
         break;
     }
-  } else if (loud_datatype::l_dichotomous) {
+  } else if (dataType == loud_datatype::l_dichotomous) {
     switch (model) {
       case (dich_model::d_qlinear):
         modelType = 17;
@@ -3040,7 +3135,7 @@ int getLoudModelType(int model, int distType, int dataType) {
         modelType = 12;
         break;
     }
-  } else if (loud_datatype::l_nested) {
+  } else if (dataType == loud_datatype::l_nested) {
     std::cout << "Loud nested not implemented" << std::endl;
   } else {
     std::cout << "error in getLoudModelType" << std::endl;
@@ -4129,7 +4224,7 @@ void fit_dgamma(
     double p_one = (a1 + b1) / sum;
 
     double g = p_zero;
-    double b = gsl_cdf_gamma_Pinv((p_one - p_zero) / (1 - p_zero), alpha, 1.0);
+    double b = safe_gamma_pinv((p_one - p_zero) / (1 - p_zero), alpha, 1.0);
 
     // scale parms for BMDS/ToxicR
     Eigen::VectorXd scaledParms{{g, alpha, b}};
@@ -4897,10 +4992,10 @@ double calcBMD_gamma_efsa(
     case CONTINUOUS_BMD_ABSOLUTE:
       break;
     case CONTINUOUS_BMD_REL_DEV:
-      bmd = gsl_cdf_gamma_Pinv(dir * bmr / (c - 1), d, 1.0) / b;
+      bmd = safe_gamma_pinv(dir * bmr / (c - 1), d, 1.0) / b;
       break;
     case CONTINUOUS_BMD_STD_DEV:
-      bmd = gsl_cdf_gamma_Pinv((((dir * bmr * var + m0) / m0) - 1) / (c - 1), d, 1.0) / b;
+      bmd = safe_gamma_pinv((((dir * bmr * var + m0) / m0) - 1) / (c - 1), d, 1.0) / b;
       break;
     case CONTINUOUS_BMD_POINT:
       break;
@@ -5007,10 +5102,18 @@ double calcLoudBMD(
 }
 
 // bmds normal models
+double continuousLoudBmr(contbmd BMDtype, double bmr, bool isIncreasing) {
+  if (BMDtype == CONTINUOUS_BMD_REL_DEV && !isIncreasing) {
+    return 1.0 - bmr;
+  }
+  return bmr;
+}
+
 double calcLoudBMD(
     normalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
     double tailProb
 ) {
+  bmr = continuousLoudBmr(BMDtype, bmr, isIncreasing);
   double bmd = BMDS_MISSING;
   switch (BMDtype) {
     case CONTINUOUS_BMD_ABSOLUTE:
@@ -5045,6 +5148,7 @@ double calcLoudBMD(
     lognormalLLModel &model, Eigen::MatrixXd theta, contbmd BMDtype, double bmr, bool isIncreasing,
     double tailProb
 ) {
+  bmr = continuousLoudBmr(BMDtype, bmr, isIncreasing);
   double bmd = BMDS_MISSING;
 
   switch (BMDtype) {
@@ -5248,8 +5352,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
 
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
 
-    Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
-    if (nan_count <= combLoudRes->BMD.size() / 2) {
+    markBmdRowsInvalidWhenParmsInvalid(combLoudRes);
+    Eigen::Index invalid_count = countInvalidBmdParmRows(combLoudRes);
+    if (invalid_count <= combLoudRes->BMD.size() / 2 &&
+        hasEnoughAlignedBmdParmDraws(combLoudRes, samples, chains)) {
       pyRes->models[i].bmdsRes.validResult = true;
       isValid[i] = true;
     }
@@ -5356,7 +5462,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // unscale bmd and parms
   for (int i = 0; i < pyMA->nmodels; i++) {
     fitResult *fitRes = &pyRes->models[i].combinedLoudRes;
-    fitRes->BMD *= max_dose;
+    rescaleBmdDraws(&fitRes->BMD, max_dose);
     Eigen::MatrixXd parms = fitRes->parms.transpose();
     // rescale fitResult parms
     for (int j = 0; j < parms.cols(); j++) {
@@ -5773,7 +5879,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   for (int i = 0; i < numModels; i++) {
     expandedPriors[i] = expandLoudPrior(pyMA->priors[i], pyMA->prior_cols[i]);
   }
-  long seed = pyMA->seed;
+  long base_seed = pyMA->seed;
   for (int i = 0; i < numModels; i++) {
     std::vector<fitResult> loudRes(pyMA->pyCA.chains);
     pyRes->models[i].loudRes = loudRes;
@@ -5907,7 +6013,11 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
         default:
           break;
       }
-      fit_Loud(&loudIn, &loudOut, seed);
+      long model_chain_seed = stableContinuousLoudSeed(
+          base_seed, static_cast<int>(pyMA->models[i]), static_cast<int>(pyMA->loud_dist_type[i]),
+          chain
+      );
+      fit_Loud(&loudIn, &loudOut, model_chain_seed);
       pyRes->models[i].loudRes[chain] = loudOut;
       pyRes->models[i].nparms = loudOut.parms.cols();
       pyRes->models[i].model = pyMA->models[i];
@@ -5924,7 +6034,6 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
       combLoudRes->BMD.segment(current_row, samples) = loudOut.BMD;
       combLoudRes->parms.block(current_row, 0, samples, loudOut.parms.cols()) = loudOut.parms;
 
-      seed += 1;
     }
   }
 
@@ -5955,8 +6064,10 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
     int nparms = pyRes->models[i].nparms;
     fitResult *combLoudRes = &pyRes->models[i].combinedLoudRes;
 
-    Eigen::Index nan_count = combLoudRes->BMD.array().isNaN().cast<int>().sum();
-    if (nan_count <= combLoudRes->BMD.size() / 2) {
+    markBmdRowsInvalidWhenParmsInvalid(combLoudRes);
+    Eigen::Index invalid_count = countInvalidBmdParmRows(combLoudRes);
+    if (invalid_count <= combLoudRes->BMD.size() / 2 &&
+        hasEnoughAlignedBmdParmDraws(combLoudRes, samples, chains)) {
       pyRes->models[i].bmdsRes.validResult = true;
       isValid[i] = true;
     }
@@ -6090,7 +6201,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // unscale bmd and parms, etc
   for (int i = 0; i < pyMA->nmodels; i++) {
     fitResult *fitRes = &pyRes->models[i].combinedLoudRes;
-    fitRes->BMD *= max_dose;
+    rescaleBmdDraws(&fitRes->BMD, max_dose);
     for (int j = 0; j < pyRes->models[i].gof.dose.size(); j++) {
       pyRes->models[i].gof.dose[j] *= max_dose;
     }
@@ -6135,7 +6246,7 @@ void BMDS_ENTRY_API __stdcall pythonBMDSLoud(
   // std::random_device rd;
   // define a random number generator
   // std::mt19937 gen(rd());
-  std::mt19937 gen(seed);
+  std::mt19937 gen(stableContinuousLoudSeed(base_seed, BMDS_MISSING, BMDS_MISSING, 0));
   // define weight distribution
   std::discrete_distribution<> d(posterior_probs.begin(), posterior_probs.end());
   std::vector<double> bmds_c(iter);

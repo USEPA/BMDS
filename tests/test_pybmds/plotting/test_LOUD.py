@@ -8,14 +8,19 @@ import pytest
 import xarray as xr
 
 import pybmds
-from pybmds.constants import DistType, Models, PriorClass
+from pybmds.constants import BMDS_BLANK_VALUE, DistType, Models, PriorClass
 from pybmds.plotting.LOUD import (
     _RHAT_SINGLE_CHAIN_FOOTNOTE,
+    _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE,
+    _add_zero_weight_convergence_footnote,
     _arviz_hdi,
     _arviz_summary,
     _as_chain_draws,
+    _apply_bmd_axis_cap,
+    _bmd_axis_cap,
     _bmd_diagnostics_table,
     _bmd_distributions_figure,
+    _bmd_plot_range,
     _bmd_summary_table,
     _build_observed_data,
     _drop_empty_summary_rows,
@@ -35,7 +40,10 @@ from pybmds.plotting.LOUD import (
     _parameter_figure_height,
     _parameter_group_records,
     _parameter_group_trace_figure,
+    _parameter_summary_with_footnotes,
+    _PLOT_KDE_POINTS,
     _plot_dist,
+    _positive_support_kde,
     _rename_summary_columns,
     _reshape_draws,
     _summary_from_draws,
@@ -77,6 +85,15 @@ def _fake_loud_idata(n_chains=2):
         coords=coords,
     )
     return _data_tree(posterior=posterior)
+
+
+def _with_observed_doses(idata, doses):
+    doses = np.asarray(doses, dtype=float)
+    observed_data = xr.Dataset(
+        {"dose": (("dose_group",), doses)},
+        coords={"dose_group": np.arange(doses.size)},
+    )
+    return _data_tree(posterior=idata.posterior, observed_data=observed_data)
 
 
 def _fake_loud_session():
@@ -319,6 +336,36 @@ class TestLOUD:
         assert not [warning for warning in caught if issubclass(warning.category, RuntimeWarning)]
         plt.close(fig)
 
+        fig, ax = plt.subplots()
+        _plot_dist(
+            np.array([-1.0, BMDS_BLANK_VALUE, 20.0, 40.0, 80.0]),
+            ax=ax,
+            color="black",
+            x_range=(0.0, 100.0),
+            positive_support=True,
+        )
+        xdata = ax.lines[0].get_xdata()
+        assert len(xdata) == _PLOT_KDE_POINTS
+        assert xdata[0] > 0
+        assert xdata[-1] == pytest.approx(100.0)
+        plt.close(fig)
+
+        with pytest.raises(ValueError, match="positive plotting range"):
+            _positive_support_kde(np.array([1.0, 2.0]), x_range=(-2.0, -1.0))
+
+        idata = _with_observed_doses(_fake_loud_idata(), [0.0, 10.0])
+        assert _bmd_axis_cap(idata) == 50.0
+        assert _bmd_plot_range(idata, np.array([1.0, 100.0])) == (0.0, 50.0)
+        assert _bmd_plot_range(idata, np.array([1.0, 10.0])) is None
+
+        fig, ax = plt.subplots()
+        _apply_bmd_axis_cap(ax, idata, np.array([1.0, 100.0]))
+        assert ax.get_xlim()[1] == pytest.approx(50.0)
+        plt.close(fig)
+
+        assert _bmd_axis_cap(_data_tree(posterior=idata.posterior)) is None
+        assert _bmd_axis_cap(_with_observed_doses(_fake_loud_idata(), [0.0, np.nan])) is None
+
         already_shaped = np.arange(6, dtype=float).reshape(2, 3)
         np.testing.assert_array_equal(_reshape_draws(already_shaped, n_chains=2), already_shaped)
         assert _pad_draws(np.ones((2, 1, 1)), 3).shape == (3, 1, 1)
@@ -361,6 +408,17 @@ class TestLOUD:
         assert _parameter_figure_height(3) == 8.0
         assert _parameter_figure_height(6) == 11.0
         assert _parameter_figure_height(20) == 11.0
+
+        summary = pd.DataFrame(
+            {
+                "Model Weight": [0.0, 1.0],
+                "R-hat": [np.nan, 1.01],
+                "Parameter": ["a", "b"],
+            }
+        )
+        footnoted = _parameter_summary_with_footnotes(summary)
+        assert "Model Weight" not in footnoted.columns
+        assert _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE in footnoted.attrs["footnotes"]
 
         monkeypatch.setattr("pybmds.plotting.LOUD._ARVIZ_USES_DATATREE", False)
 
@@ -450,6 +508,23 @@ class TestLOUD:
         assert bmd_summary.loc["MA_BMD", "Posterior Weights"] is None
         assert "BMD" in bmd_summary.columns
 
+        zero_weight_posterior = idata.posterior.to_dataset().copy()
+        zero_weight_posterior["model_weights"] = ("model", np.array([0.0, 1.0]))
+        zero_weight_idata = _data_tree(posterior=zero_weight_posterior)
+        missing_convergence = pd.DataFrame(
+            {
+                "median": [1.0, 2.0],
+                "r_hat": [np.nan, 1.01],
+                "ess_bulk": [np.nan, 50.0],
+                "ess_tail": [np.nan, 40.0],
+            },
+            index=["BMD[0:Power (CV)]", "BMD[1:Hill (NCV)]"],
+        )
+        zero_weight_bmd = _bmd_diagnostics_table(
+            zero_weight_idata, hdi_prob=0.9, summary=missing_convergence
+        )
+        assert zero_weight_bmd.attrs["footnotes"] == [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
+
         parameter_groups = _parameter_group_records(idata, session, hdi_prob=0.9)
         assert [group["name"] for group in parameter_groups] == ["Power", "Hill"]
         assert parameter_groups[0]["summary"]["Model"].tolist() == ["CV", "CV"]
@@ -462,6 +537,45 @@ class TestLOUD:
 
         for group in parameter_groups:
             plt.close(group["trace_figure"])
+        plt.close(posterior)
+        plt.close(overlay)
+
+    def test_bmd_figures_cap_x_axis_when_draws_exceed_five_times_highest_dose(self):
+        idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 2])
+        stats = _ma_bmd_quantiles(idata, alpha=0.05)
+
+        posterior = _ma_bmd_posterior_figure(idata, stats)
+        overlay = _bmd_distributions_figure(idata)
+
+        assert posterior.axes[0].get_xlim() == pytest.approx((0, 10))
+        assert overlay.axes[0].get_xlim() == pytest.approx((0, 10))
+
+        plt.close(posterior)
+        plt.close(overlay)
+
+    def test_bmd_figures_resample_density_after_x_axis_cap(self):
+        idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 2])
+
+        overlay = _bmd_distributions_figure(idata)
+
+        for line in overlay.axes[0].lines:
+            xdata = line.get_xdata()
+            assert len(xdata) == 512
+            assert xdata[0] > 0
+            assert xdata[-1] == pytest.approx(10)
+
+        plt.close(overlay)
+
+    def test_bmd_figures_keep_auto_x_axis_when_draws_within_five_times_highest_dose(self):
+        idata = _with_observed_doses(_fake_loud_idata(n_chains=2), [0, 1, 5])
+        stats = _ma_bmd_quantiles(idata, alpha=0.05)
+
+        posterior = _ma_bmd_posterior_figure(idata, stats)
+        overlay = _bmd_distributions_figure(idata)
+
+        assert posterior.axes[0].get_xlim()[1] != pytest.approx(25)
+        assert overlay.axes[0].get_xlim()[1] != pytest.approx(25)
+
         plt.close(posterior)
         plt.close(overlay)
 
@@ -576,6 +690,16 @@ class TestLOUD:
         hidden = _hide_rhat_for_single_chain(hidden)
         assert "r_hat" not in hidden.columns
         assert hidden.attrs["footnotes"] == [_RHAT_SINGLE_CHAIN_FOOTNOTE]
+
+        zero_weight = pd.DataFrame(
+            {
+                "Model Weight": [0.0, 0.2],
+                "R-hat": [np.nan, np.nan],
+                "Bulk Effective Sample Size": [np.nan, 10.0],
+            }
+        )
+        zero_weight = _add_zero_weight_convergence_footnote(zero_weight)
+        assert zero_weight.attrs["footnotes"] == [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
 
     def test_build_observed_data_dichotomous(self, ddataset2):
         observed = _build_observed_data(ddataset2)
@@ -694,6 +818,93 @@ class TestLOUD:
         )
 
         with pytest.raises(ValueError, match="BMD draw shape"):
+            model_average_to_inferencedata(session)
+
+    def test_model_average_to_inferencedata_rejects_bad_bmd_dimensions(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                structs=SimpleNamespace(n_chains=1),
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([0.1, 0.2]),
+                    model_bmd_dist=[np.array([[[1.0], [2.0]]])],
+                    model_parm_dist=[np.array([[[10.0], [20.0]]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        with pytest.raises(ValueError, match="BMD draws must be 2D"):
+            model_average_to_inferencedata(session)
+
+    def test_model_average_to_inferencedata_rejects_bad_parameter_dimensions(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                structs=SimpleNamespace(n_chains=1),
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([0.1, 0.2]),
+                    model_bmd_dist=[np.array([[1.0, 2.0]])],
+                    model_parm_dist=[np.array([[[[10.0], [20.0]]]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        with pytest.raises(ValueError, match="parameter draws must be 3D"):
+            model_average_to_inferencedata(session)
+
+    def test_model_average_to_inferencedata_rejects_parameter_name_mismatch(self, cdataset3):
+        class FakeModel:
+            bmd_model_class = SimpleNamespace(verbose="Hill")
+
+            def __init__(self):
+                self.results = SimpleNamespace(parameters=SimpleNamespace(names=["g", "alpha"]))
+                self.settings = SimpleNamespace(disttype=DistType.normal)
+
+            def name(self):
+                return "Hill"
+
+        model = FakeModel()
+        session = SimpleNamespace(
+            dataset=cdataset3,
+            model_average=SimpleNamespace(
+                structs=SimpleNamespace(n_chains=1),
+                models=[model],
+                results=SimpleNamespace(
+                    bmd_dist=np.array([0.1, 0.2]),
+                    model_bmd_dist=[np.array([[1.0, 2.0]])],
+                    model_parm_dist=[np.array([[[10.0], [20.0]]])],
+                    posteriors=np.array([1.0]),
+                ),
+            ),
+        )
+
+        with pytest.raises(ValueError, match="has 1 parameters but 2 names"):
             model_average_to_inferencedata(session)
 
     def test_model_average_to_inferencedata_pads_within_chain(self, cdataset3):
@@ -1026,7 +1237,7 @@ class TestLOUD:
         assert actual.loc["BMD[Power]", "r_hat"] == 1.01
 
     def test_summary_from_draws_quantiles_use_all_finite_draws(self):
-        draws = np.array([[1.0, np.nan, 3.0], [2.0, 4.0, np.nan]])
+        draws = np.array([[1.0, np.nan, 3.0], [2.0, 4.0, BMDS_BLANK_VALUE]])
 
         actual = _summary_from_draws(draws, "BMD", "BMD[Power]", 0.9)
 
@@ -1052,7 +1263,9 @@ class TestLOUD:
         assert np.isnan(actual.loc["BMD[Power]", "ess_tail"])
 
     def test_summary_from_draws_accepts_one_dimensional_draws(self):
-        actual = _summary_from_draws(np.array([1.0, np.nan, 3.0]), "MA_BMD", "MA_BMD", 0.9)
+        actual = _summary_from_draws(
+            np.array([1.0, np.nan, BMDS_BLANK_VALUE, 3.0]), "MA_BMD", "MA_BMD", 0.9
+        )
 
         assert actual.loc["MA_BMD", "median"] == pytest.approx(2.0)
         assert actual.loc["MA_BMD", "eti_5%"] == pytest.approx(1.1)

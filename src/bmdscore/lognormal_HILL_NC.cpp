@@ -457,8 +457,10 @@ double lognormalHILL_BMD_NC::bmd_stdev_bound(
   Eigen::MatrixXd m = mean(theta, d);
   double t = temp(0, 0);
 
+  double bmr_sign = isIncreasing ? 1.0 : -1.0;
   return bmd_absolute_bound(
-      theta, BMD, fabs(exp(m(0, 0) + BMRF * pow(t, 0.5)) - exp(m(0, 0))), isIncreasing
+      theta, BMD, fabs(exp(m(0, 0) + bmr_sign * BMRF * pow(t, 0.5)) - exp(m(0, 0))),
+      isIncreasing
   );
 }
 
@@ -585,7 +587,9 @@ double lognormalHILL_BMD_NC::bmd_stdev(Eigen::MatrixXd theta, double BMRF, bool 
   Eigen::MatrixXd med = mean(theta, d);
   med = exp(med.array());
   double t = temp(0, 0);
-  Eigen::MatrixXd md = abs(exp(log(med.array()) + BMRF * pow(t, 0.5)) - med.array());
+  double bmr_sign = isIncreasing ? 1.0 : -1.0;
+  Eigen::MatrixXd md =
+      abs(exp(log(med.array()) + bmr_sign * BMRF * pow(t, 0.5)) - med.array());
   return bmd_absolute(theta, md(0, 0), isIncreasing);
 }
 

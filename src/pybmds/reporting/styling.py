@@ -14,6 +14,7 @@ from ..constants import BMDS_BLANK_VALUE, Dtype
 from ..datasets.base import DatasetBase
 from ..plotting import close_figure
 from ..reporting.footnotes import TableFootnote
+from ..types.common import valid_bmdscore_draws
 from ..utils import citation, ff, four_decimal_formatter
 
 if TYPE_CHECKING:
@@ -498,8 +499,7 @@ def _ma_model_bmd_triplet(session: Session, model):
     except StopIteration:
         return None
 
-    draws = np.asarray(ma.results.model_bmd_dist[idx], dtype=float)
-    draws = draws[np.isfinite(draws)]
+    draws = valid_bmdscore_draws(ma.results.model_bmd_dist[idx])
     if draws.size == 0:
         return None
 
