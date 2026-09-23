@@ -666,7 +666,9 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
             index=pd.Index([], name="model"),
         )
 
-    return _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
+    return _none_empty_table_values(
+        _rename_summary_columns(pd.DataFrame.from_records(records).set_index("model"))
+    )
 
 
 def _posterior_model_weight_map(idata: xr.DataTree) -> dict[str, float]:
@@ -795,6 +797,18 @@ def _zero_weight_unavailable_convergence_labels(
     return labels
 
 
+def _none_empty_table_values(summary: pd.DataFrame) -> pd.DataFrame:
+    attrs = dict(summary.attrs)
+    summary = summary.copy()
+    for column in summary.columns:
+        missing = pd.isna(summary[column])
+        if missing.any():
+            summary[column] = summary[column].astype(object)
+            summary.loc[missing, column] = None
+    summary.attrs = attrs
+    return summary
+
+
 def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
     return bool(_zero_weight_unavailable_convergence_labels(summary))
 
@@ -818,8 +832,8 @@ def _add_zero_weight_convergence_footnote(
     labels = _zero_weight_unavailable_convergence_labels(summary, label_column=label_column)
     if labels:
         summary = _append_footnote(summary, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
-        return _append_row_footnote(summary, labels, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
-    return summary
+        summary = _append_row_footnote(summary, labels, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
+    return _none_empty_table_values(summary)
 
 
 def _parameter_summary_with_footnotes(summary: pd.DataFrame) -> pd.DataFrame:
@@ -827,7 +841,7 @@ def _parameter_summary_with_footnotes(summary: pd.DataFrame) -> pd.DataFrame:
     attrs = dict(summary.attrs)
     summary = summary.drop(columns=["Model Weight"], errors="ignore")
     summary.attrs = attrs
-    return summary
+    return _none_empty_table_values(summary)
 
 
 def _summary_from_draws(
@@ -1313,12 +1327,12 @@ def get_model_average_figures(
     bmd_summary = _bmd_diagnostics_table(idata, hdi_prob, summary=raw_multi_summary)
     if single_chain:
         bmd_summary = _hide_rhat_for_single_chain(bmd_summary)
-    out["bmd_summary"] = bmd_summary
+    out["bmd_summary"] = _none_empty_table_values(bmd_summary)
 
     multi_summary = raw_multi_summary
     if single_chain:
         multi_summary = _hide_rhat_for_single_chain(multi_summary)
-    out["multi_summary"] = multi_summary
+    out["multi_summary"] = _none_empty_table_values(multi_summary)
     parameter_groups = _parameter_group_records(
         idata,
         session,
@@ -1331,6 +1345,8 @@ def get_model_average_figures(
     if single_chain:
         for group in parameter_groups:
             group["summary"] = _hide_rhat_for_single_chain(group["summary"])
+    for group in parameter_groups:
+        group["summary"] = _none_empty_table_values(group["summary"])
     out["parameter_groups"] = parameter_groups
 
     out["posterior"] = _ma_bmd_posterior_figure(idata, ma_bmd_quantiles)

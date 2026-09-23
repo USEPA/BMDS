@@ -1,3 +1,4 @@
+import json
 import warnings
 from types import SimpleNamespace
 
@@ -515,6 +516,8 @@ class TestLOUD:
         missing_convergence = pd.DataFrame(
             {
                 "median": [1.0, 2.0],
+                "mad": [np.nan, 0.2],
+                "mcse_median": [np.nan, 0.1],
                 "r_hat": [np.nan, 1.01],
                 "ess_bulk": [np.nan, 50.0],
                 "ess_tail": [np.nan, 40.0],
@@ -524,6 +527,12 @@ class TestLOUD:
         zero_weight_bmd = _bmd_diagnostics_table(
             zero_weight_idata, hdi_prob=0.9, summary=missing_convergence
         )
+        assert zero_weight_bmd.loc["Power (CV)", "Median Absolute Deviation"] is None
+        assert zero_weight_bmd.loc["Power (CV)", "Markov Chain Standard Error (Median)"] is None
+        assert zero_weight_bmd.loc["Power (CV)", "R-hat"] is None
+        assert zero_weight_bmd.loc["Power (CV)", "Bulk Effective Sample Size"] is None
+        assert zero_weight_bmd.loc["Power (CV)", "Tail Effective Sample Size"] is None
+        assert isinstance(json.dumps(zero_weight_bmd.to_dict("index"), allow_nan=False), str)
         assert zero_weight_bmd.attrs["footnotes"] == [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
         assert zero_weight_bmd.attrs["row_footnotes"] == {
             "Power (CV)": [_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE]
@@ -1492,6 +1501,12 @@ class TestLOUD:
         assert "mad" not in parameter_summary.columns
         assert "mcse_median" not in parameter_summary.columns
         assert "eti_5%" not in parameter_summary.columns
+        assert isinstance(json.dumps(figures["bmd_summary"].to_dict("index"), allow_nan=False), str)
+        assert isinstance(
+            json.dumps(figures["multi_summary"].to_dict("index"), allow_nan=False), str
+        )
+        for group in figures["parameter_groups"]:
+            assert isinstance(json.dumps(group["summary"].to_dict("records"), allow_nan=False), str)
 
         plt.close(figures["posterior"])
         plt.close(figures["overlay"])
