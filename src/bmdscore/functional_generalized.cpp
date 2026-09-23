@@ -4,6 +4,7 @@
 // #include <RcppEigen.h>
 // #include <math.h>
 #include "functional_generalized.h"
+
 #include "DichGammaBMD_NC.h"
 // #include <boost/math/distributions/gamma.hpp>
 
