@@ -920,7 +920,8 @@ class Session:
         for model in self.models:
             if not model.has_results:
                 continue
-            params = np.asarray(model.results.parameters.values, dtype=float)
+            raw_params = model.results.parameters
+            params = np.asarray(getattr(raw_params, "values", raw_params), dtype=float)
             if not (np.isfinite(params) & (params != BMDS_BLANK_VALUE)).all():
                 continue
             dr_y = np.asarray(model.results.plotting.dr_y, dtype=float)
