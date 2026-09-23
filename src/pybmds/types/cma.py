@@ -7,7 +7,13 @@ from pydantic import BaseModel, Field, model_serializer
 
 from .. import bmdscore, constants
 from ..models.continuous import BmdModelContinuous
-from .common import clean_array, inspect_cpp_obj
+from .common import (
+    clean_array,
+    inspect_cpp_obj,
+    valid_bmdscore_draw_mask,
+    valid_bmdscore_draw_rows,
+    valid_bmdscore_draws,
+)
 from .continuous import (
     ContinuousDeviance,
     ContinuousGof,
@@ -165,10 +171,10 @@ class ContinuousModelAverageResult(ModelAverageResult):
 
     @staticmethod
     def _json_safe_draws(draws) -> list:
-        """Preserve draw shape while converting nonfinite values to JSON nulls."""
+        """Preserve draw shape while converting invalid bmdscore draws to JSON nulls."""
         arr = np.asarray(draws, dtype=float)
         values = arr.astype(object)
-        values[~np.isfinite(arr)] = None
+        values[~valid_bmdscore_draw_mask(arr)] = None
         return values.tolist()
 
     @staticmethod
@@ -182,13 +188,13 @@ class ContinuousModelAverageResult(ModelAverageResult):
             return bmd, parms
 
         if parms.ndim == bmd.ndim + 1 and parms.shape[:-1] == bmd.shape:
-            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=-1)
+            valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif bmd.ndim == 1 and parms.ndim == 2 and parms.shape[0] == bmd.shape[0]:
-            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
+            valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif parms.ndim == 2 and parms.shape[0] == bmd.size:
-            valid = (np.isfinite(bmd.reshape(-1)) & np.isfinite(parms).all(axis=1)).reshape(
-                bmd.shape
-            )
+            valid = (
+                valid_bmdscore_draw_mask(bmd.reshape(-1)) & valid_bmdscore_draw_rows(parms)
+            ).reshape(bmd.shape)
         else:
             return bmd, parms
 
@@ -370,8 +376,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
         )
 
     def model_summary(self, index: int, alpha: float) -> ModelAveragePerModelSummary:
-        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(self.model_bmd_dist[index])
 
         prior = float(self.priors[index])
         posterior = float(self.posteriors[index])
@@ -399,8 +404,7 @@ class ContinuousModelAverageResult(ModelAverageResult):
         can use the per-model outputs stored in the LOUD MA result container.
         """
         summary = self.model_summary(index, model.settings.alpha)
-        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(self.model_bmd_dist[index])
         parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
         if parm_draws.size:
             parameters = ContinuousParameters.from_loud_draws(

@@ -17,6 +17,7 @@ from .common import (
     clean_array,
     inspect_cpp_obj,
     residual_of_interest,
+    valid_bmdscore_draw_rows,
 )
 from .priors import ModelPriors, PriorClass, PriorDistribution
 
@@ -430,7 +431,7 @@ class ContinuousParameters(BaseModel):
         if draws.ndim != 2:
             raise ValueError(f"Unsupported LOUD parameter draw shape: {draws.shape}")
 
-        draws = draws[np.isfinite(draws).all(axis=1)]
+        draws = draws[valid_bmdscore_draw_rows(draws)]
         param_names = model.get_param_names()
         priors = cls.get_priors(model)
 
@@ -442,6 +443,23 @@ class ContinuousParameters(BaseModel):
         param_names = param_names[:n_params]
         priors = priors[:, :n_params]
 
+        if draws.shape[0] == 0:
+            blank_values = np.full(n_params, BMDS_BLANK_VALUE, dtype=float)
+            return cls(
+                names=param_names,
+                values=blank_values,
+                bounded=np.zeros(n_params, dtype=int),
+                se=blank_values.copy(),
+                lower_ci=blank_values.copy(),
+                upper_ci=blank_values.copy(),
+                cov=np.full((n_params, n_params), BMDS_BLANK_VALUE, dtype=float),
+                prior_type=priors[0],
+                prior_initial_value=priors[1],
+                prior_stdev=priors[2],
+                prior_min_value=priors[3],
+                prior_max_value=priors[4],
+            )
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             values = cls._median_draw(draws)
@@ -452,6 +470,11 @@ class ContinuousParameters(BaseModel):
         cov = np.atleast_2d(cov)
         if cov.shape != (n_params, n_params):
             cov = np.eye(n_params, dtype=float)
+        values = clean_array(values)
+        se = clean_array(se)
+        lower_ci = clean_array(lower_ci)
+        upper_ci = clean_array(upper_ci)
+        cov = clean_array(cov)
 
         return cls(
             names=param_names,

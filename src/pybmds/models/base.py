@@ -13,6 +13,7 @@ from .. import plotting
 from ..constants import BmdModelSchema as BmdModelClass
 from ..constants import ContinuousModelChoices, DistType, Dtype, PriorClass
 from ..datasets.base import DatasetType
+from ..types.common import valid_bmdscore_draw_mask, valid_bmdscore_draws
 from ..types.priors import ModelPriors
 from ..types.priors import priors_tbl as priors_tbl_fn
 from ..utils import get_version, multi_lstrip
@@ -34,9 +35,11 @@ def cdf_df(arr: np.ndarray, n_points: int = 200) -> pd.DataFrame:
     # row 0 = BMD values, row 1 = cumulative probabilities
     if arr.ndim == 2 and 2 in arr.shape:
         values = arr.T if arr.shape[0] == 2 else arr
+        values = values[valid_bmdscore_draw_mask(values[:, 0])]
         percentiles = values[:, 1]
         is_bmds_cdf = (
-            np.isfinite(percentiles).all()
+            values.size > 0
+            and np.isfinite(percentiles).all()
             and np.all((0 <= percentiles) & (percentiles <= 1))
             and np.all(np.diff(percentiles) >= 0)
         )
@@ -48,7 +51,7 @@ def cdf_df(arr: np.ndarray, n_points: int = 200) -> pd.DataFrame:
     # LOUD posterior draws: convert raw draws into an empirical CDF with n_points rows
     # Multiple MCMC chains arrive as chains x iterations and are combined here.
     if arr.ndim in (1, 2):
-        draws = arr[np.isfinite(arr)]
+        draws = valid_bmdscore_draws(arr)
         if draws.size == 0:
             return pd.DataFrame(columns=["Percentile", "BMD"])
 
@@ -252,16 +255,31 @@ class BmdModel(abc.ABC):
                 **{**plotting.LINE_FORMAT, "linestyle": (0, (2, 1, 1, 1)), "c": "#ef7215"},
             )
 
-        # reorder handles and labels
+        # Reorder known legend entries while allowing models without BMD lines to plot.
         handles, labels = ax.get_legend_handles_labels()
-        if draw_slope:
-            order = [2, 0, 1] if axlines else [1, 2, 0]
-        else:
-            order = [1, 0] if axlines else [0, 1]
-        ax.legend(
-            [handles[idx] for idx in order], [labels[idx] for idx in order], **plotting.LEGEND_OPTS
-        )
-        plotting.improve_bmd_diamond_legend(ax)
+        if handles:
+            preferred_labels = (
+                ["Slope Factor", "Model", "BMD/BMDL"]
+                if axlines and draw_slope
+                else ["BMD/BMDL", "Model"]
+                if axlines
+                else ["BMDL-BMD-BMDU", "Slope Factor", "Model"]
+                if draw_slope
+                else ["Model", "BMDL-BMD-BMDU"]
+            )
+            order = [
+                idx
+                for label in preferred_labels
+                for idx, actual in enumerate(labels)
+                if actual == label
+            ]
+            order.extend(idx for idx in range(len(labels)) if idx not in order)
+            ax.legend(
+                [handles[idx] for idx in order],
+                [labels[idx] for idx in order],
+                **plotting.LEGEND_OPTS,
+            )
+            plotting.improve_bmd_diamond_legend(ax)
         fig.tight_layout()
         return fig
 

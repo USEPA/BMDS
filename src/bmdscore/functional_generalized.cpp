@@ -4,6 +4,8 @@
 // #include <RcppEigen.h>
 // #include <math.h>
 #include "functional_generalized.h"
+
+#include "DichGammaBMD_NC.h"
 // #include <boost/math/distributions/gamma.hpp>
 
 // via the depends attribute we tell Rcpp to create hooks for
@@ -233,7 +235,7 @@ Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::Matr
   }
 
   // double b = R::qgamma((p1-p0)/(1-p0),alpha,1,true, false);
-  double b = gsl_cdf_gamma_Pinv((p1 - p0) / (1 - p0), alpha, 1.0);
+  double b = safe_gamma_pinv((p1 - p0) / (1 - p0), alpha, 1.0);
 
   Eigen::VectorXd out = X.col(0);
   if (b <= 0) {

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from copy import copy, deepcopy
 from itertools import cycle
-from typing import Any, Callable, ClassVar
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,11 +37,11 @@ from .reporting.styling import (
     plot_dr,
     write_base_frequentist_table,
     write_bayesian_table,
-    write_MCMC_table,
     write_citation,
     write_dataset_metadata,
     write_dataset_table,
     write_inputs_table,
+    write_MCMC_table,
     write_model,
     write_models,
 )
@@ -919,6 +920,13 @@ class Session:
         for model in self.models:
             if not model.has_results:
                 continue
+            raw_params = model.results.parameters
+            params = np.asarray(getattr(raw_params, "values", raw_params), dtype=float)
+            if not (np.isfinite(params) & (params != BMDS_BLANK_VALUE)).all():
+                continue
+            dr_y = np.asarray(model.results.plotting.dr_y, dtype=float)
+            if not (np.isfinite(dr_y) & (dr_y != BMDS_BLANK_VALUE)).all():
+                continue
             if colorize:
                 label = model.name()
             elif plotted_models == 0:
@@ -927,7 +935,7 @@ class Session:
                 label = None
             ax.plot(
                 model.results.plotting.dr_x,
-                model.results.plotting.dr_y,
+                dr_y,
                 label=label,
                 c=next(color_cycle),
                 linestyle=next(line_cycle),

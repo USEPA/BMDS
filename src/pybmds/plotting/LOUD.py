@@ -12,8 +12,10 @@ import pandas as pd
 import xarray as xr
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from scipy.stats import gaussian_kde
 
 from ..constants import DistType
+from ..types.common import valid_bmdscore_draw_rows, valid_bmdscore_draws
 
 if hasattr(az, "_log"):
     az._log.disabled = True
@@ -22,8 +24,10 @@ _ARVIZ_USES_DATATREE = "ci_prob" in inspect.signature(az.summary).parameters
 _RHAT_SINGLE_CHAIN_FOOTNOTE = (
     "R-hat statistic is calculated only when more than 1 Markov chain is used."
 )
+_ZERO_WEIGHT_CONVERGENCE_FOOTNOTE = "Convergence statistics unavailable. Model weight was set to 0."
 _PLOT_ABS_LIMIT = 1e100
 _PLOT_MAX_DRAWS = 10_000
+_PLOT_KDE_POINTS = 512
 
 
 def _downsample_plot_draws(draws: np.ndarray) -> np.ndarray:
@@ -85,6 +89,8 @@ def _plot_dist(
     ax: plt.Axes,
     color: str | tuple,
     linewidth: float = 1.5,
+    x_range: tuple[float, float] | None = None,
+    positive_support: bool = False,
 ) -> plt.Axes:
     """Plot a one-dimensional density without relying on ArviZ's plotting API."""
     draws = _plot_safe_values(draws)
@@ -98,9 +104,18 @@ def _plot_dist(
     try:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
-            kde_result = az.kde(draws)
-            # ArviZ 1.x also returns the estimated bandwidth.
-            x, y = kde_result[:2]
+            if positive_support:
+                x, y = _positive_support_kde(draws, x_range)
+            else:
+                kde_result = az.kde(draws)
+                # ArviZ 1.x also returns the estimated bandwidth.
+                x, y = kde_result[:2]
+                if x_range is not None:
+                    x = np.linspace(x_range[0], x_range[1], _PLOT_KDE_POINTS)
+                    y = gaussian_kde(draws)(x)
+                elif x.size < _PLOT_KDE_POINTS:
+                    x = np.linspace(float(np.min(x)), float(np.max(x)), _PLOT_KDE_POINTS)
+                    y = gaussian_kde(draws)(x)
     except (ValueError, TypeError, np.linalg.LinAlgError):
         ax.hist(draws, density=True, color=color, alpha=0.35)
         return ax
@@ -109,14 +124,93 @@ def _plot_dist(
     return ax
 
 
+def _positive_support_kde(
+    draws: np.ndarray, x_range: tuple[float, float] | None = None
+) -> tuple[np.ndarray, np.ndarray]:
+    positive_draws = draws[draws > 0]
+    if positive_draws.size < 2 or np.unique(positive_draws).size < 2:
+        raise ValueError("Positive-support KDE requires at least two unique positive values.")
+
+    log_draws = np.log(positive_draws)
+    kde = gaussian_kde(log_draws)
+    if x_range is None:
+        lower = float(np.min(positive_draws))
+        upper = float(np.max(positive_draws))
+    else:
+        lower, upper = x_range
+
+    if upper <= 0:
+        raise ValueError("Positive-support KDE requires a positive plotting range.")
+
+    lower = max(float(lower), np.finfo(float).tiny, float(upper) * 1e-6)
+    x = np.linspace(lower, float(upper), _PLOT_KDE_POINTS)
+    y = kde(np.log(x)) / x
+    return x, y
+
+
 def _plot_safe_values(values: np.ndarray) -> np.ndarray:
-    values = np.asarray(values, dtype=float)
-    values = values[np.isfinite(values)]
+    values = valid_bmdscore_draws(values)
     return values[np.abs(values) <= _PLOT_ABS_LIMIT]
 
 
 def _is_plot_safe_value(value: float) -> bool:
     return np.isfinite(value) and abs(value) <= _PLOT_ABS_LIMIT
+
+
+def _bmd_axis_cap(idata: xr.DataTree) -> float | None:
+    try:
+        doses = np.asarray(idata.observed_data["dose"].values, dtype=float)
+    except (AttributeError, KeyError):
+        return None
+
+    doses = doses[np.isfinite(doses)]
+    if doses.size == 0:
+        return None
+
+    highest_dose = float(np.nanmax(doses))
+    if highest_dose <= 0:
+        return None
+
+    return 3 * highest_dose
+
+
+def _apply_bmd_axis_cap(
+    ax: plt.Axes,
+    idata: xr.DataTree,
+    *draw_arrays: np.ndarray,
+) -> None:
+    cap = _bmd_axis_cap(idata)
+    if cap is None:
+        return
+
+    draws = [
+        _plot_safe_values(np.asarray(draw_array, dtype=float).reshape(-1))
+        for draw_array in draw_arrays
+    ]
+    draws = [draw for draw in draws if draw.size > 0]
+    if not draws:
+        return
+
+    if max(float(np.nanmax(draw)) for draw in draws) > cap:
+        ax.set_xlim(0, cap)
+
+
+def _bmd_plot_range(idata: xr.DataTree, *draw_arrays: np.ndarray) -> tuple[float, float] | None:
+    cap = _bmd_axis_cap(idata)
+    if cap is None:
+        return None
+
+    draws = [
+        _plot_safe_values(np.asarray(draw_array, dtype=float).reshape(-1))
+        for draw_array in draw_arrays
+    ]
+    draws = [draw for draw in draws if draw.size > 0]
+    if not draws:
+        return None
+
+    if max(float(np.nanmax(draw)) for draw in draws) > cap:
+        return (0.0, cap)
+    return None
 
 
 def _safe_tight_layout(fig: plt.Figure, *args, **kwargs) -> None:
@@ -435,8 +529,7 @@ def _figure_from_axes(axes):
 
 
 def _ma_bmd_quantiles(idata: xr.DataTree, alpha: float) -> dict[str, float]:
-    ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
-    ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
+    ma_bmd = valid_bmdscore_draws(idata.posterior["MA_BMD"].values)
     return {
         "lower": float(np.nanquantile(ma_bmd, alpha)),
         "median": float(np.nanquantile(ma_bmd, 0.5)),
@@ -445,8 +538,7 @@ def _ma_bmd_quantiles(idata: xr.DataTree, alpha: float) -> dict[str, float]:
 
 
 def _ma_bmd_hdi(idata: xr.DataTree, hdi_prob: float) -> dict[str, float]:
-    ma_bmd = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
-    ma_bmd = ma_bmd[np.isfinite(ma_bmd)]
+    ma_bmd = valid_bmdscore_draws(idata.posterior["MA_BMD"].values)
     lower, upper = _arviz_hdi(ma_bmd, hdi_prob)
     return {
         "lower": float(lower),
@@ -459,12 +551,19 @@ def _ma_bmd_posterior_figure(
     idata: xr.DataTree,
     stats: dict[str, float],
 ) -> plt.Figure:
-    ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
-    ma_draws = ma_draws[np.isfinite(ma_draws)]
+    ma_draws = valid_bmdscore_draws(idata.posterior["MA_BMD"].values)
+    x_range = _bmd_plot_range(idata, ma_draws)
 
     fig, ax = plt.subplots(figsize=(8, 5))
     if ma_draws.size > 0:
-        _plot_dist(ma_draws, ax=ax, color="black", linewidth=2.5)
+        _plot_dist(
+            ma_draws,
+            ax=ax,
+            color="black",
+            linewidth=2.5,
+            x_range=x_range,
+            positive_support=True,
+        )
 
     marker_styles = {
         "lower": {"color": "#B04A3A", "linestyle": "--", "label": "BMDL"},
@@ -507,6 +606,7 @@ def _ma_bmd_posterior_figure(
     ax.set_title("Model-averaged BMD distribution", pad=6)
     ax.set_xlabel("BMD")
     ax.set_ylabel("Density")
+    _apply_bmd_axis_cap(ax, idata, ma_draws)
     if ax.get_legend_handles_labels()[0]:
         ax.legend()
     _safe_tight_layout(fig)
@@ -521,7 +621,7 @@ def _bmd_summary_table(idata: xr.DataTree, alpha: float) -> pd.DataFrame:
 
     for model_idx, model_name in enumerate(model_names):
         draws = bmd[:, :, model_idx].reshape(-1)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(draws)
         if draws.size == 0:
             continue
         records.append(
@@ -658,11 +758,83 @@ def _hide_rhat_for_single_chain(summary: pd.DataFrame) -> pd.DataFrame:
     return summary
 
 
+def _append_footnote(summary: pd.DataFrame, footnote: str) -> pd.DataFrame:
+    footnotes = list(summary.attrs.get("footnotes", []))
+    if footnote not in footnotes:
+        footnotes.append(footnote)
+    summary.attrs["footnotes"] = footnotes
+    return summary
+
+
+def _zero_weight_unavailable_convergence_labels(
+    summary: pd.DataFrame, label_column: str | None = None
+) -> list[str]:
+    weight_col = "Posterior Weights" if "Posterior Weights" in summary.columns else "Model Weight"
+    if weight_col not in summary.columns:
+        return []
+
+    convergence_columns = [
+        column
+        for column in ("R-hat", "r_hat", "Bulk Effective Sample Size", "ess_bulk")
+        if column in summary.columns
+    ]
+    if not convergence_columns:
+        return []
+
+    labels: list[str] = []
+    for index, row in summary.iterrows():
+        try:
+            weight = float(row[weight_col])
+        except (TypeError, ValueError):
+            continue
+        if not np.isclose(weight, 0.0):
+            continue
+        if all(pd.isna(row[column]) for column in convergence_columns):
+            label = row[label_column] if label_column and label_column in row.index else index
+            labels.append(str(label))
+    return labels
+
+
+def _has_unavailable_convergence_for_zero_weight(summary: pd.DataFrame) -> bool:
+    return bool(_zero_weight_unavailable_convergence_labels(summary))
+
+
+def _append_row_footnote(summary: pd.DataFrame, labels: list[str], footnote: str) -> pd.DataFrame:
+    row_footnotes = {
+        str(label): list(footnotes)
+        for label, footnotes in summary.attrs.get("row_footnotes", {}).items()
+    }
+    for label in labels:
+        footnotes = row_footnotes.setdefault(str(label), [])
+        if footnote not in footnotes:
+            footnotes.append(footnote)
+    summary.attrs["row_footnotes"] = row_footnotes
+    return summary
+
+
+def _add_zero_weight_convergence_footnote(
+    summary: pd.DataFrame, label_column: str | None = None
+) -> pd.DataFrame:
+    labels = _zero_weight_unavailable_convergence_labels(summary, label_column=label_column)
+    if labels:
+        summary = _append_footnote(summary, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
+        return _append_row_footnote(summary, labels, _ZERO_WEIGHT_CONVERGENCE_FOOTNOTE)
+    return summary
+
+
+def _parameter_summary_with_footnotes(summary: pd.DataFrame) -> pd.DataFrame:
+    summary = _add_zero_weight_convergence_footnote(summary, label_column="Model")
+    attrs = dict(summary.attrs)
+    summary = summary.drop(columns=["Model Weight"], errors="ignore")
+    summary.attrs = attrs
+    return summary
+
+
 def _summary_from_draws(
     draws: np.ndarray, var_name: str, label: str, hdi_prob: float
 ) -> pd.DataFrame:
     draws = _nan_nonfinite(draws)
-    flat_draws = draws[np.isfinite(draws)]
+    flat_draws = valid_bmdscore_draws(draws)
     if flat_draws.size == 0:
         return pd.DataFrame()
 
@@ -672,7 +844,7 @@ def _summary_from_draws(
         # ArviZ returns an all-NaN summary when even a sparse nonfinite value is
         # present. Drop the affected iteration from every chain so R-hat and ESS
         # retain a rectangular, correctly aligned chain/draw array.
-        summary_draws = draws[:, np.isfinite(draws).all(axis=0)]
+        summary_draws = draws[:, valid_bmdscore_draw_rows(draws.T)]
     else:
         raise ValueError(f"Unsupported draw shape for summary: {draws.shape}")
 
@@ -881,23 +1053,37 @@ def _bmd_distributions_figure(idata: xr.DataTree) -> plt.Figure:
     model_names = [str(name) for name in idata.posterior.coords["model"].values]
     color_map = _model_color_map(model_names)
     fig, ax = plt.subplots(figsize=(8, 6.5))
+    ma_draws = valid_bmdscore_draws(idata.posterior["MA_BMD"].values)
+    x_range = _bmd_plot_range(idata, idata.posterior["BMD"].values, ma_draws)
 
     for model_name in model_names:
         draws = np.asarray(
             idata.posterior["BMD"].sel(model=model_name).values, dtype=float
         ).reshape(-1)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(draws)
         if draws.size == 0:
             continue
-        _plot_dist(draws, ax=ax, color=color_map[model_name])
+        _plot_dist(
+            draws,
+            ax=ax,
+            color=color_map[model_name],
+            x_range=x_range,
+            positive_support=True,
+        )
 
-    ma_draws = np.asarray(idata.posterior["MA_BMD"].values, dtype=float).reshape(-1)
-    ma_draws = ma_draws[np.isfinite(ma_draws)]
     if ma_draws.size > 0:
-        _plot_dist(ma_draws, ax=ax, color="black", linewidth=2.5)
+        _plot_dist(
+            ma_draws,
+            ax=ax,
+            color="black",
+            linewidth=2.5,
+            x_range=x_range,
+            positive_support=True,
+        )
 
     ax.set_title("BMD distributions", pad=6)
     ax.set_ylabel("Density")
+    _apply_bmd_axis_cap(ax, idata, idata.posterior["BMD"].values, ma_draws)
     _add_figure_legend(
         fig,
         [(model_name, color_map[model_name]) for model_name in model_names]
@@ -964,6 +1150,7 @@ def _parameter_group_records(
     excluded_vars = {"BMD", "MA_BMD", "model_weights", "n_param"}
     all_model_names = [model.name() for model in session.model_average.models]
     color_map = _model_color_map(all_model_names)
+    model_weights = _posterior_model_weight_map(idata)
 
     grouped_models: dict[str, list] = {}
     for model in session.model_average.models:
@@ -1013,6 +1200,7 @@ def _parameter_group_records(
                         rows.append(
                             {
                                 "Model": _parameter_group_model_label(model),
+                                "Model Weight": model_weights.get(model_name, np.nan),
                                 "Parameter": param_name,
                                 **stats.to_dict(),
                             }
@@ -1035,7 +1223,7 @@ def _parameter_group_records(
                     "name": record_name,
                     "model_names": model_names,
                     "var_names": param_names,
-                    "summary": pd.DataFrame(rows),
+                    "summary": _parameter_summary_with_footnotes(pd.DataFrame(rows)),
                     "trace_figure": figure,
                 }
             )
@@ -1085,7 +1273,7 @@ def _bmd_diagnostics_table(
         df = pd.DataFrame(rows).set_index("model")
         df["Posterior Weights"] = df["Posterior Weights"].astype(object)
         df.loc["MA_BMD", "Posterior Weights"] = None
-        return df
+        return _add_zero_weight_convergence_footnote(df)
 
     alpha = (1 - hdi_prob) / 2
     return _bmd_summary_table(idata, alpha)

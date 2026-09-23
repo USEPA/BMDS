@@ -117,6 +117,16 @@ class TestBatchSession:
             }
         ]
 
+    def test_serialize_rejects_nonfinite_json_values(self):
+        class FakeSession:
+            def to_dict(self):
+                return {"result": float("nan")}
+
+        batch = BatchSession(sessions=[FakeSession()])
+
+        with pytest.raises(ValueError, match="Out of range float values"):
+            batch.serialize()
+
 
 class TestMultitumorBatch:
     def test_exports(self, mt_datasets, rewrite_data_files, data_path):
@@ -162,3 +172,13 @@ class TestMultitumorBatch:
 
         with pytest.raises(NotImplementedError):
             MultitumorBatch.execute([{"datasets": mt_datasets}], _batch_run, nprocs=2)
+
+    def test_serialize_rejects_nonfinite_json_values(self):
+        class FakeSession:
+            def to_dict(self):
+                return {"result": float("inf")}
+
+        batch = MultitumorBatch(sessions=[FakeSession()])
+
+        with pytest.raises(ValueError, match="Out of range float values"):
+            batch.serialize()

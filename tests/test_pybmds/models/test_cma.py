@@ -6,6 +6,7 @@ import pytest
 
 import pybmds
 from pybmds.constants import DistType, PriorClass
+from pybmds.models import continuous
 from pybmds.models.cma import BmdModelAveragingContinuous
 from pybmds.types.cma import ContinuousModelAverage, ContinuousModelAverageResult
 from pybmds.types.continuous import ContinuousModelSettings
@@ -127,6 +128,70 @@ class TestContinuousMa:
         # check bmd values exist and are valid
         res = session.model_average.results
         assert np.allclose([0.036, 0.079, 0.22], [res.bmdl, res.bmd, res.bmdu], atol=5)
+
+    def test_decreasing_relative_deviation_loud_uses_requested_bmr(self):
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 25, 50, 100],
+            ns=[27, 27, 28, 28],
+            means=[15, 8, 7, 2],
+            stdevs=[5, 6, 4, 3],
+        )
+        settings = {
+            "bmr_type": pybmds.ContinuousRiskType.RelativeDeviation,
+            "bmr": 0.1,
+            "priors": PriorClass.bayesian_loud,
+            "samples": 1000,
+            "burnin": 100,
+            "seed": 123,
+        }
+
+        session = pybmds.Session(dataset=dataset)
+        for model, disttype in [
+            (pybmds.Models.Power, DistType.normal),
+            (pybmds.Models.Power, DistType.normal_ncv),
+            (pybmds.Models.Hill, DistType.normal),
+            (pybmds.Models.Hill, DistType.normal_ncv),
+            (pybmds.Models.ExponentialM3, DistType.normal),
+            (pybmds.Models.ExponentialM3, DistType.normal_ncv),
+            (pybmds.Models.ExponentialM3, DistType.log_normal),
+        ]:
+            session.add_model(model, {**settings, "disttype": disttype})
+        session.add_model_averaging()
+        session.execute()
+
+        bmd_by_model = {model.name(): model.results.bmd for model in session.model_average.models}
+
+        assert bmd_by_model["Power (CV)"] < 25
+        assert bmd_by_model["Power (NCV)"] < 25
+        assert bmd_by_model["Hill (CV)"] < 60
+        assert bmd_by_model["Hill (NCV)"] < 25
+        assert bmd_by_model["Exponential 3 (CV)"] < 60
+        assert bmd_by_model["Exponential 3 (NCV)"] < 60
+        assert bmd_by_model["Exponential 3 (Lognormal)"] < 60
+
+    def test_decreasing_lognormal_standard_deviation_uses_decreasing_side_delta(self):
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 25, 50, 100],
+            ns=[27, 27, 28, 28],
+            means=[15, 8, 7, 2],
+            stdevs=[5, 6, 4, 3],
+        )
+        model = continuous.ExponentialM3(
+            dataset,
+            {
+                "bmr_type": pybmds.ContinuousRiskType.StandardDeviation,
+                "bmr": 2.0,
+                "disttype": DistType.log_normal,
+                "priors": PriorClass.bayesian_loud,
+                "samples": 1000,
+                "burnin": 100,
+                "seed": 123,
+            },
+        )
+
+        result = model.execute()
+
+        assert result.bmd < 75
 
     def test_prior_weights(self, cdataset3):
         # default; equal weights

@@ -6,7 +6,11 @@ import pandas as pd
 import pytest
 
 import pybmds
-from pybmds.constants import DistType, Models, PriorClass
+from pybmds.constants import BMDS_BLANK_VALUE, DistType, Models, PriorClass
+
+
+def assert_strict_json(payload):
+    json.dumps(payload, allow_nan=False)
 
 
 class TestSession:
@@ -454,6 +458,8 @@ class TestSession:
 
         full = session.to_dict()
         trimmed = session.to_dict(include_loud_draws=False)
+        assert_strict_json(full)
+        assert_strict_json(trimmed)
 
         assert full["model_average"]["results"]["bmd_dist"]
         assert full["model_average"]["results"]["model_bmd_dist"]
@@ -980,6 +986,34 @@ class TestSessionPlot:
         session.add_model_averaging()
         session.execute()
         return session.plot(colorize=False)
+
+    def test_continuous_ma_skips_blank_individual_model_curve(self):
+        dataset = pybmds.ContinuousDataset(
+            doses=[0, 25, 100, 400],
+            ns=[48, 47, 49, 46],
+            means=[430.6, 431.2, 426.5, 412],
+            stdevs=[28.4, 25, 30, 30.6],
+        )
+        session = pybmds.Session(dataset=dataset)
+        session.add_default_bayesian_models(
+            include_extended=True,
+            weight_option=1,
+            settings=dict(
+                n_chains=4,
+                samples=1000,
+                burnin=200,
+                seed=0,
+                bmr_type=pybmds.ContinuousRiskType.RelativeDeviation,
+                bmr=0.1,
+            ),
+        )
+        session.execute()
+
+        fig = session.plot(colorize=False)
+        ax = fig.gca()
+
+        assert not any(np.all(line.get_ydata() == BMDS_BLANK_VALUE) for line in ax.lines)
+        assert not any(np.nanmin(line.get_ydata()) < 0 for line in ax.lines)
 
     @pytest.mark.mpl_image_compare
     def test_continuous_colorize(self, cdataset):

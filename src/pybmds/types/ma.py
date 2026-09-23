@@ -8,7 +8,13 @@ from pydantic import BaseModel, Field, model_serializer
 from .. import bmdscore, constants
 from ..constants import BMDS_BLANK_VALUE, PriorClass
 from ..models.dichotomous import BmdModelDichotomous
-from .common import clean_array, inspect_cpp_obj
+from .common import (
+    clean_array,
+    inspect_cpp_obj,
+    valid_bmdscore_draw_mask,
+    valid_bmdscore_draw_rows,
+    valid_bmdscore_draws,
+)
 from .continuous import NumpyFloatArray
 from .dichotomous import (
     DichotomousAnalysisOfDeviance,
@@ -156,7 +162,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
     def _json_safe_draws(draws) -> list:
         arr = np.asarray(draws, dtype=float)
         values = arr.astype(object)
-        values[~np.isfinite(arr)] = None
+        values[~valid_bmdscore_draw_mask(arr)] = None
         return values.tolist()
 
     @staticmethod
@@ -170,13 +176,13 @@ class DichotomousModelAverageResult(ModelAverageResult):
             return bmd, parms
 
         if parms.ndim == bmd.ndim + 1 and parms.shape[:-1] == bmd.shape:
-            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=-1)
+            valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif bmd.ndim == 1 and parms.ndim == 2 and parms.shape[0] == bmd.shape[0]:
-            valid = np.isfinite(bmd) & np.isfinite(parms).all(axis=1)
+            valid = valid_bmdscore_draw_mask(bmd) & valid_bmdscore_draw_rows(parms)
         elif parms.ndim == 2 and parms.shape[0] == bmd.size:
-            valid = (np.isfinite(bmd.reshape(-1)) & np.isfinite(parms).all(axis=1)).reshape(
-                bmd.shape
-            )
+            valid = (
+                valid_bmdscore_draw_mask(bmd.reshape(-1)) & valid_bmdscore_draw_rows(parms)
+            ).reshape(bmd.shape)
         else:
             return bmd, parms
 
@@ -345,7 +351,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             )
         else:
             arr = np.array(analysis.result.bmd_dist).reshape(2, analysis.result.dist_numE).T
-            arr = arr[np.isfinite(arr[:, 0])]
+            arr = arr[valid_bmdscore_draw_mask(arr[:, 0])]
             arr = arr[arr[:, 0] > 0]
 
         # calculate dr_y for model averaging
@@ -379,7 +385,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
             valid_posteriors = []
             for idx, (model, parm_draws) in enumerate(zip(models, model_parms, strict=True)):
                 finite_parm_draws = parm_draws.reshape(-1, parm_draws.shape[-1])
-                finite_parm_draws = finite_parm_draws[np.isfinite(finite_parm_draws).all(axis=1)]
+                finite_parm_draws = finite_parm_draws[valid_bmdscore_draw_rows(finite_parm_draws)]
                 params = (
                     np.nanmedian(finite_parm_draws, axis=0)
                     if finite_parm_draws.size
@@ -437,8 +443,7 @@ class DichotomousModelAverageResult(ModelAverageResult):
         )
 
     def model_summary(self, index: int, alpha: float) -> ModelAveragePerModelSummary:
-        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(self.model_bmd_dist[index])
         prior = float(self.priors[index])
         posterior = float(self.posteriors[index])
         if draws.size == 0:
@@ -459,16 +464,15 @@ class DichotomousModelAverageResult(ModelAverageResult):
 
     def sync_model_result(self, model, index: int, cpp_result=None) -> None:
         summary = self.model_summary(index, model.settings.alpha)
-        draws = np.asarray(self.model_bmd_dist[index], dtype=float)
-        draws = draws[np.isfinite(draws)]
+        draws = valid_bmdscore_draws(self.model_bmd_dist[index])
         raw_parm_draws = np.asarray(self.model_parm_dist[index], dtype=float)
         if raw_parm_draws.ndim >= 2:
             n_params = raw_parm_draws.shape[-1]
             flat_parm_draws = raw_parm_draws.reshape(-1, n_params)
-            parm_draws = flat_parm_draws[np.isfinite(flat_parm_draws).all(axis=1)]
+            parm_draws = flat_parm_draws[valid_bmdscore_draw_rows(flat_parm_draws)]
         else:
             n_params = raw_parm_draws.size
-            parm_draws = raw_parm_draws[np.isfinite(raw_parm_draws)]
+            parm_draws = valid_bmdscore_draws(raw_parm_draws)
 
         if parm_draws.ndim == 2 and parm_draws.size:
             param_values = np.nanmedian(parm_draws, axis=0)

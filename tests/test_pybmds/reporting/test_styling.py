@@ -39,6 +39,24 @@ def test_df_to_table_writes_dataframe_footnotes():
     )
 
 
+def test_df_to_table_writes_row_footnote_superscripts():
+    report = Report.build_default()
+    footnote = "Convergence statistics unavailable. Model weight was set to 0."
+    df = pd.DataFrame({"Model": ["A", "B"], "BMD": [1.0, 2.0]})
+    df.attrs["footnotes"] = [footnote]
+    df.attrs["row_footnotes"] = {"A": [footnote]}
+
+    df_to_table(report, df)
+
+    model_paragraph = report.document.tables[0].cell(1, 0).paragraphs[0]
+    assert model_paragraph.text == "Aa"
+    assert model_paragraph.runs[-1].font.superscript is True
+
+    footnote_paragraph = report.document.paragraphs[-1]
+    assert footnote_paragraph.text == f"a {footnote}"
+    assert footnote_paragraph.runs[0].font.superscript is True
+
+
 def test_df_to_table_accepts_custom_formatter():
     report = Report.build_default()
     df = pd.DataFrame({"Parameter": ["alpha"], "Median": [0.000584]})

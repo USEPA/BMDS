@@ -46,16 +46,23 @@ class BmdModelAveragingContinuous(BmdModelAveraging):
                 results.sync_model_result(model, idx, self.structs.result.models[idx])
         extra_values = [results.bmd] if results.bmd >= 0 else []
         dr_x = self.session.dataset.dose_linspace(extra_values=extra_values)
-        values = np.asarray(
-            [
-                np.interp(dr_x, model.results.plotting.dr_x, model.results.plotting.dr_y)
-                for model in self.models
-            ],
-            dtype=float,
-        )
+        values = np.full((len(self.models), dr_x.size), BMDS_BLANK_VALUE, dtype=float)
+        valid_curves = np.zeros(len(self.models), dtype=bool)
+        for idx, model in enumerate(self.models):
+            params = np.asarray(model.results.parameters.values, dtype=float)
+            dr_y = np.asarray(model.results.plotting.dr_y, dtype=float)
+            valid_params = np.isfinite(params) & (params != BMDS_BLANK_VALUE)
+            valid_dr_y = np.isfinite(dr_y) & (dr_y != BMDS_BLANK_VALUE)
+            if not valid_params.all() or not valid_dr_y.all():
+                continue
+            values[idx] = np.interp(dr_x, model.results.plotting.dr_x, dr_y)
+            valid_curves[idx] = True
         posteriors = np.asarray(results.posteriors, dtype=float)
         valid_posteriors = (
-            np.isfinite(posteriors) & (posteriors >= 0) & (posteriors != BMDS_BLANK_VALUE)
+            np.isfinite(posteriors)
+            & (posteriors >= 0)
+            & (posteriors != BMDS_BLANK_VALUE)
+            & valid_curves
         )
         if values.size and valid_posteriors.any() and posteriors[valid_posteriors].sum() > 0:
             weights = posteriors.copy()
