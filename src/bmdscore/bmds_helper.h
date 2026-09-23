@@ -215,12 +215,12 @@ struct fitInput {
 // result struct for LOUD CMA
 struct fitResult {
   Eigen::MatrixXd parms;
-  double int_factor;
-  double waic;
+  double int_factor = BMDS_MISSING;
+  double waic = BMDS_MISSING;
   Eigen::VectorXd BMD;
   Eigen::MatrixXd R;
-  double ll;
-  double pval;
+  double ll = BMDS_MISSING;
+  double pval = BMDS_MISSING;
 };
 
 struct python_dichotomous_analysis {
