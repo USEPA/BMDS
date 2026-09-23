@@ -2,13 +2,27 @@
 
 ## bmds-ui
 
+### Version 26.1
+
+*released on 2026-xx-xx.*
+
+* Added LOUD Bayesian model averaging for dichotomous data
+* Added LOUD Bayesian model averaging for continuous data
+* Added additional continuous models for LOUD Bayesian model averaging analyses
+* Added goodness of fit statistic for LOUD Bayesian model averaging
+* Added download LOUD inference data object to Actions button
+* Added Cochran Armitage trend test for dichotomous and cancer/multitumor data
+* Added Jonckheere-Terpstra trend test for continuous data
+* Added additional plotting functionality for nested dichotomous data
+
+
 ### Version 25.1
 
 *Released on 2025-04-25.*
 
-* Add Nested Dichotomous NCTR Model
-* Add Rao-Scott Transformation for summary Nested Dichotomous data
-* Add cloning analysis action
+* Added Nested Dichotomous NCTR Model
+* Added Rao-Scott transformation for summary Nested Dichotomous data
+* Added cloning analysis action
 * Only show dataset type selector for continuous data
 * Enable schema migration for future backwards compatibility
 * Improve database stability for BMDS Desktop
@@ -26,6 +40,16 @@
 * Initial release of `bmds-ui`; project was originally forked from [shapiromatron/bmds-server](https://github.com/shapiromatron/bmds-server)
 
 ## pybmds
+
+### Version 26.1
+
+*released on 2026-xx-xx.*
+
+* Added LOUD Bayesian model averaging for dichotomous data
+* Added LOUD Bayesian model averaging for continuous data
+* Added additional continuous models for LOUD Bayesian model averaging analyses
+* Added goodness of fit statistic for LOUD Bayesian model averaging 
+* Fixed p-value bug for permutation and exact Jonckheere-Terpstra trend test
 
 ### Version 25.2 
 

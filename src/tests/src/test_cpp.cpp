@@ -20,6 +20,8 @@ void runDichoMA();
 void runPythonDichoAnalysis();
 void runPythonDichoMA();
 void runPythonContAnalysis();
+void runPythonContLoud();
+void runPythonDichoLoud();
 void runPythonMultitumorAnalysis();
 void runTestMultitumorModel();
 void runPythonNestedAnalysis();
@@ -50,8 +52,10 @@ int main(void) {
   //  runPythonDichoAnalysis();
   //  runPythonDichoMA();
   //  runPythonContAnalysis();
+  runPythonContLoud();
+  //  runPythonDichoLoud();
   //  runPythonMultitumorAnalysis();
-  runPythonNestedAnalysis();
+  //  runPythonNestedAnalysis();
   //  Nlogist_probs_test();
   //  Nlogist_lk_test();
   ////  runTestMultitumorModel();
@@ -959,13 +963,13 @@ void runPythonDichoAnalysis() {
   // USER INPUT
   ///////////////////////////////
 
-  enum dich_model model = d_multistage;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
-                                         // d_logprobit=5, d_multistage=6,d_probit=7,
-                                         // d_qlinear=8,d_weibull=9
-  int modelType = 1;                     // 1 = frequentist, 2 = bayesian
-  bool restricted = true;                // only used for frequentist models
-  int BMD_type = 1;                      // 1 = extra ; added otherwise
-  int degree = 2;                        // for multistage only
+  enum dich_model model = d_qlinear;  // d_hill =1, d_gamma=2,d_logistic=3, d_loglogistic=4,
+                                      // d_logprobit=5, d_multistage=6,d_probit=7,
+                                      // d_qlinear=8,d_weibull=9
+  int modelType = 1;                  // 1 = frequentist, 2 = bayesian
+  bool restricted = false;            // only used for frequentist models
+  int BMD_type = 1;                   // 1 = extra ; added otherwise
+  int degree = 2;                     // for multistage only
   double BMR = 0.1;
   double alpha = 0.05;
   double countAllParmsOnBoundary = false;
@@ -2041,6 +2045,393 @@ void runPythonDichoMA() {
   std::cout << "INPUT" << std::endl;
   printBmdsStruct(&ma_info);
   std::cout << "OUTPUT" << std::endl;
+  printBmdsStruct(&ma_res);
+}
+
+Eigen::VectorXd colwiseMedian(const Eigen::MatrixXd &mat) {
+  Eigen::VectorXd medians(mat.cols());
+  for (int i = 0; i < mat.cols(); ++i) {
+    // Copy column to a vector
+    std::vector<double> col(mat.col(i).data(), mat.col(i).data() + mat.rows());
+
+    // Sort to find median
+    std::sort(col.begin(), col.end());
+
+    // Calculate median
+    if (col.size() % 2 == 0) {
+      medians(i) = (col[col.size() / 2 - 1] + col[col.size() / 2]) / 2.0;
+    } else {
+      medians(i) = col[col.size() / 2];
+    }
+  }
+  return medians;
+}
+
+void runPythonDichoLoud() {
+  // enum dich_model {
+  // d_hill = 1,
+  // d_gamma = 2,
+  // d_logistic = 3,
+  // d_loglogistic = 4,
+  // d_logprobit = 5,
+  // d_multistage = 6,
+  // d_probit = 7,
+  // d_qlinear = 8,
+  // d_weibull = 9
+
+  std::vector<int> models = {3};
+  // std::vector<int> models = {8, 3, 7, 6, 4, 5, 1, 9, 2};
+
+  //// data_M3
+  // double D[] = {0.0, 0.25, 0.5, 1.0};
+  // double Y[] = {2, 0, 9, 10};
+  // double N[] = {10, 10, 10, 10};
+
+  //// Mary debug
+  // double D[] = {0.0, 0.25, 0.5, 0.75, 1.0};
+  // double Y[] = {0, 3, 10, 15, 19};
+  // double N[] = {20, 20, 20, 20, 20};
+
+  // Dichotomous.dax Effect 1
+  double D[] = {0, 50, 100, 150, 200};
+  double Y[] = {0, 5, 30, 65, 90};
+  double N[] = {100, 100, 100, 100, 100};
+
+  ////Dichotomous.dax Effect 2
+  // double D[] = {0,50, 100, 150, 200};
+  // double Y[] = {5, 10, 33, 67, 93};
+  // double N[] = {100, 100, 100, 100, 100};
+
+  ////  D100
+  // double D[] = {0, 5.1, 21.9, 46.5};
+  // double Y[] = {5, 5, 9, 17};
+  // double N[] = {60, 60, 60, 60};
+
+  int BMD_type = 1;  // 1 = extra ; added otherwise
+  double BMR = 0.1;
+  double alpha = 0.05;
+  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+
+  int iter = 5;
+  int burnin = 2;
+  int chains = 4;
+
+  /////////////////////////////////////////////////
+  ////END USER INPUT
+  ////////////////////////////////////////////////////
+
+  int datatype = l_dichotomous;
+
+  int numDataRows = sizeof(D) / sizeof(D[0]);
+
+  // check data array sizes for consistency
+  size_t numElementsY = sizeof(Y) / sizeof(Y[0]);
+  size_t numElementsN = sizeof(N) / sizeof(N[0]);
+  if (numDataRows != numElementsY || numElementsY != numElementsN) {
+    printf("Number of data elements are not consistent\nExiting Code\n");
+    exit(-1);
+  }
+
+  int nmodels = models.size();
+
+  struct python_dichotomous_analysis anal;
+  anal.BMR = BMR;
+  anal.alpha = alpha;
+  anal.Y.assign(Y, Y + numDataRows);
+  anal.n_group.assign(N, N + numDataRows);
+  anal.doses.assign(D, D + numDataRows);
+  anal.n = numDataRows;
+  anal.samples = iter;
+  anal.burnin = burnin;
+  anal.chains = chains;
+
+  int prCols = 5;
+
+  std::vector<int> priorCols(nmodels, prCols);
+  std::vector<int> numParms;
+  std::vector<std::vector<double>> pr;
+  double *prArray;
+
+  ///////////
+  std::vector<double> curPR;
+  int prSize;
+
+  struct python_dichotomousMA_analysis ma_info;
+  // ma_info.nparms = numParms;
+  // ma_info.actual_parms = actualParms;
+  ma_info.prior_cols = priorCols;
+  ma_info.models = models;
+  // ma_info.datatype = datatype;
+  ma_info.weightOption = weightOption;
+  // ma_info.modelPriors = modelPriors;
+  ma_info.nmodels = nmodels;
+  ma_info.pyDA = anal;
+  // assign default priors
+  ma_info.priors = createDefaultDichoPriors(&ma_info);
+
+  for (int i = 0; i < nmodels; i++) {
+    int prSize = ma_info.priors[i].size();
+    numParms.push_back(prSize / prCols);
+  }
+
+  ma_info.actual_parms = numParms;
+
+  // std::vector<python_dichotomous_model_result> res(numModels);
+  std::vector<python_dichotomous_model_result> res(nmodels);
+  for (int i = 0; i < nmodels; i++) {
+    res[i].model = models[i];
+    res[i].nparms = numParms[i];
+  }
+
+  struct python_dichotomousMA_result ma_res;
+  ma_res.nmodels = nmodels;
+  ma_res.models = res;
+  // ma_res.dist_numE = dist_numE;
+
+  struct BMDSMA_results bmdsRes;
+  bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(nmodels, BMDS_MISSING);
+  bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
+  bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
+  bmdsRes.BMD_MA = BMDS_MISSING;
+  bmdsRes.BMDL_MA = BMDS_MISSING;
+  bmdsRes.BMDU_MA = BMDS_MISSING;
+
+  ma_res.bmdsRes = bmdsRes;
+
+  pythonBMDSLoud(&ma_info, &ma_res);
+
+  std::cout << "Test output:" << std::endl;
+  printBmdsStruct(&ma_res);
+
+  // Eigen::VectorXd medians = colwiseMedian(ma_res.models[0].loudRes.parms);
+  // std::cout << "medians:" << medians << std::endl;
+  // Eigen::VectorXd means = ma_res.models[0].loudRes.parms.colwise().mean();
+  // std::cout << "means:" << means << std::endl;
+}
+
+void runPythonContLoud() {
+  printf("Running LOUD Continuous Model Averaging\n");
+
+  bool isIncreasing;
+
+  // TODO make sure all user settings are passed and used correctly
+  // enum distribution dist = normal;  // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;  // if false then need to set isIncreasing
+  // bool countAllParmsOnBoundary = true;
+
+  // int degree = 2;  // for polynomial only
+
+  double alpha = 0.05;
+  double BMRF = 1.0;  // 1.0;
+  int BMD_type = 2;   // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra, 6 = hybrid_extra, 7 =
+                      // hybrid_added   from src/include/cmodeldefs.h
+  int iter = 5;
+  int burnin = 2;
+  int chains = 4;
+  long seed = 0;
+
+  int weightOption = 1;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+  int priorCols = 5;
+
+  // define models to run
+  //  hill = 6,
+  // exp_3 = 3,
+  // exp_5 = 5,
+  // power = 8,
+  // funl = 10,
+  // polynomial = 666,
+  // l_hill_efsa = 20,
+  // l_invexp_efsa = 21,
+  // l_lognormal_efsa = 22,
+  // l_gamma_efsa = 23,
+  // l_lms_efsa = 24
+
+  // define corresponding dists for each model
+  //  normal = 1, normal_ncv = 2, log_normal = 3
+
+  // testing
+  // std::vector<int> models = {8, 8};
+  // std::vector<int> dists = {1, 2};
+  // std::vector<int> models = {8};
+  // std::vector<int> dists = {1};
+  // kitchen sink
+  // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+  //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+  //                          1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+  // std::vector<int> models = {8,  8,  3,  3,  3,  5,  5,  5,  6,  6,  20, 20, 20,
+  //                           21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24};
+  // std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2, 3,
+  //                          1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+
+  // BMDS models from CMA_waic_all
+  std::vector<int> models = {8, 8, 3, 3, 3, 5, 5, 5, 6, 6};
+  std::vector<int> dists = {1, 2, 1, 2, 3, 1, 2, 3, 1, 2};
+
+  // summary data
+  //// double D[] = {0, 0.125, 0.25, 0.5, 1.0};
+  // double D[] = {0, 125, 250, 500, 1000};
+  // double Y[] = {10.61764, 11.54771, 12.20492, 14.73715, 15.85227};
+  // double N[] = {20, 20, 20, 19, 19};
+  // double SD[] = {0.8937421, 1.0580638, 1.3528275, 1.0778448, 0.8350199};
+  // bool suffStat = true;
+  // int datatype = loud_datatype::l_summary;
+  // isIncreasing = true;
+
+  // Mary debug data
+  double D[] = {0, 25, 50, 75, 100};
+  double Y[] = {6, 8, 13, 25, 30};
+  double N[] = {20, 20, 20, 20, 20};
+  double SD[] = {4, 4.3, 3.8, 4.4, 3.7};
+  bool suffStat = true;
+  int datatype = loud_datatype::l_summary;
+  isIncreasing = true;
+
+  // individual data
+  // double D[] = {0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+  //              0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.125, 0.125,
+  //              0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125,
+  //              0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.250, 0.250, 0.250, 0.250,
+  //              0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250, 0.250,
+  //              0.250, 0.250, 0.250, 0.250, 0.250, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+  //              0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500, 0.500,
+  //              0.500, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+  //              1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000};
+
+  // double Y[] = {10.859490, 10.990850, 9.975845,  10.167415, 11.600947, 8.908355,  12.766907,
+  //               9.793314,  10.357511, 10.556906, 11.129513, 10.706564, 9.744599,  10.219390,
+  //               9.633552,  10.696789, 12.251775, 10.436382, 11.082718, 10.474072, 11.769161,
+  //               11.588864, 10.948461, 12.033503, 10.584272, 10.957064, 12.129170, 12.589572,
+  //               12.923549, 11.165075, 9.203102,  11.702857, 11.934181, 11.875876, 10.688606,
+  //               12.022749, 11.276965, 10.810963, 14.266820, 10.483300, 11.451485, 12.534117,
+  //               12.455834, 13.742919, 13.007306, 12.550801, 10.400657, 12.871480, 13.413661,
+  //               9.335636,  10.929786, 10.628343, 12.961808, 12.236850, 14.812280, 11.015145,
+  //               13.553928, 10.716097, 12.704578, 12.775769, 14.446332, 14.805081, 17.173102,
+  //               14.479885, 14.871077, 13.980834, 12.882616, 15.331523, 14.935816, 14.036283,
+  //               14.825733, 14.096924, 15.580711, 15.202018, 14.187712, 14.557464, 13.124163,
+  //               17.085746, 14.402763, 16.220990, 15.640171, 17.003492, 15.824510, 15.376245,
+  //               15.997810, 15.718334, 16.092409, 14.568786, 15.414712, 15.568454, 14.780717,
+  //               14.737647, 17.006861, 17.090000, 17.079688, 15.623780, 14.735885, 16.712593};
+  // double N[1];
+  // double SD[1];
+  // bool suffStat = false;
+  // int datatype = loud_datatype::l_individual;
+  // isIncreasing = true;
+
+  int nmodels = models.size();
+  int numDataRows = sizeof(D) / sizeof(D[0]);
+
+  // check data array sizes for consistency
+  size_t numElementsY = sizeof(Y) / sizeof(Y[0]);
+  if (suffStat) {
+    size_t numElementsN = sizeof(N) / sizeof(N[0]);
+    size_t numElementsSD = sizeof(SD) / sizeof(SD[0]);
+    if (numDataRows != numElementsY || numElementsY != numElementsN ||
+        numElementsN != numElementsSD) {
+      printf("Number of data elements are not consistent\nExiting Code\n");
+      exit(-1);
+    }
+  } else {
+    if (numDataRows != numElementsY) {
+      printf("Number of data elements are not consistent\nExiting Code\n");
+      exit(-1);
+    }
+  }
+
+  // declare analysis
+  struct python_continuous_analysis anal;
+
+  anal.Y.assign(Y, Y + numDataRows);
+  anal.n = numDataRows;
+  if (suffStat) {
+    anal.n_group.assign(N, N + numDataRows);
+    anal.sd.assign(SD, SD + numDataRows);
+  }
+  anal.doses.assign(D, D + numDataRows);
+  // anal.disttype = dist;
+  if (!detectAdvDir) {
+    anal.isIncreasing = isIncreasing;
+  }
+
+  anal.n = numDataRows;
+  anal.detectAdvDir = detectAdvDir;
+
+  //  if (suffStat) {
+  //    anal.n_group.assign(N, N + numDataRows);
+  //    anal.sd.assign(SD, SD + numDataRows);
+  //  }
+  //  anal.disttype = dist;
+  //  if (!detectAdvDir) {
+  //    anal.isIncreasing = isIncreasing;
+  //  }
+
+  //  anal.alpha = alpha;
+  anal.BMD_type = BMD_type;  // 1=absdev, 2 = stddev, 3 = reldev, 4 = pt, 5 = extra,
+                             // 6 = hybrid_extra, 7 = hybrid_added   from src/include/cmodeldefs.h
+  anal.BMR = BMRF;
+  //  anal.samples = 0;  // num MCMC samples
+  //  anal.tail_prob = 0.01;
+  anal.suff_stat = suffStat;
+  anal.isIncreasing = isIncreasing;
+  //  anal.parms = numParms;
+  //  anal.prior_cols = prCols;
+  //  anal.transform_dose = 0;
+  //  anal.prior.assign(prior, prior + anal.prior_cols * anal.parms);
+  //  anal.restricted = restricted;
+  anal.detectAdvDir = detectAdvDir;
+  anal.samples = iter;
+  anal.burnin = burnin;
+  anal.chains = chains;
+
+  struct python_continuousMA_analysis ma_info;
+  // ma_info.actual_parms = numParms;
+  // ma_info.models = models;
+  // ma_info.priors = pr;
+  // ma_info.modelPriors = modelPriors;
+  // ma_info.nmodels = numModels;
+  ma_info.pyCA = anal;
+  ma_info.datatype = datatype;
+  // ma_info.iter = iter;
+  // ma_info.burnin = burnin;
+  ma_info.weightOption = weightOption;
+
+  ma_info.models = models;
+  ma_info.loud_dist_type = dists;
+  ma_info.nmodels = nmodels;
+  ma_info.prior_cols = std::vector<int>(nmodels, 5);
+  ma_info.seed = seed;
+
+  std::vector<python_continuous_model_result> res(nmodels);
+  //  for (int i = 0; i < models.size(); i++) {
+  //    res[i].model = models[i];
+  //    res[i].dist = dists[i];
+  //  }
+  std::vector<std::vector<double>> parms;
+  for (int i = 0; i < nmodels; i++) {
+    std::vector<double> newParms;
+    res[i].parms = newParms;
+  }
+
+  struct BMDSMA_results bmdsRes;
+  bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(nmodels, BMDS_MISSING);
+  bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
+  bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
+  bmdsRes.BMD_MA = BMDS_MISSING;
+  bmdsRes.BMDL_MA = BMDS_MISSING;
+  bmdsRes.BMDU_MA = BMDS_MISSING;
+
+  struct python_continuousMA_result ma_res;
+  ma_res.nmodels = nmodels;
+  ma_res.models = res;
+  ma_res.bmdsRes = bmdsRes;
+
+  ma_info.priors = createDefaultPriors(&ma_info);
+  pythonBMDSLoud(&ma_info, &ma_res);
+
   printBmdsStruct(&ma_res);
 }
 
@@ -3148,11 +3539,11 @@ void runPythonContAnalysis() {
   // USER INPUT
   //////////////////////////////
 
-  enum cont_model model = polynomial;  // hill, exp_3, exp_5, power, funl, polynomial
-  int modelType = 1;                   // 1 = frequentist, 2 = bayesian
-  bool restricted = true;              // only used for frequentist models
-  enum distribution dist = normal;     // normal, normal_ncv, log_normal
-  bool detectAdvDir = true;            // if false then need to set isIncreasing
+  enum cont_model model = power;    // hill, exp_3, exp_5, power, funl, polynomial
+  int modelType = 1;                // 1 = frequentist, 2 = bayesian
+  bool restricted = true;           // only used for frequentist models
+  enum distribution dist = normal;  // normal, normal_ncv, log_normal
+  bool detectAdvDir = true;         // if false then need to set isIncreasing
   bool countAllParmsOnBoundary = true;
   // isIncreasing = true;
 
@@ -3176,13 +3567,14 @@ void runPythonContAnalysis() {
   // isIncreasing = false;
 
   // continuous2.dax
-  // double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
-  //               30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
-  // double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
-  //               50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
-  // double N[1];
-  // double SD[1];
-  // isIncreasing = true;
+  suffStat = false;
+  double D[] = {0,  0,  0,  0,  18, 18, 18, 18, 18, 20, 20, 20, 20,
+                30, 30, 30, 30, 35, 35, 35, 35, 40, 40, 40, 40, 40};
+  double Y[] = {39,   38.4, 36.3, 37.1, 40.2, 45.3, 42.1, 38.3, 35.9, 42.5, 45.2, 40.1, 39.8,
+                50.1, 53.4, 48.2, 52.1, 56.1, 50.4, 53.2, 55.2, 55.1, 59.1, 56.3, 52.9, 53.7};
+  double N[1];
+  double SD[1];
+  isIncreasing = true;
 
   // continuous3.dax
   //  double D[] = {0,35,105,316,625};
@@ -3439,10 +3831,10 @@ void runPythonContAnalysis() {
   //  double N[] = {20, 20, 20};
   //  double SD[] = {2.23, 1.47, 1.56};
 
-  double D[] = {0, 50, 100, 150};
-  double Y[] = {10, 15, 20, 25};
-  double N[] = {10, 10, 10, 10};
-  double SD[] = {2, 3, 4, 5};
+  // double D[] = {0, 50, 100, 150};
+  // double Y[] = {10, 15, 20, 25};
+  // double N[] = {10, 10, 10, 10};
+  // double SD[] = {2, 3, 4, 5};
 
   /////////////////////////////////////////////////
   // END USER INPUT

@@ -8,11 +8,42 @@ from ..constants import DichotomousModel, DichotomousModelChoices, PriorClass
 from ..datasets import DichotomousDataset
 from ..types.dichotomous import DichotomousAnalysis, DichotomousModelSettings, DichotomousResult
 from ..types.priors import ModelPriors, get_dichotomous_prior, multistage_cancer_prior
+from ..utils import multi_lstrip
 from .base import BmdModel, BmdModelSchema, InputModelSettings
 
 
 class BmdModelDichotomous(BmdModel):
     bmd_model_class: DichotomousModel
+
+    def results_text(self) -> str:
+        if self.results is None:  # pragma: no cover
+            raise ValueError("Cannot render text if results are unavailable")
+
+        session = getattr(self, "session", None)
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and session is not None:
+            summary = session.get_model_average_summary_for_model(self)
+            if summary is not None:
+                return multi_lstrip(
+                    f"""
+                Modeling Summary:
+                {self.results.tbl()}
+
+                Model Parameters:
+                {self.results.parameters.tbl()}
+
+                Goodness of Fit:
+                {self.results.gof.tbl(self.dataset)}
+
+                LOUD Model-Average Weights:
+                Prior Weight: {summary.prior}
+                Posterior Weight: {summary.posterior}
+
+                Model-specific BMD values shown above are taken from the LOUD
+                model averaging result for this model.
+                """
+                )
+
+        return super().results_text()
 
     def get_model_settings(
         self, dataset: DichotomousDataset, settings: InputModelSettings
@@ -34,6 +65,13 @@ class BmdModelDichotomous(BmdModel):
             model_settings.priors = get_dichotomous_prior(
                 self.bmd_model_class, prior_class=prior_class
             )
+        if model_settings.priors.prior_class is PriorClass.bayesian_loud:
+            model_settings = DichotomousModelSettings.model_validate(
+                {
+                    field: getattr(model_settings, field)
+                    for field in DichotomousModelSettings.model_fields
+                }
+            )
 
         return model_settings
 
@@ -48,6 +86,8 @@ class BmdModelDichotomous(BmdModel):
             degree=self.settings.degree,
             samples=self.settings.samples,
             burnin=self.settings.burnin,
+            n_chains=self.settings.n_chains,
+            seed=self.settings.seed,
             count_all_parameters_on_boundary=self.settings.count_all_parameters_on_boundary,
         )
 
@@ -60,9 +100,21 @@ class BmdModelDichotomous(BmdModel):
         Returns:
             DichotomousResult: _description_
         """
+        if self.settings.priors.prior_class is PriorClass.bayesian_loud and (
+            self.session is None or self.session.model_average is None
+        ):
+            return self._execute_standalone_loud()
+
         inputs = self._build_inputs()
         structs = inputs.to_cpp()
         self.structs = structs
+        if (
+            self.settings.priors.prior_class is PriorClass.bayesian_loud
+            and getattr(self, "session", None) is not None
+            and self.session.model_average is not None
+        ):
+            self.results = None
+            return self.results
         self.structs.execute()
         if slope_factor:
             bmr = self.structs.analysis.BMR

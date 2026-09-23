@@ -79,7 +79,7 @@ double cwilcox_new(int k, int m, int n) {
   return (w[i][j][k]);
 }
 
-int cwilcox(int k, int m, int n) {
+double cwilcox(int k, int m, int n) {
   // reserve memory for w
   w_init(m, n);
 
@@ -90,5 +90,5 @@ int cwilcox(int k, int m, int n) {
   // if (m > WILCOX_MAX || n > WILCOX_MAX) w_free(m, n);
   w_free(m, n);
 
-  return ((int)ret);
+  return ret;
 }

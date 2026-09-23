@@ -85,6 +85,48 @@ class TestBatchSession:
             (data_path / "reports/batch-continuous.xlsx").write_bytes(excel.getvalue())
             docx.save(data_path / "reports/batch-continuous.docx")
 
+    def test_to_docx_passes_loud_parameter_options(self):
+        calls = []
+
+        class FakeSession:
+            def to_docx(self, report, **kwargs):
+                calls.append(kwargs)
+                return report.document
+
+        batch = BatchSession(sessions=[FakeSession()])
+
+        batch.to_docx(
+            citation=False,
+            parameter_tables=False,
+            parameter_visualizations=True,
+            compressed=False,
+        )
+
+        assert calls == [
+            {
+                "header_level": 1,
+                "citation": False,
+                "dataset_format_long": True,
+                "all_models": False,
+                "bmd_cdf_table": False,
+                "session_inputs_table": False,
+                "parameter_tables": False,
+                "parameter_visualizations": True,
+                "compressed": False,
+                "skip_loud_diagnostics": False,
+            }
+        ]
+
+    def test_serialize_rejects_nonfinite_json_values(self):
+        class FakeSession:
+            def to_dict(self):
+                return {"result": float("nan")}
+
+        batch = BatchSession(sessions=[FakeSession()])
+
+        with pytest.raises(ValueError, match="Out of range float values"):
+            batch.serialize()
+
 
 class TestMultitumorBatch:
     def test_exports(self, mt_datasets, rewrite_data_files, data_path):
@@ -130,3 +172,13 @@ class TestMultitumorBatch:
 
         with pytest.raises(NotImplementedError):
             MultitumorBatch.execute([{"datasets": mt_datasets}], _batch_run, nprocs=2)
+
+    def test_serialize_rejects_nonfinite_json_values(self):
+        class FakeSession:
+            def to_dict(self):
+                return {"result": float("inf")}
+
+        batch = MultitumorBatch(sessions=[FakeSession()])
+
+        with pytest.raises(ValueError, match="Out of range float values"):
+            batch.serialize()

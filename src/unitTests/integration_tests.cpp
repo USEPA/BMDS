@@ -21,6 +21,7 @@ int run_all_integrationTests() {
   runPythonDichoAnalysis();
   runPythonContAnalysis();
   runPythonMultitumorAnalysis();
+  runDichoLoudAnalysis();
   return 0;
 }
 
@@ -131,6 +132,47 @@ void runPythonMultitumorAnalysis() {
 
   // run MSCombo
   pythonBMDSMultitumor(&anal, &res);
+}
+
+void runDichoLoudAnalysis() {
+  // enum dich_model {
+  // d_hill = 1,
+  // d_gamma = 2,
+  // d_logistic = 3,
+  // d_loglogistic = 4,
+  // d_logprobit = 5,
+  // d_multistage = 6,
+  // d_probit = 7,
+  // d_qlinear = 8,
+  // d_weibull = 9
+  std::vector<int> models = {3};
+
+  std::vector<double> D = {0, 50, 100, 150, 200};
+  std::vector<double> Y = {0, 5, 30, 65, 90};
+  std::vector<double> N = {100, 100, 100, 100, 100};
+
+  int BMD_type = 1;  // 1 = extra ; added otherwise
+  double BMR = 0.1;
+  double alpha = 0.05;
+  int weightOption = 3;  // 1 - WAIC, 2 - int factor, 3 - average of 1 & 2
+
+  int iter = 5;
+  int burnin = 2;
+  int chains = 1;
+  long seed = 0;
+
+  struct python_dichotomousMA_analysis ma_info;
+  struct python_dichotomousMA_result ma_res;
+  createDichoLoudAnalysisStructs(
+      models, BMD_type, BMR, alpha, weightOption, iter, burnin, chains, seed, D, Y, N, &ma_info,
+      &ma_res
+  );
+
+  pythonBMDSLoud(&ma_info, &ma_res);
+
+  expect_true(essentiallyEqual(ma_res.bmdsRes.BMD_MA, 55.9408, 1e-4));
+  expect_true(essentiallyEqual(ma_res.bmdsRes.BMDL_MA, 55.9404, 1e-4));
+  expect_true(essentiallyEqual(ma_res.bmdsRes.BMDU_MA, 55.9422, 1e-4));
 }
 
 // Helper routines
@@ -1021,6 +1063,76 @@ void createContAnalysisStructs(
   res->aod = aod;
 
   return;
+}
+
+void createDichoLoudAnalysisStructs(
+    std::vector<int> &models, int BMD_type, double BMR, double alpha, int weightOption, int iter,
+    int burnin, int chains, long seed, std::vector<double> &D, std::vector<double> &Y,
+    std::vector<double> &N, python_dichotomousMA_analysis *ma_info,
+    python_dichotomousMA_result *ma_res
+) {
+  int datatype = l_dichotomous;
+  int numDataRows = sizeof(D) / sizeof(D[0]);
+  int nmodels = models.size();
+
+  struct python_dichotomous_analysis anal;
+  anal.BMR = BMR;
+  anal.alpha = alpha;
+  anal.Y = Y;
+  anal.n_group = N;
+  anal.doses = D;
+  anal.n = numDataRows;
+  anal.samples = iter;
+  anal.burnin = burnin;
+  anal.chains = chains;
+
+  int prCols = 5;
+
+  std::vector<int> priorCols(nmodels, prCols);
+  std::vector<int> numParms;
+  std::vector<std::vector<double>> pr;
+  double *prArray;
+
+  std::vector<double> curPR;
+  int prSize;
+  ma_info->prior_cols = priorCols;
+  ma_info->models = models;
+  // ma_info->datatype = datatype;
+  ma_info->weightOption = weightOption;
+  ma_info->seed = seed;
+  ma_info->nmodels = nmodels;
+  ma_info->pyDA = anal;
+  // assign default priors
+  ma_info->priors = createDefaultDichoPriors(ma_info);
+  for (int i = 0; i < nmodels; i++) {
+    int prSize = ma_info->priors[i].size();
+    numParms.push_back(prSize / prCols);
+  }
+
+  ma_info->actual_parms = numParms;
+
+  // std::vector<python_dichotomous_model_result> res(numModels);
+  std::vector<python_dichotomous_model_result> res(nmodels);
+  for (int i = 0; i < nmodels; i++) {
+    res[i].model = models[i];
+    res[i].nparms = numParms[i];
+  }
+
+  // struct python_dichotomousMA_result ma_res;
+  ma_res->nmodels = nmodels;
+  ma_res->models = res;
+
+  struct BMDSMA_results bmdsRes;
+  bmdsRes.BMD.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDL.assign(nmodels, BMDS_MISSING);
+  bmdsRes.BMDU.assign(nmodels, BMDS_MISSING);
+  bmdsRes.ebLower.assign(anal.n, BMDS_MISSING);
+  bmdsRes.ebUpper.assign(anal.n, BMDS_MISSING);
+  bmdsRes.BMD_MA = BMDS_MISSING;
+  bmdsRes.BMDL_MA = BMDS_MISSING;
+  bmdsRes.BMDU_MA = BMDS_MISSING;
+
+  ma_res->bmdsRes = bmdsRes;
 }
 
 void createMultitumorAnalysis(

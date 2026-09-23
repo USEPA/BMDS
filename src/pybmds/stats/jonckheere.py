@@ -45,7 +45,7 @@ class Hypothesis(StrEnum):
 class Approach(StrEnum):
     exact = "exact"
     approximate = "approximate"
-    permtuation = "permutation"
+    permutation = "permutation"
 
 
 class TestResult(BaseModel):
@@ -126,7 +126,7 @@ def jonckheere(
 
     if nperm:
         # calculate P-value via permutation
-        approach = Approach.permtuation
+        approach = Approach.permutation
         rng = np.random.default_rng(seed)
         observed_stat = statistic
         perm_stats = np.empty(nperm, dtype=np.float64)
@@ -134,8 +134,8 @@ def jonckheere(
         for i in range(nperm):
             perm_stats[i] = _calc_stat(x_perm, group_indices, group_count)
             x_perm = rng.permutation(x)
-        decreasing = np.sum(perm_stats >= observed_stat) / nperm
-        increasing = np.sum(perm_stats <= observed_stat) / nperm
+        decreasing = np.sum(perm_stats <= observed_stat) / nperm
+        increasing = np.sum(perm_stats >= observed_stat) / nperm
 
     else:
         # calculate P-value via normal approximation
@@ -151,8 +151,12 @@ def jonckheere(
         # calculate p-value with exact method
         else:
             approach = Approach.exact
-            decreasing = sum(_conv_pdf(group_size)[: int(statistic) + 1])
-            increasing = 1 - sum(_conv_pdf(group_size)[: int(statistic)])
+            pdf = _conv_pdf(group_size)
+
+            stat = int(statistic)
+
+            decreasing = np.sum(pdf[: stat + 1])  # P(J <= observed)
+            increasing = 1 - np.sum(pdf[:stat])  # P(J >= observed)
 
     pval = hypothesis.calculate_pvalue(decreasing, increasing)
 

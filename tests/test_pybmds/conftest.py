@@ -34,6 +34,16 @@ def cdataset():
 
 
 @pytest.fixture
+def cdataset3():
+    return pybmds.ContinuousDataset(
+        doses=[0, 0.125, 0.25, 0.5, 1.0],
+        ns=[20, 20, 20, 19, 19],
+        means=[10.61764, 11.54771, 12.20492, 14.73715, 15.85227],
+        stdevs=[0.8937421, 1.0580638, 1.3528275, 1.0778448, 0.8350199],
+    )
+
+
+@pytest.fixture
 def cdataset2():
     return pybmds.ContinuousDataset(
         doses=[0, 50, 100, 150, 200],

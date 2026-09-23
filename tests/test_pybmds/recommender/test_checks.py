@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from unittest import mock
 
+import pytest
+
 from pybmds.constants import BMDS_BLANK_VALUE, DistType, Dtype, LogicBin
 from pybmds.recommender import checks
 from pybmds.recommender.recommender import Rule, RuleClass
@@ -19,6 +21,26 @@ class ResultMock:
 
 
 class TestChecks:
+    def test_helper_and_invalid_value_fallbacks(self):
+        model = mock.MagicMock()
+        model.results.get_parameter.return_value = None
+        dataset = mock.MagicMock(doses=[0, 1, 2])
+
+        with pytest.raises(NotImplementedError):
+            checks.Check.run_check(dataset, model, None)
+
+        assert checks.number_or_none(None) is None
+        assert checks.number_or_none(1.5) == 1.5
+        assert checks.is_lte(None, 1.0)
+        assert checks.BmduExists.get_value(dataset, model) is None
+        assert checks.LargeRoi.get_value(dataset, model) is None
+        assert checks.BmdBmdlRatio.get_value(dataset, model) is None
+        assert checks.LowBmd.get_value(dataset, model) is None
+        assert checks.LowBmdl.get_value(dataset, model) is None
+        assert checks.HighBmd.get_value(dataset, model) is None
+        assert checks.HighBmdl.get_value(dataset, model) is None
+        assert checks.Warnings.run_check(None, dataset, model) is None
+
     def test_exists_rules(self, ddataset):
         model = mock.MagicMock()
         settings = Rule(rule_class=RuleClass.aic_missing, failure_bin=LogicBin.FAILURE)

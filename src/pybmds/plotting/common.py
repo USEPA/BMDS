@@ -11,7 +11,7 @@ def create_empty_figure(
 ) -> Figure:
     plt.style.use("seaborn-v0_8-darkgrid")
     mpl.rcParams.update({"font.size": 10})
-    fig, _ = plt.subplots(rows, cols, figsize=figsize or PLOT_FIGSIZE, dpi=DPI)
+    fig, _ = plt.subplots(nrows=rows, ncols=cols, figsize=figsize or PLOT_FIGSIZE, dpi=DPI)
     return fig
 
 

@@ -180,6 +180,42 @@ Eigen::MatrixXd rescale_parms(
         }
       }
       break;
+    case cont_model::l_hill_efsa:
+      parms(0, 0) *= bkground;
+      parms(1, 0) *= max_dose;
+      if (!is_logNormal) {
+        parms(parms.rows() - 1, 0) += 2 * log(bkground);
+      }
+      break;
+    case cont_model::l_lognormal_efsa:
+      parms(0, 0) *= bkground;
+      parms(1, 0) /= pow(max_dose, parms(3, 0));
+      if (!is_logNormal) {
+        parms(parms.rows() - 1, 0) += 2 * log(bkground);
+      }
+      break;
+    case cont_model::l_gamma_efsa:
+      parms(0, 0) *= bkground;
+      parms(1, 0) /= pow(max_dose, 1.0);
+      if (!is_logNormal) {
+        parms(parms.rows() - 1, 0) += 2 * log(bkground);
+      }
+      break;
+    case cont_model::l_invexp_efsa:
+      parms(0, 0) *= bkground;
+      parms(1, 0) *= pow(max_dose, parms(3, 0));
+      if (!is_logNormal) {
+        parms(parms.rows() - 1, 0) += 2 * log(bkground);
+      }
+      break;
+    case cont_model::l_lms_efsa:
+      parms(0, 0) *= bkground;
+      parms(3, 0) /= pow(max_dose, 2);
+      parms(1, 0) /= max_dose;
+      if (!is_logNormal) {
+        parms(parms.rows() - 1, 0) += 2 * log(bkground);
+      }
+      break;
     case cont_model::exp_3:
 
       parms(0, 0) *= bkground;

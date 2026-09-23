@@ -37,8 +37,7 @@ class CMakeBuild(build_ext):
 
         if self.compiler.compiler_type == "msvc":
             cmake_args += [
-                "-A",
-                PLAT_TO_CMAKE[self.plat_name],
+                "-A x64",
                 f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}",
             ]
             build_args += ["--config", cfg]

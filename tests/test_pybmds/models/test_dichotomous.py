@@ -51,6 +51,25 @@ class TestBmdModelDichotomous:
         text = model.text()
         assert "Gamma" in text
         assert "Goodness of Fit:" in text
+        assert "Analysis of Deviance:" in text
+
+    def test_standalone_loud(self, ddataset2):
+        model = dichotomous.Logistic(
+            dataset=ddataset2,
+            settings={"priors": PriorClass.bayesian_loud, "samples": 500, "burnin": 50},
+        )
+
+        result = model.execute()
+
+        assert result is model.results
+        assert model.has_results is True
+        assert model.session is None
+        assert result.bmd > 0
+        assert "Model has not successfully executed" not in model.text()
+        assert "Analysis of Deviance:" not in model.text()
+        assert "Analysis of Deviance:" not in result.text(model.dataset, model.settings)
+        probabilities = model.dr_curve(np.asarray(model.dataset.doses), result.parameters.values)
+        assert result.gof.expected == pytest.approx(probabilities * np.asarray(model.dataset.ns))
 
     def test_risk_type(self, ddataset2):
         # extra (default)
@@ -204,7 +223,7 @@ def test_dichotomous_pvalue():
 class TestMultistageCancer:
     def test_settings(self, ddataset2):
         default = json.loads(
-            '{"prior_class": 1, "priors": [{"name": "g", "type": 0, "initial_value": -17.0, "stdev": 0.0, "min_value": -18.0, "max_value": 18.0}, {"name": "b1", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}, {"name": "bN", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}], "variance_priors": null, "overrides": null}'
+            '{"prior_class": 1, "priors": [{"name": "g", "type": 0, "initial_value": -17.0, "stdev": 0.0, "min_value": -18.0, "max_value": 18.0}, {"name": "b1", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}, {"name": "bN", "type": 0, "initial_value": 0.1, "stdev": 0.0, "min_value": 0.0, "max_value": 10000.0}], "variance_priors": null, "overrides": null, "model_id": null}'
         )
 
         # default MultistageCancer use cancer prior

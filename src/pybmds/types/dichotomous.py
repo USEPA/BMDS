@@ -3,12 +3,12 @@ from enum import IntEnum
 from typing import Annotated, NamedTuple, Self
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .. import bmdscore, constants
 from ..constants import BOOL_YES_NO, DichotomousModelChoices
 from ..datasets import DichotomousDataset
-from ..utils import multi_lstrip, pretty_table, unique_items
+from ..utils import ff, multi_lstrip, pretty_table, unique_items
 from .common import (
     BOUND_FOOTNOTE,
     NumpyFloatArray,
@@ -18,6 +18,24 @@ from .common import (
     residual_of_interest,
 )
 from .priors import ModelPriors, PriorClass, PriorDistribution
+
+
+def _display_loud_summary_value(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == constants.BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+        return ff(value)
+    return value
+
+
+def _display_loud_loglikelihood(value):
+    if isinstance(value, float | int | np.floating | np.integer):
+        value = float(value)
+        if value == constants.BMDS_BLANK_VALUE or not np.isfinite(value):
+            return "-"
+        return ff(-abs(value))
+    return value
 
 
 class DichotomousRiskType(IntEnum):
@@ -37,12 +55,27 @@ class DichotomousModelSettings(BaseModel):
     alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
     bmr_type: DichotomousRiskType = DichotomousRiskType.ExtraRisk
     degree: Annotated[int, Field(ge=0, le=8)] = 0  # multistage only
-    samples: Annotated[int, Field(ge=10, le=1000)] = 100
-    burnin: Annotated[int, Field(ge=5, le=1000)] = 20
+    samples: Annotated[int, Field(ge=0, le=100000)] = 50000
+    burnin: Annotated[int, Field(ge=5, le=20000)] = 5000
+    n_chains: Annotated[int, Field(ge=1, le=4)] = 1
+    seed: Annotated[int, Field(ge=0, le=2_147_483_647)] = 0
     priors: PriorClass | ModelPriors | None = None  # if None; default used
     count_all_parameters_on_boundary: bool = False
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_loud_mcmc_settings(self) -> Self:
+        prior_class = (
+            self.priors.prior_class if isinstance(self.priors, ModelPriors) else self.priors
+        )
+        if prior_class is PriorClass.bayesian_loud:
+            total_samples = self.samples * self.n_chains
+            if total_samples > 100_000:
+                raise ValueError("LOUD total samples across all chains cannot exceed 100000.")
+            if self.burnin > 0.2 * self.samples:
+                raise ValueError("LOUD burnin cannot exceed 20% of samples per chain.")
+        return self
 
     @property
     def bmr_text(self) -> str:
@@ -105,6 +138,8 @@ class DichotomousAnalysis(BaseModel):
     degree: int
     samples: int
     burnin: int
+    n_chains: int
+    seed: int | None
     count_all_parameters_on_boundary: bool
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -137,6 +172,10 @@ class DichotomousAnalysis(BaseModel):
         analysis.degree = self.degree
         analysis.samples = self.samples
         analysis.burnin = self.burnin
+        if hasattr(analysis, "chains"):
+            analysis.chains = self.n_chains
+        if self.seed is not None and hasattr(analysis, "seed"):
+            analysis.seed = self.seed
         analysis.parms = self.num_params
         analysis.prior_cols = constants.NUM_PRIOR_COLS
         analysis.countAllParmsOnBoundary = self.count_all_parameters_on_boundary
@@ -183,6 +222,9 @@ class DichotomousModelResult(BaseModel):
     total_df: float
     bmd_dist: NumpyFloatArray
 
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"bmd_dist": np.empty((2, 0), dtype=float)})
+
     @classmethod
     def from_model(cls, model) -> Self:
         result = model.structs.result
@@ -216,9 +258,12 @@ class DichotomousPgofResult(BaseModel):
     @classmethod
     def from_model(cls, model):
         result = model.structs.result
-        gof = result.gof
         summary = result.bmdsRes
-        roi = residual_of_interest(summary.BMD, model.dataset.doses, gof.residual)
+        return cls.from_cpp(result.gof, summary.BMD, model.dataset.doses)
+
+    @classmethod
+    def from_cpp(cls, gof, bmd: float, doses: list[float]):
+        roi = residual_of_interest(bmd, doses, gof.residual)
         return cls(
             expected=gof.expected,
             residual=gof.residual,
@@ -412,6 +457,11 @@ class DichotomousResult(BaseModel):
     parameters: DichotomousParameters
     deviance: DichotomousAnalysisOfDeviance
     plotting: DichotomousPlotting
+    summary_p_value: float | None = None
+    summary_waic: float | None = None
+
+    def without_loud_draws(self) -> Self:
+        return self.model_copy(update={"fit": self.fit.without_loud_draws()})
 
     @classmethod
     def from_model(cls, model) -> Self:
@@ -436,6 +486,20 @@ class DichotomousResult(BaseModel):
         )
 
     def text(self, dataset: DichotomousDataset, settings: DichotomousModelSettings) -> str:
+        if settings.priors.prior_class is PriorClass.bayesian_loud:
+            return multi_lstrip(
+                f"""
+            Modeling Summary:
+            {self.tbl()}
+
+            Model Parameters:
+            {self.parameters.tbl()}
+
+            Goodness of Fit:
+            {self.gof.tbl(dataset)}
+            """
+            )
+
         return multi_lstrip(
             f"""
         Modeling Summary:
@@ -453,6 +517,18 @@ class DichotomousResult(BaseModel):
         )
 
     def tbl(self) -> str:
+        if self.summary_p_value is not None:
+            data = [
+                ["BMD", _display_loud_summary_value(self.bmd)],
+                ["BMDL", _display_loud_summary_value(self.bmdl)],
+                ["BMDU", _display_loud_summary_value(self.bmdu)],
+                ["Log-Likelihood", _display_loud_loglikelihood(self.fit.loglikelihood)],
+                ["P-Value", _display_loud_summary_value(self.summary_p_value)],
+            ]
+            if self.summary_waic is not None:
+                data.append(["WAIC", _display_loud_summary_value(self.summary_waic)])
+            return pretty_table(data, "")
+
         data = [
             ["BMD", self.bmd],
             ["BMDL", self.bmdl],

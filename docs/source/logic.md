@@ -1,6 +1,6 @@
-# Recommendation logic
+# Recommendation logic for Maximum Likelihood Models
 
-A BMDS session has a set of automated rules for recommending a best-fitting model from runs included in the session. The rules are a combination of heuristic and statistical rules, and were generated from two sources:
+When using maximum likelihood (MLE), a BMDS session has a set of automated rules for recommending a best-fitting model from runs included in the session. The rules are a combination of heuristic and statistical rules, and were generated from two sources:
 
 1. USEPA BMDS technical guidance ([EPA 2012](https://www.epa.gov/risk/benchmark-dose-technical-guidance))
 2. [Wignall et al. 2014](http://dx.doi.org/10.1289/ehp.1307539)

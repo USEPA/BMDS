@@ -9,9 +9,9 @@ from ..constants import BMDS_BLANK_VALUE
 
 
 def residual_of_interest(bmd: float, doses: list[float], residuals: list[float]) -> float:
-    if bmd <= 0:
+    if bmd <= 0 or not residuals or not doses:
         return BMDS_BLANK_VALUE
-    diffs = [abs(bmd - dose) for dose in doses]
+    diffs = [abs(bmd - dose) for dose in doses[: len(residuals)]]
     index = diffs.index(min(diffs))
     return residuals[index]
 
@@ -20,6 +20,21 @@ def clean_array(arr: np.ndarray) -> np.ndarray:
     return np.nan_to_num(
         arr, nan=BMDS_BLANK_VALUE, posinf=BMDS_BLANK_VALUE, neginf=BMDS_BLANK_VALUE
     )
+
+
+def valid_bmdscore_draw_mask(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return np.isfinite(arr) & (arr != BMDS_BLANK_VALUE)
+
+
+def valid_bmdscore_draws(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return arr[valid_bmdscore_draw_mask(arr)]
+
+
+def valid_bmdscore_draw_rows(arr: np.ndarray) -> np.ndarray:
+    arr = np.asarray(arr, dtype=float)
+    return np.isfinite(arr).all(axis=-1) & (arr != BMDS_BLANK_VALUE).all(axis=-1)
 
 
 class PydanticNumpyArray(np.ndarray):

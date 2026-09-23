@@ -59,8 +59,36 @@ You can run only one BMDS Desktop project at a time.
 ```{figure} _static/img/bmds-desktop.jpg
 :alt: Screenshot of BMDS Desktop Application
 
-BMDS Desktop Application. The main home page of the BMDS Desktop application. From BMDS Desktop you can create and execute dose-response analyses, and generate summary reports. You can also star and label analyses, and search and filter by the analysis name or other information.
+BMDS Desktop Application. The main home page of the BMDS Desktop application. From BMDS Desktop you can create and execute dose-response analyses, and generate summary reports. 
 ```
+BMDS Desktop allows users to organize all the analyses within a single project by applying "Collection" tags to the analyses and starring analyses to indicate which ones are most important.  Both starring and organizing into Collections allows users to filter their analyses as they see fit.  
+
+For example, using the Collection dropdown menu on the main page, users can create Collections that allow them to organize analyses by organ system, study name, sex, strain, or any descriptive tag they require.
+
+```{figure} _static/img/bmds-desktop-collection-dropdown.jpg
+:alt: Screenshot of BMDS Desktop Main Page with Collections drop down menu displayed with different tag options
+
+The Collections drop down menu on the BMDS Desktop Main Page.
+```
+
+Once a tag is created within the Collections drop down menu on the Main Page, it can be applied to an analysis by clicking on an analysis and then applying the tag using the Actions button.
+
+
+```{figure} _static/img/bmds-desktop-collections-actions-button.jpg
+:alt: Screenshot of BMDS Desktop Settings tab for an analysis with the Collection field within the Actions drop down menu displayed
+
+Collection tags can be applied to individual analyses from the Actions drop down menu.
+```
+Once a Collections tag has been applied to an analysis, that tag will display next to the analysis name on the Main Page.
+
+```{figure} _static/img/bmds-desktop-collection-tag-applied.jpg
+:alt: Screenshot of BMDS Desktop Main Page with Collections tags applied to all analyses
+
+Collection tags display next to analyses once applied.
+```
+
+Analyses can also be starred using the Starred toggle button.  Saved analyses can be searched by Analysis name or sorted by Collections tags or whether they are starred.
+
 
 ### Modeling Dose Response Data
 

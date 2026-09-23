@@ -483,8 +483,9 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_stdev_bound(
   Eigen::MatrixXd m = mean(theta, d);
   double t = temp(0, 0);
 
+  double bmr_sign = isIncreasing ? 1.0 : -1.0;
   return bmd_absolute_bound(
-      theta, BMD, fabs(exp(m(0, 0) + BMRF * pow(t, 0.5)) - exp(m(0, 0))), isIncreasing
+      theta, BMD, fabs(exp(m(0, 0) + bmr_sign * BMRF * pow(t, 0.5)) - exp(m(0, 0))), isIncreasing
   );
 }
 
@@ -615,6 +616,7 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_absolute(
                       // search for the BMD return INFINITY.
   }
   double test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+  niter = 0;
   while (fabs(test) > 1e-7) {  // zero in on the BMD
     if (test > 0) {
       max = mid;
@@ -626,6 +628,11 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_absolute(
     t_mean = mean(theta, d);
     t_mean = exp(t_mean.array());
     test = fabs(t_mean(1, 0) - mu_zero) - BMRF;
+    niter++;
+    if (niter > 100) {
+      // failed and could not find a BMD
+      return std::nan("-1");
+    }
   }
   return mid;
 }
@@ -639,7 +646,8 @@ double lognormalEXPONENTIAL_BMD_NC::bmd_stdev(
   Eigen::MatrixXd med = mean(theta, d);
   med = exp(med.array());
   double t = temp(0, 0);
-  Eigen::MatrixXd md = abs(exp(log(med.array()) + BMRF * pow(t, 0.5)) - med.array());
+  double bmr_sign = isIncreasing ? 1.0 : -1.0;
+  Eigen::MatrixXd md = abs(exp(log(med.array()) + bmr_sign * BMRF * pow(t, 0.5)) - med.array());
   return bmd_absolute(theta, md(0, 0), isIncreasing);
 }
 
