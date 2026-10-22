@@ -13,6 +13,10 @@ IF(WIN32)
   add_compile_definitions(RBMDS_EXPORTS)
 ENDIF()
 
+#User facing option to enable coverage (default is off)
+#Use cmake -DENABLE_COVERAGE to enable
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
 project(bmdscore)
 
 set(VCPKG_HOST_TRIPLET $ENV{VCPKG_HOST_TRIPLET})
@@ -75,7 +79,13 @@ add_executable(unit_tests ${UNIT_TEST_SOURCE})
 target_link_libraries(unit_tests bmdscore)
 
 # Enable code coverage analysis
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O2")
+if(ENABLE_COVERAGE)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+   message(STATUS "Building WITH code coverage metrics (Deactivating optimizations)")
+else()
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -DNDEBUG")
+   message(STATUS "Building WITH maximum performance optimizations (-O3 -march=native)")
+endif()
 set(TEST_EXC "'/usr/include/*'")
 
 # Add a custom target for generating coverage report
