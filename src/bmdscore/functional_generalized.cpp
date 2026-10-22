@@ -972,6 +972,16 @@ Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd& knots
   return m;
 }
 
+void trunc_lin_numeric3_fast(const double& x, const Eigen::VectorXd& knots, Eigen::RowVectorXd& out_row) {
+    out_row[0] = 1.0;
+    out_row[1] = x;
+    const Eigen::Index num_knots = knots.size();
+    for (int j = 0; j < num_knots; ++j) {
+        double temp = x - knots[j];
+        out_row[j + 2] = (temp > 0.0) ? temp * temp : 0.0;
+    }
+}
+
 void compute_transform_f_lag1_cpp3(
     const Eigen::MatrixXd& Y, const Eigen::VectorXd& qtiles, Eigen::MatrixXd& beta_return,
     Eigen::MatrixXd& knot_return
@@ -1068,6 +1078,9 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   // do the same for the trans_func (knots/betas)
   // Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["betas"]));
   // Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["knots"]));
+  
+  //Create a workspace buffer for truncated linear operations to stop malloc cycles
+  Eigen::RowVectorXd tX_workspace = Eigen::RowVectorXd::Zero(knots.rows() + 2);
 
   for (auto j = 0; j < theta_cur.size(); j++) {
     if (j == 0) {
@@ -1079,7 +1092,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   }
 
   // Wcur = Ainv.llt().solve(Wcur).reshaped();
-  Wcur = Ainv.colPivHouseholderQr().solve(Wcur);
+  // Wcur = Ainv.colPivHouseholderQr().solve(Wcur);
+  Ainv.triangularView<Eigen::Lower>().solveInPlace(Wcur);
   Eigen::VectorXd Wsnew = Eigen::VectorXd::Zero(Wcur.size());
   // Wsnew.setZero();
   // initialize l,s,a,b, theta_new, cut, W, Wtemp
@@ -1126,14 +1140,18 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
         Wsnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
       }
 
-      Wtemp = Ainv * Wsnew;
+      //Wtemp = Ainv * Wsnew;
+      //Use optimized internal BLAS GEMV routines
+      Wtemp.noalias() = Ainv * Wsnew;
 
       for (auto kk = 0; kk < theta_new.size(); kk++) {
         if (kk == 0) {
           theta_new[kk] = Wtemp[kk] + betas(0, 0) + CM[0];
         } else {
-          Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
-          theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
+          //Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
+          //theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
+	  trunc_lin_numeric3_fast(theta_new[kk - 1], knots.col(kk), tX_workspace);
+          theta_new[kk] = Wtemp[kk] + tX_workspace.dot(betas.col(kk)) + CM[kk];
         }
       }
 
@@ -1264,6 +1282,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
   double returnV = 0;
   double mean = 0;
   double sd = 0;
+
   // loop over the prior specification in prior_spec
   // when  it is 1 - Normal Prior
   // when  it is 2 - Log normal prior.
