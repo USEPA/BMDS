@@ -1280,58 +1280,66 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
 
 double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec) {
   double returnV = 0;
-  double mean = 0;
-  double sd = 0;
+  const int theta_size = theta.size();
+  
+  //Extract columns directly  to utilize consecutive memory blocks and allow vectorization
+  //columns: 0=type, 1=mean/alpha, 2=sd/beta, 3=sigma (Student-t only)
+
+  Eigen::VectorXd prior_types = prior_spec.col(0);
+  Eigen::VectorXd prior_p1 = prior_spec.col(1);
+  Eigen::VectorXd prior_p2 = prior_spec.col(2);
+
+  //Only extract col 3 if a Student-t distribution (type 5) exists in the specification
+  Eigen::VectorXd prior_p3 = (prior_types.array()==5).any() ? prior_spec.col(3) : Eigen::VectorXd();
+
+  const double universal_const=log(0.5*M_2_SQRTPI*M_SQRT1_2);
 
   // loop over the prior specification in prior_spec
   // when  it is 1 - Normal Prior
   // when  it is 2 - Log normal prior.
   for (int i = 0; i < theta.size(); i++) {
-    int t = int(prior_spec(i, 0));
+    int t = static_cast<int>(prior_types[i]);
+
+    double p1 = prior_p1[i];
+    double p2 = prior_p2[i];
 
     switch (t) {
-      case 1:
-        mean = (theta[i] - prior_spec(i, 1));
-        sd = prior_spec(i, 2);
-        returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) +
-                   double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+      case 1:{
+	double diff = theta[i] - p1;
+	returnV += -log(p2) - 0.5*(diff*diff)/(p2*p2) + universal_const;
         break;
-      case 2:
-
-        if (theta[i] <= 0 || theta[i] > 20) {
-          returnV += -std::numeric_limits<double>::infinity();
-        } else {
-          mean = (log(theta[i]) - prior_spec(i, 1));
-          sd = prior_spec(i, 2);
-          returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) +
-                     double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
-        }
+      }
+      case 2:{
+	double val = theta[i];
+	if (val<=0.0 || val > 20.0) {
+	  return -std::numeric_limits<double>::infinity();
+	}
+	double diff = log(val) - p1;
+	returnV += -log(p2) - log(val) - 0.5*(diff*diff)/(p2*p2) + universal_const;
         break;
-      case 3:
-        returnV += log_beta_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
+      }
+      case 3:{
+	returnV += log_beta_pdf(theta[i], p1, p2);
         break;
-      case 4:  // gamma distribution for dirichlet
-        returnV += log_gamma_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
+      }
+      case 4:{  // gamma distribution for dirichlet
+	returnV += log_gamma_pdf(theta[i], p1, p2);
         break;
+      }
       case 5: {  // Student-t: df, mu, sigma
-        double df = prior_spec(i, 1);
-        double mu = prior_spec(i, 2);
-        double sigma = prior_spec(i, 3);
-        double z = (theta[i] - mu) / sigma;
-
-        if (sigma <= 0 || df <= 0) {
-          returnV += -std::numeric_limits<double>::infinity();
-        } else {
-          double term1 = std::lgamma((df + 1.0) / 2.0) - std::lgamma(df / 2.0);
-          double term2 = -0.5 * log(df * M_PI) - log(sigma);
-          double term3 = -(df + 1.0) / 2.0 * log(1.0 + (z * z) / df);
-          returnV += term1 + term2 + term3;
-        }
+	double df = p1;
+	double mu = p2;
+	double sigma = prior_p3[i];
+	if (sigma<=0.0 || df <=0.0){
+	  return -std::numeric_limits<double>::infinity();
+	}
+	double z = (theta[i] - mu)/sigma;
+	returnV += std::lgamma((df + 1.0)/2.0) - std::lgamma(df/2.0) - 0.5*log(df*M_PI) - log(sigma) - (df + 1.0)/2.0*log(1.0 + (z*z)/df);
         break;
       }
 
       default:
-        returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+	returnV -= universal_const;
         break;
     }
   }
