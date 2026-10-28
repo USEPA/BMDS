@@ -1278,74 +1278,71 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
   return returnSamples;
 }
 
+
 double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec) {
   double returnV = 0;
-  const int theta_size = theta.size();
-  
-  //Extract columns directly  to utilize consecutive memory blocks and allow vectorization
-  //columns: 0=type, 1=mean/alpha, 2=sd/beta, 3=sigma (Student-t only)
+  double mean = 0;
+  double sd = 0;
 
-  Eigen::VectorXd prior_types = prior_spec.col(0);
-  Eigen::VectorXd prior_p1 = prior_spec.col(1);
-  Eigen::VectorXd prior_p2 = prior_spec.col(2);
+  // Cache the universal constant exactly as your framework evaluated it
+  const double universal_const = log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+  const double scaled_const = double(theta.size()) * universal_const;
 
-  //Only extract col 3 if a Student-t distribution (type 5) exists in the specification
-  Eigen::VectorXd prior_p3 = (prior_types.array()==5).any() ? prior_spec.col(3) : Eigen::VectorXd();
-
-  const double universal_const=log(0.5*M_2_SQRTPI*M_SQRT1_2);
-
-  // loop over the prior specification in prior_spec
-  // when  it is 1 - Normal Prior
-  // when  it is 2 - Log normal prior.
   for (int i = 0; i < theta.size(); i++) {
-    int t = static_cast<int>(prior_types[i]);
-
-    double p1 = prior_p1[i];
-    double p2 = prior_p2[i];
+    int t = static_cast<int>(prior_spec(i, 0));
 
     switch (t) {
-      case 1:{
-	double diff = theta[i] - p1;
-	returnV += -log(p2) - 0.5*(diff*diff)/(p2*p2) + universal_const;
+      case 1:
+        mean = (theta[i] - prior_spec(i, 1));
+        sd = prior_spec(i, 2);
+        returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) + scaled_const;
         break;
-      }
-      case 2:{
-	double val = theta[i];
-	if (val<=0.0 || val > 20.0) {
-	  return -std::numeric_limits<double>::infinity();
-	}
-	double diff = log(val) - p1;
-	returnV += -log(p2) - log(val) - 0.5*(diff*diff)/(p2*p2) + universal_const;
+
+      case 2:
+        if (theta[i] <= 0.0 || theta[i] > 20.0) {
+          // Signal a hard contraction rejection to the samplers
+          return std::numeric_limits<double>::infinity();
+        } else {
+          mean = (log(theta[i]) - prior_spec(i, 1));
+          sd = prior_spec(i, 2);
+          returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) + scaled_const;
+        }
         break;
-      }
-      case 3:{
-	returnV += log_beta_pdf(theta[i], p1, p2);
+
+      case 3:
+        returnV += log_beta_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
         break;
-      }
-      case 4:{  // gamma distribution for dirichlet
-	returnV += log_gamma_pdf(theta[i], p1, p2);
+
+      case 4:
+        returnV += log_gamma_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
         break;
-      }
-      case 5: {  // Student-t: df, mu, sigma
-	double df = p1;
-	double mu = p2;
-	double sigma = prior_p3[i];
-	if (sigma<=0.0 || df <=0.0){
-	  return -std::numeric_limits<double>::infinity();
-	}
-	double z = (theta[i] - mu)/sigma;
-	returnV += std::lgamma((df + 1.0)/2.0) - std::lgamma(df/2.0) - 0.5*log(df*M_PI) - log(sigma) - (df + 1.0)/2.0*log(1.0 + (z*z)/df);
+
+      case 5: {
+        double df = prior_spec(i, 1);
+        double mu = prior_spec(i, 2);
+        double sigma = prior_spec(i, 3);
+
+        if (sigma <= 0.0 || df <= 0.0) {
+          return std::numeric_limits<double>::infinity();
+        } else {
+          double z = (theta[i] - mu) / sigma;
+          double term1 = std::lgamma((df + 1.0) / 2.0) - std::lgamma(df / 2.0);
+          double term2 = -0.5 * log(df * M_PI) - log(sigma);
+          double term3 = -(df + 1.0) / 2.0 * log(1.0 + (z * z) / df);
+          returnV += term1 + term2 + term3;
+        }
         break;
       }
 
       default:
-	returnV -= universal_const;
+        returnV -= universal_const;
         break;
     }
   }
 
   return -1.0 * returnV;
 }
+
 
 double no_priorr(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec) { return 0.0; }
 
@@ -1439,38 +1436,79 @@ double ll_continuous(
   return -1.0 * ll;
 }
 
-double ll_continuous_summary(
-    const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
-    const ptr2& nly
-) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 2];
-  double prec1 = params[params.size() - 1];
+//double ll_continuous_summary(
+//    const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
+//    const ptr2& nly
+//) {
+//  double m0 = params[0];
+//  double m1 = params[1];
+//  double prec0 = params[params.size() - 2];
+//  double prec1 = params[params.size() - 1];
+//
+//  double sigma0sq = 1.0 / prec0;
+//  double sigma1sq = 1.0 / prec1;
+//  double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+//  double alpha = std::log(sigma0sq / std::pow(m0, rho));
+//
+//  Eigen::VectorXd mu = nly(params, X);  // model-predicted means
+//
+//  double ll = 0.0;
+//  for (int i = 0; i < Y.rows(); ++i) {
+//    double ybar = Y(i, 0);  // observed mean
+//    double s = Y(i, 1);     // observed sample std
+//    double n = Y(i, 2);     // sample size
+//    double m = mu[i];       // predicted mean
+//
+//    double sigma2 = std::exp(alpha) * std::pow(m, rho);
+//    double term1 = n * std::pow(ybar - m, 2);
+//    double term2 = (n - 1.0) * std::pow(s, 2);
+//
+//    ll +=
+//        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
+//  }
+//
+//  return -1.0 * ll;
+//}
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
-  double alpha = std::log(sigma0sq / std::pow(m0, rho));
+double ll_continuous_summary(const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly) {
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 2];
+  const double prec1 = params[params.size() - 1];
 
-  Eigen::VectorXd mu = nly(params, X);  // model-predicted means
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);  // observed mean
-    double s = Y(i, 1);     // observed sample std
-    double n = Y(i, 2);     // sample size
-    double m = mu[i];       // predicted mean
+  // Algebraically simplified variance base scalar coefficient
+  const double sigma_coef = sigma0sq / std::pow(m0, rho);
 
-    double sigma2 = std::exp(alpha) * std::pow(m, rho);
-    double term1 = n * std::pow(ybar - m, 2);
-    double term2 = (n - 1.0) * std::pow(s, 2);
+  // Evaluate the entire model trajectory function at once across memory
+  const Eigen::VectorXd mu = nly(params, X);
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
-  }
+  // Create lightweight zero-copy array wrappers over the columns of matrix Y
+  auto ybar = Y.col(0).array();
+  auto s    = Y.col(1).array();
+  auto n    = Y.col(2).array();
+  auto m    = mu.array();
 
-  return -1.0 * ll;
+  // 1. Vectorized calculation of mean-dependent variances across the entire array
+  // Compiles down to batch hardware instructions instead of element-by-element loops
+  Eigen::ArrayXd sigma2 = sigma_coef * m.pow(rho);
+
+  // 2. Compute components for the log-likelihood numerator using batch arrays
+  Eigen::ArrayXd term1 = n * (ybar - m).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s.square();
+
+  // 3. Batch evaluation of the log normalization terms
+  const double log_2pi = std::log(2.0 * M_PI);
+  Eigen::ArrayXd norm_terms = n * log_2pi + n * sigma2.log();
+
+  // 4. Accumulate all vectors and scale globally at the end
+  // This removes millions of scalar multiplication adjustments inside the hot path
+  double raw_sum = (norm_terms + (term1 + term2) / sigma2).sum();
+
+  return 0.5 * raw_sum;
 }
 
 // double ll_continuous_cv(Eigen::VectorXd params,
@@ -1678,10 +1716,13 @@ double full_postt(
         lll,
     std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priorrr, const ptr2& nonlinn
 ) {
+
   double retV = lll(params, X, Y, nonlinn) + priorrr(params, priorr);
 
   return retV;
 }
+
+
 
 /// @brief Run the latent slice sampler
 /// @param X Covariates matrix (first column is doses)

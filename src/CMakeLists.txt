@@ -16,6 +16,7 @@ ENDIF()
 #User facing option to enable coverage (default is off)
 #Use cmake -DENABLE_COVERAGE to enable
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
+option(ENABLE_PROFILING "Enable code profiling" OFF)
 
 project(bmdscore)
 
@@ -82,6 +83,10 @@ target_link_libraries(unit_tests bmdscore)
 if(ENABLE_COVERAGE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
    message(STATUS "Building WITH code coverage metrics (Deactivating optimizations)")
+elseif(ENABLE_PROFILING)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -g -O2 -march=native")
+   #   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+   message(STATUS "Building WITH code profiling flags (-pg -g -O2 -march=native)")
 else()
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -DNDEBUG")
    message(STATUS "Building WITH maximum performance optimizations (-O3 -march=native)")
