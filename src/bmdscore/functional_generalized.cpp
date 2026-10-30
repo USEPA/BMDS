@@ -1399,84 +1399,10 @@ double ll_poisson(
   return -1.0 * ll;
 }
 
-// random linear with added quadratic term
-// double ll_continuous(Eigen::VectorXd params,
-//                       const Eigen::MatrixXd& X,
-//                       const Eigen::MatrixXd& Y,
-//                       const ptr2& nly){
-//     double ll = 0.0;
-//     Eigen::VectorXd log_mean = nly(params, X);
-//     double var = params[params.size() - 1.0];
-//     Eigen::VectorXd sqerr = pow(Y.col(0).array() - log_mean.array(), 2.0);
-//
-//     ll += (-(0.5) * log(2.0 * M_PI * var) - (1 / (2.0 * var)) * sqerr.array()).sum();
-//     return -1.0*ll;
-// }
-
 double ll_continuous(
     const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 2];
-  double prec1 = params[params.size() - 1];
-
-  double ll = 0.0;
-
-  // compute transformed parameters
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
-
-  Eigen::VectorXd mu = nly(params, X);  // predicted means from model
-
-  for (int i = 0; i < Y.rows(); i++) {
-    double m = mu[i];
-    double var = std::exp(alpha) * std::pow(m, rho);  // mean-dependent variance
-    double resid = Y(i, 0) - m;
-    ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
-  }
-
-  return -1.0 * ll;
-}
-
-//double ll_continuous_summary(
-//    const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
-//    const ptr2& nly
-//) {
-//  double m0 = params[0];
-//  double m1 = params[1];
-//  double prec0 = params[params.size() - 2];
-//  double prec1 = params[params.size() - 1];
-//
-//  double sigma0sq = 1.0 / prec0;
-//  double sigma1sq = 1.0 / prec1;
-//  double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
-//  double alpha = std::log(sigma0sq / std::pow(m0, rho));
-//
-//  Eigen::VectorXd mu = nly(params, X);  // model-predicted means
-//
-//  double ll = 0.0;
-//  for (int i = 0; i < Y.rows(); ++i) {
-//    double ybar = Y(i, 0);  // observed mean
-//    double s = Y(i, 1);     // observed sample std
-//    double n = Y(i, 2);     // sample size
-//    double m = mu[i];       // predicted mean
-//
-//    double sigma2 = std::exp(alpha) * std::pow(m, rho);
-//    double term1 = n * std::pow(ybar - m, 2);
-//    double term2 = (n - 1.0) * std::pow(s, 2);
-//
-//    ll +=
-//        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
-//  }
-//
-//  return -1.0 * ll;
-//}
-
-double ll_continuous_summary(const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly) {
   const double m0 = params[0];
   const double m1 = params[1];
   const double prec0 = params[params.size() - 2];
@@ -1485,21 +1411,53 @@ double ll_continuous_summary(const Eigen::VectorXd& params, const Eigen::MatrixX
   const double sigma0sq = 1.0 / prec0;
   const double sigma1sq = 1.0 / prec1;
   const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
 
-  // Algebraically simplified variance base scalar coefficient
-  const double sigma_coef = sigma0sq / std::pow(m0, rho);
+  // Evaluate full expected mean trajectory at once across contiguous memory
+  const Eigen::ArrayXd m = nly(params, X).array();
+  
+  // Create a zero-copy array wrapper over your empirical response data column
+  auto y_obs = Y.col(0).array();
+
+  // 1. Compute mean-dependent variances across the entire vector in a batch
+  Eigen::ArrayXd var = std::exp(alpha) * m.pow(rho);
+
+  // 2. Pure vectorized evaluation of normalization and squared error steps
+  const double log_2pi = std::log(2.0 * M_PI);
+  Eigen::ArrayXd norm_terms = -0.5 * (log_2pi + var.log());
+  Eigen::ArrayXd squared_errors = -0.5 * (y_obs - m).square() / var;
+
+  // 3. Accumulate everything at the very end
+  double total_ll = (norm_terms + squared_errors).sum();
+
+  return -1.0 * total_ll;
+}
+
+double ll_continuous_summary(
+    const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
+    const ptr2& nly
+) {
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 2];
+  const double prec1 = params[params.size() - 1];
+
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double sigma_coef = std::exp(alpha);
+  const double log_2pi = std::log(2.0 * M_PI);
 
   // Evaluate the entire model trajectory function at once across memory
-  const Eigen::VectorXd mu = nly(params, X);
+  const Eigen::ArrayXd m = nly(params, X).array();
 
   // Create lightweight zero-copy array wrappers over the columns of matrix Y
-  auto ybar = Y.col(0).array();
-  auto s    = Y.col(1).array();
-  auto n    = Y.col(2).array();
-  auto m    = mu.array();
+  auto ybar = Y.col(0).array();  // observed mean
+  auto s    = Y.col(1).array();  // observed sample std
+  auto n    = Y.col(2).array();  // sample size
 
   // 1. Vectorized calculation of mean-dependent variances across the entire array
-  // Compiles down to batch hardware instructions instead of element-by-element loops
   Eigen::ArrayXd sigma2 = sigma_coef * m.pow(rho);
 
   // 2. Compute components for the log-likelihood numerator using batch arrays
@@ -1507,210 +1465,174 @@ double ll_continuous_summary(const Eigen::VectorXd& params, const Eigen::MatrixX
   Eigen::ArrayXd term2 = (n - 1.0) * s.square();
 
   // 3. Batch evaluation of the log normalization terms
-  const double log_2pi = std::log(2.0 * M_PI);
-  Eigen::ArrayXd norm_terms = n * log_2pi + n * sigma2.log();
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * sigma2.log();
 
-  // 4. Accumulate all vectors and scale globally at the end
-  // This removes millions of scalar multiplication adjustments inside the hot path
-  double raw_sum = (norm_terms + (term1 + term2) / sigma2).sum();
+  // 4. Accumulate all vectors in a single localized hardware step
+  double total_ll = (norm_terms - 0.5 * (term1 + term2) / sigma2).sum();
 
-  return 0.5 * raw_sum;
+  return -1.0 * total_ll;
 }
-
-// double ll_continuous_cv(Eigen::VectorXd params,
-//                        const Eigen::MatrixXd& X,
-//                        const Eigen::MatrixXd& Y,
-//                        const ptr2& nly)
-//{
-//   double alpha = params[params.size() - 1];
-//   double var = std::exp(alpha);
-//
-//   Eigen::VectorXd mu = nly(params, X);
-//
-//   double ll = 0.0;
-//   for (int i = 0; i < Y.rows(); ++i) {
-//     double resid = Y(i, 0) - mu[i];
-//     ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
-//   }
-//
-//   return -1.0 * ll;
-// }
 
 double ll_continuous_cv(
     const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double var = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double var = 1.0 / prec0;
+  const double log_2pi_var = std::log(2.0 * M_PI * var);
 
-  Eigen::VectorXd mu = nly(params, X);
+  // Batch evaluate expected values
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto y_obs = Y.col(0).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double resid = Y(i, 0) - mu[i];
-    ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
-  }
+  // Pure SIMD vectorized calculation across arrays
+  double total_ll = (-0.5 * log_2pi_var - 0.5 * (y_obs - m).square() / var).sum();
 
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
+
 
 double ll_continuous_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double sigma2 = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double sigma2 = 1.0 / prec0;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu = nly(params, X);  // predicted means
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto ybar = Y.col(0).array();
+  auto s    = Y.col(1).array();
+  auto n    = Y.col(2).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);
-    double s = Y(i, 1);
-    double n = Y(i, 2);
-    double m = mu[i];
+  // Vectorized evaluation of multi-sample summary criteria
+  Eigen::ArrayXd term1 = n * (ybar - m).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s.square();
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * std::log(sigma2);
 
-    double term1 = n * std::pow(ybar - m, 2);
-    double term2 = (n - 1.0) * std::pow(s, 2);
+  double total_ll = (norm_terms - 0.5 * (term1 + term2) / sigma2).sum();
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
-  }
-
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
+
 
 double ll_lognormal_cv(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  // double sdlog = std::exp(alpha);
-  // double var = sdlog * sdlog;
-  double var = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double var = 1.0 / prec0;
 
-  Eigen::VectorXd mu = nly(params, X);  // this is the mean of log(Y)
-  if ((mu.array().isNaN()).any()) {
-    return std::numeric_limits<double>::quiet_NaN();  // or -INFINITY
+  const Eigen::ArrayXd m = nly(params, X).array();
+  if (!m.isFinite().all()) {
+    return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double logy = std::log(Y(i, 0));
-    double resid = logy - mu[i];
-    ll += -std::log(Y(i, 0))                  // Jacobian term
-          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
-          - 0.5 * (resid * resid) / var;      // squared error
-  }
+  auto y_obs = Y.col(0).array();
+  const double log_2pi_var = std::log(2.0 * M_PI * var);
 
-  return -1.0 * ll;  // log-likelihood; negate if needed by your sampler
+  // Batch calculate original-scale log transform and Jacobian transformations
+  Eigen::ArrayXd logy = y_obs.log();
+  Eigen::ArrayXd total_terms = -logy - 0.5 * log_2pi_var - 0.5 * (logy - m).square() / var;
+
+  return -1.0 * total_terms.sum();
 }
+
 
 double ll_lognormal_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double gamma2 = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double gamma2 = 1.0 / prec0;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu_log = nly(params, X);  // predicted log means (log[f(d_i | θ)])
+  const Eigen::ArrayXd mu_log = nly(params, X).array();
+  auto ybar = Y.col(0).array();
+  auto s    = Y.col(1).array();
+  auto n    = Y.col(2).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);  // observed mean on original scale
-    double s = Y(i, 1);     // std dev on original scale
-    double n = Y(i, 2);
+  // High performance vectorized log-normal scaling math
+  Eigen::ArrayXd cv_sq_plus_1 = (s * s) / (ybar * ybar) + 1.0;
+  Eigen::ArrayXd ybar_log = ybar.log() - 0.5 * cv_sq_plus_1.log();
+  Eigen::ArrayXd s_log2 = cv_sq_plus_1.log();
+  
+  Eigen::ArrayXd jacobian = n * ybar_log;
+  Eigen::ArrayXd term1 = n * (ybar_log - mu_log).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s_log2;
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * std::log(gamma2);
 
-    double ybar_log = std::log(ybar) - 0.5 * std::log((s * s) / (ybar * ybar) + 1);
-    double s_log2 = std::log((s * s) / (ybar * ybar) + 1);
-    double jacobian = n * ybar_log;
+  double total_ll = (-jacobian + norm_terms - 0.5 * (term1 + term2) / gamma2).sum();
 
-    double term1 = n * std::pow(ybar_log - mu_log[i], 2);
-    double term2 = (n - 1.0) * s_log2;
-
-    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
-          0.5 * (term1 + term2) / gamma2;
-  }
-
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
+
 
 double ll_nested_cv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 3];
-  double prec1 = params[params.size() - 2];
-  double precF = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 3];
+  const double prec1 = params[params.size() - 2];
+  const double precF = params[params.size() - 1];
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double v_within = 1.0 / precF;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  double v_within = 1.0 / precF;
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto lmean = Y.col(0).array();
+  auto Ni    = Y.col(2).array();
 
-  Eigen::VectorXd mu = nly(params, X);
+  // Vectorized variance calculation for nested group targets
+  Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
+  Eigen::ArrayXd var_mean = v_within / Ni + var_between;
+  Eigen::ArrayXd resid = lmean - m;
 
-  double ll = 0.0;
-  const int n = (int)Y.rows();
-  for (int i = 0; i < n; ++i) {
-    double lmean = Y(i, 0);
-    double Ni = Y(i, 2);
-    double s2hat = Y(i, 1);
+  double total_ll = -0.5 * (log_2pi + var_mean.log() + (resid * resid) / var_mean).sum();
 
-    double m = mu[i];
-
-    double var_between = std::exp(alpha) * std::pow(m, rho);
-    double var_mean = v_within / Ni + var_between;
-
-    double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-  }
-
-  return -1.0 * ll;  // negative log-likelihood
+  return -1.0 * total_ll;
 }
+
+
 
 double ll_nested_ncv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 4];
-  double prec1 = params[params.size() - 3];
-  double precF0 = params[params.size() - 2];
-  double precF1 = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 4];
+  const double prec1 = params[params.size() - 3];
+  const double precF0 = params[params.size() - 2];
+  const double precF1 = params[params.size() - 1];
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double sigmaF0sq = 1.0 / precF0;
-  double sigmaF1sq = 1.0 / precF1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
-  double bf = log(sigmaF1sq / sigmaF0sq) / log(m1 / m0);
-  double af = log(sigmaF0sq / pow(m0, bf));
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double sigmaF0sq = 1.0 / precF0;
+  const double sigmaF1sq = 1.0 / precF1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double bf = std::log(sigmaF1sq / sigmaF0sq) / std::log(m1 / m0);
+  const double af = std::log(sigmaF0sq / std::pow(m0, bf));
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu = nly(params, X);
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto lmean = Y.col(0).array();
+  auto Ni    = Y.col(2).array();
 
-  double ll = 0.0;
-  const int n = (int)Y.rows();
-  for (int i = 0; i < n; ++i) {
-    double lmean = Y(i, 0);
-    double Ni = Y(i, 2);
-    double s2hat = Y(i, 1);
+  // Double variable variance trajectory matrix maps
+  Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
+  Eigen::ArrayXd v_within = std::exp(af) * m.pow(bf);
+  Eigen::ArrayXd var_mean = v_within / Ni + var_between;
+  Eigen::ArrayXd resid = lmean - m;
 
-    double m = mu[i];
+  double total_ll = -0.5 * (log_2pi + var_mean.log() + (resid * resid) / var_mean).sum();
 
-    double var_between = std::exp(alpha) * std::pow(m, rho);
-    double v_within = std::exp(af) * std::pow(m, bf);
-    double var_mean = v_within / Ni + var_between;
-
-    double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-  }
-
-  return -1.0 * ll;  // negative log-likelihood
+  return -1.0 * total_ll;
 }
 
 // generalized wrapper
