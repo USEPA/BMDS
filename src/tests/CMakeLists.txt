@@ -11,6 +11,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(test_cpp)
 
+#Use cmake -DENABLE_COVERAGE to enable
+option(ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
+option(ENABLE_PROFILING "Enable code profiling" OFF)
+
 set(VCPKG_HOST_TRIPLET $ENV{VCPKG_HOST_TRIPLET})
 
 message(STATUS "vcpkg Triplet: ${VCPKG_HOST_TRIPLET}")
@@ -38,7 +42,18 @@ set(CPP_BASE ../)
 include_directories(${CPP_BASE}/tests/src ${CPP_BASE}/build ${CPP_BASE}/include ${CPP_BASE}/bmdscore ${EIGEN_PATH} ${NLOPT_DIR_INCLUDE_DIR} ${GSL_INCLUDE_DIR})
 
 ##Enable code coverage analysis
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O2")
+if(ENABLE_COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+    message(STATUS "Building WITH code coverage metrics (Deactivating optimizations)")
+elseif(ENABLE_PROFILING)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -g -O2 -march=native")
+   #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+   message(STATUS "Building WITH code profiling flags (-pg -g -O2 -march=native)")
+else()
+    # Enforce maximum optimization parameters along with direct CPU instruction pipelines
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -DNDEBUG")
+    message(STATUS "Building WITH maximum performance optimizations (-O3 -march=native)")
+endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/../bin)

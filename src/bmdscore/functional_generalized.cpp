@@ -27,20 +27,17 @@
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the Q. Linear transformed doses
 Eigen::VectorXd binomial_cqlinear(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double sum = a1 + b1 + c1;
-  double p_zero = a1 / sum;
-  double p_one = (a1 + b1) / sum;
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double sum = a1 + b1 + c1;
+  const double g = a1 / sum;
+  const double b = -log((1.0 - (a1 + b1) / sum) / (1.0 - g));
 
-  double g = p_zero;  // R::qnorm(p_zero,0,1,true,false);
-  double b = -log((1 - p_one) / (1 - p_zero));
-
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&g, &b](double xx) { return g + (1 - g) * (1 - exp(-b * xx)); });
-  return out;
+  // Access the column directly via array map coefficients to completely stop malloc churn
+  return X.col(0).array().unaryExpr([g, b](double xx) {
+    return g + (1.0 - g) * (1.0 - std::exp(-b * xx));
+  });
 }
 
 /// @brief Computes the  transformation
@@ -48,25 +45,21 @@ Eigen::VectorXd binomial_cqlinear(const Eigen::VectorXd& params, const Eigen::Ma
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the multistage2 transformed doses
 Eigen::VectorXd binomial_cmstage2(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a11 = params[0];
-  double b11 = params[1];
-  double c11 = params[2];
-  double sum = a11 + b11 + c11;
-  double p_zero = a11 / sum;
-  double p_one = (a11 + b11) / sum;
+  const double a11 = params[0];
+  const double b11 = params[1];
+  const double c11 = params[2];
+  const double sum = a11 + b11 + c11;
+  const double g = a11 / sum;
 
-  double y1 = params[3];
+  const double y1 = params[3];
+  const double log_ratio = std::log((1.0 - (a11 + b11) / sum) / (1.0 - g));
+  const double b1 = -y1 * log_ratio;
+  const double b2 = -(1.0 - y1) * log_ratio;
 
-  double g = p_zero;  // R::qnorm(p_zero,0,1,true,false);
-  double b1 = -(y1)*log((1 - p_one) / (1 - p_zero));
-  double b2 = -(1.0 - y1) * log((1 - p_one) / (1 - p_zero));
-
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&g, &b1, &b2](double xx) {
-    return g + (1 - g) * (1 - exp(-b1 * xx - b2 * xx * xx));
+  // Zero-allocation pipeline: evaluate directly from X.col(0)
+  return X.col(0).array().unaryExpr([g, b1, b2](double xx) {
+    return g + (1.0 - g) * (1.0 - std::exp(-b1 * xx - b2 * xx * xx));
   });
-  return out;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -75,27 +68,22 @@ Eigen::VectorXd binomial_cmstage2(const Eigen::VectorXd& params, const Eigen::Ma
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the logprobit transformed doses
 Eigen::VectorXd binomial_clogprobit(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double b = params[3];
-  double sum = a1 + b1 + c1;
-  double p0 = a1 / sum;
-  double p1 = (a1 + b1) / sum;
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double b = params[3];
+  const double sum = a1 + b1 + c1;
+  const double p0 = a1 / sum;
+  const double p1 = (a1 + b1) / sum;
 
-  // double a = R::qnorm((p1-p0)/(1-p0),0,1,true,false);
-  double a = gsl_cdf_gaussian_Pinv((p1 - p0) / (1 - p0), 1.0);
+  const double a = gsl_cdf_gaussian_Pinv((p1 - p0) / (1.0 - p0), 1.0);
 
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&p0, &b, &a](double xx) {
-    if (xx == 0) {
+  return X.col(0).array().unaryExpr([p0, b, a](double xx) {
+    if (xx == 0.0) {
       return p0;
     }
-    // return p0+(1-p0)*R::pnorm(a+b*log(xx),0,1,true,false);
-    return p0 + (1 - p0) * gsl_cdf_gaussian_P(a + b * log(xx), 1.0);
+    return p0 + (1.0 - p0) * gsl_cdf_gaussian_P(a + b * std::log(xx), 1.0);
   });
-  return out;
 }
 
 /// @brief
@@ -103,27 +91,25 @@ Eigen::VectorXd binomial_clogprobit(const Eigen::VectorXd& params, const Eigen::
 /// @param X
 /// @return
 Eigen::VectorXd binomial_cloglogistic(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
   double b = params[3];
-  double sum = a1 + b1 + c1;
-  double p0 = a1 / sum;
-  double p1 = (a1 + b1) / sum;
-  double a = -log((1 - p1) / (p1 - p0));
+  const double sum = a1 + b1 + c1;
+  const double p0 = a1 / sum;
+  const double p1 = (a1 + b1) / sum;
+  const double a = -std::log((1.0 - p1) / (p1 - p0));
 
-  Eigen::VectorXd out = X.col(0);
-  if (b <= 0) {
+  if (b <= 0.0) {
     b = 1e-8;
   }
 
-  out = out.unaryExpr([&p0, &b, &a](double xx) {
-    if (xx == 0) {
+  return X.col(0).array().unaryExpr([p0, b, a](double xx) {
+    if (xx == 0.0) {
       return p0;
     }
-    return p0 + (1 - p0) / (1 + exp(-a - b * log(xx)));
+    return p0 + (1.0 - p0) / (1.0 + std::exp(-a - b * std::log(xx)));
   });
-  return out;
 }
 
 /// @brief Computes the  transformation
@@ -131,23 +117,19 @@ Eigen::VectorXd binomial_cloglogistic(const Eigen::VectorXd& params, const Eigen
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the probit transformed doses
 Eigen::VectorXd binomial_cprobit(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double sum = a1 + b1 + c1;
-  double p_zero = a1 / sum;
-  double p_one = (a1 + b1) / sum;
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double sum = a1 + b1 + c1;
+  const double p_zero = a1 / sum;
+  const double p_one = (a1 + b1) / sum;
 
-  // double a = R::qnorm(p_zero,0,1,true,false);
-  // double b = R::qnorm(p_one ,0,1,true,false) - a;
-  double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
-  double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
+  const double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
+  const double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
 
-  Eigen::VectorXd out = X.col(0);
-
-  // out = out.unaryExpr([&a,&b](double xx){return R::pnorm(a+b*xx,0,1,true,false);});
-  out = out.unaryExpr([&a, &b](double xx) { return gsl_cdf_gaussian_P(a + b * xx, 1.0); });
-  return out;
+  return X.col(0).array().unaryExpr([a, b](double xx) {
+    return gsl_cdf_gaussian_P(a + b * xx, 1.0);
+  });
 }
 
 /// @brief Computes the  transformation
@@ -155,22 +137,17 @@ Eigen::VectorXd binomial_cprobit(const Eigen::VectorXd& params, const Eigen::Mat
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the D. Hill transformed doses
 Eigen::VectorXd binomial_chill(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double g = params[0];
-  double v = params[1];
-  double a = params[2];
-  double b = params[3];
+  const double g = params[0];
+  const double v = params[1];
+  const double a = params[2];
+  const double b = params[3];
 
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&g, &b, &a, &v](double xx) {
-    if (xx == 0) {
+  return X.col(0).array().unaryExpr([g, b, a, v](double xx) {
+    if (xx == 0.0) {
       return g;
     }
-    return g + v * (1 - g) / (1 + exp(-a - b * log(xx)));
+    return g + v * (1.0 - g) / (1.0 + std::exp(-a - b * std::log(xx)));
   });
-
-  // Rcout << out << '\n';
-  return out;
 }
 
 /// @brief The Weibull Model for dichotomous data
@@ -178,22 +155,20 @@ Eigen::VectorXd binomial_chill(const Eigen::VectorXd& params, const Eigen::Matri
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of probability
 Eigen::VectorXd binomial_cweibull(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double sum = a1 + b1 + c1;
-  double p_zero = a1 / sum;
-  double p_one = (a1 + b1) / sum;
-  double g = params[3];
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double sum = a1 + b1 + c1;
+  const double p_zero = a1 / sum;
+  const double p_one = (a1 + b1) / sum;
+  const double g = params[3];
 
-  double a = p_zero;
-  double b = -log((1 - p_one) / (1 - p_zero));
+  const double a = p_zero;
+  const double b = -std::log((1.0 - p_one) / (1.0 - p_zero));
 
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&a, &b, &g](double xx) { return a + (1 - a) * (1 - exp(-b * pow(xx, g))); });
-
-  return out;
+  return X.col(0).array().unaryExpr([a, b, g](double xx) {
+    return a + (1.0 - a) * (1.0 - std::exp(-b * std::pow(xx, g)));
+  });
 }
 
 /// @brief The Logistic Model for dichotomous data
@@ -201,20 +176,19 @@ Eigen::VectorXd binomial_cweibull(const Eigen::VectorXd& params, const Eigen::Ma
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of probability
 Eigen::VectorXd binomial_clogistic(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double sum = a1 + b1 + c1;
-  double p_zero = a1 / sum;
-  double p_one = (a1 + b1) / sum;
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double sum = a1 + b1 + c1;
+  const double p_zero = a1 / sum;
+  const double p_one = (a1 + b1) / sum;
 
-  double a = log(p_zero / (1 - p_zero));
-  double b = log(p_one / (1 - p_one)) - a;
+  const double a = std::log(p_zero / (1.0 - p_zero));
+  const double b = std::log(p_one / (1.0 - p_one)) - a;
 
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&a, &b](double xx) { return 1 / (1 + exp(-a - b * xx)); });
-  return out;
+  return X.col(0).array().unaryExpr([a, b](double xx) {
+    return 1.0 / (1.0 + std::exp(-a - b * xx));
+  });
 }
 
 /// @brief The Gamma Model for dichotomous data
@@ -222,32 +196,28 @@ Eigen::VectorXd binomial_clogistic(const Eigen::VectorXd& params, const Eigen::M
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of probability
 Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double a1 = params[0];
-  double b1 = params[1];
-  double c1 = params[2];
-  double sum = a1 + b1 + c1;
-  double p0 = a1 / sum;
-  double p1 = (a1 + b1) / sum;
+  const double a1 = params[0];
+  const double b1 = params[1];
+  const double c1 = params[2];
+  const double sum = a1 + b1 + c1;
+  const double p0 = a1 / sum;
+  const double p1 = (a1 + b1) / sum;
   double alpha = params[3];
 
   if (alpha <= 0.2) {
     alpha = 0.2;
   }
 
-  // double b = R::qgamma((p1-p0)/(1-p0),alpha,1,true, false);
-  double b = safe_gamma_pinv((p1 - p0) / (1 - p0), alpha, 1.0);
+  const double probability_ratio = (p1 - p0) / (1.0 - p0);
 
-  Eigen::VectorXd out = X.col(0);
-  if (b <= 0) {
+  double b = safe_gamma_pinv(probability_ratio, alpha, 1.0);
+  if (b <= 0.0 || !std::isfinite(b)) {
     b = 1e-8;
   }
-  // out = out.unaryExpr([&p0,&b,&alpha](double xx){return p0+(1-p0)*(
-  // R::pgamma(b*xx,alpha,1.0,true,false));});
-  out = out.unaryExpr([&p0, &b, &alpha](double xx) {
-    return p0 + (1 - p0) * (gsl_cdf_gamma_P(b * xx, alpha, 1.0));
-  });
 
-  return out;
+  return X.col(0).array().unaryExpr([p0, b, alpha](double xx) {
+    return p0 + (1.0 - p0) * (gsl_cdf_gamma_P(b * xx, alpha, 1.0));
+  });
 }
 
 // typedef Eigen::VectorXd (*ptr)(const Eigen::VectorXd&, const Eigen::MatrixXd&);
@@ -286,28 +256,26 @@ double log_gamma_pdf(double x, double alpha, double beta) {
 /// @param X - A (n X 1) matrix of doses
 /// @return A vector (n x 1) of the multistage3 transformed doses
 Eigen::VectorXd binomial_mstage3(const Eigen::VectorXd& params, const Eigen::MatrixXd& X) {
-  double p_zero = params[0];
-  double p_one = params[1];
-  double a1 = params[2];
-  double a2 = params[3];
-  double a3 = params[4];
+  const double p_zero = params[0];
+  const double p_one = params[1];
+  const double a1 = params[2];
+  const double a2 = params[3];
+  const double a3 = params[4];
 
-  double sum_a = a1 + a2 + a3;
-  double d1 = a1 / sum_a;
-  double d2 = a2 / sum_a;
-  double d3 = 1 - (d1 + d2);
+  const double sum_a = a1 + a2 + a3;
+  const double d1 = a1 / sum_a;
+  const double d2 = a2 / sum_a;
+  const double d3 = 1.0 - (d1 + d2);
 
-  double g = p_zero;  // R::qnorm(p_zero,0,1,true,false);
-  double b1 = -d1 * log((1 - p_one) / (1 - p_zero));
-  double b2 = -d2 * log((1 - p_one) / (1 - p_zero));
-  double b3 = -d3 * log((1 - p_one) / (1 - p_zero));
+  const double g = p_zero;
+  const double log_ratio = std::log((1.0 - p_one) / (1.0 - p_zero));
+  const double b1 = -d1 * log_ratio;
+  const double b2 = -d2 * log_ratio;
+  const double b3 = -d3 * log_ratio;
 
-  Eigen::VectorXd out = X.col(0);
-
-  out = out.unaryExpr([&g, &b1, &b2, &b3](double xx) {
-    return g + (1 - g) * (1 - exp(-b1 * xx - b2 * xx * xx - b3 * xx * xx * xx));
+  return X.col(0).array().unaryExpr([g, b1, b2, b3](double xx) {
+    return g + (1.0 - g) * (1.0 - std::exp(-b1 * xx - b2 * xx * xx - b3 * xx * xx * xx));
   });
-  return out;
 }
 
 /// @brief Computes the Hill transformation (DO NOT USE)
@@ -450,12 +418,20 @@ Eigen::VectorXd continuous_exp3_transform(const Eigen::VectorXd& params, const E
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-    return m0 * std::exp(sign * std::pow(b * xx, c));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_c = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_c;
 
-  return out;
+  // Re-evaluate the power matrix only when parameters shift OR the dataset matrix transitions
+  if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_c = c;
+    cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+  }
+
+  return m0 * (sign * cached_bx_pow_c.array()).exp().matrix();
 }
 
 /// @brief Computes the Exp3-log transformation
@@ -473,12 +449,19 @@ Eigen::VectorXd continuous_exp3_transform_log(
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-    return m0 * std::exp(sign * std::pow(b * xx, c));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_c = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_c;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_c = c;
+    cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+  }
+
+  return (std::log(m0) + (sign * cached_bx_pow_c.array())).matrix();
 }
 
 /// @brief Computes the Exp5 transformation
@@ -500,12 +483,19 @@ Eigen::VectorXd continuous_exp5_transform(const Eigen::VectorXd& params, const E
     c = 1e-8;
   }
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-    return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_n;
 
-  return out;
+  if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_n = n;
+    cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+  }
+
+  return m0 * (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).matrix();
 }
 
 /// @brief Computes the Exp5-log transformation
@@ -529,12 +519,19 @@ Eigen::VectorXd continuous_exp5_transform_log(
     c = 1e-8;
   }
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-    return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_n;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_n = n;
+    cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+  }
+
+  return (std::log(m0) + (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).log()).matrix();
 }
 
 /// @brief Computes the BMDS Hill transformation
@@ -550,13 +547,17 @@ Eigen::VectorXd continuous_hill_transform(const Eigen::VectorXd& params, const E
   double kn = std::pow(k, n);
   double v = (m1 - m0) * (kn + 1);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &v, &k, &n](double d) {
-    double dn = std::pow(d, n);
-    return m0 + v * dn / (std::pow(k, n) + dn);
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_dn;
 
-  return out;
+  if (&X != cached_X_ptr || n != cached_n || cached_dn.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_n = n;
+    cached_dn = X.col(0).array().pow(n);
+  }
+
+  return (m0 + (v * cached_dn.array()) / (kn + cached_dn.array())).matrix();
 }
 
 /// @brief Computes the EFSA Hill transformation
@@ -574,13 +575,17 @@ Eigen::VectorXd continuous_hill4_efsa_transform(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-    double xd = std::pow(x, d);
-    return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_xd;
 
-  return out;
+  if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_d = d;
+    cached_xd = X.col(0).array().pow(d);
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).matrix();
 }
 
 /// @brief Computes the EFSA Hill-log transformation
@@ -598,13 +603,18 @@ Eigen::VectorXd continuous_hill4_efsa_transform_log(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-    double xd = std::pow(x, d);
-    return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_xd;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_d = d;
+    cached_xd = X.col(0).array().pow(d);
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).log())
+      .matrix();
 }
 
 /// @brief Computes the EFSA Inverse Exponential transformation
@@ -622,13 +632,19 @@ Eigen::VectorXd continuous_invexp_efsa_transform(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double xd = std::pow(x, -d);
-    return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
 
-  return out;
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_exp_term.array()).matrix();
 }
 
 /// @brief Computes the EFSA Inverse Exponential-log transformation
@@ -646,13 +662,19 @@ Eigen::VectorXd continuous_invexp_efsa_transform_log(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double xd = std::pow(x, -d);
-    return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_exp_term.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA Lognormal transformation
@@ -668,23 +690,35 @@ Eigen::VectorXd continuous_lognormal_efsa_transform(
   double d = params[3];
 
   double logb = std::log(b);
-  // double phi_logb = R::pnorm(logb, 0.0, 1.0, true, false);
   double phi_logb = gsl_cdf_gaussian_P(logb, 1.0);
 
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    if (x == 0) {
-      return m0;
-    }
-    double z = std::log(b) + d * std::log(x);
-    // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-    double phi = gsl_cdf_gaussian_P(z, 1.0);
-    return m0 * (1.0 + (c - 1.0) * phi);
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_phi_vector;
 
-  return out;
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_phi_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_phi_vector.resize(X.rows());
+
+    const double log_b_val = std::log(b);
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      double x = X(i, 0);
+      if (x == 0.0) {
+        cached_phi_vector[i] = phi_logb;
+      } else {
+        double z = log_b_val + d * std::log(x);
+        cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
+      }
+    }
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_phi_vector.array()).matrix();
 }
 
 /// @brief Computes the EFSA Lognormal-log transformation
@@ -703,16 +737,31 @@ Eigen::VectorXd continuous_lognormal_efsa_transform_log(
   double phi_logb = gsl_cdf_gaussian_P(std::log(b), 1.0);
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    if (x == 0) return m0;
-    double z = std::log(b) + d * std::log(x);
-    // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-    double phi = gsl_cdf_gaussian_P(z, 1.0);
-    return m0 * (1.0 + (c - 1.0) * phi);
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_phi_vector;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_phi_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_phi_vector.resize(X.rows());
+
+    const double log_b_val = std::log(b);
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      double x = X(i, 0);
+      if (x == 0.0) {
+        cached_phi_vector[i] = phi_logb;
+      } else {
+        double z = log_b_val + d * std::log(x);
+        cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
+      }
+    }
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_phi_vector.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA Gamma transformation
@@ -736,15 +785,23 @@ Eigen::VectorXd continuous_gamma_efsa_transform(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);  // pgamma(b, d, scale=1)
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double bx = b * x;
-    // double pg = R::pgamma(bx, d, 1.0, true, false);
-    double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-    return m0 * (1.0 + (c - 1.0) * pg);
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_gsl_vector;
 
-  return out;
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_gsl_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_gsl_vector.resize(X.rows());
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+    }
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_gsl_vector.array()).matrix();
 }
 
 /// @brief Computes the EFSA Gamma-log transformation
@@ -768,15 +825,23 @@ Eigen::VectorXd continuous_gamma_efsa_transform_log(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double bx = b * x;
-    // double pg = R::pgamma(bx, d, 1.0, true, false);
-    double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-    return m0 * (1.0 + (c - 1.0) * pg);
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_gsl_vector;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_gsl_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_gsl_vector.resize(X.rows());
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+    }
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_gsl_vector.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA LMS2 transformation
@@ -794,13 +859,21 @@ Eigen::VectorXd continuous_lms_efsa_transform(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double exp_term = std::exp(-b * x - d * x * x);
-    return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
 
-  return out;
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+
+    auto x_arr = X.col(0).array();
+    cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+  }
+
+  return m0 * (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).matrix();
 }
 
 /// @brief Computes the EFSA LMS2-log transformation
@@ -818,13 +891,21 @@ Eigen::VectorXd continuous_lms_efsa_transform_log(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double exp_term = std::exp(-b * x - d * x * x);
-    return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  });
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
 
-  return out.array().log().matrix();
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+
+    auto x_arr = X.col(0).array();
+    cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).log()).matrix();
 }
 
 /// @brief Computes the Logistic transformation (DO NOT USE)
@@ -972,6 +1053,18 @@ Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd& knots
   return m;
 }
 
+void trunc_lin_numeric3_fast(
+    const double& x, const Eigen::VectorXd& knots, Eigen::RowVectorXd& out_row
+) {
+  out_row[0] = 1.0;
+  out_row[1] = x;
+  const Eigen::Index num_knots = knots.size();
+  for (int j = 0; j < num_knots; ++j) {
+    double temp = x - knots[j];
+    out_row[j + 2] = (temp > 0.0) ? temp * temp : 0.0;
+  }
+}
+
 void compute_transform_f_lag1_cpp3(
     const Eigen::MatrixXd& Y, const Eigen::VectorXd& qtiles, Eigen::MatrixXd& beta_return,
     Eigen::MatrixXd& knot_return
@@ -1069,6 +1162,9 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   // Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["betas"]));
   // Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["knots"]));
 
+  // Create a workspace buffer for truncated linear operations to stop malloc cycles
+  Eigen::RowVectorXd tX_workspace = Eigen::RowVectorXd::Zero(knots.rows() + 2);
+
   for (auto j = 0; j < theta_cur.size(); j++) {
     if (j == 0) {
       Wcur[j] = theta_cur[j] - betas(0, 0) - CM(0);
@@ -1079,7 +1175,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   }
 
   // Wcur = Ainv.llt().solve(Wcur).reshaped();
-  Wcur = Ainv.colPivHouseholderQr().solve(Wcur);
+  // Wcur = Ainv.colPivHouseholderQr().solve(Wcur);
+  Ainv.triangularView<Eigen::Lower>().solveInPlace(Wcur);
   Eigen::VectorXd Wsnew = Eigen::VectorXd::Zero(Wcur.size());
   // Wsnew.setZero();
   // initialize l,s,a,b, theta_new, cut, W, Wtemp
@@ -1126,14 +1223,18 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
         Wsnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
       }
 
-      Wtemp = Ainv * Wsnew;
+      // Wtemp = Ainv * Wsnew;
+      // Use optimized internal BLAS GEMV routines
+      Wtemp.noalias() = Ainv * Wsnew;
 
       for (auto kk = 0; kk < theta_new.size(); kk++) {
         if (kk == 0) {
           theta_new[kk] = Wtemp[kk] + betas(0, 0) + CM[0];
         } else {
-          Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
-          theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
+          // Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
+          // theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
+          trunc_lin_numeric3_fast(theta_new[kk - 1], knots.col(kk), tX_workspace);
+          theta_new[kk] = Wtemp[kk] + tX_workspace.dot(betas.col(kk)) + CM[kk];
         }
       }
 
@@ -1264,45 +1365,49 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
   double returnV = 0;
   double mean = 0;
   double sd = 0;
-  // loop over the prior specification in prior_spec
-  // when  it is 1 - Normal Prior
-  // when  it is 2 - Log normal prior.
+
+  // Cache the universal constant exactly as your framework evaluated it
+  const double universal_const = log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+  const double scaled_const = double(theta.size()) * universal_const;
+
   for (int i = 0; i < theta.size(); i++) {
-    int t = int(prior_spec(i, 0));
+    int t = static_cast<int>(prior_spec(i, 0));
 
     switch (t) {
       case 1:
         mean = (theta[i] - prior_spec(i, 1));
         sd = prior_spec(i, 2);
-        returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) +
-                   double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+        returnV += -log(sd) - 0.5 * mean * mean / (sd * sd) + scaled_const;
         break;
-      case 2:
 
-        if (theta[i] <= 0 || theta[i] > 20) {
-          returnV += -std::numeric_limits<double>::infinity();
+      case 2:
+        if (theta[i] <= 0.0 || theta[i] > 20.0) {
+          // Signal a hard contraction rejection to the samplers
+          return std::numeric_limits<double>::infinity();
         } else {
           mean = (log(theta[i]) - prior_spec(i, 1));
           sd = prior_spec(i, 2);
-          returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) +
-                     double(theta.size()) * log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+          returnV += -log(sd) - log(theta[i]) - 0.5 * mean * mean / (sd * sd) + scaled_const;
         }
         break;
+
       case 3:
         returnV += log_beta_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
         break;
-      case 4:  // gamma distribution for dirichlet
+
+      case 4:
         returnV += log_gamma_pdf(theta[i], prior_spec(i, 1), prior_spec(i, 2));
         break;
-      case 5: {  // Student-t: df, mu, sigma
+
+      case 5: {
         double df = prior_spec(i, 1);
         double mu = prior_spec(i, 2);
         double sigma = prior_spec(i, 3);
-        double z = (theta[i] - mu) / sigma;
 
-        if (sigma <= 0 || df <= 0) {
-          returnV += -std::numeric_limits<double>::infinity();
+        if (sigma <= 0.0 || df <= 0.0) {
+          return std::numeric_limits<double>::infinity();
         } else {
+          double z = (theta[i] - mu) / sigma;
           double term1 = std::lgamma((df + 1.0) / 2.0) - std::lgamma(df / 2.0);
           double term2 = -0.5 * log(df * M_PI) - log(sigma);
           double term3 = -(df + 1.0) / 2.0 * log(1.0 + (z * z) / df);
@@ -1312,7 +1417,7 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
       }
 
       default:
-        returnV -= log(0.5 * M_2_SQRTPI * M_SQRT1_2);
+        returnV -= universal_const;
         break;
     }
   }
@@ -1329,24 +1434,48 @@ double no_priorr(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec
 /// @param Y
 /// @param nly
 /// @return
+// double ll_binomial(
+//     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
+//) {
+//   double ll = 0.0;
+//   Eigen::VectorXd mean = nly(params, X);
+//
+//   for (int ii = 0; ii < mean.size(); ii++) {
+//     if (std::isnan(mean[ii])) {
+//       return std::numeric_limits<double>::infinity();
+//     }
+//   }
+//   ll += (Y.col(0).array() * mean.array().log() +
+//          (Y.col(1).array() - Y.col(0).array()) * (1 - mean.array()).log())
+//             .array()
+//             .sum();
+//   if (std::isnan(ll)) {
+//     ll = -std::numeric_limits<double>::infinity();
+//   }
+//
+//   return -1.0 * ll;
+// }
+
 double ll_binomial(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 ) {
-  double ll = 0.0;
-  Eigen::VectorXd mean = nly(params, X);
+  // Vectorized invocation of model probabilities
+  const Eigen::VectorXd mean = nly(params, X);
 
-  for (int ii = 0; ii < mean.size(); ii++) {
-    if (std::isnan(mean[ii])) {
-      return std::numeric_limits<double>::infinity();
-    }
+  // Fast bitwise optimization shortcut to find any NaNs natively
+  if (!mean.array().isFinite().all()) {
+    return std::numeric_limits<double>::infinity();
   }
-  ll += (Y.col(0).array() * mean.array().log() +
-         (Y.col(1).array() - Y.col(0).array()) * (1 - mean.array()).log())
-            .array()
-            .sum();
-  if (std::isnan(ll)) {
-    ll = -std::numeric_limits<double>::infinity();
+
+  // Double check boundaries to prevent slow NaN fallback states down the line
+  if ((mean.array() <= 0.0).any() || (mean.array() >= 1.0).any()) {
+    return std::numeric_limits<double>::infinity();
   }
+
+  // Pure SIMD batch calculation of the likelihood kernel
+  double ll = (Y.col(0).array() * mean.array().log() +
+               (Y.col(1).array() - Y.col(0).array()) * (1.0 - mean.array()).log())
+                  .sum();
 
   return -1.0 * ll;
 }
@@ -1369,277 +1498,234 @@ double ll_poisson(
   return -1.0 * ll;
 }
 
-// random linear with added quadratic term
-// double ll_continuous(Eigen::VectorXd params,
-//                       const Eigen::MatrixXd& X,
-//                       const Eigen::MatrixXd& Y,
-//                       const ptr2& nly){
-//     double ll = 0.0;
-//     Eigen::VectorXd log_mean = nly(params, X);
-//     double var = params[params.size() - 1.0];
-//     Eigen::VectorXd sqerr = pow(Y.col(0).array() - log_mean.array(), 2.0);
-//
-//     ll += (-(0.5) * log(2.0 * M_PI * var) - (1 / (2.0 * var)) * sqerr.array()).sum();
-//     return -1.0*ll;
-// }
-
 double ll_continuous(
     const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 2];
-  double prec1 = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 2];
+  const double prec1 = params[params.size() - 1];
 
-  double ll = 0.0;
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
 
-  // compute transformed parameters
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
+  // Evaluate full expected mean trajectory at once across contiguous memory
+  const Eigen::ArrayXd m = nly(params, X).array();
 
-  Eigen::VectorXd mu = nly(params, X);  // predicted means from model
+  // Create a zero-copy array wrapper over your empirical response data column
+  auto y_obs = Y.col(0).array();
 
-  for (int i = 0; i < Y.rows(); i++) {
-    double m = mu[i];
-    double var = std::exp(alpha) * std::pow(m, rho);  // mean-dependent variance
-    double resid = Y(i, 0) - m;
-    ll += -0.5 * std::log(2 * M_PI * var) - 0.5 * (resid * resid) / var;
-  }
+  // 1. Compute mean-dependent variances across the entire vector in a batch
+  Eigen::ArrayXd var = std::exp(alpha) * m.pow(rho);
 
-  return -1.0 * ll;
+  // 2. Pure vectorized evaluation of normalization and squared error steps
+  const double log_2pi = std::log(2.0 * M_PI);
+  Eigen::ArrayXd norm_terms = -0.5 * (log_2pi + var.log());
+  Eigen::ArrayXd squared_errors = -0.5 * (y_obs - m).square() / var;
+
+  // 3. Accumulate everything at the very end
+  double total_ll = (norm_terms + squared_errors).sum();
+
+  return -1.0 * total_ll;
 }
 
 double ll_continuous_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 2];
-  double prec1 = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 2];
+  const double prec1 = params[params.size() - 1];
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
-  double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double sigma_coef = std::exp(alpha);
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu = nly(params, X);  // model-predicted means
+  // Evaluate the entire model trajectory function at once across memory
+  const Eigen::ArrayXd m = nly(params, X).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);  // observed mean
-    double s = Y(i, 1);     // observed sample std
-    double n = Y(i, 2);     // sample size
-    double m = mu[i];       // predicted mean
+  // Create lightweight zero-copy array wrappers over the columns of matrix Y
+  auto ybar = Y.col(0).array();  // observed mean
+  auto s = Y.col(1).array();     // observed sample std
+  auto n = Y.col(2).array();     // sample size
 
-    double sigma2 = std::exp(alpha) * std::pow(m, rho);
-    double term1 = n * std::pow(ybar - m, 2);
-    double term2 = (n - 1.0) * std::pow(s, 2);
+  // 1. Vectorized calculation of mean-dependent variances across the entire array
+  Eigen::ArrayXd sigma2 = sigma_coef * m.pow(rho);
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
-  }
+  // 2. Compute components for the log-likelihood numerator using batch arrays
+  Eigen::ArrayXd term1 = n * (ybar - m).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s.square();
 
-  return -1.0 * ll;
+  // 3. Batch evaluation of the log normalization terms
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * sigma2.log();
+
+  // 4. Accumulate all vectors in a single localized hardware step
+  double total_ll = (norm_terms - 0.5 * (term1 + term2) / sigma2).sum();
+
+  return -1.0 * total_ll;
 }
-
-// double ll_continuous_cv(Eigen::VectorXd params,
-//                        const Eigen::MatrixXd& X,
-//                        const Eigen::MatrixXd& Y,
-//                        const ptr2& nly)
-//{
-//   double alpha = params[params.size() - 1];
-//   double var = std::exp(alpha);
-//
-//   Eigen::VectorXd mu = nly(params, X);
-//
-//   double ll = 0.0;
-//   for (int i = 0; i < Y.rows(); ++i) {
-//     double resid = Y(i, 0) - mu[i];
-//     ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
-//   }
-//
-//   return -1.0 * ll;
-// }
 
 double ll_continuous_cv(
     const Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double var = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double var = 1.0 / prec0;
+  const double log_2pi_var = std::log(2.0 * M_PI * var);
 
-  Eigen::VectorXd mu = nly(params, X);
+  // Batch evaluate expected values
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto y_obs = Y.col(0).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double resid = Y(i, 0) - mu[i];
-    ll += -0.5 * std::log(2.0 * M_PI * var) - 0.5 * (resid * resid) / var;
-  }
+  // Pure SIMD vectorized calculation across arrays
+  double total_ll = (-0.5 * log_2pi_var - 0.5 * (y_obs - m).square() / var).sum();
 
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
 
 double ll_continuous_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double sigma2 = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double sigma2 = 1.0 / prec0;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu = nly(params, X);  // predicted means
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto ybar = Y.col(0).array();
+  auto s = Y.col(1).array();
+  auto n = Y.col(2).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);
-    double s = Y(i, 1);
-    double n = Y(i, 2);
-    double m = mu[i];
+  // Vectorized evaluation of multi-sample summary criteria
+  Eigen::ArrayXd term1 = n * (ybar - m).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s.square();
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * std::log(sigma2);
 
-    double term1 = n * std::pow(ybar - m, 2);
-    double term2 = (n - 1.0) * std::pow(s, 2);
+  double total_ll = (norm_terms - 0.5 * (term1 + term2) / sigma2).sum();
 
-    ll +=
-        -0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(sigma2) - 0.5 * (term1 + term2) / sigma2;
-  }
-
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
 
 double ll_lognormal_cv(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  // double sdlog = std::exp(alpha);
-  // double var = sdlog * sdlog;
-  double var = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double var = 1.0 / prec0;
 
-  Eigen::VectorXd mu = nly(params, X);  // this is the mean of log(Y)
-  if ((mu.array().isNaN()).any()) {
-    return std::numeric_limits<double>::quiet_NaN();  // or -INFINITY
+  const Eigen::ArrayXd m = nly(params, X).array();
+  if (!m.isFinite().all()) {
+    return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double logy = std::log(Y(i, 0));
-    double resid = logy - mu[i];
-    ll += -std::log(Y(i, 0))                  // Jacobian term
-          - 0.5 * std::log(2.0 * M_PI * var)  // normalization
-          - 0.5 * (resid * resid) / var;      // squared error
-  }
+  auto y_obs = Y.col(0).array();
+  const double log_2pi_var = std::log(2.0 * M_PI * var);
 
-  return -1.0 * ll;  // log-likelihood; negate if needed by your sampler
+  // Batch calculate original-scale log transform and Jacobian transformations
+  Eigen::ArrayXd logy = y_obs.log();
+  Eigen::ArrayXd total_terms = -logy - 0.5 * log_2pi_var - 0.5 * (logy - m).square() / var;
+
+  return -1.0 * total_terms.sum();
 }
 
 double ll_lognormal_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
 ) {
-  double prec0 = params[params.size() - 1];
-  double gamma2 = 1.0 / prec0;
+  const double prec0 = params[params.size() - 1];
+  const double gamma2 = 1.0 / prec0;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu_log = nly(params, X);  // predicted log means (log[f(d_i | θ)])
+  const Eigen::ArrayXd mu_log = nly(params, X).array();
+  auto ybar = Y.col(0).array();
+  auto s = Y.col(1).array();
+  auto n = Y.col(2).array();
 
-  double ll = 0.0;
-  for (int i = 0; i < Y.rows(); ++i) {
-    double ybar = Y(i, 0);  // observed mean on original scale
-    double s = Y(i, 1);     // std dev on original scale
-    double n = Y(i, 2);
+  // High performance vectorized log-normal scaling math
+  Eigen::ArrayXd cv_sq_plus_1 = (s * s) / (ybar * ybar) + 1.0;
+  Eigen::ArrayXd ybar_log = ybar.log() - 0.5 * cv_sq_plus_1.log();
+  Eigen::ArrayXd s_log2 = cv_sq_plus_1.log();
 
-    double ybar_log = std::log(ybar) - 0.5 * std::log((s * s) / (ybar * ybar) + 1);
-    double s_log2 = std::log((s * s) / (ybar * ybar) + 1);
-    double jacobian = n * ybar_log;
+  Eigen::ArrayXd jacobian = n * ybar_log;
+  Eigen::ArrayXd term1 = n * (ybar_log - mu_log).square();
+  Eigen::ArrayXd term2 = (n - 1.0) * s_log2;
+  Eigen::ArrayXd norm_terms = -0.5 * n * log_2pi - 0.5 * n * std::log(gamma2);
 
-    double term1 = n * std::pow(ybar_log - mu_log[i], 2);
-    double term2 = (n - 1.0) * s_log2;
+  double total_ll = (-jacobian + norm_terms - 0.5 * (term1 + term2) / gamma2).sum();
 
-    ll += -jacobian - 0.5 * n * std::log(2 * M_PI) - 0.5 * n * std::log(gamma2) -
-          0.5 * (term1 + term2) / gamma2;
-  }
-
-  return -1.0 * ll;
+  return -1.0 * total_ll;
 }
 
 double ll_nested_cv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 3];
-  double prec1 = params[params.size() - 2];
-  double precF = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 3];
+  const double prec1 = params[params.size() - 2];
+  const double precF = params[params.size() - 1];
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double v_within = 1.0 / precF;
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  double v_within = 1.0 / precF;
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto lmean = Y.col(0).array();
+  auto Ni = Y.col(2).array();
 
-  Eigen::VectorXd mu = nly(params, X);
+  // Vectorized variance calculation for nested group targets
+  Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
+  Eigen::ArrayXd var_mean = v_within / Ni + var_between;
+  Eigen::ArrayXd resid = lmean - m;
 
-  double ll = 0.0;
-  const int n = (int)Y.rows();
-  for (int i = 0; i < n; ++i) {
-    double lmean = Y(i, 0);
-    double Ni = Y(i, 2);
-    double s2hat = Y(i, 1);
+  double total_ll = -0.5 * (log_2pi + var_mean.log() + (resid * resid) / var_mean).sum();
 
-    double m = mu[i];
-
-    double var_between = std::exp(alpha) * std::pow(m, rho);
-    double var_mean = v_within / Ni + var_between;
-
-    double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-  }
-
-  return -1.0 * ll;  // negative log-likelihood
+  return -1.0 * total_ll;
 }
 
 double ll_nested_ncv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 ) {
-  double m0 = params[0];
-  double m1 = params[1];
-  double prec0 = params[params.size() - 4];
-  double prec1 = params[params.size() - 3];
-  double precF0 = params[params.size() - 2];
-  double precF1 = params[params.size() - 1];
+  const double m0 = params[0];
+  const double m1 = params[1];
+  const double prec0 = params[params.size() - 4];
+  const double prec1 = params[params.size() - 3];
+  const double precF0 = params[params.size() - 2];
+  const double precF1 = params[params.size() - 1];
 
-  double sigma0sq = 1.0 / prec0;
-  double sigma1sq = 1.0 / prec1;
-  double sigmaF0sq = 1.0 / precF0;
-  double sigmaF1sq = 1.0 / precF1;
-  double rho = log(sigma1sq / sigma0sq) / log(m1 / m0);
-  double alpha = log(sigma0sq / pow(m0, rho));
-  double bf = log(sigmaF1sq / sigmaF0sq) / log(m1 / m0);
-  double af = log(sigmaF0sq / pow(m0, bf));
+  const double sigma0sq = 1.0 / prec0;
+  const double sigma1sq = 1.0 / prec1;
+  const double sigmaF0sq = 1.0 / precF0;
+  const double sigmaF1sq = 1.0 / precF1;
+  const double rho = std::log(sigma1sq / sigma0sq) / std::log(m1 / m0);
+  const double alpha = std::log(sigma0sq / std::pow(m0, rho));
+  const double bf = std::log(sigmaF1sq / sigmaF0sq) / std::log(m1 / m0);
+  const double af = std::log(sigmaF0sq / std::pow(m0, bf));
+  const double log_2pi = std::log(2.0 * M_PI);
 
-  Eigen::VectorXd mu = nly(params, X);
+  const Eigen::ArrayXd m = nly(params, X).array();
+  auto lmean = Y.col(0).array();
+  auto Ni = Y.col(2).array();
 
-  double ll = 0.0;
-  const int n = (int)Y.rows();
-  for (int i = 0; i < n; ++i) {
-    double lmean = Y(i, 0);
-    double Ni = Y(i, 2);
-    double s2hat = Y(i, 1);
+  // Double variable variance trajectory matrix maps
+  Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
+  Eigen::ArrayXd v_within = std::exp(af) * m.pow(bf);
+  Eigen::ArrayXd var_mean = v_within / Ni + var_between;
+  Eigen::ArrayXd resid = lmean - m;
 
-    double m = mu[i];
+  double total_ll = -0.5 * (log_2pi + var_mean.log() + (resid * resid) / var_mean).sum();
 
-    double var_between = std::exp(alpha) * std::pow(m, rho);
-    double v_within = std::exp(af) * std::pow(m, bf);
-    double var_mean = v_within / Ni + var_between;
-
-    double resid = lmean - m;
-    ll += -0.5 * (std::log(2.0 * M_PI) + std::log(var_mean) + (resid * resid) / var_mean);
-  }
-
-  return -1.0 * ll;  // negative log-likelihood
+  return -1.0 * total_ll;
 }
 
 // generalized wrapper
