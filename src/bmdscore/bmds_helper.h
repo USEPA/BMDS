@@ -195,9 +195,9 @@ struct fitInput {
   int N_obs1;
   double s0sq;
   double s1sq;
-  int N_obs;     // required for cv, logcv
-  double ssq;    // required for cv, logcv
-  int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamma, & LMS
+  int N_obs;   // required for cv, logcv
+  double ssq;  // required for cv, logcv
+  int sign;    // required for exp3, exp5, hill, InvExp, Log, Gamma, & LMS
   int iter = 50000;
   double bmr;
   // double bmr_rel;
