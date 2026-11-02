@@ -215,11 +215,7 @@ Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::Matr
     alpha = 0.2;
   }
 
-  // Intercept parameter configurations to catch problematic inputs before solvers lock up
   const double probability_ratio = (p1 - p0) / (1.0 - p0);
-  if (probability_ratio <= 0.0 || probability_ratio >= 1.0) {
-      return Eigen::VectorXd::Constant(X.rows(), std::numeric_limits<double>::quiet_NaN());
-  }
 
   double b = safe_gamma_pinv(probability_ratio, alpha, 1.0);
   if (b <= 0.0 || !std::isfinite(b)) {
