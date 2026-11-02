@@ -198,7 +198,7 @@ struct fitInput {
   int N_obs;     // required for cv, logcv
   double ssq;    // required for cv, logcv
   int sign;      // required for exp3, exp5, hill, InvExp, Log, Gamma, & LMS
-  int iter = 5;  // 50000;
+  int iter = 50000;
   double bmr;
   // double bmr_rel;
   // double bmr_sd;
@@ -207,7 +207,7 @@ struct fitInput {
   int bmdtype;
   int weightOption;
   double tailProb;
-  int burnin = 5;  // 5000;
+  int burnin = 5000;
   double qlev = 0.90;
   int df_override = BMDS_MISSING;
 };
