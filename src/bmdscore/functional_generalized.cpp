@@ -35,12 +35,10 @@ Eigen::VectorXd binomial_cqlinear(const Eigen::VectorXd& params, const Eigen::Ma
   const double b = -log((1.0 - (a1 + b1) / sum) / (1.0 - g));
 
   // Access the column directly via array map coefficients to completely stop malloc churn
-  return X.col(0).array().unaryExpr([g, b](double xx) { 
-    return g + (1.0 - g) * (1.0 - std::exp(-b * xx)); 
+  return X.col(0).array().unaryExpr([g, b](double xx) {
+    return g + (1.0 - g) * (1.0 - std::exp(-b * xx));
   });
 }
-
-
 
 /// @brief Computes the  transformation
 /// @param params - A (nparams x 1) vector of multistage2 parameters
@@ -114,7 +112,6 @@ Eigen::VectorXd binomial_cloglogistic(const Eigen::VectorXd& params, const Eigen
   });
 }
 
-
 /// @brief Computes the  transformation
 /// @param params - A (nparams x 1) vector of Probit parameters
 /// @param X - A (n X 1) matrix of doses
@@ -130,8 +127,8 @@ Eigen::VectorXd binomial_cprobit(const Eigen::VectorXd& params, const Eigen::Mat
   const double a = gsl_cdf_gaussian_Pinv(p_zero, 1.0);
   const double b = gsl_cdf_gaussian_Pinv(p_one, 1.0) - a;
 
-  return X.col(0).array().unaryExpr([a, b](double xx) { 
-    return gsl_cdf_gaussian_P(a + b * xx, 1.0); 
+  return X.col(0).array().unaryExpr([a, b](double xx) {
+    return gsl_cdf_gaussian_P(a + b * xx, 1.0);
   });
 }
 
@@ -153,7 +150,6 @@ Eigen::VectorXd binomial_chill(const Eigen::VectorXd& params, const Eigen::Matri
   });
 }
 
-
 /// @brief The Weibull Model for dichotomous data
 /// @param params - A (nparams x 1) vector of Weibull parameters
 /// @param X - A (n X 1) matrix of doses
@@ -170,12 +166,10 @@ Eigen::VectorXd binomial_cweibull(const Eigen::VectorXd& params, const Eigen::Ma
   const double a = p_zero;
   const double b = -std::log((1.0 - p_one) / (1.0 - p_zero));
 
-  return X.col(0).array().unaryExpr([a, b, g](double xx) { 
-    return a + (1.0 - a) * (1.0 - std::exp(-b * std::pow(xx, g))); 
+  return X.col(0).array().unaryExpr([a, b, g](double xx) {
+    return a + (1.0 - a) * (1.0 - std::exp(-b * std::pow(xx, g)));
   });
 }
-
-
 
 /// @brief The Logistic Model for dichotomous data
 /// @param params - A (nparams x 1) vector of Logistic parameters
@@ -192,11 +186,10 @@ Eigen::VectorXd binomial_clogistic(const Eigen::VectorXd& params, const Eigen::M
   const double a = std::log(p_zero / (1.0 - p_zero));
   const double b = std::log(p_one / (1.0 - p_one)) - a;
 
-  return X.col(0).array().unaryExpr([a, b](double xx) { 
-    return 1.0 / (1.0 + std::exp(-a - b * xx)); 
+  return X.col(0).array().unaryExpr([a, b](double xx) {
+    return 1.0 / (1.0 + std::exp(-a - b * xx));
   });
 }
-
 
 /// @brief The Gamma Model for dichotomous data
 /// @param params - A (nparams x 1) vector of Gamma parameters
@@ -226,7 +219,6 @@ Eigen::VectorXd binomial_cgamma(const Eigen::VectorXd& params, const Eigen::Matr
     return p0 + (1.0 - p0) * (gsl_cdf_gamma_P(b * xx, alpha, 1.0));
   });
 }
-
 
 // typedef Eigen::VectorXd (*ptr)(const Eigen::VectorXd&, const Eigen::MatrixXd&);
 typedef Eigen::VectorXd (*ptr2)(const Eigen::VectorXd&, const Eigen::MatrixXd&);
@@ -426,14 +418,6 @@ Eigen::VectorXd continuous_exp3_transform(const Eigen::VectorXd& params, const E
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-  //  return m0 * std::exp(sign * std::pow(b * xx, c));
-  //});
-
-  //return out;
-
-  // Bind the cache to the specific input matrix memory address to prevent cross-model leakage
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_c = -9999.0;
@@ -441,14 +425,13 @@ Eigen::VectorXd continuous_exp3_transform(const Eigen::VectorXd& params, const E
 
   // Re-evaluate the power matrix only when parameters shift OR the dataset matrix transitions
   if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_c = c;
-      cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_c = c;
+    cached_bx_pow_c = (b * X.col(0).array()).pow(c);
   }
 
   return m0 * (sign * cached_bx_pow_c.array()).exp().matrix();
-
 }
 
 /// @brief Computes the Exp3-log transformation
@@ -466,23 +449,16 @@ Eigen::VectorXd continuous_exp3_transform_log(
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-  //  return m0 * std::exp(sign * std::pow(b * xx, c));
-  //});
-
-  //return out.array().log().matrix();
-  
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_c = -9999.0;
   static thread_local Eigen::VectorXd cached_bx_pow_c;
 
   if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_c = c;
-      cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_c = c;
+    cached_bx_pow_c = (b * X.col(0).array()).pow(c);
   }
 
   return (std::log(m0) + (sign * cached_bx_pow_c.array())).matrix();
@@ -507,23 +483,16 @@ Eigen::VectorXd continuous_exp5_transform(const Eigen::VectorXd& params, const E
     c = 1e-8;
   }
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-  //  return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  //});
-
-  //return out;
-
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_n = -9999.0;
   static thread_local Eigen::VectorXd cached_bx_pow_n;
 
   if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_n = n;
-      cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_n = n;
+    cached_bx_pow_n = (b * X.col(0).array()).pow(n);
   }
 
   return m0 * (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).matrix();
@@ -550,23 +519,16 @@ Eigen::VectorXd continuous_exp5_transform_log(
     c = 1e-8;
   }
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-  //  return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  //});
-
-  //return out.array().log().matrix();
-
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_n = -9999.0;
   static thread_local Eigen::VectorXd cached_bx_pow_n;
 
   if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_n = n;
-      cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_n = n;
+    cached_bx_pow_n = (b * X.col(0).array()).pow(n);
   }
 
   return (std::log(m0) + (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).log()).matrix();
@@ -585,21 +547,14 @@ Eigen::VectorXd continuous_hill_transform(const Eigen::VectorXd& params, const E
   double kn = std::pow(k, n);
   double v = (m1 - m0) * (kn + 1);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &v, &k, &n](double d) {
-  //  double dn = std::pow(d, n);
-  //  return m0 + v * dn / (std::pow(k, n) + dn);
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_n = -9999.0;
   static thread_local Eigen::VectorXd cached_dn;
 
   if (&X != cached_X_ptr || n != cached_n || cached_dn.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_n = n;
-      cached_dn = X.col(0).array().pow(n);
+    cached_X_ptr = &X;
+    cached_n = n;
+    cached_dn = X.col(0).array().pow(n);
   }
 
   return (m0 + (v * cached_dn.array()) / (kn + cached_dn.array())).matrix();
@@ -620,21 +575,14 @@ Eigen::VectorXd continuous_hill4_efsa_transform(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-  //  double xd = std::pow(x, d);
-  //  return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_xd;
 
   if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_d = d;
-      cached_xd = X.col(0).array().pow(d);
+    cached_X_ptr = &X;
+    cached_d = d;
+    cached_xd = X.col(0).array().pow(d);
   }
 
   return m0 * (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).matrix();
@@ -655,24 +603,18 @@ Eigen::VectorXd continuous_hill4_efsa_transform_log(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-  //  double xd = std::pow(x, d);
-  //  return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  //});
-
-  //return out.array().log().matrix();
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_xd;
 
   if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_d = d;
-      cached_xd = X.col(0).array().pow(d);
+    cached_X_ptr = &X;
+    cached_d = d;
+    cached_xd = X.col(0).array().pow(d);
   }
 
-  return (std::log(m0) + (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).log()).matrix();
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).log())
+      .matrix();
 }
 
 /// @brief Computes the EFSA Inverse Exponential transformation
@@ -690,27 +632,19 @@ Eigen::VectorXd continuous_invexp_efsa_transform(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double xd = std::pow(x, -d);
-  //  return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_exp_term;
 
   if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
   }
 
   return m0 * (1.0 + (c - 1.0) * cached_exp_term.array()).matrix();
-
 }
 
 /// @brief Computes the EFSA Inverse Exponential-log transformation
@@ -728,23 +662,16 @@ Eigen::VectorXd continuous_invexp_efsa_transform_log(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double xd = std::pow(x, -d);
-  //  return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  //});
-
-  //return out.array().log().matrix();
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_exp_term;
 
   if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
   }
 
   return (std::log(m0) + (1.0 + (c - 1.0) * cached_exp_term.array()).log()).matrix();
@@ -763,44 +690,32 @@ Eigen::VectorXd continuous_lognormal_efsa_transform(
   double d = params[3];
 
   double logb = std::log(b);
-  // double phi_logb = R::pnorm(logb, 0.0, 1.0, true, false);
   double phi_logb = gsl_cdf_gaussian_P(logb, 1.0);
 
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  if (x == 0) {
-  //    return m0;
-  //  }
-  //  double z = std::log(b) + d * std::log(x);
-  //  // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-  //  double phi = gsl_cdf_gaussian_P(z, 1.0);
-  //  return m0 * (1.0 + (c - 1.0) * phi);
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_phi_vector;
 
-  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_phi_vector.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_phi_vector.resize(X.rows());
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_phi_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_phi_vector.resize(X.rows());
 
-      const double log_b_val = std::log(b);
-      for (Eigen::Index i = 0; i < X.rows(); ++i) {
-          double x = X(i, 0);
-          if (x == 0.0) {
-              cached_phi_vector[i] = phi_logb;
-          } else {
-              double z = log_b_val + d * std::log(x);
-              cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
-          }
+    const double log_b_val = std::log(b);
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      double x = X(i, 0);
+      if (x == 0.0) {
+        cached_phi_vector[i] = phi_logb;
+      } else {
+        double z = log_b_val + d * std::log(x);
+        cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
       }
+    }
   }
 
   return m0 * (1.0 + (c - 1.0) * cached_phi_vector.array()).matrix();
@@ -822,37 +737,28 @@ Eigen::VectorXd continuous_lognormal_efsa_transform_log(
   double phi_logb = gsl_cdf_gaussian_P(std::log(b), 1.0);
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  if (x == 0) return m0;
-  //  double z = std::log(b) + d * std::log(x);
-  //  // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-  //  double phi = gsl_cdf_gaussian_P(z, 1.0);
-  //  return m0 * (1.0 + (c - 1.0) * phi);
-  //});
-
-  //return out.array().log().matrix();
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_phi_vector;
 
-  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_phi_vector.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_phi_vector.resize(X.rows());
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_phi_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_phi_vector.resize(X.rows());
 
-      const double log_b_val = std::log(b);
-      for (Eigen::Index i = 0; i < X.rows(); ++i) {
-          double x = X(i, 0);
-          if (x == 0.0) {
-              cached_phi_vector[i] = phi_logb;
-          } else {
-              double z = log_b_val + d * std::log(x);
-              cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
-          }
+    const double log_b_val = std::log(b);
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      double x = X(i, 0);
+      if (x == 0.0) {
+        cached_phi_vector[i] = phi_logb;
+      } else {
+        double z = log_b_val + d * std::log(x);
+        cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
       }
+    }
   }
 
   return (std::log(m0) + (1.0 + (c - 1.0) * cached_phi_vector.array()).log()).matrix();
@@ -879,28 +785,20 @@ Eigen::VectorXd continuous_gamma_efsa_transform(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);  // pgamma(b, d, scale=1)
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double bx = b * x;
-  //  // double pg = R::pgamma(bx, d, 1.0, true, false);
-  //  double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-  //  return m0 * (1.0 + (c - 1.0) * pg);
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_gsl_vector;
 
-  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_gsl_vector.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_gsl_vector.resize(X.rows());
-      for (Eigen::Index i = 0; i < X.rows(); ++i) {
-          cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
-      }
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_gsl_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_gsl_vector.resize(X.rows());
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+    }
   }
 
   return m0 * (1.0 + (c - 1.0) * cached_gsl_vector.array()).matrix();
@@ -927,28 +825,20 @@ Eigen::VectorXd continuous_gamma_efsa_transform_log(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double bx = b * x;
-  //  // double pg = R::pgamma(bx, d, 1.0, true, false);
-  //  double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-  //  return m0 * (1.0 + (c - 1.0) * pg);
-  //});
-
-  //return out.array().log().matrix();
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_gsl_vector;
 
-  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_gsl_vector.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
-      cached_gsl_vector.resize(X.rows());
-      for (Eigen::Index i = 0; i < X.rows(); ++i) {
-          cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
-      }
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d ||
+      cached_gsl_vector.size() != X.rows()) {
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
+    cached_gsl_vector.resize(X.rows());
+    for (Eigen::Index i = 0; i < X.rows(); ++i) {
+      cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+    }
   }
 
   return (std::log(m0) + (1.0 + (c - 1.0) * cached_gsl_vector.array()).log()).matrix();
@@ -969,25 +859,18 @@ Eigen::VectorXd continuous_lms_efsa_transform(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double exp_term = std::exp(-b * x - d * x * x);
-  //  return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  //});
-
-  //return out;
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_exp_term;
 
   if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
 
-      auto x_arr = X.col(0).array();
-      cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+    auto x_arr = X.col(0).array();
+    cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
   }
 
   return m0 * (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).matrix();
@@ -1008,25 +891,18 @@ Eigen::VectorXd continuous_lms_efsa_transform_log(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  //Eigen::VectorXd out = X.col(0);
-  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-  //  double exp_term = std::exp(-b * x - d * x * x);
-  //  return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  //});
-
-  //return out.array().log().matrix();
   static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
   static thread_local double cached_b = -9999.0;
   static thread_local double cached_d = -9999.0;
   static thread_local Eigen::VectorXd cached_exp_term;
 
   if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
-      cached_X_ptr = &X;
-      cached_b = b;
-      cached_d = d;
+    cached_X_ptr = &X;
+    cached_b = b;
+    cached_d = d;
 
-      auto x_arr = X.col(0).array();
-      cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+    auto x_arr = X.col(0).array();
+    cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
   }
 
   return (std::log(m0) + (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).log()).matrix();
@@ -1177,14 +1053,16 @@ Eigen::MatrixXd trunc_lin_numeric3(const double& x, const Eigen::VectorXd& knots
   return m;
 }
 
-void trunc_lin_numeric3_fast(const double& x, const Eigen::VectorXd& knots, Eigen::RowVectorXd& out_row) {
-    out_row[0] = 1.0;
-    out_row[1] = x;
-    const Eigen::Index num_knots = knots.size();
-    for (int j = 0; j < num_knots; ++j) {
-        double temp = x - knots[j];
-        out_row[j + 2] = (temp > 0.0) ? temp * temp : 0.0;
-    }
+void trunc_lin_numeric3_fast(
+    const double& x, const Eigen::VectorXd& knots, Eigen::RowVectorXd& out_row
+) {
+  out_row[0] = 1.0;
+  out_row[1] = x;
+  const Eigen::Index num_knots = knots.size();
+  for (int j = 0; j < num_knots; ++j) {
+    double temp = x - knots[j];
+    out_row[j + 2] = (temp > 0.0) ? temp * temp : 0.0;
+  }
 }
 
 void compute_transform_f_lag1_cpp3(
@@ -1283,8 +1161,8 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
   // do the same for the trans_func (knots/betas)
   // Eigen::MatrixXd betas = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["betas"]));
   // Eigen::MatrixXd knots = as<Eigen::MatrixXd>(as<NumericMatrix>(trans_func["knots"]));
-  
-  //Create a workspace buffer for truncated linear operations to stop malloc cycles
+
+  // Create a workspace buffer for truncated linear operations to stop malloc cycles
   Eigen::RowVectorXd tX_workspace = Eigen::RowVectorXd::Zero(knots.rows() + 2);
 
   for (auto j = 0; j < theta_cur.size(); j++) {
@@ -1345,17 +1223,17 @@ Eigen::MatrixXd transformed_slice_sampler_cpp3(
         Wsnew[ii] = gsl_ran_flat(r, a[ii], b[ii]);
       }
 
-      //Wtemp = Ainv * Wsnew;
-      //Use optimized internal BLAS GEMV routines
+      // Wtemp = Ainv * Wsnew;
+      // Use optimized internal BLAS GEMV routines
       Wtemp.noalias() = Ainv * Wsnew;
 
       for (auto kk = 0; kk < theta_new.size(); kk++) {
         if (kk == 0) {
           theta_new[kk] = Wtemp[kk] + betas(0, 0) + CM[0];
         } else {
-          //Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
-          //theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
-	  trunc_lin_numeric3_fast(theta_new[kk - 1], knots.col(kk), tX_workspace);
+          // Eigen::MatrixXd tX = trunc_lin_numeric3(theta_new[kk - 1], knots.col(kk));
+          // theta_new[kk] = Wtemp[kk] + (tX * betas.col(kk)).value() + CM[kk];
+          trunc_lin_numeric3_fast(theta_new[kk - 1], knots.col(kk), tX_workspace);
           theta_new[kk] = Wtemp[kk] + tX_workspace.dot(betas.col(kk)) + CM[kk];
         }
       }
@@ -1483,7 +1361,6 @@ Eigen::MatrixXd initial_slice_sampler_cpp3(
   return returnSamples;
 }
 
-
 double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec) {
   double returnV = 0;
   double mean = 0;
@@ -1548,7 +1425,6 @@ double neg_log_prior_cpp3(const Eigen::VectorXd& theta, const Eigen::MatrixXd& p
   return -1.0 * returnV;
 }
 
-
 double no_priorr(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec) { return 0.0; }
 
 ////binomial likelihood
@@ -1558,27 +1434,27 @@ double no_priorr(const Eigen::VectorXd& theta, const Eigen::MatrixXd& prior_spec
 /// @param Y
 /// @param nly
 /// @return
-//double ll_binomial(
-//    Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
+// double ll_binomial(
+//     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
 //) {
-//  double ll = 0.0;
-//  Eigen::VectorXd mean = nly(params, X);
+//   double ll = 0.0;
+//   Eigen::VectorXd mean = nly(params, X);
 //
-//  for (int ii = 0; ii < mean.size(); ii++) {
-//    if (std::isnan(mean[ii])) {
-//      return std::numeric_limits<double>::infinity();
-//    }
-//  }
-//  ll += (Y.col(0).array() * mean.array().log() +
-//         (Y.col(1).array() - Y.col(0).array()) * (1 - mean.array()).log())
-//            .array()
-//            .sum();
-//  if (std::isnan(ll)) {
-//    ll = -std::numeric_limits<double>::infinity();
-//  }
+//   for (int ii = 0; ii < mean.size(); ii++) {
+//     if (std::isnan(mean[ii])) {
+//       return std::numeric_limits<double>::infinity();
+//     }
+//   }
+//   ll += (Y.col(0).array() * mean.array().log() +
+//          (Y.col(1).array() - Y.col(0).array()) * (1 - mean.array()).log())
+//             .array()
+//             .sum();
+//   if (std::isnan(ll)) {
+//     ll = -std::numeric_limits<double>::infinity();
+//   }
 //
-//  return -1.0 * ll;
-//}
+//   return -1.0 * ll;
+// }
 
 double ll_binomial(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
@@ -1603,8 +1479,6 @@ double ll_binomial(
 
   return -1.0 * ll;
 }
-
-
 
 // poisson likelihood
 /// @brief
@@ -1640,7 +1514,7 @@ double ll_continuous(
 
   // Evaluate full expected mean trajectory at once across contiguous memory
   const Eigen::ArrayXd m = nly(params, X).array();
-  
+
   // Create a zero-copy array wrapper over your empirical response data column
   auto y_obs = Y.col(0).array();
 
@@ -1679,8 +1553,8 @@ double ll_continuous_summary(
 
   // Create lightweight zero-copy array wrappers over the columns of matrix Y
   auto ybar = Y.col(0).array();  // observed mean
-  auto s    = Y.col(1).array();  // observed sample std
-  auto n    = Y.col(2).array();  // sample size
+  auto s = Y.col(1).array();     // observed sample std
+  auto n = Y.col(2).array();     // sample size
 
   // 1. Vectorized calculation of mean-dependent variances across the entire array
   Eigen::ArrayXd sigma2 = sigma_coef * m.pow(rho);
@@ -1716,7 +1590,6 @@ double ll_continuous_cv(
   return -1.0 * total_ll;
 }
 
-
 double ll_continuous_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
@@ -1727,8 +1600,8 @@ double ll_continuous_cv_summary(
 
   const Eigen::ArrayXd m = nly(params, X).array();
   auto ybar = Y.col(0).array();
-  auto s    = Y.col(1).array();
-  auto n    = Y.col(2).array();
+  auto s = Y.col(1).array();
+  auto n = Y.col(2).array();
 
   // Vectorized evaluation of multi-sample summary criteria
   Eigen::ArrayXd term1 = n * (ybar - m).square();
@@ -1739,7 +1612,6 @@ double ll_continuous_cv_summary(
 
   return -1.0 * total_ll;
 }
-
 
 double ll_lognormal_cv(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
@@ -1763,7 +1635,6 @@ double ll_lognormal_cv(
   return -1.0 * total_terms.sum();
 }
 
-
 double ll_lognormal_cv_summary(
     const Eigen::VectorXd& params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y,
     const ptr2& nly
@@ -1774,14 +1645,14 @@ double ll_lognormal_cv_summary(
 
   const Eigen::ArrayXd mu_log = nly(params, X).array();
   auto ybar = Y.col(0).array();
-  auto s    = Y.col(1).array();
-  auto n    = Y.col(2).array();
+  auto s = Y.col(1).array();
+  auto n = Y.col(2).array();
 
   // High performance vectorized log-normal scaling math
   Eigen::ArrayXd cv_sq_plus_1 = (s * s) / (ybar * ybar) + 1.0;
   Eigen::ArrayXd ybar_log = ybar.log() - 0.5 * cv_sq_plus_1.log();
   Eigen::ArrayXd s_log2 = cv_sq_plus_1.log();
-  
+
   Eigen::ArrayXd jacobian = n * ybar_log;
   Eigen::ArrayXd term1 = n * (ybar_log - mu_log).square();
   Eigen::ArrayXd term2 = (n - 1.0) * s_log2;
@@ -1791,7 +1662,6 @@ double ll_lognormal_cv_summary(
 
   return -1.0 * total_ll;
 }
-
 
 double ll_nested_cv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
@@ -1811,7 +1681,7 @@ double ll_nested_cv(
 
   const Eigen::ArrayXd m = nly(params, X).array();
   auto lmean = Y.col(0).array();
-  auto Ni    = Y.col(2).array();
+  auto Ni = Y.col(2).array();
 
   // Vectorized variance calculation for nested group targets
   Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
@@ -1822,8 +1692,6 @@ double ll_nested_cv(
 
   return -1.0 * total_ll;
 }
-
-
 
 double ll_nested_ncv(
     Eigen::VectorXd params, const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y, const ptr2& nly
@@ -1847,7 +1715,7 @@ double ll_nested_ncv(
 
   const Eigen::ArrayXd m = nly(params, X).array();
   auto lmean = Y.col(0).array();
-  auto Ni    = Y.col(2).array();
+  auto Ni = Y.col(2).array();
 
   // Double variable variance trajectory matrix maps
   Eigen::ArrayXd var_between = std::exp(alpha) * m.pow(rho);
@@ -1869,13 +1737,10 @@ double full_postt(
         lll,
     std::function<double(Eigen::VectorXd, const Eigen::MatrixXd&)> priorrr, const ptr2& nonlinn
 ) {
-
   double retV = lll(params, X, Y, nonlinn) + priorrr(params, priorr);
 
   return retV;
 }
-
-
 
 /// @brief Run the latent slice sampler
 /// @param X Covariates matrix (first column is doses)
