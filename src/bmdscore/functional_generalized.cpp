@@ -426,12 +426,29 @@ Eigen::VectorXd continuous_exp3_transform(const Eigen::VectorXd& params, const E
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-    return m0 * std::exp(sign * std::pow(b * xx, c));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
+  //  return m0 * std::exp(sign * std::pow(b * xx, c));
+  //});
 
-  return out;
+  //return out;
+
+  // Bind the cache to the specific input matrix memory address to prevent cross-model leakage
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_c = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_c;
+
+  // Re-evaluate the power matrix only when parameters shift OR the dataset matrix transitions
+  if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_c = c;
+      cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+  }
+
+  return m0 * (sign * cached_bx_pow_c.array()).exp().matrix();
+
 }
 
 /// @brief Computes the Exp3-log transformation
@@ -449,12 +466,26 @@ Eigen::VectorXd continuous_exp3_transform_log(
   double sign = (log_ratio >= 0) ? 1.0 : -1.0;
   double b = std::pow(std::abs(log_ratio), 1.0 / c);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
-    return m0 * std::exp(sign * std::pow(b * xx, c));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &b, &c, &sign](double xx) {
+  //  return m0 * std::exp(sign * std::pow(b * xx, c));
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_c = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_c;
+
+  if (&X != cached_X_ptr || b != cached_b || c != cached_c || cached_bx_pow_c.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_c = c;
+      cached_bx_pow_c = (b * X.col(0).array()).pow(c);
+  }
+
+  return (std::log(m0) + (sign * cached_bx_pow_c.array())).matrix();
 }
 
 /// @brief Computes the Exp5 transformation
@@ -476,12 +507,26 @@ Eigen::VectorXd continuous_exp5_transform(const Eigen::VectorXd& params, const E
     c = 1e-8;
   }
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-    return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
+  //  return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
+  //});
 
-  return out;
+  //return out;
+
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_n;
+
+  if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_n = n;
+      cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+  }
+
+  return m0 * (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).matrix();
 }
 
 /// @brief Computes the Exp5-log transformation
@@ -505,12 +550,26 @@ Eigen::VectorXd continuous_exp5_transform_log(
     c = 1e-8;
   }
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
-    return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &b, &n, &c](double xx) {
+  //  return m0 * (c - (c - 1.0) * std::exp(-std::pow(b * xx, n)));
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_bx_pow_n;
+
+  if (&X != cached_X_ptr || b != cached_b || n != cached_n || cached_bx_pow_n.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_n = n;
+      cached_bx_pow_n = (b * X.col(0).array()).pow(n);
+  }
+
+  return (std::log(m0) + (c - (c - 1.0) * (-cached_bx_pow_n.array()).exp()).log()).matrix();
 }
 
 /// @brief Computes the BMDS Hill transformation
@@ -526,13 +585,24 @@ Eigen::VectorXd continuous_hill_transform(const Eigen::VectorXd& params, const E
   double kn = std::pow(k, n);
   double v = (m1 - m0) * (kn + 1);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &v, &k, &n](double d) {
-    double dn = std::pow(d, n);
-    return m0 + v * dn / (std::pow(k, n) + dn);
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &v, &k, &n](double d) {
+  //  double dn = std::pow(d, n);
+  //  return m0 + v * dn / (std::pow(k, n) + dn);
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_n = -9999.0;
+  static thread_local Eigen::VectorXd cached_dn;
+
+  if (&X != cached_X_ptr || n != cached_n || cached_dn.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_n = n;
+      cached_dn = X.col(0).array().pow(n);
+  }
+
+  return (m0 + (v * cached_dn.array()) / (kn + cached_dn.array())).matrix();
 }
 
 /// @brief Computes the EFSA Hill transformation
@@ -550,13 +620,24 @@ Eigen::VectorXd continuous_hill4_efsa_transform(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-    double xd = std::pow(x, d);
-    return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
+  //  double xd = std::pow(x, d);
+  //  return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_xd;
+
+  if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_d = d;
+      cached_xd = X.col(0).array().pow(d);
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).matrix();
 }
 
 /// @brief Computes the EFSA Hill-log transformation
@@ -574,13 +655,24 @@ Eigen::VectorXd continuous_hill4_efsa_transform_log(
   double bd = std::pow(b, d);
   double c = ((m1 - m0) / m0) * (bd + 1.0) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
-    double xd = std::pow(x, d);
-    return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &bd, &d](double x) {
+  //  double xd = std::pow(x, d);
+  //  return m0 * (1.0 + (c - 1.0) * xd / (bd + xd));
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_xd;
+
+  if (&X != cached_X_ptr || d != cached_d || cached_xd.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_d = d;
+      cached_xd = X.col(0).array().pow(d);
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_xd.array() / (bd + cached_xd.array())).log()).matrix();
 }
 
 /// @brief Computes the EFSA Inverse Exponential transformation
@@ -598,13 +690,27 @@ Eigen::VectorXd continuous_invexp_efsa_transform(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double xd = std::pow(x, -d);
-    return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double xd = std::pow(x, -d);
+  //  return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_exp_term.array()).matrix();
+
 }
 
 /// @brief Computes the EFSA Inverse Exponential-log transformation
@@ -622,13 +728,26 @@ Eigen::VectorXd continuous_invexp_efsa_transform_log(
   double exp_neg_b = std::exp(-b);
   double c = (m1 - m0 + m0 * exp_neg_b) / (m0 * exp_neg_b);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double xd = std::pow(x, -d);
-    return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double xd = std::pow(x, -d);
+  //  return m0 * (1.0 + (c - 1.0) * (std::exp(-b * xd)));
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_exp_term = (-b * X.col(0).array().pow(-d)).exp();
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_exp_term.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA Lognormal transformation
@@ -649,18 +768,42 @@ Eigen::VectorXd continuous_lognormal_efsa_transform(
 
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    if (x == 0) {
-      return m0;
-    }
-    double z = std::log(b) + d * std::log(x);
-    // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-    double phi = gsl_cdf_gaussian_P(z, 1.0);
-    return m0 * (1.0 + (c - 1.0) * phi);
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  if (x == 0) {
+  //    return m0;
+  //  }
+  //  double z = std::log(b) + d * std::log(x);
+  //  // double phi = R::pnorm(z, 0.0, 1.0, true, false);
+  //  double phi = gsl_cdf_gaussian_P(z, 1.0);
+  //  return m0 * (1.0 + (c - 1.0) * phi);
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_phi_vector;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_phi_vector.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_phi_vector.resize(X.rows());
+
+      const double log_b_val = std::log(b);
+      for (Eigen::Index i = 0; i < X.rows(); ++i) {
+          double x = X(i, 0);
+          if (x == 0.0) {
+              cached_phi_vector[i] = phi_logb;
+          } else {
+              double z = log_b_val + d * std::log(x);
+              cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
+          }
+      }
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_phi_vector.array()).matrix();
 }
 
 /// @brief Computes the EFSA Lognormal-log transformation
@@ -679,16 +822,40 @@ Eigen::VectorXd continuous_lognormal_efsa_transform_log(
   double phi_logb = gsl_cdf_gaussian_P(std::log(b), 1.0);
   double c = (m1 - m0 + m0 * phi_logb) / (m0 * phi_logb);
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    if (x == 0) return m0;
-    double z = std::log(b) + d * std::log(x);
-    // double phi = R::pnorm(z, 0.0, 1.0, true, false);
-    double phi = gsl_cdf_gaussian_P(z, 1.0);
-    return m0 * (1.0 + (c - 1.0) * phi);
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  if (x == 0) return m0;
+  //  double z = std::log(b) + d * std::log(x);
+  //  // double phi = R::pnorm(z, 0.0, 1.0, true, false);
+  //  double phi = gsl_cdf_gaussian_P(z, 1.0);
+  //  return m0 * (1.0 + (c - 1.0) * phi);
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_phi_vector;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_phi_vector.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_phi_vector.resize(X.rows());
+
+      const double log_b_val = std::log(b);
+      for (Eigen::Index i = 0; i < X.rows(); ++i) {
+          double x = X(i, 0);
+          if (x == 0.0) {
+              cached_phi_vector[i] = phi_logb;
+          } else {
+              double z = log_b_val + d * std::log(x);
+              cached_phi_vector[i] = gsl_cdf_gaussian_P(z, 1.0);
+          }
+      }
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_phi_vector.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA Gamma transformation
@@ -712,15 +879,31 @@ Eigen::VectorXd continuous_gamma_efsa_transform(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);  // pgamma(b, d, scale=1)
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double bx = b * x;
-    // double pg = R::pgamma(bx, d, 1.0, true, false);
-    double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-    return m0 * (1.0 + (c - 1.0) * pg);
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double bx = b * x;
+  //  // double pg = R::pgamma(bx, d, 1.0, true, false);
+  //  double pg = gsl_cdf_gamma_P(bx, d, 1.0);
+  //  return m0 * (1.0 + (c - 1.0) * pg);
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_gsl_vector;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_gsl_vector.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_gsl_vector.resize(X.rows());
+      for (Eigen::Index i = 0; i < X.rows(); ++i) {
+          cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+      }
+  }
+
+  return m0 * (1.0 + (c - 1.0) * cached_gsl_vector.array()).matrix();
 }
 
 /// @brief Computes the EFSA Gamma-log transformation
@@ -744,15 +927,31 @@ Eigen::VectorXd continuous_gamma_efsa_transform_log(
   double pg = gsl_cdf_gamma_P(b, d, 1.0);
   double c = (m1 - m0) / (m0 * pg) + 1.0;
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double bx = b * x;
-    // double pg = R::pgamma(bx, d, 1.0, true, false);
-    double pg = gsl_cdf_gamma_P(bx, d, 1.0);
-    return m0 * (1.0 + (c - 1.0) * pg);
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double bx = b * x;
+  //  // double pg = R::pgamma(bx, d, 1.0, true, false);
+  //  double pg = gsl_cdf_gamma_P(bx, d, 1.0);
+  //  return m0 * (1.0 + (c - 1.0) * pg);
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_gsl_vector;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_gsl_vector.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+      cached_gsl_vector.resize(X.rows());
+      for (Eigen::Index i = 0; i < X.rows(); ++i) {
+          cached_gsl_vector[i] = gsl_cdf_gamma_P(b * X(i, 0), d, 1.0);
+      }
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * cached_gsl_vector.array()).log()).matrix();
 }
 
 /// @brief Computes the EFSA LMS2 transformation
@@ -770,13 +969,28 @@ Eigen::VectorXd continuous_lms_efsa_transform(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double exp_term = std::exp(-b * x - d * x * x);
-    return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double exp_term = std::exp(-b * x - d * x * x);
+  //  return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
+  //});
 
-  return out;
+  //return out;
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+
+      auto x_arr = X.col(0).array();
+      cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+  }
+
+  return m0 * (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).matrix();
 }
 
 /// @brief Computes the EFSA LMS2-log transformation
@@ -794,13 +1008,28 @@ Eigen::VectorXd continuous_lms_efsa_transform_log(
   double exp_neg_bd = std::exp(-b - d);
   double c = (m1 - m0 * exp_neg_bd) / (m0 * (1.0 - exp_neg_bd));
 
-  Eigen::VectorXd out = X.col(0);
-  out = out.unaryExpr([&m0, &c, &b, &d](double x) {
-    double exp_term = std::exp(-b * x - d * x * x);
-    return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
-  });
+  //Eigen::VectorXd out = X.col(0);
+  //out = out.unaryExpr([&m0, &c, &b, &d](double x) {
+  //  double exp_term = std::exp(-b * x - d * x * x);
+  //  return m0 * (1.0 + (c - 1.0) * (1.0 - exp_term));
+  //});
 
-  return out.array().log().matrix();
+  //return out.array().log().matrix();
+  static thread_local const Eigen::MatrixXd* cached_X_ptr = nullptr;
+  static thread_local double cached_b = -9999.0;
+  static thread_local double cached_d = -9999.0;
+  static thread_local Eigen::VectorXd cached_exp_term;
+
+  if (&X != cached_X_ptr || b != cached_b || d != cached_d || cached_exp_term.size() != X.rows()) {
+      cached_X_ptr = &X;
+      cached_b = b;
+      cached_d = d;
+
+      auto x_arr = X.col(0).array();
+      cached_exp_term = (-b * x_arr - d * x_arr * x_arr).exp();
+  }
+
+  return (std::log(m0) + (1.0 + (c - 1.0) * (1.0 - cached_exp_term.array())).log()).matrix();
 }
 
 /// @brief Computes the Logistic transformation (DO NOT USE)
